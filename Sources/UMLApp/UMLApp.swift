@@ -1,5 +1,7 @@
 import SwiftUI
-import UMLLibrary
+#if os(macOS)
+import AppKit
+#endif
 
 @main
 struct UMLApp: App {
@@ -15,16 +17,15 @@ struct UMLApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ProjectBrowserView()
+        }
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("New Project") {
+                    NotificationCenter.default.post(name: .createNewProject, object: nil)
+                }.keyboardShortcut("n", modifiers: [.command])
+            }
         }
     }
 }
 
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Text("Hello from the Package App!")
-        }
-        .padding()
-    }
-}
