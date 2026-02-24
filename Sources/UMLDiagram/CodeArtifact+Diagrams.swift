@@ -259,6 +259,15 @@ extension CodeArtifact {
     ///   - title: Optional diagram title; defaults to `"TypeName.methodName()"`.
     ///   - maxDepth: Maximum call-graph traversal depth. Prevents infinite loops caused
     ///     by recursion or mutual calls. Defaults to `5`.
+    ///   - typeMapping: An optional dictionary that maps abstract type names (protocols,
+    ///     interfaces, base classes) to the concrete type whose implementation should be
+    ///     followed when tracing the call graph.  This lets you resolve dynamic dispatch
+    ///     so the diagram can be drawn even when the declared receiver type has no
+    ///     directly accessible body.
+    ///
+    ///     Example: `["AuthServiceProtocol": "DefaultAuthService"]` — calls typed as
+    ///     `AuthServiceProtocol` will appear in the diagram as `DefaultAuthService` and
+    ///     the traversal will follow `DefaultAuthService`'s implementation.
     ///
     /// - Note: This bridge requires parsers to populate `Member.callSites`. Without that
     ///   data the diagram will contain the entry participant but no messages. The
@@ -290,7 +299,8 @@ extension CodeArtifact {
     public func sequenceDiagram(
         entryPoint: (typeName: String, methodName: String),
         title: String? = nil,
-        maxDepth: Int = 5
+        maxDepth: Int = 5,
+        typeMapping: [String: String] = [:]
     ) -> SequenceDiagram {
         let diagramTitle = title ?? "\(entryPoint.typeName).\(entryPoint.methodName)()"
 
@@ -340,13 +350,16 @@ extension CodeArtifact {
             visited.insert(key)
 
             for site in member.callSites {
-                let receiverType = site.receiverType ?? callerTypeName
-                addParticipant(typeName: receiverType)
+                let declaredType = site.receiverType ?? callerTypeName
+                // Resolve dynamic dispatch: if a mapping exists for the declared
+                // (abstract) type, use the concrete type for traversal and display.
+                let concreteType = typeMapping[declaredType] ?? declaredType
+                addParticipant(typeName: concreteType)
 
-                // Forward message: caller → callee
+                // Forward message: caller → callee (concrete)
                 messages.append(SequenceDiagram.Message(
                     from: callerTypeName,
-                    to: receiverType,
+                    to: concreteType,
                     label: site.methodName,
                     kind: .synchronous,
                     order: messageOrder
@@ -354,13 +367,13 @@ extension CodeArtifact {
                 messageOrder += 1
 
                 // Recurse into callee if its implementation is available
-                if let calleeMember = membersByKey["\(receiverType).\(site.methodName)"] {
-                    traverse(callerTypeName: receiverType, member: calleeMember, depth: depth + 1)
+                if let calleeMember = membersByKey["\(concreteType).\(site.methodName)"] {
+                    traverse(callerTypeName: concreteType, member: calleeMember, depth: depth + 1)
                 }
 
                 // Return message: callee → caller
                 messages.append(SequenceDiagram.Message(
-                    from: receiverType,
+                    from: concreteType,
                     to: callerTypeName,
                     label: nil,
                     kind: .return,

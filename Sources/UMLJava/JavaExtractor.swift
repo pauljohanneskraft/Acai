@@ -321,13 +321,25 @@ struct JavaExtractor {
         enumCases: inout [EnumCase],
         parentQN: String
     ) {
+        // Pre-scan: build property map from field declarations and any already-added members
+        // (e.g. record components injected before extractClassBody is called).
+        var knownProperties: [String: String] = [:]
+        for member in members where member.kind == .property {
+            if let typeName = member.type?.name { knownProperties[member.name] = typeName }
+        }
+        for child in node.children() where child.nodeType == "field_declaration" {
+            for field in extractFieldDeclaration(child) where field.kind == .property {
+                if let typeName = field.type?.name { knownProperties[field.name] = typeName }
+            }
+        }
+
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "method_declaration":
-                if let member = extractMethodDeclaration(child) { members.append(member) }
+                if let member = extractMethodDeclaration(child, knownProperties: knownProperties) { members.append(member) }
             case "constructor_declaration":
-                if let member = extractConstructorDeclaration(child) { members.append(member) }
+                if let member = extractConstructorDeclaration(child, knownProperties: knownProperties) { members.append(member) }
             case "field_declaration":
                 members.append(contentsOf: extractFieldDeclaration(child))
             case "class_declaration":
@@ -475,7 +487,10 @@ struct JavaExtractor {
 
     // MARK: - Method Declaration
 
-    private func extractMethodDeclaration(_ node: Node) -> Member? {
+    private func extractMethodDeclaration(
+        _ node: Node,
+        knownProperties: [String: String] = [:]
+    ) -> Member? {
         let modInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
@@ -494,17 +509,24 @@ struct JavaExtractor {
             parameters = extractFormalParameters(paramsNode)
         }
 
+        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
+                                         knownProperties: knownProperties)
+
         return Member(
             name: name, kind: .method,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
             type: returnType, parameters: parameters, genericParameters: genericParams,
-            annotations: modInfo.annotations, location: nodeLoc
+            annotations: modInfo.annotations, location: nodeLoc,
+            callSites: callSites
         )
     }
 
     // MARK: - Constructor Declaration
 
-    private func extractConstructorDeclaration(_ node: Node) -> Member? {
+    private func extractConstructorDeclaration(
+        _ node: Node,
+        knownProperties: [String: String] = [:]
+    ) -> Member? {
         let modInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
@@ -515,11 +537,15 @@ struct JavaExtractor {
             parameters = extractFormalParameters(paramsNode)
         }
 
+        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
+                                         knownProperties: knownProperties)
+
         return Member(
             name: name, kind: .initializer,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
             parameters: parameters, genericParameters: genericParams,
-            annotations: modInfo.annotations, location: nodeLoc
+            annotations: modInfo.annotations, location: nodeLoc,
+            callSites: callSites
         )
     }
 
@@ -629,6 +655,54 @@ struct JavaExtractor {
         if name.isEmpty, let lastNamed = node.namedChildren().last { name = text(lastNamed) }
         guard !name.isEmpty else { return nil }
         return Parameter(internalName: name, type: paramType, isVariadic: true)
+    }
+
+    // MARK: - Call Site Extraction
+
+    private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
+        guard let body, !knownProperties.isEmpty else { return [] }
+        var sites: [CallSite] = []
+        walkForCallSites(body, knownProperties: knownProperties, into: &sites)
+        return sites
+    }
+
+    private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
+        if let site = resolveJavaCallSite(node, knownProperties: knownProperties) {
+            sites.append(site)
+        }
+        for child in node.namedChildren() {
+            walkForCallSites(child, knownProperties: knownProperties, into: &sites)
+        }
+    }
+
+    /// Matches Java `method_invocation` nodes.
+    ///
+    /// Handles:
+    /// - `receiver.method(args)` — `object` field is an `identifier`.
+    /// - `this.receiver.method(args)` — `object` field is a `field_access` whose own
+    ///   `object` is `this`.
+    private func resolveJavaCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+        guard node.nodeType == "method_invocation",
+              let nameNode = node.child(byFieldName: "name"),
+              let objectNode = node.child(byFieldName: "object")
+        else { return nil }
+
+        let methodName = text(nameNode)
+        var receiverVarName: String? = nil
+
+        if objectNode.nodeType == "identifier" {
+            receiverVarName = text(objectNode)
+        } else if objectNode.nodeType == "field_access",
+                  objectNode.child(byFieldName: "object")?.nodeType == "this",
+                  let fieldNode = objectNode.child(byFieldName: "field") {
+            receiverVarName = text(fieldNode)
+        }
+
+        guard let varName = receiverVarName,
+              let receiverType = knownProperties[varName]
+        else { return nil }
+
+        return CallSite(receiverType: receiverType, methodName: methodName, location: loc(node))
     }
 
     // MARK: - Type References

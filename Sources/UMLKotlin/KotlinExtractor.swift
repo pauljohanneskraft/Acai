@@ -308,14 +308,27 @@ struct KotlinExtractor {
     // MARK: - Class Body
 
     private mutating func extractClassBody(_ node: Node, into typeDecl: inout TypeDeclaration) {
+        // Pre-scan: build a property map so function bodies can resolve call sites.
+        // Includes primary-constructor properties already added to typeDecl.members.
+        var knownProperties: [String: String] = [:]
+        for member in typeDecl.members where member.kind == .property {
+            if let typeName = member.type?.name { knownProperties[member.name] = typeName }
+        }
+        for child in node.namedChildren() where child.nodeType == "property_declaration" {
+            let prop = extractPropertyDeclaration(child)
+            if !prop.modifiers.contains(.static), let typeName = prop.type?.name {
+                knownProperties[prop.name] = typeName
+            }
+        }
+
         for child in node.namedChildren() {
             switch child.nodeType {
             case "function_declaration":
-                typeDecl.members.append(extractFunctionDeclaration(child))
+                typeDecl.members.append(extractFunctionDeclaration(child, knownProperties: knownProperties))
             case "property_declaration":
                 typeDecl.members.append(extractPropertyDeclaration(child))
             case "secondary_constructor":
-                typeDecl.members.append(extractSecondaryConstructor(child))
+                typeDecl.members.append(extractSecondaryConstructor(child, knownProperties: knownProperties))
             case "companion_object":
                 if let obj = extractCompanionObject(child) { typeDecl.nestedTypes.append(obj) }
             case "class_declaration":
@@ -335,16 +348,24 @@ struct KotlinExtractor {
     // MARK: - Enum Class Body
 
     private mutating func extractEnumClassBody(_ node: Node, into typeDecl: inout TypeDeclaration) {
+        var knownProperties: [String: String] = [:]
+        for child in node.namedChildren() where child.nodeType == "property_declaration" {
+            let prop = extractPropertyDeclaration(child)
+            if !prop.modifiers.contains(.static), let typeName = prop.type?.name {
+                knownProperties[prop.name] = typeName
+            }
+        }
+
         for child in node.namedChildren() {
             switch child.nodeType {
             case "enum_entry":
                 if let ec = extractEnumEntry(child) { typeDecl.enumCases.append(ec) }
             case "function_declaration":
-                typeDecl.members.append(extractFunctionDeclaration(child))
+                typeDecl.members.append(extractFunctionDeclaration(child, knownProperties: knownProperties))
             case "property_declaration":
                 typeDecl.members.append(extractPropertyDeclaration(child))
             case "secondary_constructor":
-                typeDecl.members.append(extractSecondaryConstructor(child))
+                typeDecl.members.append(extractSecondaryConstructor(child, knownProperties: knownProperties))
             case "companion_object":
                 if let obj = extractCompanionObject(child) { typeDecl.nestedTypes.append(obj) }
             case "class_declaration":
@@ -372,7 +393,10 @@ struct KotlinExtractor {
 
     // MARK: - Function Declaration
 
-    private mutating func extractFunctionDeclaration(_ node: Node) -> Member {
+    private mutating func extractFunctionDeclaration(
+        _ node: Node,
+        knownProperties: [String: String] = [:]
+    ) -> Member {
         let modInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? "_anonymous"
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
@@ -389,11 +413,15 @@ struct KotlinExtractor {
             return ref.name == "Unit" ? nil : ref
         }()
 
+        let callSites = extractCallSites(from: node.firstChild(withType: "function_body"),
+                                         knownProperties: knownProperties)
+
         return Member(
             name: name, kind: .method,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
             type: returnType, parameters: params,
-            genericParameters: generics, annotations: modInfo.annotations, location: loc(node)
+            genericParameters: generics, annotations: modInfo.annotations, location: loc(node),
+            callSites: callSites
         )
     }
 
@@ -455,11 +483,16 @@ struct KotlinExtractor {
 
     // MARK: - Secondary Constructor
 
-    private func extractSecondaryConstructor(_ node: Node) -> Member {
+    private func extractSecondaryConstructor(
+        _ node: Node,
+        knownProperties: [String: String] = [:]
+    ) -> Member {
         let modInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let params = extractFunctionValueParameters(node.firstChild(withType: "function_value_parameters"))
+        let callSites = extractCallSites(from: node.firstChild(withType: "block"),
+                                         knownProperties: knownProperties)
         return Member(name: "init", kind: .initializer, accessLevel: modInfo.accessLevel,
-                      parameters: params, location: loc(node))
+                      parameters: params, location: loc(node), callSites: callSites)
     }
 
     // MARK: - Primary Constructor Parameters
@@ -576,6 +609,64 @@ struct KotlinExtractor {
             default:              return nil
             }
         }
+    }
+
+    // MARK: - Call Site Extraction
+
+    /// Recursively walks `body` collecting every resolvable `receiver.method()` call.
+    private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
+        guard let body, !knownProperties.isEmpty else { return [] }
+        var sites: [CallSite] = []
+        walkForCallSites(body, knownProperties: knownProperties, into: &sites)
+        return sites
+    }
+
+    private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
+        if let site = resolveKotlinCallSite(node, knownProperties: knownProperties) {
+            sites.append(site)
+        }
+        for child in node.namedChildren() {
+            walkForCallSites(child, knownProperties: knownProperties, into: &sites)
+        }
+    }
+
+    /// Matches `call_expression { navigation_expression { receiver … method } }`.
+    ///
+    /// Handles:
+    /// - `receiver.method(args)` — `navigation_expression` whose first named child
+    ///   is a `simple_identifier` (the receiver variable name).
+    /// - `this.receiver.method(args)` — `navigation_expression` whose first named
+    ///   child is an inner `navigation_expression` starting with `this_expression`.
+    private func resolveKotlinCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+        guard node.nodeType == "call_expression",
+              let navExpr = node.firstChild(withType: "navigation_expression")
+        else { return nil }
+
+        // Method name lives in the last navigation_suffix → simple_identifier
+        guard let navSuffix = navExpr.firstChild(withType: "navigation_suffix"),
+              let methodNode = navSuffix.firstChild(withType: "simple_identifier")
+        else { return nil }
+        let methodName = text(methodNode)
+
+        // Resolve receiver variable name
+        var receiverVarName: String? = nil
+
+        if let firstId = navExpr.firstChild(withType: "simple_identifier") {
+            // Pattern: receiverVar.method(args)
+            receiverVarName = text(firstId)
+        } else if let innerNav = navExpr.firstChild(withType: "navigation_expression"),
+                  innerNav.firstChild(withType: "this_expression") != nil,
+                  let innerSuffix = innerNav.firstChild(withType: "navigation_suffix"),
+                  let propId = innerSuffix.firstChild(withType: "simple_identifier") {
+            // Pattern: this.receiverVar.method(args)
+            receiverVarName = text(propId)
+        }
+
+        guard let varName = receiverVarName,
+              let receiverType = knownProperties[varName]
+        else { return nil }
+
+        return CallSite(receiverType: receiverType, methodName: methodName, location: loc(node))
     }
 
     // MARK: - Generic Parameters

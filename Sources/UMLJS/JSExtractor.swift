@@ -310,11 +310,14 @@ struct JSExtractor {
     // MARK: - Class Body
 
     private func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
+        let knownProperties = buildPropertyMapFromBody(bodyNode)
+
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "method_definition":
-                let member = extractMethodDefinition(child, parentName: typeDecl.name)
+                let member = extractMethodDefinition(child, parentName: typeDecl.name,
+                                                     knownProperties: knownProperties)
                 if member.kind == .initializer, isTypeScript {
                     extractConstructorParameterProperties(child, into: &typeDecl)
                 }
@@ -326,7 +329,8 @@ struct JSExtractor {
 
             case "abstract_method_definition":
                 if isTypeScript {
-                    var member = extractMethodDefinition(child, parentName: typeDecl.name)
+                    var member = extractMethodDefinition(child, parentName: typeDecl.name,
+                                                         knownProperties: knownProperties)
                     if !member.modifiers.contains(.abstract) {
                         member.modifiers.append(.abstract)
                     }
@@ -351,9 +355,47 @@ struct JSExtractor {
         }
     }
 
+    /// Builds a `varName → typeName` map by pre-scanning the class body for field
+    /// definitions and TypeScript constructor parameter properties.
+    private func buildPropertyMapFromBody(_ bodyNode: Node) -> [String: String] {
+        var map: [String: String] = [:]
+
+        for child in bodyNode.children() {
+            guard let childType = child.nodeType else { continue }
+
+            if childType == "field_definition" || childType == "public_field_definition" {
+                let member = extractFieldDefinition(child)
+                if !member.modifiers.contains(.static), let typeName = member.type?.name {
+                    map[member.name] = typeName
+                }
+            } else if childType == "method_definition", isTypeScript,
+                      child.child(byFieldName: "name").map({ text($0) }) == "constructor",
+                      let paramsNode = child.child(byFieldName: "parameters") {
+                // TypeScript constructor parameter properties (public/private/protected/readonly)
+                for param in paramsNode.children() {
+                    guard let pType = param.nodeType,
+                          pType == "required_parameter" || pType == "optional_parameter"
+                    else { continue }
+                    let accessMod = extractAccessibilityModifier(param)
+                    let hasReadonly = param.hasDirectChildText("readonly", in: context)
+                    guard accessMod != nil || hasReadonly else { continue }
+                    let name = extractParameterName(param)
+                    if !name.isEmpty, let typeRef = extractTypeAnnotation(param) {
+                        map[name] = typeRef.name
+                    }
+                }
+            }
+        }
+        return map
+    }
+
     // MARK: - Method Definition
 
-    private func extractMethodDefinition(_ node: Node, parentName: String) -> Member {
+    private func extractMethodDefinition(
+        _ node: Node,
+        parentName: String,
+        knownProperties: [String: String] = [:]
+    ) -> Member {
         let nodeLoc = loc(node)
         let nameNode = node.child(byFieldName: "name")
         let name = nameNode.map { text($0) } ?? ""
@@ -411,6 +453,9 @@ struct JSExtractor {
             returnType = extractReturnTypeAnnotation(node)
         }
 
+        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
+                                         knownProperties: knownProperties)
+
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
             kind: kind,
@@ -421,7 +466,8 @@ struct JSExtractor {
             genericParameters: generics,
             isComputed: isComputed,
             annotations: annotations,
-            location: nodeLoc
+            location: nodeLoc,
+            callSites: callSites
         )
     }
 
@@ -793,6 +839,56 @@ struct JSExtractor {
             genericParameters: generics,
             location: nodeLoc
         )
+    }
+
+    // MARK: - Call Site Extraction
+
+    private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
+        guard let body, !knownProperties.isEmpty else { return [] }
+        var sites: [CallSite] = []
+        walkForCallSites(body, knownProperties: knownProperties, into: &sites)
+        return sites
+    }
+
+    private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
+        if let site = resolveJSCallSite(node, knownProperties: knownProperties) {
+            sites.append(site)
+        }
+        for child in node.namedChildren() {
+            walkForCallSites(child, knownProperties: knownProperties, into: &sites)
+        }
+    }
+
+    /// Matches JS/TS `call_expression { function: member_expression { object, property } }`.
+    ///
+    /// Handles:
+    /// - `receiver.method(args)` — `object` is an `identifier`.
+    /// - `this.receiver.method(args)` — `object` is a `member_expression` whose own
+    ///   `object` is a `this` node.
+    private func resolveJSCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+        guard node.nodeType == "call_expression",
+              let funcNode = node.child(byFieldName: "function"),
+              funcNode.nodeType == "member_expression",
+              let propertyNode = funcNode.child(byFieldName: "property"),
+              let objectNode   = funcNode.child(byFieldName: "object")
+        else { return nil }
+
+        let methodName = text(propertyNode)
+        var receiverVarName: String? = nil
+
+        if objectNode.nodeType == "identifier" {
+            receiverVarName = text(objectNode)
+        } else if objectNode.nodeType == "member_expression",
+                  objectNode.child(byFieldName: "object")?.nodeType == "this",
+                  let propNode = objectNode.child(byFieldName: "property") {
+            receiverVarName = text(propNode)
+        }
+
+        guard let varName = receiverVarName,
+              let receiverType = knownProperties[varName]
+        else { return nil }
+
+        return CallSite(receiverType: receiverType, methodName: methodName, location: loc(node))
     }
 
     // MARK: - Parameters
