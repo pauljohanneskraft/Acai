@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DOTNode: Identifiable, Equatable {
     let id: String
-    var label: String
+    var label: AttributedString
     var position: CGPoint
 }
 
@@ -18,38 +18,27 @@ struct DOTDiagramView: View {
         
         _nodes = State(
             initialValue: {
-                // Parse nodes from dotText and assign initial positions automatically
-                // Initial positions will be centered horizontally and spaced vertically
+                let nodeRegex = /^\s*(?<id>\S+)\s*\[\s*label\s*=\s*(?<label>.*?)\s*\];/
+
                 var parsedNodes: [DOTNode] = []
                 let lines = dotText.components(separatedBy: .newlines)
                 var yOffset: CGFloat = 50
+
                 for line in lines {
-                    // Match identifier [label="..."];
-                    // identifier can be letters, digits, underscores
-                    // label is inside the quotes
-                    if let match = line.range(of: #"^(\w+)\s*\[\s*label\s*=\s*"(.*?)"\s*\];"#, options: .regularExpression) {
-                        let matchedString = String(line[match])
-                        // Extract id and label with regex capturing groups
-                        if let idRange = matchedString.range(of: #"^\w+"#, options: .regularExpression),
-                           let labelRange = matchedString.range(of: #"label\s*=\s*"(.*?)""#, options: .regularExpression) {
-                            let id = String(matchedString[idRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            
-                            // Extract label content inside quotes
-                            let labelMatch = matchedString[labelRange]
-                            // labelMatch looks like label="something"
-                            let labelStartIndex = labelMatch.firstIndex(of: "\"")!
-                            let labelEndIndex = labelMatch.lastIndex(of: "\"")!
-                            let label = String(labelMatch[labelMatch.index(after: labelStartIndex)..<labelEndIndex])
-                            
-                            // Assign an initial position
-                            let position = CGPoint(x: 100, y: yOffset)
-                            yOffset += 80
-                            parsedNodes.append(DOTNode(id: id, label: label, position: position))
-                        }
+                    // Attempt to match the line against our named capture groups
+                    if let match = try? nodeRegex.firstMatch(in: line) {
+                        print("new match: \(match)")
+                        let id = String(match.id)
+                        let label = AttributedString(html: String(match.label.dropFirst().dropLast()))
+                        
+                        let position = CGPoint(x: 100, y: yOffset)
+                        yOffset += 80
+                                                
+                        parsedNodes.append(DOTNode(id: id, label: label, position: position))
+                        print("Successfully parsed node: ID=\(id), Label=\(label)")
                     }
                 }
                 
-                print("Parsed nodes: \(parsedNodes.count) from \(dotText)")
                 return parsedNodes
             }()
         )
@@ -102,5 +91,23 @@ fileprivate struct DOTNodeView: View {
             )
             .foregroundColor(.white)
             .shadow(radius: 3)
+    }
+}
+
+fileprivate extension AttributedString {
+    init(html: String) {
+        if let data = html.data(using: .utf8),
+           let nsAttributedString = try? NSAttributedString(
+                data: data,
+                options: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue
+                ],
+                documentAttributes: nil
+           ) {
+            self = AttributedString(nsAttributedString)
+        } else {
+            self = AttributedString(html)
+        }
     }
 }
