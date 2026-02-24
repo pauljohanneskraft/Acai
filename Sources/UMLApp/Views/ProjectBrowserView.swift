@@ -10,6 +10,7 @@ struct ProjectBrowserView: View {
                 switch model.selection {
                 case .project(let id): return id
                 case .codebase(let id): return id
+                case .diagram(let id): return id
                 case .none: return nil
                 }
             } set: { newValue in
@@ -50,6 +51,20 @@ struct ProjectBrowserView: View {
                     CodebaseDetailView(codebase: codebase)
                         .environmentObject(model)
                 } else { Text("Select a codebase") }
+            case .diagram(let codebaseID):
+                if let codebase = model.store.projects.flatMap(\.codebases).first(where: { $0.id == codebaseID }),
+                   let artifact = codebase.artifact {
+                    ClassDiagramView(artifact: artifact, codebaseName: codebase.name)
+                        .environmentObject(model)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("No analysis available. Reindex the codebase first.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             case .none:
                 Text("Create or select a project")
             }

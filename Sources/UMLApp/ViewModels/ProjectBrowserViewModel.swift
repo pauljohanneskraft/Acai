@@ -12,6 +12,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     enum Selection: Hashable {
         case project(UUID)
         case codebase(UUID)
+        case diagram(UUID) // View class diagram for a codebase
     }
     
     init(store: ProjectStore = ProjectStore()) {

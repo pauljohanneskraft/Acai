@@ -3,8 +3,7 @@ import SwiftUI
 struct CodebaseDetailView: View {
     let codebase: Codebase
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var showingDOT = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -15,8 +14,13 @@ struct CodebaseDetailView: View {
                 }
                 Spacer()
                 Button { Task { await model.reindex(codebaseID: codebase.id) } } label: { Label("Reindex", systemImage: "arrow.clockwise") }
-                Button { showingDOT = true } label: { Label("Generate DOT", systemImage: "doc.plaintext") }
-                Button { model.exportDOT(for: codebase.id) } label: { Label("Export", systemImage: "square.and.arrow.up") }
+                Button {
+                    model.selection = .diagram(codebase.id)
+                } label: {
+                    Label("View Diagram", systemImage: "rectangle.3.group")
+                }
+                .disabled(codebase.artifact == nil)
+                Button { model.exportDOT(for: codebase.id) } label: { Label("Export DOT", systemImage: "square.and.arrow.up") }
             }
             Divider()
             Text("Analysis summary").font(.headline)
@@ -37,11 +41,5 @@ struct CodebaseDetailView: View {
             Spacer()
         }
         .padding()
-        .sheet(isPresented: $showingDOT) {
-            let dot = model.generateDOT(for: codebase.id)
-            DOTDiagramView(dotText: dot)
-                .frame(minWidth: 600, minHeight: 400)
-        }
     }
 }
-
