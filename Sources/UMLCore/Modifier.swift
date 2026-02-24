@@ -1,0 +1,36 @@
+public enum Modifier: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
+    case `static`
+    case `class`
+    case final
+    case abstract
+    case override
+    case mutating
+    case nonmutating
+    case lazy
+    case weak
+    case unowned
+    case optional
+    case required
+    case convenience
+    case async
+    case `throws`
+    case `rethrows`
+    case nonisolated
+    case consuming
+    case borrowing
+    case open
+    case sealed
+    case data
+    case inner
+    case inline
+    case suspend
+    case readonly
+    case declare
+    case const
+    case synchronized
+    case volatile
+    case transient
+    case native
+    case strictfp
+    case `default`
+}
