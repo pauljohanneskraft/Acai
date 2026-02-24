@@ -1,9 +1,22 @@
 import Foundation
 
 public enum UMLConstants {
-    public static let analysisDirectory =
+    private static let baseDirectory: URL = {
+        #if os(macOS)
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".uml")
+        #else
+        try! FileManager.default.url(
+            for: .documentDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        #endif
+    }()
+    
+    public static let analysisDirectory =
+        baseDirectory
             .appendingPathComponent("analysis")
     
     public static let defaultExcludedSourceDirectories: Set<String> = [
