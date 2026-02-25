@@ -12,6 +12,8 @@ struct DiagramNode: Identifiable, Sendable {
     let methods: [DiagramMember]
     let enumCases: [DiagramEnumCase]
     let genericParameters: [String]
+    /// The directory containing this type's source file (used for grouping).
+    let directoryGroup: String?
 
     init(from type: TypeDeclaration) {
         self.id = type.name
@@ -26,6 +28,21 @@ struct DiagramNode: Identifiable, Sendable {
         self.properties = props.map { DiagramMember(from: $0, isMethod: false) }
         self.methods = meths.map { DiagramMember(from: $0, isMethod: true) }
         self.enumCases = type.enumCases.map { DiagramEnumCase(from: $0) }
+
+        // Extract directory from file path for grouping.
+        if let filePath = type.location?.filePath {
+            // Use the last two path components of the directory for a meaningful group name.
+            let url = URL(fileURLWithPath: filePath)
+            let dir = url.deletingLastPathComponent()
+            let components = dir.pathComponents
+            if components.count >= 2 {
+                self.directoryGroup = components.suffix(2).joined(separator: "/")
+            } else {
+                self.directoryGroup = dir.lastPathComponent
+            }
+        } else {
+            self.directoryGroup = nil
+        }
     }
 }
 

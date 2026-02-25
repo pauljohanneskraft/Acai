@@ -49,10 +49,11 @@ struct UMLClassBoxView: View {
             if let stereotype = node.stereotype {
                 Text("<<\(stereotype)>>")
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color(white: 0.4))
             }
             Text(displayName)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundColor(Color(white: 0.1))
                 .if(isInterface) { $0.italic() }
         }
         .frame(maxWidth: .infinity)
