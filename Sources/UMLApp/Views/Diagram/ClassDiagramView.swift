@@ -106,13 +106,11 @@ struct ClassDiagramView: View {
                     dragStartPositions[id] = viewModel.nodePositions[id]
                 }
                 guard let start = dragStartPositions[id] else { return }
-                let delta = CGPoint(
-                    x: value.translation.width / canvasScale,
-                    y: value.translation.height / canvasScale
-                )
+                // DragGesture inside .scaleEffect already reports translation in
+                // canvas coordinates, so no scale adjustment is needed.
                 viewModel.moveNode(id, to: CGPoint(
-                    x: start.x + delta.x,
-                    y: start.y + delta.y
+                    x: start.x + value.translation.width,
+                    y: start.y + value.translation.height
                 ))
             }
             .onEnded { _ in

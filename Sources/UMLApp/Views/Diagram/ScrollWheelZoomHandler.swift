@@ -1,13 +1,15 @@
 #if os(macOS)
 import SwiftUI
-import AppKit
+@preconcurrency import AppKit
 
-/// An `NSViewRepresentable` that monitors scroll-wheel and trackpad pinch
-/// (magnify) events for zoom, without interfering with SwiftUI's gesture
-/// handling (panning, dragging nodes, clicking).
+/// An `NSViewRepresentable` that installs application-level event monitors for
+/// scroll-wheel zoom, trackpad pinch-to-zoom, and trackpad two-finger panning.
 ///
-/// Uses `NSEvent.addLocalMonitorForEvents` so the overlay doesn't need to
-/// participate in hit testing at all.
+/// The embedded NSView is completely invisible to hit testing (`hitTest` returns
+/// `nil`), so SwiftUI's gesture recognizers (click-drag pan, node drag, tap)
+/// work unimpeded. Zoom and trackpad-pan events are intercepted via
+/// `NSEvent.addLocalMonitorForEvents` which runs before AppKit dispatches
+/// the events, letting us consume them without interfering with SwiftUI.
 struct ScrollWheelZoomHandler: NSViewRepresentable {
     @Binding var scale: CGFloat
     @Binding var offset: CGPoint
@@ -16,77 +18,125 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
         Coordinator()
     }
 
-    func makeNSView(context: Context) -> NSView {
-        let view = ZoomAnchorView()
+    func makeNSView(context: Context) -> ZoomCaptureView {
+        let view = ZoomCaptureView()
         view.coordinator = context.coordinator
-        context.coordinator.anchorView = view
         context.coordinator.getState = { [self] in (scale, offset) }
         context.coordinator.setState = { [self] newScale, newOffset in
             scale = newScale
             offset = newOffset
         }
-        context.coordinator.startMonitoring()
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: ZoomCaptureView, context: Context) {
         context.coordinator.getState = { [self] in (scale, offset) }
         context.coordinator.setState = { [self] newScale, newOffset in
             scale = newScale
             offset = newOffset
         }
+        // Keep cached geometry fresh on every SwiftUI update.
+        context.coordinator.cacheGeometry(from: nsView)
     }
 
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
-        coordinator.stopMonitoring()
-    }
+    // MARK: - Coordinator
 
-    final class Coordinator {
-        weak var anchorView: NSView?
+    /// Always accessed on the main thread (NSViewRepresentable lifecycle +
+    /// NSEvent local monitors run on main), so `@unchecked Sendable` is safe.
+    final class Coordinator: @unchecked Sendable {
         var getState: (() -> (CGFloat, CGPoint))?
         var setState: ((CGFloat, CGPoint) -> Void)?
+
+        /// Cached view geometry so event monitors can do coordinate conversion
+        /// without accessing @MainActor-isolated NSView properties.
+        private var cachedFrameOriginInWindow: CGPoint = .zero
+        private var cachedBounds: CGRect = .zero
+
         private var scrollMonitor: Any?
         private var magnifyMonitor: Any?
 
-        func startMonitoring() {
-            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
-                guard let self, let view = self.anchorView else { return event }
-                // Only handle if the cursor is within our view.
-                let locationInView = view.convert(event.locationInWindow, from: nil)
-                guard view.bounds.contains(locationInView) else { return event }
+        /// Snapshots the view's geometry for use in event monitor callbacks.
+        /// Always called from @MainActor contexts (NSView lifecycle, updateNSView).
+        @MainActor func cacheGeometry(from view: NSView) {
+            cachedBounds = view.bounds
+            let frameInWindow = view.convert(view.bounds, to: nil)
+            cachedFrameOriginInWindow = frameInWindow.origin
+        }
 
-                // On trackpad, two-finger scroll = panning (let SwiftUI handle it).
-                if event.hasPreciseScrollingDeltas {
+        /// Converts a point in window coordinates to the view's local coordinate
+        /// system using cached geometry, then flips Y for SwiftUI (top-left origin).
+        private func viewLocation(fromWindowPoint windowPoint: CGPoint) -> (inView: CGPoint, flipped: CGPoint)? {
+            let local = CGPoint(
+                x: windowPoint.x - cachedFrameOriginInWindow.x,
+                y: windowPoint.y - cachedFrameOriginInWindow.y
+            )
+            guard cachedBounds.contains(local) else { return nil }
+            let flipped = CGPoint(x: local.x, y: cachedBounds.height - local.y)
+            return (local, flipped)
+        }
+
+        /// Installs app-level event monitors for scroll-wheel and magnify events.
+        func installMonitors() {
+            removeMonitors()
+
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) {
+                [weak self] event in
+                guard let self else { return event }
+                guard self.viewLocation(fromWindowPoint: event.locationInWindow) != nil else {
                     return event
                 }
 
-                // Mouse scroll wheel = zoom.
+                if event.hasPreciseScrollingDeltas {
+                    // Trackpad two-finger scroll → pan the canvas.
+                    guard let (scale, offset) = self.getState?() else { return event }
+                    let newOffset = CGPoint(
+                        x: offset.x + event.scrollingDeltaX,
+                        y: offset.y + event.scrollingDeltaY
+                    )
+                    self.setState?(scale, newOffset)
+                    return nil // Consume the event.
+                }
+
+                // Mouse scroll wheel → zoom.
                 let delta = event.scrollingDeltaY
                 guard abs(delta) > 0.01 else { return event }
-                let flipped = CGPoint(x: locationInView.x, y: view.bounds.height - locationInView.y)
+                guard let (_, flipped) = self.viewLocation(fromWindowPoint: event.locationInWindow) else {
+                    return event
+                }
                 self.handleZoom(delta: delta, location: flipped)
-                return nil // consume the event
+                return nil // Consume the event.
             }
 
-            magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) { [weak self] event in
-                guard let self, let view = self.anchorView else { return event }
-                let locationInView = view.convert(event.locationInWindow, from: nil)
-                guard view.bounds.contains(locationInView) else { return event }
-
-                let flipped = CGPoint(x: locationInView.x, y: view.bounds.height - locationInView.y)
+            magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) {
+                [weak self] event in
+                guard let self else { return event }
+                guard let (_, flipped) = self.viewLocation(fromWindowPoint: event.locationInWindow) else {
+                    return event
+                }
                 self.handleMagnify(magnification: event.magnification, location: flipped)
-                return nil // consume the event
+                return nil // Consume the event.
             }
         }
 
-        func stopMonitoring() {
-            if let scrollMonitor { NSEvent.removeMonitor(scrollMonitor) }
-            if let magnifyMonitor { NSEvent.removeMonitor(magnifyMonitor) }
-            scrollMonitor = nil
-            magnifyMonitor = nil
+        func removeMonitors() {
+            if let m = scrollMonitor {
+                NSEvent.removeMonitor(m)
+                scrollMonitor = nil
+            }
+            if let m = magnifyMonitor {
+                NSEvent.removeMonitor(m)
+                magnifyMonitor = nil
+            }
         }
 
-        private func handleZoom(delta: CGFloat, location: CGPoint) {
+        deinit {
+            if let m = scrollMonitor { NSEvent.removeMonitor(m) }
+            if let m = magnifyMonitor { NSEvent.removeMonitor(m) }
+        }
+
+        // MARK: - Zoom Math
+
+        func handleZoom(delta: CGFloat, location: CGPoint) {
             guard let (scale, offset) = getState?() else { return }
             let zoomFactor: CGFloat = 1.03
             let newScale: CGFloat
@@ -107,7 +157,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
             setState?(newScale, newOffset)
         }
 
-        private func handleMagnify(magnification: CGFloat, location: CGPoint) {
+        func handleMagnify(magnification: CGFloat, location: CGPoint) {
             guard let (scale, offset) = getState?() else { return }
             let newScale = max(0.1, min(5.0, scale * (1.0 + magnification)))
 
@@ -121,20 +171,34 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
             )
             setState?(newScale, newOffset)
         }
-
-        deinit {
-            stopMonitoring()
-        }
     }
 
-    /// A transparent NSView used solely as a coordinate reference for
-    /// converting event locations. Does not participate in hit testing.
-    final class ZoomAnchorView: NSView {
+    // MARK: - NSView
+
+    /// Invisible NSView that serves as an anchor for the event monitors.
+    /// Returns `nil` from `hitTest` so all mouse events pass straight through
+    /// to SwiftUI's gesture system. Updates cached geometry on layout changes.
+    final class ZoomCaptureView: NSView {
         weak var coordinator: Coordinator?
 
         override func hitTest(_ point: NSPoint) -> NSView? {
-            // Never intercept hit testing — let SwiftUI handle all clicks/drags.
-            return nil
+            nil // Completely invisible to hit testing.
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window != nil {
+                coordinator?.cacheGeometry(from: self)
+                coordinator?.installMonitors()
+            } else {
+                coordinator?.removeMonitors()
+            }
+        }
+
+        override func layout() {
+            super.layout()
+            // Keep cached geometry in sync when the window resizes.
+            coordinator?.cacheGeometry(from: self)
         }
     }
 }

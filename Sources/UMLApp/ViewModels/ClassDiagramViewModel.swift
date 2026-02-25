@@ -43,7 +43,7 @@ final class ClassDiagramViewModel: ObservableObject {
     func performLayout() {
         let engine = SugiyamaLayoutEngine()
         let inputs = nodes.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100), group: nil)
+            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100), group: $0.directoryGroup)
         }
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.sourceID, targetID: $0.targetID, kind: $0.kind)

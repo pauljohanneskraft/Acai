@@ -2,17 +2,17 @@ import UMLCore
 
 /// Phase 1 of Sugiyama layout: assigns each node to a vertical layer based on
 /// the hierarchy defined by inheritance/conformance edges.
+///
+/// When many nodes have no hierarchy edges (common in typical codebases),
+/// they are spread across multiple rows in a grid pattern rather than
+/// being crammed into a single layer.
 enum LayerAssignment {
 
+    /// Maximum number of nodes per layer for disconnected nodes.
+    /// Keeps the diagram from becoming a single wide row.
+    private static let maxNodesPerRow = 5
+
     /// Assigns nodes to integer layers (0 = topmost).
-    /// - Parameters:
-    ///   - nodeIDs: All node identifiers in the graph.
-    ///   - edges: Directed edges as (source, target) pairs.
-    ///   - hierarchyKinds: Relationship kinds that define parent-child layering
-    ///     (typically inheritance and conformance). Edges where `target` is the
-    ///     parent are used: source (child) goes below target (parent).
-    ///   - allEdges: All edges including non-hierarchy ones, with their kinds.
-    /// - Returns: A mapping from node ID to layer index.
     static func assign(
         nodeIDs: [String],
         edges: [(source: String, target: String, kind: Relationship.Kind)],
@@ -20,7 +20,7 @@ enum LayerAssignment {
     ) -> [String: Int] {
         let nodeSet = Set(nodeIDs)
 
-        // Build adjacency: parent → [children] using hierarchy edges only.
+        // Build adjacency: parent -> [children] using hierarchy edges only.
         // In UML, source inherits from / conforms to target, so target is the parent.
         var childrenOf: [String: [String]] = [:]
         var parentsOf: [String: [String]] = [:]
@@ -37,7 +37,6 @@ enum LayerAssignment {
         // BFS from roots to assign layers.
         var layers: [String: Int] = [:]
 
-        // First pass: assign roots to layer 0 and BFS downward.
         var queue: [String] = roots
         for root in roots {
             layers[root] = 0
@@ -61,15 +60,14 @@ enum LayerAssignment {
             }
         }
 
-        // Assign disconnected nodes (no hierarchy edges at all) to a separate layer.
-        let maxLayer = layers.values.max() ?? 0
+        // Spread disconnected nodes across multiple rows instead of one.
+        let maxHierarchyLayer = layers.values.max() ?? -1
         let disconnected = nodeIDs.filter { layers[$0] == nil }
 
         if !disconnected.isEmpty {
-            // Place disconnected nodes at the bottom, grouped in their own layer.
-            let disconnectedLayer = maxLayer + 1
-            for nodeID in disconnected {
-                layers[nodeID] = disconnectedLayer
+            let startLayer = maxHierarchyLayer + 1
+            for (index, nodeID) in disconnected.enumerated() {
+                layers[nodeID] = startLayer + index / maxNodesPerRow
             }
         }
 
