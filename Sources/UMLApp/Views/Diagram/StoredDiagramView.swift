@@ -3,10 +3,6 @@ import UMLCore
 
 // MARK: - Resize Support
 
-private enum StoredResizeEdge {
-    case left, right, top, bottom
-}
-
 private struct StoredResizeState {
     let startSize: CGSize
     let startPosition: CGPoint
@@ -108,10 +104,6 @@ struct StoredDiagramView: View {
                 } label: {
                     Label("Save as Custom", systemImage: "doc.badge.plus")
                 }
-
-                Text(codebaseName)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
             }
         }
         .navigationTitle(diagram.name)
@@ -204,51 +196,19 @@ struct StoredDiagramView: View {
     }
 
     private func storedEdgeResizeHandles(for id: String, at position: CGPoint, size: CGSize) -> some View {
-        let thickness: CGFloat = 8
-        return ZStack {
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x + size.width / 2, y: position.y)
-                .gesture(storedResizeGesture(for: id, edge: .right))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x - size.width / 2, y: position.y)
-                .gesture(storedResizeGesture(for: id, edge: .left))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y + size.height / 2)
-                .gesture(storedResizeGesture(for: id, edge: .bottom))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y - size.height / 2)
-                .gesture(storedResizeGesture(for: id, edge: .top))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-        }
+        let handleSize: CGFloat = 16
+        return Rectangle()
+            .fill(Color.clear)
+            #if os(macOS)
+            .cursorOnHover(.closedHand)
+            #endif
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle())
+            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
+            .gesture(storedResizeGesture(for: id))
     }
 
-    private func storedResizeGesture(for id: String, edge: StoredResizeEdge) -> some Gesture {
+    private func storedResizeGesture(for id: String) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
@@ -260,28 +220,12 @@ struct StoredDiagramView: View {
                 guard let state = activeResizeState else { return }
                 let minW: CGFloat = 80, minH: CGFloat = 50
 
-                switch edge {
-                case .right:
-                    let newW = max(minW, state.startSize.width + value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x + dw / 2, y: state.startPosition.y))
-                case .left:
-                    let newW = max(minW, state.startSize.width - value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x - dw / 2, y: state.startPosition.y))
-                case .bottom:
-                    let newH = max(minH, state.startSize.height + value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x, y: state.startPosition.y + dh / 2))
-                case .top:
-                    let newH = max(minH, state.startSize.height - value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x, y: state.startPosition.y - dh / 2))
-                }
+                let newW = max(minW, state.startSize.width + value.translation.width)
+                let newH = max(minH, state.startSize.height + value.translation.height)
+                let dw = newW - state.startSize.width
+                let dh = newH - state.startSize.height
+                viewModel.resizeNode(id, width: newW, height: newH)
+                viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x + dw / 2, y: state.startPosition.y + dh / 2))
             }
             .onEnded { _ in
                 activeResizeState = nil

@@ -69,10 +69,6 @@ private struct CanvasRightClickTracker: View {
 
 // MARK: - Resize Edge
 
-private enum ResizeEdge {
-    case left, right, top, bottom
-}
-
 private struct ResizeState {
     let startSize: CGSize
     let startPosition: CGPoint
@@ -394,55 +390,19 @@ struct CustomDiagramEditorView: View {
     }
 
     private func edgeResizeHandles(for id: UUID, at position: CGPoint, size: CGSize) -> some View {
-        let thickness: CGFloat = 8
-        return ZStack {
-            // Right edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x + size.width / 2, y: position.y)
-                .gesture(edgeResizeGesture(for: id, edge: .right))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Left edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x - size.width / 2, y: position.y)
-                .gesture(edgeResizeGesture(for: id, edge: .left))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Bottom edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y + size.height / 2)
-                .gesture(edgeResizeGesture(for: id, edge: .bottom))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Top edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y - size.height / 2)
-                .gesture(edgeResizeGesture(for: id, edge: .top))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-        }
+        let handleSize: CGFloat = 16
+        return Rectangle()
+            .fill(Color.clear)
+            #if os(macOS)
+            .cursorOnHover(.closedHand)
+            #endif
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle())
+            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
+            .gesture(edgeResizeGesture(for: id))
     }
 
-    private func edgeResizeGesture(for id: UUID, edge: ResizeEdge) -> some Gesture {
+    private func edgeResizeGesture(for id: UUID) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
@@ -454,40 +414,15 @@ struct CustomDiagramEditorView: View {
                 guard let state = activeResizeState else { return }
                 let minW: CGFloat = 80, minH: CGFloat = 50
 
-                switch edge {
-                case .right:
-                    let newW = max(minW, state.startSize.width + value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x + dw / 2,
-                        y: state.startPosition.y
-                    ))
-                case .left:
-                    let newW = max(minW, state.startSize.width - value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x - dw / 2,
-                        y: state.startPosition.y
-                    ))
-                case .bottom:
-                    let newH = max(minH, state.startSize.height + value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x,
-                        y: state.startPosition.y + dh / 2
-                    ))
-                case .top:
-                    let newH = max(minH, state.startSize.height - value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x,
-                        y: state.startPosition.y - dh / 2
-                    ))
-                }
+                let newW = max(minW, state.startSize.width + value.translation.width)
+                let newH = max(minH, state.startSize.height + value.translation.height)
+                let dw = newW - state.startSize.width
+                let dh = newH - state.startSize.height
+                viewModel.resizeNode(id, width: newW, height: newH)
+                viewModel.moveNode(id, to: CGPoint(
+                    x: state.startPosition.x + dw / 2,
+                    y: state.startPosition.y + dh / 2
+                ))
             }
             .onEnded { _ in
                 activeResizeState = nil
