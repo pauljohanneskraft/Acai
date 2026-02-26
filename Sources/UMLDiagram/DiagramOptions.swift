@@ -15,6 +15,20 @@ public struct DiagramOptions: Sendable {
     public var fontSize: Int
     public var theme: DiagramTheme
 
+    // MARK: - Class-diagram enrichment options
+
+    /// When `true`, properties whose declared type matches a known type produce
+    /// composition / aggregation edges automatically.
+    public var inferCompositionFromProperties: Bool
+
+    /// When `true`, method parameter and return types that reference a known
+    /// type produce dependency edges automatically.
+    public var inferDependencyFromMethods: Bool
+
+    /// When `true`, types referenced in relationships but not defined in the
+    /// artifact are rendered as lightweight gray placeholder nodes.
+    public var showExternalTypes: Bool
+
     public init(
         layoutDirection: LayoutDirection = .topToBottom,
         showMembers: Bool = true,
@@ -28,7 +42,10 @@ public struct DiagramOptions: Sendable {
         showGenericParameters: Bool = true,
         fontName: String = "Helvetica",
         fontSize: Int = 12,
-        theme: DiagramTheme = .default
+        theme: DiagramTheme = .default,
+        inferCompositionFromProperties: Bool = true,
+        inferDependencyFromMethods: Bool = true,
+        showExternalTypes: Bool = false
     ) {
         self.layoutDirection = layoutDirection
         self.showMembers = showMembers
@@ -43,6 +60,9 @@ public struct DiagramOptions: Sendable {
         self.fontName = fontName
         self.fontSize = fontSize
         self.theme = theme
+        self.inferCompositionFromProperties = inferCompositionFromProperties
+        self.inferDependencyFromMethods = inferDependencyFromMethods
+        self.showExternalTypes = showExternalTypes
     }
 
     public enum LayoutDirection: String, Sendable {
@@ -56,6 +76,8 @@ public struct DiagramOptions: Sendable {
         case none
         case byFile
         case byNamespace
+        /// Groups types by the directory of their source file.
+        case byDirectory
     }
 }
 

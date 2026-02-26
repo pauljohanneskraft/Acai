@@ -38,6 +38,7 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         case java
         case typeScript
         case javaScript
+        case dart
     }
 }
 
@@ -79,6 +80,70 @@ extension CodeArtifact {
             metadata: metadata,
             types: resolvedTypes,
             relationships: resolvedRelationships,
+            freestandingFunctions: freestandingFunctions
+        )
+    }
+
+    // MARK: - Generated Dart File Filtering
+
+    /// File-name suffixes used by Dart code-generators (freezed, build_runner,
+    /// json_serializable, auto_route, injectable, mockito, chopper, etc.).
+    private static let generatedDartFileSuffixes: [String] = [
+        ".freezed.dart",
+        ".g.dart",
+        ".gr.dart",
+        ".config.dart",
+        ".chopper.dart",
+        ".mocks.dart",
+        ".mapper.dart",
+    ]
+
+    /// Returns `true` when the file path looks like a Dart generated file.
+    private static func isDartGeneratedFile(_ path: String) -> Bool {
+        generatedDartFileSuffixes.contains(where: { path.hasSuffix($0) })
+    }
+
+    /// Returns `true` when the type name matches common Dart code-generation
+    /// naming patterns (e.g. `_$MyClass`, `$MyClassCopyWith`, `_MyClass`).
+    private static func isDartGeneratedTypeName(_ name: String) -> Bool {
+        // _$ClassName — freezed implementation classes
+        if name.hasPrefix("_$") { return true }
+        // $ClassNameCopyWith — freezed copy-with interfaces
+        if name.hasPrefix("$") && name.hasSuffix("CopyWith") { return true }
+        return false
+    }
+
+    /// Returns a new artifact with Dart generated types (and their relationships) removed.
+    ///
+    /// Filtering is based on two heuristics:
+    /// 1. **Source file**: types whose `location.filePath` ends with a known generated
+    ///    suffix (`.freezed.dart`, `.g.dart`, etc.) are removed.
+    /// 2. **Type name**: types matching code-generation naming patterns
+    ///    (e.g. `_$Foo`, `$FooCopyWith`) are removed.
+    public func filteringGeneratedDartTypes() -> CodeArtifact {
+        let removedIDs: Set<String> = Set(
+            types.filter { type in
+                if let path = type.location?.filePath, Self.isDartGeneratedFile(path) {
+                    return true
+                }
+                return Self.isDartGeneratedTypeName(type.name)
+            }.map(\.id)
+        )
+
+        let removedNames: Set<String> = Set(
+            types.filter { removedIDs.contains($0.id) }.map(\.name)
+        )
+
+        let filteredTypes = types.filter { !removedIDs.contains($0.id) }
+        let filteredRelationships = relationships.filter { rel in
+            !removedIDs.contains(rel.source) && !removedIDs.contains(rel.target)
+                && !removedNames.contains(rel.source) && !removedNames.contains(rel.target)
+        }
+
+        return CodeArtifact(
+            metadata: metadata,
+            types: filteredTypes,
+            relationships: filteredRelationships,
             freestandingFunctions: freestandingFunctions
         )
     }

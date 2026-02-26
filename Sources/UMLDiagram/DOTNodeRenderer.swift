@@ -14,6 +14,18 @@ struct DOTNodeRenderer {
         return "  \(nodeId) [label=<\(label)>];\n"
     }
 
+    /// Renders external (not-in-codebase) types as light gray placeholder nodes.
+    func renderExternal(types: [TypeDeclaration]) -> String {
+        guard !types.isEmpty else { return "" }
+        var output = "  // External dependencies\n"
+        for type in types {
+            let nodeId = type.id.dotNodeID
+            let label = buildExternalHTMLLabel(for: type)
+            output += "  \(nodeId) [label=<\(label)>];\n"
+        }
+        return output
+    }
+
     // MARK: - HTML label
 
     private func buildHTMLLabel(for type: TypeDeclaration) -> String {
@@ -75,6 +87,30 @@ struct DOTNodeRenderer {
             html += "</TD></TR>"
         }
 
+        html += "</TABLE>"
+        return html
+    }
+
+    /// Builds a simplified gray HTML table label for an external dependency type.
+    private func buildExternalHTMLLabel(for type: TypeDeclaration) -> String {
+        let fill = "#E8E8E8"
+        let border = "#B0B0B0"
+        let font = "#808080"
+        let fontSize = options.fontSize
+
+        var html = "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" "
+        html += "BGCOLOR=\"\(fill)\" COLOR=\"\(border)\">"
+
+        // Header only: stereotype + name
+        html += "<TR><TD ALIGN=\"CENTER\">"
+        if let stereotype = stereotypeString(for: type.kind) {
+            html += "<FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">"
+            html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
+        }
+        html += "<B><FONT COLOR=\"\(font)\">"
+        html += type.name.dotHTMLEscaped
+        html += "</FONT></B>"
+        html += "</TD></TR>"
         html += "</TABLE>"
         return html
     }
@@ -152,6 +188,7 @@ struct DOTNodeRenderer {
         case .trait: return "trait"
         case .class, .extension: return nil
         case .record: return "record"
+        case .mixin: return "mixin"
         }
     }
 

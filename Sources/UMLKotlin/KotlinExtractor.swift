@@ -150,7 +150,8 @@ struct KotlinExtractor {
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
         let ctorParams = extractPrimaryConstructorParams(node.firstChild(withType: "primary_constructor"))
         let specifiers = node.allChildren(withType: "delegation_specifier")
-        let inherited = extractInheritanceList(specifiers)
+        let classified = classifyInheritanceList(specifiers)
+        let inherited = classified.map(\.typeRef)
 
         let isAnnotation = modInfo.annotations.isEmpty &&
             (node.firstChild(withType: "modifiers")?.namedChildren()
@@ -178,9 +179,10 @@ struct KotlinExtractor {
             ))
         }
 
-        for (i, inh) in inherited.enumerated() {
+        for sup in classified {
             relationships.append(Relationship(
-                kind: i == 0 ? .inheritance : .conformance, source: qn, target: inh.name))
+                kind: sup.isClassInheritance ? .inheritance : .conformance,
+                source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractClassBody(body, into: &typeDecl)
@@ -221,7 +223,8 @@ struct KotlinExtractor {
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
         let name = text(nameNode)
         let qn = qualifiedName(name)
-        let inherited = extractInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let classified = classifyInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let inherited = classified.map(\.typeRef)
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn, kind: .object,
@@ -229,8 +232,10 @@ struct KotlinExtractor {
             inheritedTypes: inherited,
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
-        for inh in inherited {
-            relationships.append(Relationship(kind: .conformance, source: qn, target: inh.name))
+        for sup in classified {
+            relationships.append(Relationship(
+                kind: sup.isClassInheritance ? .inheritance : .conformance,
+                source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractClassBody(body, into: &typeDecl)
@@ -265,7 +270,8 @@ struct KotlinExtractor {
         let qn = qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let inherited = extractInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let classified = classifyInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let inherited = classified.map(\.typeRef)
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn, kind: .enum,
@@ -273,8 +279,10 @@ struct KotlinExtractor {
             genericParameters: generics, inheritedTypes: inherited,
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
-        for inh in inherited {
-            relationships.append(Relationship(kind: .conformance, source: qn, target: inh.name))
+        for sup in classified {
+            relationships.append(Relationship(
+                kind: sup.isClassInheritance ? .inheritance : .conformance,
+                source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "enum_class_body") {
             extractEnumClassBody(body, into: &typeDecl)
@@ -542,16 +550,27 @@ struct KotlinExtractor {
 
     // MARK: - Inheritance / Delegation Specifiers
 
+    /// A type reference paired with whether it came from a constructor invocation
+    /// (indicating class inheritance) or a bare type/delegation (indicating conformance).
+    private struct ClassifiedSupertype {
+        let typeRef: TypeReference
+        let isClassInheritance: Bool
+    }
+
     private func extractInheritanceList(_ specifiers: [Node]) -> [TypeReference] {
+        classifyInheritanceList(specifiers).map(\.typeRef)
+    }
+
+    private func classifyInheritanceList(_ specifiers: [Node]) -> [ClassifiedSupertype] {
         specifiers.compactMap { specifier in
             if let ctorInv = specifier.firstChild(withType: "constructor_invocation"),
                let ut = ctorInv.firstChild(withType: "user_type") {
-                return extractTypeReference(ut)
+                return ClassifiedSupertype(typeRef: extractTypeReference(ut), isClassInheritance: true)
             } else if let ut = specifier.firstChild(withType: "user_type") {
-                return extractTypeReference(ut)
+                return ClassifiedSupertype(typeRef: extractTypeReference(ut), isClassInheritance: false)
             } else if let expDel = specifier.firstChild(withType: "explicit_delegation"),
                       let ut = expDel.firstChild(withType: "user_type") {
-                return extractTypeReference(ut)
+                return ClassifiedSupertype(typeRef: extractTypeReference(ut), isClassInheritance: false)
             }
             return nil
         }

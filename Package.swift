@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "UMLKotlin",     targets: ["UMLKotlin"]),
         .library(name: "UMLJS",         targets: ["UMLJS"]),
         .library(name: "UMLJava",       targets: ["UMLJava"]),
+        .library(name: "UMLDart",       targets: ["UMLDart"]),
         .library(name: "UMLDiagram",    targets: ["UMLDiagram"]),
         .library(name: "UMLLibrary",    targets: ["UMLLibrary"]),
         .executable(name: "uml",        targets: ["UMLCLI"]),
@@ -29,6 +30,7 @@ let package = Package(
         .package(url: "https://github.com/fwcd/tree-sitter-kotlin",               from: "0.3.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript",    from: "0.21.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-java",          from: "0.21.0"),
+        .package(url: "https://github.com/UserNobody14/tree-sitter-dart",         branch: "master"),
         .package(url: "https://github.com/apple/swift-argument-parser",           from: "1.3.0"),
         .package(url: "https://github.com/jpsim/Yams",                            from: "5.0.0"),
     ],
@@ -81,13 +83,21 @@ let package = Package(
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
             ]
         ),
+        .target(
+            name: "UMLDart",
+            dependencies: [
+                "UMLCore",
+                "UMLTreeSitter",
+                .product(name: "TreeSitterDart", package: "tree-sitter-dart"),
+            ]
+        ),
 
         // MARK: DOT/Graphviz diagram generator
         .target(
             name: "UMLDiagram",
             dependencies: ["UMLCore"]
         ),
-        
+
         // MARK: UML Library
         .target(
             name: "UMLLibrary",
@@ -98,10 +108,11 @@ let package = Package(
                 "UMLKotlin",
                 "UMLJS",
                 "UMLJava",
+                "UMLDart",
                 "UMLDiagram",
             ]
         ),
-        
+
         // MARK: App
         .executableTarget(
             name: "UMLApp",
@@ -112,6 +123,7 @@ let package = Package(
                 "UMLKotlin",
                 "UMLJS",
                 "UMLJava",
+                "UMLDart",
                 "UMLDiagram",
                 "UMLLibrary",
             ],
@@ -139,6 +151,7 @@ let package = Package(
                 "UMLKotlin",
                 "UMLJS",
                 "UMLJava",
+                "UMLDart",
                 "UMLDiagram",
                 "UMLLibrary",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -152,6 +165,7 @@ let package = Package(
         .testTarget(name: "UMLKotlinTests",  dependencies: ["UMLKotlin",  "UMLCore"]),
         .testTarget(name: "UMLJSTests",      dependencies: ["UMLJS",      "UMLCore"]),
         .testTarget(name: "UMLJavaTests",    dependencies: ["UMLJava",    "UMLCore"]),
+        .testTarget(name: "UMLDartTests",    dependencies: ["UMLDart",    "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary"])
     ]

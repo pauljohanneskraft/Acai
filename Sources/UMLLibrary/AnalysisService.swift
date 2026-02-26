@@ -4,6 +4,7 @@ import UMLSwift
 import UMLKotlin
 import UMLJS
 import UMLJava
+import UMLDart
 
 // MARK: - Analysis Service
 
@@ -31,6 +32,7 @@ public struct AnalysisService: Sendable {
             JavaCodeParser(),
             JSCodeParser(isTypeScript: true),
             JSCodeParser(isTypeScript: false),
+            DartCodeParser(),
         ],
         projectDiscovery: ProjectDiscovery? = nil
     ) {
@@ -42,6 +44,7 @@ public struct AnalysisService: Sendable {
                 JVMBuildSystemDetector.gradle,
                 JVMBuildSystemDetector.maven,
                 NodeDetector(),
+                FlutterDetector(),
             ],
             fallback: FallbackDetector(parsers: parsers)
         )

@@ -42,4 +42,25 @@ struct DOTClusterRenderer {
             """
         }.joined()
     }
+
+    func renderByDirectory(types: [TypeDeclaration], directoryGroups: [String: [String]]) -> String {
+        let nodeRenderer = DOTNodeRenderer(options: options)
+        let typeIndex = Dictionary(uniqueKeysWithValues: types.map { ($0.id, $0) })
+
+        return directoryGroups.sorted(by: { $0.key < $1.key }).enumerated().map { index, pair in
+            let (dir, typeIds) = pair
+            let clusterTypes = typeIds.compactMap { typeIndex[$0] }
+            guard !clusterTypes.isEmpty else { return "" }
+            let label = (dir.isEmpty ? "root" : dir).dotEscaped
+            return """
+              subgraph cluster_dir_\(index) {
+                label="\(label)";
+                style=rounded;
+                color="\(options.theme.nodeBorderColor)";
+                fontcolor="\(options.theme.fontColor)";
+            \(nodeRenderer.render(types: clusterTypes))  }
+
+            """
+        }.joined()
+    }
 }

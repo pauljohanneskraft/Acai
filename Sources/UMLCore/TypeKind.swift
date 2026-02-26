@@ -11,4 +11,5 @@ public enum TypeKind: String, Codable, Equatable, Hashable, Sendable, CaseIterab
     case annotation
     case module
     case record
+    case mixin
 }

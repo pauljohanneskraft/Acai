@@ -61,6 +61,7 @@ enum UMLMemberFormatting {
         case .module: return "module"
         case .trait: return "trait"
         case .record: return "record"
+        case .mixin: return "mixin"
         case .class, .extension: return nil
         }
     }

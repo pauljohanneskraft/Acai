@@ -20,10 +20,24 @@ struct JSExtractor {
     private func text(_ node: Node) -> String { node.text(in: context) }
     private func loc(_ node: Node) -> SourceLocation { node.location(in: context) }
 
+    /// Builds a qualified ID from an optional namespace and a type name.
+    private static func qualifiedId(_ name: String, namespace: String?) -> String {
+        namespace.map { "\($0).\(name)" } ?? name
+    }
+
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
         visitProgram(root)
+
+        // Post-process: qualify type IDs with their namespace so edges resolve correctly.
+        for i in types.indices {
+            let ns = types[i].namespace
+            let qn = Self.qualifiedId(types[i].name, namespace: ns)
+            types[i].id = qn
+            types[i].qualifiedName = qn
+        }
+
         return CodeArtifact(
             metadata: .init(
                 sourceLanguage: isTypeScript ? .typeScript : .javaScript,

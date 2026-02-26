@@ -10,6 +10,8 @@ struct ClassDiagramView: View {
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
     @State private var dragStartPositions: [String: CGPoint] = [:]
+    @State private var activeDragCanvasLocation: CGPoint? = nil
+    @State private var canvasAutoPanController = EdgeAutoPanController()
 
     init(artifact: CodeArtifact, codebaseName: String) {
         self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(artifact: artifact))
@@ -17,10 +19,24 @@ struct ClassDiagramView: View {
     }
 
     var body: some View {
-        InfiniteCanvas(scale: $canvasScale, offset: $canvasOffset) {
+        InfiniteCanvas(scale: $canvasScale, offset: $canvasOffset, onSelectionRect: { rect in
+            viewModel.selectNodes(in: rect)
+        }, onBackgroundTap: {
+            viewModel.clearSelection()
+        }, autoPanDragLocation: activeDragCanvasLocation, onAutoPanDelta: { canvasDelta in
+            for nodeID in viewModel.selectedNodeIDs {
+                if let pos = viewModel.nodePositions[nodeID] {
+                    viewModel.moveNode(nodeID, to: CGPoint(
+                        x: pos.x + canvasDelta.width,
+                        y: pos.y + canvasDelta.height
+                    ))
+                }
+            }
+        }, autoPanController: canvasAutoPanController) {
             ZStack {
                 edgeLayer
                 nodeLayer
+                selectionRectangleLayer
             }
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
@@ -73,11 +89,16 @@ struct ClassDiagramView: View {
     // MARK: - Node Layer
 
     private var nodeLayer: some View {
-        ForEach(viewModel.nodes) { node in
+        
+        ForEach({
+            var ids = Set<String>()
+            return viewModel.nodes.filter { ids.insert($0.id).inserted }
+        }()
+        ) { node in
             if let position = viewModel.nodePositions[node.id] {
-                UMLClassBoxView(
+                UMLTypeBoxView(
                     node: node,
-                    isSelected: viewModel.selectedNodeID == node.id
+                    isSelected: viewModel.selectedNodeIDs.contains(node.id)
                 )
                 .fixedSize()
                 .background(
@@ -90,31 +111,63 @@ struct ClassDiagramView: View {
                 )
                 .position(position)
                 .onTapGesture {
-                    viewModel.selectedNodeID = (viewModel.selectedNodeID == node.id) ? nil : node.id
+                    #if os(macOS)
+                    let extending = NSEvent.modifierFlags.contains(.shift)
+                    #else
+                    let extending = false
+                    #endif
+                    viewModel.selectNode(node.id, extending: extending)
                 }
                 .highPriorityGesture(nodeDragGesture(for: node.id))
             }
         }
     }
 
-    // MARK: - Node Dragging
+    // MARK: - Selection Rectangle
+
+    @ViewBuilder
+    private var selectionRectangleLayer: some View {
+        if let rect = viewModel.selectionRect {
+            Rectangle()
+                .stroke(Color.accentColor, lineWidth: 1)
+                .background(Color.accentColor.opacity(0.1))
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+        }
+    }
+
+    // MARK: - Node Dragging (Group-Aware)
 
     private func nodeDragGesture(for id: String) -> some Gesture {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
-                if dragStartPositions[id] == nil {
-                    dragStartPositions[id] = viewModel.nodePositions[id]
+                if dragStartPositions.isEmpty {
+                    if !viewModel.selectedNodeIDs.contains(id) {
+                        viewModel.selectedNodeIDs = [id]
+                    }
+                    for nodeID in viewModel.selectedNodeIDs {
+                        dragStartPositions[nodeID] = viewModel.nodePositions[nodeID]
+                    }
                 }
-                guard let start = dragStartPositions[id] else { return }
-                // DragGesture inside .scaleEffect already reports translation in
-                // canvas coordinates, so no scale adjustment is needed.
-                viewModel.moveNode(id, to: CGPoint(
-                    x: start.x + value.translation.width,
-                    y: start.y + value.translation.height
-                ))
+                let tx = value.translation.width
+                let ty = value.translation.height
+                for nodeID in viewModel.selectedNodeIDs {
+                    guard let start = dragStartPositions[nodeID] else { continue }
+                    viewModel.moveNode(nodeID, to: CGPoint(
+                        x: start.x + tx,
+                        y: start.y + ty
+                    ))
+                }
+                if let start = dragStartPositions[id] {
+                    activeDragCanvasLocation = CGPoint(
+                        x: start.x + tx,
+                        y: start.y + ty
+                    )
+                }
             }
             .onEnded { _ in
-                dragStartPositions[id] = nil
+                dragStartPositions = [:]
+                activeDragCanvasLocation = nil
             }
     }
 

@@ -136,11 +136,16 @@ extension CodeArtifact {
 
     private static func deploymentArtifactKind(for kind: TypeKind) -> DeploymentDiagram.Artifact.Kind {
         switch kind {
-        case .class, .object, .record:                          return .executable
-        case .protocol, .interface, .trait:                     return .library
-        case .struct:                                           return .library
-        case .enum:                                             return .source
-        case .typeAlias, .extension, .annotation, .module:      return .file
+        case .class, .object, .record:
+            return .executable
+        case .protocol, .interface, .trait:
+            return .library
+        case .struct:
+            return .library
+        case .enum:
+            return .source
+        case .typeAlias, .extension, .annotation, .module, .mixin:
+            return .file
         }
     }
 }

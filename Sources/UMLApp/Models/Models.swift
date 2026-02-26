@@ -9,6 +9,8 @@ struct Project: Identifiable, Codable, Hashable {
     var subtitle: String
     var iconSystemName: String
     var codebases: [Codebase] = []
+    var storedDiagrams: [StoredDiagram] = []
+    var customDiagrams: [CustomDiagram] = []
 }
 
 struct Codebase: Identifiable, Codable, Hashable {

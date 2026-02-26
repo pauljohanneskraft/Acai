@@ -10,35 +10,103 @@ final class ClassDiagramViewModel: ObservableObject {
     @Published var edges: [DiagramEdge] = []
     @Published var nodePositions: [String: CGPoint] = [:]
     @Published var nodeSizes: [String: CGSize] = [:]
-    @Published var selectedNodeID: String? = nil
+    /// User-overridden sizes (from resize handles). These take priority over measured sizes.
+    @Published var userNodeSizes: [String: CGSize] = [:]
+    @Published var selectedNodeIDs: Set<String> = []
     @Published private(set) var hasPerformedMeasuredLayout = false
+    @Published var selectionRect: CGRect? = nil
 
+    private var configuration: DiagramConfiguration
+    private var restoredPositions: [String: CGPoint]?
+
+    /// Standard initializer — no configuration, no restored positions.
     init(artifact: CodeArtifact) {
         self.artifact = artifact
+        self.configuration = DiagramConfiguration()
+        self.restoredPositions = nil
         buildDiagram()
     }
 
+    /// Initializer with stored configuration and optional restored positions/sizes.
+    init(artifact: CodeArtifact, configuration: DiagramConfiguration, restoredPositions: [String: CGPoint]? = nil, restoredSizes: [String: CGSize]? = nil) {
+        self.artifact = artifact
+        self.configuration = configuration
+        self.restoredPositions = restoredPositions
+        if let restoredSizes {
+            self.userNodeSizes = restoredSizes
+        }
+        buildDiagram()
+    }
+
+    // MARK: - Build Diagram
+
     private func buildDiagram() {
-        let resolved = artifact.resolvingExtensions()
+        var resolved = artifact.resolvingExtensions()
+
+        // Filter out Dart-generated types when the option is enabled.
+        if configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
+            resolved = resolved.filteringGeneratedDartTypes()
+        }
 
         // Build nodes from type declarations.
         nodes = resolved.types.map { DiagramNode(from: $0) }
 
-        // Build edges, filtering to relationships where both source and target exist.
+        // Build edges, filtering by configuration.
         let typeNames = Set(resolved.types.map(\.name))
         edges = resolved.relationships.compactMap { rel in
             guard typeNames.contains(rel.source), typeNames.contains(rel.target) else { return nil }
-            // Skip self-referencing edges.
             guard rel.source != rel.target else { return nil }
+            guard configuration.showRelationships else { return nil }
+
+            // Filter by relationship kind.
+            switch rel.kind {
+            case .inheritance, .conformance:
+                guard configuration.showInheritance else { return nil }
+            case .composition, .aggregation:
+                guard configuration.showComposition else { return nil }
+            case .dependency:
+                guard configuration.showDependency else { return nil }
+            default:
+                break
+            }
+
             return DiagramEdge(from: rel)
         }
+
+        // Filter nodes that have no properties/methods if configuration hides them.
+        // (We still show all nodes, but filter displayed members via configuration.)
 
         // Estimate sizes and run initial layout.
         for node in nodes {
             nodeSizes[node.id] = estimateSize(for: node)
         }
-        performLayout()
+
+        if let restored = restoredPositions, !restored.isEmpty {
+            nodePositions = restored
+            // Still need layout for nodes that don't have stored positions.
+            let missing = nodes.filter { restored[$0.id] == nil }
+            if !missing.isEmpty {
+                performLayout()
+                // Overlay restored positions.
+                for (id, pos) in restored {
+                    nodePositions[id] = pos
+                }
+            }
+        } else {
+            performLayout()
+        }
     }
+
+    // MARK: - Apply Configuration
+
+    func applyConfiguration(_ newConfig: DiagramConfiguration, artifact: CodeArtifact) {
+        self.configuration = newConfig
+        self.restoredPositions = nodePositions // Keep current positions
+        hasPerformedMeasuredLayout = false
+        buildDiagram()
+    }
+
+    // MARK: - Layout
 
     func performLayout() {
         let engine = SugiyamaLayoutEngine()
@@ -52,8 +120,49 @@ final class ClassDiagramViewModel: ObservableObject {
         nodePositions = result.positions
     }
 
+    // MARK: - Selection
+
+    func selectNode(_ id: String, extending: Bool) {
+        if extending {
+            if selectedNodeIDs.contains(id) {
+                selectedNodeIDs.remove(id)
+            } else {
+                selectedNodeIDs.insert(id)
+            }
+        } else {
+            selectedNodeIDs = [id]
+        }
+    }
+
+    func selectAll() {
+        selectedNodeIDs = Set(nodes.map(\.id))
+    }
+
+    func clearSelection() {
+        selectedNodeIDs.removeAll()
+    }
+
+    /// Select nodes whose center falls within the given rectangle.
+    func selectNodes(in rect: CGRect) {
+        selectedNodeIDs = Set(nodes.filter { node in
+            guard let pos = nodePositions[node.id] else { return false }
+            return rect.contains(pos)
+        }.map(\.id))
+    }
+
+    // MARK: - Movement & Resize
+
     func moveNode(_ id: String, to position: CGPoint) {
         nodePositions[id] = position
+    }
+
+    func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {
+        userNodeSizes[id] = CGSize(width: max(80, width), height: max(50, height))
+    }
+
+    /// The effective size for a node: user-overridden > measured > estimated.
+    func effectiveSize(for id: String) -> CGSize {
+        userNodeSizes[id] ?? nodeSizes[id] ?? CGSize(width: 200, height: 100)
     }
 
     /// Called when actual rendered sizes are reported via preference keys.
@@ -74,12 +183,15 @@ final class ClassDiagramViewModel: ObservableObject {
         }
         if changed && !hasPerformedMeasuredLayout {
             hasPerformedMeasuredLayout = true
-            performLayout()
+            if restoredPositions == nil || restoredPositions!.isEmpty {
+                performLayout()
+            }
         }
     }
 
     func nodeRect(for id: String) -> CGRect? {
-        guard let pos = nodePositions[id], let size = nodeSizes[id] else { return nil }
+        guard let pos = nodePositions[id] else { return nil }
+        let size = effectiveSize(for: id)
         return CGRect(
             x: pos.x - size.width / 2,
             y: pos.y - size.height / 2,
@@ -88,15 +200,34 @@ final class ClassDiagramViewModel: ObservableObject {
         )
     }
 
+    // MARK: - Backward Compatibility
+
+    /// Single-node selection ID for backward compatibility.
+    var selectedNodeID: String? {
+        get { selectedNodeIDs.first }
+        set {
+            if let id = newValue {
+                selectedNodeIDs = [id]
+            } else {
+                selectedNodeIDs.removeAll()
+            }
+        }
+    }
+
     // MARK: - Size Estimation
 
     private func estimateSize(for node: DiagramNode) -> CGSize {
         let lineHeight: CGFloat = 18
         let headerHeight: CGFloat = node.stereotype != nil ? 48 : 32
-        let propHeight = CGFloat(max(node.properties.count, 1)) * lineHeight
-        let methodHeight = CGFloat(max(node.methods.count, 1)) * lineHeight
-        let caseHeight = node.enumCases.isEmpty ? 0 : CGFloat(node.enumCases.count) * lineHeight
-        let dividerCount: CGFloat = node.enumCases.isEmpty ? 2 : 3
+
+        let visibleProps = configuration.showProperties ? node.properties.count : 0
+        let visibleMethods = configuration.showMethods ? node.methods.count : 0
+        let visibleCases = configuration.showEnumCases ? node.enumCases.count : 0
+
+        let propHeight = CGFloat(max(visibleProps, 1)) * lineHeight
+        let methodHeight = CGFloat(max(visibleMethods, 1)) * lineHeight
+        let caseHeight = visibleCases == 0 ? 0 : CGFloat(visibleCases) * lineHeight
+        let dividerCount: CGFloat = visibleCases == 0 ? 2 : 3
         let padding: CGFloat = 16
 
         let height = headerHeight + propHeight + methodHeight + caseHeight + (dividerCount * 1) + padding

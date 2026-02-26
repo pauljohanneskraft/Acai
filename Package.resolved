@@ -1,5 +1,5 @@
 {
-  "originHash" : "2b039d03a9b8d2e1ca0e265fb429903c464710be434bbf8791c59b3440873362",
+  "originHash" : "e0f2eca3857d558b74353e2bf749d5b20ef7f61775e95f3a8d296a830719cfe5",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "da6fe9beb4f7f67beb75914ca8e0d48ae48d6406",
         "version" : "0.25.10"
+      }
+    },
+    {
+      "identity" : "tree-sitter-dart",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/UserNobody14/tree-sitter-dart",
+      "state" : {
+        "branch" : "master",
+        "revision" : "81638dbbdb76a0e88ea8c31b95ec76b9625ddb84"
       }
     },
     {
