@@ -14,7 +14,7 @@ final class ClassDiagramViewModel: ObservableObject {
     @Published var userNodeSizes: [String: CGSize] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published private(set) var hasPerformedMeasuredLayout = false
-    @Published var selectionRect: CGRect? = nil
+    @Published var selectionRect: CGRect?
 
     private var configuration: DiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -28,7 +28,12 @@ final class ClassDiagramViewModel: ObservableObject {
     }
 
     /// Initializer with stored configuration and optional restored positions/sizes.
-    init(artifact: CodeArtifact, configuration: DiagramConfiguration, restoredPositions: [String: CGPoint]? = nil, restoredSizes: [String: CGSize]? = nil) {
+    init(
+        artifact: CodeArtifact,
+        configuration: DiagramConfiguration,
+        restoredPositions: [String: CGPoint]? = nil,
+        restoredSizes: [String: CGSize]? = nil
+    ) {
         self.artifact = artifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions
@@ -53,12 +58,26 @@ final class ClassDiagramViewModel: ObservableObject {
 
         // Build edges, filtering by configuration.
         let typeNames = Set(resolved.types.map(\.name))
-        edges = resolved.relationships.compactMap { rel in
-            guard typeNames.contains(rel.source), typeNames.contains(rel.target) else { return nil }
-            guard rel.source != rel.target else { return nil }
-            guard configuration.showRelationships else { return nil }
+        edges = buildEdges(from: resolved.relationships, typeNames: typeNames)
 
-            // Filter by relationship kind.
+        // Estimate sizes and run initial layout.
+        for node in nodes {
+            nodeSizes[node.id] = estimateSize(for: node)
+        }
+
+        applyOrPerformLayout()
+    }
+
+    private func buildEdges(
+        from relationships: [Relationship],
+        typeNames: Set<String>
+    ) -> [DiagramEdge] {
+        guard configuration.showRelationships else { return [] }
+        return relationships.compactMap { rel in
+            guard typeNames.contains(rel.source),
+                  typeNames.contains(rel.target),
+                  rel.source != rel.target else { return nil }
+
             switch rel.kind {
             case .inheritance, .conformance:
                 guard configuration.showInheritance else { return nil }
@@ -72,22 +91,14 @@ final class ClassDiagramViewModel: ObservableObject {
 
             return DiagramEdge(from: rel)
         }
+    }
 
-        // Filter nodes that have no properties/methods if configuration hides them.
-        // (We still show all nodes, but filter displayed members via configuration.)
-
-        // Estimate sizes and run initial layout.
-        for node in nodes {
-            nodeSizes[node.id] = estimateSize(for: node)
-        }
-
+    private func applyOrPerformLayout() {
         if let restored = restoredPositions, !restored.isEmpty {
             nodePositions = restored
-            // Still need layout for nodes that don't have stored positions.
             let missing = nodes.filter { restored[$0.id] == nil }
             if !missing.isEmpty {
                 performLayout()
-                // Overlay restored positions.
                 for (id, pos) in restored {
                     nodePositions[id] = pos
                 }
@@ -111,7 +122,11 @@ final class ClassDiagramViewModel: ObservableObject {
     func performLayout() {
         let engine = SugiyamaLayoutEngine()
         let inputs = nodes.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100), group: $0.directoryGroup)
+            SugiyamaLayoutEngine.NodeInput(
+                id: $0.id,
+                size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100),
+                group: $0.directoryGroup
+            )
         }
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.sourceID, targetID: $0.targetID, kind: $0.kind)
@@ -232,7 +247,10 @@ final class ClassDiagramViewModel: ObservableObject {
 
         let height = headerHeight + propHeight + methodHeight + caseHeight + (dividerCount * 1) + padding
 
-        let allTexts = [node.name] + node.properties.map(\.displayText) + node.methods.map(\.displayText) + node.enumCases.map(\.displayText)
+        let allTexts = [node.name]
+            + node.properties.map(\.displayText)
+            + node.methods.map(\.displayText)
+            + node.enumCases.map(\.displayText)
         let maxChars = allTexts.map(\.count).max() ?? 10
         let width = max(180, CGFloat(maxChars) * 7.5 + 28)
 

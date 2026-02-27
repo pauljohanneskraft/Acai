@@ -14,21 +14,31 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var displayName: String {
         switch self {
-        case .classDiagram: "Class Diagram"
-        case .sequenceDiagram: "Sequence Diagram"
-        case .stateDiagram: "State Diagram"
-        case .useCaseDiagram: "Use Case Diagram"
-        case .deploymentDiagram: "Deployment Diagram"
+        case .classDiagram:
+            "Class Diagram"
+        case .sequenceDiagram:
+            "Sequence Diagram"
+        case .stateDiagram:
+            "State Diagram"
+        case .useCaseDiagram:
+            "Use Case Diagram"
+        case .deploymentDiagram:
+            "Deployment Diagram"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .classDiagram: "rectangle.3.group"
-        case .sequenceDiagram: "arrow.right.arrow.left"
-        case .stateDiagram: "circle.hexagonpath"
-        case .useCaseDiagram: "person.3"
-        case .deploymentDiagram: "server.rack"
+        case .classDiagram:
+            "rectangle.3.group"
+        case .sequenceDiagram:
+            "arrow.right.arrow.left"
+        case .stateDiagram:
+            "circle.hexagonpath"
+        case .useCaseDiagram:
+            "person.3"
+        case .deploymentDiagram:
+            "server.rack"
         }
     }
 }
@@ -46,7 +56,7 @@ struct DiagramConfiguration: Codable, Hashable, Sendable {
     var groupByDirectory: Bool = true
     var showExternalTypes: Bool = false
     /// Access level filter — only show members at or above this level.
-    var minimumAccessLevel: AccessLevel? = nil
+    var minimumAccessLevel: AccessLevel?
     /// When `true`, hides types originating from Dart generated files
     /// (e.g. `*.freezed.dart`, `*.g.dart`) as well as types whose names
     /// match common code-generation patterns.
@@ -146,23 +156,36 @@ enum NodeContent: Codable, Hashable, Sendable {
     /// An entity — an ER entity box.
     case entity
     /// A note — a dog-eared rectangle with free-form text.
-    case note(text: String)
+    case note(text:
+        String)
 
     /// The element kind derived from this content.
     var elementKind: DiagramElementKind {
         switch self {
-        case .type(let c):    .type(c.typeKind)
-        case .actor:          .actor
-        case .useCase:        .useCase
-        case .boundary:       .boundary
-        case .component:      .component
-        case .package:        .package
-        case .deploymentNode: .deploymentNode
-        case .database:       .database
-        case .artifact:       .artifact
-        case .subsystem:      .subsystem
-        case .entity:         .entity
-        case .note:           .note
+        case .type(let c):
+            .type(c.typeKind)
+        case .actor:
+            .actor
+        case .useCase:
+            .useCase
+        case .boundary:
+            .boundary
+        case .component:
+            .component
+        case .package:
+            .package
+        case .deploymentNode:
+            .deploymentNode
+        case .database:
+            .database
+        case .artifact:
+            .artifact
+        case .subsystem:
+            .subsystem
+        case .entity:
+            .entity
+        case .note:
+            .note
         }
     }
 
@@ -171,34 +194,33 @@ enum NodeContent: Codable, Hashable, Sendable {
         switch self {
         case .type(let c):
             c.stereotype ?? Self.defaultTypeStereotype(c.typeKind)
-        case .actor:          "actor"
-        case .useCase:        "use case"
-        case .boundary:       "boundary"
-        case .component:      "component"
-        case .package:        "package"
-        case .deploymentNode: "node"
-        case .database:       "database"
-        case .artifact:       "artifact"
-        case .subsystem:      "subsystem"
-        case .entity:         "entity"
-        case .note:           nil
+        case .actor:
+            "actor"
+        case .useCase:
+            "use case"
+        case .boundary:
+            "boundary"
+        case .component:
+            "component"
+        case .package:
+            "package"
+        case .deploymentNode:
+            "node"
+        case .database:
+            "database"
+        case .artifact:
+            "artifact"
+        case .subsystem:
+            "subsystem"
+        case .entity:
+            "entity"
+        case .note:
+            nil
         }
     }
 
-    private static func defaultTypeStereotype(_ tk: TypeKind) -> String? {
-        switch tk {
-        case .protocol, .interface: "interface"
-        case .enum:       "enumeration"
-        case .struct:     "struct"
-        case .typeAlias:  "typealias"
-        case .object:     "object"
-        case .annotation: "annotation"
-        case .module:     "module"
-        case .trait:      "trait"
-        case .record:     "record"
-        case .mixin:      "mixin"
-        case .class, .extension: nil
-        }
+    private static func defaultTypeStereotype(_ typeKind: TypeKind) -> String? {
+        typeKind.stereotypeString
     }
 }
 
@@ -206,7 +228,7 @@ enum NodeContent: Codable, Hashable, Sendable {
 struct TypeNodeContent: Codable, Hashable, Sendable {
     var typeKind: TypeKind
     /// Custom stereotype override — when `nil`, the default based on `typeKind` is used.
-    var stereotype: String? = nil
+    var stereotype: String?
     var properties: [CustomMember] = []
     var methods: [CustomMember] = []
     var enumCases: [CustomEnumCase] = []
@@ -254,17 +276,19 @@ struct CustomDiagramNode: Identifiable, Codable, Hashable, Sendable {
     var positionX: Double = 0
     var positionY: Double = 0
     /// User-defined width (used by resizable container nodes: package, boundary, subsystem).
-    var width: Double? = nil
+    var width: Double?
     /// User-defined height (used by resizable container nodes: package, boundary, subsystem).
-    var height: Double? = nil
+    var height: Double?
     /// Draw order within its z-layer. Higher values render on top.
     var drawOrder: Int = 0
 
     /// Whether this node should display resize handles.
     var isResizable: Bool {
         switch content {
-        case .package, .boundary, .subsystem: true
-        default: false
+        case .package, .boundary, .subsystem:
+            true
+        default:
+            false
         }
     }
 }
@@ -288,7 +312,7 @@ struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
     var diagramType: DiagramType = .classDiagram
-    var ownerProjectID: UUID? = nil
+    var ownerProjectID: UUID?
     var nodes: [CustomDiagramNode] = []
     var edges: [CustomDiagramEdge] = []
     var canvasScale: Double = 1.0

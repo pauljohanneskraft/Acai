@@ -109,9 +109,8 @@ public struct DeploymentDiagramDOTRenderer: Sendable {
         let fill = theme.nodeFillColor
         let border = theme.nodeBorderColor
         let font = theme.fontColor
-        let fs = fontSize
         let label = "<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">" +
-                    "<TR><TD><FONT POINT-SIZE=\"\(fs - 2)\" COLOR=\"\(font)\">" +
+                    "<TR><TD><FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">" +
                     "&lt;&lt;\(stereotype)&gt;&gt;</FONT></TD></TR>" +
                     "<TR><TD><FONT COLOR=\"\(font)\">\(artifact.name.dotHTMLEscaped)</FONT></TD></TR>" +
                     "</TABLE>"
@@ -123,18 +122,24 @@ public struct DeploymentDiagramDOTRenderer: Sendable {
     private func nodeLabel(_ node: DeploymentDiagram.Node) -> String {
         let stereotype: String
         switch node.kind {
-        case .device:               stereotype = "device"
-        case .executionEnvironment: stereotype = "executionEnvironment"
-        case .server:               stereotype = "server"
+        case .device:
+            stereotype = "device"
+        case .executionEnvironment:
+            stereotype = "executionEnvironment"
+        case .server:
+            stereotype = "server"
         }
         return "<<\(stereotype)>>\n\(node.name)"
     }
 
     private func clusterStyle(_ kind: DeploymentDiagram.Node.Kind) -> String {
         switch kind {
-        case .device:               return "\"filled,rounded\""
-        case .executionEnvironment: return "dashed"
-        case .server:               return "rounded"
+        case .device:
+            return "\"filled,rounded\""
+        case .executionEnvironment:
+            return "dashed"
+        case .server:
+            return "rounded"
         }
     }
 

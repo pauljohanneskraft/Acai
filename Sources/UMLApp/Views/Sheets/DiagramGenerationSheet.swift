@@ -86,7 +86,13 @@ struct DiagramGenerationSheet: View {
             // Reindex first, then generate.
             Task {
                 await model.reindex(codebaseID: codebaseID)
-                if let id = model.addStoredDiagram(to: projectID, codebaseID: codebaseID, name: diagramName, type: selectedType, configuration: configuration) {
+                if let id = model.addStoredDiagram(
+                    to: projectID,
+                    codebaseID: codebaseID,
+                    name: diagramName,
+                    type: selectedType,
+                    configuration: configuration
+                ) {
                     model.selection = .diagram(id)
                 }
                 dismiss()
@@ -94,7 +100,13 @@ struct DiagramGenerationSheet: View {
             return
         }
 
-        if let id = model.addStoredDiagram(to: projectID, codebaseID: codebaseID, name: diagramName, type: selectedType, configuration: configuration) {
+        if let id = model.addStoredDiagram(
+            to: projectID,
+            codebaseID: codebaseID,
+            name: diagramName,
+            type: selectedType,
+            configuration: configuration
+        ) {
             model.selection = .diagram(id)
         }
         dismiss()

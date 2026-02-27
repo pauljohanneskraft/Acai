@@ -10,12 +10,12 @@ struct DOTDiagramView: View {
     @State private var nodes: [DOTNode] = []
     @State private var dragOffsets: [String: CGSize] = [:]
     @State private var dragStartPositions: [String: CGPoint] = [:]
-    
+
     let dotText: String
-    
+
     init(dotText: String) {
         self.dotText = dotText
-        
+
         _nodes = State(
             initialValue: {
                 let nodeRegex = /^\s*(?<id>\S+)\s*\[\s*label\s*=\s*(?<label>.*?)\s*\];/
@@ -30,22 +30,22 @@ struct DOTDiagramView: View {
                         print("new match: \(match)")
                         let id = String(match.id)
                         let label = AttributedString(html: String(match.label.dropFirst().dropLast()))
-                        
+
                         let position = CGPoint(x: 100, y: yOffset)
                         yOffset += 80
-                                                
+
                         parsedNodes.append(DOTNode(id: id, label: label, position: position))
                         print("Successfully parsed node: ID=\(id), Label=\(label)")
                     }
                 }
-                
+
                 return parsedNodes
             }()
         )
     }
-    
+
     var body: some View {
-        GeometryReader { geo in
+        GeometryReader { _ in
             ZStack {
                 // Draw no edges since edges are not supported
                 ForEach(nodes) { node in
@@ -78,9 +78,9 @@ struct DOTDiagramView: View {
     }
 }
 
-fileprivate struct DOTNodeView: View {
+private struct DOTNodeView: View {
     let node: DOTNode
-    
+
     var body: some View {
         Text(node.label)
             .font(.system(size: 14, weight: .medium, design: .rounded))

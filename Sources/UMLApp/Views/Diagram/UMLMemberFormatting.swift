@@ -18,11 +18,11 @@ enum UMLMemberFormatting {
         result += member.name
 
         let paramStr = member.parameters.map { p in
-            var s = p.internalName
-            if let t = p.type {
-                s += ": " + typeRefString(t)
+            var parameterString = p.internalName
+            if let parameterType = p.type {
+                parameterString += ": " + typeRefString(parameterType)
             }
-            return s
+            return parameterString
         }.joined(separator: ", ")
         result += "(\(paramStr))"
 
@@ -41,29 +41,17 @@ enum UMLMemberFormatting {
     }
 
     static func typeRefString(_ ref: TypeReference) -> String {
-        var s = ref.name
+        var typeString = ref.name
         if !ref.genericArguments.isEmpty {
-            s += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
+            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
         }
-        if ref.isOptional { s += "?" }
-        if ref.isArray && !s.hasPrefix("Array") { s += "[]" }
-        return s
+        if ref.isOptional { typeString += "?" }
+        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        return typeString
     }
 
     static func stereotypeString(for kind: TypeKind) -> String? {
-        switch kind {
-        case .protocol, .interface: return "interface"
-        case .enum: return "enumeration"
-        case .struct: return "struct"
-        case .typeAlias: return "typealias"
-        case .object: return "object"
-        case .annotation: return "annotation"
-        case .module: return "module"
-        case .trait: return "trait"
-        case .record: return "record"
-        case .mixin: return "mixin"
-        case .class, .extension: return nil
-        }
+        kind.stereotypeString
     }
 
     private static func accessSymbol(_ level: AccessLevel?) -> String {

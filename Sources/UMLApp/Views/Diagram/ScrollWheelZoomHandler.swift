@@ -79,8 +79,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
         func installMonitors() {
             removeMonitors()
 
-            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) {
-                [weak self] event in
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
                 guard let self else { return event }
                 guard self.viewLocation(fromWindowPoint: event.locationInWindow) != nil else {
                     return event
@@ -107,8 +106,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
                 return nil // Consume the event.
             }
 
-            magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) {
-                [weak self] event in
+            magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) { [weak self] event in
                 guard let self else { return event }
                 guard let (_, flipped) = self.viewLocation(fromWindowPoint: event.locationInWindow) else {
                     return event

@@ -4,10 +4,10 @@ struct ProjectBrowserView: View {
     @StateObject private var model = ProjectBrowserViewModel()
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
-    @State private var sidebarSelection: SidebarItem? = nil
-    @State private var renamingDiagramID: UUID? = nil
+    @State private var sidebarSelection: SidebarItem?
+    @State private var renamingDiagramID: UUID?
     @State private var renamingText: String = ""
-    
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebarContent
@@ -34,16 +34,20 @@ struct ProjectBrowserView: View {
         }
         .onChange(of: model.selection) { newValue in
             switch newValue {
-            case .project(let id): sidebarSelection = .project(id)
-            case .codebase(let id): sidebarSelection = .codebase(id)
+            case .project(let id):
+                sidebarSelection = .project(id)
+            case .codebase(let id):
+                sidebarSelection = .codebase(id)
             case .diagram(let id):
                 // Diagram selected from detail view; keep sidebar on the parent codebase
                 if let diagram = model.storedDiagram(for: id),
                    sidebarSelection != .codebase(diagram.codebaseID) {
                     // Don't change sidebar — keep it as-is
                 }
-            case .customDiagram(let id): sidebarSelection = .customDiagram(id)
-            case .none: break
+            case .customDiagram(let id):
+                sidebarSelection = .customDiagram(id)
+            case .none:
+                break
             }
         }
         .sheet(isPresented: $newProjectPresented) {
@@ -75,7 +79,9 @@ struct ProjectBrowserView: View {
                         }
 
                     // Codebases — sorted alphabetically
-                    let sortedCodebases = project.codebases.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                    let sortedCodebases = project.codebases.sorted(by: {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    })
                     ForEach(sortedCodebases) { codebase in
                         Label(codebase.name, systemImage: "folder")
                             .tag(SidebarItem.codebase(codebase.id))
@@ -205,4 +211,3 @@ enum SidebarItem: Hashable {
     case codebase(UUID)
     case customDiagram(UUID)
 }
-

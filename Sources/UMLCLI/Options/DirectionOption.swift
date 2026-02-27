@@ -6,10 +6,14 @@ enum DirectionOption: String, ExpressibleByArgument, CaseIterable {
 
     var layoutDirection: DiagramOptions.LayoutDirection {
         switch self {
-        case .TB: return .topToBottom
-        case .LR: return .leftToRight
-        case .BT: return .bottomToTop
-        case .RL: return .rightToLeft
+        case .TB:
+            return .topToBottom
+        case .LR:
+            return .leftToRight
+        case .BT:
+            return .bottomToTop
+        case .RL:
+            return .rightToLeft
         }
     }
 }

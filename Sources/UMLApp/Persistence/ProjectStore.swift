@@ -30,39 +30,45 @@ final class ProjectStore: ObservableObject {
     private var manifestURL: URL { baseDir.appendingPathComponent("manifest.json") }
 
     init(baseDir: URL? = nil) {
-        let fm = FileManager.default
+        let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
         } else {
             #if os(macOS)
-            let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let appSupport = try? fileManager.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
             let bundleID = Bundle.main.bundleIdentifier ?? "UMLApp"
-            self.baseDir = (appSupport ?? fm.homeDirectoryForCurrentUser).appendingPathComponent(bundleID, isDirectory: true)
+            self.baseDir = (appSupport ?? fileManager.homeDirectoryForCurrentUser)
+                .appendingPathComponent(bundleID, isDirectory: true)
             #else
-            self.baseDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+            self.baseDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
             #endif
         }
-        try? fm.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
-        try? fm.createDirectory(at: projectsDir, withIntermediateDirectories: true)
-        try? fm.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
-        try? fm.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: projectsDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         load()
     }
 
     // MARK: - Load
 
     func load() {
-        let fm = FileManager.default
+        let fileManager = FileManager.default
         let decoder = JSONDecoder()
 
-        guard fm.fileExists(atPath: manifestURL.path) else { return }
+        guard fileManager.fileExists(atPath: manifestURL.path) else { return }
         do {
             let data = try Data(contentsOf: manifestURL)
             let projectIDs = try decoder.decode([UUID].self, from: data)
             var loaded: [Project] = []
             for id in projectIDs {
                 let url = projectsDir.appendingPathComponent("\(id.uuidString).json")
-                if fm.fileExists(atPath: url.path) {
+                if fileManager.fileExists(atPath: url.path) {
                     let pData = try Data(contentsOf: url)
                     let project = try decoder.decode(Project.self, from: pData)
                     loaded.append(project)
@@ -210,4 +216,3 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 }
-

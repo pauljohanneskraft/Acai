@@ -8,9 +8,12 @@ enum GroupByOption: String, ExpressibleByArgument, CaseIterable {
 
     var groupingStrategy: DiagramOptions.GroupingStrategy {
         switch self {
-        case .file:      return .byFile
-        case .namespace: return .byNamespace
-        case .none:      return .none
+        case .file:
+            return .byFile
+        case .namespace:
+            return .byNamespace
+        case .none:
+            return .none
         }
     }
 }

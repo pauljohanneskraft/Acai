@@ -14,7 +14,7 @@ struct UMLApp: App {
         }
         #endif
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ProjectBrowserView()
@@ -28,4 +28,3 @@ struct UMLApp: App {
         }
     }
 }
-

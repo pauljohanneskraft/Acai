@@ -10,7 +10,7 @@ struct ClassDiagramView: View {
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
     @State private var dragStartPositions: [String: CGPoint] = [:]
-    @State private var activeDragCanvasLocation: CGPoint? = nil
+    @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
 
     init(artifact: CodeArtifact, codebaseName: String) {
@@ -32,13 +32,13 @@ struct ClassDiagramView: View {
                     ))
                 }
             }
-        }, autoPanController: canvasAutoPanController) {
+        }, autoPanController: canvasAutoPanController, content: {
             ZStack {
                 edgeLayer
                 nodeLayer
                 selectionRectangleLayer
             }
-        }
+        })
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             viewModel.updateMeasuredSizes(sizes)
         }
@@ -89,7 +89,7 @@ struct ClassDiagramView: View {
     // MARK: - Node Layer
 
     private var nodeLayer: some View {
-        
+
         ForEach({
             var ids = Set<String>()
             return viewModel.nodes.filter { ids.insert($0.id).inserted }

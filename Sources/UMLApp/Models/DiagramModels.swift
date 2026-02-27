@@ -77,13 +77,20 @@ struct DiagramNode: Identifiable, Sendable {
     /// Numeric visibility ordering: higher = more visible.
     private static func accessOrder(_ level: AccessLevel) -> Int {
         switch level {
-        case .open:           return 6
-        case .public:         return 5
-        case .packagePrivate: return 4
-        case .internal:       return 3
-        case .protected:      return 2
-        case .filePrivate:    return 1
-        case .private:        return 0
+        case .open:
+            return 6
+        case .public:
+            return 5
+        case .packagePrivate:
+            return 4
+        case .internal:
+            return 3
+        case .protected:
+            return 2
+        case .filePrivate:
+            return 1
+        case .private:
+            return 0
         }
     }
 }

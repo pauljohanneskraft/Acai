@@ -32,9 +32,9 @@ struct CodebaseDetailView: View {
                         Divider()
                         diagramsSection(codebase: codebase, artifact: artifact)
                         Divider()
-                        typesSection(artifact: artifact)
+                        CodebaseTypesSection(artifact: artifact)
                         Divider()
-                        relationshipsSection(artifact: artifact)
+                        CodebaseRelationshipsSection(artifact: artifact)
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
@@ -98,10 +98,30 @@ struct CodebaseDetailView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                statisticCard(title: "Types", value: "\(artifact.types.count)", icon: "rectangle.3.group", color: .blue)
-                statisticCard(title: "Relationships", value: "\(artifact.relationships.count)", icon: "arrow.triangle.branch", color: .purple)
-                statisticCard(title: "Functions", value: "\(artifact.freestandingFunctions.count)", icon: "function", color: .green)
-                statisticCard(title: "Coupling", value: couplingFactor(artifact: artifact), icon: "link", color: .orange)
+                statisticCard(
+                    title: "Types",
+                    value: "\(artifact.types.count)",
+                    icon: "rectangle.3.group",
+                    color: .blue
+                )
+                statisticCard(
+                    title: "Relationships",
+                    value: "\(artifact.relationships.count)",
+                    icon: "arrow.triangle.branch",
+                    color: .purple
+                )
+                statisticCard(
+                    title: "Functions",
+                    value: "\(artifact.freestandingFunctions.count)",
+                    icon: "function",
+                    color: .green
+                )
+                statisticCard(
+                    title: "Coupling",
+                    value: couplingFactor(artifact: artifact),
+                    icon: "link",
+                    color: .orange
+                )
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
@@ -214,161 +234,6 @@ struct CodebaseDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
-    }
-
-    // MARK: - Types
-
-    private func typesSection(artifact: CodeArtifact) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Types (\(artifact.types.count))")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-
-            let sortedTypes = artifact.types.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-            LazyVStack(spacing: 1) {
-                ForEach(sortedTypes, id: \.id) { type in
-                    typeRow(type: type)
-                }
-            }
-            .padding(.bottom, 8)
-        }
-    }
-
-    private func typeRow(type: TypeDeclaration) -> some View {
-        HStack(spacing: 8) {
-            typeKindBadge(type.kind)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(type.name)
-                    .fontWeight(.medium)
-                if !type.inheritedTypes.isEmpty {
-                    Text(type.inheritedTypes.map(\.name).joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            Spacer()
-            if !type.members.isEmpty {
-                Text("\(type.members.count) members")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if let access = type.accessLevel {
-                Text(access.rawValue)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.secondary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 4)
-    }
-
-    private func typeKindBadge(_ kind: TypeKind) -> some View {
-        let (letter, color): (String, Color) = {
-            switch kind {
-            case .class: return ("C", .blue)
-            case .struct: return ("S", .purple)
-            case .enum: return ("E", .green)
-            case .protocol: return ("P", .orange)
-            case .interface: return ("I", .orange)
-            case .trait: return ("T", .pink)
-            case .typeAlias: return ("A", .gray)
-            case .object: return ("O", .teal)
-            case .extension: return ("X", .brown)
-            case .annotation: return ("@", .red)
-            case .module: return ("M", .indigo)
-            case .record: return ("R", .cyan)
-            case .mixin: return ("X", .mint)
-            }
-        }()
-        return Text(letter)
-            .font(.caption.bold())
-            .foregroundStyle(.white)
-            .frame(width: 22, height: 22)
-            .background(color)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-
-    // MARK: - Relationships
-
-    private func relationshipsSection(artifact: CodeArtifact) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Relationships (\(artifact.relationships.count))")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-
-            let sortedRelationships = artifact.relationships.sorted(by: {
-                ($0.source, $0.target) < ($1.source, $1.target)
-            })
-            LazyVStack(spacing: 1) {
-                ForEach(Array(sortedRelationships.enumerated()), id: \.offset) { _, rel in
-                    relationshipRow(rel: rel)
-                }
-            }
-            .padding(.bottom, 8)
-        }
-    }
-
-    private func relationshipRow(rel: Relationship) -> some View {
-        HStack(spacing: 8) {
-            relationshipKindBadge(rel.kind)
-            Text(rel.source)
-                .fontWeight(.medium)
-            Image(systemName: relationshipArrow(rel.kind))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(rel.target)
-                .fontWeight(.medium)
-            Spacer()
-            Text(rel.kind.rawValue)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 4)
-    }
-
-    private func relationshipKindBadge(_ kind: Relationship.Kind) -> some View {
-        let color: Color = {
-            switch kind {
-            case .inheritance: return .blue
-            case .conformance: return .orange
-            case .composition: return .red
-            case .aggregation: return .purple
-            case .association: return .green
-            case .dependency: return .gray
-            case .extension: return .brown
-            case .nesting: return .teal
-            }
-        }()
-        return Circle()
-            .fill(color)
-            .frame(width: 10, height: 10)
-    }
-
-    private func relationshipArrow(_ kind: Relationship.Kind) -> String {
-        switch kind {
-        case .inheritance: return "arrow.up"
-        case .conformance: return "arrow.up.to.line"
-        case .composition: return "diamond.fill"
-        case .aggregation: return "diamond"
-        case .association: return "arrow.right"
-        case .dependency: return "arrow.right.dotted"
-        case .extension: return "plus"
-        case .nesting: return "arrow.down.right"
-        }
     }
 
     // MARK: - Actions

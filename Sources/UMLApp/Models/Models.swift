@@ -26,7 +26,7 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// Use `ProjectStore.artifact(for:)` to load.
     var hasArtifact: Bool = false
     var languages: [LanguageSummary] = []
-    var lastIndexed: Date? = nil
+    var lastIndexed: Date?
 }
 
 struct LanguageSummary: Identifiable, Codable, Hashable {
@@ -34,4 +34,3 @@ struct LanguageSummary: Identifiable, Codable, Hashable {
     var language: String
     var filesCount: Int
 }
-

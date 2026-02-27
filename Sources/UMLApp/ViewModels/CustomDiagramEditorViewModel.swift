@@ -13,14 +13,14 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     @Published var nodes: [CustomDiagramNode] = []
     @Published var edges: [CustomDiagramEdge] = []
     @Published var selectedNodeIDs: Set<UUID> = []
-    @Published var selectedEdgeID: UUID? = nil
-    @Published var selectionRect: CGRect? = nil
+    @Published var selectedEdgeID: UUID?
+    @Published var selectionRect: CGRect?
     /// When set, the user is in "draw relationship" mode: dragging from a node creates an edge.
-    @Published var pendingRelationshipKind: Relationship.Kind? = nil
+    @Published var pendingRelationshipKind: Relationship.Kind?
     /// While dragging to draw a relationship, the source node.
-    @Published var relationshipDragSourceID: UUID? = nil
+    @Published var relationshipDragSourceID: UUID?
     /// The current endpoint (canvas coords) of the relationship being drawn.
-    @Published var relationshipDragEndpoint: CGPoint? = nil
+    @Published var relationshipDragEndpoint: CGPoint?
 
     /// Actual measured sizes of rendered node views (updated by GeometryReader).
     var measuredNodeSizes: [UUID: CGSize] = [:]
@@ -141,75 +141,6 @@ final class CustomDiagramEditorViewModel: ObservableObject {
         // The user can then shift-click a second node and use the catalog to create the edge.
     }
 
-    // MARK: - Member CRUD (type nodes only)
-
-    func addProperty(to nodeID: UUID, name: String, type: String) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.properties.append(CustomMember(name: name, type: type))
-        nodes[idx].content = .type(content)
-        save()
-    }
-
-    /// Parse a single string like "name: String" into a property and add it.
-    func addPropertyFromText(to nodeID: UUID, text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        let parts = trimmed.split(separator: ":", maxSplits: 1)
-        let name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? trimmed
-        let type = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : ""
-        addProperty(to: nodeID, name: name, type: type)
-    }
-
-    func addMethod(to nodeID: UUID, name: String, returnType: String, parameters: String) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.methods.append(CustomMember(name: name, type: returnType, parameters: parameters))
-        nodes[idx].content = .type(content)
-        save()
-    }
-
-    /// Parse a single string like "doWork(input: Int): String" into a method and add it.
-    func addMethodFromText(to nodeID: UUID, text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-
-        var name = trimmed
-        var params = ""
-        var returnType = ""
-
-        if let parenStart = trimmed.firstIndex(of: "("),
-           let parenEnd = trimmed.firstIndex(of: ")") {
-            name = String(trimmed[trimmed.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
-            params = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
-            let afterParen = trimmed[trimmed.index(after: parenEnd)...]
-            if let colonIdx = afterParen.firstIndex(of: ":") {
-                returnType = String(afterParen[afterParen.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
-            }
-        } else if let colonIdx = trimmed.firstIndex(of: ":") {
-            name = String(trimmed[trimmed.startIndex..<colonIdx]).trimmingCharacters(in: .whitespaces)
-            returnType = String(trimmed[trimmed.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
-        }
-
-        addMethod(to: nodeID, name: name, returnType: returnType, parameters: params)
-    }
-
-    func removeProperty(from nodeID: UUID, memberID: UUID) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.properties.removeAll { $0.id == memberID }
-        nodes[idx].content = .type(content)
-        save()
-    }
-
-    func removeMethod(from nodeID: UUID, memberID: UUID) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.methods.removeAll { $0.id == memberID }
-        nodes[idx].content = .type(content)
-        save()
-    }
-
     // MARK: - Selection
 
     func selectNode(_ nodeID: UUID, extending: Bool) {
@@ -234,71 +165,6 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     func clearSelection() {
         selectedNodeIDs.removeAll()
         selectedEdgeID = nil
-    }
-
-    // MARK: - Inline Editing
-
-    func updateNodeName(_ nodeID: UUID, name: String) {
-        if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
-            nodes[idx].name = name
-            save()
-        }
-    }
-
-    func updatePropertyText(_ nodeID: UUID, memberID: UUID, text: String) {
-        guard let ni = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[ni].content,
-              let mi = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
-        let parts = text.split(separator: ":", maxSplits: 1)
-        content.properties[mi].name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
-        if parts.count > 1 {
-            content.properties[mi].type = String(parts[1]).trimmingCharacters(in: .whitespaces)
-        }
-        nodes[ni].content = .type(content)
-        save()
-    }
-
-    func updateMethodText(_ nodeID: UUID, memberID: UUID, text: String) {
-        guard let ni = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[ni].content,
-              let mi = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
-        if let parenStart = text.firstIndex(of: "("),
-           let parenEnd = text.firstIndex(of: ")") {
-            content.methods[mi].name = String(text[text.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
-            content.methods[mi].parameters = String(text[text.index(after: parenStart)..<parenEnd])
-            let afterParen = text[text.index(after: parenEnd)...]
-            if let colonIdx = afterParen.firstIndex(of: ":") {
-                content.methods[mi].type = String(afterParen[afterParen.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
-            }
-        } else {
-            content.methods[mi].name = text
-        }
-        nodes[ni].content = .type(content)
-        save()
-    }
-
-    func addInlineProperty(to nodeID: UUID) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.properties.append(CustomMember(name: "newProperty", type: "Type"))
-        nodes[idx].content = .type(content)
-        save()
-    }
-
-    func addInlineMethod(to nodeID: UUID) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[idx].content else { return }
-        content.methods.append(CustomMember(name: "newMethod", type: "Void"))
-        nodes[idx].content = .type(content)
-        save()
-    }
-
-    /// Update the free-form text of a note node.
-    func updateNoteText(_ nodeID: UUID, text: String) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .note = nodes[idx].content else { return }
-        nodes[idx].content = .note(text: text)
-        save()
     }
 
     // MARK: - Relationship Drawing
@@ -386,7 +252,9 @@ final class CustomDiagramEditorViewModel: ObservableObject {
             let caseHeight = content.enumCases.isEmpty ? 0 : CGFloat(content.enumCases.count) * lineHeight
             let padding: CGFloat = 16
             let height = headerHeight + propHeight + methodHeight + caseHeight + 3 + padding
-            let maxChars = ([node.name] + content.properties.map(\.name) + content.methods.map(\.name)).map(\.count).max() ?? 10
+            let allNames = [node.name] + content.properties.map(\.name)
+                + content.methods.map(\.name)
+            let maxChars = allNames.map(\.count).max() ?? 10
             let width = max(180, CGFloat(maxChars) * 7.5 + 28)
             return CGSize(width: min(width, 400), height: height)
         case .note(let text):
@@ -410,87 +278,4 @@ final class CustomDiagramEditorViewModel: ObservableObject {
         return CGRect(x: pos.x - size.width / 2, y: pos.y - size.height / 2, width: size.width, height: size.height)
     }
 
-    // MARK: - Clipboard (Cut / Copy / Paste)
-
-    /// Internal clipboard representation.
-    private struct ClipboardPayload: Codable {
-        var nodes: [CustomDiagramNode]
-        var edges: [CustomDiagramEdge]
-    }
-
-    private static let pasteboardType = "com.umlapp.diagram.nodes"
-
-    /// Copy the currently selected nodes (and edges between them) to the system clipboard.
-    func copySelection() {
-        guard !selectedNodeIDs.isEmpty else { return }
-        let selectedNodes = nodes.filter { selectedNodeIDs.contains($0.id) }
-        let selectedEdges = edges.filter { selectedNodeIDs.contains($0.sourceNodeID) && selectedNodeIDs.contains($0.targetNodeID) }
-        let payload = ClipboardPayload(nodes: selectedNodes, edges: selectedEdges)
-        guard let data = try? JSONEncoder().encode(payload) else { return }
-
-        #if os(macOS)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setData(data, forType: .init(Self.pasteboardType))
-        #endif
-    }
-
-    /// Cut: copy selection then delete.
-    func cutSelection() {
-        copySelection()
-        let toRemove = selectedNodeIDs
-        for id in toRemove {
-            removeNode(id)
-        }
-    }
-
-    /// Paste from the system clipboard, offsetting positions so nodes don't overlap originals.
-    func paste() {
-        #if os(macOS)
-        let pasteboard = NSPasteboard.general
-        guard let data = pasteboard.data(forType: .init(Self.pasteboardType)),
-              let payload = try? JSONDecoder().decode(ClipboardPayload.self, from: data) else { return }
-        #else
-        return
-        #endif
-
-        guard !payload.nodes.isEmpty else { return }
-
-        // Build mapping from old IDs to new IDs.
-        var idMapping: [UUID: UUID] = [:]
-        for node in payload.nodes {
-            idMapping[node.id] = UUID()
-        }
-
-        let offset: Double = 30.0
-        var newSelection = Set<UUID>()
-
-        for var node in payload.nodes {
-            let newID = idMapping[node.id]!
-            node.id = newID
-            node.positionX += offset
-            node.positionY += offset
-            nodes.append(node)
-            newSelection.insert(newID)
-        }
-
-        for var edge in payload.edges {
-            guard let newSource = idMapping[edge.sourceNodeID],
-                  let newTarget = idMapping[edge.targetNodeID] else { continue }
-            edge.id = UUID()
-            edge.sourceNodeID = newSource
-            edge.targetNodeID = newTarget
-            edges.append(edge)
-        }
-
-        selectedNodeIDs = newSelection
-        selectedEdgeID = nil
-        save()
-    }
-
-    /// Select all nodes.
-    func selectAll() {
-        selectedNodeIDs = Set(nodes.map(\.id))
-        selectedEdgeID = nil
-    }
 }
