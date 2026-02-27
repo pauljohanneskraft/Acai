@@ -51,19 +51,7 @@ enum UMLMemberFormatting {
     }
 
     static func stereotypeString(for kind: TypeKind) -> String? {
-        switch kind {
-        case .protocol, .interface: return "interface"
-        case .enum: return "enumeration"
-        case .struct: return "struct"
-        case .typeAlias: return "typealias"
-        case .object: return "object"
-        case .annotation: return "annotation"
-        case .module: return "module"
-        case .trait: return "trait"
-        case .record: return "record"
-        case .mixin: return "mixin"
-        case .class, .extension: return nil
-        }
+        kind.stereotypeString
     }
 
     private static func accessSymbol(_ level: AccessLevel?) -> String {

@@ -23,29 +23,23 @@ enum TypeExtractor {
 
     // MARK: - Modifiers
 
+    private static let keywordToModifier: [Keyword: Modifier] = [
+        .static: .static, .class: .class, .final: .final,
+        .override: .override, .mutating: .mutating,
+        .nonmutating: .nonmutating, .lazy: .lazy,
+        .weak: .weak, .unowned: .unowned,
+        .optional: .optional, .required: .required,
+        .convenience: .convenience, .nonisolated: .nonisolated,
+        .consuming: .consuming, .borrowing: .borrowing
+    ]
+
     static func extractModifiers(from modifiers: DeclModifierListSyntax) -> [Modifier] {
-        var result: [Modifier] = []
-        for modifier in modifiers {
-            switch modifier.name.tokenKind {
-            case .keyword(.static): result.append(.static)
-            case .keyword(.class): result.append(.class)
-            case .keyword(.final): result.append(.final)
-            case .keyword(.override): result.append(.override)
-            case .keyword(.mutating): result.append(.mutating)
-            case .keyword(.nonmutating): result.append(.nonmutating)
-            case .keyword(.lazy): result.append(.lazy)
-            case .keyword(.weak): result.append(.weak)
-            case .keyword(.unowned): result.append(.unowned)
-            case .keyword(.optional): result.append(.optional)
-            case .keyword(.required): result.append(.required)
-            case .keyword(.convenience): result.append(.convenience)
-            case .keyword(.nonisolated): result.append(.nonisolated)
-            case .keyword(.consuming): result.append(.consuming)
-            case .keyword(.borrowing): result.append(.borrowing)
-            default: continue
+        modifiers.compactMap { modifier in
+            guard case .keyword(let keyword) = modifier.name.tokenKind else {
+                return nil
             }
+            return keywordToModifier[keyword]
         }
-        return result
     }
 
     // MARK: - Generic Parameters

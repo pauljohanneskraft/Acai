@@ -16,7 +16,7 @@ public struct KotlinCodeParser: CodeParser {
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: .kotlin, filePaths: [fileName]))
         }
-        let extractor = KotlinExtractor(source: source, fileName: fileName)
+        var extractor = KotlinExtractor(source: source, fileName: fileName)
         return extractor.extract(from: root)
     }
 }

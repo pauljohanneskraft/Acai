@@ -255,7 +255,8 @@ final class CustomDiagramEditorViewModel: ObservableObject {
               case .type(var content) = nodes[nodeIndex].content,
               let memberIndex = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
         let parts = text.split(separator: ":", maxSplits: 1)
-        content.properties[memberIndex].name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
+        content.properties[memberIndex].name = parts.first
+            .map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
         if parts.count > 1 {
             content.properties[memberIndex].type = String(parts[1]).trimmingCharacters(in: .whitespaces)
         }
@@ -269,7 +270,8 @@ final class CustomDiagramEditorViewModel: ObservableObject {
               let memberIndex = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
         if let parenStart = text.firstIndex(of: "("),
            let parenEnd = text.firstIndex(of: ")") {
-            content.methods[memberIndex].name = String(text[text.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
+            content.methods[memberIndex].name = String(text[text.startIndex..<parenStart])
+                .trimmingCharacters(in: .whitespaces)
             content.methods[memberIndex].parameters = String(text[text.index(after: parenStart)..<parenEnd])
             let afterParen = text[text.index(after: parenEnd)...]
             if let colonIdx = afterParen.firstIndex(of: ":") {

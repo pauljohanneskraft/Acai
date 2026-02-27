@@ -185,20 +185,8 @@ enum NodeContent: Codable, Hashable, Sendable {
         }
     }
 
-    private static func defaultTypeStereotype(_ tk: TypeKind) -> String? {
-        switch tk {
-        case .protocol, .interface: "interface"
-        case .enum:       "enumeration"
-        case .struct:     "struct"
-        case .typeAlias:  "typealias"
-        case .object:     "object"
-        case .annotation: "annotation"
-        case .module:     "module"
-        case .trait:      "trait"
-        case .record:     "record"
-        case .mixin:      "mixin"
-        case .class, .extension: nil
-        }
+    private static func defaultTypeStereotype(_ typeKind: TypeKind) -> String? {
+        typeKind.stereotypeString
     }
 }
 

@@ -78,7 +78,9 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
             for entry in entries {
                 guard !Self.excludedDirs.contains(entry.lastPathComponent) else { continue }
                 guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
-                if indicatorFiles.contains(where: { fileManager.fileExists(atPath: entry.appendingPathComponent($0).path) }) {
+                if indicatorFiles.contains(where: {
+                    fileManager.fileExists(atPath: entry.appendingPathComponent($0).path)
+                }) {
                     probe(entry)
                 }
             }

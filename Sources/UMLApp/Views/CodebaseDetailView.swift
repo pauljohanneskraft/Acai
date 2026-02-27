@@ -293,29 +293,23 @@ struct CodebaseDetailView: View {
         .padding(.vertical, 4)
     }
 
+    private static let badgeInfo: [TypeKind: (letter: String, color: Color)] = [
+        .class: ("C", .blue), .struct: ("S", .purple),
+        .enum: ("E", .green), .protocol: ("P", .orange),
+        .interface: ("I", .orange), .trait: ("T", .pink),
+        .typeAlias: ("A", .gray), .object: ("O", .teal),
+        .extension: ("X", .brown), .annotation: ("@", .red),
+        .module: ("M", .indigo), .record: ("R", .cyan),
+        .mixin: ("X", .mint)
+    ]
+
     private func typeKindBadge(_ kind: TypeKind) -> some View {
-        let (letter, color): (String, Color) = {
-            switch kind {
-            case .class: return ("C", .blue)
-            case .struct: return ("S", .purple)
-            case .enum: return ("E", .green)
-            case .protocol: return ("P", .orange)
-            case .interface: return ("I", .orange)
-            case .trait: return ("T", .pink)
-            case .typeAlias: return ("A", .gray)
-            case .object: return ("O", .teal)
-            case .extension: return ("X", .brown)
-            case .annotation: return ("@", .red)
-            case .module: return ("M", .indigo)
-            case .record: return ("R", .cyan)
-            case .mixin: return ("X", .mint)
-            }
-        }()
-        return Text(letter)
+        let info = Self.badgeInfo[kind] ?? ("?", .gray)
+        return Text(info.letter)
             .font(.caption.bold())
             .foregroundStyle(.white)
             .frame(width: 22, height: 22)
-            .background(color)
+            .background(info.color)
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
