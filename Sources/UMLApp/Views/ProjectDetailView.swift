@@ -223,7 +223,7 @@ struct ProjectDetailView: View {
         } label: {
             HStack {
                 Image(systemName: diagram.diagramType.systemImage)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.blue)
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(diagram.name)

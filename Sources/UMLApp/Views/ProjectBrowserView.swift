@@ -110,7 +110,7 @@ struct ProjectBrowserView: View {
                                 Text(diagram.name)
                             } icon: {
                                 Image(systemName: diagram.diagramType.systemImage)
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(.blue)
                             }
                             .tag(SidebarItem.customDiagram(diagram.id))
                             .contextMenu {

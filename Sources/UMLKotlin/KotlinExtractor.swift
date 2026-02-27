@@ -17,6 +17,7 @@ struct KotlinExtractor {
 
     mutating func extract(from root: Node) -> CodeArtifact {
         walkSourceFile(root)
+        resolveRelationshipNames()
         return CodeArtifact(
             metadata: .init(sourceLanguage: .kotlin, filePaths: [context.fileName]),
             types: types,
@@ -25,13 +26,49 @@ struct KotlinExtractor {
         )
     }
 
-    // MARK: - Convenience shorthands
+    /// Resolves relationship source/target strings against types discovered in this file.
+    ///
+    /// During extraction, supertype names are taken verbatim from source text (e.g. `Animal`),
+    /// while type IDs are fully qualified (e.g. `com.example.Animal`). This post-processing
+    /// step maps short names to qualified IDs so that relationships are immediately matchable
+    /// without relying on downstream resolution.
+    private mutating func resolveRelationshipNames() {
+        var nameToId: [String: String] = [:]
+        func register(_ types: [TypeDeclaration]) {
+            for type in types {
+                nameToId[type.name] = type.id
+                nameToId[type.qualifiedName] = type.id
+                // For nested types, also register the last component.
+                if let simpleName = type.name.components(separatedBy: ".").last,
+                   nameToId[simpleName] == nil {
+                    nameToId[simpleName] = type.id
+                }
+                register(type.nestedTypes)
+            }
+        }
+        register(types)
+
+        relationships = relationships.map { rel in
+            var resolved = rel
+            if let id = nameToId[rel.source] { resolved.source = id }
+            if let id = nameToId[rel.target] { resolved.target = id }
+            return resolved
+        }
+    }
+
+    // MARK: - Convenience
 
     private func text(_ node: Node) -> String { node.text(in: context) }
     private func loc(_ node: Node) -> SourceLocation { node.location(in: context) }
     private func hasKw(_ kw: String, in node: Node) -> Bool { node.hasAnonymousChild(kw, in: context) }
 
-    // MARK: - Qualified Name
+    /// Returns whether the node declares `val` or `var` via a `binding_pattern_kind` child.
+    /// Tree-sitter-kotlin wraps `val`/`var` in `[binding_pattern_kind] → [val]`.
+    private func bindingKind(of node: Node) -> String? {
+        guard let bpk = node.firstChild(withType: "binding_pattern_kind") else { return nil }
+        let t = text(bpk).trimmingCharacters(in: .whitespaces)
+        return (t == "val" || t == "var") ? t : nil
+    }
 
     private func qualifiedName(_ name: String) -> String {
         currentPackage.map { "\($0).\(name)" } ?? name
@@ -68,20 +105,22 @@ struct KotlinExtractor {
     // MARK: - Modifiers
 
     private struct ModifierInfo {
-        var accessLevel: AccessLevel?
+        var accessLevel: AccessLevel
         var modifiers: [Modifier]
         var annotations: [String]
-        var isEnum: Bool
     }
 
+    /// Extracts modifier information from a `modifiers` node.
+    ///
+    /// In Kotlin every declaration without an explicit visibility modifier is **public**
+    /// by default, so the returned `accessLevel` falls back to `.public`.
     private func extractModifiers(_ node: Node?) -> ModifierInfo {
         guard let node, node.nodeType == "modifiers" else {
-            return ModifierInfo(accessLevel: nil, modifiers: [], annotations: [], isEnum: false)
+            return ModifierInfo(accessLevel: .public, modifiers: [], annotations: [])
         }
         var access: AccessLevel?
         var mods: [Modifier] = []
         var annots: [String] = []
-        var isEnum = false
 
         for child in node.namedChildren() {
             let t = text(child)
@@ -96,12 +135,12 @@ struct KotlinExtractor {
                 }
             case "class_modifier":
                 switch t {
-                case "data":  mods.append(.data)
-                case "sealed": mods.append(.sealed)
+                case "data":     mods.append(.data)
+                case "sealed":   mods.append(.sealed)
                 case "abstract": mods.append(.abstract)
-                case "inner": mods.append(.inner)
-                case "enum":  isEnum = true
-                case "value": mods.append(.inline)
+                case "inner":    mods.append(.inner)
+                case "value":    mods.append(.inline)
+                // "enum" and "annotation" determine TypeKind, not modifiers.
                 default: break
                 }
             case "member_modifier":
@@ -111,6 +150,8 @@ struct KotlinExtractor {
                 case "const":    mods.append(.const)
                 default: break
                 }
+            case "property_modifier":
+                if t == "const" { mods.append(.const) }
             case "function_modifier":
                 switch t {
                 case "suspend": mods.append(.suspend)
@@ -131,7 +172,7 @@ struct KotlinExtractor {
                 break
             }
         }
-        return ModifierInfo(accessLevel: access, modifiers: mods, annotations: annots, isEnum: isEnum)
+        return ModifierInfo(accessLevel: access ?? .public, modifiers: mods, annotations: annots)
     }
 
     // MARK: - Class Declaration
@@ -148,44 +189,49 @@ struct KotlinExtractor {
         let qn = qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let ctorParams = extractPrimaryConstructorParams(node.firstChild(withType: "primary_constructor"))
-        let specifiers = node.allChildren(withType: "delegation_specifier")
-        let classified = classifyInheritanceList(specifiers)
-        let inherited = classified.map(\.typeRef)
+        let ctorNode = node.firstChild(withType: "primary_constructor")
+        let ctorAccess = ctorNode
+            .flatMap { $0.firstChild(withType: "modifiers") }
+            .map { extractModifiers($0).accessLevel } ?? modInfo.accessLevel
+        let ctorParams = extractPrimaryConstructorParams(ctorNode)
+        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
-        let isAnnotation = modInfo.annotations.isEmpty &&
-            (node.firstChild(withType: "modifiers")?.namedChildren()
-                .contains { $0.nodeType == "class_modifier" && text($0) == "annotation" } ?? false)
+        let isAnnotation = node.firstChild(withType: "modifiers")?.namedChildren()
+            .contains { $0.nodeType == "class_modifier" && text($0) == "annotation" } ?? false
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn,
             kind: isAnnotation ? .annotation : .class,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            genericParameters: generics, inheritedTypes: inherited,
+            genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
 
+        // Promoted constructor properties — each carries its own access level.
         for p in ctorParams where p.isProperty {
+            var mods = p.modifiers
+            if p.isReadOnly { mods.append(.readonly) }
             typeDecl.members.append(Member(
                 name: p.parameter.internalName, kind: .property,
-                accessLevel: modInfo.accessLevel, type: p.parameter.type
+                accessLevel: p.accessLevel, modifiers: mods,
+                type: p.parameter.type, annotations: p.annotations
             ))
         }
         if !ctorParams.isEmpty {
             typeDecl.members.append(Member(
                 name: "init", kind: .initializer,
-                accessLevel: modInfo.accessLevel,
+                accessLevel: ctorAccess,
                 parameters: ctorParams.map(\.parameter)
             ))
         }
 
-        for sup in classified {
+        for sup in supertypes {
             relationships.append(Relationship(
                 kind: sup.isClassInheritance ? .inheritance : .conformance,
                 source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "class_body") {
-            extractClassBody(body, into: &typeDecl)
+            extractBody(body, into: &typeDecl)
         }
         return typeDecl
     }
@@ -199,19 +245,19 @@ struct KotlinExtractor {
         let qn = qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let inherited = extractInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn, kind: .interface,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            genericParameters: generics, inheritedTypes: inherited,
+            genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
-        for inh in inherited {
-            relationships.append(Relationship(kind: .conformance, source: qn, target: inh.name))
+        for sup in supertypes {
+            relationships.append(Relationship(kind: .conformance, source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "class_body") {
-            extractClassBody(body, into: &typeDecl)
+            extractBody(body, into: &typeDecl)
         }
         return typeDecl
     }
@@ -223,22 +269,21 @@ struct KotlinExtractor {
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
         let name = text(nameNode)
         let qn = qualifiedName(name)
-        let classified = classifyInheritanceList(node.allChildren(withType: "delegation_specifier"))
-        let inherited = classified.map(\.typeRef)
+        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn, kind: .object,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            inheritedTypes: inherited,
+            inheritedTypes: supertypes.map(\.typeRef),
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
-        for sup in classified {
+        for sup in supertypes {
             relationships.append(Relationship(
                 kind: sup.isClassInheritance ? .inheritance : .conformance,
                 source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "class_body") {
-            extractClassBody(body, into: &typeDecl)
+            extractBody(body, into: &typeDecl)
         }
         return typeDecl
     }
@@ -248,16 +293,21 @@ struct KotlinExtractor {
     private mutating func extractCompanionObject(_ node: Node) -> TypeDeclaration? {
         let name = node.firstChild(withType: "type_identifier").map { text($0) } ?? "Companion"
         let qn = qualifiedName(name)
-        let inherited = extractInheritanceList(node.allChildren(withType: "delegation_specifier"))
+        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn,
             kind: .object, modifiers: [.static],
-            inheritedTypes: inherited,
+            inheritedTypes: supertypes.map(\.typeRef),
             namespace: currentPackage, location: loc(node)
         )
+        for sup in supertypes {
+            relationships.append(Relationship(
+                kind: sup.isClassInheritance ? .inheritance : .conformance,
+                source: qn, target: sup.typeRef.name))
+        }
         if let body = node.firstChild(withType: "class_body") {
-            extractClassBody(body, into: &typeDecl)
+            extractBody(body, into: &typeDecl)
         }
         return typeDecl
     }
@@ -270,24 +320,26 @@ struct KotlinExtractor {
         let qn = qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let classified = classifyInheritanceList(node.allChildren(withType: "delegation_specifier"))
-        let inherited = classified.map(\.typeRef)
+        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qn, name: name, qualifiedName: qn, kind: .enum,
             accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            genericParameters: generics, inheritedTypes: inherited,
+            genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
             annotations: modInfo.annotations, namespace: currentPackage, location: loc(node)
         )
-        for sup in classified {
+        for sup in supertypes {
             relationships.append(Relationship(
                 kind: sup.isClassInheritance ? .inheritance : .conformance,
                 source: qn, target: sup.typeRef.name))
         }
         if let body = node.firstChild(withType: "enum_class_body") {
-            extractEnumClassBody(body, into: &typeDecl)
+            for child in body.namedChildren() where child.nodeType == "enum_entry" {
+                if let ec = extractEnumEntry(child) { typeDecl.enumCases.append(ec) }
+            }
+            extractBody(body, into: &typeDecl, skipEnumEntries: true)
         } else if let body = node.firstChild(withType: "class_body") {
-            extractClassBody(body, into: &typeDecl)
+            extractBody(body, into: &typeDecl)
         }
         return typeDecl
     }
@@ -313,11 +365,16 @@ struct KotlinExtractor {
         )
     }
 
-    // MARK: - Class Body
+    // MARK: - Body Extraction
 
-    private mutating func extractClassBody(_ node: Node, into typeDecl: inout TypeDeclaration) {
-        // Pre-scan: build a property map so function bodies can resolve call sites.
-        // Includes primary-constructor properties already added to typeDecl.members.
+    /// Extracts members, nested types, and companion objects from a class/interface/object body.
+    /// Used for both `class_body` and `enum_class_body` nodes.
+    private mutating func extractBody(
+        _ node: Node,
+        into typeDecl: inout TypeDeclaration,
+        skipEnumEntries: Bool = false
+    ) {
+        // Pre-scan: build property → type map for call-site resolution.
         var knownProperties: [String: String] = [:]
         for member in typeDecl.members where member.kind == .property {
             if let typeName = member.type?.name { knownProperties[member.name] = typeName }
@@ -329,12 +386,23 @@ struct KotlinExtractor {
             }
         }
 
-        for child in node.namedChildren() {
+        let namedChildren = node.namedChildren()
+        for (idx, child) in namedChildren.enumerated() {
             switch child.nodeType {
+            case "enum_entry" where skipEnumEntries:
+                continue
             case "function_declaration":
                 typeDecl.members.append(extractFunctionDeclaration(child, knownProperties: knownProperties))
             case "property_declaration":
-                typeDecl.members.append(extractPropertyDeclaration(child))
+                // In tree-sitter-kotlin, getter/setter nodes are siblings of the
+                // property_declaration, not children. Look ahead to detect them.
+                let hasGetterOrSetter: Bool = {
+                    let next = idx + 1
+                    guard next < namedChildren.count else { return false }
+                    let sibling = namedChildren[next].nodeType
+                    return sibling == "getter" || sibling == "setter"
+                }()
+                typeDecl.members.append(extractPropertyDeclaration(child, isComputed: hasGetterOrSetter))
             case "secondary_constructor":
                 typeDecl.members.append(extractSecondaryConstructor(child, knownProperties: knownProperties))
             case "companion_object":
@@ -345,39 +413,6 @@ struct KotlinExtractor {
                 } else if let n = extractClassDeclaration(child) {
                     typeDecl.nestedTypes.append(n)
                 }
-            case "object_declaration":
-                if let n = extractObjectDeclaration(child) { typeDecl.nestedTypes.append(n) }
-            default:
-                break
-            }
-        }
-    }
-
-    // MARK: - Enum Class Body
-
-    private mutating func extractEnumClassBody(_ node: Node, into typeDecl: inout TypeDeclaration) {
-        var knownProperties: [String: String] = [:]
-        for child in node.namedChildren() where child.nodeType == "property_declaration" {
-            let prop = extractPropertyDeclaration(child)
-            if !prop.modifiers.contains(.static), let typeName = prop.type?.name {
-                knownProperties[prop.name] = typeName
-            }
-        }
-
-        for child in node.namedChildren() {
-            switch child.nodeType {
-            case "enum_entry":
-                if let ec = extractEnumEntry(child) { typeDecl.enumCases.append(ec) }
-            case "function_declaration":
-                typeDecl.members.append(extractFunctionDeclaration(child, knownProperties: knownProperties))
-            case "property_declaration":
-                typeDecl.members.append(extractPropertyDeclaration(child))
-            case "secondary_constructor":
-                typeDecl.members.append(extractSecondaryConstructor(child, knownProperties: knownProperties))
-            case "companion_object":
-                if let obj = extractCompanionObject(child) { typeDecl.nestedTypes.append(obj) }
-            case "class_declaration":
-                if let n = extractClassDeclaration(child) { typeDecl.nestedTypes.append(n) }
             case "object_declaration":
                 if let n = extractObjectDeclaration(child) { typeDecl.nestedTypes.append(n) }
             default:
@@ -409,9 +444,9 @@ struct KotlinExtractor {
         let name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? "_anonymous"
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
 
-        if let receiver = node.child(byFieldName: "receiver") {
-            let rt = text(receiver)
-            if !rt.isEmpty { relationships.append(Relationship(kind: .extension, source: name, target: rt)) }
+        // Extension function receiver (e.g. `fun String.hello() {}`)
+        if let receiverRef = extractReceiverType(node) {
+            relationships.append(Relationship(kind: .extension, source: name, target: receiverRef.name))
         }
 
         let params = extractFunctionValueParameters(node.firstChild(withType: "function_value_parameters"))
@@ -433,6 +468,35 @@ struct KotlinExtractor {
         )
     }
 
+    /// Extracts the receiver type from a Kotlin extension function declaration.
+    ///
+    /// In `fun String.hello() {}`, `String` is the receiver type. The tree-sitter
+    /// AST places this as a type node child followed by a `"."` anonymous child
+    /// before the function name.
+    private func extractReceiverType(_ node: Node) -> TypeReference? {
+        let children = node.children()
+        guard let funIdx = children.firstIndex(where: { !$0.isNamed && text($0) == "fun" }) else { return nil }
+        var i = children.index(after: funIdx)
+        while i < children.endIndex {
+            let child = children[i]
+            // Skip type parameters (generics before receiver)
+            if child.nodeType == "type_parameters" { i = children.index(after: i); continue }
+            // A type node followed by "." indicates a receiver type.
+            if child.isNamed,
+               let nodeType = child.nodeType,
+               ["user_type", "nullable_type", "parenthesized_type"].contains(nodeType) {
+                let nextIdx = children.index(after: i)
+                if nextIdx < children.endIndex,
+                   !children[nextIdx].isNamed,
+                   text(children[nextIdx]) == "." {
+                    return extractTypeReferenceFromAny(child)
+                }
+            }
+            break // Not an extension function
+        }
+        return nil
+    }
+
     private func findReturnType(in node: Node) -> Node? {
         var foundParams = false
         var foundColon = false
@@ -451,11 +515,11 @@ struct KotlinExtractor {
 
     // MARK: - Property Declaration
 
-    private func extractPropertyDeclaration(_ node: Node) -> Member {
+    private func extractPropertyDeclaration(_ node: Node, isComputed: Bool = false) -> Member {
         let modInfo = extractModifiers(node.firstChild(withType: "modifiers"))
-        let isVal = hasKw("val", in: node)
+        let isVal = bindingKind(of: node) == "val"
         var mods = modInfo.modifiers
-        if isVal { mods.append(.const) }
+        if isVal { mods.append(.readonly) }
 
         var name = ""
         var typeRef: TypeReference?
@@ -472,7 +536,7 @@ struct KotlinExtractor {
             name: name, kind: .property,
             accessLevel: modInfo.accessLevel, modifiers: mods,
             type: typeRef,
-            isComputed: node.hasChild(withType: "getter") || node.hasChild(withType: "setter"),
+            isComputed: isComputed,
             annotations: modInfo.annotations, location: loc(node)
         )
     }
@@ -505,13 +569,24 @@ struct KotlinExtractor {
 
     // MARK: - Primary Constructor Parameters
 
-    private struct ClassParam { let parameter: Parameter; let isProperty: Bool }
+    private struct ClassParam {
+        let parameter: Parameter
+        let isProperty: Bool
+        let isReadOnly: Bool
+        let accessLevel: AccessLevel
+        let modifiers: [Modifier]
+        let annotations: [String]
+    }
 
     private func extractPrimaryConstructorParams(_ node: Node?) -> [ClassParam] {
         guard let node else { return [] }
         let classParamsNode = node.firstChild(withType: "class_parameters") ?? node
         return classParamsNode.allChildren(withType: "class_parameter").map { child in
-            let isProperty = hasKw("val", in: child) || hasKw("var", in: child)
+            let paramModInfo = extractModifiers(child.firstChild(withType: "modifiers"))
+            let bk = bindingKind(of: child)
+            let isVal = bk == "val"
+            let isVar = bk == "var"
+            let isProperty = isVal || isVar
             let name = child.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
             let typeRef = extractFirstTypeRef(from: child)
             var defaultValue: String?
@@ -522,7 +597,11 @@ struct KotlinExtractor {
             }
             return ClassParam(
                 parameter: Parameter(internalName: name, type: typeRef, defaultValue: defaultValue),
-                isProperty: isProperty
+                isProperty: isProperty,
+                isReadOnly: isVal,
+                accessLevel: paramModInfo.accessLevel,
+                modifiers: paramModInfo.modifiers,
+                annotations: paramModInfo.annotations
             )
         }
     }
@@ -548,20 +627,16 @@ struct KotlinExtractor {
         }
     }
 
-    // MARK: - Inheritance / Delegation Specifiers
+    // MARK: - Supertype Classification
 
     /// A type reference paired with whether it came from a constructor invocation
-    /// (indicating class inheritance) or a bare type/delegation (indicating conformance).
+    /// (class inheritance) or a bare type / delegation (interface conformance).
     private struct ClassifiedSupertype {
         let typeRef: TypeReference
         let isClassInheritance: Bool
     }
 
-    private func extractInheritanceList(_ specifiers: [Node]) -> [TypeReference] {
-        classifyInheritanceList(specifiers).map(\.typeRef)
-    }
-
-    private func classifyInheritanceList(_ specifiers: [Node]) -> [ClassifiedSupertype] {
+    private func classifySupertypes(_ specifiers: [Node]) -> [ClassifiedSupertype] {
         specifiers.compactMap { specifier in
             if let ctorInv = specifier.firstChild(withType: "constructor_invocation"),
                let ut = ctorInv.firstChild(withType: "user_type") {
@@ -641,7 +716,7 @@ struct KotlinExtractor {
     }
 
     private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
-        if let site = resolveKotlinCallSite(node, knownProperties: knownProperties) {
+        if let site = resolveCallSite(node, knownProperties: knownProperties) {
             sites.append(site)
         }
         for child in node.namedChildren() {
@@ -649,14 +724,8 @@ struct KotlinExtractor {
         }
     }
 
-    /// Matches `call_expression { navigation_expression { receiver … method } }`.
-    ///
-    /// Handles:
-    /// - `receiver.method(args)` — `navigation_expression` whose first named child
-    ///   is a `simple_identifier` (the receiver variable name).
-    /// - `this.receiver.method(args)` — `navigation_expression` whose first named
-    ///   child is an inner `navigation_expression` starting with `this_expression`.
-    private func resolveKotlinCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+    /// Resolves `receiver.method(args)` and `this.receiver.method(args)` call patterns.
+    private func resolveCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
         guard node.nodeType == "call_expression",
               let navExpr = node.firstChild(withType: "navigation_expression")
         else { return nil }
