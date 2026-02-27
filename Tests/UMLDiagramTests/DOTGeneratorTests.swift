@@ -305,7 +305,9 @@ struct DOTGeneratorTests {
         // Inheritance edge to ExternalBase is KEPT (parser-produced).
         #expect(dot.contains("ExternalBase"))
         // Composition edge to ExternalCollar is FILTERED (inferred, external target).
-        #expect(!dot.contains("ExternalCollar"))
+        // The type name may still appear in the property label inside the Dog node,
+        // but there must be no separate node or edge for it.
+        #expect(!dot.contains("\"ExternalCollar\""))
     }
 
     @Test func redundantEdgesRemoved() {
