@@ -22,7 +22,9 @@ let package = Package(
         .library(name: "UMLDiagram",    targets: ["UMLDiagram"]),
         .library(name: "UMLLibrary",    targets: ["UMLLibrary"]),
         .executable(name: "uml",        targets: ["UMLCLI"]),
+        #if canImport(SwiftUI)
         .executable(name: "UMLApp",     targets: ["UMLApp"]),
+        #endif
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git",            from: "600.0.0"),
