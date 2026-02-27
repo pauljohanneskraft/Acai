@@ -115,60 +115,64 @@ struct ProjectDetailView: View {
 
     private func projectHeader(project: Project, index: Int) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            // Icon picker
-            Menu {
-                ForEach([
-                    "folder", "doc", "desktopcomputer",
-                    "iphone", "globe", "server.rack",
-                    "shippingbox", "cpu", "hammer",
-                    "wrench", "gear", "star", "bookmark"
-                ], id: \.self) { symbol in
-                    Button {
-                        model.store.projects[index].iconSystemName = symbol
-                        model.store.save()
-                        model.objectWillChange.send()
-                    } label: {
-                        Label(symbol, systemImage: symbol)
-                    }
-                }
-            } label: {
-                Image(systemName: project.iconSystemName)
-                    .font(.title)
-                    .frame(width: 44, height: 44)
-                    .background(Color.accentColor.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-
-            VStack(alignment: .leading, spacing: 4) {
-                TextField("Project Title", text: Binding(
-                    get: { model.store.projects[safe: index]?.title ?? "" },
-                    set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
-                ))
-                .font(.title2.bold())
-                .textFieldStyle(.plain)
-
-                TextField("Subtitle", text: Binding(
-                    get: { model.store.projects[safe: index]?.subtitle ?? "" },
-                    set: {
-                        model.store.projects[index].subtitle = $0
-                        model.store.save()
-                        model.objectWillChange.send()
-                    }
-                ))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .textFieldStyle(.plain)
-            }
-
+            projectIconPicker(project: project, index: index)
+            projectTitleFields(index: index)
             Spacer()
-
             Button(role: .destructive) {
                 model.removeProject(project.id)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+        }
+    }
+
+    private func projectIconPicker(project: Project, index: Int) -> some View {
+        Menu {
+            ForEach([
+                "folder", "doc", "desktopcomputer",
+                "iphone", "globe", "server.rack",
+                "shippingbox", "cpu", "hammer",
+                "wrench", "gear", "star", "bookmark"
+            ], id: \.self) { symbol in
+                Button {
+                    model.store.projects[index].iconSystemName = symbol
+                    model.store.save()
+                    model.objectWillChange.send()
+                } label: {
+                    Label(symbol, systemImage: symbol)
+                }
+            }
+        } label: {
+            Image(systemName: project.iconSystemName)
+                .font(.title)
+                .frame(width: 44, height: 44)
+                .background(Color.accentColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
+    private func projectTitleFields(index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TextField("Project Title", text: Binding(
+                get: { model.store.projects[safe: index]?.title ?? "" },
+                set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
+            ))
+            .font(.title2.bold())
+            .textFieldStyle(.plain)
+
+            TextField("Subtitle", text: Binding(
+                get: { model.store.projects[safe: index]?.subtitle ?? "" },
+                set: {
+                    model.store.projects[index].subtitle = $0
+                    model.store.save()
+                    model.objectWillChange.send()
+                }
+            ))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .textFieldStyle(.plain)
         }
     }
 
@@ -178,53 +182,62 @@ struct ProjectDetailView: View {
         Button {
             model.selection = .codebase(codebase.id)
         } label: {
-            HStack {
-                Image(systemName: "folder")
-                    .foregroundStyle(.blue)
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(codebase.name)
-                        .fontWeight(.medium)
-                    Text(URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if let date = codebase.lastIndexed {
-                    Text(date, style: .date)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if codebase.hasArtifact {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
-                } else {
-                    Image(systemName: "circle.dashed")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 6)
-            .contentShape(Rectangle())
+            codebaseRowContent(codebase: codebase)
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button {
-                Task { await model.reindex(codebaseID: codebase.id) }
-            } label: {
-                Label("Reindex", systemImage: "arrow.clockwise")
+            codebaseContextMenu(codebase: codebase)
+        }
+    }
+
+    private func codebaseRowContent(codebase: Codebase) -> some View {
+        HStack {
+            Image(systemName: "folder")
+                .foregroundStyle(.blue)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(codebase.name)
+                    .fontWeight(.medium)
+                Text(URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Button { model.exportDOT(for: codebase.id) } label: {
-                Label("Export DOT", systemImage: "square.and.arrow.up")
+            Spacer()
+            if let date = codebase.lastIndexed {
+                Text(date, style: .date)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Divider()
-            Button(role: .destructive) {
-                model.removeCodebase(codebase.id)
-            } label: {
-                Label("Delete", systemImage: "trash")
+            if codebase.hasArtifact {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .font(.caption)
+            } else {
+                Image(systemName: "circle.dashed")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
             }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func codebaseContextMenu(codebase: Codebase) -> some View {
+        Button {
+            Task { await model.reindex(codebaseID: codebase.id) }
+        } label: {
+            Label("Reindex", systemImage: "arrow.clockwise")
+        }
+        Button { model.exportDOT(for: codebase.id) } label: {
+            Label("Export DOT", systemImage: "square.and.arrow.up")
+        }
+        Divider()
+        Button(role: .destructive) {
+            model.removeCodebase(codebase.id)
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 

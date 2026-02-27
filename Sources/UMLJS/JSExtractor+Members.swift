@@ -76,6 +76,10 @@ extension JSExtractor {
 
     // MARK: - Method Definition
 
+    private static let methodKeywordModifiers: [String: Modifier] = [
+        "static": .static, "async": .async, "override": .override
+    ]
+
     private func extractMethodDefinition(
         _ node: Node,
         parentName: String,
@@ -84,34 +88,11 @@ extension JSExtractor {
         let nodeLoc = loc(node)
         let nameNode = node.child(byFieldName: "name")
         let name = nameNode.map { text($0) } ?? ""
-
-        var kind: MemberKind = .method
-        var accessLevel: AccessLevel?
-        var modifiers: [Modifier] = []
-        var isComputed = false
         let annotations = extractDecorators(node)
 
-        for child in node.children() {
-            switch text(child) {
-            case "static":
-                modifiers.append(.static)
-            case "get", "set":
-                isComputed = true; kind = .property
-            case "async":
-                modifiers.append(.async)
-            case "abstract" where isTypeScript:
-                modifiers.append(.abstract)
-            case "override":
-                modifiers.append(.override)
-            default:
-                break
-            }
-        }
-
-        if isTypeScript { accessLevel = extractAccessibilityModifier(node) }
-        if name.hasPrefix("#") { accessLevel = .private }
-        if name == "constructor" { kind = .initializer }
-        if isTypeScript && node.hasDirectChildText("readonly", in: context) { modifiers.append(.readonly) }
+        let sig = extractMethodKindAndModifiers(
+            node, name: name
+        )
 
         let generics = isTypeScript ? extractTypeParameters(node) : []
         let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
@@ -122,17 +103,56 @@ extension JSExtractor {
 
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
-            kind: kind,
-            accessLevel: accessLevel,
-            modifiers: modifiers,
+            kind: sig.kind,
+            accessLevel: sig.accessLevel,
+            modifiers: sig.modifiers,
             type: returnType,
             parameters: params,
             genericParameters: generics,
-            isComputed: isComputed,
+            isComputed: sig.isComputed,
             annotations: annotations,
             location: nodeLoc,
             callSites: callSites
         )
+    }
+
+    /// Bundles the kind, access level, modifiers, and computed flag extracted from a method node.
+    private struct MethodSignatureInfo {
+        var kind: MemberKind
+        var accessLevel: AccessLevel?
+        var modifiers: [Modifier]
+        var isComputed: Bool
+    }
+
+    private func extractMethodKindAndModifiers(
+        _ node: Node,
+        name: String
+    ) -> MethodSignatureInfo {
+        var kind: MemberKind = .method
+        var modifiers: [Modifier] = []
+        var isComputed = false
+
+        for child in node.children() {
+            let childText = text(child)
+            if let modifier = Self.methodKeywordModifiers[childText] {
+                modifiers.append(modifier)
+            } else if childText == "get" || childText == "set" {
+                isComputed = true
+                kind = .property
+            } else if childText == "abstract", isTypeScript {
+                modifiers.append(.abstract)
+            }
+        }
+
+        var accessLevel: AccessLevel?
+        if isTypeScript { accessLevel = extractAccessibilityModifier(node) }
+        if name.hasPrefix("#") { accessLevel = .private }
+        if name == "constructor" { kind = .initializer }
+        if isTypeScript, node.hasDirectChildText("readonly", in: context) {
+            modifiers.append(.readonly)
+        }
+
+        return MethodSignatureInfo(kind: kind, accessLevel: accessLevel, modifiers: modifiers, isComputed: isComputed)
     }
 
     // MARK: - Field Definition

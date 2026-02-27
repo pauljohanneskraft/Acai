@@ -5,27 +5,37 @@ import UMLTreeSitter
 
 extension DartExtractor {
 
-    @discardableResult
-    private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
+    private mutating func extractTopLevelType(
+        _ child: Node, nodeType: String
+    ) -> TypeDeclaration? {
         switch nodeType {
         case "class_definition":
-            if let typeDecl = extractClassDefinition(child) { types.append(typeDecl) }
+            return extractClassDefinition(child)
         case "enum_declaration":
-            if let typeDecl = extractEnumDeclaration(child) { types.append(typeDecl) }
+            return extractEnumDeclaration(child)
         case "mixin_declaration":
-            if let typeDecl = extractMixinDeclaration(child) { types.append(typeDecl) }
+            return extractMixinDeclaration(child)
         case "extension_declaration":
-            if let typeDecl = extractExtensionDeclaration(child) { types.append(typeDecl) }
+            return extractExtensionDeclaration(child)
         case "extension_type_declaration":
-            if let typeDecl = extractExtensionTypeDeclaration(child) { types.append(typeDecl) }
-        case "function_signature":
-            if let function = extractFunctionSignature(child, isTopLevel: true) {
-                freestandingFunctions.append(function)
-            }
+            return extractExtensionTypeDeclaration(child)
         default:
-            return false
+            return nil
         }
-        return true
+    }
+
+    @discardableResult
+    private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
+        if let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
+            types.append(typeDecl)
+            return true
+        }
+        if nodeType == "function_signature",
+           let function = extractFunctionSignature(child, isTopLevel: true) {
+            freestandingFunctions.append(function)
+            return true
+        }
+        return false
     }
 
     mutating func walkSourceFile(_ node: Node) {

@@ -61,38 +61,62 @@ extension JSExtractor {
         namespace: String? = nil
     ) -> (types: [TypeDeclaration], functions: [Member]) {
         guard let nodeType = node.nodeType else { return ([], []) }
-        var typeDecl: TypeDeclaration?
+
+        if nodeType == "function_declaration" {
+            return ([], [extractFunctionDeclaration(node, isExported: isExported)])
+        }
+
+        if let typeDecls = dispatchModuleDeclaration(nodeType, node: node, isExported: isExported) {
+            return (typeDecls.map { applyMetadata(to: $0, decorators: decorators, namespace: namespace) }, [])
+        }
+
+        if let typeDecl = dispatchTypeDeclaration(nodeType, node: node, isExported: isExported, isDefault: isDefault) {
+            return ([applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace)], [])
+        }
+
+        return ([], [])
+    }
+
+    private mutating func dispatchTypeDeclaration(
+        _ nodeType: String,
+        node: Node,
+        isExported: Bool,
+        isDefault: Bool
+    ) -> TypeDeclaration? {
         switch nodeType {
         case "class_declaration", "class":
-            typeDecl = extractClassLikeDeclaration(node, isExported: isExported, isDefault: isDefault)
+            return extractClassLikeDeclaration(node, isExported: isExported, isDefault: isDefault)
         case "abstract_class_declaration" where isTypeScript:
-            typeDecl = extractClassLikeDeclaration(node, isExported: isExported,
-                                                   isDefault: isDefault, isAbstract: true)
+            return extractClassLikeDeclaration(node, isExported: isExported, isDefault: isDefault, isAbstract: true)
         case "interface_declaration" where isTypeScript:
-            typeDecl = extractInterfaceDeclaration(node, isExported: isExported)
+            return extractInterfaceDeclaration(node, isExported: isExported)
         case "type_alias_declaration" where isTypeScript:
-            typeDecl = extractTypeAliasDeclaration(node, isExported: isExported)
+            return extractTypeAliasDeclaration(node, isExported: isExported)
         case "enum_declaration" where isTypeScript:
-            typeDecl = extractEnumDeclaration(node, isExported: isExported)
-        case "module" where isTypeScript, "internal_module" where isTypeScript:
-            var result: [TypeDeclaration] = []
-            for var declaration in extractModule(node, isExported: isExported) {
-                declaration.annotations.append(contentsOf: decorators)
-                if let namespace = namespace { declaration.namespace = namespace }
-                result.append(declaration)
-            }
-            return (result, [])
-        case "function_declaration":
-            return ([], [extractFunctionDeclaration(node, isExported: isExported)])
+            return extractEnumDeclaration(node, isExported: isExported)
         default:
-            return ([], [])
+            return nil
         }
-        if var decl = typeDecl {
-            decl.annotations.append(contentsOf: decorators)
-            if let namespace = namespace { decl.namespace = namespace }
-            return ([decl], [])
-        }
-        return ([], [])
+    }
+
+    private mutating func dispatchModuleDeclaration(
+        _ nodeType: String,
+        node: Node,
+        isExported: Bool
+    ) -> [TypeDeclaration]? {
+        guard isTypeScript, nodeType == "module" || nodeType == "internal_module" else { return nil }
+        return extractModule(node, isExported: isExported)
+    }
+
+    private func applyMetadata(
+        to declaration: TypeDeclaration,
+        decorators: [String],
+        namespace: String?
+    ) -> TypeDeclaration {
+        var result = declaration
+        result.annotations.append(contentsOf: decorators)
+        if let namespace { result.namespace = namespace }
+        return result
     }
 
     // MARK: - Class Declaration

@@ -175,6 +175,7 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
         }
     }
 
+    // swiftlint:disable cyclomatic_complexity
     /// Creates a default ``NodeContent`` for this element kind.
     func defaultContent() -> NodeContent {
         switch self {
@@ -204,6 +205,7 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
             .note(text: "")
         }
     }
+    // swiftlint:enable cyclomatic_complexity
 
     // MARK: - Catalog Grouping
 

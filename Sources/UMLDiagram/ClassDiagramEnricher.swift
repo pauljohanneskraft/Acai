@@ -250,35 +250,52 @@ public enum ClassDiagramEnricher {
         var result: [Relationship] = []
 
         for type in types {
-            // Avoid duplicate dependency edges from the same source type.
             var seen = Set<String>()
 
             for member in type.members where member.kind == .method || member.kind == .initializer {
-                // Return type.
-                if let returnType = member.type {
-                    for refName in extractReferencedTypeNames(from: returnType) {
-                        guard !isPrimitive(refName) else { continue }
-                        let targetId = resolver.resolveId(refName)
-                        guard targetId != type.id, seen.insert(targetId).inserted else { continue }
-                        result.append(Relationship(
-                            kind: .dependency, source: type.id, target: targetId))
-                    }
-                }
-
-                // Parameter types.
-                for param in member.parameters {
-                    guard let paramType = param.type else { continue }
-                    for refName in extractReferencedTypeNames(from: paramType) {
-                        guard !isPrimitive(refName) else { continue }
-                        let targetId = resolver.resolveId(refName)
-                        guard targetId != type.id, seen.insert(targetId).inserted else { continue }
-                        result.append(Relationship(
-                            kind: .dependency, source: type.id, target: targetId))
-                    }
-                }
+                collectDependencies(
+                    from: member, sourceType: type, resolver: resolver,
+                    seen: &seen, result: &result
+                )
             }
         }
         return result
+    }
+
+    private static func collectDependencies(
+        from member: Member,
+        sourceType type: TypeDeclaration,
+        resolver: TypeResolver,
+        seen: inout Set<String>,
+        result: inout [Relationship]
+    ) {
+        // Return type.
+        if let returnType = member.type {
+            appendDependencies(from: returnType, sourceId: type.id, resolver: resolver,
+                               seen: &seen, result: &result)
+        }
+
+        // Parameter types.
+        for param in member.parameters {
+            guard let paramType = param.type else { continue }
+            appendDependencies(from: paramType, sourceId: type.id, resolver: resolver,
+                               seen: &seen, result: &result)
+        }
+    }
+
+    private static func appendDependencies(
+        from typeRef: TypeReference,
+        sourceId: String,
+        resolver: TypeResolver,
+        seen: inout Set<String>,
+        result: inout [Relationship]
+    ) {
+        for refName in extractReferencedTypeNames(from: typeRef) {
+            guard !isPrimitive(refName) else { continue }
+            let targetId = resolver.resolveId(refName)
+            guard targetId != sourceId, seen.insert(targetId).inserted else { continue }
+            result.append(Relationship(kind: .dependency, source: sourceId, target: targetId))
+        }
     }
 
     // MARK: - External Types

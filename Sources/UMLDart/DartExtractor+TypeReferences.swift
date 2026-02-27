@@ -6,6 +6,21 @@ import UMLTreeSitter
 
 extension DartExtractor {
 
+    private func extractOptionalParameters(_ node: Node) -> [Parameter] {
+        var params: [Parameter] = []
+        for innerChild in node.children() {
+            guard let childType = innerChild.nodeType,
+                  childType == "default_formal_parameter"
+                    || childType == "formal_parameter"
+                    || childType == "normal_formal_parameter" else { continue }
+            if let parameter = extractDefaultFormalParameter(innerChild)
+                ?? extractFormalParameter(innerChild) {
+                params.append(parameter)
+            }
+        }
+        return params
+    }
+
     func extractFormalParameterList(_ node: Node) -> [Parameter] {
         var params: [Parameter] = []
         for child in node.children() {
@@ -16,17 +31,7 @@ extension DartExtractor {
             case "default_formal_parameter":
                 if let parameter = extractDefaultFormalParameter(child) { params.append(parameter) }
             case "optional_positional_formal_parameters", "optional_named_formal_parameters":
-                for innerChild in child.children() {
-                    if let childType = innerChild.nodeType,
-                       childType == "default_formal_parameter"
-                        || childType == "formal_parameter"
-                        || childType == "normal_formal_parameter" {
-                        if let parameter = extractDefaultFormalParameter(innerChild)
-                            ?? extractFormalParameter(innerChild) {
-                            params.append(parameter)
-                        }
-                    }
-                }
+                params.append(contentsOf: extractOptionalParameters(child))
             default:
                 break
             }
@@ -34,51 +39,58 @@ extension DartExtractor {
         return params
     }
 
+    private func extractFieldFormalParameter(_ fullText: String) -> Parameter? {
+        guard fullText.contains("this.") else { return nil }
+        let parts = fullText.components(separatedBy: "this.")
+        guard parts.count >= 2 else { return nil }
+        let afterThis = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        let paramName = afterThis
+            .components(separatedBy: CharacterSet.alphanumerics.inverted).first ?? afterThis
+        return Parameter(internalName: paramName, type: nil)
+    }
+
+    private func applyFormalParameterChild(
+        _ child: Node, childType: String,
+        paramType: inout TypeReference?, name: inout String, modifiers: inout [Modifier]
+    ) {
+        switch childType {
+        case "identifier":
+            let childText = text(child)
+            if paramType == nil && name.isEmpty {
+                name = childText
+            } else if !name.isEmpty && paramType == nil {
+                paramType = TypeReference(name: name)
+                name = childText
+            }
+        case "type_identifier", "generic_type", "function_type", "void_type":
+            paramType = extractTypeReference(child)
+        case "final_builtin":
+            modifiers.append(.final)
+        case "covariant":
+            modifiers.append(.covariant)
+        case "required":
+            modifiers.append(.required)
+        default:
+            if paramType == nil, let ref = extractTypeReference(child) {
+                paramType = ref
+            }
+        }
+    }
+
     private func extractFormalParameter(_ node: Node) -> Parameter? {
+        if let fieldParam = extractFieldFormalParameter(text(node)) {
+            return fieldParam
+        }
         var paramType: TypeReference?
         var name = ""
         var modifiers: [Modifier] = []
-
-        // Check for field formal parameter (this.name).
-        let fullText = text(node)
-        if fullText.contains("this.") {
-            let parts = fullText.components(separatedBy: "this.")
-            if parts.count >= 2 {
-                let afterThis = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                let paramName = afterThis
-                    .components(separatedBy: CharacterSet.alphanumerics.inverted).first ?? afterThis
-                return Parameter(internalName: paramName, type: nil)
-            }
-        }
-
         for child in node.children() {
             guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "identifier":
-                let childText = text(child)
-                if paramType == nil && name.isEmpty {
-                    // Could be either the type or the name. If there's only one identifier, it's the name.
-                    name = childText
-                } else if !name.isEmpty && paramType == nil {
-                    // Previous identifier was the type; this one is the name.
-                    paramType = TypeReference(name: name)
-                    name = childText
-                }
-            case "type_identifier", "generic_type", "function_type", "void_type":
-                paramType = extractTypeReference(child)
-            case "final_builtin":
-                modifiers.append(.final)
-            case "covariant":
-                modifiers.append(.covariant)
-            case "required":
-                modifiers.append(.required)
-            default:
-                if paramType == nil, let ref = extractTypeReference(child) {
-                    paramType = ref
-                }
-            }
+            applyFormalParameterChild(
+                child, childType: childType,
+                paramType: &paramType, name: &name, modifiers: &modifiers
+            )
         }
-
         guard !name.isEmpty else { return nil }
         return Parameter(internalName: name, type: paramType, modifiers: modifiers)
     }

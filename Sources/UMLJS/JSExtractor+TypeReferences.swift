@@ -150,56 +150,68 @@ extension JSExtractor {
 
     // MARK: - Type Reference Extraction
 
+    private static let passthroughNodeTypes: Set<String> = [
+        "predefined_type", "type_identifier", "identifier",
+        "union_type", "intersection_type", "function_type", "literal_type",
+        "tuple_type", "conditional_type", "index_type_query", "mapped_type",
+        "type_query", "object_type", "template_literal_type", "existential_type",
+        "nested_type_identifier", "member_expression", "this_type"
+    ]
+
     private func extractTypeReference(_ node: Node) -> TypeReference {
         guard let nodeType = node.nodeType else {
             return TypeReference(name: text(node))
         }
 
+        if Self.passthroughNodeTypes.contains(nodeType) {
+            return TypeReference(name: text(node))
+        }
+
         switch nodeType {
-        case "predefined_type", "type_identifier", "identifier",
-             "union_type", "intersection_type", "function_type", "literal_type",
-             "tuple_type", "conditional_type", "index_type_query", "mapped_type",
-             "type_query", "object_type", "template_literal_type", "existential_type",
-             "nested_type_identifier", "member_expression", "this_type":
-            return TypeReference(name: text(node))
-
         case "generic_type":
-            let nameNode = node.child(byFieldName: "name") ?? node.namedChildren().first
-            let name = nameNode.map { text($0) } ?? text(node)
-            var genericArgs: [TypeReference] = []
-            if let typeArgs = node.child(byFieldName: "type_arguments") ?? node.firstChild(withType: "type_arguments") {
-                for argChild in typeArgs.namedChildren() {
-                    genericArgs.append(extractTypeReference(argChild))
-                }
-            }
-            return TypeReference(name: name, genericArguments: genericArgs)
-
+            return extractGenericTypeReference(node)
         case "array_type":
-            if let elementType = node.namedChildren().first {
-                let inner = extractTypeReference(elementType)
-                return TypeReference(name: inner.name, genericArguments: inner.genericArguments, isArray: true)
-            }
-            return TypeReference(name: text(node), isArray: true)
-
-        case "parenthesized_type":
-            if let inner = node.namedChildren().first { return extractTypeReference(inner) }
-            return TypeReference(name: text(node))
-
-        case "readonly_type":
-            if let inner = node.namedChildren().first { return extractTypeReference(inner) }
-            return TypeReference(name: text(node))
-
+            return extractArrayTypeReference(node)
+        case "parenthesized_type", "readonly_type":
+            return extractWrappedTypeReference(node)
         case "flow_maybe_type":
-            if let inner = node.namedChildren().first {
-                var ref = extractTypeReference(inner)
-                ref.isOptional = true
-                return ref
-            }
-            return TypeReference(name: text(node), isOptional: true)
-
+            return extractOptionalTypeReference(node)
         default:
             return TypeReference(name: text(node))
         }
+    }
+
+    private func extractGenericTypeReference(_ node: Node) -> TypeReference {
+        let nameNode = node.child(byFieldName: "name") ?? node.namedChildren().first
+        let name = nameNode.map { text($0) } ?? text(node)
+        var genericArgs: [TypeReference] = []
+        if let typeArgs = node.child(byFieldName: "type_arguments")
+            ?? node.firstChild(withType: "type_arguments") {
+            genericArgs = typeArgs.namedChildren().map { extractTypeReference($0) }
+        }
+        return TypeReference(name: name, genericArguments: genericArgs)
+    }
+
+    private func extractArrayTypeReference(_ node: Node) -> TypeReference {
+        guard let elementType = node.namedChildren().first else {
+            return TypeReference(name: text(node), isArray: true)
+        }
+        let inner = extractTypeReference(elementType)
+        return TypeReference(name: inner.name, genericArguments: inner.genericArguments, isArray: true)
+    }
+
+    private func extractWrappedTypeReference(_ node: Node) -> TypeReference {
+        if let inner = node.namedChildren().first { return extractTypeReference(inner) }
+        return TypeReference(name: text(node))
+    }
+
+    private func extractOptionalTypeReference(_ node: Node) -> TypeReference {
+        guard let inner = node.namedChildren().first else {
+            return TypeReference(name: text(node), isOptional: true)
+        }
+        var ref = extractTypeReference(inner)
+        ref.isOptional = true
+        return ref
     }
 
     func extractTypeReferenceFromExpression(_ node: Node) -> TypeReference {
@@ -256,53 +268,59 @@ extension JSExtractor {
 
     // MARK: - Prototype Pattern Detection (JS only)
 
-    mutating func detectPrototypePatterns(_ root: Node) {
-        var prototypeAssignments: [(className: String, memberName: String, node: Node)] = []
+    private static let functionNodeTypes: Set<String> = [
+        "function_expression", "function", "arrow_function"
+    ]
 
+    mutating func detectPrototypePatterns(_ root: Node) {
+        let assignments = collectPrototypeAssignments(root)
+        for assignment in assignments {
+            applyPrototypeAssignment(assignment)
+        }
+    }
+
+    private func collectPrototypeAssignments(
+        _ root: Node
+    ) -> [(className: String, memberName: String, node: Node)] {
+        var results: [(className: String, memberName: String, node: Node)] = []
         for child in root.children() {
-            guard child.nodeType == "expression_statement" else { continue }
-            guard let expr = child.namedChildren().first, expr.nodeType == "assignment_expression" else { continue }
-            guard let leftNode = expr.child(byFieldName: "left"),
+            guard child.nodeType == "expression_statement",
+                  let expr = child.namedChildren().first,
+                  expr.nodeType == "assignment_expression",
+                  let leftNode = expr.child(byFieldName: "left"),
                   leftNode.nodeType == "member_expression" else { continue }
             let leftText = text(leftNode)
-            if let protoRange = leftText.range(of: ".prototype.") {
-                let className = String(leftText[leftText.startIndex..<protoRange.lowerBound])
-                let memberName = String(leftText[protoRange.upperBound...])
-                if !className.isEmpty && !memberName.isEmpty {
-                    prototypeAssignments.append((className, memberName, expr))
-                }
+            guard let protoRange = leftText.range(of: ".prototype.") else { continue }
+            let className = String(leftText[leftText.startIndex..<protoRange.lowerBound])
+            let memberName = String(leftText[protoRange.upperBound...])
+            if !className.isEmpty, !memberName.isEmpty {
+                results.append((className, memberName, expr))
             }
         }
+        return results
+    }
 
-        for assignment in prototypeAssignments {
-            ensureTypeExists(name: assignment.className)
-            let rightNode = assignment.node.child(byFieldName: "right")
-            var isFunction = false
-            var params: [Parameter] = []
-            var modifiers: [Modifier] = []
+    private mutating func applyPrototypeAssignment(
+        _ assignment: (className: String, memberName: String, node: Node)
+    ) {
+        ensureTypeExists(name: assignment.className)
+        let member = buildPrototypeMember(assignment)
+        guard let index = types.firstIndex(where: { $0.name == assignment.className }) else { return }
+        types[index].members.append(member)
+    }
 
-            if let rightNode = rightNode {
-                let rightType = rightNode.nodeType ?? ""
-                if rightType == "function_expression" || rightType == "function" || rightType == "arrow_function" {
-                    isFunction = true
-                    if rightNode.hasDirectChildText("async", in: context) { modifiers.append(.async) }
-                    if let paramsNode = rightNode.child(byFieldName: "parameters") {
-                        params = extractParameters(paramsNode)
-                    }
-                }
-            }
-
-            if let index = types.firstIndex(where: { $0.name == assignment.className }) {
-                if isFunction {
-                    types[index].members.append(Member(
-                        name: assignment.memberName, kind: .method,
-                        modifiers: modifiers, parameters: params
-                    ))
-                } else {
-                    types[index].members.append(Member(name: assignment.memberName, kind: .property))
-                }
-            }
+    private func buildPrototypeMember(
+        _ assignment: (className: String, memberName: String, node: Node)
+    ) -> Member {
+        guard let rightNode = assignment.node.child(byFieldName: "right"),
+              let rightType = rightNode.nodeType,
+              Self.functionNodeTypes.contains(rightType) else {
+            return Member(name: assignment.memberName, kind: .property)
         }
+        var modifiers: [Modifier] = []
+        if rightNode.hasDirectChildText("async", in: context) { modifiers.append(.async) }
+        let params = rightNode.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
+        return Member(name: assignment.memberName, kind: .method, modifiers: modifiers, parameters: params)
     }
 
     private mutating func ensureTypeExists(name: String) {

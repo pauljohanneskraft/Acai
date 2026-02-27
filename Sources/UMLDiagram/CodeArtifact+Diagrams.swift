@@ -307,93 +307,26 @@ extension CodeArtifact {
     ) -> SequenceDiagram {
         let diagramTitle = title ?? "\(entryPoint.typeName).\(entryPoint.methodName)()"
 
-        // Build lookup: type name → type declaration
-        let typesByName: [String: TypeDeclaration] = Dictionary(
-            types.map { ($0.name, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-
-        // Build lookup: (typeName, methodName) → Member
-        var membersByKey: [String: Member] = [:]
-        for type in types {
-            for member in type.members {
-                membersByKey["\(type.name).\(member.name)"] = member
-            }
-        }
+        let lookups = SequenceTraversalLookups(types: types)
 
         guard
-            let entryType   = typesByName[entryPoint.typeName],
-            let entryMember = membersByKey["\(entryPoint.typeName).\(entryPoint.methodName)"]
+            let entryType   = lookups.typesByName[entryPoint.typeName],
+            let entryMember = lookups.membersByKey["\(entryPoint.typeName).\(entryPoint.methodName)"]
         else {
             return SequenceDiagram(title: diagramTitle)
         }
 
-        // Ordered participant tracking (insertion order = diagram order)
-        var participantOrder: [String] = []
-        var participantMap: [String: SequenceDiagram.Participant] = [:]
-        var messages: [SequenceDiagram.Message] = []
-        var visited: Set<String> = []
-        var messageOrder = 0
+        var traversal = SequenceTraversal(
+            lookups: lookups, typeMapping: typeMapping,
+            maxDepth: maxDepth, participantKind: participantKind(for:)
+        )
+        traversal.run(entryType: entryType, entryMember: entryMember)
 
-        func addParticipant(typeName: String) {
-            guard participantMap[typeName] == nil else { return }
-            let decl = typesByName[typeName]
-            participantOrder.append(typeName)
-            participantMap[typeName] = SequenceDiagram.Participant(
-                id: decl?.id ?? typeName,
-                name: typeName,
-                kind: participantKind(for: decl)
-            )
-        }
-
-        // Recursive traversal
-        func traverse(callerTypeName: String, member: Member, depth: Int) {
-            let key = "\(callerTypeName).\(member.name)"
-            guard !visited.contains(key), depth < maxDepth else { return }
-            visited.insert(key)
-
-            for site in member.callSites {
-                let declaredType = site.receiverType ?? callerTypeName
-                // Resolve dynamic dispatch: if a mapping exists for the declared
-                // (abstract) type, use the concrete type for traversal and display.
-                let concreteType = typeMapping[declaredType] ?? declaredType
-                addParticipant(typeName: concreteType)
-
-                // Forward message: caller → callee (concrete)
-                messages.append(SequenceDiagram.Message(
-                    from: callerTypeName,
-                    to: concreteType,
-                    label: site.methodName,
-                    kind: .synchronous,
-                    order: messageOrder
-                ))
-                messageOrder += 1
-
-                // Recurse into callee if its implementation is available
-                if let calleeMember = membersByKey["\(concreteType).\(site.methodName)"] {
-                    traverse(callerTypeName: concreteType, member: calleeMember, depth: depth + 1)
-                }
-
-                // Return message: callee → caller
-                messages.append(SequenceDiagram.Message(
-                    from: concreteType,
-                    to: callerTypeName,
-                    label: nil,
-                    kind: .return,
-                    order: messageOrder
-                ))
-                messageOrder += 1
-            }
-        }
-
-        addParticipant(typeName: entryType.name)
-        traverse(callerTypeName: entryType.name, member: entryMember, depth: 0)
-
-        let orderedParticipants = participantOrder.compactMap { participantMap[$0] }
+        let orderedParticipants = traversal.participantOrder.compactMap { traversal.participantMap[$0] }
         return SequenceDiagram(
             title: diagramTitle,
             participants: orderedParticipants,
-            messages: messages
+            messages: traversal.messages
         )
     }
 
@@ -416,3 +349,91 @@ extension CodeArtifact {
         }
     }
 }
+
+// MARK: - Sequence Diagram Traversal Helpers
+
+/// Pre-built lookup tables for sequence diagram construction.
+private struct SequenceTraversalLookups {
+    let typesByName: [String: TypeDeclaration]
+    let membersByKey: [String: Member]
+
+    init(types: [TypeDeclaration]) {
+        typesByName = Dictionary(types.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        var members: [String: Member] = [:]
+        for type in types {
+            for member in type.members {
+                members["\(type.name).\(member.name)"] = member
+            }
+        }
+        membersByKey = members
+    }
+}
+
+/// Mutable state for recursive sequence diagram traversal.
+private struct SequenceTraversal {
+    let lookups: SequenceTraversalLookups
+    let typeMapping: [String: String]
+    let maxDepth: Int
+    let participantKind: (TypeDeclaration?) -> SequenceDiagram.Participant.Kind
+
+    var participantOrder: [String] = []
+    var participantMap: [String: SequenceDiagram.Participant] = [:]
+    var messages: [SequenceDiagram.Message] = []
+    private var visited: Set<String> = []
+    private var messageOrder = 0
+
+    init(
+        lookups: SequenceTraversalLookups,
+        typeMapping: [String: String],
+        maxDepth: Int,
+        participantKind: @escaping (TypeDeclaration?) -> SequenceDiagram.Participant.Kind
+    ) {
+        self.lookups = lookups
+        self.typeMapping = typeMapping
+        self.maxDepth = maxDepth
+        self.participantKind = participantKind
+    }
+
+    mutating func run(entryType: TypeDeclaration, entryMember: Member) {
+        addParticipant(typeName: entryType.name)
+        traverse(callerTypeName: entryType.name, member: entryMember, depth: 0)
+    }
+
+    private mutating func addParticipant(typeName: String) {
+        guard participantMap[typeName] == nil else { return }
+        let decl = lookups.typesByName[typeName]
+        participantOrder.append(typeName)
+        participantMap[typeName] = SequenceDiagram.Participant(
+            id: decl?.id ?? typeName,
+            name: typeName,
+            kind: participantKind(decl)
+        )
+    }
+
+    private mutating func traverse(callerTypeName: String, member: Member, depth: Int) {
+        let key = "\(callerTypeName).\(member.name)"
+        guard !visited.contains(key), depth < maxDepth else { return }
+        visited.insert(key)
+
+        for site in member.callSites {
+            let declaredType = site.receiverType ?? callerTypeName
+            let concreteType = typeMapping[declaredType] ?? declaredType
+            addParticipant(typeName: concreteType)
+
+            messages.append(SequenceDiagram.Message(
+                from: callerTypeName, to: concreteType,
+                label: site.methodName, kind: .synchronous, order: messageOrder
+            ))
+            messageOrder += 1
+
+            if let calleeMember = lookups.membersByKey["\(concreteType).\(site.methodName)"] {
+                traverse(callerTypeName: concreteType, member: calleeMember, depth: depth + 1)
+            }
+
+            messages.append(SequenceDiagram.Message(
+                from: concreteType, to: callerTypeName,
+                label: nil, kind: .return, order: messageOrder
+            ))
+            messageOrder += 1
+        }
+    }}

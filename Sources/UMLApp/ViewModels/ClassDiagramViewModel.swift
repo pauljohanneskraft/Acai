@@ -58,12 +58,26 @@ final class ClassDiagramViewModel: ObservableObject {
 
         // Build edges, filtering by configuration.
         let typeNames = Set(resolved.types.map(\.name))
-        edges = resolved.relationships.compactMap { rel in
-            guard typeNames.contains(rel.source), typeNames.contains(rel.target) else { return nil }
-            guard rel.source != rel.target else { return nil }
-            guard configuration.showRelationships else { return nil }
+        edges = buildEdges(from: resolved.relationships, typeNames: typeNames)
 
-            // Filter by relationship kind.
+        // Estimate sizes and run initial layout.
+        for node in nodes {
+            nodeSizes[node.id] = estimateSize(for: node)
+        }
+
+        applyOrPerformLayout()
+    }
+
+    private func buildEdges(
+        from relationships: [Relationship],
+        typeNames: Set<String>
+    ) -> [DiagramEdge] {
+        guard configuration.showRelationships else { return [] }
+        return relationships.compactMap { rel in
+            guard typeNames.contains(rel.source),
+                  typeNames.contains(rel.target),
+                  rel.source != rel.target else { return nil }
+
             switch rel.kind {
             case .inheritance, .conformance:
                 guard configuration.showInheritance else { return nil }
@@ -77,22 +91,14 @@ final class ClassDiagramViewModel: ObservableObject {
 
             return DiagramEdge(from: rel)
         }
+    }
 
-        // Filter nodes that have no properties/methods if configuration hides them.
-        // (We still show all nodes, but filter displayed members via configuration.)
-
-        // Estimate sizes and run initial layout.
-        for node in nodes {
-            nodeSizes[node.id] = estimateSize(for: node)
-        }
-
+    private func applyOrPerformLayout() {
         if let restored = restoredPositions, !restored.isEmpty {
             nodePositions = restored
-            // Still need layout for nodes that don't have stored positions.
             let missing = nodes.filter { restored[$0.id] == nil }
             if !missing.isEmpty {
                 performLayout()
-                // Overlay restored positions.
                 for (id, pos) in restored {
                     nodePositions[id] = pos
                 }

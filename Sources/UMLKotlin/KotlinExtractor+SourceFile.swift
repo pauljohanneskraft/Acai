@@ -71,23 +71,30 @@ extension KotlinExtractor {
 
     // MARK: - Modifiers
 
-    // Lookup tables for modifier extraction (reduces cyclomatic complexity).
+    // Lookup tables for modifier extraction.
     private static let visibilityMap: [String: AccessLevel] = [
         "public": .public, "private": .private,
         "protected": .protected, "internal": .internal
     ]
-    private static let classModifierMap: [String: Modifier] = [
-        "data": .data, "sealed": .sealed, "abstract": .abstract,
-        "inner": .inner, "value": .inline
-    ]
-    private static let memberModifierMap: [String: Modifier] = [
-        "override": .override, "lateinit": .lazy, "const": .const
-    ]
-    private static let functionModifierMap: [String: Modifier] = [
-        "suspend": .suspend, "inline": .inline
-    ]
-    private static let inheritanceModifierMap: [String: Modifier] = [
-        "open": .open, "final": .final, "abstract": .abstract
+
+    /// Unified modifier map keyed by node type, then by keyword text.
+    private static let modifierMapByNodeType: [String: [String: Modifier]] = [
+        "class_modifier": [
+            "data": .data, "sealed": .sealed, "abstract": .abstract,
+            "inner": .inner, "value": .inline
+        ],
+        "member_modifier": [
+            "override": .override, "lateinit": .lazy, "const": .const
+        ],
+        "property_modifier": [
+            "const": .const
+        ],
+        "function_modifier": [
+            "suspend": .suspend, "inline": .inline
+        ],
+        "inheritance_modifier": [
+            "open": .open, "final": .final, "abstract": .abstract
+        ]
     ]
 
     /// Extracts modifier information from a `modifiers` node.
@@ -108,26 +115,17 @@ extension KotlinExtractor {
         var annotations: [String] = []
 
         for child in node.namedChildren() {
+            guard let childType = child.nodeType else { continue }
             let modifierText = text(child)
-            switch child.nodeType {
-            case "visibility_modifier":
+            if childType == "visibility_modifier" {
                 access = Self.visibilityMap[modifierText]
-            case "class_modifier":
-                Self.classModifierMap[modifierText].map { modifiers.append($0) }
-            case "member_modifier":
-                Self.memberModifierMap[modifierText].map { modifiers.append($0) }
-            case "property_modifier":
-                if modifierText == "const" { modifiers.append(.const) }
-            case "function_modifier":
-                Self.functionModifierMap[modifierText].map { modifiers.append($0) }
-            case "inheritance_modifier":
-                Self.inheritanceModifierMap[modifierText].map { modifiers.append($0) }
-            case "annotation":
+            } else if childType == "annotation" {
                 annotations.append(
                     modifierText.hasPrefix("@") ? modifierText : "@\(modifierText)"
                 )
-            default:
-                break
+            } else if let categoryMap = Self.modifierMapByNodeType[childType],
+                      let modifier = categoryMap[modifierText] {
+                modifiers.append(modifier)
             }
         }
         return ModifierInfo(

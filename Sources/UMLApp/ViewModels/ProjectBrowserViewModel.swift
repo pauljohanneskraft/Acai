@@ -20,7 +20,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         self.store = store
     }
 
-    private func persistChanges() {
+    func persistChanges() {
         store.save()
         objectWillChange.send()
     }
@@ -213,138 +213,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func customDiagram(for diagramID: UUID) -> CustomDiagram? {
         store.customDiagrams[diagramID]
-    }
-
-    /// Convert a stored diagram to a custom diagram.
-    func saveAsCustomDiagram(
-        storedDiagramID: UUID,
-        livePositions: [String: CGPoint] = [:],
-        liveScale: CGFloat? = nil,
-        liveOffset: CGPoint? = nil
-    ) {
-        guard let stored = storedDiagram(for: storedDiagramID),
-              let pIdx = store.projects.firstIndex(where: { $0.storedDiagramIDs.contains(storedDiagramID) }),
-              let codebase = codebase(for: stored.codebaseID),
-              let artifact = artifact(for: stored.codebaseID) else { return }
-
-        var resolved = artifact.resolvingExtensions()
-        if stored.configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
-            resolved = resolved.filteringGeneratedDartTypes()
-        }
-        var customNodes: [CustomDiagramNode] = []
-        var customEdges: [CustomDiagramEdge] = []
-        var nameToUUID: [String: UUID] = [:]
-
-        for type in resolved.types {
-            let nodeID = UUID()
-            nameToUUID[type.name] = nodeID
-            let livePos = livePositions[type.name]
-            let storedPos = stored.nodePositions[type.name]
-            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? 0
-            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 0
-            let customNode = CustomDiagramNode(
-                id: nodeID,
-                name: type.name,
-                content: .type(TypeNodeContent(
-                    typeKind: type.kind,
-                    properties: type.members
-                        .filter { $0.kind == .property || $0.kind == .subscript }
-                        .map {
-                            CustomMember(
-                                name: $0.name,
-                                type: $0.type?.name ?? "",
-                                accessLevel: $0.accessLevel ?? .internal,
-                                isStatic: $0.modifiers.contains(.static),
-                                isAbstract: $0.modifiers.contains(.abstract)
-                            )
-                        },
-                    methods: type.members
-                        .filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
-                        .map {
-                            CustomMember(
-                                name: $0.name,
-                                type: $0.type?.name ?? "",
-                                accessLevel: $0.accessLevel ?? .internal,
-                                isStatic: $0.modifiers.contains(.static),
-                                isAbstract: $0.modifiers.contains(.abstract)
-                            )
-                        },
-                    enumCases: type.enumCases.map { CustomEnumCase(name: $0.name) },
-                    genericParameters: type.genericParameters.map(\.name)
-                )),
-                positionX: Double(x),
-                positionY: Double(y)
-            )
-            customNodes.append(customNode)
-        }
-
-        let typeNames = Set(resolved.types.map(\.name))
-        for rel in resolved.relationships
-            where typeNames.contains(rel.source)
-                && typeNames.contains(rel.target)
-                && rel.source != rel.target {
-            if let srcID = nameToUUID[rel.source], let tgtID = nameToUUID[rel.target] {
-                customEdges.append(CustomDiagramEdge(sourceNodeID: srcID, targetNodeID: tgtID, kind: rel.kind))
-            }
-        }
-
-        let scale = liveScale.map(Double.init) ?? stored.canvasScale
-        let offsetX = liveOffset.map { Double($0.x) } ?? stored.canvasOffsetX
-        let offsetY = liveOffset.map { Double($0.y) } ?? stored.canvasOffsetY
-
-        var custom = CustomDiagram(
-            name: stored.name + " (Custom)",
-            diagramType: stored.type,
-            ownerProjectID: store.projects[pIdx].id,
-            nodes: customNodes,
-            edges: customEdges,
-            canvasScale: scale,
-            canvasOffsetX: offsetX,
-            canvasOffsetY: offsetY
-        )
-        store.projects[pIdx].customDiagramIDs.append(custom.id)
-        store.saveCustomDiagram(custom)
-        persistChanges()
-        selection = .customDiagram(custom.id)
-    }
-
-    // MARK: - DOT Export
-
-    func generateDOT(for codebaseID: UUID) -> String {
-        guard let codebase = codebase(for: codebaseID) else { return "digraph UML { }" }
-        let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
-
-        if var artifact = artifact(for: codebaseID) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return DOTGenerator().generate(from: artifact)
-        }
-
-        if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return DOTGenerator().generate(from: artifact)
-        }
-
-        return "digraph UML { label=\"No analysis available\" }"
-    }
-
-    func exportDOT(for codebaseID: UUID) {
-        let dot = generateDOT(for: codebaseID)
-        #if os(macOS)
-        let panel = NSSavePanel()
-        panel.allowedFileTypes = ["dot"]
-        panel.nameFieldStringValue = "\(codebase(for: codebaseID)?.name ?? "diagram").dot"
-        if panel.runModal() == .OK, let url = panel.url {
-            do {
-                try dot.data(using: .utf8)?.write(to: url, options: .atomic)
-            } catch {
-                print("Export failed: \(error)")
-            }
-        }
-        #endif
     }
 
     // MARK: - Helpers

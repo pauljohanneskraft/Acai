@@ -161,31 +161,38 @@ struct SugiyamaLayoutEngine: Sendable {
     ) -> [String: CGPoint] {
         guard !components.isEmpty else { return [:] }
 
-        // Group components by directory.
-        var groupedComponents: [(group: String, items: [(bounds: CGSize, positions: [String: CGPoint])])] = []
+        let groupedComponents = groupAndSort(components)
+        let groupBlocks = buildGroupBlocks(groupedComponents, nodeSizes: nodeSizes)
+        return placeBlocksInGrid(groupBlocks)
+    }
+
+    private func groupAndSort(
+        _ components: [(bounds: CGSize, positions: [String: CGPoint], group: String?)]
+    ) -> [(group: String, items: [(bounds: CGSize, positions: [String: CGPoint])])] {
+        var grouped: [(group: String, items: [(bounds: CGSize, positions: [String: CGPoint])])] = []
         var seen: [String: Int] = [:]
 
         for comp in components {
             let group = comp.group ?? "_ungrouped"
             if let idx = seen[group] {
-                groupedComponents[idx].items.append((bounds: comp.bounds, positions: comp.positions))
+                grouped[idx].items.append((bounds: comp.bounds, positions: comp.positions))
             } else {
-                seen[group] = groupedComponents.count
-                groupedComponents.append((group: group, items: [(bounds: comp.bounds, positions: comp.positions)]))
+                seen[group] = grouped.count
+                grouped.append((group: group, items: [(bounds: comp.bounds, positions: comp.positions)]))
             }
         }
 
-        // Sort groups: larger groups first (by total node count).
-        groupedComponents.sort { a, b in
-            let countA = a.items.reduce(0) { $0 + $1.positions.count }
-            let countB = b.items.reduce(0) { $0 + $1.positions.count }
-            return countA > countB
+        grouped.sort { a, b in
+            a.items.reduce(0) { $0 + $1.positions.count } > b.items.reduce(0) { $0 + $1.positions.count }
         }
+        return grouped
+    }
 
-        // Build a block for each group (vertical stack of its components).
-        var groupBlocks: [(size: CGSize, positions: [String: CGPoint])] = []
-
-        for group in groupedComponents {
+    private func buildGroupBlocks(
+        _ groupedComponents: [(group: String, items: [(bounds: CGSize, positions: [String: CGPoint])])],
+        nodeSizes: [String: CGSize]
+    ) -> [(size: CGSize, positions: [String: CGPoint])] {
+        groupedComponents.map { group in
             var blockPositions: [String: CGPoint] = [:]
             var currentY: CGFloat = 0
 
@@ -198,10 +205,13 @@ struct SugiyamaLayoutEngine: Sendable {
             }
 
             let blockBounds = computeBounds(positions: blockPositions, nodeSizes: nodeSizes)
-            groupBlocks.append((size: blockBounds, positions: blockPositions))
+            return (size: blockBounds, positions: blockPositions)
         }
+    }
 
-        // Place blocks in a grid.
+    private func placeBlocksInGrid(
+        _ groupBlocks: [(size: CGSize, positions: [String: CGPoint])]
+    ) -> [String: CGPoint] {
         var finalPositions: [String: CGPoint] = [:]
         let maxCols = max(1, Int(ceil(sqrt(Double(groupBlocks.count)))))
 

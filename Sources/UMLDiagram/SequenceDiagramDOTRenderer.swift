@@ -37,7 +37,27 @@ public struct SequenceDiagramDOTRenderer: Sendable {
         }
         out += graphAttributes()
 
-        // Participant header nodes
+        renderParticipantHeaders(participants, into: &out)
+
+        guard steps > 0 else {
+            out += "}\n"
+            return out
+        }
+
+        renderStepNodes(participants: participants, steps: steps, into: &out)
+        renderLifelines(participants: participants, steps: steps, into: &out)
+        renderMessages(messages, into: &out)
+
+        out += "}\n"
+        return out
+    }
+
+    // MARK: - Render Sections
+
+    private func renderParticipantHeaders(
+        _ participants: [SequenceDiagram.Participant],
+        into out: inout String
+    ) {
         out += "  // Participants\n"
         for p in participants {
             let nodeId = participantHeaderID(p.id)
@@ -48,19 +68,18 @@ public struct SequenceDiagramDOTRenderer: Sendable {
                    "fillcolor=\"\(theme.nodeFillColor)\" color=\"\(theme.nodeBorderColor)\" " +
                    "fontcolor=\"\(theme.fontColor)\" label=\"\(label)\"];\n"
         }
-        // All headers on the same rank
         if !participants.isEmpty {
             out += "  { rank=same; "
             out += participants.map { participantHeaderID($0.id) }.joined(separator: "; ")
             out += "; }\n\n"
         }
+    }
 
-        guard steps > 0 else {
-            out += "}\n"
-            return out
-        }
-
-        // Step nodes (invisible) + same-rank groups
+    private func renderStepNodes(
+        participants: [SequenceDiagram.Participant],
+        steps: Int,
+        into out: inout String
+    ) {
         out += "  // Lifeline step nodes\n"
         out += "  node [shape=none label=\"\" width=0 height=0];\n"
         for step in 0..<steps {
@@ -71,8 +90,13 @@ public struct SequenceDiagramDOTRenderer: Sendable {
             out += participants.map { stepNodeID($0.id, step: step) }.joined(separator: "; ")
             out += "; }\n"
         }
+    }
 
-        // Invisible lifeline edges (connect header → step 0 → step 1 → …)
+    private func renderLifelines(
+        participants: [SequenceDiagram.Participant],
+        steps: Int,
+        into out: inout String
+    ) {
         out += "\n  // Lifelines\n"
         for p in participants {
             let chain = [participantHeaderID(p.id)]
@@ -81,23 +105,19 @@ public struct SequenceDiagramDOTRenderer: Sendable {
                 out += "  \(a) -> \(b) [style=invis];\n"
             }
         }
+    }
 
-        // Message edges
+    private func renderMessages(_ messages: [SequenceDiagram.Message], into out: inout String) {
         out += "\n  // Messages\n"
         out += "  node [shape=none label=\"\"];\n"
         for (step, msg) in messages.enumerated() {
             let from = stepNodeID(msg.from, step: step)
             let to = stepNodeID(msg.to, step: step)
-            let color = theme.edgeColor
-            let font = theme.fontColor
-            var attrs = "color=\"\(color)\" fontcolor=\"\(font)\""
+            var attrs = "color=\"\(theme.edgeColor)\" fontcolor=\"\(theme.fontColor)\""
             if let lbl = msg.label { attrs += " label=\"\(lbl.dotEscaped)\"" }
             attrs += " " + arrowAttributes(for: msg.kind)
             out += "  \(from) -> \(to) [\(attrs)];\n"
         }
-
-        out += "}\n"
-        return out
     }
 
     // MARK: - Helpers

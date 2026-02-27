@@ -140,22 +140,18 @@ extension JavaExtractor {
             }
         }
 
-        var members: [Member] = []
-        var nestedTypes: [TypeDeclaration] = []
-        var enumCases: [EnumCase] = []
+        var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractClassBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes,
-                enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
-            )
+            extractClassBody(bodyNode, context: &bodyContext)
         }
 
         return TypeDeclaration(
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .class,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
-            members: members, enumCases: enumCases, nestedTypes: nestedTypes,
+            members: bodyContext.members, enumCases: bodyContext.enumCases,
+            nestedTypes: bodyContext.nestedTypes,
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
@@ -180,22 +176,18 @@ extension JavaExtractor {
             }
         }
 
-        var members: [Member] = []
-        var nestedTypes: [TypeDeclaration] = []
-        var enumCases: [EnumCase] = []
+        var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractInterfaceBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes,
-                enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
-            )
+            extractInterfaceBody(bodyNode, context: &bodyContext)
         }
 
         return TypeDeclaration(
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .interface,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
-            members: members, enumCases: enumCases, nestedTypes: nestedTypes,
+            members: bodyContext.members, enumCases: bodyContext.enumCases,
+            nestedTypes: bodyContext.nestedTypes,
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
@@ -219,23 +211,18 @@ extension JavaExtractor {
             }
         }
 
-        var enumCases: [EnumCase] = []
-        var members: [Member] = []
-        var nestedTypes: [TypeDeclaration] = []
+        var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractEnumBody(
-                bodyNode, enumCases: &enumCases, members: &members,
-                nestedTypes: &nestedTypes, parentQualifiedName: qualifiedTypeName
-            )
+            extractEnumBody(bodyNode, context: &bodyContext)
         }
 
         return TypeDeclaration(
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .enum,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            inheritedTypes: inheritedTypes, members: members, enumCases: enumCases,
-            nestedTypes: nestedTypes, annotations: modifierInfo.annotations,
-            namespace: currentNamespace, location: nodeLoc
+            inheritedTypes: inheritedTypes, members: bodyContext.members,
+            enumCases: bodyContext.enumCases, nestedTypes: bodyContext.nestedTypes,
+            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -259,30 +246,26 @@ extension JavaExtractor {
             }
         }
 
-        var members: [Member] = []
+        var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
         if let paramsNode = node.child(byFieldName: "parameters") {
             for component in extractRecordComponents(paramsNode) {
-                members.append(Member(
+                bodyContext.members.append(Member(
                     name: component.internalName, kind: .property,
                     accessLevel: .public, type: component.type, location: nodeLoc
                 ))
             }
         }
 
-        var nestedTypes: [TypeDeclaration] = []
-        var enumCases: [EnumCase] = []
         if let bodyNode = node.child(byFieldName: "body") {
-            extractClassBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes,
-                enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
-            )
+            extractClassBody(bodyNode, context: &bodyContext)
         }
 
         return TypeDeclaration(
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .record,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
-            members: members, enumCases: enumCases, nestedTypes: nestedTypes,
+            members: bodyContext.members, enumCases: bodyContext.enumCases,
+            nestedTypes: bodyContext.nestedTypes,
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
@@ -307,20 +290,16 @@ extension JavaExtractor {
         let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
-        var members: [Member] = []
-        var nestedTypes: [TypeDeclaration] = []
+        var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractAnnotationTypeBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes,
-                parentQualifiedName: qualifiedTypeName
-            )
+            extractAnnotationTypeBody(bodyNode, context: &bodyContext)
         }
 
         return TypeDeclaration(
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .annotation,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            members: members, nestedTypes: nestedTypes,
+            members: bodyContext.members, nestedTypes: bodyContext.nestedTypes,
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }

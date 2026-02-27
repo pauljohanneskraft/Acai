@@ -95,53 +95,36 @@ struct RelationshipEdgeView: View {
 
         guard abs(dx) > 0.001 || abs(dy) > 0.001 else { return from }
 
-        var tMin: CGFloat = .greatestFiniteMagnitude
+        let noHit: CGFloat = .greatestFiniteMagnitude
+        let yRange = rect.minY...rect.maxY
+        let xRange = rect.minX...rect.maxX
 
-        // Check intersection with each edge of the rectangle.
-        // Right edge
-        if dx != 0 {
-            let t = (rect.maxX - from.x) / dx
-            if t > 0 {
-                let y = from.y + t * dy
-                if y >= rect.minY && y <= rect.maxY {
-                    tMin = min(tMin, t)
-                }
-            }
-        }
-        // Left edge
-        if dx != 0 {
-            let t = (rect.minX - from.x) / dx
-            if t > 0 {
-                let y = from.y + t * dy
-                if y >= rect.minY && y <= rect.maxY {
-                    tMin = min(tMin, t)
-                }
-            }
-        }
-        // Bottom edge
-        if dy != 0 {
-            let t = (rect.maxY - from.y) / dy
-            if t > 0 {
-                let x = from.x + t * dx
-                if x >= rect.minX && x <= rect.maxX {
-                    tMin = min(tMin, t)
-                }
-            }
-        }
-        // Top edge
-        if dy != 0 {
-            let t = (rect.minY - from.y) / dy
-            if t > 0 {
-                let x = from.x + t * dx
-                if x >= rect.minX && x <= rect.maxX {
-                    tMin = min(tMin, t)
-                }
-            }
-        }
+        let yCross = (delta: dy, origin: from.y, range: yRange)
+        let xCross = (delta: dx, origin: from.x, range: xRange)
 
-        if tMin < .greatestFiniteMagnitude {
+        let candidatesT: [CGFloat] = [
+            Self.edgeT(delta: dx, from: from.x, edge: rect.maxX, cross: yCross),
+            Self.edgeT(delta: dx, from: from.x, edge: rect.minX, cross: yCross),
+            Self.edgeT(delta: dy, from: from.y, edge: rect.maxY, cross: xCross),
+            Self.edgeT(delta: dy, from: from.y, edge: rect.minY, cross: xCross)
+        ]
+
+        let tMin = candidatesT.filter { $0 > 0 }.min() ?? noHit
+        if tMin < noHit {
             return CGPoint(x: from.x + tMin * dx, y: from.y + tMin * dy)
         }
         return from
+    }
+
+    /// Parametric t for ray intersection with one rectangle edge; returns `.greatestFiniteMagnitude` on miss.
+    private static func edgeT(
+        delta: CGFloat, from: CGFloat, edge: CGFloat,
+        cross: (delta: CGFloat, origin: CGFloat, range: ClosedRange<CGFloat>)
+    ) -> CGFloat {
+        guard delta != 0 else { return .greatestFiniteMagnitude }
+        let t = (edge - from) / delta
+        guard t > 0 else { return .greatestFiniteMagnitude }
+        let crossValue = cross.origin + t * cross.delta
+        return cross.range.contains(crossValue) ? t : .greatestFiniteMagnitude
     }
 }

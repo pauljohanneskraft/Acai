@@ -97,25 +97,25 @@ extension JavaExtractor {
         if let value { array.append(value) }
     }
 
+    /// Bundles the mutable accumulator state passed through body extraction.
+    struct BodyExtractionContext {
+        var members: [Member] = []
+        var nestedTypes: [TypeDeclaration] = []
+        var enumCases: [EnumCase] = []
+        let parentQualifiedName: String
+        var knownProperties: [String: String] = [:]
+    }
+
     /// Iterates over body children, dispatching each to the appropriate handler via the dispatch table.
     private mutating func extractBodyMembers(
         _ node: Node,
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        enumCases: inout [EnumCase],
-        parentQualifiedName: String,
-        dispatch: [String: BodyChildRole],
-        knownProperties: [String: String] = [:]
+        context: inout BodyExtractionContext,
+        dispatch: [String: BodyChildRole]
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType,
                   let role = dispatch[nodeType] else { continue }
-            dispatchBodyChild(
-                role, child: child, nodeType: nodeType,
-                members: &members, nestedTypes: &nestedTypes,
-                enumCases: &enumCases, parentQualifiedName: parentQualifiedName,
-                knownProperties: knownProperties
-            )
+            dispatchBodyChild(role, child: child, nodeType: nodeType, context: &context)
         }
     }
 
@@ -124,30 +124,29 @@ extension JavaExtractor {
         _ role: BodyChildRole,
         child: Node,
         nodeType: String,
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        enumCases: inout [EnumCase],
-        parentQualifiedName: String,
-        knownProperties: [String: String]
+        context: inout BodyExtractionContext
     ) {
         switch role {
         case .method:
-            appendIfPresent(extractMethodDeclaration(child, knownProperties: knownProperties), to: &members)
-        case .constructor:
-            appendIfPresent(extractConstructorDeclaration(child, knownProperties: knownProperties), to: &members)
-        case .field:
-            members.append(contentsOf: extractFieldDeclaration(child))
-        case .nestedType:
-            appendIfPresent(extractNestedTypeFromChild(child, nodeType: nodeType), to: &nestedTypes)
-        case .enumConstant:
-            appendIfPresent(extractEnumConstant(child), to: &enumCases)
-        case .enumBodyDeclarations:
-            extractClassBody(
-                child, members: &members, nestedTypes: &nestedTypes,
-                enumCases: &enumCases, parentQualifiedName: parentQualifiedName
+            appendIfPresent(
+                extractMethodDeclaration(child, knownProperties: context.knownProperties),
+                to: &context.members
             )
+        case .constructor:
+            appendIfPresent(
+                extractConstructorDeclaration(child, knownProperties: context.knownProperties),
+                to: &context.members
+            )
+        case .field:
+            context.members.append(contentsOf: extractFieldDeclaration(child))
+        case .nestedType:
+            appendIfPresent(extractNestedTypeFromChild(child, nodeType: nodeType), to: &context.nestedTypes)
+        case .enumConstant:
+            appendIfPresent(extractEnumConstant(child), to: &context.enumCases)
+        case .enumBodyDeclarations:
+            extractClassBody(child, context: &context)
         case .annotationTypeElement:
-            appendIfPresent(extractAnnotationTypeElement(child), to: &members)
+            appendIfPresent(extractAnnotationTypeElement(child), to: &context.members)
         }
     }
 
@@ -155,59 +154,31 @@ extension JavaExtractor {
 
     mutating func extractClassBody(
         _ node: Node,
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        enumCases: inout [EnumCase],
-        parentQualifiedName: String
+        context: inout BodyExtractionContext
     ) {
-        let knownProperties = buildPropertyMap(from: members, node: node)
-        extractBodyMembers(
-            node, members: &members, nestedTypes: &nestedTypes,
-            enumCases: &enumCases, parentQualifiedName: parentQualifiedName,
-            dispatch: Self.classBodyDispatch, knownProperties: knownProperties
-        )
+        context.knownProperties = buildPropertyMap(from: context.members, node: node)
+        extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
     }
 
     mutating func extractInterfaceBody(
         _ node: Node,
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        enumCases: inout [EnumCase],
-        parentQualifiedName: String
+        context: inout BodyExtractionContext
     ) {
-        extractBodyMembers(
-            node, members: &members, nestedTypes: &nestedTypes,
-            enumCases: &enumCases, parentQualifiedName: parentQualifiedName,
-            dispatch: Self.interfaceBodyDispatch
-        )
+        extractBodyMembers(node, context: &context, dispatch: Self.interfaceBodyDispatch)
     }
 
     mutating func extractEnumBody(
         _ node: Node,
-        enumCases: inout [EnumCase],
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        parentQualifiedName: String
+        context: inout BodyExtractionContext
     ) {
-        extractBodyMembers(
-            node, members: &members, nestedTypes: &nestedTypes,
-            enumCases: &enumCases, parentQualifiedName: parentQualifiedName,
-            dispatch: Self.enumBodyDispatch
-        )
+        extractBodyMembers(node, context: &context, dispatch: Self.enumBodyDispatch)
     }
 
     mutating func extractAnnotationTypeBody(
         _ node: Node,
-        members: inout [Member],
-        nestedTypes: inout [TypeDeclaration],
-        parentQualifiedName: String
+        context: inout BodyExtractionContext
     ) {
-        var enumCases: [EnumCase] = []
-        extractBodyMembers(
-            node, members: &members, nestedTypes: &nestedTypes,
-            enumCases: &enumCases, parentQualifiedName: parentQualifiedName,
-            dispatch: Self.annotationTypeBodyDispatch
-        )
+        extractBodyMembers(node, context: &context, dispatch: Self.annotationTypeBodyDispatch)
     }
 
     private func extractAnnotationTypeElement(_ node: Node) -> Member? {

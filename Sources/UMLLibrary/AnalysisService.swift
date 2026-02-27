@@ -83,48 +83,8 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            let codeParser = parser(for: spec.language)
-            let exts = Set(codeParser.fileExtensions)
-
-            var seenURLs: Set<URL> = []
-            let files = spec.sourceDirs
-                .flatMap { FileManager.default.fileURLs(in: $0, withExtensions: exts) }
-                .filter { seenURLs.insert($0).inserted }
-
-            guard !files.isEmpty else { continue }
-
-            print("Parsing \(files.count) \(spec.language.rawValue) file(s)…")
-
-            var artifact = CodeArtifact(
-                metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
-            )
-
-            for file in files {
-                let relativePath: String
-                if file.path.hasPrefix(rootURL.path) {
-                    relativePath = String(file.path.dropFirst(rootURL.path.count))
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                } else {
-                    relativePath = file.lastPathComponent
-                }
-
-                do {
-                    let source = try String(contentsOf: file, encoding: .utf8)
-                    let parsed = codeParser.parse(source: source, fileName: relativePath)
-                    artifact = artifact.merging(with: parsed)
-                } catch {
-                    print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
-                }
-            }
-
-            if spec.language == .swift {
-                artifact = artifact.resolvingExtensions()
-            }
-
-            if let existing = combinedArtifact {
-                combinedArtifact = existing.merging(with: artifact)
-            } else {
-                combinedArtifact = artifact
+            if let artifact = parseSpec(spec, rootURL: rootURL) {
+                combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
 
@@ -132,6 +92,44 @@ public struct AnalysisService: Sendable {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
         return result
+    }
+
+    /// Parses all files for a single language spec and returns the combined artifact.
+    private func parseSpec(
+        _ spec: SourceSpec,
+        rootURL: URL
+    ) -> CodeArtifact? {
+        let codeParser = parser(for: spec.language)
+        let exts = Set(codeParser.fileExtensions)
+
+        var seenURLs: Set<URL> = []
+        let files = spec.sourceDirs
+            .flatMap { FileManager.default.fileURLs(in: $0, withExtensions: exts) }
+            .filter { seenURLs.insert($0).inserted }
+
+        guard !files.isEmpty else { return nil }
+
+        print("Parsing \(files.count) \(spec.language.rawValue) file(s)…")
+
+        var artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
+        )
+
+        for file in files {
+            let relativePath = file.relativePath(from: rootURL)
+            do {
+                let source = try String(contentsOf: file, encoding: .utf8)
+                let parsed = codeParser.parse(source: source, fileName: relativePath)
+                artifact = artifact.merging(with: parsed)
+            } catch {
+                print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
+            }
+        }
+
+        if spec.language == .swift {
+            artifact = artifact.resolvingExtensions()
+        }
+        return artifact
     }
 
     // MARK: - Single-Directory Analysis
@@ -168,3 +166,13 @@ public struct AnalysisService: Sendable {
         return language == .swift ? combined.resolvingExtensions() : combined
     }
 }
+
+extension URL {
+    /// Returns a path relative to `base`, or the last path component if unrelated.
+    func relativePath(from base: URL) -> String {
+        if path.hasPrefix(base.path) {
+            return String(path.dropFirst(base.path.count))
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+        return lastPathComponent
+    }}
