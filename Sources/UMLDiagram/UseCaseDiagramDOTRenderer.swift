@@ -46,9 +46,8 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
             let fill = theme.nodeFillColor
             let border = theme.nodeBorderColor
             let font = theme.fontColor
-            let fs = fontSize
             let label = "<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">" +
-                        "<TR><TD><FONT POINT-SIZE=\"\(fs - 2)\" COLOR=\"\(font)\">" +
+                        "<TR><TD><FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">" +
                         "&lt;&lt;\(stereotype)&gt;&gt;</FONT></TD></TR>" +
                         "<TR><TD><FONT COLOR=\"\(font)\">\(actor.name.dotHTMLEscaped)</FONT></TD></TR>" +
                         "</TABLE>"

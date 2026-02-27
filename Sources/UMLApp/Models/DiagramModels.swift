@@ -15,19 +15,40 @@ struct DiagramNode: Identifiable, Sendable {
     /// The directory containing this type's source file (used for grouping).
     let directoryGroup: String?
 
-    init(from type: TypeDeclaration) {
+    init(from type: TypeDeclaration, configuration: DiagramConfiguration? = nil) {
         self.id = type.name
         self.name = type.name
         self.kind = type.kind
         self.stereotype = UMLMemberFormatting.stereotypeString(for: type.kind)
         self.genericParameters = type.genericParameters.map(\.name)
 
+        let config = configuration ?? DiagramConfiguration()
+        let accessFilter = config.minimumAccessLevel
+
         let props = type.members.filter { $0.kind == .property || $0.kind == .subscript }
         let meths = type.members.filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
 
-        self.properties = props.map { DiagramMember(from: $0, isMethod: false) }
-        self.methods = meths.map { DiagramMember(from: $0, isMethod: true) }
-        self.enumCases = type.enumCases.map { DiagramEnumCase(from: $0) }
+        if config.showProperties {
+            self.properties = props
+                .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
+                .map { DiagramMember(from: $0, isMethod: false) }
+        } else {
+            self.properties = []
+        }
+
+        if config.showMethods {
+            self.methods = meths
+                .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
+                .map { DiagramMember(from: $0, isMethod: true) }
+        } else {
+            self.methods = []
+        }
+
+        if config.showEnumCases {
+            self.enumCases = type.enumCases.map { DiagramEnumCase(from: $0) }
+        } else {
+            self.enumCases = []
+        }
 
         // Extract directory from file path for grouping.
         if let filePath = type.location?.filePath {
@@ -42,6 +63,34 @@ struct DiagramNode: Identifiable, Sendable {
             }
         } else {
             self.directoryGroup = nil
+        }
+    }
+
+    /// Returns true if the member's access level is at or above the minimum.
+    private static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
+        guard let minimum else { return true }
+        let order = accessOrder(memberAccess ?? .internal)
+        let minOrder = accessOrder(minimum)
+        return order >= minOrder
+    }
+
+    /// Numeric visibility ordering: higher = more visible.
+    private static func accessOrder(_ level: AccessLevel) -> Int {
+        switch level {
+        case .open:
+            return 6
+        case .public:
+            return 5
+        case .packagePrivate:
+            return 4
+        case .internal:
+            return 3
+        case .protected:
+            return 2
+        case .filePrivate:
+            return 1
+        case .private:
+            return 0
         }
     }
 }

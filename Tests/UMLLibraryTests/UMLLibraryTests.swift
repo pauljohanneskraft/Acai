@@ -17,7 +17,7 @@ struct UMLLibraryTests {
         let diagram = DOTGenerator().generate(from: artifact)
         print(diagram)
     }
-    
+
     @Test func testSwift() async throws {
         let source = """
         enum SuperClass {

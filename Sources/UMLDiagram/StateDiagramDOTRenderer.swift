@@ -94,8 +94,8 @@ public struct StateDiagramDOTRenderer: Sendable {
         case .normal, .composite:
             var label = state.name.dotHTMLEscaped
             if let entry = state.entryAction { label += "\\nentry/ \(entry.dotEscaped)" }
-            if let doAct = state.doActivity  { label += "\\ndo/ \(doAct.dotEscaped)" }
-            if let exit  = state.exitAction  { label += "\\nexit/ \(exit.dotEscaped)" }
+            if let doAct = state.doActivity { label += "\\ndo/ \(doAct.dotEscaped)" }
+            if let exit  = state.exitAction { label += "\\nexit/ \(exit.dotEscaped)" }
             return "[shape=Mrecord style=filled fillcolor=\"\(fill)\" color=\"\(border)\" " +
                    "fontcolor=\"\(font)\" label=\"\(label)\"]"
         }

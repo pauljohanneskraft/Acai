@@ -134,11 +134,11 @@ struct DOTNodeRenderer {
 
         if isMethod(member) {
             let paramStr = member.parameters.map { p in
-                var s = p.internalName.dotHTMLEscaped
-                if options.showMemberTypes, let t = p.type {
-                    s += ": " + typeRefString(t).dotHTMLEscaped
+                var parameterString = p.internalName.dotHTMLEscaped
+                if options.showMemberTypes, let parameterType = p.type {
+                    parameterString += ": " + typeRefString(parameterType).dotHTMLEscaped
                 }
-                return s
+                return parameterString
             }.joined(separator: ", ")
             result += "(\(paramStr))"
         }
@@ -167,29 +167,17 @@ struct DOTNodeRenderer {
     // MARK: - Helpers
 
     private func typeRefString(_ ref: TypeReference) -> String {
-        var s = ref.name
+        var typeString = ref.name
         if !ref.genericArguments.isEmpty {
-            s += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
+            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
         }
-        if ref.isOptional { s += "?" }
-        if ref.isArray && !s.hasPrefix("Array") { s += "[]" }
-        return s
+        if ref.isOptional { typeString += "?" }
+        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        return typeString
     }
 
     private func stereotypeString(for kind: TypeKind) -> String? {
-        switch kind {
-        case .protocol, .interface: return "interface"
-        case .enum: return "enumeration"
-        case .struct: return "struct"
-        case .typeAlias: return "typealias"
-        case .object: return "object"
-        case .annotation: return "annotation"
-        case .module: return "module"
-        case .trait: return "trait"
-        case .class, .extension: return nil
-        case .record: return "record"
-        case .mixin: return "mixin"
-        }
+        kind.stereotypeString
     }
 
     private func isProperty(_ member: Member) -> Bool {
@@ -204,7 +192,7 @@ struct DOTNodeRenderer {
         guard let minAccess = options.minimumAccessLevel else { return members }
         let order: [AccessLevel: Int] = [
             .private: 0, .filePrivate: 1, .internal: 2, .packagePrivate: 2,
-            .protected: 3, .public: 4, .open: 5,
+            .protected: 3, .public: 4, .open: 5
         ]
         guard let minRank = order[minAccess] else { return members }
         return members.filter { member in

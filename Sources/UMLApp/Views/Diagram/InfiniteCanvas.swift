@@ -30,8 +30,8 @@ struct InfiniteCanvas<Content: View>: View {
     /// The auto-pan controller, owned by the parent view as `@State`.
     var autoPanController: EdgeAutoPanController
 
-    @State private var selectionStart: CGPoint? = nil
-    @State private var selectionCurrent: CGPoint? = nil
+    @State private var selectionStart: CGPoint?
+    @State private var selectionCurrent: CGPoint?
 
     let content: () -> Content
 
@@ -57,6 +57,7 @@ struct InfiniteCanvas<Content: View>: View {
 
     var body: some View {
         GeometryReader { geometry in
+            // swiftlint:disable:next redundant_discardable_let
             let _ = configureAutoPan(viewportSize: geometry.size)
             ZStack {
                 // Grid background layer.

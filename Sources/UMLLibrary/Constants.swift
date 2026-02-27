@@ -6,6 +6,7 @@ public enum UMLConstants {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".uml")
         #else
+        // swiftlint:disable:next force_try
         try! FileManager.default.url(
             for: .documentDirectory,
             in: .userDomainMask,
@@ -14,13 +15,13 @@ public enum UMLConstants {
         )
         #endif
     }()
-    
+
     public static let analysisDirectory =
         baseDirectory
             .appendingPathComponent("analysis")
-    
+
     public static let defaultExcludedSourceDirectories: Set<String> = [
         "node_modules", ".build", "build", "Pods", ".git",
-        "DerivedData", "target", "bin", "obj",
+        "DerivedData", "target", "bin", "obj"
     ]
 }

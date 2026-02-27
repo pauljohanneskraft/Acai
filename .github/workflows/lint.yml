@@ -1,0 +1,31 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lint.yml'
+      - '.swiftlint.yml'
+      - '**/*.swift'
+  pull_request:
+    paths:
+      - '.github/workflows/lint.yml'
+      - '.swiftlint.yml'
+      - '**/*.swift'
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swiftlint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:0.57.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict

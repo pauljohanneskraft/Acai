@@ -28,4 +28,3 @@ struct NewProjectSheet: View {
         .frame(width: 360)
     }
 }
-
