@@ -310,7 +310,9 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Person.kt")
         let person = artifact.types[0]
         let constructors = person.members.filter { $0.kind == .initializer }
-        #expect(constructors.count >= 2)
+        #expect(constructors.count == 2)
+        #expect(constructors[0].parameters.count == 1)
+        #expect(constructors[1].parameters.count == 2)
     }
 
     // MARK: - Extension Function Tests
@@ -336,7 +338,10 @@ struct KotlinParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "ClassExtensions.kt")
         let utils = artifact.types[0]
-        #expect(utils.members.count >= 1)
+        #expect(utils.members.count == 1)
+        let sumMethod = utils.members.first { $0.name == "sum" }
+        #expect(sumMethod != nil)
+        #expect(sumMethod?.kind == .method)
     }
 
     // MARK: - Annotation Tests
@@ -349,8 +354,9 @@ struct KotlinParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "User.kt")
         let user = artifact.types[0]
-        #expect(user.annotations.count >= 2)
+        #expect(user.annotations.count == 2)
         #expect(user.annotations.contains("@Entity"))
+        #expect(user.annotations.contains("@Table(name = \"users\")"))
     }
 
     @Test func methodAnnotation() {
@@ -363,7 +369,8 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Service.kt")
         let service = artifact.types[0]
         let method = service.members.first { $0.name == "oldMethod" }
-        #expect(method?.annotations.isEmpty == false)
+        #expect(method?.annotations.count == 1)
+        #expect(method?.annotations.first?.contains("Deprecated") == true)
     }
 
     @Test func propertyAnnotation() {
@@ -376,7 +383,8 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Model.kt")
         let model = artifact.types[0]
         let prop = model.members.first { $0.name == "userName" }
-        #expect(prop?.annotations.isEmpty == false)
+        #expect(prop?.annotations.count == 1)
+        #expect(prop?.annotations.first?.contains("JsonProperty") == true)
     }
 
     @Test func annotationClass() {
@@ -500,7 +508,10 @@ struct KotlinParserTests {
         let color = artifact.types[0]
         #expect(color.kind == .enum)
         #expect(color.enumCases.count == 3)
-        #expect(color.enumCases[0].rawValue != nil)
+        #expect(color.enumCases[0].name == "RED")
+        #expect(color.enumCases[0].rawValue == "0xFF0000")
+        #expect(color.enumCases[1].name == "GREEN")
+        #expect(color.enumCases[2].name == "BLUE")
     }
 
     @Test func enumWithMethods() {
@@ -516,7 +527,12 @@ struct KotlinParserTests {
         let operation = artifact.types[0]
         #expect(operation.kind == .enum)
         #expect(operation.enumCases.count == 2)
-        #expect(operation.members.count >= 1)
+        #expect(operation.enumCases[0].name == "ADD")
+        #expect(operation.enumCases[1].name == "SUBTRACT")
+        let executeMethod = operation.members.first { $0.name == "execute" }
+        #expect(executeMethod != nil)
+        #expect(executeMethod?.kind == .method)
+        #expect(executeMethod?.parameters.count == 2)
     }
 
     // MARK: - Call Site Tests
@@ -535,7 +551,9 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Service.kt")
         let service = artifact.types[0]
         let method = service.members.first { $0.name == "loadData" }
-        #expect(method?.callSites.isEmpty == false)
+        #expect(method?.callSites.count == 2)
+        #expect(method?.callSites.contains { $0.methodName == "findAll" && $0.receiverType == "Repository" } == true)
+        #expect(method?.callSites.contains { $0.methodName == "save" && $0.receiverType == "Repository" } == true)
     }
 
     @Test func thisCallSites() {
@@ -551,7 +569,9 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Manager.kt")
         let manager = artifact.types[0]
         let method = manager.members.first { $0.name == "process" }
-        #expect(method?.callSites.isEmpty == false)
+        #expect(method?.callSites.count == 1)
+        #expect(method?.callSites.first?.methodName == "handle")
+        #expect(method?.callSites.first?.receiverType == "Handler")
     }
 
     // MARK: - Generic Constraint Tests
@@ -566,7 +586,10 @@ struct KotlinParserTests {
         let container = artifact.types[0]
         #expect(container.genericParameters.count == 1)
         let generic = container.genericParameters[0]
-        #expect(generic.constraints.isEmpty == false)
+        #expect(generic.name == "T")
+        #expect(generic.constraints.count == 1)
+        #expect(generic.constraints[0].kind == .conformance)
+        #expect(generic.constraints[0].type.name == "Comparable")
     }
 
     @Test func multipleGenericConstraints() {
@@ -673,8 +696,10 @@ struct KotlinParserTests {
         let config = artifact.types[0]
         let method = config.members.first { $0.name == "connect" }
         #expect(method?.parameters.count == 2)
-        #expect(method?.parameters[0].defaultValue != nil)
-        #expect(method?.parameters[1].defaultValue != nil)
+        #expect(method?.parameters[0].internalName == "host")
+        #expect(method?.parameters[0].defaultValue == "\"localhost\"")
+        #expect(method?.parameters[1].internalName == "port")
+        #expect(method?.parameters[1].defaultValue == "8080")
     }
 
     // MARK: - Complex Type Tests
@@ -699,8 +724,11 @@ struct KotlinParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "Handler.kt")
         let handler = artifact.types[0]
-        #expect(handler.inheritedTypes.count >= 3)
-        #expect(artifact.relationships.count >= 3)
+        #expect(handler.inheritedTypes.count == 3)
+        #expect(handler.inheritedTypes.map(\.name).contains("EventListener"))
+        #expect(handler.inheritedTypes.map(\.name).contains("Serializable"))
+        #expect(handler.inheritedTypes.map(\.name).contains("Closeable"))
+        #expect(artifact.relationships.count == 3)
     }
 
     // MARK: - Primary Constructor Visibility Tests
