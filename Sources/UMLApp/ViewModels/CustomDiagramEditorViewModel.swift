@@ -121,7 +121,21 @@ final class CustomDiagramEditorViewModel: ObservableObject {
 
     func removeEdge(_ edgeID: UUID) {
         edges.removeAll { $0.id == edgeID }
+        if selectedEdgeID == edgeID { selectedEdgeID = nil }
         save()
+    }
+
+    func updateEdge(_ edgeID: UUID, sourceID: UUID, targetID: UUID, kind: Relationship.Kind) {
+        guard let idx = edges.firstIndex(where: { $0.id == edgeID }) else { return }
+        edges[idx].sourceNodeID = sourceID
+        edges[idx].targetNodeID = targetID
+        edges[idx].kind = kind
+        save()
+    }
+
+    func startRelationshipDrawing(from nodeID: UUID) {
+        selectedNodeIDs = [nodeID]
+        // The user can then shift-click a second node and use the catalog to create the edge.
     }
 
     // MARK: - Member CRUD (type nodes only)

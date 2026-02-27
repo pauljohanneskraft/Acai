@@ -15,20 +15,23 @@ final class ProjectBrowserViewModel: ObservableObject {
     enum Selection: Hashable {
         case project(UUID)
         case codebase(UUID)
-        case diagram(UUID) // View a stored diagram by its ID
-        case customDiagram(UUID) // View a custom diagram by its ID
-        case globalDiagrams // Shows the global diagrams list
+        case diagram(UUID)
+        case customDiagram(UUID)
     }
     
     init(store: ProjectStore = ProjectStore()) {
         self.store = store
     }
     
-    /// Persists the store to disk and notifies SwiftUI observers.
-    /// Because `store` is a reference type, mutating its `projects` array
-    /// does not trigger `@Published`; we must send `objectWillChange` manually.
     private func persistChanges() {
         store.save()
+        objectWillChange.send()
+    }
+
+    private func persistProject(_ projectID: UUID) {
+        if let project = store.projects.first(where: { $0.id == projectID }) {
+            store.saveProject(project)
+        }
         objectWillChange.send()
     }
     
@@ -49,6 +52,11 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
     
     func removeProject(_ projectID: UUID) {
+        guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
+        // Clean up diagram files
+        for did in project.storedDiagramIDs { store.deleteStoredDiagramFile(did) }
+        for did in project.customDiagramIDs { store.deleteCustomDiagramFile(did) }
+        store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
         persistChanges()
     }
@@ -57,10 +65,8 @@ final class ProjectBrowserViewModel: ObservableObject {
     
     func addCodebase(to projectID: UUID, name: String, directoryURL: URL) {
         guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
-        var project = store.projects[idx]
         let codebase = Codebase(name: name, directoryPath: directoryURL.path, artifact: nil, languages: [], lastIndexed: nil)
-        project.codebases.append(codebase)
-        store.projects[idx] = project
+        store.projects[idx].codebases.append(codebase)
         persistChanges()
     }
     
@@ -77,8 +83,14 @@ final class ProjectBrowserViewModel: ObservableObject {
     func removeCodebase(_ codebaseID: UUID) {
         for i in store.projects.indices {
             store.projects[i].codebases.removeAll { $0.id == codebaseID }
-            // Also remove stored diagrams linked to this codebase.
-            store.projects[i].storedDiagrams.removeAll { $0.codebaseID == codebaseID }
+            // Remove stored diagrams linked to this codebase.
+            let toRemove = store.projects[i].storedDiagramIDs.filter { did in
+                store.storedDiagrams[did]?.codebaseID == codebaseID
+            }
+            for did in toRemove {
+                store.projects[i].storedDiagramIDs.removeAll { $0 == did }
+                store.deleteStoredDiagramFile(did)
+            }
         }
         persistChanges()
     }
@@ -107,53 +119,52 @@ final class ProjectBrowserViewModel: ObservableObject {
     func addStoredDiagram(to projectID: UUID, codebaseID: UUID, name: String, type: DiagramType, configuration: DiagramConfiguration) -> UUID? {
         guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         let diagram = StoredDiagram(name: name, type: type, codebaseID: codebaseID, configuration: configuration)
-        store.projects[idx].storedDiagrams.append(diagram)
+        store.projects[idx].storedDiagramIDs.append(diagram.id)
+        store.saveStoredDiagram(diagram)
         persistChanges()
         return diagram.id
     }
     
     func updateStoredDiagramPositions(diagramID: UUID, positions: [String: CGPoint], sizes: [String: CGSize] = [:], scale: CGFloat, offset: CGPoint) {
-        for i in store.projects.indices {
-            if let j = store.projects[i].storedDiagrams.firstIndex(where: { $0.id == diagramID }) {
-                var diagram = store.projects[i].storedDiagrams[j]
-                diagram.nodePositions = positions.mapValues { StoredNodePosition(point: $0) }
-                if !sizes.isEmpty {
-                    diagram.nodeSizes = sizes.mapValues { StoredNodeSize(size: $0) }
-                }
-                diagram.canvasScale = Double(scale)
-                diagram.canvasOffsetX = Double(offset.x)
-                diagram.canvasOffsetY = Double(offset.y)
-                diagram.lastModified = Date()
-                store.projects[i].storedDiagrams[j] = diagram
-                persistChanges()
-                return
-            }
+        guard var diagram = store.storedDiagrams[diagramID] else { return }
+        diagram.nodePositions = positions.mapValues { StoredNodePosition(point: $0) }
+        if !sizes.isEmpty {
+            diagram.nodeSizes = sizes.mapValues { StoredNodeSize(size: $0) }
         }
+        diagram.canvasScale = Double(scale)
+        diagram.canvasOffsetX = Double(offset.x)
+        diagram.canvasOffsetY = Double(offset.y)
+        diagram.lastModified = Date()
+        store.saveStoredDiagram(diagram)
+        objectWillChange.send()
     }
     
     func updateStoredDiagramConfiguration(diagramID: UUID, configuration: DiagramConfiguration) {
-        for i in store.projects.indices {
-            if let j = store.projects[i].storedDiagrams.firstIndex(where: { $0.id == diagramID }) {
-                store.projects[i].storedDiagrams[j].configuration = configuration
-                store.projects[i].storedDiagrams[j].lastModified = Date()
-                persistChanges()
-                return
-            }
-        }
+        guard var diagram = store.storedDiagrams[diagramID] else { return }
+        diagram.configuration = configuration
+        diagram.lastModified = Date()
+        store.saveStoredDiagram(diagram)
+        objectWillChange.send()
+    }
+
+    func renameStoredDiagram(_ diagramID: UUID, name: String) {
+        guard var diagram = store.storedDiagrams[diagramID] else { return }
+        diagram.name = name
+        diagram.lastModified = Date()
+        store.saveStoredDiagram(diagram)
+        objectWillChange.send()
     }
     
     func removeStoredDiagram(_ diagramID: UUID) {
         for i in store.projects.indices {
-            store.projects[i].storedDiagrams.removeAll { $0.id == diagramID }
+            store.projects[i].storedDiagramIDs.removeAll { $0 == diagramID }
         }
+        store.deleteStoredDiagramFile(diagramID)
         persistChanges()
     }
     
     func storedDiagram(for diagramID: UUID) -> StoredDiagram? {
-        for p in store.projects {
-            if let d = p.storedDiagrams.first(where: { $0.id == diagramID }) { return d }
-        }
-        return nil
+        store.storedDiagrams[diagramID]
     }
     
     // MARK: - Custom Diagram CRUD
@@ -162,60 +173,40 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         var diagram = CustomDiagram(name: name, diagramType: type)
         diagram.ownerProjectID = projectID
-        store.projects[idx].customDiagrams.append(diagram)
-        persistChanges()
-        return diagram.id
-    }
-    
-    func addGlobalCustomDiagram(name: String, type: DiagramType) -> UUID {
-        var diagram = CustomDiagram(name: name, diagramType: type)
-        diagram.ownerProjectID = nil
-        diagram.ownerCodebaseID = nil
-        store.globalCustomDiagrams.append(diagram)
+        store.projects[idx].customDiagramIDs.append(diagram.id)
+        store.saveCustomDiagram(diagram)
         persistChanges()
         return diagram.id
     }
     
     func updateCustomDiagram(diagramID: UUID, diagram: CustomDiagram) {
-        // Check project-owned diagrams first.
-        for i in store.projects.indices {
-            if let j = store.projects[i].customDiagrams.firstIndex(where: { $0.id == diagramID }) {
-                store.projects[i].customDiagrams[j] = diagram
-                store.projects[i].customDiagrams[j].lastModified = Date()
-                persistChanges()
-                return
-            }
-        }
-        // Check global diagrams.
-        if let idx = store.globalCustomDiagrams.firstIndex(where: { $0.id == diagramID }) {
-            store.globalCustomDiagrams[idx] = diagram
-            store.globalCustomDiagrams[idx].lastModified = Date()
-            persistChanges()
-        }
+        var updated = diagram
+        updated.lastModified = Date()
+        store.saveCustomDiagram(updated)
+        objectWillChange.send()
+    }
+
+    func renameCustomDiagram(_ diagramID: UUID, name: String) {
+        guard var diagram = store.customDiagrams[diagramID] else { return }
+        diagram.name = name
+        diagram.lastModified = Date()
+        store.saveCustomDiagram(diagram)
+        objectWillChange.send()
     }
     
     func removeCustomDiagram(_ diagramID: UUID) {
         for i in store.projects.indices {
-            store.projects[i].customDiagrams.removeAll { $0.id == diagramID }
+            store.projects[i].customDiagramIDs.removeAll { $0 == diagramID }
         }
-        store.globalCustomDiagrams.removeAll { $0.id == diagramID }
+        store.deleteCustomDiagramFile(diagramID)
         persistChanges()
     }
     
     func customDiagram(for diagramID: UUID) -> CustomDiagram? {
-        for p in store.projects {
-            if let d = p.customDiagrams.first(where: { $0.id == diagramID }) { return d }
-        }
-        return store.globalCustomDiagrams.first(where: { $0.id == diagramID })
+        store.customDiagrams[diagramID]
     }
     
-    /// Convert a stored diagram to a custom diagram (copy nodes/edges as user-editable).
-    ///
-    /// - Parameters:
-    ///   - storedDiagramID: The stored diagram to convert.
-    ///   - livePositions: The positions currently shown on screen (from `ClassDiagramViewModel.nodePositions`).
-    ///   - liveScale: Current canvas scale.
-    ///   - liveOffset: Current canvas offset.
+    /// Convert a stored diagram to a custom diagram.
     func saveAsCustomDiagram(
         storedDiagramID: UUID,
         livePositions: [String: CGPoint] = [:],
@@ -223,7 +214,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         liveOffset: CGPoint? = nil
     ) {
         guard let stored = storedDiagram(for: storedDiagramID),
-              let pIdx = store.projects.firstIndex(where: { $0.storedDiagrams.contains(where: { $0.id == storedDiagramID }) }),
+              let pIdx = store.projects.firstIndex(where: { $0.storedDiagramIDs.contains(storedDiagramID) }),
               let codebase = codebase(for: stored.codebaseID),
               let artifact = codebase.artifact else { return }
         
@@ -238,7 +229,6 @@ final class ProjectBrowserViewModel: ObservableObject {
         for type in resolved.types {
             let nodeID = UUID()
             nameToUUID[type.name] = nodeID
-            // Prefer live position over persisted position.
             let livePos = livePositions[type.name]
             let storedPos = stored.nodePositions[type.name]
             let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? 0
@@ -274,7 +264,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         let offsetX = liveOffset.map { Double($0.x) } ?? stored.canvasOffsetX
         let offsetY = liveOffset.map { Double($0.y) } ?? stored.canvasOffsetY
 
-        let custom = CustomDiagram(
+        var custom = CustomDiagram(
             name: stored.name + " (Custom)",
             diagramType: stored.type,
             ownerProjectID: store.projects[pIdx].id,
@@ -284,7 +274,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             canvasOffsetX: offsetX,
             canvasOffsetY: offsetY
         )
-        store.projects[pIdx].customDiagrams.append(custom)
+        store.projects[pIdx].customDiagramIDs.append(custom.id)
+        store.saveCustomDiagram(custom)
         persistChanges()
         selection = .customDiagram(custom.id)
     }
@@ -302,7 +293,6 @@ final class ProjectBrowserViewModel: ObservableObject {
             return DOTGenerator().generate(from: artifact)
         }
 
-        // If no cached artifact, attempt an on-the-fly analysis.
         if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
@@ -343,18 +333,25 @@ final class ProjectBrowserViewModel: ObservableObject {
     
     func projectForDiagram(_ diagramID: UUID) -> Project? {
         store.projects.first(where: {
-            $0.storedDiagrams.contains(where: { $0.id == diagramID }) ||
-            $0.customDiagrams.contains(where: { $0.id == diagramID })
+            $0.storedDiagramIDs.contains(diagramID) ||
+            $0.customDiagramIDs.contains(diagramID)
         })
     }
     
-    /// All custom diagrams across all projects and global.
-    var allCustomDiagrams: [CustomDiagram] {
-        store.projects.flatMap(\.customDiagrams) + store.globalCustomDiagrams
-    }
-    
     func storedDiagrams(for codebaseID: UUID) -> [StoredDiagram] {
-        store.projects.flatMap(\.storedDiagrams).filter { $0.codebaseID == codebaseID }
+        store.storedDiagrams.values.filter { $0.codebaseID == codebaseID }
+    }
+
+    /// All stored diagrams for a project.
+    func storedDiagramsForProject(_ projectID: UUID) -> [StoredDiagram] {
+        guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
+        return project.storedDiagramIDs.compactMap { store.storedDiagrams[$0] }
+    }
+
+    /// All custom diagrams for a project.
+    func customDiagramsForProject(_ projectID: UUID) -> [CustomDiagram] {
+        guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
+        return project.customDiagramIDs.compactMap { store.customDiagrams[$0] }
     }
 }
 

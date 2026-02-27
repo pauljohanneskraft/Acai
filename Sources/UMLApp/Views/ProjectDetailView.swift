@@ -4,7 +4,6 @@ struct ProjectDetailView: View {
     let projectID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var addingCodebase = false
-    @State private var diagramGenerationTarget: UUID? = nil
 
     private var project: Project? {
         model.store.projects.first(where: { $0.id == projectID })
@@ -36,15 +35,16 @@ struct ProjectDetailView: View {
                 // Codebase list
                 List {
                     ForEach(project.codebases) { codebase in
-                        codebaseRow(codebase: codebase)
+                        codebaseRow(codebase: codebase, project: project)
                     }
                 }
                 .listStyle(.inset)
 
                 Divider()
 
-                // Stored diagrams section
-                if !project.storedDiagrams.isEmpty {
+                // Generated diagrams section
+                let storedDiagrams = model.storedDiagramsForProject(projectID)
+                if !storedDiagrams.isEmpty {
                     HStack {
                         Text("Generated Diagrams").font(.headline)
                         Spacer()
@@ -53,7 +53,7 @@ struct ProjectDetailView: View {
                     .padding(.vertical, 8)
 
                     List {
-                        ForEach(project.storedDiagrams) { diagram in
+                        ForEach(storedDiagrams) { diagram in
                             Button {
                                 model.selection = .diagram(diagram.id)
                             } label: {
@@ -107,14 +107,15 @@ struct ProjectDetailView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
 
-                if project.customDiagrams.isEmpty {
+                let customDiagrams = model.customDiagramsForProject(projectID)
+                if customDiagrams.isEmpty {
                     Text("No custom diagrams yet. Create one above.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal)
                 } else {
                     List {
-                        ForEach(project.customDiagrams) { diagram in
+                        ForEach(customDiagrams) { diagram in
                             Button {
                                 model.selection = .customDiagram(diagram.id)
                             } label: {
@@ -146,10 +147,6 @@ struct ProjectDetailView: View {
             }
             .sheet(isPresented: $addingCodebase) {
                 NewCodebaseSheet(projectID: project.id)
-                    .environmentObject(model)
-            }
-            .sheet(item: $diagramGenerationTarget) { codebaseID in
-                DiagramGenerationSheet(projectID: projectID, codebaseID: codebaseID)
                     .environmentObject(model)
             }
         } else {
@@ -212,7 +209,7 @@ struct ProjectDetailView: View {
 
     // MARK: - Codebase Row
 
-    private func codebaseRow(codebase: Codebase) -> some View {
+    private func codebaseRow(codebase: Codebase, project: Project) -> some View {
         HStack {
             Image(systemName: "folder")
             VStack(alignment: .leading) {
@@ -228,25 +225,37 @@ struct ProjectDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // Quick diagram type buttons
+            ForEach(DiagramType.allCases) { type in
+                let exists = model.storedDiagrams(for: codebase.id).contains(where: { $0.type == type })
+                Button {
+                    if let existing = model.storedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
+                        model.selection = .diagram(existing.id)
+                    } else if let id = model.addStoredDiagram(
+                        to: project.id,
+                        codebaseID: codebase.id,
+                        name: "\(codebase.name) — \(type.displayName)",
+                        type: type,
+                        configuration: DiagramConfiguration()
+                    ) {
+                        model.selection = .diagram(id)
+                    }
+                } label: {
+                    Image(systemName: type.systemImage)
+                        .foregroundStyle(exists ? .primary : .secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(exists ? "Open \(type.displayName)" : "Generate \(type.displayName)")
+                .disabled(codebase.artifact == nil)
+            }
+
             // Three-dot menu
             Menu {
                 Button {
                     model.inspectedCodebaseID = codebase.id
+                    model.showInspector = true
                 } label: {
                     Label("Show Details", systemImage: "info.circle")
-                }
-
-                Divider()
-
-                Menu("Generate Diagram") {
-                    ForEach(DiagramType.allCases) { type in
-                        Button {
-                            diagramGenerationTarget = codebase.id
-                        } label: {
-                            Label(type.displayName, systemImage: type.systemImage)
-                        }
-                        .disabled(codebase.artifact == nil && type != .classDiagram)
-                    }
                 }
 
                 Divider()

@@ -3,14 +3,18 @@ import UMLCore
 
 // MARK: - Models
 
+/// Persisted as its own JSON file: `<projectID>.json`
+/// Diagrams are stored separately — one file per diagram.
 struct Project: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var title: String
     var subtitle: String
     var iconSystemName: String
     var codebases: [Codebase] = []
-    var storedDiagrams: [StoredDiagram] = []
-    var customDiagrams: [CustomDiagram] = []
+    /// IDs of generated (stored) diagrams that belong to this project. Diagram data is in a separate file.
+    var storedDiagramIDs: [UUID] = []
+    /// IDs of custom diagrams that belong to this project. Diagram data is in a separate file.
+    var customDiagramIDs: [UUID] = []
 }
 
 struct Codebase: Identifiable, Codable, Hashable {
@@ -18,7 +22,7 @@ struct Codebase: Identifiable, Codable, Hashable {
     var name: String
     var directoryPath: String
     var artifact: CodeArtifact? = nil
-    var languages: [LanguageSummary] = [] // kept for backward compatibility, but no longer populated
+    var languages: [LanguageSummary] = []
     var lastIndexed: Date? = nil
 }
 
