@@ -3,15 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/build.yml'
-      - 'Package*'
-      - 'Sources/**/*.swift'
   pull_request:
-    paths:
-      - '.github/workflows/build.yml'
-      - 'Package*'
-      - 'Sources/**/*.swift'
 
 concurrency:
   group: build-${{ github.ref }}

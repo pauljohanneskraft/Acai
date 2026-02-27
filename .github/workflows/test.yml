@@ -3,17 +3,7 @@ name: Test
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/test.yml'
-      - 'Package*'
-      - 'Sources/**/*.swift'
-      - 'Tests/**/*.swift'
   pull_request:
-    paths:
-      - '.github/workflows/test.yml'
-      - 'Package*'
-      - 'Sources/**/*.swift'
-      - 'Tests/**/*.swift'
 
 concurrency:
   group: test-${{ github.ref }}
