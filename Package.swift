@@ -2,6 +2,44 @@
 
 import PackageDescription
 
+var optionalProducts: [Product] = []
+var optionalTargets: [Target] = []
+
+#if canImport(SwiftUI)
+optionalProducts.append(
+    .executable(name: "UMLApp",     targets: ["UMLApp"])
+)
+optionalTargets.append(
+    .executableTarget(
+        name: "UMLApp",
+        dependencies: [
+            "UMLCore",
+            "UMLTreeSitter",
+            "UMLSwift",
+            "UMLKotlin",
+            "UMLJS",
+            "UMLJava",
+            "UMLDart",
+            "UMLDiagram",
+            "UMLLibrary",
+        ],
+        resources: [
+            .process("Resources/Assets.xcassets"),
+        ],
+        linkerSettings: [
+            // Embeds Info.plist into the binary so it runs as a GUI app
+            .unsafeFlags([
+                "-Xlinker", "-sectcreate",
+                "-Xlinker", "__TEXT",
+                "-Xlinker", "__info_plist",
+                "-Xlinker", "Sources/UMLApp/Resources/Info.plist"
+            ])
+        ]
+    )
+)
+#endif
+
+
 let package = Package(
     name: "UML",
     platforms: [
@@ -21,11 +59,7 @@ let package = Package(
         .library(name: "UMLDart",       targets: ["UMLDart"]),
         .library(name: "UMLDiagram",    targets: ["UMLDiagram"]),
         .library(name: "UMLLibrary",    targets: ["UMLLibrary"]),
-        .executable(name: "uml",        targets: ["UMLCLI"]),
-        #if canImport(SwiftUI)
-        .executable(name: "UMLApp",     targets: ["UMLApp"]),
-        #endif
-    ],
+    ] + optionalProducts,
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git",            from: "600.0.0"),
         .package(url: "https://github.com/tree-sitter/swift-tree-sitter",         from: "0.9.0"),
@@ -115,34 +149,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: App
-        .executableTarget(
-            name: "UMLApp",
-            dependencies: [
-                "UMLCore",
-                "UMLTreeSitter",
-                "UMLSwift",
-                "UMLKotlin",
-                "UMLJS",
-                "UMLJava",
-                "UMLDart",
-                "UMLDiagram",
-                "UMLLibrary",
-            ],
-            resources: [
-                .process("Resources/Assets.xcassets"),
-            ],
-            linkerSettings: [
-                // Embeds Info.plist into the binary so it runs as a GUI app
-                .unsafeFlags([
-                    "-Xlinker", "-sectcreate",
-                    "-Xlinker", "__TEXT",
-                    "-Xlinker", "__info_plist",
-                    "-Xlinker", "Sources/UMLApp/Resources/Info.plist"
-                ])
-            ]
-        ),
-
         // MARK: CLI tool
         .executableTarget(
             name: "UMLCLI",
@@ -170,5 +176,5 @@ let package = Package(
         .testTarget(name: "UMLDartTests",    dependencies: ["UMLDart",    "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary"])
-    ]
+    ] + optionalTargets
 )
