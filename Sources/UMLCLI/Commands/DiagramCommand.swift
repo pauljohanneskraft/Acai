@@ -78,8 +78,8 @@ extension UMLCommand {
             }
 
             if let dir = direction { options.layoutDirection = dir.layoutDirection }
-            if let t = theme { options.theme = t.diagramTheme }
-            if let g = groupBy { options.groupBy = g.groupingStrategy }
+            if let selectedTheme = theme { options.theme = selectedTheme.diagramTheme }
+            if let selectedGroupBy = groupBy { options.groupBy = selectedGroupBy.groupingStrategy }
             if showMembers { options.showMembers = true }
             if noShowMembers { options.showMembers = false }
 

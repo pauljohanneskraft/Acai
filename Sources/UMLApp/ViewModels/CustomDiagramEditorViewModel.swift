@@ -251,36 +251,36 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     }
 
     func updatePropertyText(_ nodeID: UUID, memberID: UUID, text: String) {
-        guard let ni = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[ni].content,
-              let mi = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
+        guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
+              case .type(var content) = nodes[nodeIndex].content,
+              let memberIndex = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
         let parts = text.split(separator: ":", maxSplits: 1)
-        content.properties[mi].name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
+        content.properties[memberIndex].name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
         if parts.count > 1 {
-            content.properties[mi].type = String(parts[1]).trimmingCharacters(in: .whitespaces)
+            content.properties[memberIndex].type = String(parts[1]).trimmingCharacters(in: .whitespaces)
         }
-        nodes[ni].content = .type(content)
+        nodes[nodeIndex].content = .type(content)
         save()
     }
 
     func updateMethodText(_ nodeID: UUID, memberID: UUID, text: String) {
-        guard let ni = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = nodes[ni].content,
-              let mi = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
+        guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
+              case .type(var content) = nodes[nodeIndex].content,
+              let memberIndex = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
         if let parenStart = text.firstIndex(of: "("),
            let parenEnd = text.firstIndex(of: ")") {
-            content.methods[mi].name = String(text[text.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
-            content.methods[mi].parameters = String(text[text.index(after: parenStart)..<parenEnd])
+            content.methods[memberIndex].name = String(text[text.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
+            content.methods[memberIndex].parameters = String(text[text.index(after: parenStart)..<parenEnd])
             let afterParen = text[text.index(after: parenEnd)...]
             if let colonIdx = afterParen.firstIndex(of: ":") {
-                content.methods[mi].type = String(
+                content.methods[memberIndex].type = String(
                     afterParen[afterParen.index(after: colonIdx)...]
                 ).trimmingCharacters(in: .whitespaces)
             }
         } else {
-            content.methods[mi].name = text
+            content.methods[memberIndex].name = text
         }
-        nodes[ni].content = .type(content)
+        nodes[nodeIndex].content = .type(content)
         save()
     }
 

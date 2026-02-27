@@ -32,12 +32,12 @@ extension DiagramOptions {
             }
         }
 
-        if let v = yaml["showMembers"]             as? Bool { self.showMembers = v }
-        if let v = yaml["showMemberTypes"]         as? Bool { self.showMemberTypes = v }
-        if let v = yaml["showAccessLevelSymbols"]  as? Bool { self.showAccessLevelSymbols = v }
-        if let v = yaml["showAnnotations"]         as? Bool { self.showAnnotations = v }
-        if let v = yaml["showGenericParameters"]   as? Bool { self.showGenericParameters = v }
-        if let v = yaml["fontName"]                as? String { self.fontName = v }
-        if let v = yaml["fontSize"]                as? Int { self.fontSize = v }
+        if let value = yaml["showMembers"]             as? Bool { self.showMembers = value }
+        if let value = yaml["showMemberTypes"]         as? Bool { self.showMemberTypes = value }
+        if let value = yaml["showAccessLevelSymbols"]  as? Bool { self.showAccessLevelSymbols = value }
+        if let value = yaml["showAnnotations"]         as? Bool { self.showAnnotations = value }
+        if let value = yaml["showGenericParameters"]   as? Bool { self.showGenericParameters = value }
+        if let value = yaml["fontName"]                as? String { self.fontName = value }
+        if let value = yaml["fontSize"]                as? Int { self.fontSize = value }
     }
 }

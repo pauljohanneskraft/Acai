@@ -228,9 +228,9 @@ extension UMLTypeBoxView {
             return MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
         }
         var seenCases = Set<String>()
-        self.enumCases = node.enumCases.compactMap { ec in
-            guard seenCases.insert(ec.id).inserted else { return nil }
-            return EnumCaseDisplayItem(id: ec.id, text: ec.displayText)
+        self.enumCases = node.enumCases.compactMap { enumCase in
+            guard seenCases.insert(enumCase.id).inserted else { return nil }
+            return EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
         }
     }
 
@@ -258,10 +258,10 @@ extension UMLTypeBoxView {
                 isAbstract: member.isAbstract
             )
         }
-        self.enumCases = content.enumCases.map { ec in
+        self.enumCases = content.enumCases.map { enumCase in
             EnumCaseDisplayItem(
-                id: ec.id.uuidString,
-                text: ec.name + (ec.associatedValues.isEmpty ? "" : "(\(ec.associatedValues))")
+                id: enumCase.id.uuidString,
+                text: enumCase.name + (enumCase.associatedValues.isEmpty ? "" : "(\(enumCase.associatedValues))")
             )
         }
     }
@@ -378,8 +378,8 @@ struct UMLContainerNodeView: View {
     }
 
     var body: some View {
-        let w = size?.width ?? 200
-        let h = size?.height ?? 150
+        let width = size?.width ?? 200
+        let height = size?.height ?? 150
         let border = isSelected ? Color.accentColor : style.borderColor
         let lineWidth: CGFloat = isSelected ? 2 : 1
 
@@ -405,7 +405,7 @@ struct UMLContainerNodeView: View {
             // Open body area
             Spacer()
         }
-        .frame(width: w, height: h)
+        .frame(width: width, height: height)
         .background(style.fillColor)
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(

@@ -18,11 +18,11 @@ enum UMLMemberFormatting {
         result += member.name
 
         let paramStr = member.parameters.map { p in
-            var s = p.internalName
-            if let t = p.type {
-                s += ": " + typeRefString(t)
+            var parameterString = p.internalName
+            if let parameterType = p.type {
+                parameterString += ": " + typeRefString(parameterType)
             }
-            return s
+            return parameterString
         }.joined(separator: ", ")
         result += "(\(paramStr))"
 
@@ -41,13 +41,13 @@ enum UMLMemberFormatting {
     }
 
     static func typeRefString(_ ref: TypeReference) -> String {
-        var s = ref.name
+        var typeString = ref.name
         if !ref.genericArguments.isEmpty {
-            s += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
+            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
         }
-        if ref.isOptional { s += "?" }
-        if ref.isArray && !s.hasPrefix("Array") { s += "[]" }
-        return s
+        if ref.isOptional { typeString += "?" }
+        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        return typeString
     }
 
     static func stereotypeString(for kind: TypeKind) -> String? {

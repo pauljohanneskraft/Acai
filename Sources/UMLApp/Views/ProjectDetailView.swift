@@ -14,11 +14,11 @@ struct ProjectDetailView: View {
     }
 
     var body: some View {
-        if let project, let idx = projectIndex {
+        if let project, let index = projectIndex {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     // Editable project header
-                    projectHeader(project: project, index: idx)
+                    projectHeader(project: project, index: index)
                         .padding()
 
                     Divider()

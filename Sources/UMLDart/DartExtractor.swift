@@ -2,38 +2,23 @@ import Foundation
 import UMLCore
 import UMLTreeSitter
 
-struct DartExtractor {
-    private let context: SourceFileContext
+struct DartExtractor: TreeSitterExtracting {
+    let context: SourceFileContext
 
-    private var types: [TypeDeclaration] = []
-    private var relationships: [Relationship] = []
-    private var freestandingFunctions: [Member] = []
-    private var currentLibrary: String?
+    var types: [TypeDeclaration] = []
+    var relationships: [Relationship] = []
+    var freestandingFunctions: [Member] = []
+    var currentNamespace: String?
 
     init(source: String, fileName: String) {
         self.context = SourceFileContext(source: source, fileName: fileName)
     }
 
-    // MARK: - Shorthands
-
-    private func text(_ node: Node) -> String { node.text(in: context) }
-    private func loc(_ node: Node) -> SourceLocation { node.location(in: context) }
-
-    /// Builds a fully-qualified ID for a type name using the current library as prefix.
-    private func dartId(_ name: String) -> String {
-        currentLibrary.map { "\($0).\(name)" } ?? name
-    }
-
     // MARK: - Public
 
     mutating func extract(from root: Node) -> CodeArtifact {
-        extractProgram(root)
-        return CodeArtifact(
-            metadata: .init(sourceLanguage: .dart, filePaths: [context.fileName]),
-            types: types,
-            relationships: relationships,
-            freestandingFunctions: freestandingFunctions
-        )
+        walkSourceFile(root)
+        return buildArtifact(language: .dart)
     }
 }
 
@@ -45,18 +30,18 @@ extension DartExtractor {
     private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
         switch nodeType {
         case "class_definition":
-            if let t = extractClassDefinition(child) { types.append(t) }
+            if let typeDecl = extractClassDefinition(child) { types.append(typeDecl) }
         case "enum_declaration":
-            if let t = extractEnumDeclaration(child) { types.append(t) }
+            if let typeDecl = extractEnumDeclaration(child) { types.append(typeDecl) }
         case "mixin_declaration":
-            if let t = extractMixinDeclaration(child) { types.append(t) }
+            if let typeDecl = extractMixinDeclaration(child) { types.append(typeDecl) }
         case "extension_declaration":
-            if let t = extractExtensionDeclaration(child) { types.append(t) }
+            if let typeDecl = extractExtensionDeclaration(child) { types.append(typeDecl) }
         case "extension_type_declaration":
-            if let t = extractExtensionTypeDeclaration(child) { types.append(t) }
+            if let typeDecl = extractExtensionTypeDeclaration(child) { types.append(typeDecl) }
         case "function_signature":
-            if let fn = extractFunctionSignature(child, isTopLevel: true) {
-                freestandingFunctions.append(fn)
+            if let function = extractFunctionSignature(child, isTopLevel: true) {
+                freestandingFunctions.append(function)
             }
         default:
             return false
@@ -64,12 +49,12 @@ extension DartExtractor {
         return true
     }
 
-    private mutating func extractProgram(_ node: Node) {
+    mutating func walkSourceFile(_ node: Node) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "library_name":
-                currentLibrary = extractLibraryName(child)
+                currentNamespace = extractLibraryName(child)
             case "declaration":
                 extractTopLevelChildren(child)
             case "import_or_export", "part_directive", "part_of_directive":
@@ -105,7 +90,7 @@ extension DartExtractor {
     private mutating func extractClassDefinition(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let typeId = dartId(name)
+        let typeId = qualifiedName(name)
         let nodeLoc = loc(node)
         let modifiers = extractClassModifiers(node)
         let genericParams = extractTypeParameters(from: node)
@@ -153,7 +138,7 @@ extension DartExtractor {
             modifiers: modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            namespace: currentLibrary, location: nodeLoc
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -162,7 +147,7 @@ extension DartExtractor {
     private mutating func extractEnumDeclaration(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let typeId = dartId(name)
+        let typeId = qualifiedName(name)
         let nodeLoc = loc(node)
         var inheritedTypes: [TypeReference] = []
 
@@ -196,7 +181,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases,
-            namespace: currentLibrary, location: nodeLoc
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -214,7 +199,7 @@ extension DartExtractor {
             }
         }
         guard !name.isEmpty else { return nil }
-        let typeId = dartId(name)
+        let typeId = qualifiedName(name)
         let nodeLoc = loc(node)
         let genericParams = extractTypeParametersFromChildren(node)
         var inheritedTypes: [TypeReference] = []
@@ -252,7 +237,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            namespace: currentLibrary, location: nodeLoc
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -273,11 +258,11 @@ extension DartExtractor {
         }
 
         return TypeDeclaration(
-            id: dartId(displayName), name: displayName, qualifiedName: dartId(displayName),
+            id: qualifiedName(displayName), name: displayName, qualifiedName: qualifiedName(displayName),
             kind: .extension,
             members: members, nestedTypes: nestedTypes,
             extensionOf: extendedType,
-            namespace: currentLibrary, location: nodeLoc
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -291,7 +276,7 @@ extension DartExtractor {
             }
         }
         guard !name.isEmpty else { return nil }
-        let typeId = dartId(name)
+        let typeId = qualifiedName(name)
         let nodeLoc = loc(node)
         var inheritedTypes: [TypeReference] = []
 
@@ -317,7 +302,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            namespace: currentLibrary, location: nodeLoc
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 }
@@ -336,27 +321,27 @@ extension DartExtractor {
     ) -> Bool {
         switch nodeType {
         case "method_signature":
-            if let m = extractMethodSignature(child) { members.append(m) }
+            if let member = extractMethodSignature(child) { members.append(member) }
         case "function_signature":
-            if let m = extractFunctionSignature(child, isTopLevel: false) { members.append(m) }
+            if let member = extractFunctionSignature(child, isTopLevel: false) { members.append(member) }
         case "constructor_signature", "constant_constructor_signature":
-            if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
+            if let member = extractConstructorSignature(child, parentName: parentName) { members.append(member) }
         case "factory_constructor_signature", "redirecting_factory_constructor_signature":
-            if let m = extractFactoryConstructorSignature(child) { members.append(m) }
+            if let member = extractFactoryConstructorSignature(child) { members.append(member) }
         case "getter_signature":
-            if let m = extractGetterSignature(child) { members.append(m) }
+            if let member = extractGetterSignature(child) { members.append(member) }
         case "setter_signature":
-            if let m = extractSetterSignature(child) { members.append(m) }
+            if let member = extractSetterSignature(child) { members.append(member) }
         case "operator_signature":
-            if let m = extractOperatorSignature(child) { members.append(m) }
+            if let member = extractOperatorSignature(child) { members.append(member) }
         case "static_final_declaration_list", "initialized_identifier_list":
             members.append(contentsOf: extractFieldDeclarations(child))
         case "class_definition":
-            if let t = extractClassDefinition(child) { nestedTypes.append(t) }
+            if let typeDecl = extractClassDefinition(child) { nestedTypes.append(typeDecl) }
         case "enum_declaration":
-            if let t = extractEnumDeclaration(child) { nestedTypes.append(t) }
+            if let typeDecl = extractEnumDeclaration(child) { nestedTypes.append(typeDecl) }
         case "mixin_declaration":
-            if let t = extractMixinDeclaration(child) { nestedTypes.append(t) }
+            if let typeDecl = extractMixinDeclaration(child) { nestedTypes.append(typeDecl) }
         default:
             return false
         }
@@ -417,7 +402,7 @@ extension DartExtractor {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "enum_constant":
-                if let ec = extractEnumConstant(child) { enumCases.append(ec) }
+                if let enumCase = extractEnumConstant(child) { enumCases.append(enumCase) }
             case "declaration":
                 extractClassMemberDeclaration(
                     child, members: &members, nestedTypes: &ignored, parentName: parentName
@@ -461,11 +446,11 @@ extension DartExtractor {
                 parameters = inner.parameters
                 genericParams = inner.genericParameters
             case "constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: "") {
+                if let member = extractConstructorSignature(child, parentName: "") {
                     return Member(
-                        name: m.name, kind: m.kind,
-                        modifiers: isStatic ? m.modifiers + [.static] : m.modifiers,
-                        type: m.type, parameters: m.parameters, location: loc(node)
+                        name: member.name, kind: member.kind,
+                        modifiers: isStatic ? member.modifiers + [.static] : member.modifiers,
+                        type: member.type, parameters: member.parameters, location: loc(node)
                     )
                 }
             default:
@@ -556,9 +541,9 @@ extension DartExtractor {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "identifier":
-                let t = text(child)
-                if t != parentName && !t.isEmpty {
-                    name = t
+                let childText = text(child)
+                if childText != parentName && !childText.isEmpty {
+                    name = childText
                 }
             case "formal_parameter_list":
                 parameters = extractFormalParameterList(child)
@@ -674,15 +659,15 @@ extension DartExtractor {
         isStatic: Bool, isLate: Bool, isConst: Bool, isFinal: Bool,
         location: SourceLocation
     ) -> Member {
-        var mods: [Modifier] = []
-        if isStatic { mods.append(.static) }
-        if isLate { mods.append(.late) }
-        if isConst { mods.append(.const) }
-        if isFinal { mods.append(.final) }
+        var modifiers: [Modifier] = []
+        if isStatic { modifiers.append(.static) }
+        if isLate { modifiers.append(.late) }
+        if isConst { modifiers.append(.const) }
+        if isFinal { modifiers.append(.final) }
         return Member(
             name: name, kind: .property,
             accessLevel: accessLevel(for: name),
-            modifiers: mods, type: type, location: location
+            modifiers: modifiers, type: type, location: location
         )
     }
 
@@ -764,15 +749,15 @@ extension DartExtractor {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "formal_parameter", "normal_formal_parameter":
-                if let p = extractFormalParameter(child) { params.append(p) }
+                if let parameter = extractFormalParameter(child) { params.append(parameter) }
             case "default_formal_parameter":
-                if let p = extractDefaultFormalParameter(child) { params.append(p) }
+                if let parameter = extractDefaultFormalParameter(child) { params.append(parameter) }
             case "optional_positional_formal_parameters", "optional_named_formal_parameters":
                 for innerChild in child.children() {
-                    if let ct = innerChild.nodeType,
-                       ct == "default_formal_parameter" || ct == "formal_parameter" || ct == "normal_formal_parameter" {
-                        if let p = extractDefaultFormalParameter(innerChild) ?? extractFormalParameter(innerChild) {
-                            params.append(p)
+                    if let childType = innerChild.nodeType,
+                       childType == "default_formal_parameter" || childType == "formal_parameter" || childType == "normal_formal_parameter" {
+                        if let parameter = extractDefaultFormalParameter(innerChild) ?? extractFormalParameter(innerChild) {
+                            params.append(parameter)
                         }
                     }
                 }
@@ -786,7 +771,7 @@ extension DartExtractor {
     private func extractFormalParameter(_ node: Node) -> Parameter? {
         var paramType: TypeReference?
         var name = ""
-        var mods: [Modifier] = []
+        var modifiers: [Modifier] = []
 
         // Check for field formal parameter (this.name).
         let fullText = text(node)
@@ -804,23 +789,23 @@ extension DartExtractor {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "identifier":
-                let t = text(child)
+                let childText = text(child)
                 if paramType == nil && name.isEmpty {
                     // Could be either the type or the name. If there's only one identifier, it's the name.
-                    name = t
+                    name = childText
                 } else if !name.isEmpty && paramType == nil {
                     // Previous identifier was the type; this one is the name.
                     paramType = TypeReference(name: name)
-                    name = t
+                    name = childText
                 }
             case "type_identifier", "generic_type", "function_type", "void_type":
                 paramType = extractTypeReference(child)
             case "final_builtin":
-                mods.append(.final)
+                modifiers.append(.final)
             case "covariant":
-                mods.append(.covariant)
+                modifiers.append(.covariant)
             case "required":
-                mods.append(.required)
+                modifiers.append(.required)
             default:
                 if paramType == nil, let ref = extractTypeReference(child) {
                     paramType = ref
@@ -829,7 +814,7 @@ extension DartExtractor {
         }
 
         guard !name.isEmpty else { return nil }
-        return Parameter(internalName: name, type: paramType, modifiers: mods)
+        return Parameter(internalName: name, type: paramType, modifiers: modifiers)
     }
 
     private func extractDefaultFormalParameter(_ node: Node) -> Parameter? {
@@ -870,8 +855,8 @@ extension DartExtractor {
         case "inferred_type":
             return TypeReference(name: "var")
         default:
-            let t = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-            return t.isEmpty ? nil : TypeReference(name: t)
+            let typeText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+            return typeText.isEmpty ? nil : TypeReference(name: typeText)
         }
     }
 
@@ -1004,8 +989,8 @@ extension DartExtractor {
         var modifiers: [Modifier] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            let t = text(child)
-            switch t {
+            let modifierText = text(child)
+            switch modifierText {
             case "abstract": modifiers.append(.abstract)
             case "sealed": modifiers.append(.sealed)
             case "final": modifiers.append(.final)

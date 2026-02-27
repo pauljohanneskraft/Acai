@@ -1,31 +1,23 @@
 import UMLCore
 import UMLTreeSitter
 
-struct JavaExtractor {
-    private let context: SourceFileContext
+struct JavaExtractor: TreeSitterExtracting, CallSiteResolving {
+    let context: SourceFileContext
 
-    private var types: [TypeDeclaration] = []
-    private var relationships: [Relationship] = []
-    private var currentPackage: String?
+    var types: [TypeDeclaration] = []
+    var relationships: [Relationship] = []
+    var freestandingFunctions: [Member] = []
+    var currentNamespace: String?
 
     init(source: String, fileName: String) {
         self.context = SourceFileContext(source: source, fileName: fileName)
     }
 
-    // MARK: - Shorthands
-
-    private func text(_ node: Node) -> String { node.text(in: context) }
-    private func loc(_ node: Node) -> SourceLocation { node.location(in: context) }
-
     // MARK: - Public
 
     mutating func extract(from root: Node) -> CodeArtifact {
-        extractProgram(root)
-        return CodeArtifact(
-            metadata: .init(sourceLanguage: .java, filePaths: [context.fileName]),
-            types: types,
-            relationships: relationships
-        )
+        walkSourceFile(root)
+        return buildArtifact(language: .java)
     }
 }
 
@@ -33,12 +25,12 @@ struct JavaExtractor {
 
 extension JavaExtractor {
 
-    private mutating func extractProgram(_ node: Node) {
+    mutating func walkSourceFile(_ node: Node) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "package_declaration":
-                currentPackage = extractPackageName(child)
+                currentNamespace = extractPackageName(child)
             case "import_declaration":
                 break // Skip imports
             case "class_declaration":
@@ -71,20 +63,9 @@ extension JavaExtractor {
 
     // MARK: - Qualified Name Helpers
 
-    private func qualifiedName(_ name: String) -> String {
-        if let pkg = currentPackage { return "\(pkg).\(name)" }
-        return name
-    }
-
     private func typeId(_ name: String) -> String { qualifiedName(name) }
 
     // MARK: - Modifiers
-
-    private struct ModifierInfo {
-        var accessLevel: AccessLevel?
-        var modifiers: [Modifier]
-        var annotations: [String]
-    }
 
     private func extractModifiers(_ node: Node) -> ModifierInfo {
         var accessLevel: AccessLevel?
@@ -126,10 +107,10 @@ extension JavaExtractor {
     // MARK: - Class Declaration
 
     private mutating func extractClassDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let qn = qualifiedName(name)
+        let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
         let genericParams = extractTypeParameters(from: node)
@@ -138,14 +119,14 @@ extension JavaExtractor {
         if let superclassNode = node.child(byFieldName: "superclass") {
             for superType in extractSuperclassTypes(superclassNode) {
                 inheritedTypes.append(superType)
-                relationships.append(Relationship(kind: .inheritance, source: qn, target: superType.name))
+                relationships.append(Relationship(kind: .inheritance, source: qualifiedTypeName, target: superType.name))
             }
         }
 
         if let interfacesNode = node.child(byFieldName: "interfaces") {
             for ifaceType in extractTypeList(interfacesNode) {
                 inheritedTypes.append(ifaceType)
-                relationships.append(Relationship(kind: .conformance, source: qn, target: ifaceType.name))
+                relationships.append(Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name))
             }
         }
 
@@ -155,26 +136,26 @@ extension JavaExtractor {
 
         if let bodyNode = node.child(byFieldName: "body") {
             extractClassBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
             )
         }
 
         return TypeDeclaration(
-            id: typeId(name), name: name, qualifiedName: qn, kind: .class,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .class,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases, nestedTypes: nestedTypes,
-            annotations: modInfo.annotations, namespace: currentPackage, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Interface Declaration
 
     private mutating func extractInterfaceDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let qn = qualifiedName(name)
+        let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
         let genericParams = extractTypeParameters(from: node)
@@ -184,7 +165,7 @@ extension JavaExtractor {
             guard child.nodeType == "extends_interfaces" else { continue }
             for extType in extractTypeList(child) {
                 inheritedTypes.append(extType)
-                relationships.append(Relationship(kind: .conformance, source: qn, target: extType.name))
+                relationships.append(Relationship(kind: .conformance, source: qualifiedTypeName, target: extType.name))
             }
         }
 
@@ -194,33 +175,33 @@ extension JavaExtractor {
 
         if let bodyNode = node.child(byFieldName: "body") {
             extractInterfaceBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
             )
         }
 
         return TypeDeclaration(
-            id: typeId(name), name: name, qualifiedName: qn, kind: .interface,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .interface,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases, nestedTypes: nestedTypes,
-            annotations: modInfo.annotations, namespace: currentPackage, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Enum Declaration
 
     private mutating func extractEnumDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let qn = qualifiedName(name)
+        let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
         var inheritedTypes: [TypeReference] = []
         if let interfacesNode = node.child(byFieldName: "interfaces") {
             for ifaceType in extractTypeList(interfacesNode) {
                 inheritedTypes.append(ifaceType)
-                relationships.append(Relationship(kind: .conformance, source: qn, target: ifaceType.name))
+                relationships.append(Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name))
             }
         }
 
@@ -229,25 +210,25 @@ extension JavaExtractor {
         var nestedTypes: [TypeDeclaration] = []
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractEnumBody(bodyNode, enumCases: &enumCases, members: &members, nestedTypes: &nestedTypes, parentQN: qn)
+            extractEnumBody(bodyNode, enumCases: &enumCases, members: &members, nestedTypes: &nestedTypes, parentQualifiedName: qualifiedTypeName)
         }
 
         return TypeDeclaration(
-            id: typeId(name), name: name, qualifiedName: qn, kind: .enum,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .enum,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             inheritedTypes: inheritedTypes, members: members, enumCases: enumCases,
-            nestedTypes: nestedTypes, annotations: modInfo.annotations,
-            namespace: currentPackage, location: nodeLoc
+            nestedTypes: nestedTypes, annotations: modifierInfo.annotations,
+            namespace: currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Record Declaration
 
     private mutating func extractRecordDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let qn = qualifiedName(name)
+        let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
         let genericParams = extractTypeParameters(from: node)
@@ -255,7 +236,7 @@ extension JavaExtractor {
         if let interfacesNode = node.child(byFieldName: "interfaces") {
             for ifaceType in extractTypeList(interfacesNode) {
                 inheritedTypes.append(ifaceType)
-                relationships.append(Relationship(kind: .conformance, source: qn, target: ifaceType.name))
+                relationships.append(Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name))
             }
         }
 
@@ -273,16 +254,16 @@ extension JavaExtractor {
         var enumCases: [EnumCase] = []
         if let bodyNode = node.child(byFieldName: "body") {
             extractClassBody(
-                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQualifiedName: qualifiedTypeName
             )
         }
 
         return TypeDeclaration(
-            id: typeId(name), name: name, qualifiedName: qn, kind: .record,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .record,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases, nestedTypes: nestedTypes,
-            annotations: modInfo.annotations, namespace: currentPackage, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
 
@@ -300,24 +281,24 @@ extension JavaExtractor {
     // MARK: - Annotation Type Declaration
 
     private mutating func extractAnnotationTypeDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
-        let qn = qualifiedName(name)
+        let qualifiedTypeName = qualifiedName(name)
         let nodeLoc = loc(node)
 
         var members: [Member] = []
         var nestedTypes: [TypeDeclaration] = []
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractAnnotationTypeBody(bodyNode, members: &members, nestedTypes: &nestedTypes, parentQN: qn)
+            extractAnnotationTypeBody(bodyNode, members: &members, nestedTypes: &nestedTypes, parentQualifiedName: qualifiedTypeName)
         }
 
         return TypeDeclaration(
-            id: typeId(name), name: name, qualifiedName: qn, kind: .annotation,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .annotation,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             members: members, nestedTypes: nestedTypes,
-            annotations: modInfo.annotations, namespace: currentPackage, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
         )
     }
 }
@@ -355,7 +336,7 @@ extension JavaExtractor {
         members: inout [Member],
         nestedTypes: inout [TypeDeclaration],
         enumCases: inout [EnumCase],
-        parentQN: String
+        parentQualifiedName: String
     ) {
         let knownProperties = buildPropertyMap(from: members, node: node)
 
@@ -390,7 +371,7 @@ extension JavaExtractor {
         members: inout [Member],
         nestedTypes: inout [TypeDeclaration],
         enumCases: inout [EnumCase],
-        parentQN: String
+        parentQualifiedName: String
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -420,17 +401,17 @@ extension JavaExtractor {
         enumCases: inout [EnumCase],
         members: inout [Member],
         nestedTypes: inout [TypeDeclaration],
-        parentQN: String
+        parentQualifiedName: String
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "enum_constant":
-                if let ec = extractEnumConstant(child) { enumCases.append(ec) }
+                if let enumCase = extractEnumConstant(child) { enumCases.append(enumCase) }
             case "enum_body_declarations":
                 extractClassBody(
                     child, members: &members, nestedTypes: &nestedTypes,
-                    enumCases: &enumCases, parentQN: parentQN
+                    enumCases: &enumCases, parentQualifiedName: parentQualifiedName
                 )
             case "method_declaration":
                 if let member = extractMethodDeclaration(child) { members.append(member) }
@@ -452,7 +433,7 @@ extension JavaExtractor {
         _ node: Node,
         members: inout [Member],
         nestedTypes: inout [TypeDeclaration],
-        parentQN: String
+        parentQualifiedName: String
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -474,7 +455,7 @@ extension JavaExtractor {
     }
 
     private func extractAnnotationTypeElement(_ node: Node) -> Member? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
         var returnType: TypeReference?
         var name = ""
@@ -485,8 +466,8 @@ extension JavaExtractor {
 
         return Member(
             name: name, kind: .method,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            type: returnType, annotations: modInfo.annotations, location: nodeLoc
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
+            type: returnType, annotations: modifierInfo.annotations, location: nodeLoc
         )
     }
 
@@ -519,7 +500,7 @@ extension JavaExtractor {
         _ node: Node,
         knownProperties: [String: String] = [:]
     ) -> Member? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
@@ -542,9 +523,9 @@ extension JavaExtractor {
 
         return Member(
             name: name, kind: .method,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: returnType, parameters: parameters, genericParameters: genericParams,
-            annotations: modInfo.annotations, location: nodeLoc,
+            annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites
         )
     }
@@ -555,7 +536,7 @@ extension JavaExtractor {
         _ node: Node,
         knownProperties: [String: String] = [:]
     ) -> Member? {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
         let name = node.child(byFieldName: "name").map { text($0) } ?? ""
@@ -570,9 +551,9 @@ extension JavaExtractor {
 
         return Member(
             name: name, kind: .initializer,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             parameters: parameters, genericParameters: genericParams,
-            annotations: modInfo.annotations, location: nodeLoc,
+            annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites
         )
     }
@@ -580,7 +561,7 @@ extension JavaExtractor {
     // MARK: - Field Declaration
 
     private func extractFieldDeclaration(_ node: Node) -> [Member] {
-        let modInfo = extractModifiersFromParent(node)
+        let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
         var fieldType: TypeReference?
@@ -592,14 +573,14 @@ extension JavaExtractor {
         let declarators = node.allChildren(withType: "variable_declarator")
         if !declarators.isEmpty {
             return declarators.compactMap {
-                extractVariableDeclarator($0, fieldType: fieldType, modInfo: modInfo, loc: nodeLoc)
+                extractVariableDeclarator($0, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc)
             }
         }
 
         // Fallback: try declarator field name
         if let declaratorNode = node.child(byFieldName: "declarator") {
             if let member = extractVariableDeclarator(
-                declaratorNode, fieldType: fieldType, modInfo: modInfo, loc: nodeLoc
+                declaratorNode, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc
             ) {
                 return [member]
             }
@@ -610,7 +591,7 @@ extension JavaExtractor {
     private func extractVariableDeclarator(
         _ node: Node,
         fieldType: TypeReference?,
-        modInfo: ModifierInfo,
+        modifierInfo: ModifierInfo,
         loc: SourceLocation
     ) -> Member? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
@@ -621,18 +602,18 @@ extension JavaExtractor {
         if let dimensionsNode = node.child(byFieldName: "dimensions") {
             let dimText = text(dimensionsNode)
             let bracketPairs = dimText.components(separatedBy: "[]").count - 1
-            if bracketPairs > 0, let ft = actualType {
+            if bracketPairs > 0, let arrayFieldType = actualType {
                 actualType = TypeReference(
-                    name: ft.name, genericArguments: ft.genericArguments,
-                    isOptional: ft.isOptional, isArray: true
+                    name: arrayFieldType.name, genericArguments: arrayFieldType.genericArguments,
+                    isOptional: arrayFieldType.isOptional, isArray: true
                 )
             }
         }
 
         return Member(
             name: name, kind: .property,
-            accessLevel: modInfo.accessLevel, modifiers: modInfo.modifiers,
-            type: actualType, annotations: modInfo.annotations, location: loc
+            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
+            type: actualType, annotations: modifierInfo.annotations, location: loc
         )
     }
 
@@ -671,10 +652,10 @@ extension JavaExtractor {
 
         if let dimensionsNode = node.child(byFieldName: "dimensions") {
             let dimText = text(dimensionsNode)
-            if !dimText.isEmpty, let pt = paramType {
+            if !dimText.isEmpty, let parameterType = paramType {
                 paramType = TypeReference(
-                    name: pt.name, genericArguments: pt.genericArguments,
-                    isOptional: pt.isOptional, isArray: true
+                    name: parameterType.name, genericArguments: parameterType.genericArguments,
+                    isOptional: parameterType.isOptional, isArray: true
                 )
             }
         }
@@ -698,29 +679,13 @@ extension JavaExtractor {
 
 extension JavaExtractor {
 
-    private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
-        guard let body, !knownProperties.isEmpty else { return [] }
-        var sites: [CallSite] = []
-        walkForCallSites(body, knownProperties: knownProperties, into: &sites)
-        return sites
-    }
-
-    private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
-        if let site = resolveJavaCallSite(node, knownProperties: knownProperties) {
-            sites.append(site)
-        }
-        for child in node.namedChildren() {
-            walkForCallSites(child, knownProperties: knownProperties, into: &sites)
-        }
-    }
-
     /// Matches Java `method_invocation` nodes.
     ///
     /// Handles:
     /// - `receiver.method(args)` — `object` field is an `identifier`.
     /// - `this.receiver.method(args)` — `object` field is a `field_access` whose own
     ///   `object` is `this`.
-    private func resolveJavaCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+    func resolveCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
         guard node.nodeType == "method_invocation",
               let nameNode = node.child(byFieldName: "name"),
               let objectNode = node.child(byFieldName: "object")
@@ -768,8 +733,8 @@ extension JavaExtractor {
         case "dimensions":
             return nil
         default:
-            let t = text(node)
-            return t.isEmpty ? nil : TypeReference(name: t)
+            let typeName = text(node)
+            return typeName.isEmpty ? nil : TypeReference(name: typeName)
         }
     }
 

@@ -134,11 +134,11 @@ struct DOTNodeRenderer {
 
         if isMethod(member) {
             let paramStr = member.parameters.map { p in
-                var s = p.internalName.dotHTMLEscaped
-                if options.showMemberTypes, let t = p.type {
-                    s += ": " + typeRefString(t).dotHTMLEscaped
+                var parameterString = p.internalName.dotHTMLEscaped
+                if options.showMemberTypes, let parameterType = p.type {
+                    parameterString += ": " + typeRefString(parameterType).dotHTMLEscaped
                 }
-                return s
+                return parameterString
             }.joined(separator: ", ")
             result += "(\(paramStr))"
         }
@@ -167,13 +167,13 @@ struct DOTNodeRenderer {
     // MARK: - Helpers
 
     private func typeRefString(_ ref: TypeReference) -> String {
-        var s = ref.name
+        var typeString = ref.name
         if !ref.genericArguments.isEmpty {
-            s += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
+            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
         }
-        if ref.isOptional { s += "?" }
-        if ref.isArray && !s.hasPrefix("Array") { s += "[]" }
-        return s
+        if ref.isOptional { typeString += "?" }
+        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        return typeString
     }
 
     private func stereotypeString(for kind: TypeKind) -> String? {

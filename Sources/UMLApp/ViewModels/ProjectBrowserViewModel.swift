@@ -41,10 +41,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func updateProject(id: UUID, title: String, subtitle: String, iconSystemName: String) {
-        guard let idx = store.projects.firstIndex(where: { $0.id == id }) else { return }
-        store.projects[idx].title = title
-        store.projects[idx].subtitle = subtitle
-        store.projects[idx].iconSystemName = iconSystemName
+        guard let projectIndex = store.projects.firstIndex(where: { $0.id == id }) else { return }
+        store.projects[projectIndex].title = title
+        store.projects[projectIndex].subtitle = subtitle
+        store.projects[projectIndex].iconSystemName = iconSystemName
         persistChanges()
     }
 
@@ -61,9 +61,9 @@ final class ProjectBrowserViewModel: ObservableObject {
     // MARK: - Codebase CRUD
 
     func addCodebase(to projectID: UUID, name: String, directoryURL: URL) {
-        guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
         let codebase = Codebase(name: name, directoryPath: directoryURL.path)
-        store.projects[idx].codebases.append(codebase)
+        store.projects[projectIndex].codebases.append(codebase)
         persistChanges()
     }
 
@@ -120,9 +120,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         type: DiagramType,
         configuration: DiagramConfiguration
     ) -> UUID? {
-        guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         let diagram = StoredDiagram(name: name, type: type, codebaseID: codebaseID, configuration: configuration)
-        store.projects[idx].storedDiagramIDs.append(diagram.id)
+        store.projects[projectIndex].storedDiagramIDs.append(diagram.id)
         store.saveStoredDiagram(diagram)
         persistChanges()
         return diagram.id
@@ -179,10 +179,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     // MARK: - Custom Diagram CRUD
 
     func addCustomDiagram(to projectID: UUID, name: String, type: DiagramType) -> UUID? {
-        guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         var diagram = CustomDiagram(name: name, diagramType: type)
         diagram.ownerProjectID = projectID
-        store.projects[idx].customDiagramIDs.append(diagram.id)
+        store.projects[projectIndex].customDiagramIDs.append(diagram.id)
         store.saveCustomDiagram(diagram)
         persistChanges()
         return diagram.id

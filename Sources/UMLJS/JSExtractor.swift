@@ -2,13 +2,14 @@ import UMLCore
 import UMLTreeSitter
 
 /// Walks a tree-sitter AST (JavaScript or TypeScript) and produces UMLCore model types.
-struct JSExtractor {
-    private let context: SourceFileContext
-    private let isTypeScript: Bool
+struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
+    let context: SourceFileContext
+    let isTypeScript: Bool
 
-    private var types: [TypeDeclaration] = []
-    private var relationships: [Relationship] = []
-    private var freestandingFunctions: [Member] = []
+    var types: [TypeDeclaration] = []
+    var relationships: [Relationship] = []
+    var freestandingFunctions: [Member] = []
+    var currentNamespace: String?
 
     init(source: String, fileName: String, isTypeScript: Bool) {
         self.context = SourceFileContext(source: source, fileName: fileName)
@@ -16,9 +17,6 @@ struct JSExtractor {
     }
 
     // MARK: - Shorthands
-
-    private func text(_ node: Node) -> String { node.text(in: context) }
-    private func loc(_ node: Node) -> SourceLocation { node.location(in: context) }
 
     /// Builds a qualified ID from an optional namespace and a type name.
     private static func qualifiedId(_ name: String, namespace: String?) -> String {
@@ -28,14 +26,14 @@ struct JSExtractor {
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
-        visitProgram(root)
+        walkSourceFile(root)
 
         // Post-process: qualify type IDs with their namespace so edges resolve correctly.
         for i in types.indices {
-            let ns = types[i].namespace
-            let qn = Self.qualifiedId(types[i].name, namespace: ns)
-            types[i].id = qn
-            types[i].qualifiedName = qn
+            let namespace = types[i].namespace
+            let qualifiedTypeName = Self.qualifiedId(types[i].name, namespace: namespace)
+            types[i].id = qualifiedTypeName
+            types[i].qualifiedName = qualifiedTypeName
         }
 
         return CodeArtifact(
@@ -56,7 +54,7 @@ extension JSExtractor {
 
     // MARK: - Program
 
-    private mutating func visitProgram(_ node: Node) {
+    mutating func walkSourceFile(_ node: Node) {
         for child in node.children() {
             visitTopLevelNode(child)
         }
@@ -75,13 +73,13 @@ extension JSExtractor {
         } else if nodeType == "expression_statement", isTypeScript {
             // tree-sitter-typescript 0.23+: namespace Foo {} → expression_statement → internal_module
             for inner in node.namedChildren() {
-                guard let t = inner.nodeType, t == "internal_module" || t == "module" else { continue }
-                let (t1, f1) = dispatchDeclaration(inner, isExported: false)
-                types += t1; freestandingFunctions += f1
+                guard let nodeType = inner.nodeType, nodeType == "internal_module" || nodeType == "module" else { continue }
+                let (newTypes, newFunctions) = dispatchDeclaration(inner, isExported: false)
+                types += newTypes; freestandingFunctions += newFunctions
             }
         } else {
-            let (t1, f1) = dispatchDeclaration(node, isExported: false)
-            types += t1; freestandingFunctions += f1
+            let (newTypes, newFunctions) = dispatchDeclaration(node, isExported: false)
+            types += newTypes; freestandingFunctions += newFunctions
         }
     }
 
@@ -91,9 +89,9 @@ extension JSExtractor {
         let isDefault = node.hasDirectChildText("default", in: context)
         let exportDecorators = extractDecorators(node)
         for child in node.children() {
-            let (t1, f1) = dispatchDeclaration(child, isExported: true, isDefault: isDefault,
+            let (newTypes, newFunctions) = dispatchDeclaration(child, isExported: true, isDefault: isDefault,
                                               decorators: exportDecorators)
-            types += t1; freestandingFunctions += f1
+            types += newTypes; freestandingFunctions += newFunctions
         }
     }
 
@@ -124,10 +122,10 @@ extension JSExtractor {
             typeDecl = extractEnumDeclaration(node, isExported: isExported)
         case "module" where isTypeScript, "internal_module" where isTypeScript:
             var result: [TypeDeclaration] = []
-            for var d in extractModule(node, isExported: isExported) {
-                d.annotations.append(contentsOf: decorators)
-                if let ns = namespace { d.namespace = ns }
-                result.append(d)
+            for var declaration in extractModule(node, isExported: isExported) {
+                declaration.annotations.append(contentsOf: decorators)
+                if let namespace = namespace { declaration.namespace = namespace }
+                result.append(declaration)
             }
             return (result, [])
         case "function_declaration":
@@ -137,7 +135,7 @@ extension JSExtractor {
         }
         if var decl = typeDecl {
             decl.annotations.append(contentsOf: decorators)
-            if let ns = namespace { decl.namespace = ns }
+            if let namespace = namespace { decl.namespace = namespace }
             return ([decl], [])
         }
         return ([], [])
@@ -629,13 +627,13 @@ extension JSExtractor {
                     let isDefault = child.hasDirectChildText("default", in: context)
                     let exportDecorators = extractDecorators(child)
                     for exportChild in child.children() {
-                        let (t1, f1) = dispatchDeclaration(exportChild, isExported: true, isDefault: isDefault,
+                        let (newTypes, newFunctions) = dispatchDeclaration(exportChild, isExported: true, isDefault: isDefault,
                                                            decorators: exportDecorators, namespace: name)
-                        nestedTypes += t1; nestedFunctions += f1
+                        nestedTypes += newTypes; nestedFunctions += newFunctions
                     }
                 } else {
-                    let (t1, f1) = dispatchDeclaration(child, isExported: false, namespace: name)
-                    nestedTypes += t1; nestedFunctions += f1
+                    let (newTypes, newFunctions) = dispatchDeclaration(child, isExported: false, namespace: name)
+                    nestedTypes += newTypes; nestedFunctions += newFunctions
                 }
             }
         }
@@ -674,29 +672,13 @@ extension JSExtractor {
 
     // MARK: - Call Site Extraction
 
-    private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
-        guard let body, !knownProperties.isEmpty else { return [] }
-        var sites: [CallSite] = []
-        walkForCallSites(body, knownProperties: knownProperties, into: &sites)
-        return sites
-    }
-
-    private func walkForCallSites(_ node: Node, knownProperties: [String: String], into sites: inout [CallSite]) {
-        if let site = resolveJSCallSite(node, knownProperties: knownProperties) {
-            sites.append(site)
-        }
-        for child in node.namedChildren() {
-            walkForCallSites(child, knownProperties: knownProperties, into: &sites)
-        }
-    }
-
     /// Matches JS/TS `call_expression { function: member_expression { object, property } }`.
     ///
     /// Handles:
     /// - `receiver.method(args)` — `object` is an `identifier`.
     /// - `this.receiver.method(args)` — `object` is a `member_expression` whose own
     ///   `object` is a `this` node.
-    private func resolveJSCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+    func resolveCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
         guard node.nodeType == "call_expression",
               let funcNode = node.child(byFieldName: "function"),
               funcNode.nodeType == "member_expression",
@@ -975,14 +957,14 @@ extension JSExtractor {
                 }
             }
 
-            if let idx = types.firstIndex(where: { $0.name == assignment.className }) {
+            if let index = types.firstIndex(where: { $0.name == assignment.className }) {
                 if isFunction {
-                    types[idx].members.append(Member(
+                    types[index].members.append(Member(
                         name: assignment.memberName, kind: .method,
                         modifiers: modifiers, parameters: params
                     ))
                 } else {
-                    types[idx].members.append(Member(name: assignment.memberName, kind: .property))
+                    types[index].members.append(Member(name: assignment.memberName, kind: .property))
                 }
             }
         }

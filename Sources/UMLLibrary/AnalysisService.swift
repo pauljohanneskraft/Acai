@@ -83,8 +83,8 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            let p = parser(for: spec.language)
-            let exts = Set(p.fileExtensions)
+            let codeParser = parser(for: spec.language)
+            let exts = Set(codeParser.fileExtensions)
 
             var seenURLs: Set<URL> = []
             let files = spec.sourceDirs
@@ -110,7 +110,7 @@ public struct AnalysisService: Sendable {
 
                 do {
                     let source = try String(contentsOf: file, encoding: .utf8)
-                    let parsed = p.parse(source: source, fileName: relativePath)
+                    let parsed = codeParser.parse(source: source, fileName: relativePath)
                     artifact = artifact.merging(with: parsed)
                 } catch {
                     print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
@@ -141,8 +141,8 @@ public struct AnalysisService: Sendable {
         at directory: URL,
         language: CodeArtifact.SourceLanguage
     ) throws -> CodeArtifact {
-        let p = parser(for: language)
-        let files = FileManager.default.fileURLs(in: directory, withExtensions: Set(p.fileExtensions))
+        let codeParser = parser(for: language)
+        let files = FileManager.default.fileURLs(in: directory, withExtensions: Set(codeParser.fileExtensions))
 
         if files.isEmpty {
             throw ValidationError("No \(language.rawValue) source files found in \(directory.path)")
@@ -159,7 +159,7 @@ public struct AnalysisService: Sendable {
 
             do {
                 let source = try String(contentsOf: file, encoding: .utf8)
-                combined = combined.merging(with: p.parse(source: source, fileName: relativePath))
+                combined = combined.merging(with: codeParser.parse(source: source, fileName: relativePath))
             } catch {
                 print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
             }
