@@ -20,10 +20,22 @@ opt_in_rules:
   - sorted_first_last
   - switch_case_on_newline
 
+# Rule settings
+
 colon:
   flexible_right_spacing: true
 
-line_length: 120
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
 
 identifier_name:
   min_length: 1
@@ -38,23 +50,13 @@ identifier_name:
     - y
     - z
 
-type_body_length:
-  warning: 300
-  error: 400
+large_tuple: 3
 
-file_length:
-  warning: 500
-  error: 1000
-
-function_body_length:
-  warning: 50
-  error: 100
+line_length: 120
 
 nesting:
   type_level: 2
 
-large_tuple: 3
-
-cyclomatic_complexity:
-  warning: 10
-  error: 20
+type_body_length:
+  warning: 300
+  error: 400
