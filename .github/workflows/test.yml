@@ -1,0 +1,79 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test.yml'
+      - 'Package*'
+      - 'Sources/**/*.swift'
+      - 'Tests/**/*.swift'
+  pull_request:
+    paths:
+      - '.github/workflows/test.yml'
+      - 'Package*'
+      - 'Sources/**/*.swift'
+      - 'Tests/**/*.swift'
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS (Xcode ${{ matrix.xcode }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            xcode: '15.4'
+          - os: macos-15
+            xcode: '16.2'
+            coverage: true
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_${{ matrix.xcode }}.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run tests
+        run: swift test --parallel
+
+      - name: Generate code coverage
+        if: matrix.coverage
+        run: |
+          swift test --enable-code-coverage
+          xcrun llvm-cov export -format="lcov" \
+            .build/debug/UMLPackageTests.xctest/Contents/MacOS/UMLPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.lcov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  linux:
+    name: Linux (Swift ${{ matrix.swift }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        swift: ['6.0', '6.1']
+    container:
+      image: swift:${{ matrix.swift }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run tests
+        run: swift test --parallel
