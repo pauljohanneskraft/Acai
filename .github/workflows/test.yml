@@ -27,6 +27,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure Git to use HTTPS
+        run: git config --global url."https://github.com/".insteadOf git@github.com:
+
       - name: Show Swift version
         run: swift --version
 
@@ -56,6 +59,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: git config --global url."https://github.com/".insteadOf git@github.com:
 
       - name: Show Swift version
         run: swift --version
