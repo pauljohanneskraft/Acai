@@ -1,5 +1,4 @@
 import Foundation
-import UMLCore
 
 // MARK: - Models
 
@@ -25,7 +24,6 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// Analysis results are stored in a separate file (`artifacts/codebase_<id>.json`).
     /// Use `ProjectStore.artifact(for:)` to load.
     var hasArtifact: Bool = false
-    var languages: [LanguageSummary] = []
     var lastIndexed: Date?
 }
 

@@ -70,7 +70,7 @@ extension UMLCommand {
                 throw ValidationError("Either --from or --source must be specified.")
             }
 
-            var options = DiagramOptions()
+            var options = ClassDiagramOptions()
 
             if let configPath = config {
                 let yamlString = try String(contentsOf: URL(fileURLWithPath: configPath), encoding: .utf8)

@@ -112,7 +112,7 @@ struct DOTGeneratorTests {
     }
 
     @Test func layoutDirection() {
-        let options = DiagramOptions(layoutDirection: .leftToRight)
+        let options = ClassDiagramOptions(layoutDirection: .leftToRight)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
@@ -122,7 +122,7 @@ struct DOTGeneratorTests {
     }
 
     @Test func darkTheme() {
-        let options = DiagramOptions(theme: .dark)
+        let options = ClassDiagramOptions(theme: .dark)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
@@ -132,7 +132,7 @@ struct DOTGeneratorTests {
     }
 
     @Test func hideMembersOption() {
-        let options = DiagramOptions(showMembers: false)
+        let options = ClassDiagramOptions(showMembers: false)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
@@ -147,7 +147,7 @@ struct DOTGeneratorTests {
     }
 
     @Test func filterRelationshipKinds() {
-        let options = DiagramOptions(includedRelationshipKinds: [.inheritance])
+        let options = ClassDiagramOptions(includedRelationshipKinds: [.inheritance])
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
@@ -166,7 +166,7 @@ struct DOTGeneratorTests {
     }
 
     @Test func clusterByFile() {
-        let options = DiagramOptions(groupBy: .byFile)
+        let options = ClassDiagramOptions(groupBy: .byFile)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift"]),
             types: [

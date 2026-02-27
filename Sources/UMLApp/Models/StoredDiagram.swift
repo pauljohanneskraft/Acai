@@ -307,17 +307,17 @@ struct CustomDiagramEdge: Identifiable, Codable, Hashable, Sendable {
 // MARK: - Custom Diagram
 
 /// A fully user-defined diagram with manually placed nodes and edges.
-/// Ownership: belongs to a project (via `ownerProjectID`).
 struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
     var diagramType: DiagramType = .classDiagram
-    var ownerProjectID: UUID?
     var nodes: [CustomDiagramNode] = []
     var edges: [CustomDiagramEdge] = []
     var canvasScale: Double = 1.0
     var canvasOffsetX: Double = 0
     var canvasOffsetY: Double = 0
+    // periphery:ignore
     var createdDate: Date = Date()
+    // periphery:ignore
     var lastModified: Date = Date()
 }

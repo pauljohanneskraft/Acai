@@ -87,11 +87,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         }
 
         probe(root)
-
-        func dedup(_ urls: [URL]) -> [URL] {
-            var seen: Set<URL> = []
-            return urls.filter { seen.insert($0).inserted }
-        }
-        return (dedup(kotlinDirs), dedup(javaDirs))
+        
+        return (kotlinDirs.removingDuplicates { $0 }, javaDirs.removingDuplicates { $0 })
     }
 }
