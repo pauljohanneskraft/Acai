@@ -11,8 +11,8 @@ concurrency:
 
 jobs:
   macos:
-    name: macOS (latest Xcode)
-    runs-on: macos-latest
+    name: macOS
+    runs-on: macos-26
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
         continue-on-error: true
 
   linux:
-    name: Linux (latest Swift)
+    name: Linux
     runs-on: ubuntu-latest
     container:
       image: swift:latest
