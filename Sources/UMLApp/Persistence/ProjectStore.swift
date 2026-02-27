@@ -1,4 +1,5 @@
 import Foundation
+import UMLCore
 
 /// Per-file persistence layout:
 /// ```
@@ -9,6 +10,8 @@ import Foundation
 ///   diagrams/
 ///     stored_<diagramID>.json   – StoredDiagram
 ///     custom_<diagramID>.json   – CustomDiagram
+///   artifacts/
+///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
 /// ```
 final class ProjectStore: ObservableObject {
     @Published var projects: [Project] = []
@@ -17,9 +20,13 @@ final class ProjectStore: ObservableObject {
     @Published var storedDiagrams: [UUID: StoredDiagram] = [:]
     @Published var customDiagrams: [UUID: CustomDiagram] = [:]
 
+    /// In-memory cache of loaded artifacts, keyed by codebase ID.
+    @Published var artifacts: [UUID: CodeArtifact] = [:]
+
     let baseDir: URL
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
+    private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
     private var manifestURL: URL { baseDir.appendingPathComponent("manifest.json") }
 
     init(baseDir: URL? = nil) {
@@ -38,6 +45,7 @@ final class ProjectStore: ObservableObject {
         try? fm.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
         try? fm.createDirectory(at: projectsDir, withIntermediateDirectories: true)
         try? fm.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         load()
     }
 
@@ -63,6 +71,9 @@ final class ProjectStore: ObservableObject {
                     }
                     for did in project.customDiagramIDs {
                         loadCustomDiagram(did)
+                    }
+                    for codebase in project.codebases where codebase.hasArtifact {
+                        loadArtifact(for: codebase.id)
                     }
                 }
             }
@@ -92,6 +103,23 @@ final class ProjectStore: ObservableObject {
         } catch {
             print("Failed to load custom diagram \(id): \(error)")
         }
+    }
+
+    func loadArtifact(for codebaseID: UUID) {
+        guard artifacts[codebaseID] == nil else { return }
+        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
+        do {
+            let data = try Data(contentsOf: url)
+            artifacts[codebaseID] = try JSONDecoder().decode(CodeArtifact.self, from: data)
+        } catch {
+            print("Failed to load artifact for codebase \(codebaseID): \(error)")
+        }
+    }
+
+    // MARK: - Artifact Access
+
+    func artifact(for codebaseID: UUID) -> CodeArtifact? {
+        artifacts[codebaseID]
     }
 
     // MARK: - Save
@@ -147,6 +175,18 @@ final class ProjectStore: ObservableObject {
         }
     }
 
+    func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
+        artifacts[codebaseID] = artifact
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
+        do {
+            try encoder.encode(artifact).write(to: url, options: .atomic)
+        } catch {
+            print("Failed to save artifact for codebase \(codebaseID): \(error)")
+        }
+    }
+
     func deleteStoredDiagramFile(_ id: UUID) {
         storedDiagrams.removeValue(forKey: id)
         let url = diagramsDir.appendingPathComponent("stored_\(id.uuidString).json")
@@ -161,6 +201,12 @@ final class ProjectStore: ObservableObject {
 
     func deleteProjectFile(_ id: UUID) {
         let url = projectsDir.appendingPathComponent("\(id.uuidString).json")
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    func deleteArtifactFile(for codebaseID: UUID) {
+        artifacts.removeValue(forKey: codebaseID)
+        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
     }
 }

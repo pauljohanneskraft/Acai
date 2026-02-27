@@ -5,6 +5,7 @@ import UMLCore
 
 /// Persisted as its own JSON file: `<projectID>.json`
 /// Diagrams are stored separately — one file per diagram.
+/// Code analysis results (CodeArtifact) are stored separately — one file per codebase.
 struct Project: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var title: String
@@ -21,7 +22,9 @@ struct Codebase: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var name: String
     var directoryPath: String
-    var artifact: CodeArtifact? = nil
+    /// Analysis results are stored in a separate file (`artifacts/codebase_<id>.json`).
+    /// Use `ProjectStore.artifact(for:)` to load.
+    var hasArtifact: Bool = false
     var languages: [LanguageSummary] = []
     var lastIndexed: Date? = nil
 }

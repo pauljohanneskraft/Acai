@@ -8,9 +8,6 @@ import UMLDiagram
 final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection? = nil
-    /// The ID of the item whose inspector is shown in the right sidebar.
-    @Published var inspectedCodebaseID: UUID? = nil
-    @Published var showInspector: Bool = false
     
     enum Selection: Hashable {
         case project(UUID)
@@ -65,7 +62,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     
     func addCodebase(to projectID: UUID, name: String, directoryURL: URL) {
         guard let idx = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
-        let codebase = Codebase(name: name, directoryPath: directoryURL.path, artifact: nil, languages: [], lastIndexed: nil)
+        let codebase = Codebase(name: name, directoryPath: directoryURL.path)
         store.projects[idx].codebases.append(codebase)
         persistChanges()
     }
@@ -92,23 +89,23 @@ final class ProjectBrowserViewModel: ObservableObject {
                 store.deleteStoredDiagramFile(did)
             }
         }
+        store.deleteArtifactFile(for: codebaseID)
         persistChanges()
     }
     
     func reindex(codebaseID: UUID) async {
         guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
               let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID }) else { return }
-        var codebase = store.projects[pIndex].codebases[cIndex]
-        let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
+        let url = URL(fileURLWithPath: store.projects[pIndex].codebases[cIndex].directoryPath).standardizedFileURL
 
         do {
             let artifact = try await Task.detached(priority: .userInitiated) {
                 try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: [])
             }.value
-            codebase.artifact = artifact
-            codebase.lastIndexed = Date()
-            store.projects[pIndex].codebases[cIndex] = codebase
-            persistChanges()
+            store.projects[pIndex].codebases[cIndex].hasArtifact = true
+            store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
+            store.saveArtifact(artifact, for: codebaseID)
+            persistProject(store.projects[pIndex].id)
         } catch {
             print("Reindex failed: \(error)")
         }
@@ -216,7 +213,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let stored = storedDiagram(for: storedDiagramID),
               let pIdx = store.projects.firstIndex(where: { $0.storedDiagramIDs.contains(storedDiagramID) }),
               let codebase = codebase(for: stored.codebaseID),
-              let artifact = codebase.artifact else { return }
+              let artifact = artifact(for: stored.codebaseID) else { return }
         
         var resolved = artifact.resolvingExtensions()
         if stored.configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
@@ -286,7 +283,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let codebase = codebase(for: codebaseID) else { return "digraph UML { }" }
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
 
-        if var artifact = codebase.artifact {
+        if var artifact = artifact(for: codebaseID) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
             }
@@ -329,6 +326,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     func codebase(for codebaseID: UUID) -> Codebase? {
         for p in store.projects { if let c = p.codebases.first(where: { $0.id == codebaseID }) { return c } }
         return nil
+    }
+    
+    func artifact(for codebaseID: UUID) -> CodeArtifact? {
+        store.artifact(for: codebaseID)
     }
     
     func projectForDiagram(_ diagramID: UUID) -> Project? {

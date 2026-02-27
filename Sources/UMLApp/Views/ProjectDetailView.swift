@@ -15,134 +15,74 @@ struct ProjectDetailView: View {
 
     var body: some View {
         if let project, let idx = projectIndex {
-            VStack(alignment: .leading, spacing: 0) {
-                // Editable project header
-                projectHeader(project: project, index: idx)
-                    .padding()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Editable project header
+                    projectHeader(project: project, index: idx)
+                        .padding()
 
-                Divider()
+                    Divider()
 
-                // Codebase section header
-                HStack {
-                    Text("Codebases").font(.headline)
-                    Spacer()
-                    Button { addingCodebase = true } label: { Label("Add Codebase", systemImage: "plus") }
-                        .buttonStyle(.borderless)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-
-                // Codebase list
-                List {
-                    ForEach(project.codebases) { codebase in
-                        codebaseRow(codebase: codebase, project: project)
+                    // Codebases section
+                    sectionHeader(title: "Codebases") {
+                        Button { addingCodebase = true } label: { Label("Add Codebase", systemImage: "plus") }
+                            .buttonStyle(.borderless)
                     }
-                }
-                .listStyle(.inset)
 
-                Divider()
-
-                // Generated diagrams section
-                let storedDiagrams = model.storedDiagramsForProject(projectID)
-                if !storedDiagrams.isEmpty {
-                    HStack {
-                        Text("Generated Diagrams").font(.headline)
-                        Spacer()
+                    let sortedCodebases = project.codebases.sorted(by: {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    })
+                    if sortedCodebases.isEmpty {
+                        Text("No codebases yet. Add one above.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
+                            .padding(.bottom, 12)
+                    } else {
+                        LazyVStack(spacing: 1) {
+                            ForEach(sortedCodebases) { codebase in
+                                codebaseRow(codebase: codebase)
+                            }
+                        }
+                        .padding(.bottom, 8)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
 
-                    List {
-                        ForEach(storedDiagrams) { diagram in
-                            Button {
-                                model.selection = .diagram(diagram.id)
-                            } label: {
-                                HStack {
-                                    Image(systemName: diagram.type.systemImage)
-                                    VStack(alignment: .leading) {
-                                        Text(diagram.name)
-                                        Text(diagram.type.displayName)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                    Divider()
+
+                    // Custom diagrams section
+                    sectionHeader(title: "Custom Diagrams") {
+                        Menu {
+                            ForEach(DiagramType.allCases) { type in
+                                Button {
+                                    if let id = model.addCustomDiagram(to: projectID, name: "New \(type.displayName)", type: type) {
+                                        model.selection = .customDiagram(id)
                                     }
-                                    Spacer()
-                                    Text(diagram.lastModified, style: .date)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    model.removeStoredDiagram(diagram.id)
                                 } label: {
-                                    Label("Delete Diagram", systemImage: "trash")
+                                    Label(type.displayName, systemImage: type.systemImage)
                                 }
+                            }
+                        } label: {
+                            Label("New Custom Diagram", systemImage: "plus")
+                        }
+                        .menuStyle(.borderlessButton)
+                    }
+
+                    let customDiagrams = model.customDiagramsForProject(projectID)
+                        .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                    if customDiagrams.isEmpty {
+                        Text("No custom diagrams yet. Create one above.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
+                            .padding(.bottom, 12)
+                    } else {
+                        LazyVStack(spacing: 1) {
+                            ForEach(customDiagrams) { diagram in
+                                customDiagramRow(diagram: diagram)
                             }
                         }
+                        .padding(.bottom, 8)
                     }
-                    .listStyle(.inset)
-                }
-
-                // Custom diagrams section
-                Divider()
-
-                HStack {
-                    Text("Custom Diagrams").font(.headline)
-                    Spacer()
-                    Menu {
-                        ForEach(DiagramType.allCases) { type in
-                            Button {
-                                if let id = model.addCustomDiagram(to: projectID, name: "New \(type.displayName)", type: type) {
-                                    model.selection = .customDiagram(id)
-                                }
-                            } label: {
-                                Label(type.displayName, systemImage: type.systemImage)
-                            }
-                        }
-                    } label: {
-                        Label("New Custom Diagram", systemImage: "plus")
-                    }
-                    .menuStyle(.borderlessButton)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-
-                let customDiagrams = model.customDiagramsForProject(projectID)
-                if customDiagrams.isEmpty {
-                    Text("No custom diagrams yet. Create one above.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
-                } else {
-                    List {
-                        ForEach(customDiagrams) { diagram in
-                            Button {
-                                model.selection = .customDiagram(diagram.id)
-                            } label: {
-                                HStack {
-                                    Image(systemName: diagram.diagramType.systemImage)
-                                    VStack(alignment: .leading) {
-                                        Text(diagram.name)
-                                        Text(diagram.diagramType.displayName + " (Custom)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Text(diagram.lastModified, style: .date)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    model.removeCustomDiagram(diagram.id)
-                                } label: {
-                                    Label("Delete Diagram", systemImage: "trash")
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(.inset)
                 }
             }
             .sheet(isPresented: $addingCodebase) {
@@ -153,6 +93,18 @@ struct ProjectDetailView: View {
             Text("Project not found")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Section Header
+
+    private func sectionHeader<Trailing: View>(title: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack {
+            Text(title).font(.headline)
+            Spacer()
+            trailing()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Project Header (Editable)
@@ -209,80 +161,93 @@ struct ProjectDetailView: View {
 
     // MARK: - Codebase Row
 
-    private func codebaseRow(codebase: Codebase, project: Project) -> some View {
-        HStack {
-            Image(systemName: "folder")
-            VStack(alignment: .leading) {
-                Text(codebase.name)
-                Text(URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private func codebaseRow(codebase: Codebase) -> some View {
+        Button {
+            model.selection = .codebase(codebase.id)
+        } label: {
+            HStack {
+                Image(systemName: "folder")
+                    .foregroundStyle(.blue)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(codebase.name)
+                        .fontWeight(.medium)
+                    Text(URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if let date = codebase.lastIndexed {
+                    Text(date, style: .date)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if codebase.hasArtifact {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.caption)
+                } else {
+                    Image(systemName: "circle.dashed")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
             }
-            Spacer()
-            if let date = codebase.lastIndexed {
-                Text(date, style: .date)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            // Quick diagram type buttons
-            ForEach(DiagramType.allCases) { type in
-                let exists = model.storedDiagrams(for: codebase.id).contains(where: { $0.type == type })
-                Button {
-                    if let existing = model.storedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
-                        model.selection = .diagram(existing.id)
-                    } else if let id = model.addStoredDiagram(
-                        to: project.id,
-                        codebaseID: codebase.id,
-                        name: "\(codebase.name) — \(type.displayName)",
-                        type: type,
-                        configuration: DiagramConfiguration()
-                    ) {
-                        model.selection = .diagram(id)
-                    }
-                } label: {
-                    Image(systemName: type.systemImage)
-                        .foregroundStyle(exists ? .primary : .secondary)
-                }
-                .buttonStyle(.borderless)
-                .help(exists ? "Open \(type.displayName)" : "Generate \(type.displayName)")
-                .disabled(codebase.artifact == nil)
-            }
-
-            // Three-dot menu
-            Menu {
-                Button {
-                    model.inspectedCodebaseID = codebase.id
-                    model.showInspector = true
-                } label: {
-                    Label("Show Details", systemImage: "info.circle")
-                }
-
-                Divider()
-
-                Button {
-                    Task { await model.reindex(codebaseID: codebase.id) }
-                } label: {
-                    Label("Reindex", systemImage: "arrow.clockwise")
-                }
-
-                Button { model.exportDOT(for: codebase.id) } label: {
-                    Label("Export DOT", systemImage: "square.and.arrow.up")
-                }
-
-                Divider()
-
-                Button(role: .destructive) {
-                    model.removeCodebase(codebase.id)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                Task { await model.reindex(codebaseID: codebase.id) }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Label("Reindex", systemImage: "arrow.clockwise")
+            }
+            Button { model.exportDOT(for: codebase.id) } label: {
+                Label("Export DOT", systemImage: "square.and.arrow.up")
+            }
+            Divider()
+            Button(role: .destructive) {
+                model.removeCodebase(codebase.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    // MARK: - Custom Diagram Row
+
+    private func customDiagramRow(diagram: CustomDiagram) -> some View {
+        Button {
+            model.selection = .customDiagram(diagram.id)
+        } label: {
+            HStack {
+                Image(systemName: diagram.diagramType.systemImage)
+                    .foregroundStyle(.orange)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(diagram.name)
+                        .fontWeight(.medium)
+                    Text(diagram.diagramType.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(diagram.lastModified, style: .date)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button(role: .destructive) {
+                model.removeCustomDiagram(diagram.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 }
