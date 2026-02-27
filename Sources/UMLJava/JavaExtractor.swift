@@ -27,8 +27,11 @@ struct JavaExtractor {
             relationships: relationships
         )
     }
+}
 
-    // MARK: - Program
+// MARK: - Program & Declaration Extraction
+
+extension JavaExtractor {
 
     private mutating func extractProgram(_ node: Node) {
         for child in node.children() {
@@ -151,7 +154,9 @@ struct JavaExtractor {
         var enumCases: [EnumCase] = []
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractClassBody(bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn)
+            extractClassBody(
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+            )
         }
 
         return TypeDeclaration(
@@ -188,7 +193,9 @@ struct JavaExtractor {
         var enumCases: [EnumCase] = []
 
         if let bodyNode = node.child(byFieldName: "body") {
-            extractInterfaceBody(bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn)
+            extractInterfaceBody(
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+            )
         }
 
         return TypeDeclaration(
@@ -265,7 +272,9 @@ struct JavaExtractor {
         var nestedTypes: [TypeDeclaration] = []
         var enumCases: [EnumCase] = []
         if let bodyNode = node.child(byFieldName: "body") {
-            extractClassBody(bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn)
+            extractClassBody(
+                bodyNode, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: qn
+            )
         }
 
         return TypeDeclaration(
@@ -311,8 +320,35 @@ struct JavaExtractor {
             annotations: modInfo.annotations, namespace: currentPackage, location: nodeLoc
         )
     }
+}
 
-    // MARK: - Body Extraction
+// MARK: - Body & Member Extraction
+
+extension JavaExtractor {
+
+    private func buildPropertyMap(from existingMembers: [Member], node: Node) -> [String: String] {
+        var knownProperties: [String: String] = [:]
+        for member in existingMembers where member.kind == .property {
+            if let typeName = member.type?.name { knownProperties[member.name] = typeName }
+        }
+        for child in node.children() where child.nodeType == "field_declaration" {
+            for field in extractFieldDeclaration(child) where field.kind == .property {
+                if let typeName = field.type?.name { knownProperties[field.name] = typeName }
+            }
+        }
+        return knownProperties
+    }
+
+    private mutating func extractNestedTypeFromChild(_ child: Node, nodeType: String) -> TypeDeclaration? {
+        switch nodeType {
+        case "class_declaration":          return extractClassDeclaration(child)
+        case "interface_declaration":      return extractInterfaceDeclaration(child)
+        case "enum_declaration":           return extractEnumDeclaration(child)
+        case "record_declaration":         return extractRecordDeclaration(child)
+        case "annotation_type_declaration": return extractAnnotationTypeDeclaration(child)
+        default:                            return nil
+        }
+    }
 
     private mutating func extractClassBody(
         _ node: Node,
@@ -321,37 +357,26 @@ struct JavaExtractor {
         enumCases: inout [EnumCase],
         parentQN: String
     ) {
-        // Pre-scan: build property map from field declarations and any already-added members
-        // (e.g. record components injected before extractClassBody is called).
-        var knownProperties: [String: String] = [:]
-        for member in members where member.kind == .property {
-            if let typeName = member.type?.name { knownProperties[member.name] = typeName }
-        }
-        for child in node.children() where child.nodeType == "field_declaration" {
-            for field in extractFieldDeclaration(child) where field.kind == .property {
-                if let typeName = field.type?.name { knownProperties[field.name] = typeName }
-            }
-        }
+        let knownProperties = buildPropertyMap(from: members, node: node)
 
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "method_declaration":
-                if let member = extractMethodDeclaration(child, knownProperties: knownProperties) { members.append(member) }
+                if let member = extractMethodDeclaration(child, knownProperties: knownProperties) {
+                    members.append(member)
+                }
             case "constructor_declaration":
-                if let member = extractConstructorDeclaration(child, knownProperties: knownProperties) { members.append(member) }
+                if let member = extractConstructorDeclaration(child, knownProperties: knownProperties) {
+                    members.append(member)
+                }
             case "field_declaration":
                 members.append(contentsOf: extractFieldDeclaration(child))
-            case "class_declaration":
-                if let nested = extractClassDeclaration(child) { nestedTypes.append(nested) }
-            case "interface_declaration":
-                if let nested = extractInterfaceDeclaration(child) { nestedTypes.append(nested) }
-            case "enum_declaration":
-                if let nested = extractEnumDeclaration(child) { nestedTypes.append(nested) }
-            case "record_declaration":
-                if let nested = extractRecordDeclaration(child) { nestedTypes.append(nested) }
-            case "annotation_type_declaration":
-                if let nested = extractAnnotationTypeDeclaration(child) { nestedTypes.append(nested) }
+            case "class_declaration", "interface_declaration", "enum_declaration",
+                 "record_declaration", "annotation_type_declaration":
+                if let nested = extractNestedTypeFromChild(child, nodeType: nodeType) {
+                    nestedTypes.append(nested)
+                }
             case "static_initializer", "block", ";":
                 break
             default:
@@ -403,7 +428,10 @@ struct JavaExtractor {
             case "enum_constant":
                 if let ec = extractEnumConstant(child) { enumCases.append(ec) }
             case "enum_body_declarations":
-                extractClassBody(child, members: &members, nestedTypes: &nestedTypes, enumCases: &enumCases, parentQN: parentQN)
+                extractClassBody(
+                    child, members: &members, nestedTypes: &nestedTypes,
+                    enumCases: &enumCases, parentQN: parentQN
+                )
             case "method_declaration":
                 if let member = extractMethodDeclaration(child) { members.append(member) }
             case "constructor_declaration":
@@ -570,7 +598,9 @@ struct JavaExtractor {
 
         // Fallback: try declarator field name
         if let declaratorNode = node.child(byFieldName: "declarator") {
-            if let member = extractVariableDeclarator(declaratorNode, fieldType: fieldType, modInfo: modInfo, loc: nodeLoc) {
+            if let member = extractVariableDeclarator(
+                declaratorNode, fieldType: fieldType, modInfo: modInfo, loc: nodeLoc
+            ) {
                 return [member]
             }
         }
@@ -592,7 +622,10 @@ struct JavaExtractor {
             let dimText = text(dimensionsNode)
             let bracketPairs = dimText.components(separatedBy: "[]").count - 1
             if bracketPairs > 0, let ft = actualType {
-                actualType = TypeReference(name: ft.name, genericArguments: ft.genericArguments, isOptional: ft.isOptional, isArray: true)
+                actualType = TypeReference(
+                    name: ft.name, genericArguments: ft.genericArguments,
+                    isOptional: ft.isOptional, isArray: true
+                )
             }
         }
 
@@ -639,7 +672,10 @@ struct JavaExtractor {
         if let dimensionsNode = node.child(byFieldName: "dimensions") {
             let dimText = text(dimensionsNode)
             if !dimText.isEmpty, let pt = paramType {
-                paramType = TypeReference(name: pt.name, genericArguments: pt.genericArguments, isOptional: pt.isOptional, isArray: true)
+                paramType = TypeReference(
+                    name: pt.name, genericArguments: pt.genericArguments,
+                    isOptional: pt.isOptional, isArray: true
+                )
             }
         }
 
@@ -656,8 +692,11 @@ struct JavaExtractor {
         guard !name.isEmpty else { return nil }
         return Parameter(internalName: name, type: paramType, isVariadic: true)
     }
+}
 
-    // MARK: - Call Site Extraction
+// MARK: - Type References, Generics & Call Sites
+
+extension JavaExtractor {
 
     private func extractCallSites(from body: Node?, knownProperties: [String: String]) -> [CallSite] {
         guard let body, !knownProperties.isEmpty else { return [] }
@@ -688,7 +727,7 @@ struct JavaExtractor {
         else { return nil }
 
         let methodName = text(nameNode)
-        var receiverVarName: String? = nil
+        var receiverVarName: String?
 
         if objectNode.nodeType == "identifier" {
             receiverVarName = text(objectNode)
@@ -711,61 +750,66 @@ struct JavaExtractor {
         guard let nodeType = node.nodeType else { return nil }
 
         switch nodeType {
-        case "type_identifier":
+        case "type_identifier", "integral_type", "floating_point_type",
+             "scoped_type_identifier":
             return TypeReference(name: text(node))
-
+        case "void_type":
+            return TypeReference(name: "void")
+        case "boolean_type":
+            return TypeReference(name: "boolean")
         case "generic_type":
-            var name = ""
-            var genericArgs: [TypeReference] = []
-            for child in node.children() {
-                guard let childType = child.nodeType else { continue }
-                switch childType {
-                case "type_identifier", "scoped_type_identifier":
-                    name = text(child)
-                case "type_arguments":
-                    genericArgs = extractTypeArguments(child)
-                default:
-                    break
-                }
-            }
-            return TypeReference(name: name, genericArguments: genericArgs)
-
+            return extractGenericTypeReference(node)
         case "array_type":
-            if let elementNode = node.child(byFieldName: "element"),
-               let elementRef = extractTypeReference(elementNode) {
-                return TypeReference(
-                    name: elementRef.name, genericArguments: elementRef.genericArguments,
-                    isOptional: elementRef.isOptional, isArray: true
-                )
-            }
-            let trimmed = text(node).replacingOccurrences(of: "[]", with: "")
-            return TypeReference(name: trimmed, isArray: true)
-
-        case "void_type":            return TypeReference(name: "void")
-        case "integral_type":        return TypeReference(name: text(node))
-        case "floating_point_type":  return TypeReference(name: text(node))
-        case "boolean_type":         return TypeReference(name: "boolean")
-        case "scoped_type_identifier": return TypeReference(name: text(node))
-
+            return extractArrayTypeReference(node)
         case "wildcard":
             return extractWildcard(node)
-
         case "annotated_type":
-            for child in node.children() {
-                guard let childType = child.nodeType else { continue }
-                if childType != "marker_annotation" && childType != "annotation" {
-                    if let ref = extractTypeReference(child) { return ref }
-                }
-            }
-            return nil
-
+            return extractAnnotatedTypeReference(node)
         case "dimensions":
             return nil
-
         default:
             let t = text(node)
             return t.isEmpty ? nil : TypeReference(name: t)
         }
+    }
+
+    private func extractGenericTypeReference(_ node: Node) -> TypeReference {
+        var name = ""
+        var genericArgs: [TypeReference] = []
+        for child in node.children() {
+            guard let childType = child.nodeType else { continue }
+            switch childType {
+            case "type_identifier", "scoped_type_identifier":
+                name = text(child)
+            case "type_arguments":
+                genericArgs = extractTypeArguments(child)
+            default:
+                break
+            }
+        }
+        return TypeReference(name: name, genericArguments: genericArgs)
+    }
+
+    private func extractArrayTypeReference(_ node: Node) -> TypeReference {
+        if let elementNode = node.child(byFieldName: "element"),
+           let elementRef = extractTypeReference(elementNode) {
+            return TypeReference(
+                name: elementRef.name, genericArguments: elementRef.genericArguments,
+                isOptional: elementRef.isOptional, isArray: true
+            )
+        }
+        let trimmed = text(node).replacingOccurrences(of: "[]", with: "")
+        return TypeReference(name: trimmed, isArray: true)
+    }
+
+    private func extractAnnotatedTypeReference(_ node: Node) -> TypeReference? {
+        for child in node.children() {
+            guard let childType = child.nodeType else { continue }
+            if childType != "marker_annotation" && childType != "annotation" {
+                if let ref = extractTypeReference(child) { return ref }
+            }
+        }
+        return nil
     }
 
     private func extractWildcard(_ node: Node) -> TypeReference {

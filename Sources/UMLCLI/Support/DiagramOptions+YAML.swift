@@ -11,8 +11,7 @@ extension DiagramOptions {
         }
 
         if let directionStr = yaml["direction"] as? String,
-           let dir = DiagramOptions.LayoutDirection(rawValue: directionStr)
-        {
+           let dir = DiagramOptions.LayoutDirection(rawValue: directionStr) {
             self.layoutDirection = dir
         }
 
@@ -39,6 +38,6 @@ extension DiagramOptions {
         if let v = yaml["showAnnotations"]         as? Bool { self.showAnnotations = v }
         if let v = yaml["showGenericParameters"]   as? Bool { self.showGenericParameters = v }
         if let v = yaml["fontName"]                as? String { self.fontName = v }
-        if let v = yaml["fontSize"]                as? Int    { self.fontSize = v }
+        if let v = yaml["fontSize"]                as? Int { self.fontSize = v }
     }
 }

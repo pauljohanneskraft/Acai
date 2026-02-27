@@ -160,7 +160,7 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
         items += [
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
-            .entity, .note,
+            .entity, .note
         ]
         return items
     }()

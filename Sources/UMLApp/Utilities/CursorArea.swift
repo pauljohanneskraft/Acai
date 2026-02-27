@@ -5,7 +5,7 @@ import AppKit
 
 private struct CursorArea: ViewModifier {
     let cursor: NSCursor
-    
+
     func body(content: Content) -> some View {
         content.onHover { isHovering in
             if isHovering {
@@ -15,7 +15,7 @@ private struct CursorArea: ViewModifier {
             }
         }
     }
-    
+
 }
 
 extension View {

@@ -9,9 +9,9 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     /// File names (relative to the project root) whose presence signals this build system.
     public let indicatorFiles: [String]
-    
+
     private static let excludedDirs: Set<String> = [
-        "build", ".gradle", ".build", "node_modules", ".git", "target", ".idea",
+        "build", ".gradle", ".build", "node_modules", ".git", "target", ".idea"
     ]
 
     public init(indicatorFiles: [String]) {
@@ -20,7 +20,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     /// Preset for Gradle projects.
     public static let gradle = JVMBuildSystemDetector(indicatorFiles: [
-        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
+        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"
     ])
 
     /// Preset for Maven projects.
@@ -59,7 +59,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
         return specs
     }
-    
+
     private func findSourceDirs(in root: URL) -> (kotlin: [URL], java: [URL]) {
         let fm = FileManager.default
         var kotlinDirs: [URL] = []
@@ -69,7 +69,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
             let kotlinSrc = dir.appendingPathComponent("src/main/kotlin")
             let javaSrc   = dir.appendingPathComponent("src/main/java")
             if fm.fileExists(atPath: kotlinSrc.path) { kotlinDirs.append(kotlinSrc) }
-            if fm.fileExists(atPath: javaSrc.path)   { javaDirs.append(javaSrc) }
+            if fm.fileExists(atPath: javaSrc.path) { javaDirs.append(javaSrc) }
 
             guard let entries = try? fm.contentsOfDirectory(
                 at: dir, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]

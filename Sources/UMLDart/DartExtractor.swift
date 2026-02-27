@@ -35,8 +35,34 @@ struct DartExtractor {
             freestandingFunctions: freestandingFunctions
         )
     }
+}
 
-    // MARK: - Program
+// MARK: - Program & Top-Level Extraction
+
+extension DartExtractor {
+
+    @discardableResult
+    private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
+        switch nodeType {
+        case "class_definition":
+            if let t = extractClassDefinition(child) { types.append(t) }
+        case "enum_declaration":
+            if let t = extractEnumDeclaration(child) { types.append(t) }
+        case "mixin_declaration":
+            if let t = extractMixinDeclaration(child) { types.append(t) }
+        case "extension_declaration":
+            if let t = extractExtensionDeclaration(child) { types.append(t) }
+        case "extension_type_declaration":
+            if let t = extractExtensionTypeDeclaration(child) { types.append(t) }
+        case "function_signature":
+            if let fn = extractFunctionSignature(child, isTopLevel: true) {
+                freestandingFunctions.append(fn)
+            }
+        default:
+            return false
+        }
+        return true
+    }
 
     private mutating func extractProgram(_ node: Node) {
         for child in node.children() {
@@ -44,78 +70,23 @@ struct DartExtractor {
             switch nodeType {
             case "library_name":
                 currentLibrary = extractLibraryName(child)
-            case "class_definition":
-                if let typeDecl = extractClassDefinition(child) { types.append(typeDecl) }
-            case "enum_declaration":
-                if let typeDecl = extractEnumDeclaration(child) { types.append(typeDecl) }
-            case "mixin_declaration":
-                if let typeDecl = extractMixinDeclaration(child) { types.append(typeDecl) }
-            case "extension_declaration":
-                if let typeDecl = extractExtensionDeclaration(child) { types.append(typeDecl) }
-            case "extension_type_declaration":
-                if let typeDecl = extractExtensionTypeDeclaration(child) { types.append(typeDecl) }
-            case "function_signature":
-                if let fn = extractFunctionSignature(child, isTopLevel: true) {
-                    freestandingFunctions.append(fn)
-                }
             case "declaration":
-                extractDeclarationWrapper(child)
+                extractTopLevelChildren(child)
             case "import_or_export", "part_directive", "part_of_directive":
                 break
             default:
-                // Walk into other top-level wrappers.
-                extractTopLevelInner(child)
+                if !processTopLevelTypeNode(child, nodeType: nodeType) {
+                    extractTopLevelChildren(child)
+                }
             }
         }
     }
 
     /// Some top-level constructs may be wrapped in container nodes.
-    private mutating func extractTopLevelInner(_ node: Node) {
+    private mutating func extractTopLevelChildren(_ node: Node) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "class_definition":
-                if let t = extractClassDefinition(child) { types.append(t) }
-            case "enum_declaration":
-                if let t = extractEnumDeclaration(child) { types.append(t) }
-            case "mixin_declaration":
-                if let t = extractMixinDeclaration(child) { types.append(t) }
-            case "extension_declaration":
-                if let t = extractExtensionDeclaration(child) { types.append(t) }
-            case "extension_type_declaration":
-                if let t = extractExtensionTypeDeclaration(child) { types.append(t) }
-            case "function_signature":
-                if let fn = extractFunctionSignature(child, isTopLevel: true) {
-                    freestandingFunctions.append(fn)
-                }
-            default:
-                break
-            }
-        }
-    }
-
-    /// Handles `declaration` wrapper nodes that may contain class/enum/function definitions.
-    private mutating func extractDeclarationWrapper(_ node: Node) {
-        for child in node.children() {
-            guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "class_definition":
-                if let t = extractClassDefinition(child) { types.append(t) }
-            case "enum_declaration":
-                if let t = extractEnumDeclaration(child) { types.append(t) }
-            case "mixin_declaration":
-                if let t = extractMixinDeclaration(child) { types.append(t) }
-            case "extension_declaration":
-                if let t = extractExtensionDeclaration(child) { types.append(t) }
-            case "extension_type_declaration":
-                if let t = extractExtensionTypeDeclaration(child) { types.append(t) }
-            case "function_signature":
-                if let fn = extractFunctionSignature(child, isTopLevel: true) {
-                    freestandingFunctions.append(fn)
-                }
-            default:
-                break
-            }
+            processTopLevelTypeNode(child, nodeType: nodeType)
         }
     }
 
@@ -125,8 +96,11 @@ struct DartExtractor {
         let children = node.namedChildren()
         return children.first.map { text($0) }
     }
+}
 
-    // MARK: - Class Definition
+// MARK: - Type Declarations
+
+extension DartExtractor {
 
     private mutating func extractClassDefinition(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
@@ -149,13 +123,11 @@ struct DartExtractor {
         }
 
         // Mixins (with).
-        for child in node.children() {
-            if child.nodeType == "mixins" {
-                for ref in extractTypeList(child) {
-                    inheritedTypes.append(ref)
-                    relationships.append(Relationship(
-                        kind: .inheritance, source: typeId, target: ref.name))
-                }
+        for child in node.children() where child.nodeType == "mixins" {
+            for ref in extractTypeList(child) {
+                inheritedTypes.append(ref)
+                relationships.append(Relationship(
+                    kind: .inheritance, source: typeId, target: ref.name))
             }
         }
 
@@ -195,24 +167,20 @@ struct DartExtractor {
         var inheritedTypes: [TypeReference] = []
 
         // Mixins.
-        for child in node.children() {
-            if child.nodeType == "mixins" {
-                for ref in extractTypeList(child) {
-                    inheritedTypes.append(ref)
-                    relationships.append(Relationship(
-                        kind: .inheritance, source: typeId, target: ref.name))
-                }
+        for child in node.children() where child.nodeType == "mixins" {
+            for ref in extractTypeList(child) {
+                inheritedTypes.append(ref)
+                relationships.append(Relationship(
+                    kind: .inheritance, source: typeId, target: ref.name))
             }
         }
 
         // Interfaces.
-        for child in node.children() {
-            if child.nodeType == "interfaces" {
-                for ref in extractTypeList(child) {
-                    inheritedTypes.append(ref)
-                    relationships.append(Relationship(
-                        kind: .conformance, source: typeId, target: ref.name))
-                }
+        for child in node.children() where child.nodeType == "interfaces" {
+            for ref in extractTypeList(child) {
+                inheritedTypes.append(ref)
+                relationships.append(Relationship(
+                    kind: .conformance, source: typeId, target: ref.name))
             }
         }
 
@@ -235,7 +203,9 @@ struct DartExtractor {
     // MARK: - Mixin Declaration
 
     private mutating func extractMixinDeclaration(_ node: Node) -> TypeDeclaration? {
-        // Mixin: optional(metadata) optional(base) 'mixin' identifier optional(type_parameters) optional('on' type_list) optional(interfaces) class_body
+        // Mixin: optional(metadata) optional(base) 'mixin' identifier
+        // optional(type_parameters) optional('on' type_list)
+        // optional(interfaces) class_body
         var name = ""
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -261,13 +231,11 @@ struct DartExtractor {
         }
 
         // Interfaces.
-        for child in node.children() {
-            if child.nodeType == "interfaces" {
-                for ref in extractTypeList(child) {
-                    inheritedTypes.append(ref)
-                    relationships.append(Relationship(
-                        kind: .conformance, source: typeId, target: ref.name))
-                }
+        for child in node.children() where child.nodeType == "interfaces" {
+            for ref in extractTypeList(child) {
+                inheritedTypes.append(ref)
+                relationships.append(Relationship(
+                    kind: .conformance, source: typeId, target: ref.name))
             }
         }
 
@@ -275,10 +243,8 @@ struct DartExtractor {
         var nestedTypes: [TypeDeclaration] = []
 
         // The body is a class_body node.
-        for child in node.children() {
-            if child.nodeType == "class_body" {
-                extractClassBody(child, members: &members, nestedTypes: &nestedTypes, parentName: name)
-            }
+        for child in node.children() where child.nodeType == "class_body" {
+            extractClassBody(child, members: &members, nestedTypes: &nestedTypes, parentName: name)
         }
 
         return TypeDeclaration(
@@ -329,13 +295,11 @@ struct DartExtractor {
         let nodeLoc = loc(node)
         var inheritedTypes: [TypeReference] = []
 
-        for child in node.children() {
-            if child.nodeType == "interfaces" {
-                for ref in extractTypeList(child) {
-                    inheritedTypes.append(ref)
-                    relationships.append(Relationship(
-                        kind: .conformance, source: typeId, target: ref.name))
-                }
+        for child in node.children() where child.nodeType == "interfaces" {
+            for ref in extractTypeList(child) {
+                inheritedTypes.append(ref)
+                relationships.append(Relationship(
+                    kind: .conformance, source: typeId, target: ref.name))
             }
         }
 
@@ -356,8 +320,48 @@ struct DartExtractor {
             namespace: currentLibrary, location: nodeLoc
         )
     }
+}
 
-    // MARK: - Class Body
+// MARK: - Body Extraction & Member Signatures
+
+extension DartExtractor {
+
+    @discardableResult
+    private mutating func processClassMemberNode(
+        _ child: Node,
+        nodeType: String,
+        members: inout [Member],
+        nestedTypes: inout [TypeDeclaration],
+        parentName: String
+    ) -> Bool {
+        switch nodeType {
+        case "method_signature":
+            if let m = extractMethodSignature(child) { members.append(m) }
+        case "function_signature":
+            if let m = extractFunctionSignature(child, isTopLevel: false) { members.append(m) }
+        case "constructor_signature", "constant_constructor_signature":
+            if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
+        case "factory_constructor_signature", "redirecting_factory_constructor_signature":
+            if let m = extractFactoryConstructorSignature(child) { members.append(m) }
+        case "getter_signature":
+            if let m = extractGetterSignature(child) { members.append(m) }
+        case "setter_signature":
+            if let m = extractSetterSignature(child) { members.append(m) }
+        case "operator_signature":
+            if let m = extractOperatorSignature(child) { members.append(m) }
+        case "static_final_declaration_list", "initialized_identifier_list":
+            members.append(contentsOf: extractFieldDeclarations(child))
+        case "class_definition":
+            if let t = extractClassDefinition(child) { nestedTypes.append(t) }
+        case "enum_declaration":
+            if let t = extractEnumDeclaration(child) { nestedTypes.append(t) }
+        case "mixin_declaration":
+            if let t = extractMixinDeclaration(child) { nestedTypes.append(t) }
+        default:
+            return false
+        }
+        return true
+    }
 
     private mutating func extractClassBody(
         _ node: Node,
@@ -367,37 +371,15 @@ struct DartExtractor {
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "declaration":
-                extractClassMemberDeclaration(child, members: &members, nestedTypes: &nestedTypes, parentName: parentName)
-            case "method_signature":
-                if let m = extractMethodSignature(child) { members.append(m) }
-            case "function_signature":
-                if let m = extractFunctionSignature(child, isTopLevel: false) { members.append(m) }
-            case "constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
-            case "factory_constructor_signature":
-                if let m = extractFactoryConstructorSignature(child) { members.append(m) }
-            case "constant_constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
-            case "redirecting_factory_constructor_signature":
-                if let m = extractFactoryConstructorSignature(child) { members.append(m) }
-            case "getter_signature":
-                if let m = extractGetterSignature(child) { members.append(m) }
-            case "setter_signature":
-                if let m = extractSetterSignature(child) { members.append(m) }
-            case "operator_signature":
-                if let m = extractOperatorSignature(child) { members.append(m) }
-            case "static_final_declaration_list", "initialized_identifier_list":
-                members.append(contentsOf: extractFieldDeclarations(child))
-            case "class_definition":
-                if let t = extractClassDefinition(child) { nestedTypes.append(t) }
-            case "enum_declaration":
-                if let t = extractEnumDeclaration(child) { nestedTypes.append(t) }
-            case "mixin_declaration":
-                if let t = extractMixinDeclaration(child) { nestedTypes.append(t) }
-            default:
-                break
+            if nodeType == "declaration" {
+                extractClassMemberDeclaration(
+                    child, members: &members, nestedTypes: &nestedTypes, parentName: parentName
+                )
+            } else {
+                processClassMemberNode(
+                    child, nodeType: nodeType, members: &members,
+                    nestedTypes: &nestedTypes, parentName: parentName
+                )
             }
         }
     }
@@ -411,35 +393,10 @@ struct DartExtractor {
     ) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "method_signature":
-                if let m = extractMethodSignature(child) { members.append(m) }
-            case "function_signature":
-                if let m = extractFunctionSignature(child, isTopLevel: false) { members.append(m) }
-            case "constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
-            case "factory_constructor_signature":
-                if let m = extractFactoryConstructorSignature(child) { members.append(m) }
-            case "constant_constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
-            case "redirecting_factory_constructor_signature":
-                if let m = extractFactoryConstructorSignature(child) { members.append(m) }
-            case "getter_signature":
-                if let m = extractGetterSignature(child) { members.append(m) }
-            case "setter_signature":
-                if let m = extractSetterSignature(child) { members.append(m) }
-            case "operator_signature":
-                if let m = extractOperatorSignature(child) { members.append(m) }
-            case "static_final_declaration_list", "initialized_identifier_list":
-                members.append(contentsOf: extractFieldDeclarations(child))
-            case "class_definition":
-                if let t = extractClassDefinition(child) { nestedTypes.append(t) }
-            case "enum_declaration":
-                if let t = extractEnumDeclaration(child) { nestedTypes.append(t) }
-            case "mixin_declaration":
-                if let t = extractMixinDeclaration(child) { nestedTypes.append(t) }
-            default:
-                // Try to extract as field declarations from common patterns.
+            if !processClassMemberNode(
+                child, nodeType: nodeType, members: &members,
+                nestedTypes: &nestedTypes, parentName: parentName
+            ) {
                 if let fields = extractFieldFromDeclarationChild(child, parentNodeType: nodeType) {
                     members.append(contentsOf: fields)
                 }
@@ -455,35 +412,30 @@ struct DartExtractor {
         members: inout [Member],
         parentName: String
     ) {
+        var ignored: [TypeDeclaration] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "enum_constant":
                 if let ec = extractEnumConstant(child) { enumCases.append(ec) }
             case "declaration":
-                var nested: [TypeDeclaration] = []
-                extractClassMemberDeclaration(child, members: &members, nestedTypes: &nested, parentName: parentName)
-            case "method_signature":
-                if let m = extractMethodSignature(child) { members.append(m) }
-            case "constructor_signature":
-                if let m = extractConstructorSignature(child, parentName: parentName) { members.append(m) }
-            case "getter_signature":
-                if let m = extractGetterSignature(child) { members.append(m) }
-            case "setter_signature":
-                if let m = extractSetterSignature(child) { members.append(m) }
+                extractClassMemberDeclaration(
+                    child, members: &members, nestedTypes: &ignored, parentName: parentName
+                )
             default:
-                break
+                processClassMemberNode(
+                    child, nodeType: nodeType, members: &members,
+                    nestedTypes: &ignored, parentName: parentName
+                )
             }
         }
     }
 
     private func extractEnumConstant(_ node: Node) -> EnumCase? {
         var name = ""
-        for child in node.children() {
-            if child.nodeType == "identifier" {
-                name = text(child)
-                break
-            }
+        for child in node.children() where child.nodeType == "identifier" {
+            name = text(child)
+            break
         }
         guard !name.isEmpty else { return nil }
         return EnumCase(name: name, location: loc(node))
@@ -579,10 +531,7 @@ struct DartExtractor {
             case "formal_parameter_list":
                 info.parameters = extractFormalParameterList(child)
             case "type_identifier", "void_type", "function_type":
-                if info.returnType == nil && info.name.isEmpty {
-                    // This is likely the return type appearing before the name.
-                    info.returnType = extractTypeReference(child)
-                } else if info.returnType == nil {
+                if info.returnType == nil {
                     info.returnType = extractTypeReference(child)
                 }
             default:
@@ -715,15 +664,27 @@ struct DartExtractor {
     }
 
     private func extractOperatorSignature(_ node: Node) -> Member? {
-        let fullText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = "operator"
-        return Member(
-            name: name, kind: .method,
-            location: loc(node)
-        )
+        Member(name: "operator", kind: .method, location: loc(node))
     }
 
     // MARK: - Field Declarations
+
+    private func makeFieldMember(
+        name: String, type: TypeReference?,
+        isStatic: Bool, isLate: Bool, isConst: Bool, isFinal: Bool,
+        location: SourceLocation
+    ) -> Member {
+        var mods: [Modifier] = []
+        if isStatic { mods.append(.static) }
+        if isLate { mods.append(.late) }
+        if isConst { mods.append(.const) }
+        if isFinal { mods.append(.final) }
+        return Member(
+            name: name, kind: .property,
+            accessLevel: accessLevel(for: name),
+            modifiers: mods, type: type, location: location
+        )
+    }
 
     private func extractFieldDeclarations(_ node: Node) -> [Member] {
         var members: [Member] = []
@@ -733,7 +694,6 @@ struct DartExtractor {
                       node.hasAnonymousChild("const", in: context) ||
                       node.hasAnonymousChild("final", in: context)
 
-        // Look for type annotation and variable names.
         var fieldType: TypeReference?
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -743,44 +703,28 @@ struct DartExtractor {
             case "initialized_identifier":
                 let varName = extractIdentifierName(child)
                 guard !varName.isEmpty else { continue }
-                var mods: [Modifier] = []
-                if isStatic { mods.append(.static) }
-                if isLate { mods.append(.late) }
-                if isConst { mods.append(.const) }
-                members.append(Member(
-                    name: varName, kind: .property,
-                    accessLevel: accessLevel(for: varName),
-                    modifiers: mods,
-                    type: fieldType,
+                members.append(makeFieldMember(
+                    name: varName, type: fieldType,
+                    isStatic: isStatic, isLate: isLate, isConst: isConst, isFinal: false,
                     location: loc(child)
                 ))
             case "static_final_declaration":
                 let varName = extractIdentifierName(child)
                 guard !varName.isEmpty else { continue }
-                var mods: [Modifier] = [.static, .final]
-                if isConst { mods.append(.const) }
-                members.append(Member(
-                    name: varName, kind: .property,
-                    accessLevel: accessLevel(for: varName),
-                    modifiers: mods,
-                    type: fieldType,
+                members.append(makeFieldMember(
+                    name: varName, type: fieldType,
+                    isStatic: true, isLate: false, isConst: isConst, isFinal: true,
                     location: loc(child)
                 ))
             case "identifier":
                 let varName = text(child)
                 guard !varName.isEmpty, !varName.hasPrefix("var"), !varName.hasPrefix("final") else { continue }
-                // Skip type-like identifiers that precede the actual variable name.
                 if fieldType == nil {
                     fieldType = TypeReference(name: varName)
                 } else {
-                    var mods: [Modifier] = []
-                    if isStatic { mods.append(.static) }
-                    if isLate { mods.append(.late) }
-                    members.append(Member(
-                        name: varName, kind: .property,
-                        accessLevel: accessLevel(for: varName),
-                        modifiers: mods,
-                        type: fieldType,
+                    members.append(makeFieldMember(
+                        name: varName, type: fieldType,
+                        isStatic: isStatic, isLate: isLate, isConst: false, isFinal: false,
                         location: loc(child)
                     ))
                 }
@@ -803,24 +747,23 @@ struct DartExtractor {
     }
 
     private func extractIdentifierName(_ node: Node) -> String {
-        for child in node.children() {
-            if child.nodeType == "identifier" {
-                return text(child)
-            }
+        for child in node.children() where child.nodeType == "identifier" {
+            return text(child)
         }
         return ""
     }
+}
 
-    // MARK: - Formal Parameters
+// MARK: - Parameters, Types & Utilities
+
+extension DartExtractor {
 
     private func extractFormalParameterList(_ node: Node) -> [Parameter] {
         var params: [Parameter] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
-            case "formal_parameter":
-                if let p = extractFormalParameter(child) { params.append(p) }
-            case "normal_formal_parameter":
+            case "formal_parameter", "normal_formal_parameter":
                 if let p = extractFormalParameter(child) { params.append(p) }
             case "default_formal_parameter":
                 if let p = extractDefaultFormalParameter(child) { params.append(p) }
@@ -851,7 +794,8 @@ struct DartExtractor {
             let parts = fullText.components(separatedBy: "this.")
             if parts.count >= 2 {
                 let afterThis = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                let paramName = afterThis.components(separatedBy: CharacterSet.alphanumerics.inverted).first ?? afterThis
+                let paramName = afterThis
+                    .components(separatedBy: CharacterSet.alphanumerics.inverted).first ?? afterThis
                 return Parameter(internalName: paramName, type: nil)
             }
         }
@@ -910,7 +854,10 @@ struct DartExtractor {
         case "nullable_type":
             for child in node.namedChildren() {
                 if var ref = extractTypeReference(child) {
-                    return TypeReference(name: ref.name, genericArguments: ref.genericArguments, isOptional: true, isArray: ref.isArray)
+                    return TypeReference(
+                        name: ref.name, genericArguments: ref.genericArguments,
+                        isOptional: true, isArray: ref.isArray
+                    )
                 }
             }
             return nil
@@ -959,10 +906,8 @@ struct DartExtractor {
     }
 
     private func extractTypeParametersFromChildren(_ node: Node) -> [GenericParameter] {
-        for child in node.children() {
-            if child.nodeType == "type_parameters" {
-                return extractTypeParameterList(child)
-            }
+        for child in node.children() where child.nodeType == "type_parameters" {
+            return extractTypeParameterList(child)
         }
         return []
     }
@@ -979,8 +924,7 @@ struct DartExtractor {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "type_identifier", "identifier":
-                if name.isEmpty { name = text(child) }
-                else {
+                if name.isEmpty { name = text(child) } else {
                     constraints.append(GenericConstraint(
                         kind: .superclass,
                         type: TypeReference(name: text(child))

@@ -464,7 +464,9 @@ enum TypeExtractor {
         )
     }
 
-    static func extractProtocol(from node: ProtocolDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    static func extractProtocol(
+        from node: ProtocolDeclSyntax, fileName: String, namespace: String?
+    ) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -481,7 +483,9 @@ enum TypeExtractor {
         )
     }
 
-    static func extractExtension(from node: ExtensionDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    static func extractExtension(
+        from node: ExtensionDeclSyntax, fileName: String, namespace: String?
+    ) -> TypeDeclaration {
         let extendedName = node.extendedType.trimmedDescription
         let name = extendedName
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
@@ -500,7 +504,9 @@ enum TypeExtractor {
         )
     }
 
-    static func extractTypeAlias(from node: TypeAliasDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    static func extractTypeAlias(
+        from node: TypeAliasDeclSyntax, fileName: String, namespace: String?
+    ) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(

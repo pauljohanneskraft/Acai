@@ -28,8 +28,7 @@ extension CodeArtifact {
     // MARK: Node building
 
     private func buildDeploymentNodes(granularity: DiagramGranularity)
-        -> (nodes: [DeploymentDiagram.Node], typeToNodeId: [String: String])
-    {
+        -> (nodes: [DeploymentDiagram.Node], typeToNodeId: [String: String]) {
         switch granularity {
 
         case .fileLevel:
@@ -71,8 +70,7 @@ extension CodeArtifact {
         var grouped: [String: [TypeDeclaration]] = [:]
         var ungrouped: [TypeDeclaration] = []
         for type in types {
-            if let key = keyOf(type) { grouped[key, default: []].append(type) }
-            else { ungrouped.append(type) }
+            if let key = keyOf(type) { grouped[key, default: []].append(type) } else { ungrouped.append(type) }
         }
 
         var nodes: [DeploymentDiagram.Node] = []

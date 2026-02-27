@@ -32,7 +32,7 @@ public struct AnalysisService: Sendable {
             JavaCodeParser(),
             JSCodeParser(isTypeScript: true),
             JSCodeParser(isTypeScript: false),
-            DartCodeParser(),
+            DartCodeParser()
         ],
         projectDiscovery: ProjectDiscovery? = nil
     ) {
@@ -44,7 +44,7 @@ public struct AnalysisService: Sendable {
                 JVMBuildSystemDetector.gradle,
                 JVMBuildSystemDetector.maven,
                 NodeDetector(),
-                FlutterDetector(),
+                FlutterDetector()
             ],
             fallback: FallbackDetector(parsers: parsers)
         )

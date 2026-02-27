@@ -76,9 +76,9 @@ struct CustomDiagramEditorView: View {
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
     @State private var dragStartPositions: [UUID: CGPoint] = [:]
-    @State private var activeDragCanvasLocation: CGPoint? = nil
+    @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var activeResizeState: ResizeState? = nil
+    @State private var activeResizeState: ResizeState?
     @State private var showDeleteConfirmation = false
     /// Tracks the last right-click location in screen coordinates for context menu insertion.
     @State private var lastRightClickCanvasPoint: CGPoint = .zero
@@ -214,14 +214,14 @@ struct CustomDiagramEditorView: View {
                     ))
                 }
             }
-        }, autoPanController: canvasAutoPanController) {
+        }, autoPanController: canvasAutoPanController, content: {
             ZStack {
                 containerNodeLayer
                 edgeLayer
                 regularNodeLayer
                 resizeHandleLayer
             }
-        }
+        })
         .onPreferenceChange(CustomNodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
                 viewModel.measuredNodeSizes[id] = size
@@ -258,7 +258,9 @@ struct CustomDiagramEditorView: View {
     // MARK: - Insertion Helpers
 
     private func insertNode(kind: DiagramElementKind, at canvasPoint: CGPoint) {
-        let name = "New\(kind.displayName.replacingOccurrences(of: " / ", with: "").replacingOccurrences(of: " ", with: ""))"
+        let name = "New" + kind.displayName
+            .replacingOccurrences(of: " / ", with: "")
+            .replacingOccurrences(of: " ", with: "")
         viewModel.addNode(kind: kind, name: name, at: canvasPoint)
     }
 
@@ -620,8 +622,8 @@ struct CustomDiagramEditorView: View {
     @State private var newPropertyText: String = ""
     @State private var newMethodText: String = ""
 
-    @State private var inspectorEdgeSourceID: UUID? = nil
-    @State private var inspectorEdgeTargetID: UUID? = nil
+    @State private var inspectorEdgeSourceID: UUID?
+    @State private var inspectorEdgeTargetID: UUID?
     @State private var inspectorEdgeKind: Relationship.Kind = .association
 
     @ViewBuilder
@@ -836,7 +838,12 @@ struct CustomDiagramEditorView: View {
                     Picker("Source", selection: Binding(
                         get: { edge.sourceNodeID },
                         set: { newSource in
-                            viewModel.updateEdge(edge.id, sourceID: newSource, targetID: edge.targetNodeID, kind: edge.kind)
+                            viewModel.updateEdge(
+                                edge.id,
+                                sourceID: newSource,
+                                targetID: edge.targetNodeID,
+                                kind: edge.kind
+                            )
                         }
                     )) {
                         ForEach(viewModel.nodes) { node in
@@ -847,7 +854,12 @@ struct CustomDiagramEditorView: View {
                     Picker("Target", selection: Binding(
                         get: { edge.targetNodeID },
                         set: { newTarget in
-                            viewModel.updateEdge(edge.id, sourceID: edge.sourceNodeID, targetID: newTarget, kind: edge.kind)
+                            viewModel.updateEdge(
+                                edge.id,
+                                sourceID: edge.sourceNodeID,
+                                targetID: newTarget,
+                                kind: edge.kind
+                            )
                         }
                     )) {
                         ForEach(viewModel.nodes) { node in
@@ -858,7 +870,12 @@ struct CustomDiagramEditorView: View {
                     Picker("Kind", selection: Binding(
                         get: { edge.kind },
                         set: { newKind in
-                            viewModel.updateEdge(edge.id, sourceID: edge.sourceNodeID, targetID: edge.targetNodeID, kind: newKind)
+                            viewModel.updateEdge(
+                                edge.id,
+                                sourceID: edge.sourceNodeID,
+                                targetID: edge.targetNodeID,
+                                kind: newKind
+                            )
                         }
                     )) {
                         Text("Inheritance").tag(Relationship.Kind.inheritance)
@@ -931,7 +948,7 @@ struct CustomNodeView: View {
     let node: CustomDiagramNode
     let isSelected: Bool
     /// Explicit size for resizable container nodes. `nil` for auto-sized nodes.
-    var size: CGSize? = nil
+    var size: CGSize?
 
     var body: some View {
         switch node.content {
@@ -944,11 +961,20 @@ struct CustomNodeView: View {
         case .useCase:
             UMLUseCaseNodeView(name: node.name, isSelected: isSelected)
         case .package:
-            UMLContainerNodeView(name: node.name, stereotype: "package", style: .package, isSelected: isSelected, size: size)
+            UMLContainerNodeView(
+                name: node.name, stereotype: "package",
+                style: .package, isSelected: isSelected, size: size
+            )
         case .boundary:
-            UMLContainerNodeView(name: node.name, stereotype: "boundary", style: .boundary, isSelected: isSelected, size: size)
+            UMLContainerNodeView(
+                name: node.name, stereotype: "boundary",
+                style: .boundary, isSelected: isSelected, size: size
+            )
         case .subsystem:
-            UMLContainerNodeView(name: node.name, stereotype: "subsystem", style: .subsystem, isSelected: isSelected, size: size)
+            UMLContainerNodeView(
+                name: node.name, stereotype: "subsystem",
+                style: .subsystem, isSelected: isSelected, size: size
+            )
         case .database:
             UMLDatabaseNodeView(name: node.name, isSelected: isSelected)
         default:

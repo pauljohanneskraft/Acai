@@ -417,7 +417,7 @@ public enum ClassDiagramEnricher {
         // Dart
         "dynamic", "num", "var", "inferred",
         // Optional wrappers
-        "Optional",
+        "Optional"
     ]
 
     private static let collectionTypes: Set<String> = [
@@ -426,6 +426,6 @@ public enum ClassDiagramEnricher {
         "Set", "HashSet", "TreeSet", "LinkedHashSet", "MutableSet",
         "Map", "HashMap", "TreeMap", "LinkedHashMap", "MutableMap",
         "Array", "MutableList", "Iterable", "Collection", "Sequence",
-        "Dictionary",
+        "Dictionary"
     ]
 }

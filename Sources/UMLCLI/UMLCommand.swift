@@ -11,4 +11,3 @@ struct UMLCommand: ParsableCommand {
         subcommands: [Analyze.self, Store.self, List.self, Diagram.self]
     )
 }
-

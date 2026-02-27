@@ -48,6 +48,11 @@ struct JSExtractor {
             freestandingFunctions: freestandingFunctions
         )
     }
+}
+
+// MARK: - Declaration Dispatch & Extraction
+
+extension JSExtractor {
 
     // MARK: - Program
 
@@ -65,54 +70,18 @@ struct JSExtractor {
 
     private mutating func visitTopLevelNode(_ node: Node) {
         guard let nodeType = node.nodeType else { return }
-        switch nodeType {
-        case "export_statement":
+        if nodeType == "export_statement" {
             visitExportStatement(node)
-        case "class_declaration":
-            let decl = extractClassDeclaration(node, isExported: false, isDefault: false)
-            types.append(decl)
-        case "abstract_class_declaration":
-            if isTypeScript {
-                let decl = extractAbstractClassDeclaration(node, isExported: false, isDefault: false)
-                types.append(decl)
+        } else if nodeType == "expression_statement", isTypeScript {
+            // tree-sitter-typescript 0.23+: namespace Foo {} → expression_statement → internal_module
+            for inner in node.namedChildren() {
+                guard let t = inner.nodeType, t == "internal_module" || t == "module" else { continue }
+                let (t1, f1) = dispatchDeclaration(inner, isExported: false)
+                types += t1; freestandingFunctions += f1
             }
-        case "interface_declaration":
-            if isTypeScript {
-                let decl = extractInterfaceDeclaration(node, isExported: false)
-                types.append(decl)
-            }
-        case "type_alias_declaration":
-            if isTypeScript {
-                let decl = extractTypeAliasDeclaration(node, isExported: false)
-                types.append(decl)
-            }
-        case "enum_declaration":
-            if isTypeScript {
-                let decl = extractEnumDeclaration(node, isExported: false)
-                types.append(decl)
-            }
-        case "module", "internal_module":
-            if isTypeScript {
-                let decls = extractModule(node, isExported: false)
-                types.append(contentsOf: decls)
-            }
-        case "function_declaration":
-            let fn = extractFunctionDeclaration(node, isExported: false)
-            freestandingFunctions.append(fn)
-        case "expression_statement":
-            // In tree-sitter-typescript 0.23+, `namespace Foo {}` is emitted as:
-            //   expression_statement → internal_module
-            // Unwrap and dispatch the inner node.
-            if isTypeScript {
-                for inner in node.namedChildren() {
-                    guard let t = inner.nodeType, t == "internal_module" || t == "module" else { continue }
-                    let decls = extractModule(inner, isExported: false)
-                    types.append(contentsOf: decls)
-                }
-            }
-            // In JS mode: handled separately by the prototype detection pass.
-        default:
-            break
+        } else {
+            let (t1, f1) = dispatchDeclaration(node, isExported: false)
+            types += t1; freestandingFunctions += f1
         }
     }
 
@@ -121,98 +90,73 @@ struct JSExtractor {
     private mutating func visitExportStatement(_ node: Node) {
         let isDefault = node.hasDirectChildText("default", in: context)
         let exportDecorators = extractDecorators(node)
-
         for child in node.children() {
-            guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "class_declaration":
-                var decl = extractClassDeclaration(child, isExported: true, isDefault: isDefault)
-                // Decorators may appear on the export_statement node; propagate them to the class.
-                decl.annotations.append(contentsOf: exportDecorators)
-                types.append(decl)
-            case "abstract_class_declaration":
-                if isTypeScript {
-                    var decl = extractAbstractClassDeclaration(child, isExported: true, isDefault: isDefault)
-                    // Decorators may appear on the export_statement node; propagate them to the class.
-                    decl.annotations.append(contentsOf: exportDecorators)
-                    types.append(decl)
-                }
-            case "class":
-                // export default class { ... } (anonymous or named)
-                var decl = extractClassExpression(child, isExported: true, isDefault: isDefault)
-                // Decorators may appear on the export_statement node; propagate them to the class.
-                decl.annotations.append(contentsOf: exportDecorators)
-                types.append(decl)
-            case "interface_declaration":
-                if isTypeScript {
-                    let decl = extractInterfaceDeclaration(child, isExported: true)
-                    types.append(decl)
-                }
-            case "type_alias_declaration":
-                if isTypeScript {
-                    let decl = extractTypeAliasDeclaration(child, isExported: true)
-                    types.append(decl)
-                }
-            case "enum_declaration":
-                if isTypeScript {
-                    let decl = extractEnumDeclaration(child, isExported: true)
-                    types.append(decl)
-                }
-            case "module", "internal_module":
-                if isTypeScript {
-                    let decls = extractModule(child, isExported: true)
-                    types.append(contentsOf: decls)
-                }
-            case "function_declaration":
-                let fn = extractFunctionDeclaration(child, isExported: true)
-                freestandingFunctions.append(fn)
-            default:
-                break
-            }
+            let (t1, f1) = dispatchDeclaration(child, isExported: true, isDefault: isDefault,
+                                              decorators: exportDecorators)
+            types += t1; freestandingFunctions += f1
         }
+    }
+
+    // MARK: - Declaration Dispatch
+
+    /// Shared dispatch for top-level nodes, export children, and module body children.
+    @discardableResult
+    private mutating func dispatchDeclaration(
+        _ node: Node,
+        isExported: Bool,
+        isDefault: Bool = false,
+        decorators: [String] = [],
+        namespace: String? = nil
+    ) -> (types: [TypeDeclaration], functions: [Member]) {
+        guard let nodeType = node.nodeType else { return ([], []) }
+        var typeDecl: TypeDeclaration?
+        switch nodeType {
+        case "class_declaration", "class":
+            typeDecl = extractClassLikeDeclaration(node, isExported: isExported, isDefault: isDefault)
+        case "abstract_class_declaration" where isTypeScript:
+            typeDecl = extractClassLikeDeclaration(node, isExported: isExported,
+                                                   isDefault: isDefault, isAbstract: true)
+        case "interface_declaration" where isTypeScript:
+            typeDecl = extractInterfaceDeclaration(node, isExported: isExported)
+        case "type_alias_declaration" where isTypeScript:
+            typeDecl = extractTypeAliasDeclaration(node, isExported: isExported)
+        case "enum_declaration" where isTypeScript:
+            typeDecl = extractEnumDeclaration(node, isExported: isExported)
+        case "module" where isTypeScript, "internal_module" where isTypeScript:
+            var result: [TypeDeclaration] = []
+            for var d in extractModule(node, isExported: isExported) {
+                d.annotations.append(contentsOf: decorators)
+                if let ns = namespace { d.namespace = ns }
+                result.append(d)
+            }
+            return (result, [])
+        case "function_declaration":
+            return ([], [extractFunctionDeclaration(node, isExported: isExported)])
+        default:
+            return ([], [])
+        }
+        if var decl = typeDecl {
+            decl.annotations.append(contentsOf: decorators)
+            if let ns = namespace { decl.namespace = ns }
+            return ([decl], [])
+        }
+        return ([], [])
     }
 
     // MARK: - Class Declaration
 
-    private mutating func extractClassDeclaration(_ node: Node, isExported: Bool, isDefault: Bool) -> TypeDeclaration {
+    private mutating func extractClassLikeDeclaration(
+        _ node: Node, isExported: Bool, isDefault: Bool, isAbstract: Bool = false
+    ) -> TypeDeclaration {
         let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        var name = nameNode.map { text($0) } ?? ""
+        var name = node.child(byFieldName: "name").map { text($0) } ?? ""
         if name.isEmpty { name = isDefault ? "default" : "_Anonymous" }
 
+        let modifiers: [Modifier] = isAbstract ? [.abstract] : []
         var annotations = extractDecorators(node)
         if isDefault { annotations.append("default") }
 
         let generics = isTypeScript ? extractTypeParameters(node) : []
-        let (inherited, rels) = extractClassHeritage(node, className: name)
-        relationships.append(contentsOf: rels)
-
-        var typeDecl = TypeDeclaration(
-            id: name, name: name, qualifiedName: name, kind: .class,
-            accessLevel: isExported ? .public : nil,
-            genericParameters: generics,
-            inheritedTypes: inherited,
-            annotations: annotations,
-            location: nodeLoc
-        )
-
-        if let body = node.child(byFieldName: "body") {
-            parseClassBody(body, into: &typeDecl)
-        }
-        return typeDecl
-    }
-
-    private mutating func extractAbstractClassDeclaration(_ node: Node, isExported: Bool, isDefault: Bool) -> TypeDeclaration {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        var name = nameNode.map { text($0) } ?? ""
-        if name.isEmpty { name = isDefault ? "default" : "_Anonymous" }
-
-        let modifiers: [Modifier] = [.abstract]
-        var annotations = extractDecorators(node)
-        if isDefault { annotations.append("default") }
-
-        let generics = extractTypeParameters(node)
         let (inherited, rels) = extractClassHeritage(node, className: name)
         relationships.append(contentsOf: rels)
 
@@ -232,34 +176,6 @@ struct JSExtractor {
         return typeDecl
     }
 
-    private mutating func extractClassExpression(_ node: Node, isExported: Bool, isDefault: Bool) -> TypeDeclaration {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        var name = nameNode.map { text($0) } ?? ""
-        if name.isEmpty { name = isDefault ? "default" : "_Anonymous" }
-
-        var annotations = extractDecorators(node)
-        if isDefault { annotations.append("default") }
-
-        let generics = isTypeScript ? extractTypeParameters(node) : []
-        let (inherited, rels) = extractClassHeritage(node, className: name)
-        relationships.append(contentsOf: rels)
-
-        var typeDecl = TypeDeclaration(
-            id: name, name: name, qualifiedName: name, kind: .class,
-            accessLevel: isExported ? .public : nil,
-            genericParameters: generics,
-            inheritedTypes: inherited,
-            annotations: annotations,
-            location: nodeLoc
-        )
-
-        if let body = node.child(byFieldName: "body") {
-            parseClassBody(body, into: &typeDecl)
-        }
-        return typeDecl
-    }
-
     // MARK: - Class Heritage (extends/implements)
 
     private func extractClassHeritage(_ node: Node, className: String) -> ([TypeReference], [Relationship]) {
@@ -267,42 +183,38 @@ struct JSExtractor {
         var rels: [Relationship] = []
 
         for child in node.children() {
-            guard let childType = child.nodeType else { continue }
-            if childType == "class_heritage" {
+            if child.nodeType == "class_heritage" {
                 for heritageChild in child.children() {
-                    guard let hType = heritageChild.nodeType else { continue }
-                    if hType == "extends_clause" {
-                        if let valueNode = heritageChild.child(byFieldName: "value") ?? heritageChild.namedChildren().first {
-                            let ref = extractTypeReferenceFromExpression(valueNode)
-                            inherited.append(ref)
-                            rels.append(Relationship(kind: .inheritance, source: className, target: ref.name))
-                        }
-                    } else if hType == "implements_clause" {
-                        for typeNode in heritageChild.namedChildren() {
-                            let ref = extractTypeReferenceFromExpression(typeNode)
-                            inherited.append(ref)
-                            rels.append(Relationship(kind: .conformance, source: className, target: ref.name))
-                        }
-                    }
+                    collectHeritageClause(heritageChild, className: className,
+                                         inherited: &inherited, rels: &rels)
                 }
             }
-            // In some grammars, extends_clause/implements_clause might be direct children
-            if childType == "extends_clause" {
-                if let valueNode = child.child(byFieldName: "value") ?? child.namedChildren().first {
-                    let ref = extractTypeReferenceFromExpression(valueNode)
-                    inherited.append(ref)
-                    rels.append(Relationship(kind: .inheritance, source: className, target: ref.name))
-                }
-            }
-            if childType == "implements_clause" {
-                for typeNode in child.namedChildren() {
-                    let ref = extractTypeReferenceFromExpression(typeNode)
-                    inherited.append(ref)
-                    rels.append(Relationship(kind: .conformance, source: className, target: ref.name))
-                }
-            }
+            collectHeritageClause(child, className: className,
+                                 inherited: &inherited, rels: &rels)
         }
         return (inherited, rels)
+    }
+
+    private func collectHeritageClause(
+        _ node: Node, className: String,
+        inherited: inout [TypeReference], rels: inout [Relationship]
+    ) {
+        switch node.nodeType {
+        case "extends_clause":
+            if let valueNode = node.child(byFieldName: "value") ?? node.namedChildren().first {
+                let ref = extractTypeReferenceFromExpression(valueNode)
+                inherited.append(ref)
+                rels.append(Relationship(kind: .inheritance, source: className, target: ref.name))
+            }
+        case "implements_clause":
+            for typeNode in node.namedChildren() {
+                let ref = extractTypeReferenceFromExpression(typeNode)
+                inherited.append(ref)
+                rels.append(Relationship(kind: .conformance, source: className, target: ref.name))
+            }
+        default:
+            break
+        }
     }
 
     // MARK: - Decorators / Annotations
@@ -320,6 +232,11 @@ struct JSExtractor {
         }
         return annotations
     }
+}
+
+// MARK: - Members & Type Extraction
+
+extension JSExtractor {
 
     // MARK: - Class Body
 
@@ -329,39 +246,26 @@ struct JSExtractor {
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
             switch childType {
-            case "method_definition":
-                let member = extractMethodDefinition(child, parentName: typeDecl.name,
+            case "method_definition", "abstract_method_definition":
+                var member = extractMethodDefinition(child, parentName: typeDecl.name,
                                                      knownProperties: knownProperties)
+                if childType == "abstract_method_definition", isTypeScript,
+                   !member.modifiers.contains(.abstract) {
+                    member.modifiers.append(.abstract)
+                }
                 if member.kind == .initializer, isTypeScript {
                     extractConstructorParameterProperties(child, into: &typeDecl)
                 }
                 typeDecl.members.append(member)
 
             case "field_definition", "public_field_definition":
-                let member = extractFieldDefinition(child)
-                typeDecl.members.append(member)
+                typeDecl.members.append(extractFieldDefinition(child))
 
-            case "abstract_method_definition":
-                if isTypeScript {
-                    var member = extractMethodDefinition(child, parentName: typeDecl.name,
-                                                         knownProperties: knownProperties)
-                    if !member.modifiers.contains(.abstract) {
-                        member.modifiers.append(.abstract)
-                    }
-                    typeDecl.members.append(member)
-                }
+            case "method_signature" where isTypeScript:
+                typeDecl.members.append(extractMethodSignature(child))
 
-            case "method_signature":
-                if isTypeScript {
-                    let member = extractMethodSignature(child)
-                    typeDecl.members.append(member)
-                }
-
-            case "property_signature":
-                if isTypeScript {
-                    let member = extractPropertySignature(child)
-                    typeDecl.members.append(member)
-                }
+            case "property_signature" where isTypeScript:
+                typeDecl.members.append(extractPropertySignature(child))
 
             default:
                 break
@@ -415,57 +319,30 @@ struct JSExtractor {
         let name = nameNode.map { text($0) } ?? ""
 
         var kind: MemberKind = .method
-        var accessLevel: AccessLevel? = nil
+        var accessLevel: AccessLevel?
         var modifiers: [Modifier] = []
         var isComputed = false
         let annotations = extractDecorators(node)
 
-        // Check for keywords in children: static, get, set, async, abstract, override
         for child in node.children() {
-            let t = text(child)
-            switch t {
-            case "static":   modifiers.append(.static)
-            case "get":      isComputed = true; kind = .property
-            case "set":      isComputed = true; kind = .property
-            case "async":    modifiers.append(.async)
-            case "abstract": if isTypeScript { modifiers.append(.abstract) }
-            case "override": modifiers.append(.override)
-            default:         break
+            switch text(child) {
+            case "static":                      modifiers.append(.static)
+            case "get", "set":                  isComputed = true; kind = .property
+            case "async":                       modifiers.append(.async)
+            case "abstract" where isTypeScript: modifiers.append(.abstract)
+            case "override":                    modifiers.append(.override)
+            default:                            break
             }
         }
 
-        // TypeScript accessibility modifier
-        if isTypeScript {
-            accessLevel = extractAccessibilityModifier(node)
-        }
-
-        // Private field prefix (#)
-        if name.hasPrefix("#") {
-            accessLevel = .private
-        }
-
-        // Constructor
-        if name == "constructor" {
-            kind = .initializer
-        }
-
-        // Readonly (TS)
-        if isTypeScript && node.hasDirectChildText("readonly", in: context) {
-            modifiers.append(.readonly)
-        }
+        if isTypeScript { accessLevel = extractAccessibilityModifier(node) }
+        if name.hasPrefix("#") { accessLevel = .private }
+        if name == "constructor" { kind = .initializer }
+        if isTypeScript && node.hasDirectChildText("readonly", in: context) { modifiers.append(.readonly) }
 
         let generics = isTypeScript ? extractTypeParameters(node) : []
-        let params: [Parameter]
-        if let paramsNode = node.child(byFieldName: "parameters") {
-            params = extractParameters(paramsNode)
-        } else {
-            params = []
-        }
-
-        var returnType: TypeReference? = nil
-        if isTypeScript {
-            returnType = extractReturnTypeAnnotation(node)
-        }
+        let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
+        let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
 
         let callSites = extractCallSites(from: node.child(byFieldName: "body"),
                                          knownProperties: knownProperties)
@@ -492,7 +369,7 @@ struct JSExtractor {
         let nameNode = node.child(byFieldName: "property") ?? node.child(byFieldName: "name")
         let name = nameNode.map { text($0) } ?? ""
 
-        var accessLevel: AccessLevel? = nil
+        var accessLevel: AccessLevel?
         var modifiers: [Modifier] = []
         let annotations = extractDecorators(node)
 
@@ -514,7 +391,7 @@ struct JSExtractor {
             if node.hasDirectChildText("declare", in: context) { modifiers.append(.declare) }
         }
 
-        var propType: TypeReference? = nil
+        var propType: TypeReference?
         if isTypeScript {
             propType = extractTypeAnnotation(node)
         }
@@ -629,7 +506,7 @@ struct JSExtractor {
         let nameNode = node.child(byFieldName: "name")
         let name = nameNode.map { text($0) } ?? ""
 
-        var accessLevel: AccessLevel? = nil
+        var accessLevel: AccessLevel?
         var modifiers: [Modifier] = []
 
         if let acc = extractAccessibilityModifier(node) {
@@ -725,7 +602,7 @@ struct JSExtractor {
                     } else {
                         caseName = child.namedChildren().first.map { text($0) } ?? ""
                     }
-                    var rawValue: String? = nil
+                    var rawValue: String?
                     if let valueChild = child.child(byFieldName: "value") {
                         rawValue = text(valueChild)
                     }
@@ -741,76 +618,29 @@ struct JSExtractor {
     // MARK: - Module / Namespace
 
     private mutating func extractModule(_ node: Node, isExported: Bool) -> [TypeDeclaration] {
-        let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? "_Module"
+        let name = node.child(byFieldName: "name").map { text($0) } ?? "_Module"
         var nestedTypes: [TypeDeclaration] = []
+        var nestedFunctions: [Member] = []
 
         if let body = node.child(byFieldName: "body") {
             for child in body.children() {
                 guard let childType = child.nodeType else { continue }
-                switch childType {
-                case "export_statement":
+                if childType == "export_statement" {
                     let isDefault = child.hasDirectChildText("default", in: context)
                     let exportDecorators = extractDecorators(child)
                     for exportChild in child.children() {
-                        guard let ecType = exportChild.nodeType else { continue }
-                        switch ecType {
-                        case "class_declaration":
-                            var t = extractClassDeclaration(exportChild, isExported: true, isDefault: isDefault)
-                            t.annotations.append(contentsOf: exportDecorators)
-                            t.namespace = name
-                            nestedTypes.append(t)
-                        case "abstract_class_declaration":
-                            if isTypeScript {
-                                var t = extractAbstractClassDeclaration(exportChild, isExported: true, isDefault: isDefault)
-                                t.annotations.append(contentsOf: exportDecorators)
-                                t.namespace = name
-                                nestedTypes.append(t)
-                            }
-                        case "interface_declaration":
-                            if isTypeScript {
-                                var t = extractInterfaceDeclaration(exportChild, isExported: true)
-                                t.namespace = name
-                                nestedTypes.append(t)
-                            }
-                        case "type_alias_declaration":
-                            if isTypeScript {
-                                var t = extractTypeAliasDeclaration(exportChild, isExported: true)
-                                t.namespace = name
-                                nestedTypes.append(t)
-                            }
-                        case "function_declaration":
-                            let fn = extractFunctionDeclaration(exportChild, isExported: true)
-                            freestandingFunctions.append(fn)
-                        default:
-                            break
-                        }
+                        let (t1, f1) = dispatchDeclaration(exportChild, isExported: true, isDefault: isDefault,
+                                                           decorators: exportDecorators, namespace: name)
+                        nestedTypes += t1; nestedFunctions += f1
                     }
-                case "class_declaration":
-                    var t = extractClassDeclaration(child, isExported: false, isDefault: false)
-                    t.namespace = name
-                    nestedTypes.append(t)
-                case "interface_declaration":
-                    if isTypeScript {
-                        var t = extractInterfaceDeclaration(child, isExported: false)
-                        t.namespace = name
-                        nestedTypes.append(t)
-                    }
-                case "type_alias_declaration":
-                    if isTypeScript {
-                        var t = extractTypeAliasDeclaration(child, isExported: false)
-                        t.namespace = name
-                        nestedTypes.append(t)
-                    }
-                case "function_declaration":
-                    let fn = extractFunctionDeclaration(child, isExported: false)
-                    freestandingFunctions.append(fn)
-                default:
-                    break
+                } else {
+                    let (t1, f1) = dispatchDeclaration(child, isExported: false, namespace: name)
+                    nestedTypes += t1; nestedFunctions += f1
                 }
             }
         }
 
+        freestandingFunctions.append(contentsOf: nestedFunctions)
         let nsDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .module,
             accessLevel: isExported ? .public : nil,
@@ -823,37 +653,24 @@ struct JSExtractor {
 
     private func extractFunctionDeclaration(_ node: Node, isExported: Bool) -> Member {
         let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? "_anonymous"
-
+        let name = node.child(byFieldName: "name").map { text($0) } ?? "_anonymous"
         var modifiers: [Modifier] = []
-        if node.hasDirectChildText("async", in: context) {
-            modifiers.append(.async)
-        }
-
+        if node.hasDirectChildText("async", in: context) { modifiers.append(.async) }
         let generics = isTypeScript ? extractTypeParameters(node) : []
-        let params: [Parameter]
-        if let paramsNode = node.child(byFieldName: "parameters") {
-            params = extractParameters(paramsNode)
-        } else {
-            params = []
-        }
-        var returnType: TypeReference? = nil
-        if isTypeScript {
-            returnType = extractReturnTypeAnnotation(node)
-        }
-
+        let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
+        let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
         return Member(
-            name: name,
-            kind: .method,
+            name: name, kind: .method,
             accessLevel: isExported ? .public : nil,
-            modifiers: modifiers,
-            type: returnType,
-            parameters: params,
-            genericParameters: generics,
-            location: nodeLoc
+            modifiers: modifiers, type: returnType,
+            parameters: params, genericParameters: generics, location: nodeLoc
         )
     }
+}
+
+// MARK: - Parameters, Types & Utilities
+
+extension JSExtractor {
 
     // MARK: - Call Site Extraction
 
@@ -888,7 +705,7 @@ struct JSExtractor {
         else { return nil }
 
         let methodName = text(propertyNode)
-        var receiverVarName: String? = nil
+        var receiverVarName: String?
 
         if objectNode.nodeType == "identifier" {
             receiverVarName = text(objectNode)
@@ -939,7 +756,7 @@ struct JSExtractor {
             name = extractParameterName(node)
         }
 
-        var paramType: TypeReference? = nil
+        var paramType: TypeReference?
         if isTypeScript {
             paramType = extractTypeAnnotation(node)
         }
@@ -958,11 +775,9 @@ struct JSExtractor {
 
     private func extractRestParameter(_ node: Node) -> Parameter {
         var name = ""
-        for child in node.namedChildren() {
-            if child.nodeType == "identifier" {
-                name = text(child)
-                break
-            }
+        for child in node.namedChildren() where child.nodeType == "identifier" {
+            name = text(child)
+            break
         }
         if name.isEmpty {
             if let patternNode = node.child(byFieldName: "pattern") {
@@ -972,7 +787,7 @@ struct JSExtractor {
             }
         }
 
-        var paramType: TypeReference? = nil
+        var paramType: TypeReference?
         if isTypeScript { paramType = extractTypeAnnotation(node) }
 
         return Parameter(internalName: name, type: paramType, isVariadic: true)
@@ -988,8 +803,8 @@ struct JSExtractor {
         if let pattern = node.child(byFieldName: "pattern") {
             return text(pattern)
         }
-        for child in node.children() {
-            if child.nodeType == "identifier" { return text(child) }
+        for child in node.children() where child.nodeType == "identifier" {
+            return text(child)
         }
         return ""
     }
@@ -1024,7 +839,11 @@ struct JSExtractor {
         }
 
         switch nodeType {
-        case "predefined_type", "type_identifier", "identifier":
+        case "predefined_type", "type_identifier", "identifier",
+             "union_type", "intersection_type", "function_type", "literal_type",
+             "tuple_type", "conditional_type", "index_type_query", "mapped_type",
+             "type_query", "object_type", "template_literal_type", "existential_type",
+             "nested_type_identifier", "member_expression", "this_type":
             return TypeReference(name: text(node))
 
         case "generic_type":
@@ -1045,24 +864,13 @@ struct JSExtractor {
             }
             return TypeReference(name: text(node), isArray: true)
 
-        case "union_type", "intersection_type", "function_type", "literal_type",
-             "tuple_type", "conditional_type", "index_type_query", "mapped_type",
-             "type_query", "object_type", "template_literal_type", "existential_type":
-            return TypeReference(name: text(node))
-
         case "parenthesized_type":
             if let inner = node.namedChildren().first { return extractTypeReference(inner) }
-            return TypeReference(name: text(node))
-
-        case "nested_type_identifier", "member_expression":
             return TypeReference(name: text(node))
 
         case "readonly_type":
             if let inner = node.namedChildren().first { return extractTypeReference(inner) }
             return TypeReference(name: text(node))
-
-        case "this_type":
-            return TypeReference(name: "this")
 
         case "flow_maybe_type":
             if let inner = node.namedChildren().first {
@@ -1115,24 +923,16 @@ struct JSExtractor {
 
     // MARK: - Accessibility Modifier
 
+    private static let accessLevelMap: [String: AccessLevel] = [
+        "public": .public, "private": .private, "protected": .protected
+    ]
+
     private func extractAccessibilityModifier(_ node: Node) -> AccessLevel? {
-        for child in node.children() {
-            if child.nodeType == "accessibility_modifier" {
-                switch text(child) {
-                case "public":    return .public
-                case "private":   return .private
-                case "protected": return .protected
-                default:          break
-                }
-            }
+        for child in node.children() where child.nodeType == "accessibility_modifier" {
+            if let level = Self.accessLevelMap[text(child)] { return level }
         }
-        // Also check keyword children that act as access modifiers
-        for child in node.children() {
-            let t = text(child)
-            guard child.nodeType != "type_identifier" else { continue }
-            if t == "public"    { return .public }
-            if t == "private"   { return .private }
-            if t == "protected" { return .protected }
+        for child in node.children() where child.nodeType != "type_identifier" {
+            if let level = Self.accessLevelMap[text(child)] { return level }
         }
         return nil
     }
@@ -1194,4 +994,3 @@ struct JSExtractor {
         }
     }
 }
-

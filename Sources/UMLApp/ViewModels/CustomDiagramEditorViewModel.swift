@@ -13,14 +13,14 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     @Published var nodes: [CustomDiagramNode] = []
     @Published var edges: [CustomDiagramEdge] = []
     @Published var selectedNodeIDs: Set<UUID> = []
-    @Published var selectedEdgeID: UUID? = nil
-    @Published var selectionRect: CGRect? = nil
+    @Published var selectedEdgeID: UUID?
+    @Published var selectionRect: CGRect?
     /// When set, the user is in "draw relationship" mode: dragging from a node creates an edge.
-    @Published var pendingRelationshipKind: Relationship.Kind? = nil
+    @Published var pendingRelationshipKind: Relationship.Kind?
     /// While dragging to draw a relationship, the source node.
-    @Published var relationshipDragSourceID: UUID? = nil
+    @Published var relationshipDragSourceID: UUID?
     /// The current endpoint (canvas coords) of the relationship being drawn.
-    @Published var relationshipDragEndpoint: CGPoint? = nil
+    @Published var relationshipDragEndpoint: CGPoint?
 
     /// Actual measured sizes of rendered node views (updated by GeometryReader).
     var measuredNodeSizes: [UUID: CGSize] = [:]
@@ -180,15 +180,20 @@ final class CustomDiagramEditorViewModel: ObservableObject {
 
         if let parenStart = trimmed.firstIndex(of: "("),
            let parenEnd = trimmed.firstIndex(of: ")") {
-            name = String(trimmed[trimmed.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
+            name = String(trimmed[trimmed.startIndex..<parenStart])
+                .trimmingCharacters(in: .whitespaces)
             params = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
             let afterParen = trimmed[trimmed.index(after: parenEnd)...]
             if let colonIdx = afterParen.firstIndex(of: ":") {
-                returnType = String(afterParen[afterParen.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
+                returnType = String(
+                    afterParen[afterParen.index(after: colonIdx)...]
+                ).trimmingCharacters(in: .whitespaces)
             }
         } else if let colonIdx = trimmed.firstIndex(of: ":") {
-            name = String(trimmed[trimmed.startIndex..<colonIdx]).trimmingCharacters(in: .whitespaces)
-            returnType = String(trimmed[trimmed.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
+            name = String(trimmed[trimmed.startIndex..<colonIdx])
+                .trimmingCharacters(in: .whitespaces)
+            returnType = String(trimmed[trimmed.index(after: colonIdx)...])
+                .trimmingCharacters(in: .whitespaces)
         }
 
         addMethod(to: nodeID, name: name, returnType: returnType, parameters: params)
@@ -268,7 +273,9 @@ final class CustomDiagramEditorViewModel: ObservableObject {
             content.methods[mi].parameters = String(text[text.index(after: parenStart)..<parenEnd])
             let afterParen = text[text.index(after: parenEnd)...]
             if let colonIdx = afterParen.firstIndex(of: ":") {
-                content.methods[mi].type = String(afterParen[afterParen.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
+                content.methods[mi].type = String(
+                    afterParen[afterParen.index(after: colonIdx)...]
+                ).trimmingCharacters(in: .whitespaces)
             }
         } else {
             content.methods[mi].name = text
@@ -386,7 +393,9 @@ final class CustomDiagramEditorViewModel: ObservableObject {
             let caseHeight = content.enumCases.isEmpty ? 0 : CGFloat(content.enumCases.count) * lineHeight
             let padding: CGFloat = 16
             let height = headerHeight + propHeight + methodHeight + caseHeight + 3 + padding
-            let maxChars = ([node.name] + content.properties.map(\.name) + content.methods.map(\.name)).map(\.count).max() ?? 10
+            let allNames = [node.name] + content.properties.map(\.name)
+                + content.methods.map(\.name)
+            let maxChars = allNames.map(\.count).max() ?? 10
             let width = max(180, CGFloat(maxChars) * 7.5 + 28)
             return CGSize(width: min(width, 400), height: height)
         case .note(let text):
@@ -424,7 +433,10 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     func copySelection() {
         guard !selectedNodeIDs.isEmpty else { return }
         let selectedNodes = nodes.filter { selectedNodeIDs.contains($0.id) }
-        let selectedEdges = edges.filter { selectedNodeIDs.contains($0.sourceNodeID) && selectedNodeIDs.contains($0.targetNodeID) }
+        let selectedEdges = edges.filter {
+            selectedNodeIDs.contains($0.sourceNodeID)
+                && selectedNodeIDs.contains($0.targetNodeID)
+        }
         let payload = ClipboardPayload(nodes: selectedNodes, edges: selectedEdges)
         guard let data = try? JSONEncoder().encode(payload) else { return }
 

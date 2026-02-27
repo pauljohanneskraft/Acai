@@ -204,7 +204,7 @@ struct DOTNodeRenderer {
         guard let minAccess = options.minimumAccessLevel else { return members }
         let order: [AccessLevel: Int] = [
             .private: 0, .filePrivate: 1, .internal: 2, .packagePrivate: 2,
-            .protected: 3, .public: 4, .open: 5,
+            .protected: 3, .public: 4, .open: 5
         ]
         guard let minRank = order[minAccess] else { return members }
         return members.filter { member in

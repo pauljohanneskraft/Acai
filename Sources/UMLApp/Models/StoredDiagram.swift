@@ -46,7 +46,7 @@ struct DiagramConfiguration: Codable, Hashable, Sendable {
     var groupByDirectory: Bool = true
     var showExternalTypes: Bool = false
     /// Access level filter — only show members at or above this level.
-    var minimumAccessLevel: AccessLevel? = nil
+    var minimumAccessLevel: AccessLevel?
     /// When `true`, hides types originating from Dart generated files
     /// (e.g. `*.freezed.dart`, `*.g.dart`) as well as types whose names
     /// match common code-generation patterns.
@@ -206,7 +206,7 @@ enum NodeContent: Codable, Hashable, Sendable {
 struct TypeNodeContent: Codable, Hashable, Sendable {
     var typeKind: TypeKind
     /// Custom stereotype override — when `nil`, the default based on `typeKind` is used.
-    var stereotype: String? = nil
+    var stereotype: String?
     var properties: [CustomMember] = []
     var methods: [CustomMember] = []
     var enumCases: [CustomEnumCase] = []
@@ -254,9 +254,9 @@ struct CustomDiagramNode: Identifiable, Codable, Hashable, Sendable {
     var positionX: Double = 0
     var positionY: Double = 0
     /// User-defined width (used by resizable container nodes: package, boundary, subsystem).
-    var width: Double? = nil
+    var width: Double?
     /// User-defined height (used by resizable container nodes: package, boundary, subsystem).
-    var height: Double? = nil
+    var height: Double?
     /// Draw order within its z-layer. Higher values render on top.
     var drawOrder: Int = 0
 
@@ -288,7 +288,7 @@ struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
     var diagramType: DiagramType = .classDiagram
-    var ownerProjectID: UUID? = nil
+    var ownerProjectID: UUID?
     var nodes: [CustomDiagramNode] = []
     var edges: [CustomDiagramEdge] = []
     var canvasScale: Double = 1.0

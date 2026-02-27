@@ -35,9 +35,15 @@ final class ProjectStore: ObservableObject {
             self.baseDir = baseDir
         } else {
             #if os(macOS)
-            let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let appSupport = try? fm.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
             let bundleID = Bundle.main.bundleIdentifier ?? "UMLApp"
-            self.baseDir = (appSupport ?? fm.homeDirectoryForCurrentUser).appendingPathComponent(bundleID, isDirectory: true)
+            self.baseDir = (appSupport ?? fm.homeDirectoryForCurrentUser)
+                .appendingPathComponent(bundleID, isDirectory: true)
             #else
             self.baseDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
             #endif
@@ -210,4 +216,3 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 }
-

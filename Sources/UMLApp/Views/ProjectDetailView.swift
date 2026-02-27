@@ -54,7 +54,11 @@ struct ProjectDetailView: View {
                         Menu {
                             ForEach(DiagramType.allCases) { type in
                                 Button {
-                                    if let id = model.addCustomDiagram(to: projectID, name: "New \(type.displayName)", type: type) {
+                                    if let id = model.addCustomDiagram(
+                        to: projectID,
+                        name: "New \(type.displayName)",
+                        type: type
+                    ) {
                                         model.selection = .customDiagram(id)
                                     }
                                 } label: {
@@ -113,7 +117,12 @@ struct ProjectDetailView: View {
         HStack(alignment: .top, spacing: 12) {
             // Icon picker
             Menu {
-                ForEach(["folder", "doc", "desktopcomputer", "iphone", "globe", "server.rack", "shippingbox", "cpu", "hammer", "wrench", "gear", "star", "bookmark"], id: \.self) { symbol in
+                ForEach([
+                    "folder", "doc", "desktopcomputer",
+                    "iphone", "globe", "server.rack",
+                    "shippingbox", "cpu", "hammer",
+                    "wrench", "gear", "star", "bookmark"
+                ], id: \.self) { symbol in
                     Button {
                         model.store.projects[index].iconSystemName = symbol
                         model.store.save()
@@ -142,7 +151,11 @@ struct ProjectDetailView: View {
 
                 TextField("Subtitle", text: Binding(
                     get: { model.store.projects[safe: index]?.subtitle ?? "" },
-                    set: { model.store.projects[index].subtitle = $0; model.store.save(); model.objectWillChange.send() }
+                    set: {
+                        model.store.projects[index].subtitle = $0
+                        model.store.save()
+                        model.objectWillChange.send()
+                    }
                 ))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -263,4 +276,3 @@ extension Array {
 extension UUID: @retroactive Identifiable {
     public var id: UUID { self }
 }
-

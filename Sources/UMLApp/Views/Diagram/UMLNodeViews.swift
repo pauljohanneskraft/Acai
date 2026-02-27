@@ -172,7 +172,7 @@ struct UMLTypeBoxView: View {
         switch kind {
         case .protocol, .interface: Color(red: 0.93, green: 0.95, blue: 1.0)
         case .struct, .record:      Color(red: 0.93, green: 0.98, blue: 0.93)
-        case .enum:                 Color(red: 1.0,  green: 0.96, blue: 0.92)
+        case .enum:                 Color(red: 1.0, green: 0.96, blue: 0.92)
         case .class:                Color(red: 0.96, green: 0.93, blue: 1.0)
         case .trait:                Color(red: 0.92, green: 0.98, blue: 0.98)
         case .mixin:                Color(red: 0.95, green: 0.93, blue: 1.0)
@@ -184,7 +184,7 @@ struct UMLTypeBoxView: View {
         switch kind {
         case .protocol, .interface: Color(red: 0.97, green: 0.98, blue: 1.0)
         case .struct, .record:      Color(red: 0.97, green: 0.99, blue: 0.97)
-        case .enum:                 Color(red: 1.0,  green: 0.99, blue: 0.97)
+        case .enum:                 Color(red: 1.0, green: 0.99, blue: 0.97)
         case .class:                Color(red: 0.99, green: 0.97, blue: 1.0)
         case .trait:                Color(red: 0.97, green: 0.99, blue: 0.99)
         case .mixin:                Color(red: 0.98, green: 0.97, blue: 1.0)
@@ -351,7 +351,7 @@ struct UMLContainerNodeView: View {
         var fillColor: Color {
             switch self {
             case .package:   Color(red: 0.96, green: 0.93, blue: 0.88)
-            case .boundary:  Color(red: 1.0,  green: 0.97, blue: 0.90)
+            case .boundary:  Color(red: 1.0, green: 0.97, blue: 0.90)
             case .subsystem: Color(red: 0.90, green: 0.96, blue: 0.98)
             }
         }

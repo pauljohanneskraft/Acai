@@ -4,10 +4,10 @@ struct ProjectBrowserView: View {
     @StateObject private var model = ProjectBrowserViewModel()
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
-    @State private var sidebarSelection: SidebarItem? = nil
-    @State private var renamingDiagramID: UUID? = nil
+    @State private var sidebarSelection: SidebarItem?
+    @State private var renamingDiagramID: UUID?
     @State private var renamingText: String = ""
-    
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebarContent
@@ -75,7 +75,9 @@ struct ProjectBrowserView: View {
                         }
 
                     // Codebases — sorted alphabetically
-                    let sortedCodebases = project.codebases.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                    let sortedCodebases = project.codebases.sorted(by: {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    })
                     ForEach(sortedCodebases) { codebase in
                         Label(codebase.name, systemImage: "folder")
                             .tag(SidebarItem.codebase(codebase.id))
@@ -205,4 +207,3 @@ enum SidebarItem: Hashable {
     case codebase(UUID)
     case customDiagram(UUID)
 }
-

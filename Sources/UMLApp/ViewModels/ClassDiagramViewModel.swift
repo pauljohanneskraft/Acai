@@ -14,7 +14,7 @@ final class ClassDiagramViewModel: ObservableObject {
     @Published var userNodeSizes: [String: CGSize] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published private(set) var hasPerformedMeasuredLayout = false
-    @Published var selectionRect: CGRect? = nil
+    @Published var selectionRect: CGRect?
 
     private var configuration: DiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -28,7 +28,12 @@ final class ClassDiagramViewModel: ObservableObject {
     }
 
     /// Initializer with stored configuration and optional restored positions/sizes.
-    init(artifact: CodeArtifact, configuration: DiagramConfiguration, restoredPositions: [String: CGPoint]? = nil, restoredSizes: [String: CGSize]? = nil) {
+    init(
+        artifact: CodeArtifact,
+        configuration: DiagramConfiguration,
+        restoredPositions: [String: CGPoint]? = nil,
+        restoredSizes: [String: CGSize]? = nil
+    ) {
         self.artifact = artifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions
@@ -111,7 +116,11 @@ final class ClassDiagramViewModel: ObservableObject {
     func performLayout() {
         let engine = SugiyamaLayoutEngine()
         let inputs = nodes.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100), group: $0.directoryGroup)
+            SugiyamaLayoutEngine.NodeInput(
+                id: $0.id,
+                size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100),
+                group: $0.directoryGroup
+            )
         }
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.sourceID, targetID: $0.targetID, kind: $0.kind)
@@ -232,7 +241,10 @@ final class ClassDiagramViewModel: ObservableObject {
 
         let height = headerHeight + propHeight + methodHeight + caseHeight + (dividerCount * 1) + padding
 
-        let allTexts = [node.name] + node.properties.map(\.displayText) + node.methods.map(\.displayText) + node.enumCases.map(\.displayText)
+        let allTexts = [node.name]
+            + node.properties.map(\.displayText)
+            + node.methods.map(\.displayText)
+            + node.enumCases.map(\.displayText)
         let maxChars = allTexts.map(\.count).max() ?? 10
         let width = max(180, CGFloat(maxChars) * 7.5 + 28)
 

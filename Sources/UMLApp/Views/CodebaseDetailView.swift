@@ -98,10 +98,30 @@ struct CodebaseDetailView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                statisticCard(title: "Types", value: "\(artifact.types.count)", icon: "rectangle.3.group", color: .blue)
-                statisticCard(title: "Relationships", value: "\(artifact.relationships.count)", icon: "arrow.triangle.branch", color: .purple)
-                statisticCard(title: "Functions", value: "\(artifact.freestandingFunctions.count)", icon: "function", color: .green)
-                statisticCard(title: "Coupling", value: couplingFactor(artifact: artifact), icon: "link", color: .orange)
+                statisticCard(
+                    title: "Types",
+                    value: "\(artifact.types.count)",
+                    icon: "rectangle.3.group",
+                    color: .blue
+                )
+                statisticCard(
+                    title: "Relationships",
+                    value: "\(artifact.relationships.count)",
+                    icon: "arrow.triangle.branch",
+                    color: .purple
+                )
+                statisticCard(
+                    title: "Functions",
+                    value: "\(artifact.freestandingFunctions.count)",
+                    icon: "function",
+                    color: .green
+                )
+                statisticCard(
+                    title: "Coupling",
+                    value: couplingFactor(artifact: artifact),
+                    icon: "link",
+                    color: .orange
+                )
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
@@ -228,7 +248,9 @@ struct CodebaseDetailView: View {
             .padding(.horizontal)
             .padding(.top, 12)
 
-            let sortedTypes = artifact.types.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+            let sortedTypes = artifact.types.sorted(by: {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            })
             LazyVStack(spacing: 1) {
                 ForEach(sortedTypes, id: \.id) { type in
                     typeRow(type: type)

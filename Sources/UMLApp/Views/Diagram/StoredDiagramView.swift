@@ -20,9 +20,9 @@ struct StoredDiagramView: View {
     @State private var canvasScale: CGFloat
     @State private var canvasOffset: CGPoint
     @State private var dragStartPositions: [String: CGPoint] = [:]
-    @State private var activeDragCanvasLocation: CGPoint? = nil
+    @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var activeResizeState: StoredResizeState? = nil
+    @State private var activeResizeState: StoredResizeState?
     @State private var showInspector = false
 
     enum InspectorTab { case settings, selection }
@@ -130,14 +130,14 @@ struct StoredDiagramView: View {
                     ))
                 }
             }
-        }, autoPanController: canvasAutoPanController) {
+        }, autoPanController: canvasAutoPanController, content: {
             ZStack {
                 edgeLayer
                 nodeLayer
                 resizeHandleLayer
                 selectionRectangleLayer
             }
-        }
+        })
     }
 
     // MARK: - Edge Layer
@@ -242,7 +242,13 @@ struct StoredDiagramView: View {
                 let dw = newW - state.startSize.width
                 let dh = newH - state.startSize.height
                 viewModel.resizeNode(id, width: newW, height: newH)
-                viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x + dw / 2, y: state.startPosition.y + dh / 2))
+                viewModel.moveNode(
+                    id,
+                    to: CGPoint(
+                        x: state.startPosition.x + dw / 2,
+                        y: state.startPosition.y + dh / 2
+                    )
+                )
             }
             .onEnded { _ in
                 activeResizeState = nil
@@ -367,7 +373,7 @@ struct StoredDiagramView: View {
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    @State private var localConfig: DiagramConfiguration? = nil
+    @State private var localConfig: DiagramConfiguration?
 
     private var configurationInspector: some View {
         let config = Binding<DiagramConfiguration>(
