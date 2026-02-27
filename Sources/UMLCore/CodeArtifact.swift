@@ -95,7 +95,7 @@ extension CodeArtifact {
         ".config.dart",
         ".chopper.dart",
         ".mocks.dart",
-        ".mapper.dart",
+        ".mapper.dart"
     ]
 
     /// Returns `true` when the file path looks like a Dart generated file.

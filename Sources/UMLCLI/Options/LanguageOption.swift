@@ -11,12 +11,18 @@ enum LanguageOption: String, ExpressibleByArgument, CaseIterable {
 
     var sourceLanguage: CodeArtifact.SourceLanguage {
         switch self {
-        case .swift:      return .swift
-        case .kotlin:     return .kotlin
-        case .java:       return .java
-        case .typescript: return .typeScript
-        case .javascript: return .javaScript
-        case .dart:       return .dart
+        case .swift:
+            return .swift
+        case .kotlin:
+            return .kotlin
+        case .java:
+            return .java
+        case .typescript:
+            return .typeScript
+        case .javascript:
+            return .javaScript
+        case .dart:
+            return .dart
         }
     }
 }

@@ -34,18 +34,30 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
 
     var id: String {
         switch self {
-        case .type(let tk):   "type.\(tk.rawValue)"
-        case .actor:          "actor"
-        case .useCase:        "useCase"
-        case .boundary:       "boundary"
-        case .component:      "component"
-        case .package:        "package"
-        case .deploymentNode: "deploymentNode"
-        case .database:       "database"
-        case .artifact:       "artifact"
-        case .subsystem:      "subsystem"
-        case .entity:         "entity"
-        case .note:           "note"
+        case .type(let tk):
+            "type.\(tk.rawValue)"
+        case .actor:
+            "actor"
+        case .useCase:
+            "useCase"
+        case .boundary:
+            "boundary"
+        case .component:
+            "component"
+        case .package:
+            "package"
+        case .deploymentNode:
+            "deploymentNode"
+        case .database:
+            "database"
+        case .artifact:
+            "artifact"
+        case .subsystem:
+            "subsystem"
+        case .entity:
+            "entity"
+        case .note:
+            "note"
         }
     }
 
@@ -56,31 +68,55 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
         switch self {
         case .type(let tk):
             switch tk {
-            case .class:      "Class"
-            case .struct:     "Struct"
-            case .enum:       "Enum"
-            case .protocol:   "Protocol"
-            case .interface:  "Interface"
-            case .trait:      "Trait"
-            case .typeAlias:  "Type Alias"
-            case .object:     "Object"
-            case .extension:  "Extension"
-            case .annotation: "Annotation"
-            case .module:     "Module"
-            case .record:     "Record"
-            case .mixin:      "Mixin"
+            case .class:
+                "Class"
+            case .struct:
+                "Struct"
+            case .enum:
+                "Enum"
+            case .protocol:
+                "Protocol"
+            case .interface:
+                "Interface"
+            case .trait:
+                "Trait"
+            case .typeAlias:
+                "Type Alias"
+            case .object:
+                "Object"
+            case .extension:
+                "Extension"
+            case .annotation:
+                "Annotation"
+            case .module:
+                "Module"
+            case .record:
+                "Record"
+            case .mixin:
+                "Mixin"
             }
-        case .actor:          "Actor"
-        case .useCase:        "Use Case"
-        case .boundary:       "Boundary"
-        case .component:      "Component"
-        case .package:        "Package"
-        case .deploymentNode: "Node"
-        case .database:       "Database"
-        case .artifact:       "Artifact"
-        case .subsystem:      "Subsystem"
-        case .entity:         "Entity"
-        case .note:           "Note"
+        case .actor:
+            "Actor"
+        case .useCase:
+            "Use Case"
+        case .boundary:
+            "Boundary"
+        case .component:
+            "Component"
+        case .package:
+            "Package"
+        case .deploymentNode:
+            "Node"
+        case .database:
+            "Database"
+        case .artifact:
+            "Artifact"
+        case .subsystem:
+            "Subsystem"
+        case .entity:
+            "Entity"
+        case .note:
+            "Note"
         }
     }
 
@@ -89,50 +125,87 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
         switch self {
         case .type(let tk):
             switch tk {
-            case .class:              "c.square"
-            case .struct:             "s.square"
-            case .enum:               "e.square"
-            case .protocol, .interface: "p.square"
-            case .trait:              "t.square"
-            case .annotation:         "a.square"
-            case .object:             "o.square"
-            case .record:             "r.square"
-            case .mixin:              "m.square"
-            case .typeAlias:          "arrow.triangle.turn.up.right.diamond"
-            case .extension:          "curlybraces"
-            case .module:             "square.grid.3x3"
+            case .class:
+                "c.square"
+            case .struct:
+                "s.square"
+            case .enum:
+                "e.square"
+            case .protocol, .interface:
+                "p.square"
+            case .trait:
+                "t.square"
+            case .annotation:
+                "a.square"
+            case .object:
+                "o.square"
+            case .record:
+                "r.square"
+            case .mixin:
+                "m.square"
+            case .typeAlias:
+                "arrow.triangle.turn.up.right.diamond"
+            case .extension:
+                "curlybraces"
+            case .module:
+                "square.grid.3x3"
             }
-        case .actor:          "person"
-        case .useCase:        "ellipsis.rectangle"
-        case .boundary:       "rectangle.dashed"
-        case .component:      "puzzlepiece"
-        case .package:        "shippingbox"
-        case .deploymentNode: "cube"
-        case .database:       "cylinder"
-        case .artifact:       "doc"
-        case .subsystem:      "square.stack.3d.up"
-        case .entity:         "tablecells"
-        case .note:           "note.text"
+        case .actor:
+            "person"
+        case .useCase:
+            "ellipsis.rectangle"
+        case .boundary:
+            "rectangle.dashed"
+        case .component:
+            "puzzlepiece"
+        case .package:
+            "shippingbox"
+        case .deploymentNode:
+            "cube"
+        case .database:
+            "cylinder"
+        case .artifact:
+            "doc"
+        case .subsystem:
+            "square.stack.3d.up"
+        case .entity:
+            "tablecells"
+        case .note:
+            "note.text"
         }
     }
 
+    // swiftlint:disable cyclomatic_complexity
     /// Creates a default ``NodeContent`` for this element kind.
     func defaultContent() -> NodeContent {
         switch self {
-        case .type(let tk):   .type(TypeNodeContent(typeKind: tk))
-        case .actor:          .actor
-        case .useCase:        .useCase
-        case .boundary:       .boundary
-        case .component:      .component
-        case .package:        .package
-        case .deploymentNode: .deploymentNode
-        case .database:       .database
-        case .artifact:       .artifact
-        case .subsystem:      .subsystem
-        case .entity:         .entity
-        case .note:           .note(text: "")
+        case .type(let tk):
+            .type(TypeNodeContent(typeKind: tk))
+        case .actor:
+            .actor
+        case .useCase:
+            .useCase
+        case .boundary:
+            .boundary
+        case .component:
+            .component
+        case .package:
+            .package
+        case .deploymentNode:
+            .deploymentNode
+        case .database:
+            .database
+        case .artifact:
+            .artifact
+        case .subsystem:
+            .subsystem
+        case .entity:
+            .entity
+        case .note:
+            .note(text: "")
         }
     }
+    // swiftlint:enable cyclomatic_complexity
 
     // MARK: - Catalog Grouping
 
@@ -146,11 +219,15 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
 
     var catalogGroup: CatalogGroup {
         switch self {
-        case .type:                                        .classDiagram
-        case .actor, .useCase, .boundary:                  .useCaseDiagram
+        case .type:
+            .classDiagram
+        case .actor, .useCase, .boundary:
+            .useCaseDiagram
         case .component, .package, .deploymentNode,
-             .database, .artifact, .subsystem:             .componentDeployment
-        case .entity, .note:                               .general
+             .database, .artifact, .subsystem:
+            .componentDeployment
+        case .entity, .note:
+            .general
         }
     }
 
@@ -160,7 +237,7 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
         items += [
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
-            .entity, .note,
+            .entity, .note
         ]
         return items
     }()

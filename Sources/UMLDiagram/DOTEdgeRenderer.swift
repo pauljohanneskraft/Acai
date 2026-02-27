@@ -31,14 +31,22 @@ struct DOTEdgeRenderer {
     private func edgeAttributes(for kind: Relationship.Kind) -> String {
         let color = options.theme.edgeColor
         switch kind {
-        case .inheritance:  return "arrowhead=empty style=solid color=\"\(color)\""
-        case .conformance:  return "arrowhead=empty style=dashed color=\"\(color)\""
-        case .composition:  return "dir=back arrowtail=diamond color=\"\(color)\""
-        case .aggregation:  return "dir=back arrowtail=odiamond color=\"\(color)\""
-        case .association:  return "arrowhead=vee style=solid color=\"\(color)\""
-        case .dependency:   return "arrowhead=vee style=dashed color=\"\(color)\""
-        case .extension:    return "arrowhead=empty style=dotted color=\"\(color)\""
-        case .nesting:      return "arrowhead=dot style=solid color=\"\(color)\""
+        case .inheritance:
+            return "arrowhead=empty style=solid color=\"\(color)\""
+        case .conformance:
+            return "arrowhead=empty style=dashed color=\"\(color)\""
+        case .composition:
+            return "dir=back arrowtail=diamond color=\"\(color)\""
+        case .aggregation:
+            return "dir=back arrowtail=odiamond color=\"\(color)\""
+        case .association:
+            return "arrowhead=vee style=solid color=\"\(color)\""
+        case .dependency:
+            return "arrowhead=vee style=dashed color=\"\(color)\""
+        case .extension:
+            return "arrowhead=empty style=dotted color=\"\(color)\""
+        case .nesting:
+            return "arrowhead=dot style=solid color=\"\(color)\""
         }
     }
 }

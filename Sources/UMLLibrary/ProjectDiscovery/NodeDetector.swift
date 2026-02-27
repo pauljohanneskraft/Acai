@@ -20,8 +20,12 @@ public struct NodeDetector: BuildSystemDetector {
 
         let searchDirs = tsConfigSourceDirs(in: root) ?? defaultSourceDirs(in: root)
 
-        let hasTS = searchDirs.contains(where: { !FileManager.default.fileURLs(in: $0, withExtensions: ["ts", "tsx"]).isEmpty })
-        let hasJS = searchDirs.contains(where: { !FileManager.default.fileURLs(in: $0, withExtensions: ["js", "jsx", "mjs"]).isEmpty })
+        let hasTS = searchDirs.contains(where: {
+            !FileManager.default.fileURLs(in: $0, withExtensions: ["ts", "tsx"]).isEmpty
+        })
+        let hasJS = searchDirs.contains(where: {
+            !FileManager.default.fileURLs(in: $0, withExtensions: ["js", "jsx", "mjs"]).isEmpty
+        })
 
         var specs: [SourceSpec] = []
 
@@ -31,7 +35,7 @@ public struct NodeDetector: BuildSystemDetector {
         // Add JavaScript only when JS files exist AND the project isn't purely TypeScript,
         // or the user explicitly requested JavaScript.
         let userExplicitlyWantsJS = requestedLanguages.contains(.javaScript)
-        if hasJS, wants(.javaScript), (!hasTS || userExplicitlyWantsJS) {
+        if hasJS, wants(.javaScript), !hasTS || userExplicitlyWantsJS {
             specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs))
         }
 
@@ -58,8 +62,7 @@ public struct NodeDetector: BuildSystemDetector {
         }
 
         if let compilerOpts = json["compilerOptions"] as? [String: Any],
-           let rootDir = compilerOpts["rootDir"] as? String
-        {
+           let rootDir = compilerOpts["rootDir"] as? String {
             addIfNew(rootURL.appendingPathComponent(rootDir))
         }
 

@@ -4,8 +4,10 @@ struct ProjectBrowserView: View {
     @StateObject private var model = ProjectBrowserViewModel()
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
-    @State private var sidebarSelection: SidebarItem? = nil
-    
+    @State private var sidebarSelection: SidebarItem?
+    @State private var renamingDiagramID: UUID?
+    @State private var renamingText: String = ""
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebarContent
@@ -16,25 +18,7 @@ struct ProjectBrowserView: View {
                 }
                 .navigationTitle("Projects")
         } detail: {
-            HSplitView {
-                detailContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .toolbar {
-                        ToolbarItem(placement: .automatic) {
-                            if inspectorAvailable {
-                                Button {
-                                    withAnimation { model.showInspector.toggle() }
-                                } label: {
-                                    Label("Inspector", systemImage: model.showInspector ? "sidebar.trailing" : "sidebar.trailing")
-                                }
-                            }
-                        }
-                    }
-                if model.showInspector {
-                    inspectorContent
-                        .frame(minWidth: 220, idealWidth: 280, maxWidth: 360)
-                }
-            }
+            detailContent
         }
         .onChange(of: sidebarSelection) { newValue in
             switch newValue {
@@ -42,29 +26,28 @@ struct ProjectBrowserView: View {
                 model.selection = .project(id)
             case .codebase(let id):
                 model.selection = .codebase(id)
-                model.inspectedCodebaseID = id
-                model.showInspector = true
-            case .diagram(let id):
-                model.selection = .diagram(id)
-                model.showInspector = false
             case .customDiagram(let id):
                 model.selection = .customDiagram(id)
-                model.showInspector = false
-            case .globalDiagrams:
-                model.selection = .globalDiagrams
-                model.showInspector = false
             case .none:
                 break
             }
         }
         .onChange(of: model.selection) { newValue in
             switch newValue {
-            case .project(let id): sidebarSelection = .project(id)
-            case .codebase(let id): sidebarSelection = .codebase(id)
-            case .diagram(let id): sidebarSelection = .diagram(id)
-            case .customDiagram(let id): sidebarSelection = .customDiagram(id)
-            case .globalDiagrams: sidebarSelection = .globalDiagrams
-            case .none: break
+            case .project(let id):
+                sidebarSelection = .project(id)
+            case .codebase(let id):
+                sidebarSelection = .codebase(id)
+            case .diagram(let id):
+                // Diagram selected from detail view; keep sidebar on the parent codebase
+                if let diagram = model.storedDiagram(for: id),
+                   sidebarSelection != .codebase(diagram.codebaseID) {
+                    // Don't change sidebar — keep it as-is
+                }
+            case .customDiagram(let id):
+                sidebarSelection = .customDiagram(id)
+            case .none:
+                break
             }
         }
         .sheet(isPresented: $newProjectPresented) {
@@ -76,25 +59,14 @@ struct ProjectBrowserView: View {
             newProjectPresented = true
         }
     }
-    
-    /// Whether the inspector toggle should be visible for the current selection.
-    private var inspectorAvailable: Bool {
-        switch model.selection {
-        case .codebase: return true
-        case .project: return true
-        default: return false
-        }
-    }
 
     // MARK: - Sidebar (Left Column)
-
-    @State private var diagramGenerationCodebaseID: UUID? = nil
 
     private var sidebarContent: some View {
         List(selection: $sidebarSelection) {
             ForEach(model.store.projects) { project in
                 Section {
-                    // Project row (selectable)
+                    // Project row
                     Label(project.title, systemImage: project.iconSystemName)
                         .font(.headline)
                         .tag(SidebarItem.project(project.id))
@@ -106,73 +78,54 @@ struct ProjectBrowserView: View {
                             }
                         }
 
-                    // Codebases under this project
-                    if !project.codebases.isEmpty {
-                        ForEach(project.codebases) { codebase in
-                            Label(codebase.name, systemImage: "folder")
-                                .tag(SidebarItem.codebase(codebase.id))
-                                .contextMenu {
-                                    Button {
-                                        model.inspectedCodebaseID = codebase.id
-                                        model.showInspector = true
-                                        sidebarSelection = .codebase(codebase.id)
-                                    } label: {
-                                        Label("Show Details", systemImage: "info.circle")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        diagramGenerationCodebaseID = codebase.id
-                                    } label: {
-                                        Label("Generate Diagram…", systemImage: "plus.rectangle.on.rectangle")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        Task { await model.reindex(codebaseID: codebase.id) }
-                                    } label: {
-                                        Label("Reindex", systemImage: "arrow.clockwise")
-                                    }
-
-                                    Divider()
-
-                                    Button(role: .destructive) {
-                                        model.removeCodebase(codebase.id)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+                    // Codebases — sorted alphabetically
+                    let sortedCodebases = project.codebases.sorted(by: {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    })
+                    ForEach(sortedCodebases) { codebase in
+                        Label(codebase.name, systemImage: "folder")
+                            .tag(SidebarItem.codebase(codebase.id))
+                            .contextMenu {
+                                Button {
+                                    Task { await model.reindex(codebaseID: codebase.id) }
+                                } label: {
+                                    Label("Reindex", systemImage: "arrow.clockwise")
                                 }
-                        }
+                                Divider()
+                                Button(role: .destructive) {
+                                    model.removeCodebase(codebase.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
 
-                    // Stored diagrams under this project
-                    if !project.storedDiagrams.isEmpty {
-                        ForEach(project.storedDiagrams) { diagram in
-                            Label(diagram.name, systemImage: diagram.type.systemImage)
-                                .tag(SidebarItem.diagram(diagram.id))
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        model.removeStoredDiagram(diagram.id)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                        }
-                    }
-
-                    // Custom diagrams owned by this project
-                    if !project.customDiagrams.isEmpty {
-                        ForEach(project.customDiagrams) { diagram in
+                    // Custom diagrams — sorted alphabetically
+                    let customDiagrams = model.customDiagramsForProject(project.id)
+                        .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                    ForEach(customDiagrams) { diagram in
+                        if renamingDiagramID == diagram.id {
+                            TextField("Name", text: $renamingText, onCommit: {
+                                model.renameCustomDiagram(diagram.id, name: renamingText)
+                                renamingDiagramID = nil
+                            })
+                            .textFieldStyle(.roundedBorder)
+                            .font(.callout)
+                        } else {
                             Label {
                                 Text(diagram.name)
                             } icon: {
                                 Image(systemName: diagram.diagramType.systemImage)
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(.blue)
                             }
                             .tag(SidebarItem.customDiagram(diagram.id))
                             .contextMenu {
+                                Button {
+                                    renamingText = diagram.name
+                                    renamingDiagramID = diagram.id
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
                                 Button(role: .destructive) {
                                     model.removeCustomDiagram(diagram.id)
                                 } label: {
@@ -182,41 +135,6 @@ struct ProjectBrowserView: View {
                         }
                     }
                 }
-            }
-
-            // MARK: Global Diagrams at the bottom
-            Section {
-                Label {
-                    Text("Custom Diagrams")
-                } icon: {
-                    Image(systemName: "square.on.square")
-                        .foregroundStyle(.orange)
-                }
-                .font(.headline)
-                .tag(SidebarItem.globalDiagrams)
-
-                ForEach(model.store.globalCustomDiagrams) { diagram in
-                    Label {
-                        Text(diagram.name)
-                    } icon: {
-                        Image(systemName: diagram.diagramType.systemImage)
-                            .foregroundStyle(.orange)
-                    }
-                    .tag(SidebarItem.customDiagram(diagram.id))
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            model.removeCustomDiagram(diagram.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(item: $diagramGenerationCodebaseID) { codebaseID in
-            if let projectID = model.projectID(for: codebaseID) {
-                DiagramGenerationSheet(projectID: projectID, codebaseID: codebaseID)
-                    .environmentObject(model)
             }
         }
     }
@@ -231,20 +149,13 @@ struct ProjectBrowserView: View {
                 .id(id)
                 .environmentObject(model)
         case .codebase(let id):
-            if let projectID = model.projectID(for: id) {
-                ProjectDetailView(projectID: projectID)
-                    .id(projectID)
-                    .environmentObject(model)
-            } else {
-                emptyState
-            }
+            CodebaseDetailView(codebaseID: id)
+                .id(id)
+                .environmentObject(model)
         case .diagram(let diagramID):
             storedDiagramDetail(diagramID: diagramID)
         case .customDiagram(let diagramID):
             customDiagramDetail(diagramID: diagramID)
-        case .globalDiagrams:
-            GlobalDiagramsListView()
-                .environmentObject(model)
         case .none:
             emptyState
         }
@@ -253,8 +164,8 @@ struct ProjectBrowserView: View {
     @ViewBuilder
     private func storedDiagramDetail(diagramID: UUID) -> some View {
         if let diagram = model.storedDiagram(for: diagramID),
-           let codebase = model.codebase(for: diagram.codebaseID),
-           let artifact = codebase.artifact {
+           let artifact = model.artifact(for: diagram.codebaseID),
+           let codebase = model.codebase(for: diagram.codebaseID) {
             StoredDiagramView(diagram: diagram, artifact: artifact, codebaseName: codebase.name)
                 .id(diagramID)
                 .environmentObject(model)
@@ -291,20 +202,6 @@ struct ProjectBrowserView: View {
                 .foregroundStyle(.secondary)
         }
     }
-
-    // MARK: - Inspector (Right Column)
-
-    @ViewBuilder
-    private var inspectorContent: some View {
-        if let codebaseID = model.inspectedCodebaseID {
-            CodebaseInspectorView(codebaseID: codebaseID)
-                .environmentObject(model)
-        } else {
-            Text("Select a codebase to inspect")
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
 }
 
 // MARK: - Sidebar Item
@@ -312,80 +209,5 @@ struct ProjectBrowserView: View {
 enum SidebarItem: Hashable {
     case project(UUID)
     case codebase(UUID)
-    case diagram(UUID)
     case customDiagram(UUID)
-    case globalDiagrams
 }
-
-// MARK: - Global Diagrams List View
-
-/// Detail view shown when the "Custom Diagrams" global section is selected.
-struct GlobalDiagramsListView: View {
-    @EnvironmentObject private var model: ProjectBrowserViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Custom Diagrams").font(.title2.bold())
-                Spacer()
-                Menu {
-                    ForEach(DiagramType.allCases) { type in
-                        Button {
-                            let id = model.addGlobalCustomDiagram(name: "New \(type.displayName)", type: type)
-                            model.selection = .customDiagram(id)
-                        } label: {
-                            Label(type.displayName, systemImage: type.systemImage)
-                        }
-                    }
-                } label: {
-                    Label("New Diagram", systemImage: "plus")
-                }
-            }
-            .padding()
-
-            Divider()
-
-            if model.store.globalCustomDiagrams.isEmpty {
-                Spacer()
-                Text("No custom diagrams yet.\nCreate one using the + button above.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                Spacer()
-            } else {
-                List {
-                    ForEach(model.store.globalCustomDiagrams) { diagram in
-                        Button {
-                            model.selection = .customDiagram(diagram.id)
-                        } label: {
-                            HStack {
-                                Image(systemName: diagram.diagramType.systemImage)
-                                    .foregroundStyle(.orange)
-                                VStack(alignment: .leading) {
-                                    Text(diagram.name)
-                                    Text(diagram.diagramType.displayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text(diagram.lastModified, style: .date)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                model.removeCustomDiagram(diagram.id)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-                .listStyle(.inset)
-            }
-        }
-        .navigationTitle("Custom Diagrams")
-    }
-}
-

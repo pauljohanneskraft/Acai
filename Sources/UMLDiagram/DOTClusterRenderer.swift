@@ -26,18 +26,18 @@ struct DOTClusterRenderer {
         let nodeRenderer = DOTNodeRenderer(options: options)
         let grouped = Dictionary(grouping: types) { $0.namespace ?? "" }
         return grouped.sorted(by: { $0.key < $1.key }).enumerated().map { index, pair in
-            let (ns, nsTypes) = pair
-            if ns.isEmpty {
-                return nodeRenderer.render(types: nsTypes)
+            let (namespace, namespaceTypes) = pair
+            if namespace.isEmpty {
+                return nodeRenderer.render(types: namespaceTypes)
             }
-            let label = ns.dotEscaped
+            let label = namespace.dotEscaped
             return """
               subgraph cluster_ns_\(index) {
                 label="\(label)";
                 style=rounded;
                 color="\(options.theme.nodeBorderColor)";
                 fontcolor="\(options.theme.fontColor)";
-            \(nodeRenderer.render(types: nsTypes))  }
+            \(nodeRenderer.render(types: namespaceTypes))  }
 
             """
         }.joined()
