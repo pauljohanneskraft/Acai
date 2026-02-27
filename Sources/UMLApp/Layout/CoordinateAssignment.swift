@@ -59,7 +59,13 @@ enum CoordinateAssignment {
 
         // Step 4: Refinement — nudge nodes toward connected neighbors to straighten edges.
         for _ in 0..<8 {
-            refinementPass(layers: layers, positions: &positions, nodeSizes: nodeSizes, adjacency: adjacency, horizontalSpacing: horizontalSpacing)
+            refinementPass(
+                layers: layers,
+                positions: &positions,
+                nodeSizes: nodeSizes,
+                adjacency: adjacency,
+                horizontalSpacing: horizontalSpacing
+            )
         }
 
         return positions
@@ -87,7 +93,12 @@ enum CoordinateAssignment {
             }
 
             // Resolve overlaps within the layer after shifting.
-            resolveOverlaps(layer: layer, positions: &positions, nodeSizes: nodeSizes, horizontalSpacing: horizontalSpacing)
+            resolveOverlaps(
+                layer: layer,
+                positions: &positions,
+                nodeSizes: nodeSizes,
+                horizontalSpacing: horizontalSpacing
+            )
         }
     }
 

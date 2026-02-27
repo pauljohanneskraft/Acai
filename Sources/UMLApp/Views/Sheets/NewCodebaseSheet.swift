@@ -5,8 +5,8 @@ struct NewCodebaseSheet: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
-    @State private var directoryURL: URL? = nil
-    
+    @State private var directoryURL: URL?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Add Codebase").font(.title2).bold()
@@ -28,7 +28,7 @@ struct NewCodebaseSheet: View {
         .padding()
         .frame(width: 480)
     }
-    
+
     private func pickDirectory() {
         #if os(macOS)
         let panel = NSOpenPanel()
@@ -41,4 +41,3 @@ struct NewCodebaseSheet: View {
         #endif
     }
 }
-

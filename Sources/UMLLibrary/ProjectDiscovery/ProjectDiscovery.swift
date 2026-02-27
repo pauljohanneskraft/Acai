@@ -33,8 +33,7 @@ public struct ProjectDiscovery: Sendable {
 
         for detector in detectors where detector.isPresent(at: rootURL) {
             for spec in detector.discoverSourceSpecs(at: rootURL, requestedLanguages: requestedLanguages)
-                where seenLanguages.insert(spec.language).inserted
-            {
+                where seenLanguages.insert(spec.language).inserted {
                 specs.append(spec)
             }
         }

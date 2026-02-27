@@ -1,0 +1,62 @@
+included:
+  - Sources
+  - Tests
+
+disabled_rules:
+  - todo
+  - blanket_disable_command
+
+analyzer_rules:
+  - unused_import
+  - unused_declaration
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - explicit_init
+  - first_where
+  - modifier_order
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - switch_case_on_newline
+
+# Rule settings
+
+colon:
+  flexible_right_spacing: true
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
+
+identifier_name:
+  min_length: 1
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - i
+    - j
+    - x
+    - y
+    - z
+
+large_tuple: 3
+
+line_length: 120
+
+nesting:
+  type_level: 2
+
+type_body_length:
+  warning: 300
+  error: 400

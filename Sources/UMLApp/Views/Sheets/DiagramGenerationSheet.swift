@@ -82,11 +82,17 @@ struct DiagramGenerationSheet: View {
         isGenerating = true
 
         // Ensure codebase has been indexed.
-        guard codebase?.artifact != nil else {
+        guard codebase?.hasArtifact == true else {
             // Reindex first, then generate.
             Task {
                 await model.reindex(codebaseID: codebaseID)
-                if let id = model.addStoredDiagram(to: projectID, codebaseID: codebaseID, name: diagramName, type: selectedType, configuration: configuration) {
+                if let id = model.addStoredDiagram(
+                    to: projectID,
+                    codebaseID: codebaseID,
+                    name: diagramName,
+                    type: selectedType,
+                    configuration: configuration
+                ) {
                     model.selection = .diagram(id)
                 }
                 dismiss()
@@ -94,7 +100,13 @@ struct DiagramGenerationSheet: View {
             return
         }
 
-        if let id = model.addStoredDiagram(to: projectID, codebaseID: codebaseID, name: diagramName, type: selectedType, configuration: configuration) {
+        if let id = model.addStoredDiagram(
+            to: projectID,
+            codebaseID: codebaseID,
+            name: diagramName,
+            type: selectedType,
+            configuration: configuration
+        ) {
             model.selection = .diagram(id)
         }
         dismiss()

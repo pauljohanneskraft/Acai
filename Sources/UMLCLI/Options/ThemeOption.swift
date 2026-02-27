@@ -7,8 +7,10 @@ enum ThemeOption: String, ExpressibleByArgument, CaseIterable {
 
     var diagramTheme: DiagramTheme {
         switch self {
-        case .default: return .default
-        case .dark:    return .dark
+        case .default:
+            return .default
+        case .dark:
+            return .dark
         }
     }
 }
