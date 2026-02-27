@@ -2,15 +2,6 @@ import SwiftUI
 import UMLCore
 import UniformTypeIdentifiers
 
-// MARK: - Identifiable UUID Wrapper
-
-/// Wraps a UUID to conform to Identifiable, for use with `.sheet(item:)`.
-private struct IdentifiableUUID: Identifiable {
-    let value: UUID
-    var id: UUID { value }
-    init(_ value: UUID) { self.value = value }
-}
-
 // MARK: - Canvas Right-Click Tracker
 
 #if os(macOS)
@@ -69,10 +60,6 @@ private struct CanvasRightClickTracker: View {
 
 // MARK: - Resize Edge
 
-private enum ResizeEdge {
-    case left, right, top, bottom
-}
-
 private struct ResizeState {
     let startSize: CGSize
     let startPosition: CGPoint
@@ -92,50 +79,48 @@ struct CustomDiagramEditorView: View {
     @State private var activeDragCanvasLocation: CGPoint? = nil
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var activeResizeState: ResizeState? = nil
-    @State private var showingCatalog = false
-    @State private var editingNodeID: IdentifiableUUID? = nil
-    @State private var showingEdgeCreator = false
-    @State private var edgeSourceID: UUID? = nil
     @State private var showDeleteConfirmation = false
     /// Tracks the last right-click location in screen coordinates for context menu insertion.
     @State private var lastRightClickCanvasPoint: CGPoint = .zero
 
+    enum SidebarTab { case catalog, inspector }
+    @State private var showSidebar = true
+    @State private var sidebarTab: SidebarTab = .catalog
+
     var body: some View {
-        HStack(spacing: 0) {
+        HSplitView {
             // Main canvas
             canvasArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Catalog / Inspector sidebar
-            if showingCatalog {
-                Divider()
-                catalogSidebar
-                    .frame(width: 240)
+            // Combined Catalog / Inspector sidebar
+            if showSidebar {
+                sidebarContent
+                    .frame(minWidth: 240, idealWidth: 280, maxWidth: 360)
             }
         }
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    showingCatalog.toggle()
+                    sidebarTab = .catalog
+                    showSidebar.toggle()
                 } label: {
                     Label("Catalog", systemImage: "square.grid.2x2")
                 }
 
                 Button {
-                    if let first = viewModel.selectedNodeIDs.first {
-                        editingNodeID = IdentifiableUUID(first)
-                    }
+                    sidebarTab = .inspector
+                    showSidebar.toggle()
                 } label: {
-                    Label("Edit Node", systemImage: "pencil")
+                    Label("Inspector", systemImage: "sidebar.trailing")
                 }
-                .disabled(viewModel.selectedNodeIDs.count != 1)
 
                 Button {
                     showDeleteConfirmation = true
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
-                .disabled(viewModel.selectedNodeIDs.isEmpty)
+                .disabled(viewModel.selectedNodeIDs.isEmpty && viewModel.selectedEdgeID == nil)
             }
         }
         .navigationTitle(browserModel.customDiagram(for: diagramID)?.name ?? "Custom Diagram")
@@ -151,27 +136,50 @@ struct CustomDiagramEditorView: View {
         .onDisappear {
             viewModel.saveCanvasState(scale: canvasScale, offset: canvasOffset)
         }
-        .sheet(item: $editingNodeID) { item in
-            CustomNodeEditorSheet(viewModel: viewModel, nodeID: item.value)
+        .onChange(of: viewModel.selectedNodeIDs) { newSelection in
+            if !newSelection.isEmpty {
+                sidebarTab = .inspector
+                showSidebar = true
+            }
         }
-        .sheet(isPresented: $showingEdgeCreator) {
-            CustomEdgeCreatorSheet(viewModel: viewModel, sourceNodeID: edgeSourceID)
+        .onChange(of: viewModel.selectedEdgeID) { newSelection in
+            if newSelection != nil {
+                sidebarTab = .inspector
+                showSidebar = true
+            }
         }
         .background {
-            // Hidden button to capture backspace / delete key
-            Button("") {
-                if !viewModel.selectedNodeIDs.isEmpty {
-                    showDeleteConfirmation = true
+            // Hidden buttons to capture keyboard shortcuts
+            Group {
+                Button("") {
+                    if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
+                        showDeleteConfirmation = true
+                    }
                 }
+                .keyboardShortcut(.delete, modifiers: [])
+
+                Button("") { viewModel.copySelection() }
+                    .keyboardShortcut("c", modifiers: .command)
+
+                Button("") { viewModel.cutSelection() }
+                    .keyboardShortcut("x", modifiers: .command)
+
+                Button("") { viewModel.paste() }
+                    .keyboardShortcut("v", modifiers: .command)
+
+                Button("") { viewModel.selectAll() }
+                    .keyboardShortcut("a", modifiers: .command)
             }
-            .keyboardShortcut(.delete, modifiers: [])
             .hidden()
         }
         .alert(
-            "Delete \(viewModel.selectedNodeIDs.count == 1 ? "Node" : "\(viewModel.selectedNodeIDs.count) Nodes")?",
+            deleteAlertTitle,
             isPresented: $showDeleteConfirmation
         ) {
             Button("Delete", role: .destructive) {
+                if let edgeID = viewModel.selectedEdgeID {
+                    viewModel.removeEdge(edgeID)
+                }
                 for id in viewModel.selectedNodeIDs {
                     viewModel.removeNode(id)
                 }
@@ -180,6 +188,14 @@ struct CustomDiagramEditorView: View {
         } message: {
             Text("This action cannot be undone.")
         }
+    }
+
+    private var deleteAlertTitle: String {
+        if viewModel.selectedEdgeID != nil && viewModel.selectedNodeIDs.isEmpty {
+            return "Delete Relationship?"
+        }
+        let count = viewModel.selectedNodeIDs.count
+        return count == 1 ? "Delete Node?" : "Delete \(count) Nodes?"
     }
 
     // MARK: - Canvas
@@ -312,11 +328,13 @@ struct CustomDiagramEditorView: View {
         return nodeContent(node: node, size: size, isSelected: selected)
             .position(pos)
             .onTapGesture(count: 2) {
-                editingNodeID = IdentifiableUUID(node.id)
+                viewModel.selectNode(node.id, extending: false)
+                sidebarTab = .inspector
+                showSidebar = true
             }
             .onTapGesture(count: 1) {
                 #if os(macOS)
-                let extending = NSEvent.modifierFlags.contains(.shift)
+                let extending = NSEvent.modifierFlags.contains(.command)
                 #else
                 let extending = false
                 #endif
@@ -325,16 +343,17 @@ struct CustomDiagramEditorView: View {
             .highPriorityGesture(nodeDragGesture(for: node.id))
             .contextMenu {
                 Button {
-                    editingNodeID = IdentifiableUUID(node.id)
+                    viewModel.selectNode(node.id, extending: false)
+                    sidebarTab = .inspector
+                    showSidebar = true
                 } label: {
                     Label("Edit", systemImage: "pencil")
                 }
 
                 Button {
-                    edgeSourceID = node.id
-                    showingEdgeCreator = true
+                    viewModel.startRelationshipDrawing(from: node.id)
                 } label: {
-                    Label("Add Edge From Here", systemImage: "arrow.right")
+                    Label("Draw Relationship", systemImage: "arrow.right")
                 }
 
                 Divider()
@@ -386,7 +405,7 @@ struct CustomDiagramEditorView: View {
     // MARK: - Resize Handle Layer
 
     private var resizeHandleLayer: some View {
-        ForEach(viewModel.nodes.filter { $0.isResizable && viewModel.selectedNodeIDs.contains($0.id) }) { node in
+        ForEach(viewModel.nodes.filter { $0.isResizable }) { node in
             let pos = CGPoint(x: node.positionX, y: node.positionY)
             let size = viewModel.nodeSize(node.id)
             edgeResizeHandles(for: node.id, at: pos, size: size)
@@ -394,55 +413,19 @@ struct CustomDiagramEditorView: View {
     }
 
     private func edgeResizeHandles(for id: UUID, at position: CGPoint, size: CGSize) -> some View {
-        let thickness: CGFloat = 8
-        return ZStack {
-            // Right edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x + size.width / 2, y: position.y)
-                .gesture(edgeResizeGesture(for: id, edge: .right))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Left edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x - size.width / 2, y: position.y)
-                .gesture(edgeResizeGesture(for: id, edge: .left))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Bottom edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y + size.height / 2)
-                .gesture(edgeResizeGesture(for: id, edge: .bottom))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-
-            // Top edge
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y - size.height / 2)
-                .gesture(edgeResizeGesture(for: id, edge: .top))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-        }
+        let handleSize: CGFloat = 16
+        return Rectangle()
+            .fill(Color.clear)
+            #if os(macOS)
+            .cursorOnHover(.closedHand)
+            #endif
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle())
+            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
+            .gesture(edgeResizeGesture(for: id))
     }
 
-    private func edgeResizeGesture(for id: UUID, edge: ResizeEdge) -> some Gesture {
+    private func edgeResizeGesture(for id: UUID) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
@@ -454,40 +437,15 @@ struct CustomDiagramEditorView: View {
                 guard let state = activeResizeState else { return }
                 let minW: CGFloat = 80, minH: CGFloat = 50
 
-                switch edge {
-                case .right:
-                    let newW = max(minW, state.startSize.width + value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x + dw / 2,
-                        y: state.startPosition.y
-                    ))
-                case .left:
-                    let newW = max(minW, state.startSize.width - value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x - dw / 2,
-                        y: state.startPosition.y
-                    ))
-                case .bottom:
-                    let newH = max(minH, state.startSize.height + value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x,
-                        y: state.startPosition.y + dh / 2
-                    ))
-                case .top:
-                    let newH = max(minH, state.startSize.height - value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(
-                        x: state.startPosition.x,
-                        y: state.startPosition.y - dh / 2
-                    ))
-                }
+                let newW = max(minW, state.startSize.width + value.translation.width)
+                let newH = max(minH, state.startSize.height + value.translation.height)
+                let dw = newW - state.startSize.width
+                let dh = newH - state.startSize.height
+                viewModel.resizeNode(id, width: newW, height: newH)
+                viewModel.moveNode(id, to: CGPoint(
+                    x: state.startPosition.x + dw / 2,
+                    y: state.startPosition.y + dh / 2
+                ))
             }
             .onEnded { _ in
                 activeResizeState = nil
@@ -531,9 +489,30 @@ struct CustomDiagramEditorView: View {
             }
     }
 
-    // MARK: - Catalog Sidebar
+    // MARK: - Sidebar (Catalog + Inspector)
 
-    private var catalogSidebar: some View {
+    private var sidebarContent: some View {
+        VStack(spacing: 0) {
+            Picker("Sidebar", selection: $sidebarTab) {
+                Text("Catalog").tag(SidebarTab.catalog)
+                Text("Inspector").tag(SidebarTab.inspector)
+            }
+            .pickerStyle(.segmented)
+            .padding(8)
+
+            Divider()
+
+            switch sidebarTab {
+            case .catalog:
+                catalogSidebarContent
+            case .inspector:
+                inspectorSidebarContent
+            }
+        }
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private var catalogSidebarContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Node Catalog")
@@ -618,9 +597,6 @@ struct CustomDiagramEditorView: View {
             let selected = Array(viewModel.selectedNodeIDs)
             if selected.count == 2 {
                 viewModel.addEdge(from: selected[0], to: selected[1], kind: kind)
-            } else {
-                edgeSourceID = viewModel.selectedNodeIDs.first
-                showingEdgeCreator = true
             }
         } label: {
             HStack {
@@ -633,6 +609,318 @@ struct CustomDiagramEditorView: View {
             .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
+        .disabled(viewModel.selectedNodeIDs.count != 2)
+    }
+
+    // MARK: - Inspector Sidebar
+
+    @State private var inspectorNodeName: String = ""
+    @State private var inspectorNodeKind: DiagramElementKind = .type(.class)
+    @State private var inspectorNoteText: String = ""
+    @State private var newPropertyText: String = ""
+    @State private var newMethodText: String = ""
+
+    @State private var inspectorEdgeSourceID: UUID? = nil
+    @State private var inspectorEdgeTargetID: UUID? = nil
+    @State private var inspectorEdgeKind: Relationship.Kind = .association
+
+    @ViewBuilder
+    private var inspectorSidebarContent: some View {
+        if let edgeID = viewModel.selectedEdgeID,
+           let edge = viewModel.edges.first(where: { $0.id == edgeID }) {
+            edgeInspector(edge: edge)
+        } else if viewModel.selectedNodeIDs.count == 1,
+                  let nodeID = viewModel.selectedNodeIDs.first,
+                  let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
+            nodeInspector(node: node)
+        } else if viewModel.selectedNodeIDs.count > 1 {
+            multiNodeInspector
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "cursorarrow.click")
+                    .font(.title)
+                    .foregroundStyle(.secondary)
+                Text("Select a node or relationship to inspect")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    // MARK: Node Inspector
+
+    private func nodeInspector(node: CustomDiagramNode) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                // Name
+                Section {
+                    TextField("Name", text: Binding(
+                        get: { node.name },
+                        set: { viewModel.updateNode(node.id, name: $0, kind: node.content.elementKind) }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.headline)
+                } header: {
+                    Text("Name").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                }
+
+                // Kind picker
+                Section {
+                    Picker("Kind", selection: Binding(
+                        get: { node.content.elementKind },
+                        set: { viewModel.updateNode(node.id, name: node.name, kind: $0) }
+                    )) {
+                        ForEach(DiagramElementKind.CatalogGroup.allCases, id: \.rawValue) { group in
+                            Section(group.rawValue) {
+                                ForEach(DiagramElementKind.catalogItems(in: group)) { elementKind in
+                                    Text(elementKind.displayName).tag(elementKind)
+                                }
+                            }
+                        }
+                    }
+                    .labelsHidden()
+                } header: {
+                    Text("Kind").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                }
+
+                // Position
+                Section {
+                    HStack {
+                        Text("X: \(Int(node.positionX))").font(.caption.monospaced())
+                        Spacer()
+                        Text("Y: \(Int(node.positionY))").font(.caption.monospaced())
+                    }
+                    let size = viewModel.nodeSize(node.id)
+                    HStack {
+                        Text("W: \(Int(size.width))").font(.caption.monospaced())
+                        Spacer()
+                        Text("H: \(Int(size.height))").font(.caption.monospaced())
+                    }
+                } header: {
+                    Text("Position & Size").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                }
+
+                // Type-specific: Properties & Methods
+                if case .type(let content) = node.content {
+                    propertiesSection(nodeID: node.id, content: content)
+                    methodsSection(nodeID: node.id, content: content)
+                }
+
+                // Note-specific: Text
+                if case .note(let text) = node.content {
+                    Section {
+                        TextEditor(text: Binding(
+                            get: { text },
+                            set: { viewModel.updateNoteText(node.id, text: $0) }
+                        ))
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(minHeight: 80)
+                        .border(Color.secondary.opacity(0.3))
+                    } header: {
+                        Text("Note Text").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                    }
+                }
+
+                // Relationships for this node
+                let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
+                if !relatedEdges.isEmpty {
+                    Section {
+                        ForEach(relatedEdges) { edge in
+                            HStack {
+                                Text(edge.kind.rawValue)
+                                    .font(.caption)
+                                Spacer()
+                                let otherID = edge.sourceNodeID == node.id ? edge.targetNodeID : edge.sourceNodeID
+                                let otherName = viewModel.nodes.first(where: { $0.id == otherID })?.name ?? "?"
+                                Text(otherName)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.selectedEdgeID = edge.id
+                            }
+                        }
+                    } header: {
+                        Text("Relationships (\(relatedEdges.count))")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Delete button
+                Button(role: .destructive) {
+                    viewModel.removeNode(node.id)
+                } label: {
+                    Label("Delete Node", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+        }
+    }
+
+    private func propertiesSection(nodeID: UUID, content: TypeNodeContent) -> some View {
+        Section {
+            ForEach(content.properties) { prop in
+                HStack {
+                    Text(prop.displayString)
+                        .font(.system(size: 12, design: .monospaced))
+                    Spacer()
+                    Button(role: .destructive) {
+                        viewModel.removeProperty(from: nodeID, memberID: prop.id)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+            HStack {
+                TextField("e.g. name: String", text: $newPropertyText)
+                    .font(.system(size: 12, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+                Button {
+                    viewModel.addPropertyFromText(to: nodeID, text: newPropertyText)
+                    newPropertyText = ""
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .disabled(newPropertyText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } header: {
+            Text("Properties").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+        }
+    }
+
+    private func methodsSection(nodeID: UUID, content: TypeNodeContent) -> some View {
+        Section {
+            ForEach(content.methods) { method in
+                HStack {
+                    Text(method.displayString)
+                        .font(.system(size: 12, design: .monospaced))
+                    Spacer()
+                    Button(role: .destructive) {
+                        viewModel.removeMethod(from: nodeID, memberID: method.id)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+            HStack {
+                TextField("e.g. doWork(input: Int): String", text: $newMethodText)
+                    .font(.system(size: 12, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+                Button {
+                    viewModel.addMethodFromText(to: nodeID, text: newMethodText)
+                    newMethodText = ""
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .disabled(newMethodText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } header: {
+            Text("Methods").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: Edge Inspector
+
+    private func edgeInspector(edge: CustomDiagramEdge) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Section {
+                    Picker("Source", selection: Binding(
+                        get: { edge.sourceNodeID },
+                        set: { newSource in
+                            viewModel.updateEdge(edge.id, sourceID: newSource, targetID: edge.targetNodeID, kind: edge.kind)
+                        }
+                    )) {
+                        ForEach(viewModel.nodes) { node in
+                            Text(node.name).tag(node.id)
+                        }
+                    }
+
+                    Picker("Target", selection: Binding(
+                        get: { edge.targetNodeID },
+                        set: { newTarget in
+                            viewModel.updateEdge(edge.id, sourceID: edge.sourceNodeID, targetID: newTarget, kind: edge.kind)
+                        }
+                    )) {
+                        ForEach(viewModel.nodes) { node in
+                            Text(node.name).tag(node.id)
+                        }
+                    }
+
+                    Picker("Kind", selection: Binding(
+                        get: { edge.kind },
+                        set: { newKind in
+                            viewModel.updateEdge(edge.id, sourceID: edge.sourceNodeID, targetID: edge.targetNodeID, kind: newKind)
+                        }
+                    )) {
+                        Text("Inheritance").tag(Relationship.Kind.inheritance)
+                        Text("Conformance").tag(Relationship.Kind.conformance)
+                        Text("Composition").tag(Relationship.Kind.composition)
+                        Text("Aggregation").tag(Relationship.Kind.aggregation)
+                        Text("Association").tag(Relationship.Kind.association)
+                        Text("Dependency").tag(Relationship.Kind.dependency)
+                    }
+                } header: {
+                    Text("Relationship").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                }
+
+                let sourceName = viewModel.nodes.first(where: { $0.id == edge.sourceNodeID })?.name ?? "?"
+                let targetName = viewModel.nodes.first(where: { $0.id == edge.targetNodeID })?.name ?? "?"
+                Text("\(sourceName) → \(targetName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(role: .destructive) {
+                    viewModel.removeEdge(edge.id)
+                    viewModel.selectedEdgeID = nil
+                } label: {
+                    Label("Delete Relationship", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+        }
+    }
+
+    // MARK: Multi-Node Inspector
+
+    private var multiNodeInspector: some View {
+        VStack(spacing: 12) {
+            Text("\(viewModel.selectedNodeIDs.count) nodes selected")
+                .font(.headline)
+
+            List {
+                ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
+                    if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
+                        HStack {
+                            Image(systemName: node.content.elementKind.systemImage)
+                            Text(node.name)
+                        }
+                    }
+                }
+            }
+            .listStyle(.inset)
+
+            Button(role: .destructive) {
+                for id in viewModel.selectedNodeIDs {
+                    viewModel.removeNode(id)
+                }
+            } label: {
+                Label("Delete Selected", systemImage: "trash")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .padding()
+        }
     }
 }
 
@@ -671,202 +959,6 @@ struct CustomNodeView: View {
                 systemImage: node.content.elementKind.systemImage,
                 isSelected: isSelected
             )
-        }
-    }
-}
-
-// MARK: - Custom Node Editor Sheet
-
-struct CustomNodeEditorSheet: View {
-    @ObservedObject var viewModel: CustomDiagramEditorViewModel
-    let nodeID: UUID
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var name: String = ""
-    @State private var selectedKind: DiagramElementKind = .type(.class)
-    @State private var noteText: String = ""
-    @State private var newPropertyText = ""
-    @State private var newMethodText = ""
-
-    private var node: CustomDiagramNode? {
-        viewModel.nodes.first(where: { $0.id == nodeID })
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Edit Node").font(.title2).bold()
-
-            Form {
-                Section("General") {
-                    TextField("Name", text: $name)
-                    Picker("Kind", selection: $selectedKind) {
-                        ForEach(DiagramElementKind.CatalogGroup.allCases, id: \.rawValue) { group in
-                            Section(group.rawValue) {
-                                ForEach(DiagramElementKind.catalogItems(in: group)) { elementKind in
-                                    Text(elementKind.displayName).tag(elementKind)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Type-specific sections
-                if case .type = selectedKind {
-                    Section("Properties") {
-                        if let node, case .type(let content) = node.content {
-                            ForEach(content.properties) { prop in
-                                HStack {
-                                    Text(prop.displayString)
-                                        .font(.system(size: 12, design: .monospaced))
-                                    Spacer()
-                                    Button(role: .destructive) {
-                                        viewModel.removeProperty(from: nodeID, memberID: prop.id)
-                                    } label: {
-                                        Image(systemName: "minus.circle")
-                                    }
-                                    .buttonStyle(.borderless)
-                                }
-                            }
-                        }
-                        HStack {
-                            TextField("e.g. name: String", text: $newPropertyText)
-                                .font(.system(size: 12, design: .monospaced))
-                            Button {
-                                viewModel.addPropertyFromText(to: nodeID, text: newPropertyText)
-                                newPropertyText = ""
-                            } label: {
-                                Image(systemName: "plus.circle")
-                            }
-                            .disabled(newPropertyText.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                    }
-
-                    Section("Methods") {
-                        if let node, case .type(let content) = node.content {
-                            ForEach(content.methods) { method in
-                                HStack {
-                                    Text(method.displayString)
-                                        .font(.system(size: 12, design: .monospaced))
-                                    Spacer()
-                                    Button(role: .destructive) {
-                                        viewModel.removeMethod(from: nodeID, memberID: method.id)
-                                    } label: {
-                                        Image(systemName: "minus.circle")
-                                    }
-                                    .buttonStyle(.borderless)
-                                }
-                            }
-                        }
-                        HStack {
-                            TextField("e.g. doWork(input: Int): String", text: $newMethodText)
-                                .font(.system(size: 12, design: .monospaced))
-                            Button {
-                                viewModel.addMethodFromText(to: nodeID, text: newMethodText)
-                                newMethodText = ""
-                            } label: {
-                                Image(systemName: "plus.circle")
-                            }
-                            .disabled(newMethodText.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                    }
-                }
-
-                // Note-specific section
-                if case .note = selectedKind {
-                    Section("Note Text") {
-                        TextEditor(text: $noteText)
-                            .font(.system(size: 12, design: .monospaced))
-                            .frame(minHeight: 80)
-                    }
-                }
-            }
-            .formStyle(.grouped)
-
-            HStack {
-                Spacer()
-                Button("Done") {
-                    viewModel.updateNode(nodeID, name: name, kind: selectedKind)
-                    if case .note = selectedKind {
-                        viewModel.updateNoteText(nodeID, text: noteText)
-                    }
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding()
-        .frame(width: 500, height: 520)
-        .onAppear {
-            if let node {
-                name = node.name
-                selectedKind = node.content.elementKind
-                if case .note(let text) = node.content {
-                    noteText = text
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Custom Edge Creator Sheet
-
-struct CustomEdgeCreatorSheet: View {
-    @ObservedObject var viewModel: CustomDiagramEditorViewModel
-    let sourceNodeID: UUID?
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var selectedSourceID: UUID? = nil
-    @State private var selectedTargetID: UUID? = nil
-    @State private var selectedKind: Relationship.Kind = .association
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Add Relationship").font(.title2).bold()
-
-            Form {
-                Picker("Source", selection: $selectedSourceID) {
-                    Text("Select…").tag(nil as UUID?)
-                    ForEach(viewModel.nodes) { node in
-                        Text(node.name).tag(node.id as UUID?)
-                    }
-                }
-
-                Picker("Target", selection: $selectedTargetID) {
-                    Text("Select…").tag(nil as UUID?)
-                    ForEach(viewModel.nodes) { node in
-                        Text(node.name).tag(node.id as UUID?)
-                    }
-                }
-
-                Picker("Kind", selection: $selectedKind) {
-                    Text("Inheritance").tag(Relationship.Kind.inheritance)
-                    Text("Conformance").tag(Relationship.Kind.conformance)
-                    Text("Composition").tag(Relationship.Kind.composition)
-                    Text("Aggregation").tag(Relationship.Kind.aggregation)
-                    Text("Association").tag(Relationship.Kind.association)
-                    Text("Dependency").tag(Relationship.Kind.dependency)
-                }
-            }
-            .formStyle(.grouped)
-
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Add") {
-                    if let src = selectedSourceID, let tgt = selectedTargetID {
-                        viewModel.addEdge(from: src, to: tgt, kind: selectedKind)
-                    }
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(selectedSourceID == nil || selectedTargetID == nil)
-            }
-        }
-        .padding()
-        .frame(width: 400, height: 340)
-        .onAppear {
-            selectedSourceID = sourceNodeID
         }
     }
 }

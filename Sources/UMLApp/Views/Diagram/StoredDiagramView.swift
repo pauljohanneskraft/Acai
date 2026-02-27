@@ -3,10 +3,6 @@ import UMLCore
 
 // MARK: - Resize Support
 
-private enum StoredResizeEdge {
-    case left, right, top, bottom
-}
-
 private struct StoredResizeState {
     let startSize: CGSize
     let startPosition: CGPoint
@@ -27,7 +23,10 @@ struct StoredDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint? = nil
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var activeResizeState: StoredResizeState? = nil
-    @State private var showingConfigSheet = false
+    @State private var showInspector = false
+
+    enum InspectorTab { case settings, selection }
+    @State private var inspectorTab: InspectorTab = .settings
 
     init(diagram: StoredDiagram, artifact: CodeArtifact, codebaseName: String) {
         self.diagram = diagram
@@ -45,27 +44,13 @@ struct StoredDiagramView: View {
     }
 
     var body: some View {
-        InfiniteCanvas(scale: $canvasScale, offset: $canvasOffset, onSelectionRect: { rect in
-            viewModel.selectNodes(in: rect)
-        }, onBackgroundTap: {
-            viewModel.clearSelection()
-        }, autoPanDragLocation: activeDragCanvasLocation, onAutoPanDelta: { canvasDelta in
-            // Move all dragged nodes by the incremental delta so they keep
-            // up with the auto-pan while the cursor is stationary.
-            for nodeID in viewModel.selectedNodeIDs {
-                if let pos = viewModel.nodePositions[nodeID] {
-                    viewModel.moveNode(nodeID, to: CGPoint(
-                        x: pos.x + canvasDelta.width,
-                        y: pos.y + canvasDelta.height
-                    ))
-                }
-            }
-        }, autoPanController: canvasAutoPanController) {
-            ZStack {
-                edgeLayer
-                nodeLayer
-                resizeHandleLayer
-                selectionRectangleLayer
+        HSplitView {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if showInspector {
+                storedDiagramInspector
+                    .frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
             }
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
@@ -93,9 +78,9 @@ struct StoredDiagramView: View {
                 }
 
                 Button {
-                    showingConfigSheet = true
+                    showInspector.toggle()
                 } label: {
-                    Label("Settings", systemImage: "gear")
+                    Label("Inspector", systemImage: "sidebar.trailing")
                 }
 
                 Button {
@@ -108,10 +93,6 @@ struct StoredDiagramView: View {
                 } label: {
                     Label("Save as Custom", systemImage: "doc.badge.plus")
                 }
-
-                Text(codebaseName)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
             }
         }
         .navigationTitle(diagram.name)
@@ -123,10 +104,38 @@ struct StoredDiagramView: View {
         .onDisappear {
             savePositions()
         }
-        .sheet(isPresented: $showingConfigSheet) {
-            DiagramConfigurationEditor(configuration: diagram.configuration) { newConfig in
-                model.updateStoredDiagramConfiguration(diagramID: diagram.id, configuration: newConfig)
-                viewModel.applyConfiguration(newConfig, artifact: artifact)
+        .onChange(of: viewModel.selectedNodeIDs) { newSelection in
+            if !newSelection.isEmpty {
+                inspectorTab = .selection
+                showInspector = true
+            }
+        }
+    }
+
+    // MARK: - Canvas Content
+
+    private var canvasContent: some View {
+        InfiniteCanvas(scale: $canvasScale, offset: $canvasOffset, onSelectionRect: { rect in
+            viewModel.selectNodes(in: rect)
+        }, onBackgroundTap: {
+            viewModel.clearSelection()
+        }, autoPanDragLocation: activeDragCanvasLocation, onAutoPanDelta: { canvasDelta in
+            // Move all dragged nodes by the incremental delta so they keep
+            // up with the auto-pan while the cursor is stationary.
+            for nodeID in viewModel.selectedNodeIDs {
+                if let pos = viewModel.nodePositions[nodeID] {
+                    viewModel.moveNode(nodeID, to: CGPoint(
+                        x: pos.x + canvasDelta.width,
+                        y: pos.y + canvasDelta.height
+                    ))
+                }
+            }
+        }, autoPanController: canvasAutoPanController) {
+            ZStack {
+                edgeLayer
+                nodeLayer
+                resizeHandleLayer
+                selectionRectangleLayer
             }
         }
     }
@@ -181,7 +190,7 @@ struct StoredDiagramView: View {
                 .position(position)
                 .onTapGesture {
                     #if os(macOS)
-                    let extending = NSEvent.modifierFlags.contains(.shift)
+                    let extending = NSEvent.modifierFlags.contains(.command)
                     #else
                     let extending = false
                     #endif
@@ -204,51 +213,19 @@ struct StoredDiagramView: View {
     }
 
     private func storedEdgeResizeHandles(for id: String, at position: CGPoint, size: CGSize) -> some View {
-        let thickness: CGFloat = 8
-        return ZStack {
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x + size.width / 2, y: position.y)
-                .gesture(storedResizeGesture(for: id, edge: .right))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: thickness, height: size.height)
-                .contentShape(Rectangle())
-                .position(x: position.x - size.width / 2, y: position.y)
-                .gesture(storedResizeGesture(for: id, edge: .left))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y + size.height / 2)
-                .gesture(storedResizeGesture(for: id, edge: .bottom))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: size.width, height: thickness)
-                .contentShape(Rectangle())
-                .position(x: position.x, y: position.y - size.height / 2)
-                .gesture(storedResizeGesture(for: id, edge: .top))
-                #if os(macOS)
-                .onHover { h in if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() } }
-                #endif
-        }
+        let handleSize: CGFloat = 16
+        return Rectangle()
+            .fill(Color.clear)
+            #if os(macOS)
+            .cursorOnHover(.closedHand)
+            #endif
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle())
+            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
+            .gesture(storedResizeGesture(for: id))
     }
 
-    private func storedResizeGesture(for id: String, edge: StoredResizeEdge) -> some Gesture {
+    private func storedResizeGesture(for id: String) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
@@ -260,28 +237,12 @@ struct StoredDiagramView: View {
                 guard let state = activeResizeState else { return }
                 let minW: CGFloat = 80, minH: CGFloat = 50
 
-                switch edge {
-                case .right:
-                    let newW = max(minW, state.startSize.width + value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x + dw / 2, y: state.startPosition.y))
-                case .left:
-                    let newW = max(minW, state.startSize.width - value.translation.width)
-                    let dw = newW - state.startSize.width
-                    viewModel.resizeNode(id, width: newW, height: state.startSize.height)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x - dw / 2, y: state.startPosition.y))
-                case .bottom:
-                    let newH = max(minH, state.startSize.height + value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x, y: state.startPosition.y + dh / 2))
-                case .top:
-                    let newH = max(minH, state.startSize.height - value.translation.height)
-                    let dh = newH - state.startSize.height
-                    viewModel.resizeNode(id, width: state.startSize.width, height: newH)
-                    viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x, y: state.startPosition.y - dh / 2))
-                }
+                let newW = max(minW, state.startSize.width + value.translation.width)
+                let newH = max(minH, state.startSize.height + value.translation.height)
+                let dw = newW - state.startSize.width
+                let dh = newH - state.startSize.height
+                viewModel.resizeNode(id, width: newW, height: newH)
+                viewModel.moveNode(id, to: CGPoint(x: state.startPosition.x + dw / 2, y: state.startPosition.y + dh / 2))
             }
             .onEnded { _ in
                 activeResizeState = nil
@@ -380,61 +341,152 @@ struct StoredDiagramView: View {
             y: (viewHeight - diagramHeight * canvasScale) / 2 - minY * canvasScale
         )
     }
-}
 
-// MARK: - Diagram Configuration Editor
+    // MARK: - Inspector Sidebar
 
-struct DiagramConfigurationEditor: View {
-    @State var configuration: DiagramConfiguration
-    var onSave: (DiagramConfiguration) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Diagram Settings").font(.title2).bold()
-
-            Form {
-                Section("Visibility") {
-                    Toggle("Show Properties", isOn: $configuration.showProperties)
-                    Toggle("Show Methods", isOn: $configuration.showMethods)
-                    Toggle("Show Enum Cases", isOn: $configuration.showEnumCases)
-                }
-
-                Section("Relationships") {
-                    Toggle("Show Relationships", isOn: $configuration.showRelationships)
-                    if configuration.showRelationships {
-                        Toggle("Inheritance", isOn: $configuration.showInheritance)
-                        Toggle("Composition", isOn: $configuration.showComposition)
-                        Toggle("Dependency", isOn: $configuration.showDependency)
-                    }
-                }
-
-                Section("Layout") {
-                    Toggle("Group by Directory", isOn: $configuration.groupByDirectory)
-                    Toggle("Show External Types", isOn: $configuration.showExternalTypes)
-                }
-
-                Section("Dart") {
-                    Toggle("Hide Generated Types", isOn: $configuration.hideGeneratedDartTypes)
-                    Text("Hides types from .freezed.dart, .g.dart and other code-generated files.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+    @ViewBuilder
+    private var storedDiagramInspector: some View {
+        VStack(spacing: 0) {
+            // Tab picker
+            Picker("Inspector", selection: $inspectorTab) {
+                Text("Settings").tag(InspectorTab.settings)
+                Text("Selection").tag(InspectorTab.selection)
             }
-            .formStyle(.grouped)
+            .pickerStyle(.segmented)
+            .padding(8)
 
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Apply") {
-                    onSave(configuration)
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
+            Divider()
+
+            switch inspectorTab {
+            case .settings:
+                configurationInspector
+            case .selection:
+                selectionInspector
             }
         }
-        .padding()
-        .frame(width: 400, height: 520)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    @State private var localConfig: DiagramConfiguration? = nil
+
+    private var configurationInspector: some View {
+        let config = Binding<DiagramConfiguration>(
+            get: { localConfig ?? diagram.configuration },
+            set: { newConfig in
+                localConfig = newConfig
+                model.updateStoredDiagramConfiguration(diagramID: diagram.id, configuration: newConfig)
+                viewModel.applyConfiguration(newConfig, artifact: artifact)
+            }
+        )
+
+        return Form {
+            Section("Visibility") {
+                Toggle("Show Properties", isOn: config.showProperties)
+                Toggle("Show Methods", isOn: config.showMethods)
+                Toggle("Show Enum Cases", isOn: config.showEnumCases)
+
+                Picker("Min Access Level", selection: config.minimumAccessLevel) {
+                    Text("All").tag(AccessLevel?.none)
+                    ForEach([AccessLevel.public, .internal, .private], id: \.self) { level in
+                        Text(level.rawValue).tag(AccessLevel?.some(level))
+                    }
+                }
+            }
+
+            Section("Relationships") {
+                Toggle("Show Relationships", isOn: config.showRelationships)
+                if config.wrappedValue.showRelationships {
+                    Toggle("Inheritance", isOn: config.showInheritance)
+                    Toggle("Composition", isOn: config.showComposition)
+                    Toggle("Dependency", isOn: config.showDependency)
+                }
+            }
+
+            Section("Layout") {
+                Toggle("Group by Directory", isOn: config.groupByDirectory)
+                Toggle("Show External Types", isOn: config.showExternalTypes)
+            }
+
+            Section("Dart") {
+                Toggle("Hide Generated Types", isOn: config.hideGeneratedDartTypes)
+                Text("Hides types from .freezed.dart, .g.dart and other code-generated files.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    @ViewBuilder
+    private var selectionInspector: some View {
+        if viewModel.selectedNodeIDs.isEmpty {
+            VStack(spacing: 12) {
+                Image(systemName: "cursorarrow.click")
+                    .font(.title)
+                    .foregroundStyle(.secondary)
+                Text("Select a node to inspect")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            List {
+                ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
+                    if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
+                        Section(node.name) {
+                            LabeledContent("Kind", value: node.kind.rawValue)
+                            if !node.properties.isEmpty {
+                                DisclosureGroup("Properties (\(node.properties.count))") {
+                                    ForEach(node.properties) { prop in
+                                        Text(prop.displayText)
+                                            .font(.caption.monospaced())
+                                    }
+                                }
+                            }
+                            if !node.methods.isEmpty {
+                                DisclosureGroup("Methods (\(node.methods.count))") {
+                                    ForEach(node.methods) { method in
+                                        Text(method.displayText)
+                                            .font(.caption.monospaced())
+                                    }
+                                }
+                            }
+
+                            // Position info
+                            if let pos = viewModel.nodePositions[nodeID] {
+                                LabeledContent("Position") {
+                                    Text("(\(Int(pos.x)), \(Int(pos.y)))")
+                                        .font(.caption.monospaced())
+                                }
+                            }
+                            let size = viewModel.effectiveSize(for: nodeID)
+                            LabeledContent("Size") {
+                                Text("\(Int(size.width)) x \(Int(size.height))")
+                                    .font(.caption.monospaced())
+                            }
+
+                            // Show edges for this node
+                            let relatedEdges = viewModel.edges.filter { $0.sourceID == nodeID || $0.targetID == nodeID }
+                            if !relatedEdges.isEmpty {
+                                DisclosureGroup("Relationships (\(relatedEdges.count))") {
+                                    ForEach(relatedEdges) { edge in
+                                        HStack {
+                                            Text(edge.kind.rawValue)
+                                                .font(.caption)
+                                            Spacer()
+                                            let otherID = edge.sourceID == nodeID ? edge.targetID : edge.sourceID
+                                            Text(otherID)
+                                                .font(.caption.monospaced())
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.inset)
+        }
     }
 }

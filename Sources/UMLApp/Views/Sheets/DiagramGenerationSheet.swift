@@ -82,7 +82,7 @@ struct DiagramGenerationSheet: View {
         isGenerating = true
 
         // Ensure codebase has been indexed.
-        guard codebase?.artifact != nil else {
+        guard codebase?.hasArtifact == true else {
             // Reindex first, then generate.
             Task {
                 await model.reindex(codebaseID: codebaseID)

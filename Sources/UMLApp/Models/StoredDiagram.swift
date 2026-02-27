@@ -283,14 +283,12 @@ struct CustomDiagramEdge: Identifiable, Codable, Hashable, Sendable {
 // MARK: - Custom Diagram
 
 /// A fully user-defined diagram with manually placed nodes and edges.
-/// Ownership: belongs to a project (via `ownerProjectID`), a codebase (via `ownerCodebaseID`),
-/// or is global (both nil). Global diagrams are stored in `ProjectStore.globalCustomDiagrams`.
+/// Ownership: belongs to a project (via `ownerProjectID`).
 struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
     var diagramType: DiagramType = .classDiagram
     var ownerProjectID: UUID? = nil
-    var ownerCodebaseID: UUID? = nil
     var nodes: [CustomDiagramNode] = []
     var edges: [CustomDiagramEdge] = []
     var canvasScale: Double = 1.0

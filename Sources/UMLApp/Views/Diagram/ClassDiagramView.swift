@@ -112,7 +112,7 @@ struct ClassDiagramView: View {
                 .position(position)
                 .onTapGesture {
                     #if os(macOS)
-                    let extending = NSEvent.modifierFlags.contains(.shift)
+                    let extending = NSEvent.modifierFlags.contains(.command)
                     #else
                     let extending = false
                     #endif
