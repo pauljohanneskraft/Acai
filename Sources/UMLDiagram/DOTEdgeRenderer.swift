@@ -31,21 +31,21 @@ struct DOTEdgeRenderer {
     private func edgeAttributes(for kind: Relationship.Kind) -> String {
         let color = options.theme.edgeColor
         switch kind {
-        case .inheritance:  
+        case .inheritance:
             return "arrowhead=empty style=solid color=\"\(color)\""
-        case .conformance:  
+        case .conformance:
             return "arrowhead=empty style=dashed color=\"\(color)\""
-        case .composition:  
+        case .composition:
             return "dir=back arrowtail=diamond color=\"\(color)\""
-        case .aggregation:  
+        case .aggregation:
             return "dir=back arrowtail=odiamond color=\"\(color)\""
-        case .association:  
+        case .association:
             return "arrowhead=vee style=solid color=\"\(color)\""
-        case .dependency:   
+        case .dependency:
             return "arrowhead=vee style=dashed color=\"\(color)\""
-        case .extension:    
+        case .extension:
             return "arrowhead=empty style=dotted color=\"\(color)\""
-        case .nesting:      
+        case .nesting:
             return "arrowhead=dot style=solid color=\"\(color)\""
         }
     }

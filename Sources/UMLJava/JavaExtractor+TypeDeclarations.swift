@@ -39,12 +39,18 @@ extension JavaExtractor {
     /// Dispatches a type-declaration node to the appropriate extractor.
     mutating func extractTopLevelType(_ node: Node, nodeType: String) -> TypeDeclaration? {
         switch nodeType {
-        case "class_declaration": return extractClassDeclaration(node)
-        case "interface_declaration": return extractInterfaceDeclaration(node)
-        case "enum_declaration": return extractEnumDeclaration(node)
-        case "record_declaration": return extractRecordDeclaration(node)
-        case "annotation_type_declaration": return extractAnnotationTypeDeclaration(node)
-        default: return nil
+        case "class_declaration":
+            return extractClassDeclaration(node)
+        case "interface_declaration":
+            return extractInterfaceDeclaration(node)
+        case "enum_declaration":
+            return extractEnumDeclaration(node)
+        case "record_declaration":
+            return extractRecordDeclaration(node)
+        case "annotation_type_declaration":
+            return extractAnnotationTypeDeclaration(node)
+        default:
+            return nil
         }
     }
 

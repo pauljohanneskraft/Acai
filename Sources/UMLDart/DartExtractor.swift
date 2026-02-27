@@ -21,4 +21,3 @@ struct DartExtractor: TreeSitterExtracting {
         return buildArtifact(language: .dart)
     }
 }
-

@@ -109,22 +109,33 @@ public struct SequenceDiagramDOTRenderer: Sendable {
 
     private func participantStereotype(_ kind: SequenceDiagram.Participant.Kind) -> String? {
         switch kind {
-        case .object:   return nil
-        case .actor:    return "actor"
-        case .boundary: return "boundary"
-        case .control:  return "control"
-        case .entity:   return "entity"
-        case .database: return "database"
+        case .object:
+            return nil
+        case .actor:
+            return "actor"
+        case .boundary:
+            return "boundary"
+        case .control:
+            return "control"
+        case .entity:
+            return "entity"
+        case .database:
+            return "database"
         }
     }
 
     private func arrowAttributes(for kind: SequenceDiagram.Message.Kind) -> String {
         switch kind {
-        case .synchronous:  return "arrowhead=normal style=solid"
-        case .asynchronous: return "arrowhead=open style=solid"
-        case .return:       return "arrowhead=normal style=dashed"
-        case .create:       return "arrowhead=normal style=dashed label=\"<<create>>\""
-        case .destroy:      return "arrowhead=normal style=solid label=\"<<destroy>>\""
+        case .synchronous:
+            return "arrowhead=normal style=solid"
+        case .asynchronous:
+            return "arrowhead=open style=solid"
+        case .return:
+            return "arrowhead=normal style=dashed"
+        case .create:
+            return "arrowhead=normal style=dashed label=\"<<create>>\""
+        case .destroy:
+            return "arrowhead=normal style=solid label=\"<<destroy>>\""
         }
     }
 

@@ -401,12 +401,18 @@ extension CodeArtifact {
 
     private func participantKind(for decl: TypeDeclaration?) -> SequenceDiagram.Participant.Kind {
         switch decl?.kind {
-        case .protocol, .interface:             return .boundary
-        case .class, .object, .record:          return .object
-        case .struct:                           return .object
-        case .enum:                             return .object
-        case .none:                             return .object
-        default:                                return .object
+        case .protocol, .interface:
+            return .boundary
+        case .class, .object, .record:
+            return .object
+        case .struct:
+            return .object
+        case .enum:
+            return .object
+        case .none:
+            return .object
+        default:
+            return .object
         }
     }
 }

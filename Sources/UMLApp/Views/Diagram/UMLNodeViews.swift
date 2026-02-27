@@ -158,49 +158,77 @@ struct UMLTypeBoxView: View {
 
     private var kindColor: Color {
         switch kind {
-        case .protocol, .interface: .blue
-        case .struct, .record:      .green
-        case .enum:                 .orange
-        case .class:                .purple
-        case .trait:                .teal
-        case .mixin:                .indigo
-        default:                    .gray
+        case .protocol, .interface:
+            .blue
+        case .struct, .record:
+            .green
+        case .enum:
+            .orange
+        case .class:
+            .purple
+        case .trait:
+            .teal
+        case .mixin:
+            .indigo
+        default:
+            .gray
         }
     }
 
     private var kindHeaderBackground: Color {
         switch kind {
-        case .protocol, .interface: Color(red: 0.93, green: 0.95, blue: 1.0)
-        case .struct, .record:      Color(red: 0.93, green: 0.98, blue: 0.93)
-        case .enum:                 Color(red: 1.0, green: 0.96, blue: 0.92)
-        case .class:                Color(red: 0.96, green: 0.93, blue: 1.0)
-        case .trait:                Color(red: 0.92, green: 0.98, blue: 0.98)
-        case .mixin:                Color(red: 0.95, green: 0.93, blue: 1.0)
-        default:                    Color(red: 0.95, green: 0.95, blue: 0.95)
+        case .protocol, .interface:
+            Color(red: 0.93, green: 0.95, blue: 1.0)
+        case .struct, .record:
+            Color(red: 0.93, green: 0.98, blue: 0.93)
+        case .enum:
+            Color(red: 1.0, green: 0.96, blue: 0.92)
+        case .class:
+            Color(red: 0.96, green: 0.93, blue: 1.0)
+        case .trait:
+            Color(red: 0.92, green: 0.98, blue: 0.98)
+        case .mixin:
+            Color(red: 0.95, green: 0.93, blue: 1.0)
+        default:
+            Color(red: 0.95, green: 0.95, blue: 0.95)
         }
     }
 
     private var kindBodyBackground: Color {
         switch kind {
-        case .protocol, .interface: Color(red: 0.97, green: 0.98, blue: 1.0)
-        case .struct, .record:      Color(red: 0.97, green: 0.99, blue: 0.97)
-        case .enum:                 Color(red: 1.0, green: 0.99, blue: 0.97)
-        case .class:                Color(red: 0.99, green: 0.97, blue: 1.0)
-        case .trait:                Color(red: 0.97, green: 0.99, blue: 0.99)
-        case .mixin:                Color(red: 0.98, green: 0.97, blue: 1.0)
-        default:                    Color(red: 0.98, green: 0.98, blue: 0.98)
+        case .protocol, .interface:
+            Color(red: 0.97, green: 0.98, blue: 1.0)
+        case .struct, .record:
+            Color(red: 0.97, green: 0.99, blue: 0.97)
+        case .enum:
+            Color(red: 1.0, green: 0.99, blue: 0.97)
+        case .class:
+            Color(red: 0.99, green: 0.97, blue: 1.0)
+        case .trait:
+            Color(red: 0.97, green: 0.99, blue: 0.99)
+        case .mixin:
+            Color(red: 0.98, green: 0.97, blue: 1.0)
+        default:
+            Color(red: 0.98, green: 0.98, blue: 0.98)
         }
     }
 
     private var kindBorderColor: Color {
         switch kind {
-        case .protocol, .interface: Color(red: 0.55, green: 0.62, blue: 0.85)
-        case .struct, .record:      Color(red: 0.50, green: 0.72, blue: 0.50)
-        case .enum:                 Color(red: 0.82, green: 0.68, blue: 0.45)
-        case .class:                Color(red: 0.68, green: 0.52, blue: 0.82)
-        case .trait:                Color(red: 0.45, green: 0.72, blue: 0.72)
-        case .mixin:                Color(red: 0.58, green: 0.52, blue: 0.82)
-        default:                    Color(red: 0.70, green: 0.70, blue: 0.70)
+        case .protocol, .interface:
+            Color(red: 0.55, green: 0.62, blue: 0.85)
+        case .struct, .record:
+            Color(red: 0.50, green: 0.72, blue: 0.50)
+        case .enum:
+            Color(red: 0.82, green: 0.68, blue: 0.45)
+        case .class:
+            Color(red: 0.68, green: 0.52, blue: 0.82)
+        case .trait:
+            Color(red: 0.45, green: 0.72, blue: 0.72)
+        case .mixin:
+            Color(red: 0.58, green: 0.52, blue: 0.82)
+        default:
+            Color(red: 0.70, green: 0.70, blue: 0.70)
         }
     }
 }
@@ -350,25 +378,34 @@ struct UMLContainerNodeView: View {
 
         var fillColor: Color {
             switch self {
-            case .package:   Color(red: 0.96, green: 0.93, blue: 0.88)
-            case .boundary:  Color(red: 1.0, green: 0.97, blue: 0.90)
-            case .subsystem: Color(red: 0.90, green: 0.96, blue: 0.98)
+            case .package:
+                Color(red: 0.96, green: 0.93, blue: 0.88)
+            case .boundary:
+                Color(red: 1.0, green: 0.97, blue: 0.90)
+            case .subsystem:
+                Color(red: 0.90, green: 0.96, blue: 0.98)
             }
         }
 
         var headerColor: Color {
             switch self {
-            case .package:   Color(red: 0.91, green: 0.86, blue: 0.78)
-            case .boundary:  Color(red: 0.96, green: 0.92, blue: 0.82)
-            case .subsystem: Color(red: 0.82, green: 0.92, blue: 0.96)
+            case .package:
+                Color(red: 0.91, green: 0.86, blue: 0.78)
+            case .boundary:
+                Color(red: 0.96, green: 0.92, blue: 0.82)
+            case .subsystem:
+                Color(red: 0.82, green: 0.92, blue: 0.96)
             }
         }
 
         var borderColor: Color {
             switch self {
-            case .package:   Color(red: 0.68, green: 0.58, blue: 0.42)
-            case .boundary:  Color(red: 0.78, green: 0.65, blue: 0.35)
-            case .subsystem: Color(red: 0.40, green: 0.65, blue: 0.75)
+            case .package:
+                Color(red: 0.68, green: 0.58, blue: 0.42)
+            case .boundary:
+                Color(red: 0.78, green: 0.65, blue: 0.35)
+            case .subsystem:
+                Color(red: 0.40, green: 0.65, blue: 0.75)
             }
         }
 

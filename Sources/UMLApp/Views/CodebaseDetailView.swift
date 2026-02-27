@@ -359,14 +359,22 @@ struct CodebaseDetailView: View {
     private func relationshipKindBadge(_ kind: Relationship.Kind) -> some View {
         let color: Color = {
             switch kind {
-            case .inheritance: return .blue
-            case .conformance: return .orange
-            case .composition: return .red
-            case .aggregation: return .purple
-            case .association: return .green
-            case .dependency: return .gray
-            case .extension: return .brown
-            case .nesting: return .teal
+            case .inheritance:
+                return .blue
+            case .conformance:
+                return .orange
+            case .composition:
+                return .red
+            case .aggregation:
+                return .purple
+            case .association:
+                return .green
+            case .dependency:
+                return .gray
+            case .extension:
+                return .brown
+            case .nesting:
+                return .teal
             }
         }()
         return Circle()
@@ -376,14 +384,22 @@ struct CodebaseDetailView: View {
 
     private func relationshipArrow(_ kind: Relationship.Kind) -> String {
         switch kind {
-        case .inheritance: return "arrow.up"
-        case .conformance: return "arrow.up.to.line"
-        case .composition: return "diamond.fill"
-        case .aggregation: return "diamond"
-        case .association: return "arrow.right"
-        case .dependency: return "arrow.right.dotted"
-        case .extension: return "plus"
-        case .nesting: return "arrow.down.right"
+        case .inheritance:
+            return "arrow.up"
+        case .conformance:
+            return "arrow.up.to.line"
+        case .composition:
+            return "diamond.fill"
+        case .aggregation:
+            return "diamond"
+        case .association:
+            return "arrow.right"
+        case .dependency:
+            return "arrow.right.dotted"
+        case .extension:
+            return "plus"
+        case .nesting:
+            return "arrow.down.right"
         }
     }
 

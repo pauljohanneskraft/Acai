@@ -17,17 +17,28 @@ public enum TypeKind: String, Codable, Equatable, Hashable, Sendable, CaseIterab
     /// that have no stereotype (e.g. `.class`, `.extension`).
     public var stereotypeString: String? {
         switch self {
-        case .protocol, .interface: "interface"
-        case .enum:       "enumeration"
-        case .struct:     "struct"
-        case .typeAlias:  "typealias"
-        case .object:     "object"
-        case .annotation: "annotation"
-        case .module:     "module"
-        case .trait:      "trait"
-        case .record:     "record"
-        case .mixin:      "mixin"
-        case .class, .extension: nil
+        case .protocol, .interface:
+            "interface"
+        case .enum:
+            "enumeration"
+        case .struct:
+            "struct"
+        case .typeAlias:
+            "typealias"
+        case .object:
+            "object"
+        case .annotation:
+            "annotation"
+        case .module:
+            "module"
+        case .trait:
+            "trait"
+        case .record:
+            "record"
+        case .mixin:
+            "mixin"
+        case .class, .extension:
+            nil
         }
     }
 }

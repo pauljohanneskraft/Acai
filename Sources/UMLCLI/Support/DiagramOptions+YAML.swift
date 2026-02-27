@@ -17,18 +17,25 @@ extension DiagramOptions {
 
         if let themeStr = yaml["theme"] as? String {
             switch themeStr.lowercased() {
-            case "dark":    self.theme = .dark
-            case "default": self.theme = .default
-            default: print("Warning: Unknown theme '\(themeStr)', using default.")
+            case "dark":
+                self.theme = .dark
+            case "default":
+                self.theme = .default
+            default:
+                print("Warning: Unknown theme '\(themeStr)', using default.")
             }
         }
 
         if let groupStr = yaml["groupBy"] as? String {
             switch groupStr.lowercased() {
-            case "file":      self.groupBy = .byFile
-            case "namespace": self.groupBy = .byNamespace
-            case "none":      self.groupBy = .none
-            default: print("Warning: Unknown groupBy '\(groupStr)', using none.")
+            case "file":
+                self.groupBy = .byFile
+            case "namespace":
+                self.groupBy = .byNamespace
+            case "none":
+                self.groupBy = .none
+            default:
+                print("Warning: Unknown groupBy '\(groupStr)', using none.")
             }
         }
 

@@ -20,12 +20,18 @@ extension JavaExtractor {
 
     mutating func extractNestedTypeFromChild(_ child: Node, nodeType: String) -> TypeDeclaration? {
         switch nodeType {
-        case "class_declaration":          return extractClassDeclaration(child)
-        case "interface_declaration":      return extractInterfaceDeclaration(child)
-        case "enum_declaration":           return extractEnumDeclaration(child)
-        case "record_declaration":         return extractRecordDeclaration(child)
-        case "annotation_type_declaration": return extractAnnotationTypeDeclaration(child)
-        default:                            return nil
+        case "class_declaration":
+            return extractClassDeclaration(child)
+        case "interface_declaration":
+            return extractInterfaceDeclaration(child)
+        case "enum_declaration":
+            return extractEnumDeclaration(child)
+        case "record_declaration":
+            return extractRecordDeclaration(child)
+        case "annotation_type_declaration":
+            return extractAnnotationTypeDeclaration(child)
+        default:
+            return nil
         }
     }
 

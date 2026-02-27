@@ -122,18 +122,24 @@ public struct DeploymentDiagramDOTRenderer: Sendable {
     private func nodeLabel(_ node: DeploymentDiagram.Node) -> String {
         let stereotype: String
         switch node.kind {
-        case .device:               stereotype = "device"
-        case .executionEnvironment: stereotype = "executionEnvironment"
-        case .server:               stereotype = "server"
+        case .device:
+            stereotype = "device"
+        case .executionEnvironment:
+            stereotype = "executionEnvironment"
+        case .server:
+            stereotype = "server"
         }
         return "<<\(stereotype)>>\n\(node.name)"
     }
 
     private func clusterStyle(_ kind: DeploymentDiagram.Node.Kind) -> String {
         switch kind {
-        case .device:               return "\"filled,rounded\""
-        case .executionEnvironment: return "dashed"
-        case .server:               return "rounded"
+        case .device:
+            return "\"filled,rounded\""
+        case .executionEnvironment:
+            return "dashed"
+        case .server:
+            return "rounded"
         }
     }
 

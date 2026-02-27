@@ -14,21 +14,31 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var displayName: String {
         switch self {
-        case .classDiagram: "Class Diagram"
-        case .sequenceDiagram: "Sequence Diagram"
-        case .stateDiagram: "State Diagram"
-        case .useCaseDiagram: "Use Case Diagram"
-        case .deploymentDiagram: "Deployment Diagram"
+        case .classDiagram:
+            "Class Diagram"
+        case .sequenceDiagram:
+            "Sequence Diagram"
+        case .stateDiagram:
+            "State Diagram"
+        case .useCaseDiagram:
+            "Use Case Diagram"
+        case .deploymentDiagram:
+            "Deployment Diagram"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .classDiagram: "rectangle.3.group"
-        case .sequenceDiagram: "arrow.right.arrow.left"
-        case .stateDiagram: "circle.hexagonpath"
-        case .useCaseDiagram: "person.3"
-        case .deploymentDiagram: "server.rack"
+        case .classDiagram:
+            "rectangle.3.group"
+        case .sequenceDiagram:
+            "arrow.right.arrow.left"
+        case .stateDiagram:
+            "circle.hexagonpath"
+        case .useCaseDiagram:
+            "person.3"
+        case .deploymentDiagram:
+            "server.rack"
         }
     }
 }
@@ -146,23 +156,36 @@ enum NodeContent: Codable, Hashable, Sendable {
     /// An entity — an ER entity box.
     case entity
     /// A note — a dog-eared rectangle with free-form text.
-    case note(text: String)
+    case note(text:
+        String)
 
     /// The element kind derived from this content.
     var elementKind: DiagramElementKind {
         switch self {
-        case .type(let c):    .type(c.typeKind)
-        case .actor:          .actor
-        case .useCase:        .useCase
-        case .boundary:       .boundary
-        case .component:      .component
-        case .package:        .package
-        case .deploymentNode: .deploymentNode
-        case .database:       .database
-        case .artifact:       .artifact
-        case .subsystem:      .subsystem
-        case .entity:         .entity
-        case .note:           .note
+        case .type(let c):
+            .type(c.typeKind)
+        case .actor:
+            .actor
+        case .useCase:
+            .useCase
+        case .boundary:
+            .boundary
+        case .component:
+            .component
+        case .package:
+            .package
+        case .deploymentNode:
+            .deploymentNode
+        case .database:
+            .database
+        case .artifact:
+            .artifact
+        case .subsystem:
+            .subsystem
+        case .entity:
+            .entity
+        case .note:
+            .note
         }
     }
 
@@ -171,17 +194,28 @@ enum NodeContent: Codable, Hashable, Sendable {
         switch self {
         case .type(let c):
             c.stereotype ?? Self.defaultTypeStereotype(c.typeKind)
-        case .actor:          "actor"
-        case .useCase:        "use case"
-        case .boundary:       "boundary"
-        case .component:      "component"
-        case .package:        "package"
-        case .deploymentNode: "node"
-        case .database:       "database"
-        case .artifact:       "artifact"
-        case .subsystem:      "subsystem"
-        case .entity:         "entity"
-        case .note:           nil
+        case .actor:
+            "actor"
+        case .useCase:
+            "use case"
+        case .boundary:
+            "boundary"
+        case .component:
+            "component"
+        case .package:
+            "package"
+        case .deploymentNode:
+            "node"
+        case .database:
+            "database"
+        case .artifact:
+            "artifact"
+        case .subsystem:
+            "subsystem"
+        case .entity:
+            "entity"
+        case .note:
+            nil
         }
     }
 
@@ -251,8 +285,10 @@ struct CustomDiagramNode: Identifiable, Codable, Hashable, Sendable {
     /// Whether this node should display resize handles.
     var isResizable: Bool {
         switch content {
-        case .package, .boundary, .subsystem: true
-        default: false
+        case .package, .boundary, .subsystem:
+            true
+        default:
+            false
         }
     }
 }

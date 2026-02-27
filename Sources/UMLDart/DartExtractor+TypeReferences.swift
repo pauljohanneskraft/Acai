@@ -257,10 +257,14 @@ extension DartExtractor {
             guard let nodeType = child.nodeType else { continue }
             let modifierText = text(child)
             switch modifierText {
-            case "abstract": modifiers.append(.abstract)
-            case "sealed": modifiers.append(.sealed)
-            case "final": modifiers.append(.final)
-            default: break
+            case "abstract":
+                modifiers.append(.abstract)
+            case "sealed":
+                modifiers.append(.sealed)
+            case "final":
+                modifiers.append(.final)
+            default:
+                break
             }
             if nodeType == "abstract" { modifiers.append(.abstract) }
             if nodeType == "sealed" { modifiers.append(.sealed) }

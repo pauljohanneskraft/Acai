@@ -9,13 +9,20 @@ enum TypeExtractor {
     static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
         for modifier in modifiers {
             switch modifier.name.tokenKind {
-            case .keyword(.public): return .public
-            case .keyword(.open): return .open
-            case .keyword(.internal): return .internal
-            case .keyword(.private): return .private
-            case .keyword(.fileprivate): return .filePrivate
-            case .keyword(.package): return .packagePrivate
-            default: continue
+            case .keyword(.public):
+                return .public
+            case .keyword(.open):
+                return .open
+            case .keyword(.internal):
+                return .internal
+            case .keyword(.private):
+                return .private
+            case .keyword(.fileprivate):
+                return .filePrivate
+            case .keyword(.package):
+                return .packagePrivate
+            default:
+                continue
             }
         }
         return nil
@@ -208,9 +215,12 @@ enum TypeExtractor {
         var modifiers: [Modifier] = []
         for specifier in param.modifiers {
             switch specifier.name.tokenKind {
-            case .keyword(.consuming): modifiers.append(.consuming)
-            case .keyword(.borrowing): modifiers.append(.borrowing)
-            default: break
+            case .keyword(.consuming):
+                modifiers.append(.consuming)
+            case .keyword(.borrowing):
+                modifiers.append(.borrowing)
+            default:
+                break
             }
         }
 

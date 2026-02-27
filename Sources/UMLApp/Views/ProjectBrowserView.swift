@@ -34,16 +34,20 @@ struct ProjectBrowserView: View {
         }
         .onChange(of: model.selection) { newValue in
             switch newValue {
-            case .project(let id): sidebarSelection = .project(id)
-            case .codebase(let id): sidebarSelection = .codebase(id)
+            case .project(let id):
+                sidebarSelection = .project(id)
+            case .codebase(let id):
+                sidebarSelection = .codebase(id)
             case .diagram(let id):
                 // Diagram selected from detail view; keep sidebar on the parent codebase
                 if let diagram = model.storedDiagram(for: id),
                    sidebarSelection != .codebase(diagram.codebaseID) {
                     // Don't change sidebar — keep it as-is
                 }
-            case .customDiagram(let id): sidebarSelection = .customDiagram(id)
-            case .none: break
+            case .customDiagram(let id):
+                sidebarSelection = .customDiagram(id)
+            case .none:
+                break
             }
         }
         .sheet(isPresented: $newProjectPresented) {

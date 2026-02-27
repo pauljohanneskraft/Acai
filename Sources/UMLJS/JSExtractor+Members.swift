@@ -93,12 +93,18 @@ extension JSExtractor {
 
         for child in node.children() {
             switch text(child) {
-            case "static":                      modifiers.append(.static)
-            case "get", "set":                  isComputed = true; kind = .property
-            case "async":                       modifiers.append(.async)
-            case "abstract" where isTypeScript: modifiers.append(.abstract)
-            case "override":                    modifiers.append(.override)
-            default:                            break
+            case "static":
+                modifiers.append(.static)
+            case "get", "set":
+                isComputed = true; kind = .property
+            case "async":
+                modifiers.append(.async)
+            case "abstract" where isTypeScript:
+                modifiers.append(.abstract)
+            case "override":
+                modifiers.append(.override)
+            default:
+                break
             }
         }
 

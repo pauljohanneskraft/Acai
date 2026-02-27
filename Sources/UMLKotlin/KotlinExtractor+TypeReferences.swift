@@ -33,9 +33,12 @@ extension KotlinExtractor {
 
     func extractTypeReferenceFromAny(_ node: Node) -> TypeReference {
         switch node.nodeType {
-        case "user_type":     return extractTypeReference(node)
-        case "nullable_type": return extractNullableType(node)
-        case "function_type": return extractFunctionType(node)
+        case "user_type":
+            return extractTypeReference(node)
+        case "nullable_type":
+            return extractNullableType(node)
+        case "function_type":
+            return extractFunctionType(node)
         case "parenthesized_type":
             return node.namedChildren().first.map { extractTypeReferenceFromAny($0) }
                 ?? TypeReference(name: text(node))
@@ -49,9 +52,12 @@ extension KotlinExtractor {
         var genericArgs: [TypeReference] = []
         for child in node.namedChildren() {
             switch child.nodeType {
-            case "type_identifier": nameParts.append(text(child))
-            case "type_arguments":  genericArgs = extractTypeArguments(child)
-            default: break
+            case "type_identifier":
+                nameParts.append(text(child))
+            case "type_arguments":
+                genericArgs = extractTypeArguments(child)
+            default:
+                break
             }
         }
         return TypeReference(name: nameParts.joined(separator: "."), genericArguments: genericArgs)
@@ -76,9 +82,12 @@ extension KotlinExtractor {
             case "type_projection":
                 if let star = child.firstChild(withType: "star_projection") { return TypeReference(name: text(star)) }
                 return child.namedChildren().first.map { extractTypeReferenceFromAny($0) }
-            case "user_type":     return extractTypeReference(child)
-            case "nullable_type": return extractNullableType(child)
-            default:              return nil
+            case "user_type":
+                return extractTypeReference(child)
+            case "nullable_type":
+                return extractNullableType(child)
+            default:
+                return nil
             }
         }
     }

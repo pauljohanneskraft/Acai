@@ -266,10 +266,14 @@ extension KotlinExtractor {
     private func extractFirstTypeRef(from node: Node) -> TypeReference? {
         for child in node.namedChildren() {
             switch child.nodeType {
-            case "user_type":     return extractTypeReference(child)
-            case "nullable_type": return extractNullableType(child)
-            case "function_type": return extractFunctionType(child)
-            default: break
+            case "user_type":
+                return extractTypeReference(child)
+            case "nullable_type":
+                return extractNullableType(child)
+            case "function_type":
+                return extractFunctionType(child)
+            default:
+                break
             }
         }
         return nil
