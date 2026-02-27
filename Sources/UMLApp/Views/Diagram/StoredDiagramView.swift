@@ -78,19 +78,7 @@ struct StoredDiagramView: View {
                 }
 
                 Button {
-                    withAnimation {
-                        inspectorTab = .settings
-                        showInspector.toggle()
-                    }
-                } label: {
-                    Label("Settings", systemImage: "gear")
-                }
-
-                Button {
-                    withAnimation {
-                        inspectorTab = .selection
-                        showInspector.toggle()
-                    }
+                    showInspector.toggle()
                 } label: {
                     Label("Inspector", systemImage: "sidebar.trailing")
                 }
@@ -202,7 +190,7 @@ struct StoredDiagramView: View {
                 .position(position)
                 .onTapGesture {
                     #if os(macOS)
-                    let extending = NSEvent.modifierFlags.contains(.shift)
+                    let extending = NSEvent.modifierFlags.contains(.command)
                     #else
                     let extending = false
                     #endif
@@ -396,6 +384,13 @@ struct StoredDiagramView: View {
                 Toggle("Show Properties", isOn: config.showProperties)
                 Toggle("Show Methods", isOn: config.showMethods)
                 Toggle("Show Enum Cases", isOn: config.showEnumCases)
+
+                Picker("Min Access Level", selection: config.minimumAccessLevel) {
+                    Text("All").tag(AccessLevel?.none)
+                    ForEach([AccessLevel.public, .internal, .private], id: \.self) { level in
+                        Text(level.rawValue).tag(AccessLevel?.some(level))
+                    }
+                }
             }
 
             Section("Relationships") {

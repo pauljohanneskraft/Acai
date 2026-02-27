@@ -48,8 +48,8 @@ final class ClassDiagramViewModel: ObservableObject {
             resolved = resolved.filteringGeneratedDartTypes()
         }
 
-        // Build nodes from type declarations.
-        nodes = resolved.types.map { DiagramNode(from: $0) }
+        // Build nodes from type declarations, applying configuration filters.
+        nodes = resolved.types.map { DiagramNode(from: $0, configuration: configuration) }
 
         // Build edges, filtering by configuration.
         let typeNames = Set(resolved.types.map(\.name))
@@ -220,9 +220,9 @@ final class ClassDiagramViewModel: ObservableObject {
         let lineHeight: CGFloat = 18
         let headerHeight: CGFloat = node.stereotype != nil ? 48 : 32
 
-        let visibleProps = configuration.showProperties ? node.properties.count : 0
-        let visibleMethods = configuration.showMethods ? node.methods.count : 0
-        let visibleCases = configuration.showEnumCases ? node.enumCases.count : 0
+        let visibleProps = node.properties.count
+        let visibleMethods = node.methods.count
+        let visibleCases = node.enumCases.count
 
         let propHeight = CGFloat(max(visibleProps, 1)) * lineHeight
         let methodHeight = CGFloat(max(visibleMethods, 1)) * lineHeight

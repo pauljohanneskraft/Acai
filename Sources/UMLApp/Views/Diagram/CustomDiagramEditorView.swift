@@ -102,19 +102,15 @@ struct CustomDiagramEditorView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    withAnimation {
-                        sidebarTab = .catalog
-                        showSidebar.toggle()
-                    }
+                    sidebarTab = .catalog
+                    showSidebar.toggle()
                 } label: {
                     Label("Catalog", systemImage: "square.grid.2x2")
                 }
 
                 Button {
-                    withAnimation {
-                        sidebarTab = .inspector
-                        showSidebar.toggle()
-                    }
+                    sidebarTab = .inspector
+                    showSidebar.toggle()
                 } label: {
                     Label("Inspector", systemImage: "sidebar.trailing")
                 }
@@ -153,13 +149,27 @@ struct CustomDiagramEditorView: View {
             }
         }
         .background {
-            // Hidden button to capture backspace / delete key
-            Button("") {
-                if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
-                    showDeleteConfirmation = true
+            // Hidden buttons to capture keyboard shortcuts
+            Group {
+                Button("") {
+                    if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
+                        showDeleteConfirmation = true
+                    }
                 }
+                .keyboardShortcut(.delete, modifiers: [])
+
+                Button("") { viewModel.copySelection() }
+                    .keyboardShortcut("c", modifiers: .command)
+
+                Button("") { viewModel.cutSelection() }
+                    .keyboardShortcut("x", modifiers: .command)
+
+                Button("") { viewModel.paste() }
+                    .keyboardShortcut("v", modifiers: .command)
+
+                Button("") { viewModel.selectAll() }
+                    .keyboardShortcut("a", modifiers: .command)
             }
-            .keyboardShortcut(.delete, modifiers: [])
             .hidden()
         }
         .alert(
@@ -324,7 +334,7 @@ struct CustomDiagramEditorView: View {
             }
             .onTapGesture(count: 1) {
                 #if os(macOS)
-                let extending = NSEvent.modifierFlags.contains(.shift)
+                let extending = NSEvent.modifierFlags.contains(.command)
                 #else
                 let extending = false
                 #endif
