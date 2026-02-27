@@ -3,6 +3,7 @@ import SwiftUI
 import UMLLibrary
 import UMLCore
 import UMLDiagram
+import UniformTypeIdentifiers
 
 // MARK: - DOT Export & Custom Diagram Conversion
 
@@ -35,7 +36,7 @@ extension ProjectBrowserViewModel {
         let dot = generateDOT(for: codebaseID)
         #if os(macOS)
         let panel = NSSavePanel()
-        panel.allowedFileTypes = ["dot"]
+        panel.allowedContentTypes = [UTType(importedAs: "org.graphviz.dot", conformingTo: .text)]
         panel.nameFieldStringValue = "\(codebase(for: codebaseID)?.name ?? "diagram").dot"
         if panel.runModal() == .OK, let url = panel.url {
             do {
@@ -58,7 +59,6 @@ extension ProjectBrowserViewModel {
     ) {
         guard let stored = storedDiagram(for: storedDiagramID),
               let pIdx = store.projects.firstIndex(where: { $0.storedDiagramIDs.contains(storedDiagramID) }),
-              let codebase = codebase(for: stored.codebaseID),
               let artifact = artifact(for: stored.codebaseID) else { return }
 
         var resolved = artifact.resolvingExtensions()
@@ -75,7 +75,7 @@ extension ProjectBrowserViewModel {
         let offsetX = liveOffset.map { Double($0.x) } ?? stored.canvasOffsetX
         let offsetY = liveOffset.map { Double($0.y) } ?? stored.canvasOffsetY
 
-        var custom = CustomDiagram(
+        let custom = CustomDiagram(
             name: stored.name + " (Custom)",
             diagramType: stored.type,
             ownerProjectID: store.projects[pIdx].id,

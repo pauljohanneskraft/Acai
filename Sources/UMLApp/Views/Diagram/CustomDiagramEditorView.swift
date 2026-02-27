@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 /// Editor view for custom (user-created) diagrams.
 /// Provides a canvas with drag-to-select, a catalog sidebar for adding nodes/edges,
 /// and inline editing of node members.
+@MainActor
 struct CustomDiagramEditorView: View {
     let diagramID: UUID
     @EnvironmentObject private var browserModel: ProjectBrowserViewModel
@@ -206,11 +207,11 @@ struct CustomDiagramEditorView: View {
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard let kindID = object as? String else { return }
             guard let kind = DiagramElementKind.allCatalogItems.first(where: { $0.id == kindID }) else { return }
-            let canvasPoint = CGPoint(
-                x: (screenLocation.x - canvasOffset.x) / canvasScale,
-                y: (screenLocation.y - canvasOffset.y) / canvasScale
-            )
-            DispatchQueue.main.async {
+            Task { @MainActor in
+                let canvasPoint = CGPoint(
+                    x: (screenLocation.x - canvasOffset.x) / canvasScale,
+                    y: (screenLocation.y - canvasOffset.y) / canvasScale
+                )
                 insertNode(kind: kind, at: canvasPoint)
             }
         }
