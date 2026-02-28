@@ -144,7 +144,7 @@ struct CodebaseDetailView: View {
             Spacer()
 
             Image(systemName: icon)
-                .font(.title2)
+                .font(.title2.bold())
                 .foregroundStyle(color)
 
             Text(label)
@@ -208,9 +208,9 @@ struct CodebaseDetailView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: type.systemImage)
-                    .font(.title3)
+                    .font(.title2.bold())
                 Text(type.displayName)
-                    .font(.title3)
+                    .font(.title3.bold())
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)

@@ -71,7 +71,7 @@ struct DiagramGenerationSheet: View {
                 diagramName = "\(name) — Class Diagram"
             }
         }
-        .onChange(of: selectedType) { newType in
+        .onChange(of: selectedType) { _, newType in
             if let name = codebase?.name {
                 diagramName = "\(name) — \(newType.displayName)"
             }

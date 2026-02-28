@@ -72,7 +72,6 @@ struct InfiniteCanvas<Content: View>: View {
                 selectionRectOverlay
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
             .contentShape(Rectangle())
             .background(Color(white: 0.96))
             .gesture(selectionGesture)

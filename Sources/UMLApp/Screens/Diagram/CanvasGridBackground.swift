@@ -6,7 +6,7 @@ struct CanvasGridBackground: View {
     let offset: CGPoint
 
     private let dotSpacing: CGFloat = 24
-    private let dotRadius: CGFloat = 1.0
+    private let dotRadius: CGFloat = 1.5
     private let dotColor = Color.gray.opacity(0.25)
 
     var body: some View {

@@ -20,8 +20,9 @@ struct ProjectBrowserView: View {
                 .navigationTitle("Projects")
         } detail: {
             detailContent
+                .containerBackground(.windowBackground, for: .window)
         }
-        .onChange(of: sidebarSelection) { newValue in
+        .onChange(of: sidebarSelection) { _, newValue in
             switch newValue {
             case .project(let id):
                 model.selection = .project(id)
@@ -33,7 +34,7 @@ struct ProjectBrowserView: View {
                 break
             }
         }
-        .onChange(of: model.selection) { newValue in
+        .onChange(of: model.selection) { _, newValue in
             switch newValue {
             case .project(let id):
                 sidebarSelection = .project(id)
