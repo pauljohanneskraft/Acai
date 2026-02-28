@@ -4,7 +4,6 @@ import UMLCore
 /// Per-file persistence layout:
 /// ```
 /// <baseDir>/
-///   manifest.json          – array of project IDs
 ///   projects/
 ///     <projectID>.json     – Project struct (includes codebases, diagram IDs)
 ///   diagrams/
@@ -27,7 +26,6 @@ final class ProjectStore: ObservableObject {
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
-    private var manifestURL: URL { baseDir.appendingPathComponent("manifest.json") }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
@@ -61,31 +59,28 @@ final class ProjectStore: ObservableObject {
         let fileManager = FileManager.default
         let decoder = JSONDecoder()
 
-        guard fileManager.fileExists(atPath: manifestURL.path) else { return }
         do {
-            let data = try Data(contentsOf: manifestURL)
-            let projectIDs = try decoder.decode([UUID].self, from: data)
-            var loaded: [Project] = []
-            for id in projectIDs {
-                let url = projectsDir.appendingPathComponent("\(id.uuidString).json")
-                if fileManager.fileExists(atPath: url.path) {
-                    let pData = try Data(contentsOf: url)
+            let projectURLs = try fileManager.contentsOfDirectory(at: projectsDir, includingPropertiesForKeys: nil)
+            for projectURL in projectURLs where projectURL.pathExtension == "json" {
+                do {
+                    let pData = try Data(contentsOf: projectURL)
                     let project = try decoder.decode(Project.self, from: pData)
-                    loaded.append(project)
-                    for did in project.generatedDiagramIDs {
-                        loadGeneratedDiagram(did)
+                    projects.append(project)
+                    for diagramID in project.generatedDiagramIDs {
+                        loadGeneratedDiagram(diagramID)
                     }
-                    for did in project.customDiagramIDs {
-                        loadCustomDiagram(did)
+                    for diagramID in project.customDiagramIDs {
+                        loadCustomDiagram(diagramID)
                     }
                     for codebase in project.codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
+                } catch {
+                    print("Failed to load project at \(projectURL): \(error)")
                 }
             }
-            projects = loaded
         } catch {
-            print("Failed to load manifest: \(error)")
+            print("Failed to load project directory: \(error)")
         }
     }
 
@@ -131,24 +126,22 @@ final class ProjectStore: ObservableObject {
     // MARK: - Save
 
     func save() {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-
-        do {
-            let ids = projects.map(\.id)
-            try encoder.encode(ids).write(to: manifestURL, options: .atomic)
-        } catch {
-            print("Failed to save manifest: \(error)")
-        }
-
         for project in projects {
             saveProject(project)
+        }
+        for diagram in generatedDiagrams.values {
+            saveGeneratedDiagram(diagram)
+        }
+        for diagram in customDiagrams.values {
+            saveCustomDiagram(diagram)
+        }
+        for (codebaseID, artifact) in artifacts {
+            saveArtifact(artifact, for: codebaseID)
         }
     }
 
     func saveProject(_ project: Project) {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
         let url = projectsDir.appendingPathComponent("\(project.id.uuidString).json")
         do {
             try encoder.encode(project).write(to: url, options: .atomic)
@@ -160,7 +153,6 @@ final class ProjectStore: ObservableObject {
     func saveGeneratedDiagram(_ diagram: GeneratedDiagram) {
         generatedDiagrams[diagram.id] = diagram
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
         let url = diagramsDir.appendingPathComponent("generated_\(diagram.id.uuidString).json")
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
@@ -172,7 +164,6 @@ final class ProjectStore: ObservableObject {
     func saveCustomDiagram(_ diagram: CustomDiagram) {
         customDiagrams[diagram.id] = diagram
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
         let url = diagramsDir.appendingPathComponent("custom_\(diagram.id.uuidString).json")
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
@@ -184,7 +175,6 @@ final class ProjectStore: ObservableObject {
     func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
         artifacts[codebaseID] = artifact
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         do {
             try encoder.encode(artifact).write(to: url, options: .atomic)
