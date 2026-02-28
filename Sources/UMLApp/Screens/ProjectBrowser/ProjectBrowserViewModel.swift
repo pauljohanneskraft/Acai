@@ -34,17 +34,16 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Project CRUD
 
-    func addProject(title: String, subtitle: String, iconSystemName: String) {
-        let project = Project(title: title, subtitle: subtitle, iconSystemName: iconSystemName, codebases: [])
+    func addProject(title: String, subtitle: String) {
+        let project = Project(title: title, subtitle: subtitle, codebases: [])
         store.projects.append(project)
         persistChanges()
     }
 
-    func updateProject(id: UUID, title: String, subtitle: String, iconSystemName: String) {
+    func updateProject(id: UUID, title: String, subtitle: String) {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == id }) else { return }
         store.projects[projectIndex].title = title
         store.projects[projectIndex].subtitle = subtitle
-        store.projects[projectIndex].iconSystemName = iconSystemName
         persistChanges()
     }
 
@@ -231,7 +230,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func artifact(for codebaseID: UUID) -> CodeArtifact? {
-        store.artifact(for: codebaseID)
+        store.artifact(for: codebaseID)?.resolvingExtensions().filteringGeneratedDartTypes()
     }
 
     func projectForDiagram(_ diagramID: UUID) -> Project? {

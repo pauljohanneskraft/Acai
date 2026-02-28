@@ -16,9 +16,11 @@ struct CodebaseTypesSection: View {
             .padding(.horizontal)
             .padding(.top, 12)
 
-            let sortedTypes = artifact.types.sorted(by: {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            })
+            let sortedTypes = artifact.types
+                .removingDuplicates(by: \.id)
+                .sorted {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
             LazyVStack(spacing: 1) {
                 ForEach(sortedTypes, id: \.id) { type in
                     typeRow(type: type)
@@ -97,9 +99,11 @@ struct CodebaseRelationshipsSection: View {
             .padding(.horizontal)
             .padding(.top, 12)
 
-            let sortedRelationships = artifact.relationships.sorted(by: {
-                ($0.source, $0.target) < ($1.source, $1.target)
-            })
+            let sortedRelationships = artifact.relationships
+                .removingDuplicates { "\($0.source)-\($0.target)" }
+                .sorted {
+                    ($0.source, $0.target) < ($1.source, $1.target)
+                }
             LazyVStack(spacing: 1) {
                 ForEach(Array(sortedRelationships.enumerated()), id: \.offset) { _, rel in
                     relationshipRow(rel: rel)

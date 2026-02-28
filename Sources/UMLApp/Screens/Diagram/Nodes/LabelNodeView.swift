@@ -4,7 +4,7 @@ struct LabelNodeView: View {
     private static let actorBackgroundColor = Color(red: 0.95, green: 0.99, blue: 0.99)
     private static let actorBorderColor = Color(red: 0.45, green: 0.72, blue: 0.72)
     private static let actorIconColor = Color(red: 0.30, green: 0.60, blue: 0.60)
-    
+
     static func actor(
         name: String,
         isSelected: Bool
@@ -18,12 +18,11 @@ struct LabelNodeView: View {
             borderColor: actorBorderColor
         )
     }
-    
+
     private static let databaseBackgroundColor = Color(red: 1.0, green: 0.96, blue: 0.97)
     private static let databaseBorderColor = Color(red: 0.82, green: 0.52, blue: 0.58)
     private static let databaseIconColor = Color(red: 0.72, green: 0.40, blue: 0.48)
 
-    
     static func database(
         name: String,
         isSelected: Bool
@@ -37,7 +36,7 @@ struct LabelNodeView: View {
             borderColor: databaseBorderColor
         )
     }
-    
+
     let name: String
     let systemImageName: String
     let isSelected: Bool

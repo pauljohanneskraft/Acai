@@ -5,6 +5,7 @@ struct ProjectBrowserView: View {
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
     @State private var sidebarSelection: SidebarItem?
+    @State private var collapsedProjects = Set<UUID>()
     @State private var renamingDiagramID: UUID?
     @State private var renamingText: String = ""
 
@@ -51,8 +52,8 @@ struct ProjectBrowserView: View {
             }
         }
         .sheet(isPresented: $newProjectPresented) {
-            NewProjectSheet { title, subtitle, icon in
-                model.addProject(title: title, subtitle: subtitle, iconSystemName: icon)
+            NewProjectSheet { title, subtitle in
+                model.addProject(title: title, subtitle: subtitle)
             }
         }
     }
@@ -62,19 +63,17 @@ struct ProjectBrowserView: View {
     private var sidebarContent: some View {
         List(selection: $sidebarSelection) {
             ForEach(model.store.projects) { project in
-                Section {
-                    // Project row
-                    Label(project.title, systemImage: project.iconSystemName)
-                        .font(.headline)
-                        .tag(SidebarItem.project(project.id))
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                model.removeProject(project.id)
-                            } label: {
-                                Label("Delete Project", systemImage: "trash")
-                            }
+                DisclosureGroup(
+                    isExpanded: Binding {
+                        !collapsedProjects.contains(project.id)
+                    } set: { newValue in
+                        if newValue {
+                            collapsedProjects.remove(project.id)
+                        } else {
+                            collapsedProjects.insert(project.id)
                         }
-
+                    }
+                ) {
                     // Codebases — sorted alphabetically
                     let sortedCodebases = project.codebases.sorted(by: {
                         $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
@@ -131,6 +130,17 @@ struct ProjectBrowserView: View {
                             }
                         }
                     }
+                } label: {
+                    Label(project.title, systemImage: "tray.full")
+                        .font(.headline)
+                        .tag(SidebarItem.project(project.id))
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                model.removeProject(project.id)
+                            } label: {
+                                Label("Delete Project", systemImage: "trash")
+                            }
+                        }
                 }
             }
         }

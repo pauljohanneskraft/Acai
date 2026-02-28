@@ -52,7 +52,7 @@ struct CodebaseDetailView: View {
     private func headerSection(codebase: Codebase) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: "folder.fill")
+                Image(systemName: "folder")
                     .font(.title)
                     .foregroundStyle(.blue)
                     .frame(width: 44, height: 44)
@@ -60,10 +60,15 @@ struct CodebaseDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(codebase.name)
-                        .font(.title2.bold())
+                    TextField("Codebase Name", text: Binding(
+                        get: { codebase.name },
+                        set: { model.updateCodebase(id: codebase.id, name: $0) }
+                    ))
+                    .font(.title2.bold())
+                    .textFieldStyle(.plain)
+
                     Text(codebase.directoryPath)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .truncationMode(.middle)
@@ -106,7 +111,6 @@ struct CodebaseDetailView: View {
             Text("Statistics")
                 .font(.headline)
                 .padding(.horizontal)
-                .padding(.top, 12)
 
             HStack(spacing: 12) {
                 statisticCard(
@@ -131,8 +135,8 @@ struct CodebaseDetailView: View {
                 )
             }
             .padding(.horizontal)
-            .padding(.bottom, 12)
         }
+        .padding(.vertical, 12)
     }
 
     private func statisticCard(label: String, icon: String, color: Color) -> some View {

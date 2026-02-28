@@ -3,13 +3,15 @@ import UMLCore
 
 // MARK: - Resize Support
 
-/// View for a stored (generated) diagram that persists positions and supports re-generation.
-struct GeneratedDiagramView: View {
+extension GeneratedDiagramView {
     struct ResizeState {
         let startSize: CGSize
         let startPosition: CGPoint
     }
-    
+}
+
+/// View for a stored (generated) diagram that persists positions and supports re-generation.
+struct GeneratedDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebaseName: String
@@ -24,7 +26,6 @@ struct GeneratedDiagramView: View {
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var activeResizeState: ResizeState?
     @State private var showSidebar = false
-
     @State private var sidebarTab: GeneratedDiagramSidebarTab = .settings
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebaseName: String) {
@@ -46,7 +47,6 @@ struct GeneratedDiagramView: View {
         HSplitView {
             canvasContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
             if showSidebar {
                 GeneratedDiagramSidebar(
                     viewModel: viewModel,
@@ -68,13 +68,11 @@ struct GeneratedDiagramView: View {
                 } label: {
                     Label("Re-layout", systemImage: "rectangle.3.group")
                 }
-
                 Button {
                     centerDiagram()
                 } label: {
                     Label("Fit to View", systemImage: "rectangle.dashed")
                 }
-                
                 Button {
                     model.saveAsCustomDiagram(
                         id: diagram.id,
@@ -85,7 +83,6 @@ struct GeneratedDiagramView: View {
                 } label: {
                     Label("Save as Custom", systemImage: "document.on.document")
                 }
-
                 Button {
                     showSidebar.toggle()
                 } label: {
@@ -112,8 +109,6 @@ struct GeneratedDiagramView: View {
         }, onBackgroundTap: {
             viewModel.clearSelection()
         }, autoPanDragLocation: activeDragCanvasLocation, onAutoPanDelta: { canvasDelta in
-            // Move all dragged nodes by the incremental delta so they keep
-            // up with the auto-pan while the cursor is stationary.
             for nodeID in viewModel.selectedNodeIDs {
                 if let pos = viewModel.nodePositions[nodeID] {
                     viewModel.moveNode(nodeID, to: CGPoint(
@@ -155,29 +150,22 @@ struct GeneratedDiagramView: View {
                 let hasUserSize = viewModel.userNodeSizes[node.id] != nil
                 let size = viewModel.effectiveSize(for: node.id)
                 let selected = viewModel.selectedNodeIDs.contains(node.id)
-
                 Group {
                     if hasUserSize {
-                        TypeNodeView(
-                            node: node,
-                            isSelected: selected
-                        )
-                        .frame(width: size.width, height: size.height)
-                        .contentShape(Rectangle().inset(by: 6))
+                        TypeNodeView(node: node, isSelected: selected)
+                            .frame(width: size.width, height: size.height)
+                            .contentShape(Rectangle().inset(by: 6))
                     } else {
-                        TypeNodeView(
-                            node: node,
-                            isSelected: selected
-                        )
-                        .fixedSize()
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: NodeSizePreferenceKey.self,
-                                    value: [node.id: geo.size]
-                                )
-                            }
-                        )
+                        TypeNodeView(node: node, isSelected: selected)
+                            .fixedSize()
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.preference(
+                                        key: NodeSizePreferenceKey.self,
+                                        value: [node.id: geo.size]
+                                    )
+                                }
+                            )
                     }
                 }
                 .position(position)
@@ -243,7 +231,6 @@ struct GeneratedDiagramView: View {
                 }
                 guard let state = activeResizeState else { return }
                 let minW: CGFloat = 80, minH: CGFloat = 50
-
                 let newW = max(minW, state.startSize.width + value.translation.width)
                 let newH = max(minH, state.startSize.height + value.translation.height)
                 let dw = newW - state.startSize.width
@@ -326,12 +313,10 @@ struct GeneratedDiagramView: View {
 
     private func centerDiagram() {
         guard !viewModel.nodePositions.isEmpty else { return }
-
         var minX: CGFloat = .greatestFiniteMagnitude
         var minY: CGFloat = .greatestFiniteMagnitude
         var maxX: CGFloat = -.greatestFiniteMagnitude
         var maxY: CGFloat = -.greatestFiniteMagnitude
-
         for (id, pos) in viewModel.nodePositions {
             let size = viewModel.effectiveSize(for: id)
             minX = min(minX, pos.x - size.width / 2)
@@ -339,17 +324,13 @@ struct GeneratedDiagramView: View {
             maxX = max(maxX, pos.x + size.width / 2)
             maxY = max(maxY, pos.y + size.height / 2)
         }
-
         let diagramWidth = maxX - minX
         let diagramHeight = maxY - minY
         let padding: CGFloat = 60
-        let viewWidth: CGFloat = 900
-        let viewHeight: CGFloat = 600
-
+        let viewWidth: CGFloat = 900, viewHeight: CGFloat = 600
         let scaleX = (viewWidth - padding * 2) / max(diagramWidth, 1)
         let scaleY = (viewHeight - padding * 2) / max(diagramHeight, 1)
         let fitScale = min(min(scaleX, scaleY), 1.2)
-
         canvasScale = max(fitScale, 0.15)
         canvasOffset = CGPoint(
             x: (viewWidth - diagramWidth * canvasScale) / 2 - minX * canvasScale,

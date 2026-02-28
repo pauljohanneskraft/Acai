@@ -19,15 +19,10 @@ struct ProjectDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Editable project header
                     projectHeader(project: project, index: index)
-                        .padding()
 
                     Divider()
 
-                    // Codebases section
-                    sectionHeader(title: "Codebases") {
-                        Button { addingCodebase = true } label: { Label("Add Codebase", systemImage: "plus") }
-                            .buttonStyle(.borderless)
-                    }
+                    sectionHeader(title: "Codebases")
 
                     let sortedCodebases = project.codebases.sorted(by: {
                         $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
@@ -49,27 +44,7 @@ struct ProjectDetailView: View {
 
                     Divider()
 
-                    // Custom diagrams section
-                    sectionHeader(title: "Custom Diagrams") {
-                        Menu {
-                            ForEach(DiagramType.allCases) { type in
-                                Button {
-                                    if let id = model.addCustomDiagram(
-                        to: projectID,
-                        name: "New \(type.displayName)",
-                        type: type
-                    ) {
-                                        model.selection = .customDiagram(id)
-                                    }
-                                } label: {
-                                    Label(type.displayName, systemImage: type.systemImage)
-                                }
-                            }
-                        } label: {
-                            Label("New Custom Diagram", systemImage: "plus")
-                        }
-                        .menuStyle(.borderlessButton)
-                    }
+                    sectionHeader(title: "Diagrams")
 
                     let customDiagrams = model.customDiagramsForProject(projectID)
                         .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
@@ -101,68 +76,63 @@ struct ProjectDetailView: View {
 
     // MARK: - Section Header
 
-    private func sectionHeader<Trailing: View>(title: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+    private func sectionHeader(title: String) -> some View {
         HStack {
             Text(title).font(.headline)
             Spacer()
-            trailing()
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
     }
 
     // MARK: - Project Header (Editable)
 
     private func projectHeader(project: Project, index: Int) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            projectIconPicker(project: project, index: index)
+        HStack(spacing: 8) {
+            Image(systemName: "tray.full")
+                .font(.title)
+                .foregroundStyle(.blue)
+                .frame(width: 44, height: 44)
+                .background(Color.blue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             projectTitleFields(index: index)
             Spacer()
-            Button(role: .destructive) {
-                model.removeProject(project.id)
+            Button {
+                addingCodebase = true
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label("Add codebase", systemImage: "plus")
             }
-        }
-    }
-
-    private func projectIconPicker(project: Project, index: Int) -> some View {
-        Menu {
-            ForEach([
-                "folder", "doc", "desktopcomputer",
-                "iphone", "globe", "server.rack",
-                "shippingbox", "cpu", "hammer",
-                "wrench", "gear", "star", "bookmark"
-            ], id: \.self) { symbol in
-                Button {
-                    model.store.projects[index].iconSystemName = symbol
-                    model.store.save()
-                    model.objectWillChange.send()
-                } label: {
-                    Label(symbol, systemImage: symbol)
+            Menu {
+                ForEach(DiagramType.allCases) { type in
+                    Button {
+                        if let id = model.addCustomDiagram(
+                            to: projectID,
+                            name: "New \(type.displayName)",
+                            type: type
+                        ) {
+                            model.selection = .customDiagram(id)
+                        }
+                    } label: {
+                        Label(type.displayName, systemImage: type.systemImage)
+                    }
                 }
+            } label: {
+                Label("Add Diagram", systemImage: "plus")
             }
-        } label: {
-            Image(systemName: project.iconSystemName)
-                .font(.title)
-                .frame(width: 44, height: 44)
-                .background(Color.accentColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        .padding()
     }
 
     private func projectTitleFields(index: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            TextField("Project Title", text: Binding(
+            TextField("Project Name", text: Binding(
                 get: { model.store.projects[safe: index]?.title ?? "" },
                 set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
             ))
             .font(.title2.bold())
             .textFieldStyle(.plain)
 
-            TextField("Subtitle", text: Binding(
+            TextField("Project Description", text: Binding(
                 get: { model.store.projects[safe: index]?.subtitle ?? "" },
                 set: {
                     model.store.projects[index].subtitle = $0

@@ -11,7 +11,7 @@ extension CustomDiagramEditorView {
         ForEach(viewModel.edges) { edge in
             let sourceRect = viewModel.nodeRect(edge.sourceNodeID)
             let targetRect = viewModel.nodeRect(edge.targetNodeID)
-            
+
             RelationshipEdgeView(
                 kind: edge.kind,
                 sourceRect: sourceRect,
