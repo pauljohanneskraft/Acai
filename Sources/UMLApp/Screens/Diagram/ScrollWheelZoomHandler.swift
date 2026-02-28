@@ -13,7 +13,7 @@ import SwiftUI
 struct ScrollWheelZoomHandler: NSViewRepresentable {
     @Binding var scale: CGFloat
     @Binding var offset: CGPoint
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -48,7 +48,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
 
         var getState: (() -> (CGFloat, CGPoint))?
         var setState: ((CGFloat, CGPoint) -> Void)?
-        
+
         /// Cached view geometry so event monitors can do coordinate conversion
         /// without accessing @MainActor-isolated NSView properties.
         private var cachedFrameOriginInWindow: CGPoint = .zero

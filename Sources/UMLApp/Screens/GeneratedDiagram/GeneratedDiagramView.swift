@@ -44,8 +44,7 @@ struct GeneratedDiagramView: View {
                     diagram: diagram,
                     artifact: artifact,
                     tab: $sidebarTab
-                )
-                .frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
+                ).frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
             }
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
@@ -87,9 +86,7 @@ struct GeneratedDiagramView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { centerDiagram() }
             }
         }
-        .onDisappear {
-            savePositions()
-        }
+        .onDisappear { savePositions() }
     }
 
     // MARK: - Canvas Content
@@ -120,8 +117,7 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Edge Layer
 
-    @ViewBuilder
-    private var edgeLayer: some View {
+    @ViewBuilder private var edgeLayer: some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
         ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
@@ -137,8 +133,7 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Node Layer
 
-    @ViewBuilder
-    private var nodeLayer: some View {
+    @ViewBuilder private var nodeLayer: some View {
         let nodes = viewModel.nodes.removingDuplicates { $0.id }
         ForEach(nodes) { node in
             if let position = viewModel.nodePositions[node.id] {
@@ -193,8 +188,7 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Resize Handle Layer
 
-    @ViewBuilder
-    private var resizeHandleLayer: some View {
+    @ViewBuilder private var resizeHandleLayer: some View {
         let nodes = viewModel.nodes
             .filter { viewModel.selectedNodeIDs.contains($0.id) }
             .removingDuplicates(by: \.id)
@@ -337,5 +331,4 @@ struct GeneratedDiagramView: View {
         )
         savePositions()
     }
-
 }

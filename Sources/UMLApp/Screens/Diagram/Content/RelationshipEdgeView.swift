@@ -7,11 +7,11 @@ struct RelationshipEdgeView: View, Equatable {
     let kind: Relationship.Kind
     let sourceRect: CGRect
     let targetRect: CGRect
-    
+
     nonisolated static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect && lhs.kind == rhs.kind
     }
-    
+
     @State private var startPoint: CGPoint?
     @State private var endPoint: CGPoint?
 
@@ -46,7 +46,6 @@ struct RelationshipEdgeView: View, Equatable {
 
                 let style = kind.strokeStyle
 
-                
                 linePath.stroke(edgeColor, style: style)
 
                 // Arrow head at target
