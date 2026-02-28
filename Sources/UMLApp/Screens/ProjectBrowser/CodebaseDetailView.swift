@@ -67,7 +67,7 @@ struct CodebaseDetailView: View {
                     .font(.title2.bold())
                     .textFieldStyle(.plain)
 
-                    Text(codebase.directoryPath)
+                    Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
