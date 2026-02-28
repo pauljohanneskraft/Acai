@@ -180,9 +180,9 @@ struct CustomDiagramEditorView: View {
 
     @ViewBuilder
     private var canvasContextMenu: some View {
-        ForEach(DiagramElementKind.CatalogGroup.allCases, id: \.rawValue) { group in
+        ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
             Menu(group.rawValue) {
-                ForEach(DiagramElementKind.catalogItems(in: group)) { kind in
+                ForEach(CustomDiagramNodeKind.cases(in: group)) { kind in
                     Button {
                         insertNode(kind: kind, at: lastRightClickCanvasPoint)
                     } label: {
@@ -195,7 +195,7 @@ struct CustomDiagramEditorView: View {
 
     // MARK: - Insertion Helpers
 
-    private func insertNode(kind: DiagramElementKind, at canvasPoint: CGPoint) {
+    private func insertNode(kind: CustomDiagramNodeKind, at canvasPoint: CGPoint) {
         let name = "New" + kind.displayName
             .replacingOccurrences(of: " / ", with: "")
             .replacingOccurrences(of: " ", with: "")
@@ -206,7 +206,7 @@ struct CustomDiagramEditorView: View {
         guard let provider = providers.first else { return false }
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard let kindID = object as? String else { return }
-            guard let kind = DiagramElementKind.allCatalogItems.first(where: { $0.id == kindID }) else { return }
+            guard let kind = CustomDiagramNodeKind.allCases.first(where: { $0.id == kindID }) else { return }
             Task { @MainActor in
                 let canvasPoint = CGPoint(
                     x: (screenLocation.x - canvasOffset.x) / canvasScale,

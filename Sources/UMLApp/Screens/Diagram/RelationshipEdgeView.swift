@@ -4,7 +4,7 @@ import UMLCore
 /// Draws a relationship line between two node rectangles with appropriate
 /// UML arrow heads and line styles.
 struct RelationshipEdgeView: View {
-    let edge: DiagramEdge
+    let edge: GeneratedDiagramEdge
     let sourceRect: CGRect
     let targetRect: CGRect
 

@@ -9,7 +9,7 @@ struct CustomDiagramCatalog: View {
     @ObservedObject var viewModel: CustomDiagramEditorViewModel
     let canvasScale: CGFloat
     let canvasOffset: CGPoint
-    let onInsertNode: (DiagramElementKind, CGPoint) -> Void
+    let onInsertNode: (CustomDiagramNodeKind, CGPoint) -> Void
 
     var body: some View {
         ScrollView {
@@ -37,9 +37,9 @@ struct CustomDiagramCatalog: View {
 
     private var nodeTypeCatalog: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(DiagramElementKind.CatalogGroup.allCases, id: \.rawValue) { group in
+            ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                 catalogSection(group.rawValue) {
-                    ForEach(DiagramElementKind.catalogItems(in: group)) { kind in
+                    ForEach(CustomDiagramNodeKind.cases(in: group)) { kind in
                         catalogButton(kind: kind)
                     }
                 }
@@ -61,7 +61,7 @@ struct CustomDiagramCatalog: View {
         }
     }
 
-    private func catalogButton(kind: DiagramElementKind) -> some View {
+    private func catalogButton(kind: CustomDiagramNodeKind) -> some View {
         Button {
             let centerX = (canvasOffset.x * -1 + 450) / canvasScale
             let centerY = (canvasOffset.y * -1 + 300) / canvasScale

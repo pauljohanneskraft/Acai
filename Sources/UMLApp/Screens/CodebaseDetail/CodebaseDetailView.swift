@@ -28,9 +28,9 @@ struct CodebaseDetailView: View {
                     Divider()
 
                     if let artifact {
-                        statisticsSection(artifact: artifact)
-                        Divider()
                         diagramsSection(codebase: codebase, artifact: artifact)
+                        Divider()
+                        statisticsSection(artifact: artifact)
                         Divider()
                         CodebaseTypesSection(artifact: artifact)
                         Divider()
@@ -38,9 +38,6 @@ struct CodebaseDetailView: View {
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
-
-                    Divider()
-                    actionsSection(codebase: codebase)
                 }
             }
         } else {
@@ -54,7 +51,7 @@ struct CodebaseDetailView: View {
 
     private func headerSection(codebase: Codebase) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
+            HStack {
                 Image(systemName: "folder.fill")
                     .font(.title)
                     .foregroundStyle(.blue)
@@ -71,13 +68,32 @@ struct CodebaseDetailView: View {
                         .lineLimit(2)
                         .truncationMode(.middle)
                         .textSelection(.enabled)
-                    if let date = codebase.lastIndexed {
-                        Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
                 }
+
                 Spacer()
+
+                if let date = codebase.lastIndexed {
+                    Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    isIndexing = true
+                    Task {
+                        await model.reindex(codebaseID: codebase.id)
+                        isIndexing = false
+                    }
+                } label: {
+                    Label("Reindex", systemImage: "arrow.clockwise")
+                }
+                .disabled(isIndexing)
+
+                Button {
+                    model.exportDOT(for: codebase.id)
+                } label: {
+                    Label("Export DOT", systemImage: "square.and.arrow.up")
+                }
             }
         }
         .padding()
@@ -92,33 +108,24 @@ struct CodebaseDetailView: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
 
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
+            HStack(spacing: 12) {
                 statisticCard(
-                    title: "Types",
-                    value: "\(artifact.types.count)",
+                    label: "\(artifact.types.count) Types",
                     icon: "rectangle.3.group",
                     color: .blue
                 )
                 statisticCard(
-                    title: "Relationships",
-                    value: "\(artifact.relationships.count)",
+                    label: "\(artifact.relationships.count) Relationships",
                     icon: "arrow.triangle.branch",
                     color: .purple
                 )
                 statisticCard(
-                    title: "Functions",
-                    value: "\(artifact.freestandingFunctions.count)",
+                    label: "\(artifact.freestandingFunctions.count) Functions",
                     icon: "function",
                     color: .green
                 )
                 statisticCard(
-                    title: "Coupling",
-                    value: couplingFactor(artifact: artifact),
+                    label: "Coupling: \(couplingFactor(artifact: artifact)) %",
                     icon: "link",
                     color: .orange
                 )
@@ -128,16 +135,19 @@ struct CodebaseDetailView: View {
         }
     }
 
-    private func statisticCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 6) {
+    private func statisticCard(label: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Spacer()
+
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundStyle(color)
-            Text(value)
+
+            Text(label)
                 .font(.title3.bold())
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
+
+            Spacer()
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -153,7 +163,7 @@ struct CodebaseDetailView: View {
         let maxPossible = Double(n * (n - 1))
         let uniquePairs = Set(artifact.relationships.map { "\($0.source)->\($0.target)" })
         let factor = Double(uniquePairs.count) / maxPossible
-        return String(format: "%.2f", factor)
+        return String(format: "%.2f", factor * 100)
     }
 
     // MARK: - Diagrams
@@ -165,11 +175,7 @@ struct CodebaseDetailView: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
 
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
+            HStack(spacing: 12) {
                 ForEach(DiagramType.allCases) { type in
                     diagramButton(codebase: codebase, type: type)
                 }
@@ -184,23 +190,23 @@ struct CodebaseDetailView: View {
     private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
         Button {
             guard let projectID else { return }
-            if let existing = model.storedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
+            if let existing = model.generatedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
                 model.selection = .diagram(existing.id)
-            } else if let id = model.addStoredDiagram(
+            } else if let id = model.addGeneratedDiagram(
                 to: projectID,
                 codebaseID: codebase.id,
                 name: "\(codebase.name) — \(type.displayName)",
                 type: type,
-                configuration: DiagramConfiguration()
+                configuration: .init()
             ) {
                 model.selection = .diagram(id)
             }
         } label: {
-            VStack(spacing: 6) {
+            HStack(spacing: 12) {
                 Image(systemName: type.systemImage)
-                    .font(.title2)
+                    .font(.title3)
                 Text(type.displayName)
-                    .font(.caption)
+                    .font(.title3)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
@@ -234,31 +240,5 @@ struct CodebaseDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
-    }
-
-    // MARK: - Actions
-
-    private func actionsSection(codebase: Codebase) -> some View {
-        HStack(spacing: 12) {
-            Button {
-                isIndexing = true
-                Task {
-                    await model.reindex(codebaseID: codebase.id)
-                    isIndexing = false
-                }
-            } label: {
-                Label("Reindex", systemImage: "arrow.clockwise")
-            }
-            .disabled(isIndexing)
-
-            Button {
-                model.exportDOT(for: codebase.id)
-            } label: {
-                Label("Export DOT", systemImage: "square.and.arrow.up")
-            }
-
-            Spacer()
-        }
-        .padding()
     }
 }

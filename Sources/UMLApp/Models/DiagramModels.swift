@@ -3,7 +3,7 @@ import UMLCore
 
 // MARK: - Diagram Node
 
-struct DiagramNode: Identifiable, Sendable {
+struct GeneratedDiagramNode: Identifiable, Sendable {
     let id: String
     let name: String
     let kind: TypeKind
@@ -15,14 +15,14 @@ struct DiagramNode: Identifiable, Sendable {
     /// The directory containing this type's source file (used for grouping).
     let directoryGroup: String?
 
-    init(from type: TypeDeclaration, configuration: DiagramConfiguration? = nil) {
+    init(from type: TypeDeclaration, configuration: GeneratedDiagram.Configuration? = nil) {
         self.id = type.name
         self.name = type.name
         self.kind = type.kind
         self.stereotype = UMLMemberFormatting.stereotypeString(for: type.kind)
         self.genericParameters = type.genericParameters.map(\.name)
 
-        let config = configuration ?? DiagramConfiguration()
+        let config = configuration ?? .init()
         let accessFilter = config.minimumAccessLevel
 
         let props = type.members.filter { $0.kind == .property || $0.kind == .subscript }
@@ -134,7 +134,7 @@ struct DiagramEnumCase: Identifiable, Sendable {
 
 // MARK: - Diagram Edge
 
-struct DiagramEdge: Identifiable, Sendable {
+struct GeneratedDiagramEdge: Identifiable, Sendable {
     let id: String
     let sourceID: String
     let targetID: String

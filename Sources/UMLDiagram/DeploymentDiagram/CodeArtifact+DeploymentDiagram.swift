@@ -26,7 +26,6 @@ extension CodeArtifact {
     case artifactLevel
 }
 
-
     /// Derives a `DeploymentDiagram` from this artifact.
     ///
     /// The `granularity` parameter controls how types are grouped into nodes:

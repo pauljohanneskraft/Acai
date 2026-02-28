@@ -13,7 +13,7 @@ extension CustomDiagramEditorView {
             let targetRect = viewModel.nodeRect(edge.targetNodeID)
 
             // Reuse RelationshipEdgeView with a temporary DiagramEdge.
-            let diagramEdge = DiagramEdge(
+            let diagramEdge = GeneratedDiagramEdge(
                 id: edge.id.uuidString,
                 sourceID: edge.sourceNodeID.uuidString,
                 targetID: edge.targetNodeID.uuidString,
@@ -47,7 +47,7 @@ extension CustomDiagramEditorView {
         }
     }
 
-    func nodeView(for node: CustomDiagramNode) -> some View {
+    func nodeView(for node: CustomDiagram.Node) -> some View {
         let pos = CGPoint(x: node.positionX, y: node.positionY)
         let size = viewModel.nodeSize(node.id)
         let selected = viewModel.selectedNodeIDs.contains(node.id)
@@ -108,7 +108,7 @@ extension CustomDiagramEditorView {
     }
 
     @ViewBuilder
-    func nodeContent(node: CustomDiagramNode, size: CGSize, isSelected: Bool) -> some View {
+    func nodeContent(node: CustomDiagram.Node, size: CGSize, isSelected: Bool) -> some View {
         if node.isResizable {
             CustomNodeView(node: node, isSelected: isSelected, size: size)
                 .frame(width: size.width, height: size.height)

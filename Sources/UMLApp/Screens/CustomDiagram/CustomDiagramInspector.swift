@@ -37,7 +37,7 @@ struct CustomDiagramInspector: View {
 
     // MARK: - Node Inspector
 
-    private func nodeInspector(node: CustomDiagramNode) -> some View {
+    private func nodeInspector(node: CustomDiagram.Node) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 nodeNameSection(node: node)
@@ -57,11 +57,11 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodeNameSection(node: CustomDiagramNode) -> some View {
+    private func nodeNameSection(node: CustomDiagram.Node) -> some View {
         Section {
             TextField("Name", text: Binding(
                 get: { node.name },
-                set: { viewModel.updateNode(node.id, name: $0, kind: node.content.elementKind) }
+                set: { viewModel.updateNode(node.id, name: $0, kind: node.content.kind) }
             ))
             .textFieldStyle(.roundedBorder)
             .font(.headline)
@@ -70,15 +70,15 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodeKindSection(node: CustomDiagramNode) -> some View {
+    private func nodeKindSection(node: CustomDiagram.Node) -> some View {
         Section {
             Picker("Kind", selection: Binding(
-                get: { node.content.elementKind },
+                get: { node.content.kind },
                 set: { viewModel.updateNode(node.id, name: node.name, kind: $0) }
             )) {
-                ForEach(DiagramElementKind.CatalogGroup.allCases, id: \.rawValue) { group in
+                ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                     Section(group.rawValue) {
-                        ForEach(DiagramElementKind.catalogItems(in: group)) { elementKind in
+                        ForEach(CustomDiagramNodeKind.cases(in: group)) { elementKind in
                             Text(elementKind.displayName).tag(elementKind)
                         }
                     }
@@ -90,7 +90,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodePositionSection(node: CustomDiagramNode) -> some View {
+    private func nodePositionSection(node: CustomDiagram.Node) -> some View {
         Section {
             HStack {
                 Text("X: \(Int(node.positionX))").font(.caption.monospaced())
@@ -109,7 +109,7 @@ struct CustomDiagramInspector: View {
     }
 
     @ViewBuilder
-    private func nodeContentSections(node: CustomDiagramNode) -> some View {
+    private func nodeContentSections(node: CustomDiagram.Node) -> some View {
         if case .type(let content) = node.content {
             propertiesSection(nodeID: node.id, content: content)
             methodsSection(nodeID: node.id, content: content)
@@ -130,7 +130,7 @@ struct CustomDiagramInspector: View {
     }
 
     @ViewBuilder
-    private func nodeRelationshipsSection(node: CustomDiagramNode) -> some View {
+    private func nodeRelationshipsSection(node: CustomDiagram.Node) -> some View {
         let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
         if !relatedEdges.isEmpty {
             Section {
@@ -160,7 +160,7 @@ struct CustomDiagramInspector: View {
 
     // MARK: - Member Sections
 
-    private func propertiesSection(nodeID: UUID, content: TypeNodeContent) -> some View {
+    private func propertiesSection(nodeID: UUID, content: CustomDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.properties) { prop in
                 HStack {
@@ -192,7 +192,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func methodsSection(nodeID: UUID, content: TypeNodeContent) -> some View {
+    private func methodsSection(nodeID: UUID, content: CustomDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.methods) { method in
                 HStack {
@@ -226,7 +226,7 @@ struct CustomDiagramInspector: View {
 
     // MARK: - Edge Inspector
 
-    private func edgeInspector(edge: CustomDiagramEdge) -> some View {
+    private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 edgePickersSection(edge: edge)
@@ -244,7 +244,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func edgePickersSection(edge: CustomDiagramEdge) -> some View {
+    private func edgePickersSection(edge: CustomDiagram.Edge) -> some View {
         Section {
             Picker("Source", selection: Binding(
                 get: { edge.sourceNodeID },
@@ -285,7 +285,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func edgeSummary(edge: CustomDiagramEdge) -> some View {
+    private func edgeSummary(edge: CustomDiagram.Edge) -> some View {
         let sourceName = viewModel.nodes.first(where: { $0.id == edge.sourceNodeID })?.name ?? "?"
         let targetName = viewModel.nodes.first(where: { $0.id == edge.targetNodeID })?.name ?? "?"
         return Text("\(sourceName) → \(targetName)")
@@ -304,7 +304,7 @@ struct CustomDiagramInspector: View {
                 ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
                     if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
                         HStack {
-                            Image(systemName: node.content.elementKind.systemImage)
+                            Image(systemName: node.content.kind.systemImage)
                             Text(node.name)
                         }
                     }

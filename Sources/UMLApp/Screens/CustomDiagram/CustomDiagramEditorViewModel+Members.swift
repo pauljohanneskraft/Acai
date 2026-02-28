@@ -7,7 +7,7 @@ extension CustomDiagramEditorViewModel {
     func addProperty(to nodeID: UUID, name: String, type: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
-        content.properties.append(CustomMember(name: name, type: type))
+        content.properties.append(.init(name: name, type: type))
         nodes[idx].content = .type(content)
         save()
     }
@@ -25,7 +25,7 @@ extension CustomDiagramEditorViewModel {
     func addMethod(to nodeID: UUID, name: String, returnType: String, parameters: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
-        content.methods.append(CustomMember(name: name, type: returnType, parameters: parameters))
+        content.methods.append(.init(name: name, type: returnType, parameters: parameters))
         nodes[idx].content = .type(content)
         save()
     }
@@ -124,7 +124,7 @@ extension CustomDiagramEditorViewModel {
     func addInlineProperty(to nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
-        content.properties.append(CustomMember(name: "newProperty", type: "Type"))
+        content.properties.append(.init(name: "newProperty", type: "Type"))
         nodes[idx].content = .type(content)
         save()
     }
@@ -132,7 +132,7 @@ extension CustomDiagramEditorViewModel {
     func addInlineMethod(to nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
-        content.methods.append(CustomMember(name: "newMethod", type: "Void"))
+        content.methods.append(.init(name: "newMethod", type: "Void"))
         nodes[idx].content = .type(content)
         save()
     }

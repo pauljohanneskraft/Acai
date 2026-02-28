@@ -3,11 +3,11 @@ import SwiftUI
 import UMLCore
 
 @MainActor
-final class ClassDiagramViewModel: ObservableObject {
+final class GeneratedDiagramViewModel: ObservableObject {
     let artifact: CodeArtifact
 
-    @Published var nodes: [DiagramNode] = []
-    @Published var edges: [DiagramEdge] = []
+    @Published var nodes: [GeneratedDiagramNode] = []
+    @Published var edges: [GeneratedDiagramEdge] = []
     @Published var nodePositions: [String: CGPoint] = [:]
     @Published var nodeSizes: [String: CGSize] = [:]
     /// User-overridden sizes (from resize handles). These take priority over measured sizes.
@@ -16,12 +16,12 @@ final class ClassDiagramViewModel: ObservableObject {
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
 
-    private var configuration: DiagramConfiguration
+    private var configuration: GeneratedDiagram.Configuration
     private var restoredPositions: [String: CGPoint]?
 
     init(
         artifact: CodeArtifact,
-        configuration: DiagramConfiguration = DiagramConfiguration(),
+        configuration: GeneratedDiagram.Configuration = .init(),
         restoredPositions: [String: CGPoint]? = nil,
         restoredSizes: [String: CGSize]? = nil
     ) {
@@ -45,7 +45,7 @@ final class ClassDiagramViewModel: ObservableObject {
         }
 
         // Build nodes from type declarations, applying configuration filters.
-        nodes = resolved.types.map { DiagramNode(from: $0, configuration: configuration) }
+        nodes = resolved.types.map { .init(from: $0, configuration: configuration) }
 
         // Build edges, filtering by configuration.
         let typeNames = Set(resolved.types.map(\.name))
@@ -62,7 +62,7 @@ final class ClassDiagramViewModel: ObservableObject {
     private func buildEdges(
         from relationships: [Relationship],
         typeNames: Set<String>
-    ) -> [DiagramEdge] {
+    ) -> [GeneratedDiagramEdge] {
         guard configuration.showRelationships else { return [] }
         return relationships.compactMap { rel in
             guard typeNames.contains(rel.source),
@@ -80,7 +80,7 @@ final class ClassDiagramViewModel: ObservableObject {
                 break
             }
 
-            return DiagramEdge(from: rel)
+            return GeneratedDiagramEdge(from: rel)
         }
     }
 
@@ -101,7 +101,7 @@ final class ClassDiagramViewModel: ObservableObject {
 
     // MARK: - Apply Configuration
 
-    func applyConfiguration(_ newConfig: DiagramConfiguration, artifact: CodeArtifact) {
+    func applyConfiguration(_ newConfig: GeneratedDiagram.Configuration, artifact: CodeArtifact) {
         self.configuration = newConfig
         self.restoredPositions = nodePositions // Keep current positions
         hasPerformedMeasuredLayout = false
@@ -208,7 +208,7 @@ final class ClassDiagramViewModel: ObservableObject {
 
     // MARK: - Size Estimation
 
-    private func estimateSize(for node: DiagramNode) -> CGSize {
+    private func estimateSize(for node: GeneratedDiagramNode) -> CGSize {
         let lineHeight: CGFloat = 18
         let headerHeight: CGFloat = node.stereotype != nil ? 48 : 32
 

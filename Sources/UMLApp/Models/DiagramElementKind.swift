@@ -4,7 +4,7 @@ import UMLCore
 ///
 /// Used for **catalog selection** (picking which element to add) and **display logic**
 /// (icons, colours, labels). The actual per-node data lives in ``NodeContent``.
-enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
+enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     /// A code-analysis type (class, struct, enum, protocol, …).
     /// The associated `TypeKind` carries the specific kind.
@@ -177,10 +177,10 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
 
     // swiftlint:disable cyclomatic_complexity
     /// Creates a default ``NodeContent`` for this element kind.
-    func defaultContent() -> NodeContent {
+    func defaultContent() -> CustomDiagram.Node.Content {
         switch self {
         case .type(let tk):
-            .type(TypeNodeContent(typeKind: tk))
+                .type(.init(typeKind: tk))
         case .actor:
             .actor
         case .useCase:
@@ -232,8 +232,8 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
     }
 
     /// Every element kind available in the catalog, in display order.
-    static let allCatalogItems: [DiagramElementKind] = {
-        var items: [DiagramElementKind] = TypeKind.allCases.map { .type($0) }
+    static let allCases: [CustomDiagramNodeKind] = {
+        var items: [CustomDiagramNodeKind] = TypeKind.allCases.map { .type($0) }
         items += [
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
@@ -243,7 +243,7 @@ enum DiagramElementKind: Equatable, Hashable, Sendable, Identifiable {
     }()
 
     /// Catalog items belonging to a given group.
-    static func catalogItems(in group: CatalogGroup) -> [DiagramElementKind] {
-        allCatalogItems.filter { $0.catalogGroup == group }
+    static func cases(in group: CatalogGroup) -> [CustomDiagramNodeKind] {
+        allCases.filter { $0.catalogGroup == group }
     }
 }

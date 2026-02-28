@@ -1,4 +1,3 @@
-
 /// Renders a `DeploymentDiagram` to Graphviz DOT format.
 ///
 /// Each `Node` becomes a `subgraph` cluster (nested clusters for child nodes).

@@ -68,7 +68,7 @@ struct ResizeState {
 
 /// Dispatches to the appropriate shared UML node view based on the node's content.
 struct CustomNodeView: View {
-    let node: CustomDiagramNode
+    let node: CustomDiagram.Node
     let isSelected: Bool
     /// Explicit size for resizable container nodes. `nil` for auto-sized nodes.
     var size: CGSize?
@@ -105,7 +105,7 @@ struct CustomNodeView: View {
             UMLStereotypedBoxNodeView(
                 name: node.name,
                 stereotype: node.content.stereotype,
-                systemImage: node.content.elementKind.systemImage,
+                systemImage: node.content.kind.systemImage,
                 isSelected: isSelected
             )
         }
@@ -114,7 +114,7 @@ struct CustomNodeView: View {
 
 // MARK: - DiagramEdge convenience init for custom diagrams.
 
-extension DiagramEdge {
+extension GeneratedDiagramEdge {
     init(id: String, sourceID: String, targetID: String, kind: Relationship.Kind) {
         self.id = id
         self.sourceID = sourceID

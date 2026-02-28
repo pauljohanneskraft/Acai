@@ -1,34 +1,34 @@
 import SwiftUI
 import UMLCore
 
-/// Inspector tab choices for the stored diagram inspector.
-enum StoredDiagramInspectorTab {
+/// Inspector tab choices for the generated diagram inspector.
+enum GeneratedDiagramInspectorTab {
     case settings, selection
 }
 
-/// Inspector sidebar for the stored diagram view, showing configuration
+/// Inspector sidebar for the generated diagram view, showing configuration
 /// options and details of the currently-selected nodes.
-struct StoredDiagramInspector: View {
-    @ObservedObject var viewModel: ClassDiagramViewModel
+struct GeneratedDiagramInspector: View {
+    @ObservedObject var viewModel: GeneratedDiagramViewModel
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    let diagram: StoredDiagram
+    let diagram: GeneratedDiagram
     let artifact: CodeArtifact
-    @Binding var inspectorTab: StoredDiagramInspectorTab
+    @Binding var tab: GeneratedDiagramInspectorTab
 
-    @State private var localConfig: DiagramConfiguration?
+    @State private var configuration: GeneratedDiagram.Configuration?
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Inspector", selection: $inspectorTab) {
-                Text("Settings").tag(StoredDiagramInspectorTab.settings)
-                Text("Selection").tag(StoredDiagramInspectorTab.selection)
+            Picker("", selection: $tab) {
+                Text("Settings").tag(GeneratedDiagramInspectorTab.settings)
+                Text("Selection").tag(GeneratedDiagramInspectorTab.selection)
             }
             .pickerStyle(.segmented)
             .padding(8)
 
             Divider()
 
-            switch inspectorTab {
+            switch tab {
             case .settings:
                 configurationInspector
             case .selection:
@@ -41,12 +41,12 @@ struct StoredDiagramInspector: View {
     // MARK: - Configuration Inspector
 
     private var configurationInspector: some View {
-        let config = Binding<DiagramConfiguration>(
-            get: { localConfig ?? diagram.configuration },
-            set: { newConfig in
-                localConfig = newConfig
-                model.updateStoredDiagramConfiguration(diagramID: diagram.id, configuration: newConfig)
-                viewModel.applyConfiguration(newConfig, artifact: artifact)
+        let config = Binding<GeneratedDiagram.Configuration>(
+            get: { configuration ?? diagram.configuration },
+            set: { newValue in
+                configuration = newValue
+                model.updateGeneratedDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
+                viewModel.applyConfiguration(newValue, artifact: artifact)
             }
         )
 

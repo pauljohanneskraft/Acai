@@ -12,7 +12,7 @@ struct Project: Identifiable, Codable, Hashable {
     var iconSystemName: String
     var codebases: [Codebase] = []
     /// IDs of generated (stored) diagrams that belong to this project. Diagram data is in a separate file.
-    var storedDiagramIDs: [UUID] = []
+    var generatedDiagramIDs: [UUID] = []
     /// IDs of custom diagrams that belong to this project. Diagram data is in a separate file.
     var customDiagramIDs: [UUID] = []
 }

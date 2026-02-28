@@ -21,7 +21,7 @@ struct EnumCaseDisplayItem: Identifiable {
 
 /// Renders a code-type node as a three-compartment UML class box.
 /// Used by both generated diagrams (from `DiagramNode`) and custom diagrams
-/// (from `CustomDiagramNode` + `TypeNodeContent`).
+/// (from `CustomDiagram.Node` + `TypeNodeContent`).
 struct UMLTypeBoxView: View {
     let name: String
     let kind: TypeKind
@@ -236,8 +236,7 @@ struct UMLTypeBoxView: View {
 // MARK: - UMLTypeBoxView Convenience Initializers
 
 extension UMLTypeBoxView {
-    /// Create from a generated `DiagramNode`.
-    init(node: DiagramNode, isSelected: Bool) {
+    init(node: GeneratedDiagramNode, isSelected: Bool) {
         self.name = node.name
         self.kind = node.kind
         self.stereotype = node.stereotype
@@ -263,10 +262,10 @@ extension UMLTypeBoxView {
     }
 
     /// Create from a custom diagram node with type content.
-    init(node: CustomDiagramNode, content: TypeNodeContent, isSelected: Bool) {
+    init(node: CustomDiagram.Node, content: CustomDiagram.Node.TypeContent, isSelected: Bool) {
         self.name = node.name
         self.kind = content.typeKind
-        self.stereotype = NodeContent.type(content).stereotype
+        self.stereotype = CustomDiagram.Node.Content.type(content).stereotype
         self.genericParameters = content.genericParameters
         self.isSelected = isSelected
 
@@ -294,7 +293,7 @@ extension UMLTypeBoxView {
         }
     }
 
-    private static func formatCustomMember(_ member: CustomMember, isMethod: Bool) -> String {
+    private static func formatCustomMember(_ member: CustomDiagram.Node.Member, isMethod: Bool) -> String {
         let symbol = member.accessLevel.umlSymbol
         if isMethod {
             return "\(symbol) \(member.name)(\(member.parameters))\(member.type.isEmpty ? "" : ": \(member.type)")"

@@ -10,8 +10,8 @@ extension CustomDiagramEditorViewModel {
 
     /// Internal clipboard representation.
     private struct ClipboardPayload: Codable {
-        var nodes: [CustomDiagramNode]
-        var edges: [CustomDiagramEdge]
+        var nodes: [CustomDiagram.Node]
+        var edges: [CustomDiagram.Edge]
     }
 
     private static var pasteboardType: String { "com.umlapp.diagram.nodes" }

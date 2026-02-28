@@ -8,8 +8,8 @@ import UMLCore
 ///   projects/
 ///     <projectID>.json     – Project struct (includes codebases, diagram IDs)
 ///   diagrams/
-///     stored_<diagramID>.json   – StoredDiagram
-///     custom_<diagramID>.json   – CustomDiagram
+///     generated_<diagramID>.json  – GeneratedDiagram
+///     custom_<diagramID>.json     – CustomDiagram
 ///   artifacts/
 ///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
 /// ```
@@ -17,7 +17,7 @@ final class ProjectStore: ObservableObject {
     @Published var projects: [Project] = []
 
     /// In-memory cache of loaded diagrams, keyed by ID.
-    @Published var storedDiagrams: [UUID: StoredDiagram] = [:]
+    @Published var generatedDiagrams: [UUID: GeneratedDiagram] = [:]
     @Published var customDiagrams: [UUID: CustomDiagram] = [:]
 
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
@@ -72,8 +72,8 @@ final class ProjectStore: ObservableObject {
                     let pData = try Data(contentsOf: url)
                     let project = try decoder.decode(Project.self, from: pData)
                     loaded.append(project)
-                    for did in project.storedDiagramIDs {
-                        loadStoredDiagram(did)
+                    for did in project.generatedDiagramIDs {
+                        loadGeneratedDiagram(did)
                     }
                     for did in project.customDiagramIDs {
                         loadCustomDiagram(did)
@@ -89,14 +89,14 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func loadStoredDiagram(_ id: UUID) {
-        guard storedDiagrams[id] == nil else { return }
+    func loadGeneratedDiagram(_ id: UUID) {
+        guard generatedDiagrams[id] == nil else { return }
         let url = diagramsDir.appendingPathComponent("stored_\(id.uuidString).json")
         do {
             let data = try Data(contentsOf: url)
-            storedDiagrams[id] = try JSONDecoder().decode(StoredDiagram.self, from: data)
+            generatedDiagrams[id] = try JSONDecoder().decode(GeneratedDiagram.self, from: data)
         } catch {
-            print("Failed to load stored diagram \(id): \(error)")
+            print("Failed to load generated diagram \(id): \(error)")
         }
     }
 
@@ -157,15 +157,15 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func saveStoredDiagram(_ diagram: StoredDiagram) {
-        storedDiagrams[diagram.id] = diagram
+    func saveGeneratedDiagram(_ diagram: GeneratedDiagram) {
+        generatedDiagrams[diagram.id] = diagram
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
-        let url = diagramsDir.appendingPathComponent("stored_\(diagram.id.uuidString).json")
+        let url = diagramsDir.appendingPathComponent("generated_\(diagram.id.uuidString).json")
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save stored diagram \(diagram.id): \(error)")
+            print("Failed to save generated diagram \(diagram.id): \(error)")
         }
     }
 
@@ -193,9 +193,9 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func deleteStoredDiagramFile(_ id: UUID) {
-        storedDiagrams.removeValue(forKey: id)
-        let url = diagramsDir.appendingPathComponent("stored_\(id.uuidString).json")
+    func deleteGeneratedDiagramFile(_ id: UUID) {
+        generatedDiagrams.removeValue(forKey: id)
+        let url = diagramsDir.appendingPathComponent("generated_\(id.uuidString).json")
         try? FileManager.default.removeItem(at: url)
     }
 

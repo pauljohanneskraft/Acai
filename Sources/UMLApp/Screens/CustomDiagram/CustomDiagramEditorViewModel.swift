@@ -10,8 +10,8 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
 
-    @Published var nodes: [CustomDiagramNode] = []
-    @Published var edges: [CustomDiagramEdge] = []
+    @Published var nodes: [CustomDiagram.Node] = []
+    @Published var edges: [CustomDiagram.Edge] = []
     @Published var selectedNodeIDs: Set<UUID> = []
     @Published var selectedEdgeID: UUID?
     @Published var selectionRect: CGRect?
@@ -41,8 +41,8 @@ final class CustomDiagramEditorViewModel: ObservableObject {
 
     // MARK: - Node CRUD
 
-    func addNode(kind: DiagramElementKind, name: String, at position: CGPoint) {
-        let node = CustomDiagramNode(
+    func addNode(kind: CustomDiagramNodeKind, name: String, at position: CGPoint) {
+        let node = CustomDiagram.Node(
             name: name,
             content: kind.defaultContent(),
             positionX: Double(position.x),
@@ -97,7 +97,7 @@ final class CustomDiagramEditorViewModel: ObservableObject {
         save()
     }
 
-    func updateNode(_ nodeID: UUID, name: String? = nil, kind: DiagramElementKind? = nil) {
+    func updateNode(_ nodeID: UUID, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             if let name { nodes[idx].name = name }
             if let kind {
@@ -117,7 +117,7 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     // MARK: - Edge CRUD
 
     func addEdge(from sourceID: UUID, to targetID: UUID, kind: Relationship.Kind) {
-        let edge = CustomDiagramEdge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
+        let edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
         edges.append(edge)
         save()
     }
@@ -245,7 +245,7 @@ final class CustomDiagramEditorViewModel: ObservableObject {
         case .type(let content):
             let lineHeight: CGFloat = 18
             let hasStereotype = content.stereotype != nil ||
-                NodeContent.type(content).stereotype != nil
+                CustomDiagram.Node.Content.type(content).stereotype != nil
             let headerHeight: CGFloat = hasStereotype ? 48 : 32
             let propHeight = CGFloat(max(content.properties.count, 1)) * lineHeight
             let methodHeight = CGFloat(max(content.methods.count, 1)) * lineHeight

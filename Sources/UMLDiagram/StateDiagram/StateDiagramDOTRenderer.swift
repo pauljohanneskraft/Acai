@@ -1,4 +1,3 @@
-
 /// Renders a `StateDiagram` to Graphviz DOT format.
 ///
 /// States are DOT nodes with shape variants chosen by `State.Kind`.

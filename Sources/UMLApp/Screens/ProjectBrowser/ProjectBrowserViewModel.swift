@@ -51,7 +51,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     func removeProject(_ projectID: UUID) {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
         // Clean up diagram files
-        for did in project.storedDiagramIDs { store.deleteStoredDiagramFile(did) }
+        for did in project.generatedDiagramIDs { store.deleteGeneratedDiagramFile(did) }
         for did in project.customDiagramIDs { store.deleteCustomDiagramFile(did) }
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
@@ -80,13 +80,13 @@ final class ProjectBrowserViewModel: ObservableObject {
     func removeCodebase(_ codebaseID: UUID) {
         for i in store.projects.indices {
             store.projects[i].codebases.removeAll { $0.id == codebaseID }
-            // Remove stored diagrams linked to this codebase.
-            let toRemove = store.projects[i].storedDiagramIDs.filter { did in
-                store.storedDiagrams[did]?.codebaseID == codebaseID
+            // Remove generated diagrams linked to this codebase.
+            let toRemove = store.projects[i].generatedDiagramIDs.filter { did in
+                store.generatedDiagrams[did]?.codebaseID == codebaseID
             }
             for did in toRemove {
-                store.projects[i].storedDiagramIDs.removeAll { $0 == did }
-                store.deleteStoredDiagramFile(did)
+                store.projects[i].generatedDiagramIDs.removeAll { $0 == did }
+                store.deleteGeneratedDiagramFile(did)
             }
         }
         store.deleteArtifactFile(for: codebaseID)
@@ -111,69 +111,69 @@ final class ProjectBrowserViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Stored Diagram CRUD
+    // MARK: - Generated Diagram CRUD
 
-    func addStoredDiagram(
+    func addGeneratedDiagram(
         to projectID: UUID,
         codebaseID: UUID,
         name: String,
         type: DiagramType,
-        configuration: DiagramConfiguration
+        configuration: GeneratedDiagram.Configuration
     ) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = StoredDiagram(name: name, type: type, codebaseID: codebaseID, configuration: configuration)
-        store.projects[projectIndex].storedDiagramIDs.append(diagram.id)
-        store.saveStoredDiagram(diagram)
+        let diagram = GeneratedDiagram(name: name, type: type, codebaseID: codebaseID, configuration: configuration)
+        store.projects[projectIndex].generatedDiagramIDs.append(diagram.id)
+        store.saveGeneratedDiagram(diagram)
         persistChanges()
         return diagram.id
     }
 
-    func updateStoredDiagramPositions(
+    func updateGeneratedDiagramPositions(
         diagramID: UUID,
         positions: [String: CGPoint],
         sizes: [String: CGSize] = [:],
         scale: CGFloat,
         offset: CGPoint
     ) {
-        guard var diagram = store.storedDiagrams[diagramID] else { return }
-        diagram.nodePositions = positions.mapValues { StoredNodePosition(point: $0) }
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
+        diagram.nodePositions = positions.mapValues { .init(point: $0) }
         if !sizes.isEmpty {
-            diagram.nodeSizes = sizes.mapValues { StoredNodeSize(size: $0) }
+            diagram.nodeSizes = sizes.mapValues { .init(size: $0) }
         }
         diagram.canvasScale = Double(scale)
         diagram.canvasOffsetX = Double(offset.x)
         diagram.canvasOffsetY = Double(offset.y)
         diagram.lastModified = Date()
-        store.saveStoredDiagram(diagram)
+        store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
     }
 
-    func updateStoredDiagramConfiguration(diagramID: UUID, configuration: DiagramConfiguration) {
-        guard var diagram = store.storedDiagrams[diagramID] else { return }
+    func updateGeneratedDiagramConfiguration(diagramID: UUID, configuration: GeneratedDiagram.Configuration) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.configuration = configuration
         diagram.lastModified = Date()
-        store.saveStoredDiagram(diagram)
+        store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
     }
 
-    func renameStoredDiagram(_ diagramID: UUID, name: String) {
-        guard var diagram = store.storedDiagrams[diagramID] else { return }
+    func renameGeneratedDiagram(_ diagramID: UUID, name: String) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.name = name
         diagram.lastModified = Date()
-        store.saveStoredDiagram(diagram)
+        store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
     }
 
-    func removeStoredDiagram(_ diagramID: UUID) {
+    func removeGeneratedDiagram(_ diagramID: UUID) {
         for i in store.projects.indices {
-            store.projects[i].storedDiagramIDs.removeAll { $0 == diagramID }
+            store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
         }
-        store.deleteStoredDiagramFile(diagramID)
+        store.deleteGeneratedDiagramFile(diagramID)
         persistChanges()
     }
 
-    func storedDiagram(for diagramID: UUID) -> StoredDiagram? {
-        store.storedDiagrams[diagramID]
+    func generatedDiagram(for diagramID: UUID) -> GeneratedDiagram? {
+        store.generatedDiagrams[diagramID]
     }
 
     // MARK: - Custom Diagram CRUD
@@ -236,19 +236,19 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func projectForDiagram(_ diagramID: UUID) -> Project? {
         store.projects.first(where: {
-            $0.storedDiagramIDs.contains(diagramID) ||
+            $0.generatedDiagramIDs.contains(diagramID) ||
             $0.customDiagramIDs.contains(diagramID)
         })
     }
 
-    func storedDiagrams(for codebaseID: UUID) -> [StoredDiagram] {
-        store.storedDiagrams.values.filter { $0.codebaseID == codebaseID }
+    func generatedDiagrams(for codebaseID: UUID) -> [GeneratedDiagram] {
+        store.generatedDiagrams.values.filter { $0.codebaseID == codebaseID }
     }
 
-    /// All stored diagrams for a project.
-    func storedDiagramsForProject(_ projectID: UUID) -> [StoredDiagram] {
+    /// All generated diagrams for a project.
+    func generatedDiagramsForProject(_ projectID: UUID) -> [GeneratedDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
-        return project.storedDiagramIDs.compactMap { store.storedDiagrams[$0] }
+        return project.generatedDiagramIDs.compactMap { store.generatedDiagrams[$0] }
     }
 
     /// All custom diagrams for a project.

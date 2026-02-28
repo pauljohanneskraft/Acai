@@ -9,13 +9,13 @@ private struct StoredResizeState {
 }
 
 /// View for a stored (generated) diagram that persists positions and supports re-generation.
-struct StoredDiagramView: View {
-    let diagram: StoredDiagram
+struct GeneratedDiagramView: View {
+    let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebaseName: String
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @StateObject private var viewModel: ClassDiagramViewModel
+    @StateObject private var viewModel: GeneratedDiagramViewModel
 
     @State private var canvasScale: CGFloat
     @State private var canvasOffset: CGPoint
@@ -25,14 +25,14 @@ struct StoredDiagramView: View {
     @State private var activeResizeState: StoredResizeState?
     @State private var showInspector = false
 
-    @State private var inspectorTab: StoredDiagramInspectorTab = .settings
+    @State private var inspectorTab: GeneratedDiagramInspectorTab = .settings
 
-    init(diagram: StoredDiagram, artifact: CodeArtifact, codebaseName: String) {
+    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebaseName: String) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebaseName = codebaseName
         let restoredSizes = diagram.nodeSizes.mapValues { $0.cgSize }
-        self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(
+        self._viewModel = StateObject(wrappedValue: GeneratedDiagramViewModel(
             artifact: artifact,
             configuration: diagram.configuration,
             restoredPositions: diagram.nodePositions.mapValues { $0.cgPoint },
@@ -48,11 +48,11 @@ struct StoredDiagramView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if showInspector {
-                StoredDiagramInspector(
+                GeneratedDiagramInspector(
                     viewModel: viewModel,
                     diagram: diagram,
                     artifact: artifact,
-                    inspectorTab: $inspectorTab
+                    tab: $inspectorTab
                 )
                 .frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
             }
@@ -89,10 +89,10 @@ struct StoredDiagramView: View {
 
                 Button {
                     model.saveAsCustomDiagram(
-                        storedDiagramID: diagram.id,
-                        livePositions: viewModel.nodePositions,
-                        liveScale: canvasScale,
-                        liveOffset: canvasOffset
+                        id: diagram.id,
+                        positions: viewModel.nodePositions,
+                        scale: canvasScale,
+                        offset: canvasOffset
                     )
                 } label: {
                     Label("Save as Custom", systemImage: "doc.badge.plus")
@@ -307,7 +307,7 @@ struct StoredDiagramView: View {
     // MARK: - Save & Center
 
     private func savePositions() {
-        model.updateStoredDiagramPositions(
+        model.updateGeneratedDiagramPositions(
             diagramID: diagram.id,
             positions: viewModel.nodePositions,
             sizes: viewModel.userNodeSizes,

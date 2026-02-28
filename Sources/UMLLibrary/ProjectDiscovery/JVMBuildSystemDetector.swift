@@ -87,7 +87,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         }
 
         probe(root)
-        
+
         return (kotlinDirs.removingDuplicates { $0 }, javaDirs.removingDuplicates { $0 })
     }
 }

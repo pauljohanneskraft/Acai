@@ -40,7 +40,7 @@ struct ProjectBrowserView: View {
                 sidebarSelection = .codebase(id)
             case .diagram(let id):
                 // Diagram selected from detail view; keep sidebar on the parent codebase
-                if let diagram = model.storedDiagram(for: id),
+                if let diagram = model.generatedDiagram(for: id),
                    sidebarSelection != .codebase(diagram.codebaseID) {
                     // Don't change sidebar — keep it as-is
                 }
@@ -160,10 +160,10 @@ struct ProjectBrowserView: View {
 
     @ViewBuilder
     private func storedDiagramDetail(diagramID: UUID) -> some View {
-        if let diagram = model.storedDiagram(for: diagramID),
+        if let diagram = model.generatedDiagram(for: diagramID),
            let artifact = model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
-            StoredDiagramView(diagram: diagram, artifact: artifact, codebaseName: codebase.name)
+            GeneratedDiagramView(diagram: diagram, artifact: artifact, codebaseName: codebase.name)
                 .id(diagramID)
                 .environmentObject(model)
         } else {

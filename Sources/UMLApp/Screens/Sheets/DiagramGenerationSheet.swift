@@ -9,7 +9,7 @@ struct DiagramGenerationSheet: View {
 
     @State private var diagramName = ""
     @State private var selectedType: DiagramType = .classDiagram
-    @State private var configuration = DiagramConfiguration()
+    @State private var configuration = GeneratedDiagram.Configuration()
     @State private var isGenerating = false
 
     private var codebase: Codebase? {
@@ -86,7 +86,7 @@ struct DiagramGenerationSheet: View {
             // Reindex first, then generate.
             Task {
                 await model.reindex(codebaseID: codebaseID)
-                if let id = model.addStoredDiagram(
+                if let id = model.addGeneratedDiagram(
                     to: projectID,
                     codebaseID: codebaseID,
                     name: diagramName,
@@ -100,7 +100,7 @@ struct DiagramGenerationSheet: View {
             return
         }
 
-        if let id = model.addStoredDiagram(
+        if let id = model.addGeneratedDiagram(
             to: projectID,
             codebaseID: codebaseID,
             name: diagramName,
