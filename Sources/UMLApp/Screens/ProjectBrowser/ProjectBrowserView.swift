@@ -136,9 +136,9 @@ struct ProjectBrowserView: View {
                     }
                 }
             }
-            
+
             Divider()
-            
+
             Button {
                 newProjectPresented = true
             } label: {
