@@ -27,16 +27,24 @@ extension CustomDiagramView {
 
     // MARK: - Container Node Layer (lowest z-level)
 
+    @ViewBuilder
     var containerNodeLayer: some View {
-        ForEach(viewModel.nodes.filter(\.isResizable).sorted(by: { $0.drawOrder < $1.drawOrder })) { node in
+        let nodes = viewModel.nodes
+            .filter(\.isResizable)
+            .sorted { $0.drawOrder < $1.drawOrder }
+        ForEach(nodes) { node in
             nodeView(for: node)
         }
     }
 
     // MARK: - Regular Node Layer (highest z-level)
 
+    @ViewBuilder
     var regularNodeLayer: some View {
-        ForEach(viewModel.nodes.filter({ !$0.isResizable }).sorted(by: { $0.drawOrder < $1.drawOrder })) { node in
+        let nodes = viewModel.nodes
+            .filter { !$0.isResizable }
+            .sorted { $0.drawOrder < $1.drawOrder }
+        ForEach(nodes) { node in
             nodeView(for: node)
         }
     }
@@ -119,8 +127,11 @@ extension CustomDiagramView {
 
     // MARK: - Resize Handle Layer
 
+    @ViewBuilder
     var resizeHandleLayer: some View {
-        ForEach(viewModel.nodes.filter { $0.isResizable }) { node in
+        let nodes = viewModel.nodes
+            .filter { $0.isResizable }
+        ForEach(nodes) { node in
             let pos = CGPoint(x: node.positionX, y: node.positionY)
             let size = viewModel.nodeSize(node.id)
             edgeResizeHandles(for: node.id, at: pos, size: size)

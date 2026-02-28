@@ -36,8 +36,8 @@ extension ProjectBrowserViewModel {
         let dot = generateDOT(for: codebaseID)
         #if os(macOS)
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(importedAs: "org.graphviz.dot", conformingTo: .text)]
-        panel.nameFieldStringValue = "\(codebase(for: codebaseID)?.name ?? "diagram").dot"
+        panel.allowedContentTypes = [UTType.plainText]
+        panel.nameFieldStringValue = "\(codebase(for: codebaseID)?.name ?? "diagram").txt"
         if panel.runModal() == .OK, let url = panel.url {
             do {
                 try dot.data(using: .utf8)?.write(to: url, options: .atomic)

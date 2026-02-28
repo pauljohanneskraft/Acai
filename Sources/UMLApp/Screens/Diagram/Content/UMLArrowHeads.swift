@@ -39,24 +39,26 @@ extension Path {
     static func filledDiamond(at point: CGPoint, angle: CGFloat, size: CGFloat = 10) -> Path {
         Path { path in
             let tip = point
-            let left = CGPoint(
-                x: point.x + size * 0.5 * cos(angle - .pi / 2),
-                y: point.y + size * 0.5 * sin(angle - .pi / 2)
-            )
             let back = CGPoint(
-                x: point.x + size * cos(angle),
-                y: point.y + size * sin(angle)
+                x: point.x - size * cos(angle),
+                y: point.y - size * sin(angle)
+            )
+            let width = size / 2
+            let midX = point.x - width * cos(angle)
+            let midY = point.y - width * sin(angle)
+            let left = CGPoint(
+                x: midX + width * cos(angle - .pi / 2),
+                y: midY + width * sin(angle - .pi / 2)
             )
             let right = CGPoint(
-                x: point.x + size * 0.5 * cos(angle + .pi / 2),
-                y: point.y + size * 0.5 * sin(angle + .pi / 2)
+                x: midX + width * cos(angle + .pi / 2),
+                y: midY + width * sin(angle + .pi / 2)
             )
             path.move(to: tip)
             path.addLine(to: left)
             path.addLine(to: back)
             path.addLine(to: right)
             path.closeSubpath()
-
         }
     }
 }

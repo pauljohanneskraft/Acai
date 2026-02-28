@@ -165,7 +165,12 @@ struct CodebaseDetailView: View {
         let n = artifact.types.count
         guard n > 1 else { return "N/A" }
         let maxPossible = Double(n * (n - 1))
-        let uniquePairs = Set(artifact.relationships.map { "\($0.source)->\($0.target)" })
+        let typeIds = artifact.types.map(\.id)
+        let uniquePairs = Set(
+            artifact.relationships
+                .filter { typeIds.contains($0.source) && typeIds.contains($0.target) }
+                .map { "\($0.source)->\($0.target)" }
+        )
         let factor = Double(uniquePairs.count) / maxPossible
         return String(format: "%.2f", factor * 100)
     }

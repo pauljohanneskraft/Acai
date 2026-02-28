@@ -101,9 +101,23 @@ final class ProjectBrowserViewModel: ObservableObject {
             let artifact = try await Task.detached(priority: .userInitiated) {
                 try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: [])
             }.value
+            let enriched = ClassDiagramEnricher.enrich(
+                artifact,
+                options: EnrichmentOptions(
+                    inferCompositionFromProperties: true,
+                    inferDependencyFromMethods: true,
+                    showExternalTypes: true
+                )
+            )
+            let newArtifact = CodeArtifact(
+                metadata: artifact.metadata,
+                types: enriched.types,
+                relationships: enriched.relationships,
+                freestandingFunctions: artifact.freestandingFunctions
+            )
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
-            store.saveArtifact(artifact, for: codebaseID)
+            store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {
             print("Reindex failed: \(error)")

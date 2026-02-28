@@ -120,8 +120,10 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Edge Layer
 
+    @ViewBuilder
     private var edgeLayer: some View {
-        ForEach(viewModel.edges) { edge in
+        let edges = viewModel.edges.removingDuplicates(by: \.id)
+        ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
                 RelationshipEdgeView(
@@ -135,8 +137,10 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Node Layer
 
+    @ViewBuilder
     private var nodeLayer: some View {
-        ForEach(viewModel.nodes.removingDuplicates { $0.id }) { node in
+        let nodes = viewModel.nodes.removingDuplicates { $0.id }
+        ForEach(nodes) { node in
             if let position = viewModel.nodePositions[node.id] {
                 let hasUserSize = viewModel.userNodeSizes[node.id] != nil
                 let size = viewModel.effectiveSize(for: node.id)
@@ -189,8 +193,12 @@ struct GeneratedDiagramView: View {
 
     // MARK: - Resize Handle Layer
 
+    @ViewBuilder
     private var resizeHandleLayer: some View {
-        ForEach(viewModel.nodes.filter { viewModel.selectedNodeIDs.contains($0.id) }) { node in
+        let nodes = viewModel.nodes
+            .filter { viewModel.selectedNodeIDs.contains($0.id) }
+            .removingDuplicates(by: \.id)
+        ForEach(nodes) { node in
             if let position = viewModel.nodePositions[node.id] {
                 let size = viewModel.effectiveSize(for: node.id)
                 storedEdgeResizeHandles(for: node.id, at: position, size: size)

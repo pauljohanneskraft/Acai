@@ -3,70 +3,80 @@ import UMLCore
 
 /// Draws a relationship line between two node rectangles with appropriate
 /// UML arrow heads and line styles.
-struct RelationshipEdgeView: View {
+struct RelationshipEdgeView: View, Equatable {
     let kind: Relationship.Kind
     let sourceRect: CGRect
     let targetRect: CGRect
+    
+    nonisolated static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
+        lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect && lhs.kind == rhs.kind
+    }
+    
+    @State private var startPoint: CGPoint?
+    @State private var endPoint: CGPoint?
 
     private let edgeColor = Color(white: 0.4)
 
     var body: some View {
-        let (startPoint, endPoint) = connectionPoints(from: sourceRect, to: targetRect)
-        let lineAngle = Self.angle(from: startPoint, to: endPoint)
-
-        // Main line path.
-        let linePath = Path { path in
-            path.move(to: startPoint)
-            path.addLine(to: endPoint)
-        }
-
-        let arrowPath: Path = switch kind {
-        case .inheritance, .conformance:
-            .emptyTriangle(at: endPoint, angle: lineAngle)
-        case .association, .dependency:
-            .openArrow(at: endPoint, angle: lineAngle)
-        case .extension:
-            .emptyTriangle(at: endPoint, angle: lineAngle)
-        case .nesting:
-            .openArrow(at: endPoint, angle: lineAngle)
-        default:
-            .init()
-        }
-
-        // Source decoration path (diamond for composition/aggregation).
-        let sourceAngle = Self.angle(from: endPoint, to: startPoint)
-        let sourcePath: Path = if kind.hasSourceDecoration {
-            .filledDiamond(at: startPoint, angle: sourceAngle)
-        } else { .init() }
-
-        let style = kind.strokeStyle
-
         ZStack {
-            // Line
-            linePath.stroke(edgeColor, style: style)
+            if let startPoint, let endPoint {
+                let lineAngle = Self.angle(from: startPoint, to: endPoint)
 
-            // Arrow head at target
-            switch kind {
-            case .inheritance, .conformance, .extension:
-                // Empty triangle: stroke only (unfilled)
-                arrowPath.fill(Color(white: 0.96))
-                arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
-            case .association, .dependency, .nesting:
-                // Open arrow: stroke only
-                arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
-            default:
-                EmptyView()
-            }
+                let linePath = Path { path in
+                    path.move(to: startPoint)
+                    path.addLine(to: endPoint)
+                }
 
-            // Diamond at source
-            if kind.hasSourceDecoration {
-                if kind.isSourceDecorationFilled {
-                    sourcePath.fill(edgeColor)
-                } else {
-                    sourcePath.fill(Color(white: 0.96))
-                    sourcePath.stroke(edgeColor, lineWidth: 1.5)
+                let arrowPath: Path = switch kind {
+                case .inheritance, .conformance:
+                    .emptyTriangle(at: endPoint, angle: lineAngle)
+                case .association, .dependency:
+                    .openArrow(at: endPoint, angle: lineAngle)
+                case .extension:
+                    .emptyTriangle(at: endPoint, angle: lineAngle)
+                case .nesting:
+                    .openArrow(at: endPoint, angle: lineAngle)
+                default:
+                    .init()
+                }
+
+                let sourcePath: Path = if kind.hasSourceDecoration {
+                    .filledDiamond(at: startPoint, angle: lineAngle - .pi)
+                } else { .init() }
+
+                let style = kind.strokeStyle
+
+                
+                linePath.stroke(edgeColor, style: style)
+
+                // Arrow head at target
+                switch kind {
+                case .inheritance, .conformance, .extension:
+                    // Empty triangle: stroke only (unfilled)
+                    arrowPath.fill(Color(white: 0.96))
+                    arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
+                case .association, .dependency, .nesting:
+                    // Open arrow: stroke only
+                    arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
+                default:
+                    EmptyView()
+                }
+
+                // Diamond at source
+                if kind.hasSourceDecoration {
+                    sourcePath.fill(
+                        kind.isSourceDecorationFilled
+                            ? edgeColor
+                            : Color(white: 0.96)
+                    )
+                    sourcePath.stroke(edgeColor, lineWidth: style.lineWidth)
                 }
             }
+        }
+        .onChange(of: self) {
+            let (startPoint, endPoint) = connectionPoints(from: sourceRect, to: targetRect)
+            self.startPoint = startPoint
+            self.endPoint = endPoint
         }
     }
 

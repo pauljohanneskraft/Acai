@@ -171,7 +171,7 @@ struct CodebaseRelationshipsSection: View {
         case .association:
             return "arrow.right"
         case .dependency:
-            return "arrow.right.dotted"
+            return "arrow.right"
         case .extension:
             return "plus"
         case .nesting:
