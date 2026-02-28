@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # --- CONFIGURATION ---
-readonly APP_NAME="UMLApp"
+readonly APP_NAME="UML"
 readonly INFO_PLIST_PATH="./Sources/UMLApp/Resources/Info.plist"
 readonly BUNDLE_ID="de.pauljohanneskraft.uml"
 readonly EXECUTABLE_TARGET="UMLApp"
@@ -38,7 +38,7 @@ sips -z 128 128 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_128x128.png" > /dev/nul
 iconutil -c icns "$TEMP_ICONSET" -o "$APP_BUNDLE_DIR/Contents/Resources/AppIcon.icns"
 rm -rf "$TEMP_ICONSET"
 
-cp ".build/release/$EXECUTABLE_TARGET" "$APP_BUNDLE_DIR/Contents/MacOS/$APP_NAME"
+cp ".build/release/$EXECUTABLE_TARGET" "$APP_BUNDLE_DIR/Contents/MacOS/$EXECUTABLE_TARGET"
 cp "$INFO_PLIST_PATH" "$APP_BUNDLE_DIR/Contents/Info.plist"
 
 /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" "$APP_BUNDLE_DIR/Contents/Info.plist" 2>/dev/null

@@ -26,6 +26,7 @@ optionalTargets.append(
             "UMLDiagram",
             "UMLLibrary",
         ],
+        exclude: ["Resources/Info.plist"],
         resources: [
             .process("Resources/Assets.xcassets"),
         ],

@@ -13,7 +13,7 @@ import SwiftUI
 struct ScrollWheelZoomHandler: NSViewRepresentable {
     @Binding var scale: CGFloat
     @Binding var offset: CGPoint
-
+    
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -44,9 +44,11 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
     /// Always accessed on the main thread (NSViewRepresentable lifecycle +
     /// NSEvent local monitors run on main), so `@unchecked Sendable` is safe.
     final class Coordinator: @unchecked Sendable {
+        static let scaleRange: ClosedRange<CGFloat> = 0.2...2.0
+
         var getState: (() -> (CGFloat, CGPoint))?
         var setState: ((CGFloat, CGPoint) -> Void)?
-
+        
         /// Cached view geometry so event monitors can do coordinate conversion
         /// without accessing @MainActor-isolated NSView properties.
         private var cachedFrameOriginInWindow: CGPoint = .zero
@@ -139,9 +141,15 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
             let zoomFactor: CGFloat = 1.03
             let newScale: CGFloat
             if delta > 0 {
-                newScale = min(scale * pow(zoomFactor, delta), 5.0)
+                newScale = min(
+                    scale * pow(zoomFactor, delta),
+                    Self.scaleRange.upperBound
+                )
             } else {
-                newScale = max(scale * pow(zoomFactor, delta), 0.1)
+                newScale = max(
+                    scale * pow(zoomFactor, delta),
+                    Self.scaleRange.lowerBound
+                )
             }
 
             let canvasPoint = CGPoint(
@@ -157,7 +165,13 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
 
         func handleMagnify(magnification: CGFloat, location: CGPoint) {
             guard let (scale, offset) = getState?() else { return }
-            let newScale = max(0.1, min(5.0, scale * (1.0 + magnification)))
+            let newScale = max(
+                min(
+                    scale * (1.0 + magnification),
+                    Self.scaleRange.upperBound
+                ),
+                Self.scaleRange.lowerBound
+            )
 
             let canvasPoint = CGPoint(
                 x: (location.x - offset.x) / scale,

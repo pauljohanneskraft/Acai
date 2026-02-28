@@ -322,7 +322,7 @@ struct GeneratedDiagramView: View {
         let scaleX = (viewWidth - padding * 2) / max(diagramWidth, 1)
         let scaleY = (viewHeight - padding * 2) / max(diagramHeight, 1)
         let fitScale = min(min(scaleX, scaleY), 1.2)
-        canvasScale = max(fitScale, 0.15)
+        canvasScale = max(fitScale, 0.2)
         canvasOffset = CGPoint(
             x: (viewWidth - diagramWidth * canvasScale) / 2 - minX * canvasScale,
             y: (viewHeight - diagramHeight * canvasScale) / 2 - minY * canvasScale
