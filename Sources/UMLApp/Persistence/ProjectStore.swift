@@ -91,7 +91,7 @@ final class ProjectStore: ObservableObject {
 
     func loadGeneratedDiagram(_ id: UUID) {
         guard generatedDiagrams[id] == nil else { return }
-        let url = diagramsDir.appendingPathComponent("stored_\(id.uuidString).json")
+        let url = diagramsDir.appendingPathComponent("generated_\(id.uuidString).json")
         do {
             let data = try Data(contentsOf: url)
             generatedDiagrams[id] = try JSONDecoder().decode(GeneratedDiagram.self, from: data)

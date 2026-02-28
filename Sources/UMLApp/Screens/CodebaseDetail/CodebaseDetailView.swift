@@ -191,7 +191,7 @@ struct CodebaseDetailView: View {
         Button {
             guard let projectID else { return }
             if let existing = model.generatedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
-                model.selection = .diagram(existing.id)
+                model.selection = .generatedDiagram(existing.id)
             } else if let id = model.addGeneratedDiagram(
                 to: projectID,
                 codebaseID: codebase.id,
@@ -199,7 +199,7 @@ struct CodebaseDetailView: View {
                 type: type,
                 configuration: .init()
             ) {
-                model.selection = .diagram(id)
+                model.selection = .generatedDiagram(id)
             }
         } label: {
             HStack(spacing: 12) {

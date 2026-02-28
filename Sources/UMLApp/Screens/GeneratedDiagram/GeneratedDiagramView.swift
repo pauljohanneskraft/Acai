@@ -3,13 +3,13 @@ import UMLCore
 
 // MARK: - Resize Support
 
-private struct StoredResizeState {
-    let startSize: CGSize
-    let startPosition: CGPoint
-}
-
 /// View for a stored (generated) diagram that persists positions and supports re-generation.
 struct GeneratedDiagramView: View {
+    struct ResizeState {
+        let startSize: CGSize
+        let startPosition: CGPoint
+    }
+    
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebaseName: String
@@ -22,7 +22,7 @@ struct GeneratedDiagramView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var activeResizeState: StoredResizeState?
+    @State private var activeResizeState: ResizeState?
     @State private var showSidebar = false
 
     @State private var sidebarTab: GeneratedDiagramSidebarTab = .settings
@@ -236,7 +236,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
-                    activeResizeState = StoredResizeState(
+                    activeResizeState = ResizeState(
                         startSize: viewModel.effectiveSize(for: id),
                         startPosition: viewModel.nodePositions[id] ?? .zero
                     )

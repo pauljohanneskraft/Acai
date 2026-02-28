@@ -93,7 +93,7 @@ struct DiagramGenerationSheet: View {
                     type: selectedType,
                     configuration: configuration
                 ) {
-                    model.selection = .diagram(id)
+                    model.selection = .generatedDiagram(id)
                 }
                 dismiss()
             }
@@ -107,7 +107,7 @@ struct DiagramGenerationSheet: View {
             type: selectedType,
             configuration: configuration
         ) {
-            model.selection = .diagram(id)
+            model.selection = .generatedDiagram(id)
         }
         dismiss()
     }

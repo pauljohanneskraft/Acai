@@ -12,7 +12,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     enum Selection: Hashable {
         case project(UUID)
         case codebase(UUID)
-        case diagram(UUID)
+        case generatedDiagram(UUID)
         case customDiagram(UUID)
     }
 
