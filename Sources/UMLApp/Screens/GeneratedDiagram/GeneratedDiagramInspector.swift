@@ -2,26 +2,26 @@ import SwiftUI
 import UMLCore
 
 /// Inspector tab choices for the generated diagram inspector.
-enum GeneratedDiagramInspectorTab {
-    case settings, selection
+enum GeneratedDiagramSidebarTab {
+    case settings, inspector
 }
 
 /// Inspector sidebar for the generated diagram view, showing configuration
 /// options and details of the currently-selected nodes.
-struct GeneratedDiagramInspector: View {
+struct GeneratedDiagramSidebar: View {
     @ObservedObject var viewModel: GeneratedDiagramViewModel
     @EnvironmentObject private var model: ProjectBrowserViewModel
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
-    @Binding var tab: GeneratedDiagramInspectorTab
+    @Binding var tab: GeneratedDiagramSidebarTab
 
     @State private var configuration: GeneratedDiagram.Configuration?
 
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(GeneratedDiagramInspectorTab.settings)
-                Text("Selection").tag(GeneratedDiagramInspectorTab.selection)
+                Text("Settings").tag(GeneratedDiagramSidebarTab.settings)
+                Text("Inspector").tag(GeneratedDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -31,7 +31,7 @@ struct GeneratedDiagramInspector: View {
             switch tab {
             case .settings:
                 configurationInspector
-            case .selection:
+            case .inspector:
                 selectionInspector
             }
         }

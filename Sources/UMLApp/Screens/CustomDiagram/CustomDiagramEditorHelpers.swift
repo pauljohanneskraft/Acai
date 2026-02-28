@@ -76,33 +76,33 @@ struct CustomNodeView: View {
     var body: some View {
         switch node.content {
         case .type(let content):
-            UMLTypeBoxView(node: node, content: content, isSelected: isSelected)
+            TypeNodeView(node: node, content: content, isSelected: isSelected)
         case .note(let text):
-            UMLNoteNodeView(name: node.name, text: text, isSelected: isSelected)
+            NoteNodeView(name: node.name, text: text, isSelected: isSelected)
         case .actor:
-            UMLActorNodeView(name: node.name, isSelected: isSelected)
+            LabelNodeView.actor(name: node.name, isSelected: isSelected)
         case .useCase:
-            UMLUseCaseNodeView(name: node.name, isSelected: isSelected)
+            UseCaseNodeView(name: node.name, isSelected: isSelected)
         case .package:
-            UMLContainerNodeView(
+            ContainerNodeView(
                 name: node.name, stereotype: "package",
                 style: .package, isSelected: isSelected, size: size
             )
         case .boundary:
-            UMLContainerNodeView(
+            ContainerNodeView(
                 name: node.name, stereotype: "boundary",
                 style: .boundary, isSelected: isSelected, size: size
             )
         case .subsystem:
-            UMLContainerNodeView(
+            ContainerNodeView(
                 name: node.name, stereotype: "subsystem",
                 style: .subsystem, isSelected: isSelected, size: size
             )
         case .database:
-            UMLDatabaseNodeView(name: node.name, isSelected: isSelected)
+            LabelNodeView.database(name: node.name, isSelected: isSelected)
         default:
             // component, deploymentNode, artifact, entity
-            UMLStereotypedBoxNodeView(
+            StereotypedBoxNodeView(
                 name: node.name,
                 stereotype: node.content.stereotype,
                 systemImage: node.content.kind.systemImage,

@@ -136,11 +136,6 @@ final class CustomDiagramEditorViewModel: ObservableObject {
         save()
     }
 
-    func startRelationshipDrawing(from nodeID: UUID) {
-        selectedNodeIDs = [nodeID]
-        // The user can then shift-click a second node and use the catalog to create the edge.
-    }
-
     // MARK: - Selection
 
     func selectNode(_ nodeID: UUID, extending: Bool) {
@@ -165,42 +160,6 @@ final class CustomDiagramEditorViewModel: ObservableObject {
     func clearSelection() {
         selectedNodeIDs.removeAll()
         selectedEdgeID = nil
-    }
-
-    // MARK: - Relationship Drawing
-
-    func beginRelationshipDrag(from nodeID: UUID) {
-        relationshipDragSourceID = nodeID
-    }
-
-    func updateRelationshipDrag(to point: CGPoint) {
-        relationshipDragEndpoint = point
-    }
-
-    func completeRelationshipDrag(at point: CGPoint) {
-        guard let sourceID = relationshipDragSourceID,
-              let kind = pendingRelationshipKind else {
-            cancelRelationshipDrag()
-            return
-        }
-        // Find target node under the drop point.
-        if let targetNode = nodes.first(where: { node in
-            let rect = CGRect(
-                x: node.positionX - nodeSize(node.id).width / 2,
-                y: node.positionY - nodeSize(node.id).height / 2,
-                width: nodeSize(node.id).width,
-                height: nodeSize(node.id).height
-            )
-            return rect.contains(point)
-        }), targetNode.id != sourceID {
-            addEdge(from: sourceID, to: targetNode.id, kind: kind)
-        }
-        cancelRelationshipDrag()
-    }
-
-    func cancelRelationshipDrag() {
-        relationshipDragSourceID = nil
-        relationshipDragEndpoint = nil
     }
 
     // MARK: - Persistence

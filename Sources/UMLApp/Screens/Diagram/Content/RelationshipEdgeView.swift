@@ -4,7 +4,7 @@ import UMLCore
 /// Draws a relationship line between two node rectangles with appropriate
 /// UML arrow heads and line styles.
 struct RelationshipEdgeView: View {
-    let edge: GeneratedDiagramEdge
+    let kind: Relationship.Kind
     let sourceRect: CGRect
     let targetRect: CGRect
 
@@ -12,7 +12,7 @@ struct RelationshipEdgeView: View {
 
     var body: some View {
         let (startPoint, endPoint) = connectionPoints(from: sourceRect, to: targetRect)
-        let lineAngle = UMLArrowHeads.angle(from: startPoint, to: endPoint)
+        let lineAngle = Self.angle(from: startPoint, to: endPoint)
 
         // Main line path.
         let linePath = Path { path in
@@ -20,56 +20,51 @@ struct RelationshipEdgeView: View {
             path.addLine(to: endPoint)
         }
 
-        // Arrow head path at target.
-        let arrowPath = Path { path in
-            switch edge.kind {
-            case .inheritance, .conformance:
-                UMLArrowHeads.emptyTriangle(in: &path, at: endPoint, angle: lineAngle)
-            case .association, .dependency:
-                UMLArrowHeads.openArrow(in: &path, at: endPoint, angle: lineAngle)
-            case .extension:
-                UMLArrowHeads.emptyTriangle(in: &path, at: endPoint, angle: lineAngle)
-            case .nesting:
-                UMLArrowHeads.openArrow(in: &path, at: endPoint, angle: lineAngle)
-            default:
-                break
-            }
+        let arrowPath: Path = switch kind {
+        case .inheritance, .conformance:
+            .emptyTriangle(at: endPoint, angle: lineAngle)
+        case .association, .dependency:
+            .openArrow(at: endPoint, angle: lineAngle)
+        case .extension:
+            .emptyTriangle(at: endPoint, angle: lineAngle)
+        case .nesting:
+            .openArrow(at: endPoint, angle: lineAngle)
+        default:
+            .init()
         }
 
         // Source decoration path (diamond for composition/aggregation).
-        let sourceAngle = UMLArrowHeads.angle(from: endPoint, to: startPoint)
-        let sourcePath = Path { path in
-            if UMLArrowHeads.hasSourceDecoration(for: edge.kind) {
-                UMLArrowHeads.filledDiamond(in: &path, at: startPoint, angle: sourceAngle)
-            }
-        }
+        let sourceAngle = Self.angle(from: endPoint, to: startPoint)
+        let sourcePath: Path = if kind.hasSourceDecoration {
+            .filledDiamond(at: startPoint, angle: sourceAngle)
+        } else { .init() }
 
-        let style = UMLArrowHeads.strokeStyle(for: edge.kind)
+        let style = kind.strokeStyle
 
         ZStack {
             // Line
             linePath.stroke(edgeColor, style: style)
 
             // Arrow head at target
-            switch edge.kind {
+            switch kind {
             case .inheritance, .conformance, .extension:
                 // Empty triangle: stroke only (unfilled)
-                arrowPath.stroke(edgeColor, lineWidth: 1.5)
                 arrowPath.fill(Color(white: 0.96))
+                arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
             case .association, .dependency, .nesting:
                 // Open arrow: stroke only
-                arrowPath.stroke(edgeColor, lineWidth: 1.5)
+                arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
             default:
                 EmptyView()
             }
 
             // Diamond at source
-            if UMLArrowHeads.hasSourceDecoration(for: edge.kind) {
-                if UMLArrowHeads.isSourceDecorationFilled(for: edge.kind) {
+            if kind.hasSourceDecoration {
+                if kind.isSourceDecorationFilled {
                     sourcePath.fill(edgeColor)
                 } else {
-                    sourcePath.stroke(edgeColor, lineWidth: 1.5)
                     sourcePath.fill(Color(white: 0.96))
+                    sourcePath.stroke(edgeColor, lineWidth: 1.5)
                 }
             }
         }
@@ -114,6 +109,10 @@ struct RelationshipEdgeView: View {
             return CGPoint(x: from.x + tMin * dx, y: from.y + tMin * dy)
         }
         return from
+    }
+
+    private static func angle(from start: CGPoint, to end: CGPoint) -> CGFloat {
+        atan2(end.y - start.y, end.x - start.x)
     }
 
     /// Parametric t for ray intersection with one rectangle edge; returns `.greatestFiniteMagnitude` on miss.

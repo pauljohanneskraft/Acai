@@ -22,7 +22,7 @@ struct CustomDiagramEditorView: View {
     @State private var lastRightClickCanvasPoint: CGPoint = .zero
 
     enum SidebarTab { case catalog, inspector }
-    @State var showSidebar = true
+    @State var showSidebar = false
     @State var sidebarTab: SidebarTab = .catalog
 
     var body: some View {
@@ -43,22 +43,8 @@ struct CustomDiagramEditorView: View {
                     sidebarTab = .catalog
                     showSidebar.toggle()
                 } label: {
-                    Label("Catalog", systemImage: "square.grid.2x2")
+                    Label("Sidebar", systemImage: "sidebar.trailing")
                 }
-
-                Button {
-                    sidebarTab = .inspector
-                    showSidebar.toggle()
-                } label: {
-                    Label("Inspector", systemImage: "sidebar.trailing")
-                }
-
-                Button {
-                    showDeleteConfirmation = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                .disabled(viewModel.selectedNodeIDs.isEmpty && viewModel.selectedEdgeID == nil)
             }
         }
         .navigationTitle(browserModel.customDiagram(for: diagramID)?.name ?? "Custom Diagram")
@@ -73,18 +59,6 @@ struct CustomDiagramEditorView: View {
         }
         .onDisappear {
             viewModel.saveCanvasState(scale: canvasScale, offset: canvasOffset)
-        }
-        .onChange(of: viewModel.selectedNodeIDs) { newSelection in
-            if !newSelection.isEmpty {
-                sidebarTab = .inspector
-                showSidebar = true
-            }
-        }
-        .onChange(of: viewModel.selectedEdgeID) { newSelection in
-            if newSelection != nil {
-                sidebarTab = .inspector
-                showSidebar = true
-            }
         }
         .background {
             // Hidden buttons to capture keyboard shortcuts
@@ -222,7 +196,7 @@ struct CustomDiagramEditorView: View {
 
     private var sidebarContent: some View {
         VStack(spacing: 0) {
-            Picker("Sidebar", selection: $sidebarTab) {
+            Picker("", selection: $sidebarTab) {
                 Text("Catalog").tag(SidebarTab.catalog)
                 Text("Inspector").tag(SidebarTab.inspector)
             }

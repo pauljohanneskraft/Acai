@@ -23,9 +23,9 @@ struct GeneratedDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var activeResizeState: StoredResizeState?
-    @State private var showInspector = false
+    @State private var showSidebar = false
 
-    @State private var inspectorTab: GeneratedDiagramInspectorTab = .settings
+    @State private var sidebarTab: GeneratedDiagramSidebarTab = .settings
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebaseName: String) {
         self.diagram = diagram
@@ -47,12 +47,12 @@ struct GeneratedDiagramView: View {
             canvasContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if showInspector {
-                GeneratedDiagramInspector(
+            if showSidebar {
+                GeneratedDiagramSidebar(
                     viewModel: viewModel,
                     diagram: diagram,
                     artifact: artifact,
-                    tab: $inspectorTab
+                    tab: $sidebarTab
                 )
                 .frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
             }
@@ -72,21 +72,9 @@ struct GeneratedDiagramView: View {
                 Button {
                     centerDiagram()
                 } label: {
-                    Label("Fit to View", systemImage: "arrow.up.left.and.arrow.down.right")
+                    Label("Fit to View", systemImage: "rectangle.dashed")
                 }
-
-                Button {
-                    savePositions()
-                } label: {
-                    Label("Save", systemImage: "square.and.arrow.down")
-                }
-
-                Button {
-                    showInspector.toggle()
-                } label: {
-                    Label("Inspector", systemImage: "sidebar.trailing")
-                }
-
+                
                 Button {
                     model.saveAsCustomDiagram(
                         id: diagram.id,
@@ -95,7 +83,13 @@ struct GeneratedDiagramView: View {
                         offset: canvasOffset
                     )
                 } label: {
-                    Label("Save as Custom", systemImage: "doc.badge.plus")
+                    Label("Save as Custom", systemImage: "document.on.document")
+                }
+
+                Button {
+                    showSidebar.toggle()
+                } label: {
+                    Label("Sidebar", systemImage: "sidebar.trailing")
                 }
             }
         }
@@ -107,12 +101,6 @@ struct GeneratedDiagramView: View {
         }
         .onDisappear {
             savePositions()
-        }
-        .onChange(of: viewModel.selectedNodeIDs) { newSelection in
-            if !newSelection.isEmpty {
-                inspectorTab = .selection
-                showInspector = true
-            }
         }
     }
 
@@ -150,7 +138,11 @@ struct GeneratedDiagramView: View {
         ForEach(viewModel.edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
-                RelationshipEdgeView(edge: edge, sourceRect: sourceRect, targetRect: targetRect)
+                RelationshipEdgeView(
+                    kind: edge.kind,
+                    sourceRect: sourceRect,
+                    targetRect: targetRect
+                )
             }
         }
     }
@@ -166,14 +158,14 @@ struct GeneratedDiagramView: View {
 
                 Group {
                     if hasUserSize {
-                        UMLTypeBoxView(
+                        TypeNodeView(
                             node: node,
                             isSelected: selected
                         )
                         .frame(width: size.width, height: size.height)
                         .contentShape(Rectangle().inset(by: 6))
                     } else {
-                        UMLTypeBoxView(
+                        TypeNodeView(
                             node: node,
                             isSelected: selected
                         )
@@ -189,7 +181,12 @@ struct GeneratedDiagramView: View {
                     }
                 }
                 .position(position)
-                .onTapGesture {
+                .onTapGesture(count: 2) {
+                    viewModel.selectNode(node.id, extending: false)
+                    sidebarTab = .inspector
+                    showSidebar = true
+                }
+                .onTapGesture(count: 1) {
                     #if os(macOS)
                     let extending = NSEvent.modifierFlags.contains(.command)
                     #else
@@ -198,6 +195,15 @@ struct GeneratedDiagramView: View {
                     viewModel.selectNode(node.id, extending: extending)
                 }
                 .highPriorityGesture(nodeDragGesture(for: node.id))
+                .contextMenu {
+                    Button {
+                        viewModel.selectNode(node.id, extending: false)
+                        sidebarTab = .inspector
+                        showSidebar = true
+                    } label: {
+                        Label("Details", systemImage: "info")
+                    }
+                }
             }
         }
     }
@@ -253,6 +259,7 @@ struct GeneratedDiagramView: View {
             }
             .onEnded { _ in
                 activeResizeState = nil
+                savePositions()
             }
     }
 
@@ -301,6 +308,7 @@ struct GeneratedDiagramView: View {
             .onEnded { _ in
                 dragStartPositions = [:]
                 activeDragCanvasLocation = nil
+                savePositions()
             }
     }
 
@@ -347,6 +355,7 @@ struct GeneratedDiagramView: View {
             x: (viewWidth - diagramWidth * canvasScale) / 2 - minX * canvasScale,
             y: (viewHeight - diagramHeight * canvasScale) / 2 - minY * canvasScale
         )
+        savePositions()
     }
 
 }

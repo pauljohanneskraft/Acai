@@ -11,21 +11,18 @@ extension CustomDiagramEditorView {
         ForEach(viewModel.edges) { edge in
             let sourceRect = viewModel.nodeRect(edge.sourceNodeID)
             let targetRect = viewModel.nodeRect(edge.targetNodeID)
-
-            // Reuse RelationshipEdgeView with a temporary DiagramEdge.
-            let diagramEdge = GeneratedDiagramEdge(
-                id: edge.id.uuidString,
-                sourceID: edge.sourceNodeID.uuidString,
-                targetID: edge.targetNodeID.uuidString,
-                kind: edge.kind
-            )
-
+            
             RelationshipEdgeView(
-                edge: diagramEdge,
+                kind: edge.kind,
                 sourceRect: sourceRect,
                 targetRect: targetRect
             )
-            .onTapGesture {
+            .onTapGesture(count: 2) {
+                viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
+                sidebarTab = .inspector
+                showSidebar = true
+            }
+            .onTapGesture(count: 1) {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
             }
         }
@@ -75,12 +72,6 @@ extension CustomDiagramEditorView {
                     showSidebar = true
                 } label: {
                     Label("Edit", systemImage: "pencil")
-                }
-
-                Button {
-                    viewModel.startRelationshipDrawing(from: node.id)
-                } label: {
-                    Label("Draw Relationship", systemImage: "arrow.right")
                 }
 
                 Divider()

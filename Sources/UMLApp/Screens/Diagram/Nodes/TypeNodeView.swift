@@ -22,7 +22,7 @@ struct EnumCaseDisplayItem: Identifiable {
 /// Renders a code-type node as a three-compartment UML class box.
 /// Used by both generated diagrams (from `DiagramNode`) and custom diagrams
 /// (from `CustomDiagram.Node` + `TypeNodeContent`).
-struct UMLTypeBoxView: View {
+struct TypeNodeView: View {
     let name: String
     let kind: TypeKind
     let stereotype: String?
@@ -65,7 +65,7 @@ struct UMLTypeBoxView: View {
             Text(displayName)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundColor(Color(white: 0.1))
-                .conditionalModifier(isInterface) { $0.italic() }
+                .if(isInterface) { $0.italic() }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
@@ -140,8 +140,8 @@ struct UMLTypeBoxView: View {
     private func memberRow(_ member: MemberDisplayItem) -> some View {
         Text(member.text)
             .font(.system(size: 11, design: .monospaced))
-            .conditionalModifier(member.isStatic) { $0.underline() }
-            .conditionalModifier(member.isAbstract) { $0.italic() }
+            .if(member.isStatic) { $0.underline() }
+            .if(member.isAbstract) { $0.italic() }
             .foregroundColor(Color(white: 0.15))
             .lineLimit(1)
     }
@@ -235,7 +235,7 @@ struct UMLTypeBoxView: View {
 
 // MARK: - UMLTypeBoxView Convenience Initializers
 
-extension UMLTypeBoxView {
+extension TypeNodeView {
     init(node: GeneratedDiagramNode, isSelected: Bool) {
         self.name = node.name
         self.kind = node.kind
@@ -243,22 +243,21 @@ extension UMLTypeBoxView {
         self.genericParameters = node.genericParameters
         self.isSelected = isSelected
 
-        // Deduplicate members from generated diagrams.
-        var seenProps = Set<String>()
-        self.properties = node.properties.compactMap { m in
-            guard seenProps.insert(m.id).inserted else { return nil }
-            return MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-        }
-        var seenMethods = Set<String>()
-        self.methods = node.methods.compactMap { m in
-            guard seenMethods.insert(m.id).inserted else { return nil }
-            return MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-        }
-        var seenCases = Set<String>()
-        self.enumCases = node.enumCases.compactMap { enumCase in
-            guard seenCases.insert(enumCase.id).inserted else { return nil }
-            return EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
-        }
+        self.properties = node.properties
+            .removingDuplicates(by: \.id)
+            .map { m in
+                MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
+            }
+        self.methods = node.methods
+            .removingDuplicates(by: \.id)
+            .map { m in
+                MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
+            }
+        self.enumCases = node.enumCases
+            .removingDuplicates(by: \.id)
+            .map { enumCase in
+                EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
+            }
     }
 
     /// Create from a custom diagram node with type content.

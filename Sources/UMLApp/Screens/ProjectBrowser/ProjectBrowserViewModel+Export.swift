@@ -59,11 +59,10 @@ extension ProjectBrowserViewModel {
     ) {
         guard let diagram = generatedDiagram(for: diagramId),
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
-              let artifact = artifact(for: diagram.codebaseID) else { return }
+              var artifact = artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
 
-        var resolved = artifact.resolvingExtensions()
         if diagram.configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
-            resolved = resolved.filteringGeneratedDartTypes()
+            artifact = artifact.filteringGeneratedDartTypes()
         }
         let customDiagram = diagram.convertToCustom(
             artifact: artifact,
