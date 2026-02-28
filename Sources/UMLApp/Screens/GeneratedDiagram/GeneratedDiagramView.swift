@@ -110,8 +110,8 @@ struct GeneratedDiagramView: View {
             }
         }, autoPanController: canvasAutoPanController, content: {
             ZStack {
-                edgeLayer
                 nodeLayer
+                edgeLayer
                 resizeHandleLayer
                 selectionRectangleLayer
             }
