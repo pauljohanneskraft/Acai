@@ -19,31 +19,29 @@ fi
 
 # 2. Setup Bundle Structure
 readonly APP_BUNDLE="$APP_NAME.app"
+readonly APP_BUNDLE_DIR=".build/artifacts/$APP_NAME.app"
 echo "📦 Creating $APP_BUNDLE..."
 
-rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_BUNDLE/Contents/MacOS"
-mkdir -p "$APP_BUNDLE/Contents/Resources"
+rm -rf "$APP_BUNDLE_DIR"
+mkdir -p "$APP_BUNDLE_DIR/Contents/MacOS"
+mkdir -p "$APP_BUNDLE_DIR/Contents/Resources"
 
 echo "🎨 Converting Assets to .icns..."
-mkdir -p "Temporary.iconset"
-cp "$ICONSET_PATH"/*.png "Temporary.iconset/"
+readonly TEMP_ICONSET="$APP_BUNDLE_DIR/Temporary.iconset"
+mkdir -p "$TEMP_ICONSET"
+cp "$ICONSET_PATH"/*.png "$TEMP_ICONSET"
 LARGEST_PNG=$(ls -S "$ICONSET_PATH"/*.png | head -n 1)
-sips -z 1024 1024 "$LARGEST_PNG" --out "Temporary.iconset/icon_512x512@2x.png"
-sips -z 512 512 "$LARGEST_PNG" --out "Temporary.iconset/icon_512x512.png"
-sips -z 256 256 "$LARGEST_PNG" --out "Temporary.iconset/icon_256x256.png"
-sips -z 128 128 "$LARGEST_PNG" --out "Temporary.iconset/icon_128x128.png"
-iconutil -c icns "Temporary.iconset" -o "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
-rm -rf "Temporary.iconset"
+sips -z 1024 1024 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_512x512@2x.png" > /dev/null
+sips -z 512 512 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_512x512.png" > /dev/null
+sips -z 256 256 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_256x256.png" > /dev/null
+sips -z 128 128 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_128x128.png" > /dev/null
+iconutil -c icns "$TEMP_ICONSET" -o "$APP_BUNDLE_DIR/Contents/Resources/AppIcon.icns"
+rm -rf "$TEMP_ICONSET"
 
-cp ".build/release/$EXECUTABLE_TARGET" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
-cp "$INFO_PLIST_PATH" "$APP_BUNDLE/Contents/Info.plist"
+cp ".build/release/$EXECUTABLE_TARGET" "$APP_BUNDLE_DIR/Contents/MacOS/$APP_NAME"
+cp "$INFO_PLIST_PATH" "$APP_BUNDLE_DIR/Contents/Info.plist"
 
-/usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null
-/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon.icns" "$APP_BUNDLE/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string $APP_NAME" "$APP_BUNDLE/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" "$APP_BUNDLE_DIR/Contents/Info.plist" 2>/dev/null
+/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon.icns" "$APP_BUNDLE_DIR/Contents/Info.plist"
 
-echo "✍️ Ad-hoc signing..."
-codesign --force --deep --sign - "$APP_BUNDLE"
-
-echo "✅ Success! Your app is ready at $(pwd)/$APP_BUNDLE"
+echo "✅ Success! Your app is ready at $(dirs -p | head -1)/$APP_BUNDLE_DIR"
