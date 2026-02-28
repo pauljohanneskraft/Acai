@@ -56,7 +56,10 @@ struct ProjectBrowserView: View {
     private var sidebarContent: some View {
         VStack(spacing: 0) {
             List(selection: $sidebarSelection) {
-                ForEach(model.store.projects) { project in
+                let projects = model.store.projects.sorted(by: {
+                    $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+                })
+                ForEach(projects) { project in
                     DisclosureGroup(
                         isExpanded: Binding {
                             !collapsedProjects.contains(project.id)
@@ -191,7 +194,7 @@ struct ProjectBrowserView: View {
     @ViewBuilder
     private func customDiagramDetail(diagramID: UUID) -> some View {
         if model.customDiagram(for: diagramID) != nil {
-            CustomDiagramEditorView(diagramID: diagramID)
+            CustomDiagramView(diagramID: diagramID)
                 .id(diagramID)
                 .environmentObject(model)
         } else {

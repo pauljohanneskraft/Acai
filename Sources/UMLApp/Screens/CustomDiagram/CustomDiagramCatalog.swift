@@ -6,7 +6,7 @@ import UMLCore
 /// Sidebar panel listing available node kinds and relationship types
 /// for the custom diagram editor.
 struct CustomDiagramCatalog: View {
-    @ObservedObject var viewModel: CustomDiagramEditorViewModel
+    @ObservedObject var viewModel: CustomDiagramViewModel
     let canvasScale: CGFloat
     let canvasOffset: CGPoint
     let onInsertNode: (CustomDiagramNodeKind, CGPoint) -> Void
@@ -63,8 +63,8 @@ struct CustomDiagramCatalog: View {
 
     private func catalogButton(kind: CustomDiagramNodeKind) -> some View {
         Button {
-            let centerX = (canvasOffset.x * -1 + 450) / canvasScale
-            let centerY = (canvasOffset.y * -1 + 300) / canvasScale
+            let centerX = (450 - canvasOffset.x) / canvasScale
+            let centerY = (300 - canvasOffset.y) / canvasScale
             onInsertNode(kind, CGPoint(x: centerX, y: centerY))
         } label: {
             HStack {

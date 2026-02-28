@@ -6,7 +6,7 @@ import UMLCore
 /// Inspector panel for the custom diagram editor, showing details of the
 /// currently-selected node, edge, or multi-selection.
 struct CustomDiagramInspector: View {
-    @ObservedObject var viewModel: CustomDiagramEditorViewModel
+    @ObservedObject var viewModel: CustomDiagramViewModel
 
     @State private var newPropertyText: String = ""
     @State private var newMethodText: String = ""

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Member CRUD & Inline Editing
 
-extension CustomDiagramEditorViewModel {
+extension CustomDiagramViewModel {
 
     func addProperty(to nodeID: UUID, name: String, type: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),

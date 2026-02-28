@@ -3,19 +3,16 @@ import UMLCore
 
 // MARK: - Canvas Layers & Node Interaction
 
-extension CustomDiagramEditorView {
+extension CustomDiagramView {
 
     // MARK: - Edge Layer
 
     var edgeLayer: some View {
         ForEach(viewModel.edges) { edge in
-            let sourceRect = viewModel.nodeRect(edge.sourceNodeID)
-            let targetRect = viewModel.nodeRect(edge.targetNodeID)
-
             RelationshipEdgeView(
                 kind: edge.kind,
-                sourceRect: sourceRect,
-                targetRect: targetRect
+                sourceRect: viewModel.nodeRect(edge.sourceNodeID),
+                targetRect: viewModel.nodeRect(edge.targetNodeID)
             )
             .onTapGesture(count: 2) {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
@@ -147,7 +144,7 @@ extension CustomDiagramEditorView {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
-                    activeResizeState = ResizeState(
+                    activeResizeState = .init(
                         startSize: viewModel.nodeSize(id),
                         startPosition: viewModel.nodePosition(id) ?? .zero
                     )

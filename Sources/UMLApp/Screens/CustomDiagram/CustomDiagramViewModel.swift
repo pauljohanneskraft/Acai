@@ -6,7 +6,7 @@ import AppKit
 
 /// View model for the custom diagram editor.
 @MainActor
-final class CustomDiagramEditorViewModel: ObservableObject {
+final class CustomDiagramViewModel: ObservableObject {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
 

@@ -6,20 +6,19 @@ import UniformTypeIdentifiers
 /// Provides a canvas with drag-to-select, a catalog sidebar for adding nodes/edges,
 /// and inline editing of node members.
 @MainActor
-struct CustomDiagramEditorView: View {
+struct CustomDiagramView: View {
     let diagramID: UUID
     @EnvironmentObject private var browserModel: ProjectBrowserViewModel
-    @StateObject var viewModel = CustomDiagramEditorViewModel()
+    @StateObject var viewModel = CustomDiagramViewModel()
 
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
     @State var dragStartPositions: [UUID: CGPoint] = [:]
     @State var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State var activeResizeState: ResizeState?
+    @State var activeResizeState: DiagramResizeState?
     @State private var showDeleteConfirmation = false
-    /// Tracks the last right-click location in screen coordinates for context menu insertion.
-    @State private var lastRightClickCanvasPoint: CGPoint = .zero
+    @State private var cursorLocation: CGPoint = .zero
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
@@ -129,8 +128,8 @@ struct CustomDiagramEditorView: View {
         }, autoPanController: canvasAutoPanController, content: {
             ZStack {
                 containerNodeLayer
-                edgeLayer
                 regularNodeLayer
+                edgeLayer
                 resizeHandleLayer
             }
         })
@@ -139,8 +138,10 @@ struct CustomDiagramEditorView: View {
                 viewModel.measuredNodeSizes[UUID(uuidString: id) ?? UUID()] = size
             }
         }
-        .overlay {
-            CanvasRightClickTracker(canvasPoint: $lastRightClickCanvasPoint, scale: canvasScale, offset: canvasOffset)
+        .onContinuousHover { phase in
+            if case let .active(location) = phase {
+                cursorLocation = location
+            }
         }
         .contextMenu {
             canvasContextMenu
@@ -158,7 +159,11 @@ struct CustomDiagramEditorView: View {
             Menu(group.rawValue) {
                 ForEach(CustomDiagramNodeKind.cases(in: group)) { kind in
                     Button {
-                        insertNode(kind: kind, at: lastRightClickCanvasPoint)
+                        let canvasPoint = CGPoint(
+                            x: (cursorLocation.x - canvasOffset.x) / canvasScale,
+                            y: (cursorLocation.y - canvasOffset.y) / canvasScale
+                        )
+                        insertNode(kind: kind, at: canvasPoint)
                     } label: {
                         Label(kind.displayName, systemImage: kind.systemImage)
                     }

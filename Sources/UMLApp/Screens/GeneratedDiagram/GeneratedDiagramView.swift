@@ -1,15 +1,6 @@
 import SwiftUI
 import UMLCore
 
-// MARK: - Resize Support
-
-extension GeneratedDiagramView {
-    struct ResizeState {
-        let startSize: CGSize
-        let startPosition: CGPoint
-    }
-}
-
 /// View for a stored (generated) diagram that persists positions and supports re-generation.
 struct GeneratedDiagramView: View {
     let diagram: GeneratedDiagram
@@ -19,12 +10,12 @@ struct GeneratedDiagramView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: GeneratedDiagramViewModel
 
-    @State private var canvasScale: CGFloat
-    @State private var canvasOffset: CGPoint
+    @State var canvasScale: CGFloat
+    @State var canvasOffset: CGPoint
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var activeResizeState: ResizeState?
+    @State private var activeResizeState: DiagramResizeState?
     @State private var showSidebar = false
     @State private var sidebarTab: GeneratedDiagramSidebarTab = .settings
 
@@ -224,7 +215,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
-                    activeResizeState = ResizeState(
+                    activeResizeState = .init(
                         startSize: viewModel.effectiveSize(for: id),
                         startPosition: viewModel.nodePositions[id] ?? .zero
                     )

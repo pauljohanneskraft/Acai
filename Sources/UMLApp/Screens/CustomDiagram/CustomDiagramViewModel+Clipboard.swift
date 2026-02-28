@@ -6,7 +6,7 @@ import AppKit
 
 // MARK: - Clipboard (Cut / Copy / Paste)
 
-extension CustomDiagramEditorViewModel {
+extension CustomDiagramViewModel {
 
     /// Internal clipboard representation.
     private struct ClipboardPayload: Codable {
