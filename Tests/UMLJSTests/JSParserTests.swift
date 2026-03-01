@@ -391,7 +391,7 @@ struct ExtendedTypeScriptParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "computed.ts")
         let props = artifact.types[0]
-        #expect(artifact.types.count > 0)
+        #expect(!artifact.types.isEmpty)
     }
 
     @Test func abstractMethodsAndProperties() {
