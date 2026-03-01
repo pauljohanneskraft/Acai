@@ -48,3 +48,23 @@ UML is a multi-language code analysis and diagramming toolkit. Point it at a cod
 ### Build
 ```sh
 swift build
+```
+
+### Test
+```sh
+swift test
+```
+
+### App
+```sh
+./Scripts/release_app.sh # Creates `UML.app` in `.build/artifacts`
+./Scripts/install_app.sh # Moves built artifact to `/Applications/UML.app`
+./Scripts/uninstall_app.sh # Deletes `/Applications/UML.app`
+```
+
+### CLI
+```sh
+./Scripts/release_cli.sh # Creates `uml` binary in `.build/artifacts`
+./Scripts/install_cli.sh # Moves built artifact to binary directory
+./Scripts/uninstall_cli.sh # Deletes binary artifact from the respective binary directories
+```
