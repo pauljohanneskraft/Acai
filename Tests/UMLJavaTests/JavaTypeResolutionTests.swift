@@ -214,4 +214,61 @@ struct JavaTypeResolutionTests {
         let status = order.nestedTypes.first { $0.name == "Status" }!
         #expect(status.id == "com.example.Order.Status")
     }
+
+    // MARK: - Multi-File Simulation
+
+    @Test func multiFileInheritanceProducesResolvableRelationship() {
+        let source1 = """
+        package com.example;
+
+        public class Animal {
+            private String name;
+        }
+        """
+        let source2 = """
+        package com.example;
+
+        public class Dog extends Animal {
+            private String breed;
+        }
+        """
+        let artifact1 = parser.parse(source: source1, fileName: "Animal.java")
+        let artifact2 = parser.parse(source: source2, fileName: "Dog.java")
+        let merged = artifact1.merging(with: artifact2)
+
+        let inheritance = merged.relationships.first { $0.kind == .inheritance }
+        #expect(inheritance?.source == "com.example.Dog")
+        // Target is just "Animal" because it's not defined in Dog.java.
+        #expect(inheritance?.target == "Animal")
+
+        #expect(merged.types.contains { $0.id == "com.example.Animal" })
+        #expect(merged.types.contains { $0.id == "com.example.Dog" })
+    }
+
+    @Test func multiFileInterfaceConformanceRelationship() {
+        let source1 = """
+        package com.example;
+
+        public interface Serializable {
+            String serialize();
+        }
+        """
+        let source2 = """
+        package com.example;
+
+        public class User implements Serializable {
+            public String serialize() { return ""; }
+        }
+        """
+        let artifact1 = parser.parse(source: source1, fileName: "Serializable.java")
+        let artifact2 = parser.parse(source: source2, fileName: "User.java")
+        let merged = artifact1.merging(with: artifact2)
+
+        let conformance = merged.relationships.first { $0.kind == .conformance }
+        #expect(conformance?.source == "com.example.User")
+        #expect(conformance?.target == "Serializable")
+
+        #expect(merged.types.contains { $0.id == "com.example.Serializable" })
+        #expect(merged.types.contains { $0.id == "com.example.User" })
+    }
 }

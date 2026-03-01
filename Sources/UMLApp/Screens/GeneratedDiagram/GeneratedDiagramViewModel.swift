@@ -51,8 +51,8 @@ final class GeneratedDiagramViewModel: ObservableObject {
         nodes = resolved.types.map { .init(from: $0, configuration: configuration) }
 
         // Build edges, filtering by configuration.
-        let typeNames = Set(resolved.types.map(\.name))
-        edges = buildEdges(from: resolved.relationships, typeNames: typeNames)
+        let typeIds = Set(resolved.types.map(\.id))
+        edges = buildEdges(from: resolved.relationships, knownTypeIds: typeIds)
 
         // Estimate sizes and run initial layout.
         for node in nodes {
@@ -64,12 +64,12 @@ final class GeneratedDiagramViewModel: ObservableObject {
 
     private func buildEdges(
         from relationships: [Relationship],
-        typeNames: Set<String>
+        knownTypeIds: Set<String>
     ) -> [GeneratedDiagramEdge] {
         guard configuration.showRelationships else { return [] }
         return relationships.compactMap { rel in
-            guard typeNames.contains(rel.source),
-                  typeNames.contains(rel.target),
+            guard knownTypeIds.contains(rel.source),
+                  knownTypeIds.contains(rel.target),
                   rel.source != rel.target else { return nil }
 
             switch rel.kind {

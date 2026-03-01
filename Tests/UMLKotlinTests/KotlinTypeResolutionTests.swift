@@ -223,4 +223,61 @@ struct KotlinTypeResolutionTests {
         #expect(conformance?.source == "com.example.Color")
         #expect(conformance?.target == "com.example.Displayable")
     }
+
+    // MARK: - Multi-File Simulation
+
+    @Test func multiFileInheritanceProducesResolvableRelationship() {
+        // File 1: defines Animal
+        let source1 = """
+        package com.example
+
+        open class Animal(val name: String)
+        """
+        // File 2: defines Dog extending Animal
+        let source2 = """
+        package com.example
+
+        class Dog(val breed: String) : Animal("Rex")
+        """
+        let artifact1 = parser.parse(source: source1, fileName: "Animal.kt")
+        let artifact2 = parser.parse(source: source2, fileName: "Dog.kt")
+        let merged = artifact1.merging(with: artifact2)
+
+        // Relationship must exist with qualified source and simple target.
+        let inheritance = merged.relationships.first { $0.kind == .inheritance }
+        #expect(inheritance?.source == "com.example.Dog")
+        // Target is just "Animal" because it's not defined in Dog.kt.
+        #expect(inheritance?.target == "Animal")
+
+        // Both types must be in the merged artifact.
+        #expect(merged.types.contains { $0.id == "com.example.Animal" })
+        #expect(merged.types.contains { $0.id == "com.example.Dog" })
+    }
+
+    @Test func multiFileInterfaceConformanceRelationship() {
+        let source1 = """
+        package com.example
+
+        interface Identifiable {
+            fun getId(): String
+        }
+        """
+        let source2 = """
+        package com.example
+
+        class User(val name: String) : Identifiable {
+            override fun getId(): String = name
+        }
+        """
+        let artifact1 = parser.parse(source: source1, fileName: "Identifiable.kt")
+        let artifact2 = parser.parse(source: source2, fileName: "User.kt")
+        let merged = artifact1.merging(with: artifact2)
+
+        let conformance = merged.relationships.first { $0.kind == .conformance }
+        #expect(conformance?.source == "com.example.User")
+        #expect(conformance?.target == "Identifiable")
+
+        #expect(merged.types.contains { $0.id == "com.example.Identifiable" })
+        #expect(merged.types.contains { $0.id == "com.example.User" })
+    }
 }

@@ -16,7 +16,7 @@ struct GeneratedDiagramNode: Identifiable, Sendable {
     let directoryGroup: String?
 
     init(from type: TypeDeclaration, configuration: GeneratedDiagram.Configuration? = nil) {
-        self.id = type.name
+        self.id = type.id
         self.name = type.name
         self.kind = type.kind
         self.stereotype = UMLMemberFormatting.stereotypeString(for: type.kind)

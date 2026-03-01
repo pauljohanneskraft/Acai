@@ -7,6 +7,20 @@ struct CodebaseTypesSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact
 
+    /// Maps qualified type IDs to display names for readable inherited-type labels.
+    private var displayNameMap: [String: String] {
+        var map: [String: String] = [:]
+        for type in artifact.types {
+            map[type.id] = type.name
+            map[type.qualifiedName] = type.name
+        }
+        return map
+    }
+
+    private func displayName(for id: String) -> String {
+        displayNameMap[id] ?? id
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -38,7 +52,7 @@ struct CodebaseTypesSection: View {
                 Text(type.name)
                     .fontWeight(.medium)
                 if !type.inheritedTypes.isEmpty {
-                    Text(type.inheritedTypes.map(\.name).joined(separator: ", "))
+                    Text(type.inheritedTypes.map { displayName(for: $0.name) }.joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -104,6 +118,20 @@ struct CodebaseTypesSection: View {
 struct CodebaseRelationshipsSection: View {
     let artifact: CodeArtifact
 
+    /// Maps qualified type IDs to display names for readable relationship labels.
+    private var displayNameMap: [String: String] {
+        var map: [String: String] = [:]
+        for type in artifact.types {
+            map[type.id] = type.name
+            map[type.qualifiedName] = type.name
+        }
+        return map
+    }
+
+    private func displayName(for id: String) -> String {
+        displayNameMap[id] ?? id
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -131,12 +159,12 @@ struct CodebaseRelationshipsSection: View {
     private func relationshipRow(rel: Relationship) -> some View {
         HStack(spacing: 8) {
             relationshipKindBadge(rel.kind)
-            Text(rel.source)
+            Text(displayName(for: rel.source))
                 .fontWeight(.medium)
             Image(systemName: relationshipArrow(rel.kind))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(rel.target)
+            Text(displayName(for: rel.target))
                 .fontWeight(.medium)
             Spacer()
             Text(rel.kind.rawValue)
