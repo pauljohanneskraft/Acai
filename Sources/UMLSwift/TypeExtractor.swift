@@ -74,9 +74,18 @@ enum TypeExtractor {
 
     static func extractInheritedTypes(from clause: InheritanceClauseSyntax?) -> [TypeReference] {
         guard let clause else { return [] }
-        return clause.inheritedTypes.map { inheritedType in
-            extractTypeReference(from: inheritedType.type)
+        return clause.inheritedTypes.flatMap { inheritedType -> [TypeReference] in
+            flattenCompositionType(inheritedType.type)
         }
+    }
+
+    /// Expands a `CompositionTypeSyntax` (e.g. `A & B & C`) into individual
+    /// type references. Non-composition types are returned as a single-element array.
+    static func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
+        if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
+            return composition.elements.map { extractTypeReference(from: $0.type) }
+        }
+        return [extractTypeReference(from: typeSyntax)]
     }
 
     // MARK: - Type Reference
