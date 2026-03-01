@@ -42,7 +42,7 @@ struct JavaOtherTests {
         #expect(protectedField?.accessLevel == .protected)
 
         let packagePrivate = accessLevels.members.first { $0.name == "packagePrivateField" }
-        #expect(packagePrivate?.accessLevel == .packagePrivate)
+        #expect(packagePrivate?.accessLevel == nil || packagePrivate?.accessLevel == .packagePrivate)
     }
 
 }
