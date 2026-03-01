@@ -187,6 +187,37 @@ struct ClassDiagramEnricherTests {
         #expect(dot.contains("\"com.example.Child\" -> \"com.example.Base\""))
     }
 
+    @Test func compositionTypeInPropertyProducesIndividualEdges() {
+        // A property typed `Drawable & Printable` should create edges to both types.
+        // The parser stores composition components as genericArguments on the TypeReference,
+        // so the enricher finds them via its existing recursive traversal.
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
+            types: [
+                TypeDeclaration(id: "Drawable", name: "Drawable", qualifiedName: "Drawable", kind: .protocol),
+                TypeDeclaration(id: "Printable", name: "Printable", qualifiedName: "Printable", kind: .protocol),
+                TypeDeclaration(
+                    id: "Box", name: "Box", qualifiedName: "Box", kind: .class,
+                    members: [
+                        Member(name: "value", kind: .property,
+                               type: TypeReference(
+                                   name: "Drawable & Printable",
+                                   genericArguments: [
+                                       TypeReference(name: "Drawable"),
+                                       TypeReference(name: "Printable")
+                                   ]
+                               ))
+                    ]
+                )
+            ]
+        )
+        let result = ClassDiagramEnricher.enrich(artifact)
+        let boxEdges = result.relationships.filter { $0.source == "Box" }
+        let targets = Set(boxEdges.map(\.target))
+        #expect(targets.contains("Drawable"))
+        #expect(targets.contains("Printable"))
+    }
+
     @Test func compositionDisabledByOption() {
         let options = ClassDiagramOptions(inferCompositionFromProperties: false)
         let artifact = CodeArtifact(

@@ -225,6 +225,11 @@ struct SwiftTypeTests {
         let typeRef = valueMember?.type
         #expect(typeRef?.genericArguments.count == 2)
         #expect(typeRef?.genericArguments[0].name == "String & CustomStringConvertible")
+        // The composition's components are stored as nested genericArguments
+        // so the enricher can discover them for relationship inference.
+        #expect(typeRef?.genericArguments[0].genericArguments.count == 2)
+        #expect(typeRef?.genericArguments[0].genericArguments[0].name == "String")
+        #expect(typeRef?.genericArguments[0].genericArguments[1].name == "CustomStringConvertible")
         #expect(typeRef?.genericArguments[1].name == "Int")
     }
 

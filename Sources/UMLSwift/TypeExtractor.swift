@@ -199,7 +199,7 @@ enum TypeExtractor {
         if let compositionType = typeSyntax.as(CompositionTypeSyntax.self) {
             let elements = compositionType.elements.map { extractTypeReference(from: $0.type) }
             let name = elements.map(\.name).joined(separator: " & ")
-            return TypeReference(name: name)
+            return TypeReference(name: name, genericArguments: elements)
         }
 
         return nil
