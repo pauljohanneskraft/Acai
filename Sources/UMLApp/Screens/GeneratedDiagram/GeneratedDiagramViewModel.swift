@@ -4,6 +4,7 @@ import UMLCore
 
 @MainActor
 final class GeneratedDiagramViewModel: ObservableObject {
+    let codebase: Codebase
     let artifact: CodeArtifact
 
     @Published var nodes: [GeneratedDiagramNode] = []
@@ -20,11 +21,13 @@ final class GeneratedDiagramViewModel: ObservableObject {
     private var restoredPositions: [String: CGPoint]?
 
     init(
+        codebase: Codebase,
         artifact: CodeArtifact,
         configuration: GeneratedDiagram.Configuration = .init(),
         restoredPositions: [String: CGPoint]? = nil,
         restoredSizes: [String: CGSize]? = nil
     ) {
+        self.codebase = codebase
         self.artifact = artifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions

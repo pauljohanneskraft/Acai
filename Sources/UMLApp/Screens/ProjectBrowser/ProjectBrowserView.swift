@@ -177,7 +177,7 @@ struct ProjectBrowserView: View {
         if let diagram = model.generatedDiagram(for: diagramID),
            let artifact = model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
-            GeneratedDiagramView(diagram: diagram, artifact: artifact, codebaseName: codebase.name)
+            GeneratedDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
                 .id(diagramID)
                 .environmentObject(model)
         } else {

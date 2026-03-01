@@ -5,7 +5,7 @@ import UMLCore
 struct GeneratedDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
-    let codebaseName: String
+    let codebase: Codebase
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: GeneratedDiagramViewModel
@@ -19,12 +19,13 @@ struct GeneratedDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: GeneratedDiagramSidebarTab = .settings
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebaseName: String) {
+    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
         self.artifact = artifact
-        self.codebaseName = codebaseName
+        self.codebase = codebase
         let restoredSizes = diagram.nodeSizes.mapValues { $0.cgSize }
         self._viewModel = StateObject(wrappedValue: GeneratedDiagramViewModel(
+            codebase: codebase,
             artifact: artifact,
             configuration: diagram.configuration,
             restoredPositions: diagram.nodePositions.mapValues { $0.cgPoint },
@@ -81,10 +82,9 @@ struct GeneratedDiagramView: View {
             }
         }
         .navigationTitle(diagram.name)
-        .onAppear {
-            if diagram.canvasScale <= 0.01 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { centerDiagram() }
-            }
+        .task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1))
+            centerDiagram()
         }
         .onDisappear { savePositions() }
     }

@@ -4,6 +4,7 @@ import UMLCore
 /// Section view displaying all types found in a codebase,
 /// sorted alphabetically with type-kind badges.
 struct CodebaseTypesSection: View {
+    let codebase: Codebase
     let artifact: CodeArtifact
 
     var body: some View {
@@ -59,6 +60,20 @@ struct CodebaseTypesSection: View {
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
         }
+        #if os(macOS)
+        .onTapGesture {
+            guard let filePath = type.location?.filePath else {
+                print("Unknown location of type: \(type.name)")
+                return
+            }
+            let url = URL(filePath: codebase.directoryPath).appending(path: filePath)
+            guard FileManager.default.fileExists(atPath: url.path()) else {
+                print("File doesn't exist at path: \(url.absoluteString)")
+                return
+            }
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
+        #endif
         .padding(.horizontal)
         .padding(.vertical, 4)
     }

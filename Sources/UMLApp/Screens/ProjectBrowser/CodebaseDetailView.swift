@@ -32,7 +32,7 @@ struct CodebaseDetailView: View {
                         Divider()
                         statisticsSection(artifact: artifact)
                         Divider()
-                        CodebaseTypesSection(artifact: artifact)
+                        CodebaseTypesSection(codebase: codebase, artifact: artifact)
                         Divider()
                         CodebaseRelationshipsSection(artifact: artifact)
                     } else {

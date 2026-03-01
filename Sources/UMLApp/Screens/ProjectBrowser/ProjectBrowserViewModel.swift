@@ -230,8 +230,9 @@ final class ProjectBrowserViewModel: ObservableObject {
     // MARK: - Helpers
 
     func projectID(for codebaseID: UUID) -> UUID? {
-        for p in store.projects where p.codebases.contains(where: { $0.id == codebaseID }) { return p.id }
-        return nil
+        store.projects.first { project in
+            project.codebases.contains { $0.id == codebaseID }
+        }?.id
     }
 
     func project(for projectID: UUID) -> Project? {
@@ -239,7 +240,11 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func codebase(for codebaseID: UUID) -> Codebase? {
-        for p in store.projects { if let c = p.codebases.first(where: { $0.id == codebaseID }) { return c } }
+        for p in store.projects {
+            if let c = p.codebases.first(where: { $0.id == codebaseID }) {
+                return c
+            }
+        }
         return nil
     }
 
@@ -248,10 +253,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func projectForDiagram(_ diagramID: UUID) -> Project? {
-        store.projects.first(where: {
+        store.projects.first {
             $0.generatedDiagramIDs.contains(diagramID) ||
             $0.customDiagramIDs.contains(diagramID)
-        })
+        }
     }
 
     func generatedDiagrams(for codebaseID: UUID) -> [GeneratedDiagram] {

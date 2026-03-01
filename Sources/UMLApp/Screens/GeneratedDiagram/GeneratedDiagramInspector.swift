@@ -158,11 +158,31 @@ struct GeneratedDiagramSidebar: View {
                                     }
                                 }
                             }
+                            VStack(alignment: .center) {
+                                revealInFinderButton(node: node)
+                            }
                         }
                     }
                 }
             }
             .listStyle(.inset)
         }
+    }
+
+    @ViewBuilder
+    private func revealInFinderButton(node: GeneratedDiagramNode) -> some View {
+        #if os(macOS)
+        if let type = artifact.types.first(where: { $0.id == node.id }),
+           let filePath = type.location?.filePath {
+            let url = URL(filePath: viewModel.codebase.directoryPath).appending(path: filePath)
+            if FileManager.default.fileExists(atPath: url.path()) {
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } label: {
+                    Label("Reveal in Finder", systemImage: "finder")
+                }
+            }
+        }
+        #endif
     }
 }
