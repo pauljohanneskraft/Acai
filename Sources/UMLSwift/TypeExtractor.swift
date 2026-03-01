@@ -134,12 +134,14 @@ enum TypeExtractor {
         if let optionalType = typeSyntax.as(OptionalTypeSyntax.self) {
             var ref = extractTypeReference(from: optionalType.wrappedType)
             ref.isOptional = true
+            ref.name += "?"
             return ref
         }
 
         if let implicitlyUnwrapped = typeSyntax.as(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
             var ref = extractTypeReference(from: implicitlyUnwrapped.wrappedType)
             ref.isOptional = true
+            ref.name += "!"
             return ref
         }
 
