@@ -91,21 +91,31 @@ extension DartExtractor {
     }
 
     /// Handles `declaration` nodes inside class bodies.
+    ///
+    /// A `declaration` node typically has the structure:
+    ///   [modifiers] [type] [nullable_type?] (initialized_identifier_list | static_final_declaration_list)
+    /// We extract the type and modifiers first, then propagate them to field extraction.
     private mutating func extractClassMemberDeclaration(
         _ node: Node,
         members: inout [Member],
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) {
+        let info = collectDeclarationInfo(node)
+
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            if !processClassMemberNode(
+            if nodeType == "initialized_identifier_list" {
+                members.append(contentsOf: extractFieldsFromIdentifierList(child, info: info))
+            } else if nodeType == "static_final_declaration_list" {
+                members.append(contentsOf: extractStaticFinalFields(child, info: info))
+            } else if processClassMemberNode(
                 child, nodeType: nodeType, members: &members,
                 nestedTypes: &nestedTypes, parentName: parentName
             ) {
-                if let fields = extractFieldFromDeclarationChild(child) {
-                    members.append(contentsOf: fields)
-                }
+                continue
+            } else if let fields = extractFieldFromDeclarationChild(child) {
+                members.append(contentsOf: fields)
             }
         }
     }
@@ -149,8 +159,44 @@ extension DartExtractor {
 
     // MARK: - Method/Function Signatures
 
+    /// Wraps a property member with the method_signature's static modifier if needed.
+    private func wrapPropertyMember(_ member: Member, isStatic: Bool, at node: Node) -> Member {
+        var mods = member.modifiers
+        if isStatic, !mods.contains(.static) { mods.append(.static) }
+        return Member(
+            name: member.name, kind: member.kind,
+            accessLevel: member.accessLevel, modifiers: mods,
+            type: member.type, isComputed: member.isComputed,
+            location: loc(node)
+        )
+    }
+
+    /// Attempts to resolve a child of a `method_signature` into a member
+    /// for signatures that are returned directly (constructor, getter, setter, operator).
+    private func resolveMethodSignatureChild(
+        _ child: Node, nodeType: String, isStatic: Bool, at node: Node
+    ) -> Member? {
+        switch nodeType {
+        case "constructor_signature":
+            return extractConstructorSignature(child, parentName: "").map { member in
+                Member(
+                    name: member.name, kind: member.kind,
+                    modifiers: isStatic ? member.modifiers + [.static] : member.modifiers,
+                    type: member.type, parameters: member.parameters, location: loc(node)
+                )
+            }
+        case "getter_signature":
+            return extractGetterSignature(child).map { wrapPropertyMember($0, isStatic: isStatic, at: node) }
+        case "setter_signature":
+            return extractSetterSignature(child).map { wrapPropertyMember($0, isStatic: isStatic, at: node) }
+        case "operator_signature":
+            return extractOperatorSignature(child)
+        default:
+            return nil
+        }
+    }
+
     private func extractMethodSignature(_ node: Node) -> Member? {
-        // method_signature can wrap function_signature with optional 'static' prefix.
         let isStatic = node.hasAnonymousChild("static", in: context)
         var returnType: TypeReference?
         var name = ""
@@ -159,23 +205,17 @@ extension DartExtractor {
 
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "function_signature":
+            if let member = resolveMethodSignatureChild(
+                child, nodeType: nodeType, isStatic: isStatic, at: node
+            ) {
+                return member
+            }
+            if nodeType == "function_signature" {
                 let inner = extractFunctionSignatureInner(child)
                 returnType = inner.returnType
                 name = inner.name
                 parameters = inner.parameters
                 genericParams = inner.genericParameters
-            case "constructor_signature":
-                if let member = extractConstructorSignature(child, parentName: "") {
-                    return Member(
-                        name: member.name, kind: member.kind,
-                        modifiers: isStatic ? member.modifiers + [.static] : member.modifiers,
-                        type: member.type, parameters: member.parameters, location: loc(node)
-                    )
-                }
-            default:
-                break
             }
         }
 
@@ -371,127 +411,29 @@ extension DartExtractor {
     }
 
     private func extractOperatorSignature(_ node: Node) -> Member? {
-        Member(name: "operator", kind: .method, location: loc(node))
-    }
+        var returnType: TypeReference?
+        var operatorName = "operator"
+        var parameters: [Parameter] = []
 
-    // MARK: - Field Declarations
-
-    private struct FieldAttributes {
-        var isStatic: Bool = false
-        var isLate: Bool = false
-        var isConst: Bool = false
-        var isFinal: Bool = false
-
-        var modifiers: [Modifier] {
-            var result: [Modifier] = []
-            if isStatic { result.append(.static) }
-            if isLate { result.append(.late) }
-            if isConst { result.append(.const) }
-            if isFinal { result.append(.final) }
-            return result
-        }
-    }
-
-    private func makeFieldMember(
-        name: String, type: TypeReference?,
-        attributes: FieldAttributes, location: SourceLocation
-    ) -> Member {
-        Member(
-            name: name, kind: .property,
-            accessLevel: accessLevel(for: name),
-            modifiers: attributes.modifiers, type: type, location: location
-        )
-    }
-
-    private func processFieldChild(
-        _ child: Node, nodeType: String,
-        fieldType: inout TypeReference?, attributes: FieldAttributes
-    ) -> [Member] {
-        switch nodeType {
-        case "type_identifier", "generic_type", "function_type":
-            if fieldType == nil { fieldType = extractTypeReference(child) }
-            return []
-        case "initialized_identifier":
-            let varName = extractIdentifierName(child)
-            guard !varName.isEmpty else { return [] }
-            return [makeFieldMember(
-                name: varName, type: fieldType,
-                attributes: attributes, location: loc(child)
-            )]
-        case "static_final_declaration":
-            let varName = extractIdentifierName(child)
-            guard !varName.isEmpty else { return [] }
-            var attrs = attributes
-            attrs.isStatic = true
-            attrs.isLate = false
-            attrs.isFinal = true
-            return [makeFieldMember(
-                name: varName, type: fieldType,
-                attributes: attrs, location: loc(child)
-            )]
-        case "identifier":
-            return processFieldIdentifier(
-                child, fieldType: &fieldType, attributes: attributes
-            )
-        default:
-            return []
-        }
-    }
-
-    private func processFieldIdentifier(
-        _ child: Node, fieldType: inout TypeReference?,
-        attributes: FieldAttributes
-    ) -> [Member] {
-        let varName = text(child)
-        guard !varName.isEmpty, !varName.hasPrefix("var"),
-              !varName.hasPrefix("final") else { return [] }
-        if fieldType == nil {
-            fieldType = TypeReference(name: varName)
-            return []
-        }
-        var attrs = attributes
-        attrs.isConst = false
-        return [makeFieldMember(
-            name: varName, type: fieldType,
-            attributes: attrs, location: loc(child)
-        )]
-    }
-
-    private func extractFieldDeclarations(_ node: Node) -> [Member] {
-        let attributes = FieldAttributes(
-            isStatic: node.hasAnonymousChild("static", in: context),
-            isLate: node.hasAnonymousChild("late", in: context),
-            isConst: node.nodeType == "static_final_declaration_list"
-                || node.hasAnonymousChild("const", in: context)
-                || node.hasAnonymousChild("final", in: context)
-        )
-        var members: [Member] = []
-        var fieldType: TypeReference?
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
-            members.append(contentsOf: processFieldChild(
-                child, nodeType: nodeType, fieldType: &fieldType,
-                attributes: attributes
-            ))
+            switch nodeType {
+            case "type_identifier", "void_type":
+                if returnType == nil { returnType = extractTypeReference(child) }
+            case "binary_operator", "unary_prefix_operator", "unary_postfix_operator",
+                 "tilde_operator", "minus_operator", "negation_operator":
+                operatorName = text(child).trimmingCharacters(in: .whitespacesAndNewlines)
+            case "formal_parameter_list":
+                parameters = extractFormalParameterList(child)
+            default:
+                break
+            }
         }
-        return members
-    }
 
-    /// Attempt to extract fields from arbitrary child nodes of a declaration.
-    private func extractFieldFromDeclarationChild(_ child: Node) -> [Member]? {
-        guard let nodeType = child.nodeType else { return nil }
-        switch nodeType {
-        case "static_final_declaration_list", "initialized_identifier_list":
-            return extractFieldDeclarations(child)
-        default:
-            return nil
-        }
-    }
-
-    private func extractIdentifierName(_ node: Node) -> String {
-        for child in node.children() where child.nodeType == "identifier" {
-            return text(child)
-        }
-        return ""
+        return Member(
+            name: operatorName, kind: .method,
+            type: returnType, parameters: parameters,
+            location: loc(node)
+        )
     }
 }

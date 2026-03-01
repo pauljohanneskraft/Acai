@@ -61,6 +61,8 @@ extension DartExtractor {
             } else if !name.isEmpty && paramType == nil {
                 paramType = TypeReference(name: name)
                 name = childText
+            } else {
+                name = childText
             }
         case "type_identifier", "generic_type", "function_type", "void_type":
             paramType = extractTypeReference(child)
