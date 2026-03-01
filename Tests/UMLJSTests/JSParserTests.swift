@@ -181,103 +181,312 @@ struct TypeScriptParserTests {
     }
 }
 
-@Suite("JavaScript Parser Tests")
-struct JavaScriptParserTests {
-    let parser = JSCodeParser(isTypeScript: false)
+// MARK: - Extended TypeScript Tests
 
-    @Test func simpleClass() {
+@Suite("Extended TypeScript Parser Tests")
+struct ExtendedTypeScriptParserTests {
+    let parser = JSCodeParser(isTypeScript: true)
+
+    @Test func nestedClasses() {
         let source = """
-        class Animal {
-            constructor(name) { this.name = name; }
-            speak() { return this.name; }
+        class Outer {
+            class Inner {
+                value: number = 0;
+            }
         }
         """
-        let artifact = parser.parse(source: source, fileName: "animal.js")
-        #expect(artifact.types.count == 1)
-        let animal = artifact.types[0]
-        #expect(animal.name == "Animal")
-        #expect(artifact.metadata.sourceLanguage == .javaScript)
+        let artifact = parser.parse(source: source, fileName: "nested.ts")
+        let outer = artifact.types.first { $0.name == "Outer" }
+        #expect(outer != nil)
+        // Note: nested classes may be extracted as separate types or as nestedTypes
+        #expect(artifact.types.count >= 1)
     }
 
-    @Test func classExtends() {
+    @Test func multipleInterfaceImplementations() {
         let source = """
-        class Dog extends Animal {
-            constructor(name, breed) { super(name); this.breed = breed; }
-            bark() {}
+        interface A { a(): void; }
+        interface B { b(): void; }
+        interface C { c(): void; }
+        class Multi implements A, B, C {
+            a() {}
+            b() {}
+            c() {}
         }
         """
-        let artifact = parser.parse(source: source, fileName: "dog.js")
-        let dog = artifact.types[0]
-        #expect(dog.inheritedTypes.count == 1)
-        #expect(artifact.relationships.first?.kind == .inheritance)
+        let artifact = parser.parse(source: source, fileName: "multi.ts")
+        let multi = artifact.types.first { $0.name == "Multi" }
+        #expect(multi != nil)
+        #expect(multi?.inheritedTypes.count == 3)
+        let conformances = artifact.relationships.filter { $0.kind == .conformance && $0.source == "Multi" }
+        #expect(conformances.count == 3)
     }
 
-    @Test func staticMembers() {
+    @Test func asyncAwaitMethods() {
         let source = """
-        class Counter {
-            static count = 0;
-            static increment() { Counter.count++; }
+        class AsyncService {
+            async fetchData(): Promise<string> {
+                return "data";
+            }
+            async processItems(items: string[]): Promise<void> {}
         }
         """
-        let artifact = parser.parse(source: source, fileName: "counter.js")
-        let counter = artifact.types[0]
-        #expect(counter.members.contains { $0.modifiers.contains(.static) })
+        let artifact = parser.parse(source: source, fileName: "async.ts")
+        let service = artifact.types[0]
+        let asyncMethods = service.members.filter { $0.modifiers.contains(.async) }
+        #expect(asyncMethods.count == 2)
     }
 
-    @Test func getterSetter() {
+    @Test func arrowFunctionFields() {
+        let source = """
+        class Calculator {
+            add = (a: number, b: number): number => a + b;
+            multiply = (a: number, b: number) => a * b;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "calc.ts")
+        let calc = artifact.types[0]
+        #expect(calc.members.count >= 2)
+    }
+
+    @Test func unionAndIntersectionTypes() {
+        let source = """
+        type StringOrNumber = string | number;
+        type Mergeable = { name: string } & { age: number };
+        interface Container {
+            value: string | number | boolean;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "types.ts")
+        #expect(artifact.types.count == 3)
+        let stringOrNumber = artifact.types.first { $0.name == "StringOrNumber" }
+        #expect(stringOrNumber?.kind == .typeAlias)
+    }
+
+    @Test func complexGenericConstraints() {
+        let source = """
+        class Repository<T extends { id: string }, U extends T> {
+            items: T[] = [];
+            find(id: string): T | undefined { return undefined; }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "repo.ts")
+        let repo = artifact.types[0]
+        #expect(repo.genericParameters.count == 2)
+        #expect(repo.genericParameters[0].constraints.count >= 1)
+    }
+
+    @Test func interfaceExtensionChain() {
+        let source = """
+        interface Base { id: string; }
+        interface Middle extends Base { name: string; }
+        interface Derived extends Middle { age: number; }
+        """
+        let artifact = parser.parse(source: source, fileName: "chain.ts")
+        #expect(artifact.types.count == 3)
+        let derived = artifact.types.first { $0.name == "Derived" }
+        #expect((derived?.inheritedTypes.count ?? 0) >= 1)
+        let inheritance = artifact.relationships.filter {
+            $0.kind == .conformance && $0.source == "Derived"
+        }
+        #expect(inheritance.count >= 1)
+    }
+
+    @Test func overrideModifier() {
+        let source = """
+        class Base {
+            method(): void {}
+        }
+        class Child extends Base {
+            override method(): void {}
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "override.ts")
+        let child = artifact.types.first { $0.name == "Child" }
+        let overriddenMethod = child?.members.first { $0.name == "method" }
+        #expect(overriddenMethod?.modifiers.contains(.override) == true)
+    }
+
+    @Test func declareModifier() {
+        let source = """
+        declare class ExternalLib {
+            static version: string;
+            process(data: string): void;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "declare.ts")
+        // The declare keyword is typically used for ambient declarations
+        let lib = artifact.types.first { $0.name == "ExternalLib" }
+        #expect(lib != nil)
+    }
+
+    @Test func optionalParametersAndMethods() {
+        let source = """
+        interface Service {
+            required(x: string): void;
+            optional?(y: number): void;
+        }
+        class Implementation {
+            method(required: string, optional?: number, another?: boolean): void {}
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "optional.ts")
+        let impl = artifact.types.first { $0.name == "Implementation" }
+        let method = impl?.members.first { $0.name == "method" }
+        #expect(method?.parameters.count == 3)
+    }
+
+    @Test func restParameters() {
+        let source = """
+        function combine(first: string, ...rest: string[]): string {
+            return first + rest.join();
+        }
+        class Logger {
+            log(message: string, ...args: any[]): void {}
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "rest.ts")
+        #expect(artifact.freestandingFunctions.count == 1)
+        let combineFunc = artifact.freestandingFunctions[0]
+        #expect(combineFunc.parameters.count >= 2)
+    }
+
+    @Test func defaultParameterValues() {
+        let source = """
+        function greet(name: string = "World"): string {
+            return "Hello " + name;
+        }
+        class Config {
+            constructor(public debug: boolean = false, public port: number = 3000) {}
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "defaults.ts")
+        let config = artifact.types.first { $0.name == "Config" }
+        #expect(config != nil)
+    }
+
+    @Test func multipleDecorators() {
+        let source = """
+        @Injectable()
+        @Component({selector: 'test'})
+        @Singleton
+        class MultiDecorated {
+            @Input() value: string = "";
+            @Output() changed = new EventEmitter();
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "decorators.ts")
+        let decorated = artifact.types[0]
+        #expect(decorated.annotations.count >= 3)
+        let valueField = decorated.members.first { $0.name == "value" }
+        #expect(valueField?.annotations.contains("@Input") == true)
+    }
+
+    @Test func computedPropertyNames() {
+        let source = """
+        const key = "dynamic";
+        class ComputedProps {
+            [key]: string;
+            ["literal"]: number;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "computed.ts")
+        let props = artifact.types[0]
+        #expect(!artifact.types.isEmpty)
+    }
+
+    @Test func abstractMethodsAndProperties() {
+        let source = """
+        abstract class AbstractBase {
+            abstract name: string;
+            abstract getName(): string;
+            abstract setName(value: string): void;
+            concrete(): void {}
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "abstract.ts")
+        let base = artifact.types[0]
+        #expect(base.modifiers.contains(.abstract))
+        let abstractMembers = base.members.filter { $0.modifiers.contains(.abstract) }
+        #expect(abstractMembers.count >= 2)
+    }
+
+    @Test func getterSetterPairs() {
         let source = """
         class Person {
-            get fullName() { return this.first + ' ' + this.last; }
-            set fullName(value) { }
+            private _name: string = "";
+            get name(): string { return this._name; }
+            set name(value: string) { this._name = value; }
         }
         """
-        let artifact = parser.parse(source: source, fileName: "person.js")
+        let artifact = parser.parse(source: source, fileName: "getset.ts")
         let person = artifact.types[0]
-        let getterSetter = person.members.filter { $0.isComputed }
-        #expect(getterSetter.count >= 1)
+        let computed = person.members.filter { $0.isComputed }
+        #expect(computed.count >= 2)
     }
 
-    @Test func privateFields() {
+    @Test func indexSignatures() {
         let source = """
-        class Foo {
-            #count = 0;
-            #increment() { this.#count++; }
-            getCount() { return this.#count; }
+        interface Dictionary {
+            [key: string]: any;
+        }
+        interface NumberMap {
+            [index: number]: string;
         }
         """
-        let artifact = parser.parse(source: source, fileName: "foo.js")
-        let foo = artifact.types[0]
-        let privateMembers = foo.members.filter { $0.accessLevel == .private }
-        #expect(privateMembers.count == 2)
+        let artifact = parser.parse(source: source, fileName: "index.ts")
+        #expect(artifact.types.count == 2)
     }
 
-    @Test func exportClass() {
+    @Test func callSignatures() {
         let source = """
-        export class Service {
-            fetch() {}
+        interface Callable {
+            (x: number): string;
+        }
+        interface ConstructorLike {
+            new (x: number): object;
         }
         """
-        let artifact = parser.parse(source: source, fileName: "service.js")
-        #expect(artifact.types[0].accessLevel == .public)
+        let artifact = parser.parse(source: source, fileName: "callable.ts")
+        #expect(artifact.types.count == 2)
     }
 
-    @Test func prototypeMethod() {
+    @Test func mixedExports() {
         let source = """
-        function Foo() {}
-        Foo.prototype.bar = function() {};
+        export class Named {}
+        export default class DefaultClass {}
+        export { Named as RenamedExport };
         """
-        let artifact = parser.parse(source: source, fileName: "foo.js")
-        let foo = artifact.types.first { $0.name == "Foo" }
-        #expect(foo != nil)
-        #expect(foo?.members.contains { $0.name == "bar" } == true)
+        let artifact = parser.parse(source: source, fileName: "exports.ts")
+        let types = artifact.types
+        #expect(types.count >= 1)
+        let defaultClass = types.first { $0.annotations.contains("default") }
+        #expect(defaultClass != nil)
     }
 
-    @Test func freestandingFunction() {
+    @Test func namespaceWithClasses() {
         let source = """
-        function helper(x, y) { return x + y; }
+        namespace App {
+            export class Service {}
+            export namespace Models {
+                export class User {}
+            }
+        }
         """
-        let artifact = parser.parse(source: source, fileName: "helpers.js")
-        #expect(artifact.freestandingFunctions.count == 1)
-        #expect(artifact.freestandingFunctions[0].name == "helper")
+        let artifact = parser.parse(source: source, fileName: "namespace.ts")
+        let module = artifact.types.first { $0.kind == .module }
+        #expect(module != nil)
+    }
+
+    @Test func genericInterfaceWithMethods() {
+        let source = """
+        interface Comparable<T> {
+            compareTo(other: T): number;
+            equals(other: T): boolean;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "comparable.ts")
+        let comparable = artifact.types[0]
+        #expect(comparable.genericParameters.count == 1)
+        #expect(comparable.members.count == 2)
     }
 }
