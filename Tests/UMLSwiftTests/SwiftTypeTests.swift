@@ -190,9 +190,47 @@ struct SwiftTypeTests {
         """
         let artifact = parser.parse(source: source, fileName: "Composition.swift")
         let model = artifact.types[0]
-        // TODO: inheritedTypes and relationships should actually be 3 rather than 1
-        #expect(model.inheritedTypes.count == 1)
-        #expect(artifact.relationships.count == 1)
+        #expect(model.inheritedTypes.count == 3)
+        #expect(model.inheritedTypes.map(\.name) == ["Codable", "Hashable", "Identifiable"])
+        #expect(artifact.relationships.count == 3)
+        #expect(artifact.relationships.allSatisfy { $0.kind == .conformance })
+    }
+
+    @Test func compositionTypesEquivalentToCommaList() {
+        let ampersand = parser.parse(source: "struct A: B & C {}", fileName: "A.swift")
+        let commaList = parser.parse(source: "struct A: B, C {}", fileName: "A.swift")
+
+        #expect(ampersand.types[0].inheritedTypes.count == 2)
+        #expect(commaList.types[0].inheritedTypes.count == 2)
+        #expect(ampersand.types[0].inheritedTypes.map(\.name) == commaList.types[0].inheritedTypes.map(\.name))
+        #expect(ampersand.relationships.count == commaList.relationships.count)
+        for (lhs, rhs) in zip(ampersand.relationships, commaList.relationships) {
+            #expect(lhs.kind == rhs.kind)
+            #expect(lhs.target == rhs.target)
+        }
+    }
+
+    @Test func compositionInGenericArgumentIsNotFlattened() {
+        let source = """
+        class Container {
+            var value: Dictionary<String & CustomStringConvertible, Int>
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Container.swift")
+        let container = artifact.types[0]
+        let valueMember = container.members.first { $0.name == "value" }
+        #expect(valueMember != nil)
+        // The generic type should have exactly 2 arguments, not 3.
+        // `String & CustomStringConvertible` is a single composition type, not two separate types.
+        let typeRef = valueMember?.type
+        #expect(typeRef?.genericArguments.count == 2)
+        #expect(typeRef?.genericArguments[0].name == "String & CustomStringConvertible")
+        // The composition's components are stored as nested genericArguments
+        // so the enricher can discover them for relationship inference.
+        #expect(typeRef?.genericArguments[0].genericArguments.count == 2)
+        #expect(typeRef?.genericArguments[0].genericArguments[0].name == "String")
+        #expect(typeRef?.genericArguments[0].genericArguments[1].name == "CustomStringConvertible")
+        #expect(typeRef?.genericArguments[1].name == "Int")
     }
 
     @Test func finalClass() {
