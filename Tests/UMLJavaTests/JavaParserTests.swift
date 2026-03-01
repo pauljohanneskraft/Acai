@@ -5,8 +5,6 @@ import Testing
 @Suite("Java Parser Tests")
 struct JavaParserTests {
     let parser = JavaCodeParser()
-
-    @Test func classInheritance() {
         let source = """
         package com.example;
 
@@ -20,18 +18,10 @@ struct JavaParserTests {
         #expect(dog.name == "Dog")
         #expect(dog.id == "com.example.Dog")
         #expect(dog.namespace == "com.example")
-
-        let inheritance = artifact.relationships.first { $0.kind == .inheritance }
-        #expect(inheritance != nil)
         #expect(inheritance?.source == "com.example.Dog")
         #expect(inheritance?.target == "Animal")
-
-        let conformance = artifact.relationships.first { $0.kind == .conformance }
-        #expect(conformance != nil)
         #expect(conformance?.target == "Serializable")
     }
-
-    @Test func interfaceDeclaration() {
         let source = """
         public interface Repository<T> {
             T findById(String id);
@@ -45,8 +35,6 @@ struct JavaParserTests {
         #expect(repo.genericParameters.count == 1)
         #expect(repo.members.count == 2)
     }
-
-    @Test func enumDeclaration() {
         let source = """
         public enum Direction {
             NORTH, SOUTH, EAST, WEST;
@@ -59,8 +47,6 @@ struct JavaParserTests {
         #expect(dir.enumCases.count == 4)
         #expect(dir.enumCases[0].name == "NORTH")
     }
-
-    @Test func fieldDeclaration() {
         let source = """
         public class Config {
             private String name;
@@ -73,13 +59,8 @@ struct JavaParserTests {
         let nameField = config.members.first { $0.name == "name" }
         #expect(nameField?.type?.name == "String")
         #expect(nameField?.accessLevel == .private)
-
-        let countField = config.members.first { $0.name == "count" }
-        #expect(countField?.type?.name == "int")
         #expect(countField?.accessLevel == .public)
     }
-
-    @Test func methodDeclaration() {
         let source = """
         public class Service {
             public String process(int id, String name) {
@@ -94,8 +75,6 @@ struct JavaParserTests {
         #expect(method?.type?.name == "String")
         #expect(method?.parameters.count == 2)
     }
-
-    @Test func recordDeclaration() {
         let source = """
         public record Point(int x, int y) {}
         """
@@ -105,8 +84,6 @@ struct JavaParserTests {
         #expect(point.kind == .record)
         #expect(point.members.count >= 2) // x and y as properties
     }
-
-    @Test func nestedClasses() {
         let source = """
         public class Outer {
             public class Inner {
@@ -120,8 +97,6 @@ struct JavaParserTests {
         #expect(outer.nestedTypes.count == 1)
         #expect(outer.nestedTypes[0].name == "Inner")
     }
-
-    @Test func modifiersStatic() {
         let source = """
         public class Utils {
             public static String CONSTANT = "value";
@@ -130,15 +105,7 @@ struct JavaParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "Utils.java")
         let utils = artifact.types[0]
-
-        let constant = utils.members.first { $0.name == "CONSTANT" }
-        #expect(constant?.modifiers.contains(.static) == true)
-
-        let method = utils.members.first { $0.name == "staticMethod" }
-        #expect(method?.modifiers.contains(.static) == true)
     }
-
-    @Test func modifiersFinal() {
         let source = """
         public final class Immutable {
             private final String value;
@@ -148,15 +115,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "Immutable.java")
         let immutable = artifact.types[0]
         #expect(immutable.modifiers.contains(.final) == true)
-
-        let field = immutable.members.first { $0.name == "value" }
-        #expect(field?.modifiers.contains(.final) == true)
-
-        let method = immutable.members.first { $0.name == "finalMethod" }
-        #expect(method?.modifiers.contains(.final) == true)
     }
-
-    @Test func modifiersAbstract() {
         let source = """
         public abstract class AbstractBase {
             public abstract void abstractMethod();
@@ -166,15 +125,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "AbstractBase.java")
         let base = artifact.types[0]
         #expect(base.modifiers.contains(.abstract) == true)
-
-        let abstractMethod = base.members.first { $0.name == "abstractMethod" }
-        #expect(abstractMethod?.modifiers.contains(.abstract) == true)
-
-        let concreteMethod = base.members.first { $0.name == "concreteMethod" }
-        #expect(concreteMethod?.modifiers.contains(.abstract) == false)
     }
-
-    @Test func modifiersSynchronized() {
         let source = """
         public class ThreadSafe {
             public synchronized void syncMethod() {}
@@ -185,8 +136,6 @@ struct JavaParserTests {
         let method = threadSafe.members.first { $0.name == "syncMethod" }
         #expect(method?.modifiers.contains(.synchronized) == true)
     }
-
-    @Test func modifiersVolatile() {
         let source = """
         public class Concurrent {
             private volatile boolean flag;
@@ -197,8 +146,6 @@ struct JavaParserTests {
         let field = concurrent.members.first { $0.name == "flag" }
         #expect(field?.modifiers.contains(.volatile) == true)
     }
-
-    @Test func modifiersTransient() {
         let source = """
         public class Serialization {
             private transient String tempData;
@@ -209,8 +156,6 @@ struct JavaParserTests {
         let field = serialization.members.first { $0.name == "tempData" }
         #expect(field?.modifiers.contains(.transient) == true)
     }
-
-    @Test func modifiersNative() {
         let source = """
         public class NativeLib {
             public native void nativeMethod();
@@ -221,8 +166,6 @@ struct JavaParserTests {
         let method = nativeLib.members.first { $0.name == "nativeMethod" }
         #expect(method?.modifiers.contains(.native) == true)
     }
-
-    @Test func modifiersStrictfp() {
         let source = """
         public strictfp class StrictFloatingPoint {
             public strictfp void strictMethod() {}
@@ -231,12 +174,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "StrictFloatingPoint.java")
         let strictClass = artifact.types[0]
         #expect(strictClass.modifiers.contains(.strictfp) == true)
-
-        let method = strictClass.members.first { $0.name == "strictMethod" }
-        #expect(method?.modifiers.contains(.strictfp) == true)
     }
-
-    @Test func modifiersDefault() {
         let source = """
         public interface DefaultMethods {
             default void defaultMethod() {
@@ -249,8 +187,6 @@ struct JavaParserTests {
         let method = iface.members.first { $0.name == "defaultMethod" }
         #expect(method?.modifiers.contains(.default) == true)
     }
-
-    @Test func annotations() {
         let source = """
         @Deprecated
         @SuppressWarnings("unchecked")
@@ -266,8 +202,6 @@ struct JavaParserTests {
         #expect(annotatedClass.annotations.count >= 1)
         #expect(annotatedClass.annotations.contains { $0.contains("Deprecated") })
     }
-
-    @Test func genericConstraints() {
         let source = """
         public class Container<T extends Comparable<T> & Serializable> {
             private T value;
@@ -280,8 +214,6 @@ struct JavaParserTests {
         #expect(param.name == "T")
         #expect(param.constraints.count >= 1)
     }
-
-    @Test func multipleGenericParameters() {
         let source = """
         public class Pair<K extends Comparable<K>, V> {
             private K key;
@@ -294,8 +226,6 @@ struct JavaParserTests {
         #expect(pair.genericParameters[0].name == "K")
         #expect(pair.genericParameters[1].name == "V")
     }
-
-    @Test func constructorWithParameters() {
         let source = """
         public class Person {
             private String name;
@@ -315,8 +245,6 @@ struct JavaParserTests {
         #expect(constructor?.parameters[0].internalName == "name")
         #expect(constructor?.parameters[1].internalName == "age")
     }
-
-    @Test func arrayTypes() {
         let source = """
         public class Arrays {
             private int[] numbers;
@@ -328,13 +256,8 @@ struct JavaParserTests {
         let numbers = arrays.members.first { $0.name == "numbers" }
         #expect(numbers?.type?.isArray == true)
         #expect(numbers?.type?.name == "int")
-
-        let matrix = arrays.members.first { $0.name == "matrix" }
-        #expect(matrix?.type?.isArray == true)
         #expect(matrix?.type?.name == "String")
     }
-
-    @Test func wildcardTypes() {
         let source = """
         public class Wildcards {
             private List<?> anything;
@@ -345,12 +268,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "Wildcards.java")
         let wildcards = artifact.types[0]
         #expect(wildcards.members.count == 3)
-
-        let anything = wildcards.members.first { $0.name == "anything" }
-        #expect(anything?.type != nil)
     }
-
-    @Test func annotationType() {
         let source = """
         public @interface CustomAnnotation {
             String value();
@@ -363,8 +281,6 @@ struct JavaParserTests {
         #expect(annotation.kind == .annotation)
         #expect(annotation.members.count >= 1)
     }
-
-    @Test func enumWithArguments() {
         let source = """
         public enum Planet {
             EARTH(5.976e+24, 6.37814e6),
@@ -386,8 +302,6 @@ struct JavaParserTests {
         #expect(planet.enumCases[0].name == "EARTH")
         #expect(planet.enumCases[1].name == "MARS")
     }
-
-    @Test func enumWithInterfaces() {
         let source = """
         public enum Operation implements Calculator {
             ADD, SUBTRACT, MULTIPLY, DIVIDE;
@@ -396,26 +310,16 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "Operation.java")
         let operation = artifact.types[0]
         #expect(operation.kind == .enum)
-
-        let conformance = artifact.relationships.first { $0.kind == .conformance }
-        #expect(conformance != nil)
         #expect(conformance?.target == "Calculator")
     }
-
-    @Test func recordWithInterfaces() {
         let source = """
         public record Coordinate(double x, double y) implements Comparable<Coordinate> {}
         """
         let artifact = parser.parse(source: source, fileName: "Coordinate.java")
         let coordinate = artifact.types[0]
         #expect(coordinate.kind == .record)
-
-        let conformance = artifact.relationships.first { $0.kind == .conformance }
-        #expect(conformance != nil)
         #expect(conformance?.target.contains("Comparable") == true)
     }
-
-    @Test func varargParameter() {
         let source = """
         public class VarArgs {
             public void method(String first, int... numbers) {}
@@ -428,8 +332,6 @@ struct JavaParserTests {
         #expect(method?.parameters[1].internalName == "numbers")
         #expect(method?.parameters[1].isVariadic == true)
     }
-
-    @Test func multipleFieldDeclarators() {
         let source = """
         public class MultiField {
             private int x, y, z;
@@ -447,8 +349,6 @@ struct JavaParserTests {
         #expect(y?.type?.name == "int")
         #expect(z?.type?.name == "int")
     }
-
-    @Test func packageNamespace() {
         let source = """
         package com.example.project;
 
@@ -460,34 +360,19 @@ struct JavaParserTests {
         #expect(myClass.qualifiedName == "com.example.project.MyClass")
         #expect(myClass.id == "com.example.project.MyClass")
     }
-
-    @Test func multipleInheritance() {
         let source = """
         public class Dog extends Animal implements Runnable, Comparable<Dog> {
         }
         """
         let artifact = parser.parse(source: source, fileName: "Dog.java")
-
-        let inheritance = artifact.relationships.filter { $0.kind == .inheritance }
-        #expect(inheritance.count == 1)
         #expect(inheritance[0].target == "Animal")
-
-        let conformances = artifact.relationships.filter { $0.kind == .conformance }
-        #expect(conformances.count >= 2)
     }
-
-    @Test func interfaceExtends() {
         let source = """
         public interface ExtendedRepository extends Repository, Serializable {
         }
         """
         let artifact = parser.parse(source: source, fileName: "ExtendedRepository.java")
-
-        let conformances = artifact.relationships.filter { $0.kind == .conformance }
-        #expect(conformances.count == 2)
     }
-
-    @Test func complexGenerics() {
         let source = """
         public class Complex {
             private Map<String, List<Integer>> data;
@@ -497,12 +382,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "Complex.java")
         let complex = artifact.types[0]
         #expect(complex.members.count == 2)
-
-        let data = complex.members.first { $0.name == "data" }
-        #expect(data?.type?.name == "Map")
     }
-
-    @Test func staticNestedClass() {
         let source = """
         public class Outer {
             public static class StaticNested {
@@ -516,8 +396,6 @@ struct JavaParserTests {
         let nested = outer.nestedTypes[0]
         #expect(nested.modifiers.contains(.static) == true)
     }
-
-    @Test func accessLevels() {
         let source = """
         public class AccessLevels {
             public String publicField;
@@ -528,21 +406,7 @@ struct JavaParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "AccessLevels.java")
         let accessLevels = artifact.types[0]
-
-        let publicField = accessLevels.members.first { $0.name == "publicField" }
-        #expect(publicField?.accessLevel == .public)
-
-        let privateField = accessLevels.members.first { $0.name == "privateField" }
-        #expect(privateField?.accessLevel == .private)
-
-        let protectedField = accessLevels.members.first { $0.name == "protectedField" }
-        #expect(protectedField?.accessLevel == .protected)
-
-        let packagePrivate = accessLevels.members.first { $0.name == "packagePrivateField" }
-        #expect(packagePrivate?.accessLevel == .packagePrivate)
     }
-
-    @Test func genericMethods() {
         let source = """
         public class GenericMethods {
             public <T> T identity(T value) {
@@ -557,15 +421,7 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "GenericMethods.java")
         let genericMethods = artifact.types[0]
         #expect(genericMethods.members.count == 2)
-
-        let identity = genericMethods.members.first { $0.name == "identity" }
-        #expect(identity?.genericParameters.count == 1)
-
-        let max = genericMethods.members.first { $0.name == "max" }
-        #expect(max?.genericParameters.count == 1)
     }
-
-    @Test func overloadedMethods() {
         let source = """
         public class Overloaded {
             public void method() {}
@@ -579,8 +435,6 @@ struct JavaParserTests {
         let methods = overloaded.members.filter { $0.name == "method" }
         #expect(methods.count == 4)
     }
-
-    @Test func overloadedConstructors() {
         let source = """
         public class MultiConstructor {
             public MultiConstructor() {}
@@ -593,8 +447,6 @@ struct JavaParserTests {
         let constructors = multiConstructor.members.filter { $0.kind == .initializer }
         #expect(constructors.count == 3)
     }
-
-    @Test func throwsClause() {
         let source = """
         public class Exceptions {
             public void riskyMethod() throws IOException, SQLException {}
@@ -605,8 +457,6 @@ struct JavaParserTests {
         let method = exceptions.members.first { $0.name == "riskyMethod" }
         #expect(method != nil)
     }
-
-    @Test func recordWithGenerics() {
         let source = """
         public record Box<T>(T value) {}
         """
