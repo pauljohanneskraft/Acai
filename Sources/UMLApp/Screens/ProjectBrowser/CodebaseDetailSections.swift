@@ -7,18 +7,10 @@ struct CodebaseTypesSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact
 
-    /// Maps qualified type IDs to display names for readable inherited-type labels.
-    private var displayNameMap: [String: String] {
-        var map: [String: String] = [:]
-        for type in artifact.types {
-            map[type.id] = type.name
-            map[type.qualifiedName] = type.name
-        }
-        return map
-    }
-
     private func displayName(for id: String) -> String {
-        displayNameMap[id] ?? id
+        artifact.types.first { 
+            $0.id == id || $0.qualifiedName == id 
+        }?.name ?? id
     }
 
     var body: some View {
@@ -118,18 +110,10 @@ struct CodebaseTypesSection: View {
 struct CodebaseRelationshipsSection: View {
     let artifact: CodeArtifact
 
-    /// Maps qualified type IDs to display names for readable relationship labels.
-    private var displayNameMap: [String: String] {
-        var map: [String: String] = [:]
-        for type in artifact.types {
-            map[type.id] = type.name
-            map[type.qualifiedName] = type.name
-        }
-        return map
-    }
-
     private func displayName(for id: String) -> String {
-        displayNameMap[id] ?? id
+        artifact.types.first { 
+            $0.id == id || $0.qualifiedName == id 
+        }?.name ?? id
     }
 
     var body: some View {
