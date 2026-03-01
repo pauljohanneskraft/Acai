@@ -62,6 +62,17 @@ extension JSExtractor {
     ) -> (types: [TypeDeclaration], functions: [Member]) {
         guard let nodeType = node.nodeType else { return ([], []) }
 
+        // Handle ambient declarations (declare class, declare function, etc.)
+        if nodeType == "ambient_declaration", isTypeScript {
+            return dispatchAmbientDeclaration(node, isExported: isExported, isDefault: isDefault,
+                                              decorators: decorators, namespace: namespace)
+        }
+
+        // Handle class expressions assigned to variables (const MyClass = class { ... })
+        if nodeType == "lexical_declaration" || nodeType == "variable_declaration" {
+            return dispatchVariableClassExpressions(node, decorators: decorators, namespace: namespace)
+        }
+
         if nodeType == "function_declaration" {
             return ([], [extractFunctionDeclaration(node, isExported: isExported)])
         }
@@ -75,6 +86,48 @@ extension JSExtractor {
         }
 
         return ([], [])
+    }
+
+    /// Unwrap `ambient_declaration` (e.g. `declare class Foo { ... }`) and dispatch the inner declaration.
+    private mutating func dispatchAmbientDeclaration(
+        _ node: Node,
+        isExported: Bool,
+        isDefault: Bool,
+        decorators: [String],
+        namespace: String?
+    ) -> (types: [TypeDeclaration], functions: [Member]) {
+        for child in node.namedChildren() {
+            let result = dispatchDeclaration(child, isExported: isExported, isDefault: isDefault,
+                                             decorators: decorators, namespace: namespace)
+            if !result.types.isEmpty || !result.functions.isEmpty {
+                return result
+            }
+        }
+        return ([], [])
+    }
+
+    /// Extract class expressions from variable declarations (e.g. `const MyClass = class { ... }`).
+    private mutating func dispatchVariableClassExpressions(
+        _ node: Node,
+        decorators: [String],
+        namespace: String?
+    ) -> (types: [TypeDeclaration], functions: [Member]) {
+        var allTypes: [TypeDeclaration] = []
+        let isExported = false
+        for child in node.namedChildren() {
+            guard child.nodeType == "variable_declarator" else { continue }
+            let varName = child.child(byFieldName: "name").map { text($0) }
+            let value = child.child(byFieldName: "value")
+            guard let value, value.nodeType == "class" else { continue }
+            var typeDecl = extractClassLikeDeclaration(value, isExported: isExported, isDefault: false)
+            if typeDecl.name == "_Anonymous" || typeDecl.name == "default", let varName {
+                typeDecl.name = varName
+                typeDecl.id = varName
+                typeDecl.qualifiedName = varName
+            }
+            allTypes.append(applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace))
+        }
+        return (allTypes, [])
     }
 
     private mutating func dispatchTypeDeclaration(

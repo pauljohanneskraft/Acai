@@ -12,31 +12,53 @@ extension JSExtractor {
 
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "method_definition", "abstract_method_definition":
-                var member = extractMethodDefinition(child, parentName: typeDecl.name,
-                                                     knownProperties: knownProperties)
-                if childType == "abstract_method_definition", isTypeScript,
-                   !member.modifiers.contains(.abstract) {
-                    member.modifiers.append(.abstract)
-                }
-                if member.kind == .initializer, isTypeScript {
-                    extractConstructorParameterProperties(child, into: &typeDecl)
-                }
+            if let member = extractClassBodyMember(child, childType: childType,
+                                                   parentName: typeDecl.name,
+                                                   knownProperties: knownProperties,
+                                                   typeDecl: &typeDecl) {
                 typeDecl.members.append(member)
-
-            case "field_definition", "public_field_definition":
-                typeDecl.members.append(extractFieldDefinition(child))
-
-            case "method_signature" where isTypeScript:
-                typeDecl.members.append(extractMethodSignature(child))
-
-            case "property_signature" where isTypeScript:
-                typeDecl.members.append(extractPropertySignature(child))
-
-            default:
-                break
             }
+        }
+    }
+
+    private func extractClassBodyMember(
+        _ child: Node,
+        childType: String,
+        parentName: String,
+        knownProperties: [String: String],
+        typeDecl: inout TypeDeclaration
+    ) -> Member? {
+        switch childType {
+        case "method_definition", "abstract_method_definition":
+            var member = extractMethodDefinition(child, parentName: parentName,
+                                                 knownProperties: knownProperties)
+            if childType == "abstract_method_definition", isTypeScript,
+               !member.modifiers.contains(.abstract) {
+                member.modifiers.append(.abstract)
+            }
+            if member.kind == .initializer, isTypeScript {
+                extractConstructorParameterProperties(child, into: &typeDecl)
+            }
+            return member
+
+        case "field_definition", "public_field_definition":
+            return extractFieldDefinition(child)
+
+        case "method_signature" where isTypeScript:
+            return extractMethodSignature(child)
+
+        case "abstract_method_signature" where isTypeScript:
+            var member = extractMethodSignature(child)
+            if !member.modifiers.contains(.abstract) {
+                member.modifiers.append(.abstract)
+            }
+            return member
+
+        case "property_signature" where isTypeScript:
+            return extractPropertySignature(child)
+
+        default:
+            return nil
         }
     }
 
