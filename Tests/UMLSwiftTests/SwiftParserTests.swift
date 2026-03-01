@@ -30,7 +30,6 @@ struct SwiftParserTests {
         #expect(animal.accessLevel == .public)
         #expect(animal.members.count == 4) // 2 props + init + method
     }
-
     @Test func structWithProtocolConformance() {
         let source = """
         struct Point: Equatable, Hashable {
@@ -46,7 +45,6 @@ struct SwiftParserTests {
         #expect(artifact.relationships.count == 2)
         #expect(artifact.relationships.allSatisfy { $0.kind == .conformance })
     }
-
     @Test func enumWithCases() {
         let source = """
         enum Direction: String {
@@ -64,7 +62,6 @@ struct SwiftParserTests {
         #expect(dir.enumCases[0].name == "north")
         #expect(dir.enumCases[0].rawValue == "\"N\"")
     }
-
     @Test func protocolDeclaration() {
         let source = """
         public protocol Repository {
@@ -80,7 +77,6 @@ struct SwiftParserTests {
         #expect(repo.accessLevel == .public)
         #expect(repo.members.count == 2) // findAll + save
     }
-
     @Test func extensionDeclaration() {
         let source = """
         extension String: CustomStringConvertible {
@@ -95,7 +91,6 @@ struct SwiftParserTests {
         #expect(ext.members.count == 1)
         #expect(ext.inheritedTypes.count == 1)
     }
-
     @Test func genericClass() {
         let source = """
         class Box<T: Equatable> {
@@ -109,7 +104,6 @@ struct SwiftParserTests {
         #expect(box.genericParameters[0].name == "T")
         #expect(box.genericParameters[0].constraints.count == 1)
     }
-
     @Test func nestedTypes() {
         let source = """
         class Outer {
@@ -126,7 +120,6 @@ struct SwiftParserTests {
         #expect(outer.nestedTypes[0].kind == .struct)
         #expect(outer.nestedTypes[1].kind == .enum)
     }
-
     @Test func accessLevels() {
         let source = """
         public class MyClass {
@@ -144,7 +137,6 @@ struct SwiftParserTests {
         #expect(cls.members[2].accessLevel == .filePrivate)
         #expect(cls.members[3].accessLevel == .private)
     }
-
     @Test func inheritance() {
         let source = """
         class Dog: Animal, Hashable, CustomStringConvertible {
@@ -158,7 +150,6 @@ struct SwiftParserTests {
         #expect(artifact.relationships[1].kind == .conformance)
         #expect(artifact.relationships[2].kind == .conformance)
     }
-
     @Test func freestandingFunction() {
         let source = """
         func helper(x: Int, y: Int) -> Int {
@@ -171,7 +162,6 @@ struct SwiftParserTests {
         #expect(artifact.freestandingFunctions[0].name == "helper")
         #expect(artifact.freestandingFunctions[0].parameters.count == 2)
     }
-
     @Test func typeAlias() {
         let source = """
         public typealias StringMap = Dictionary<String, String>
@@ -181,7 +171,6 @@ struct SwiftParserTests {
         #expect(artifact.types[0].kind == .typeAlias)
         #expect(artifact.types[0].name == "StringMap")
     }
-
     @Test func actorDeclaration() {
         let source = """
         actor DataStore {
@@ -195,7 +184,6 @@ struct SwiftParserTests {
         #expect(artifact.types[0].annotations.contains("@actor"))
         #expect(artifact.types[0].members.count == 2) // items + add
     }
-
     @Test func asyncThrowsFunction() {
         let source = """
         class Service {
@@ -207,7 +195,6 @@ struct SwiftParserTests {
         #expect(method.modifiers.contains(.async))
         #expect(method.modifiers.contains(.throws))
     }
-
     @Test func enumWithAssociatedValues() {
         let source = """
         enum Result<T, E> {
@@ -226,7 +213,6 @@ struct SwiftParserTests {
         #expect(result.enumCases[2].name == "pending")
         #expect(result.genericParameters.count == 2)
     }
-
     @Test func computedProperty() {
         let source = """
         struct Circle {
@@ -244,7 +230,6 @@ struct SwiftParserTests {
         #expect(circle.members[1].isComputed == true)
         #expect(circle.members[2].isComputed == true)
     }
-
     @Test func multipleGenericConstraints() {
         let source = """
         func process<T: Codable & Hashable>(item: T) -> String {
@@ -253,11 +238,10 @@ struct SwiftParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "Generic.swift")
         #expect(artifact.freestandingFunctions.count == 1)
-        let func_ = artifact.freestandingFunctions[0]
-        #expect(func_.genericParameters.count == 1)
-        #expect(func_.genericParameters[0].constraints.count >= 1)
+        let function = artifact.freestandingFunctions[0]
+        #expect(function.genericParameters.count == 1)
+        #expect(function.genericParameters[0].constraints.count >= 1)
     }
-
     @Test func whereClauseGeneric() {
         let source = """
         func combine<S: Sequence>(items: S) -> [S.Element] where S.Element: Comparable {
@@ -266,10 +250,9 @@ struct SwiftParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "Where.swift")
         #expect(artifact.freestandingFunctions.count == 1)
-        let func_ = artifact.freestandingFunctions[0]
-        #expect(func_.genericParameters.count == 1)
+        let function = artifact.freestandingFunctions[0]
+        #expect(function.genericParameters.count == 1)
     }
-
     @Test func attributesAndAnnotations() {
         let source = """
         struct User: Codable {
@@ -284,7 +267,6 @@ struct SwiftParserTests {
         #expect(user.members[0].annotations.contains("@Published"))
         #expect(user.members[1].annotations.contains("@State"))
     }
-
     @Test func tupleTypes() {
         let source = """
         struct Coordinate {
@@ -299,7 +281,6 @@ struct SwiftParserTests {
         #expect(coord.members.count == 2)
         #expect(coord.members[0].type?.name.contains("(") == true)
     }
-
     @Test func closureTypes() {
         let source = """
         class Handler {
@@ -311,7 +292,6 @@ struct SwiftParserTests {
         let handler = artifact.types[0]
         #expect(handler.members.count == 2)
     }
-
     @Test func opaqueReturnTypes() {
         let source = """
         protocol Shape {}
@@ -324,7 +304,6 @@ struct SwiftParserTests {
         #expect(artifact.types.count == 2)
         #expect(artifact.freestandingFunctions.count == 1)
     }
-
     @Test func callSiteTracking() {
         let source = """
         class Service {
@@ -344,7 +323,6 @@ struct SwiftParserTests {
         #expect(executeMethod?.callSites[1].receiverType == "Helper")
         #expect(executeMethod?.callSites[1].methodName == "validate")
     }
-
     @Test func staticAndClassMembers() {
         let source = """
         class MyClass {
@@ -360,7 +338,6 @@ struct SwiftParserTests {
         #expect(cls.members[1].modifiers.contains(.class))
         #expect(cls.members[2].modifiers.contains(.static))
     }
-
     @Test func propertyWrappers() {
         let source = """
         @propertyWrapper
@@ -373,7 +350,6 @@ struct SwiftParserTests {
         let clamped = artifact.types[0]
         #expect(clamped.annotations.contains("@propertyWrapper"))
     }
-
     @Test func deinitializer() {
         let source = """
         class Resource {
@@ -387,7 +363,6 @@ struct SwiftParserTests {
         #expect(resource.members.count == 1)
         #expect(resource.members[0].kind == .deinitializer)
     }
-
     @Test func subscriptDeclaration() {
         let source = """
         struct Matrix {
@@ -403,7 +378,6 @@ struct SwiftParserTests {
         #expect(matrix.members[0].kind == .subscript)
         #expect(matrix.members[0].parameters.count == 2)
     }
-
     @Test func compositionTypes() {
         let source = """
         struct Model: Codable & Hashable & Identifiable {
@@ -415,7 +389,6 @@ struct SwiftParserTests {
         #expect(model.inheritedTypes.count == 3)
         #expect(artifact.relationships.count == 3)
     }
-
     @Test func variadicParameters() {
         let source = """
         func combine(values: Int...) -> Int {
@@ -424,10 +397,9 @@ struct SwiftParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "Variadic.swift")
         #expect(artifact.freestandingFunctions.count == 1)
-        let func_ = artifact.freestandingFunctions[0]
-        #expect(func_.parameters.count == 1)
+        let function = artifact.freestandingFunctions[0]
+        #expect(function.parameters.count == 1)
     }
-
     @Test func inoutParameters() {
         let source = """
         func swap(_ a: inout Int, _ b: inout Int) {
@@ -439,7 +411,6 @@ struct SwiftParserTests {
         let artifact = parser.parse(source: source, fileName: "Inout.swift")
         #expect(artifact.freestandingFunctions.count == 1)
     }
-
     @Test func lazyProperty() {
         let source = """
         class DataLoader {
@@ -450,7 +421,6 @@ struct SwiftParserTests {
         let loader = artifact.types[0]
         #expect(loader.members[0].modifiers.contains(.lazy))
     }
-
     @Test func finalClass() {
         let source = """
         final class Singleton {
@@ -461,7 +431,6 @@ struct SwiftParserTests {
         let singleton = artifact.types[0]
         #expect(singleton.modifiers.contains(.final))
     }
-
     @Test func convenienceInitializer() {
         let source = """
         class Person {
@@ -476,7 +445,6 @@ struct SwiftParserTests {
         #expect(person.members.count == 2)
         #expect(person.members[1].modifiers.contains(.convenience))
     }
-
     @Test func optionalTypes() {
         let source = """
         struct Data {
@@ -490,7 +458,6 @@ struct SwiftParserTests {
         #expect(data.members[0].type?.name.contains("?") == true)
         #expect(data.members[1].type?.name.contains("!") == true)
     }
-
     @Test func arrayAndDictionaryTypes() {
         let source = """
         struct Container {
