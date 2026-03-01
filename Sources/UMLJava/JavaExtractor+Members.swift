@@ -18,7 +18,17 @@ extension JavaExtractor {
         return knownProperties
     }
 
-    mutating func extractNestedTypeFromChild(_ child: Node, nodeType: String) -> TypeDeclaration? {
+    mutating func extractNestedTypeFromChild(
+        _ child: Node,
+        nodeType: String,
+        parentQualifiedName: String
+    ) -> TypeDeclaration? {
+        // Temporarily set namespace to the parent type's qualified name
+        // so nested types receive correct IDs (e.g. `pkg.Outer.Inner`).
+        let savedNamespace = currentNamespace
+        currentNamespace = parentQualifiedName
+        defer { currentNamespace = savedNamespace }
+
         switch nodeType {
         case "class_declaration":
             return extractClassDeclaration(child)
@@ -140,7 +150,13 @@ extension JavaExtractor {
         case .field:
             context.members.append(contentsOf: extractFieldDeclaration(child))
         case .nestedType:
-            appendIfPresent(extractNestedTypeFromChild(child, nodeType: nodeType), to: &context.nestedTypes)
+            appendIfPresent(
+                extractNestedTypeFromChild(
+                    child, nodeType: nodeType,
+                    parentQualifiedName: context.parentQualifiedName
+                ),
+                to: &context.nestedTypes
+            )
         case .enumConstant:
             appendIfPresent(extractEnumConstant(child), to: &context.enumCases)
         case .enumBodyDeclarations:

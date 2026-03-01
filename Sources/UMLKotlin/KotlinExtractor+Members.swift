@@ -14,6 +14,12 @@ extension KotlinExtractor {
         into typeDecl: inout TypeDeclaration,
         skipEnumEntries: Bool = false
     ) {
+        // Use the parent type's qualified ID as namespace so that nested
+        // types receive correctly-qualified IDs (e.g. `pkg.Outer.Inner`).
+        let savedNamespace = currentNamespace
+        currentNamespace = typeDecl.id
+        defer { currentNamespace = savedNamespace }
+
         // Pre-scan: build property → type map for call-site resolution.
         var knownProperties: [String: String] = [:]
         for member in typeDecl.members where member.kind == .property {

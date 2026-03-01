@@ -17,6 +17,7 @@ struct JavaExtractor: TreeSitterExtracting, CallSiteResolving {
 
     mutating func extract(from root: Node) -> CodeArtifact {
         walkSourceFile(root)
+        resolveRelationshipNames()
         return buildArtifact(language: .java)
     }
 }
