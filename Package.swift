@@ -7,7 +7,10 @@ var optionalTargets: [Target] = []
 
 #if canImport(SwiftUI)
 optionalProducts.append(
-    .executable(name: "UMLApp",     targets: ["UMLApp"])
+    .executable(
+        name: "UMLApp",
+        targets: ["UMLApp"]
+    )
 )
 optionalTargets.append(
     .executableTarget(
@@ -23,6 +26,7 @@ optionalTargets.append(
             "UMLDiagram",
             "UMLLibrary",
         ],
+        exclude: ["Resources/Info.plist"],
         resources: [
             .process("Resources/Assets.xcassets"),
         ],
@@ -43,32 +47,32 @@ optionalTargets.append(
 let package = Package(
     name: "UML",
     platforms: [
-        .macOS(.v13),
+        .macOS(.v15),
         .iOS(.v16),
         .tvOS(.v16),
         .watchOS(.v9),
         .visionOS(.v1),
     ],
     products: [
-        .library(name: "UMLCore",       targets: ["UMLCore"]),
+        .library(name: "UMLCore", targets: ["UMLCore"]),
         .library(name: "UMLTreeSitter", targets: ["UMLTreeSitter"]),
-        .library(name: "UMLSwift",      targets: ["UMLSwift"]),
-        .library(name: "UMLKotlin",     targets: ["UMLKotlin"]),
-        .library(name: "UMLJS",         targets: ["UMLJS"]),
-        .library(name: "UMLJava",       targets: ["UMLJava"]),
-        .library(name: "UMLDart",       targets: ["UMLDart"]),
-        .library(name: "UMLDiagram",    targets: ["UMLDiagram"]),
-        .library(name: "UMLLibrary",    targets: ["UMLLibrary"]),
+        .library(name: "UMLSwift", targets: ["UMLSwift"]),
+        .library(name: "UMLKotlin", targets: ["UMLKotlin"]),
+        .library(name: "UMLJS", targets: ["UMLJS"]),
+        .library(name: "UMLJava", targets: ["UMLJava"]),
+        .library(name: "UMLDart", targets: ["UMLDart"]),
+        .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
+        .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
     ] + optionalProducts,
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git",            from: "600.0.0"),
-        .package(url: "https://github.com/tree-sitter/swift-tree-sitter",         from: "0.9.0"),
-        .package(url: "https://github.com/fwcd/tree-sitter-kotlin",               from: "0.3.0"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-typescript",    from: "0.21.0"),
-        .package(url: "https://github.com/tree-sitter/tree-sitter-java",          from: "0.21.0"),
-        .package(url: "https://github.com/UserNobody14/tree-sitter-dart",         branch: "master"),
-        .package(url: "https://github.com/apple/swift-argument-parser",           from: "1.3.0"),
-        .package(url: "https://github.com/jpsim/Yams",                            from: "5.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
+        .package(url: "https://github.com/tree-sitter/swift-tree-sitter", from: "0.9.0"),
+        .package(url: "https://github.com/fwcd/tree-sitter-kotlin", from: "0.3.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-typescript", from: "0.21.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-java", from: "0.21.0"),
+        .package(url: "https://github.com/UserNobody14/tree-sitter-dart", branch: "master"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
+        .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
     ],
     targets: [
         // MARK: Core models
@@ -168,12 +172,12 @@ let package = Package(
         ),
 
         // MARK: Tests
-        .testTarget(name: "UMLCoreTests",    dependencies: ["UMLCore"]),
-        .testTarget(name: "UMLSwiftTests",   dependencies: ["UMLSwift",   "UMLCore"]),
-        .testTarget(name: "UMLKotlinTests",  dependencies: ["UMLKotlin",  "UMLCore"]),
-        .testTarget(name: "UMLJSTests",      dependencies: ["UMLJS",      "UMLCore"]),
-        .testTarget(name: "UMLJavaTests",    dependencies: ["UMLJava",    "UMLCore"]),
-        .testTarget(name: "UMLDartTests",    dependencies: ["UMLDart",    "UMLCore"]),
+        .testTarget(name: "UMLCoreTests", dependencies: ["UMLCore"]),
+        .testTarget(name: "UMLSwiftTests", dependencies: ["UMLSwift", "UMLCore"]),
+        .testTarget(name: "UMLKotlinTests", dependencies: ["UMLKotlin", "UMLCore"]),
+        .testTarget(name: "UMLJSTests", dependencies: ["UMLJS", "UMLCore"]),
+        .testTarget(name: "UMLJavaTests", dependencies: ["UMLJava", "UMLCore"]),
+        .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary"])
     ] + optionalTargets

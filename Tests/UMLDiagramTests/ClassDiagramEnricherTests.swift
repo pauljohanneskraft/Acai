@@ -67,7 +67,7 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func externalTypesShownWhenEnabled() {
-        let options = DiagramOptions(showExternalTypes: true)
+        let options = ClassDiagramOptions(showExternalTypes: true)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
@@ -134,7 +134,7 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func clusterByDirectory() {
-        let options = DiagramOptions(groupBy: .byDirectory)
+        let options = ClassDiagramOptions(groupBy: .byDirectory)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["models/A.swift", "views/B.swift"]),
             types: [
@@ -188,7 +188,7 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func compositionDisabledByOption() {
-        let options = DiagramOptions(inferCompositionFromProperties: false)
+        let options = ClassDiagramOptions(inferCompositionFromProperties: false)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
