@@ -9,9 +9,9 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     /// File names (relative to the project root) whose presence signals this build system.
     public let indicatorFiles: [String]
-    
+
     private static let excludedDirs: Set<String> = [
-        "build", ".gradle", ".build", "node_modules", ".git", "target", ".idea",
+        "build", ".gradle", ".build", "node_modules", ".git", "target", ".idea"
     ]
 
     public init(indicatorFiles: [String]) {
@@ -20,7 +20,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     /// Preset for Gradle projects.
     public static let gradle = JVMBuildSystemDetector(indicatorFiles: [
-        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
+        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"
     ])
 
     /// Preset for Maven projects.
@@ -59,26 +59,28 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
         return specs
     }
-    
+
     private func findSourceDirs(in root: URL) -> (kotlin: [URL], java: [URL]) {
-        let fm = FileManager.default
+        let fileManager = FileManager.default
         var kotlinDirs: [URL] = []
         var javaDirs: [URL] = []
 
         func probe(_ dir: URL) {
             let kotlinSrc = dir.appendingPathComponent("src/main/kotlin")
             let javaSrc   = dir.appendingPathComponent("src/main/java")
-            if fm.fileExists(atPath: kotlinSrc.path) { kotlinDirs.append(kotlinSrc) }
-            if fm.fileExists(atPath: javaSrc.path)   { javaDirs.append(javaSrc) }
+            if fileManager.fileExists(atPath: kotlinSrc.path) { kotlinDirs.append(kotlinSrc) }
+            if fileManager.fileExists(atPath: javaSrc.path) { javaDirs.append(javaSrc) }
 
-            guard let entries = try? fm.contentsOfDirectory(
+            guard let entries = try? fileManager.contentsOfDirectory(
                 at: dir, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
             ) else { return }
 
             for entry in entries {
                 guard !Self.excludedDirs.contains(entry.lastPathComponent) else { continue }
                 guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
-                if indicatorFiles.contains(where: { fm.fileExists(atPath: entry.appendingPathComponent($0).path) }) {
+                if indicatorFiles.contains(where: {
+                    fileManager.fileExists(atPath: entry.appendingPathComponent($0).path)
+                }) {
                     probe(entry)
                 }
             }
@@ -86,10 +88,6 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
         probe(root)
 
-        func dedup(_ urls: [URL]) -> [URL] {
-            var seen: Set<URL> = []
-            return urls.filter { seen.insert($0).inserted }
-        }
-        return (dedup(kotlinDirs), dedup(javaDirs))
+        return (kotlinDirs.removingDuplicates { $0 }, javaDirs.removingDuplicates { $0 })
     }
 }

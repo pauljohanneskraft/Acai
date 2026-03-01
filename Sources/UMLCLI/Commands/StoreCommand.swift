@@ -14,7 +14,12 @@ extension UMLCommand {
         @Argument(help: "Path to the source directory to analyze.")
         var sourceDir: String
 
-        @Option(name: .long, help: "Limit analysis to one or more languages (swift, kotlin, java, typescript, javascript). Repeat the flag for multiple: --language kotlin --language java.")
+        @Option(name: .long, help: ArgumentHelp(
+            "Limit analysis to one or more languages" +
+            " (swift, kotlin, java, typescript, javascript)." +
+            " Repeat the flag for multiple:" +
+            " --language kotlin --language java."
+        ))
         var language: [LanguageOption] = []
 
         mutating func run() throws {

@@ -15,7 +15,11 @@ extension UMLCommand {
         @Option(name: .long, help: "Path to a source directory to analyze on the fly.")
         var source: String?
 
-        @Option(name: .long, help: "Limit analysis to one or more languages when using --source. Repeat the flag for multiple: --language kotlin --language java.")
+        @Option(name: .long, help: ArgumentHelp(
+            "Limit analysis to one or more languages" +
+            " when using --source. Repeat the flag for" +
+            " multiple: --language kotlin --language java."
+        ))
         var language: [LanguageOption] = []
 
         @Option(name: .long, help: "Path to a YAML configuration file.")
@@ -66,18 +70,18 @@ extension UMLCommand {
                 throw ValidationError("Either --from or --source must be specified.")
             }
 
-            var options = DiagramOptions()
+            var options = ClassDiagramOptions()
 
             if let configPath = config {
                 let yamlString = try String(contentsOf: URL(fileURLWithPath: configPath), encoding: .utf8)
                 try options.applyYAMLConfig(yamlString)
             }
 
-            if let dir = direction  { options.layoutDirection = dir.layoutDirection }
-            if let t = theme        { options.theme = t.diagramTheme }
-            if let g = groupBy      { options.groupBy = g.groupingStrategy }
-            if showMembers          { options.showMembers = true }
-            if noShowMembers        { options.showMembers = false }
+            if let dir = direction { options.layoutDirection = dir.layoutDirection }
+            if let selectedTheme = theme { options.theme = selectedTheme.diagramTheme }
+            if let selectedGroupBy = groupBy { options.groupBy = selectedGroupBy.groupingStrategy }
+            if showMembers { options.showMembers = true }
+            if noShowMembers { options.showMembers = false }
 
             let generator = DOTGenerator(options: options)
             let dot = generator.generate(from: artifact)

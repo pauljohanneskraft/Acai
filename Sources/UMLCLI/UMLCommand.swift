@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-import UMLLibrary
 import Yams
 
 @main
@@ -11,4 +10,3 @@ struct UMLCommand: ParsableCommand {
         subcommands: [Analyze.self, Store.self, List.self, Diagram.self]
     )
 }
-
