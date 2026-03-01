@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-import UMLLibrary
 import Yams
 
 @main

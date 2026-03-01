@@ -6,7 +6,7 @@ enum GroupByOption: String, ExpressibleByArgument, CaseIterable {
     case namespace
     case none
 
-    var groupingStrategy: DiagramOptions.GroupingStrategy {
+    var groupingStrategy: ClassDiagramOptions.GroupingStrategy {
         switch self {
         case .file:
             return .byFile

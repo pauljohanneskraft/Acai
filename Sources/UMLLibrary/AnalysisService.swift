@@ -102,10 +102,9 @@ public struct AnalysisService: Sendable {
         let codeParser = parser(for: spec.language)
         let exts = Set(codeParser.fileExtensions)
 
-        var seenURLs: Set<URL> = []
         let files = spec.sourceDirs
             .flatMap { FileManager.default.fileURLs(in: $0, withExtensions: exts) }
-            .filter { seenURLs.insert($0).inserted }
+            .removingDuplicates { $0 }
 
         guard !files.isEmpty else { return nil }
 
@@ -130,40 +129,6 @@ public struct AnalysisService: Sendable {
             artifact = artifact.resolvingExtensions()
         }
         return artifact
-    }
-
-    // MARK: - Single-Directory Analysis
-
-    /// Parses all source files of a given language in a single directory.
-    public func analyzeDirectory(
-        at directory: URL,
-        language: CodeArtifact.SourceLanguage
-    ) throws -> CodeArtifact {
-        let codeParser = parser(for: language)
-        let files = FileManager.default.fileURLs(in: directory, withExtensions: Set(codeParser.fileExtensions))
-
-        if files.isEmpty {
-            throw ValidationError("No \(language.rawValue) source files found in \(directory.path)")
-        }
-
-        var combined = CodeArtifact(
-            metadata: .init(sourceLanguage: language, filePaths: [], toolVersion: "1.0.0")
-        )
-
-        for file in files {
-            let relativePath = file.path.hasPrefix(directory.path)
-                ? String(file.path.dropFirst(directory.path.count + 1))
-                : file.lastPathComponent
-
-            do {
-                let source = try String(contentsOf: file, encoding: .utf8)
-                combined = combined.merging(with: codeParser.parse(source: source, fileName: relativePath))
-            } catch {
-                print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
-            }
-        }
-
-        return language == .swift ? combined.resolvingExtensions() : combined
     }
 }
 

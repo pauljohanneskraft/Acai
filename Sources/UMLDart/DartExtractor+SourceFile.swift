@@ -31,7 +31,7 @@ extension DartExtractor {
             return true
         }
         if nodeType == "function_signature",
-           let function = extractFunctionSignature(child, isTopLevel: true) {
+           let function = extractFunctionSignature(child) {
             freestandingFunctions.append(function)
             return true
         }
