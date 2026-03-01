@@ -57,14 +57,14 @@ swift test
 
 ### App
 ```sh
-./Scripts/create_app.sh # Creates `UML.app` in `.build/artifacts`
-./Scripts/install_app.sh # Moves built artifact to `/Applications/UML.app`
-./Scripts/uninstall_app.sh # Deletes `/Applications/UML.app`
+./Scripts/app_create.sh # Creates `UML.app` in `.build/artifacts`
+./Scripts/app_install.sh # Moves built artifact to `/Applications/UML.app`
+./Scripts/app_uninstall.sh # Deletes `/Applications/UML.app`
 ```
 
 ### CLI
 ```sh
-./Scripts/create_cli.sh # Creates `uml` binary in `.build/artifacts`
-./Scripts/install_cli.sh # Moves built artifact to binary directory
-./Scripts/uninstall_cli.sh # Deletes binary artifact from the respective binary directories
+./Scripts/cli_create.sh # Creates `uml` binary in `.build/artifacts`
+./Scripts/cli_install.sh # Moves built artifact to binary directory
+./Scripts/cli_uninstall.sh # Deletes binary artifact from the respective binary directories
 ```
