@@ -12,7 +12,7 @@ extension DartExtractor {
         case "method_signature":
             return extractMethodSignature(child)
         case "function_signature":
-            return extractFunctionSignature(child, isTopLevel: false)
+            return extractFunctionSignature(child)
         case "constructor_signature", "constant_constructor_signature":
             return extractConstructorSignature(child, parentName: parentName)
         case "factory_constructor_signature", "redirecting_factory_constructor_signature":
@@ -103,7 +103,7 @@ extension DartExtractor {
                 child, nodeType: nodeType, members: &members,
                 nestedTypes: &nestedTypes, parentName: parentName
             ) {
-                if let fields = extractFieldFromDeclarationChild(child, parentNodeType: nodeType) {
+                if let fields = extractFieldFromDeclarationChild(child) {
                     members.append(contentsOf: fields)
                 }
             }
@@ -194,7 +194,7 @@ extension DartExtractor {
         )
     }
 
-    func extractFunctionSignature(_ node: Node, isTopLevel: Bool) -> Member? {
+    func extractFunctionSignature(_ node: Node) -> Member? {
         let inner = extractFunctionSignatureInner(node)
         guard !inner.name.isEmpty else { return nil }
 
@@ -478,7 +478,7 @@ extension DartExtractor {
     }
 
     /// Attempt to extract fields from arbitrary child nodes of a declaration.
-    private func extractFieldFromDeclarationChild(_ child: Node, parentNodeType: String) -> [Member]? {
+    private func extractFieldFromDeclarationChild(_ child: Node) -> [Member]? {
         guard let nodeType = child.nodeType else { return nil }
         switch nodeType {
         case "static_final_declaration_list", "initialized_identifier_list":

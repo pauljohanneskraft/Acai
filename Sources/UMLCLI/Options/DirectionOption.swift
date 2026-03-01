@@ -4,7 +4,7 @@ import UMLDiagram
 enum DirectionOption: String, ExpressibleByArgument, CaseIterable {
     case TB, LR, BT, RL
 
-    var layoutDirection: DiagramOptions.LayoutDirection {
+    var layoutDirection: ClassDiagramOptions.LayoutDirection {
         switch self {
         case .TB:
             return .topToBottom
