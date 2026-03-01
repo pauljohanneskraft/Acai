@@ -32,6 +32,8 @@ cyclomatic_complexity:
 file_length:
   warning: 500
   error: 1000
+  excluded:
+    - "Tests/**/*Tests.swift"
 
 function_body_length:
   warning: 50
@@ -60,3 +62,5 @@ nesting:
 type_body_length:
   warning: 300
   error: 400
+  excluded:
+    - "Tests/**/*Tests.swift"
