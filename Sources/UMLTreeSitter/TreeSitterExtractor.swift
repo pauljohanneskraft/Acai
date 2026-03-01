@@ -147,6 +147,23 @@ extension TreeSitterExtracting {
             }
             return resolved
         }
+
+        // Also resolve inherited-type names so the codebase detail
+        // view shows consistent naming (qualified IDs where possible).
+        func resolveInheritedTypes(
+            in types: inout [TypeDeclaration]
+        ) {
+            for index in types.indices {
+                for refIndex in types[index].inheritedTypes.indices {
+                    let name = types[index].inheritedTypes[refIndex].name
+                    if let id = nameToId[name] {
+                        types[index].inheritedTypes[refIndex].name = id
+                    }
+                }
+                resolveInheritedTypes(in: &types[index].nestedTypes)
+            }
+        }
+        resolveInheritedTypes(in: &types)
     }
 
     // MARK: Property Map

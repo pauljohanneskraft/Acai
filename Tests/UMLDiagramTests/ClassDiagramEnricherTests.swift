@@ -236,4 +236,86 @@ struct ClassDiagramEnricherTests {
         let dot = DOTGenerator(options: options).generate(from: artifact)
         #expect(!dot.contains("arrowtail=diamond"))
     }
+
+    @Test func crossFileRelationshipsResolvedByEnricher() {
+        // Simulates two Kotlin files parsed separately and merged:
+        // File 1 defines Animal, File 2 defines Dog extending Animal.
+        // After merging, the relationship target "Animal" (simple name from source text)
+        // must be resolved to "com.example.Animal" (qualified ID) by the enricher.
+        let file1 = CodeArtifact(
+            metadata: .init(sourceLanguage: .kotlin, filePaths: ["Animal.kt"]),
+            types: [
+                TypeDeclaration(
+                    id: "com.example.Animal", name: "Animal",
+                    qualifiedName: "com.example.Animal", kind: .class,
+                    namespace: "com.example"
+                )
+            ]
+        )
+        let file2 = CodeArtifact(
+            metadata: .init(sourceLanguage: .kotlin, filePaths: ["Dog.kt"]),
+            types: [
+                TypeDeclaration(
+                    id: "com.example.Dog", name: "Dog",
+                    qualifiedName: "com.example.Dog", kind: .class,
+                    inheritedTypes: [TypeReference(name: "Animal")],
+                    namespace: "com.example"
+                )
+            ],
+            // Parser creates relationship with simple name for cross-file target.
+            relationships: [
+                Relationship(kind: .inheritance, source: "com.example.Dog", target: "Animal")
+            ]
+        )
+
+        let merged = file1.merging(with: file2)
+        let result = ClassDiagramEnricher.enrich(merged)
+
+        // Enricher must resolve "Animal" to "com.example.Animal".
+        let inheritance = result.relationships.first { $0.kind == .inheritance }
+        #expect(inheritance?.source == "com.example.Dog")
+        #expect(inheritance?.target == "com.example.Animal")
+
+        // Both endpoints must be in the known types.
+        let ids = Set(result.types.map(\.id))
+        #expect(ids.contains("com.example.Dog"))
+        #expect(ids.contains("com.example.Animal"))
+    }
+
+    @Test func multiFilePropertyEdgesResolved() {
+        // Simulates a property type reference to a type from a different file.
+        let file1 = CodeArtifact(
+            metadata: .init(sourceLanguage: .java, filePaths: ["Engine.java"]),
+            types: [
+                TypeDeclaration(
+                    id: "com.example.Engine", name: "Engine",
+                    qualifiedName: "com.example.Engine", kind: .class,
+                    namespace: "com.example"
+                )
+            ]
+        )
+        let file2 = CodeArtifact(
+            metadata: .init(sourceLanguage: .java, filePaths: ["Car.java"]),
+            types: [
+                TypeDeclaration(
+                    id: "com.example.Car", name: "Car",
+                    qualifiedName: "com.example.Car", kind: .class,
+                    members: [
+                        Member(name: "engine", kind: .property,
+                               type: TypeReference(name: "Engine"))
+                    ],
+                    namespace: "com.example"
+                )
+            ]
+        )
+
+        let merged = file1.merging(with: file2)
+        let result = ClassDiagramEnricher.enrich(merged)
+
+        // Enricher should infer a composition edge from Car to Engine.
+        let compositions = result.relationships.filter {
+            $0.kind == .composition && $0.source == "com.example.Car"
+        }
+        #expect(compositions.contains { $0.target == "com.example.Engine" })
+    }
 }

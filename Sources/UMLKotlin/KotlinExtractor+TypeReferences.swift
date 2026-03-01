@@ -54,6 +54,13 @@ extension KotlinExtractor {
             switch child.nodeType {
             case "type_identifier":
                 nameParts.append(text(child))
+            case "user_type":
+                // Nested user_type nodes appear for qualified references
+                // like `com.example.Animal` or `Outer.Inner`.
+                let nested = extractTypeReference(child)
+                if !nested.name.isEmpty {
+                    nameParts.append(nested.name)
+                }
             case "type_arguments":
                 genericArgs = extractTypeArguments(child)
             default:
