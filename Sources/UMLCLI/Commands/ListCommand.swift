@@ -10,14 +10,14 @@ extension UMLCommand {
 
         mutating func run() throws {
             let storageDir = UMLConstants.analysisDirectory
-            let fm = FileManager.default
+            let fileManager = FileManager.default
 
-            guard fm.fileExists(atPath: storageDir.path) else {
+            guard fileManager.fileExists(atPath: storageDir.path) else {
                 print("No stored analyses found.")
                 return
             }
 
-            let contents = try fm.contentsOfDirectory(
+            let contents = try fileManager.contentsOfDirectory(
                 at: storageDir,
                 includingPropertiesForKeys: nil,
                 options: [.skipsHiddenFiles]

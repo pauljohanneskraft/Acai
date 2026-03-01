@@ -32,7 +32,7 @@ public struct AnalysisService: Sendable {
             JavaCodeParser(),
             JSCodeParser(isTypeScript: true),
             JSCodeParser(isTypeScript: false),
-            DartCodeParser(),
+            DartCodeParser()
         ],
         projectDiscovery: ProjectDiscovery? = nil
     ) {
@@ -44,7 +44,7 @@ public struct AnalysisService: Sendable {
                 JVMBuildSystemDetector.gradle,
                 JVMBuildSystemDetector.maven,
                 NodeDetector(),
-                FlutterDetector(),
+                FlutterDetector()
             ],
             fallback: FallbackDetector(parsers: parsers)
         )
@@ -83,48 +83,8 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            let p = parser(for: spec.language)
-            let exts = Set(p.fileExtensions)
-
-            var seenURLs: Set<URL> = []
-            let files = spec.sourceDirs
-                .flatMap { FileManager.default.fileURLs(in: $0, withExtensions: exts) }
-                .filter { seenURLs.insert($0).inserted }
-
-            guard !files.isEmpty else { continue }
-
-            print("Parsing \(files.count) \(spec.language.rawValue) file(s)…")
-
-            var artifact = CodeArtifact(
-                metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
-            )
-
-            for file in files {
-                let relativePath: String
-                if file.path.hasPrefix(rootURL.path) {
-                    relativePath = String(file.path.dropFirst(rootURL.path.count))
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                } else {
-                    relativePath = file.lastPathComponent
-                }
-
-                do {
-                    let source = try String(contentsOf: file, encoding: .utf8)
-                    let parsed = p.parse(source: source, fileName: relativePath)
-                    artifact = artifact.merging(with: parsed)
-                } catch {
-                    print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
-                }
-            }
-
-            if spec.language == .swift {
-                artifact = artifact.resolvingExtensions()
-            }
-
-            if let existing = combinedArtifact {
-                combinedArtifact = existing.merging(with: artifact)
-            } else {
-                combinedArtifact = artifact
+            if let artifact = parseSpec(spec, rootURL: rootURL) {
+                combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
 
@@ -134,37 +94,50 @@ public struct AnalysisService: Sendable {
         return result
     }
 
-    // MARK: - Single-Directory Analysis
+    /// Parses all files for a single language spec and returns the combined artifact.
+    private func parseSpec(
+        _ spec: SourceSpec,
+        rootURL: URL
+    ) -> CodeArtifact? {
+        let codeParser = parser(for: spec.language)
+        let exts = Set(codeParser.fileExtensions)
 
-    /// Parses all source files of a given language in a single directory.
-    public func analyzeDirectory(
-        at directory: URL,
-        language: CodeArtifact.SourceLanguage
-    ) throws -> CodeArtifact {
-        let p = parser(for: language)
-        let files = FileManager.default.fileURLs(in: directory, withExtensions: Set(p.fileExtensions))
+        let files = spec.sourceDirs
+            .flatMap { FileManager.default.fileURLs(in: $0, withExtensions: exts) }
+            .removingDuplicates { $0 }
 
-        if files.isEmpty {
-            throw ValidationError("No \(language.rawValue) source files found in \(directory.path)")
-        }
+        guard !files.isEmpty else { return nil }
 
-        var combined = CodeArtifact(
-            metadata: .init(sourceLanguage: language, filePaths: [], toolVersion: "1.0.0")
+        print("Parsing \(files.count) \(spec.language.rawValue) file(s)…")
+
+        var artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
         )
 
         for file in files {
-            let relativePath = file.path.hasPrefix(directory.path)
-                ? String(file.path.dropFirst(directory.path.count + 1))
-                : file.lastPathComponent
-
+            let relativePath = file.relativePath(from: rootURL)
             do {
                 let source = try String(contentsOf: file, encoding: .utf8)
-                combined = combined.merging(with: p.parse(source: source, fileName: relativePath))
+                let parsed = codeParser.parse(source: source, fileName: relativePath)
+                artifact = artifact.merging(with: parsed)
             } catch {
                 print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
             }
         }
 
-        return language == .swift ? combined.resolvingExtensions() : combined
+        if spec.language == .swift {
+            artifact = artifact.resolvingExtensions()
+        }
+        return artifact
     }
 }
+
+extension URL {
+    /// Returns a path relative to `base`, or the last path component if unrelated.
+    func relativePath(from base: URL) -> String {
+        if path.hasPrefix(base.path) {
+            return String(path.dropFirst(base.path.count))
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+        return lastPathComponent
+    }}

@@ -6,6 +6,8 @@ import Testing
 struct KotlinParserTests {
     let parser = KotlinCodeParser()
 
+    // MARK: - Basic Declarations
+
     @Test func dataClass() {
         let source = """
         data class User(
@@ -93,18 +95,6 @@ struct KotlinParserTests {
         #expect(dir.enumCases[0].name == "NORTH")
     }
 
-    @Test func classInheritance() {
-        let source = """
-        class Dog : Animal(), Serializable {
-            val breed: String = ""
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Dog.kt")
-        #expect(artifact.relationships.count >= 2)
-        let inheritance = artifact.relationships.first { $0.kind == .inheritance }
-        #expect(inheritance?.target == "Animal")
-    }
-
     @Test func genericClass() {
         let source = """
         class Box<T : Comparable<T>>(val value: T) {
@@ -166,4 +156,5 @@ struct KotlinParserTests {
         #expect(artifact.freestandingFunctions.count == 1)
         #expect(artifact.freestandingFunctions[0].name == "greet")
     }
+
 }

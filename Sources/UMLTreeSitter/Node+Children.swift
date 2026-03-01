@@ -15,11 +15,6 @@ public extension Node {
         children().filter(\.isNamed)
     }
 
-    /// First named child.
-    func firstNamedChild() -> Node? {
-        (0..<childCount).lazy.compactMap { child(at: $0) }.first(where: \.isNamed)
-    }
-
     /// First child whose `nodeType` equals `type`.
     func firstChild(withType type: String) -> Node? {
         (0..<childCount).lazy.compactMap { child(at: $0) }.first { $0.nodeType == type }

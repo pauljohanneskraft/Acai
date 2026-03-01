@@ -9,10 +9,14 @@ public enum AccessLevel: String, Codable, Equatable, Hashable, Sendable, CaseIte
 
     public var umlSymbol: String {
         switch self {
-        case .public, .open: "+"
-        case .internal, .packagePrivate: "~"
-        case .protected: "#"
-        case .private, .filePrivate: "-"
+        case .public, .open:
+            "+"
+        case .internal, .packagePrivate:
+            "~"
+        case .protected:
+            "#"
+        case .private, .filePrivate:
+            "-"
         }
     }
 }

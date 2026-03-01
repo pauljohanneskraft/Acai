@@ -14,18 +14,10 @@ struct UMLApp: App {
         }
         #endif
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ProjectBrowserView()
         }
-        .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("New Project") {
-                    NotificationCenter.default.post(name: .createNewProject, object: nil)
-                }.keyboardShortcut("n", modifiers: [.command])
-            }
-        }
     }
 }
-
