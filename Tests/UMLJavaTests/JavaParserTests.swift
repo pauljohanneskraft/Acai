@@ -326,10 +326,12 @@ struct JavaParserTests {
         let artifact = parser.parse(source: source, fileName: "Arrays.java")
         let arrays = artifact.types[0]
         let numbers = arrays.members.first { $0.name == "numbers" }
-        #expect(numbers?.type?.name.contains("[") == true)
+        #expect(numbers?.type?.isArray == true)
+        #expect(numbers?.type?.name == "int")
 
         let matrix = arrays.members.first { $0.name == "matrix" }
-        #expect(matrix?.type?.name.contains("[") == true)
+        #expect(matrix?.type?.isArray == true)
+        #expect(matrix?.type?.name == "String")
     }
 
     @Test func wildcardTypes() {
@@ -424,6 +426,7 @@ struct JavaParserTests {
         let method = varArgs.members.first { $0.name == "method" }
         #expect(method?.parameters.count == 2)
         #expect(method?.parameters[1].internalName == "numbers")
+        #expect(method?.parameters[1].isVariadic == true)
     }
 
     @Test func multipleFieldDeclarators() {
