@@ -286,8 +286,10 @@ struct SwiftOtherTests {
         let artifact = parser.parse(source: source, fileName: "Optional.swift")
         let data = artifact.types[0]
         #expect(data.members.count == 2)
-        #expect(data.members[0].type?.name.contains("?") == true)
-        #expect(data.members[1].type?.name.contains("!") == true)
+        #expect(data.members[0].type?.name.contains("?") == false)
+        #expect(data.members[0].type?.isOptional == true)
+        #expect(data.members[1].type?.name.contains("!") == false)
+        #expect(data.members[1].type?.isOptional == true)
     }
 
     @Test func arrayAndDictionaryTypes() {
