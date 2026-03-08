@@ -56,6 +56,24 @@ struct GeneratedDiagramView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
+                    viewModel.undo()
+                    savePositions()
+                } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(!viewModel.canUndo)
+                .help("Undo (⌘Z)")
+
+                Button {
+                    viewModel.redo()
+                    savePositions()
+                } label: {
+                    Label("Redo", systemImage: "arrow.uturn.forward")
+                }
+                .disabled(!viewModel.canRedo)
+                .help("Redo (⇧⌘Z)")
+
+                Button {
                     viewModel.performLayout()
                     centerDiagram()
                 } label: {
@@ -87,6 +105,23 @@ struct GeneratedDiagramView: View {
                     Label("Sidebar", systemImage: "sidebar.trailing")
                 }
             }
+        }
+        .background {
+            // Hidden buttons to capture keyboard shortcuts
+            Group {
+                Button("") {
+                    viewModel.undo()
+                    savePositions()
+                }
+                .keyboardShortcut("z", modifiers: .command)
+
+                Button("") {
+                    viewModel.redo()
+                    savePositions()
+                }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+            }
+            .hidden()
         }
         .navigationTitle(diagram.name)
         .task { @MainActor in
@@ -225,6 +260,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
+                    viewModel.recordUndoForGesture()
                     activeResizeState = .init(
                         startSize: viewModel.effectiveSize(for: id),
                         startPosition: viewModel.nodePositions[id] ?? .zero
@@ -270,6 +306,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
                 if dragStartPositions.isEmpty {
+                    viewModel.recordUndoForGesture()
                     if !viewModel.selectedNodeIDs.contains(id) {
                         viewModel.selectedNodeIDs = [id]
                     }

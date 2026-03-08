@@ -5,6 +5,7 @@ import Foundation
 extension CustomDiagramViewModel {
 
     func addProperty(to nodeID: UUID, name: String, type: String) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.properties.append(.init(name: name, type: type))
@@ -23,6 +24,7 @@ extension CustomDiagramViewModel {
     }
 
     func addMethod(to nodeID: UUID, name: String, returnType: String, parameters: String) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.methods.append(.init(name: name, type: returnType, parameters: parameters))
@@ -61,6 +63,7 @@ extension CustomDiagramViewModel {
     }
 
     func removeProperty(from nodeID: UUID, memberID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.properties.removeAll { $0.id == memberID }
@@ -69,6 +72,7 @@ extension CustomDiagramViewModel {
     }
 
     func removeMethod(from nodeID: UUID, memberID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.methods.removeAll { $0.id == memberID }
@@ -79,6 +83,7 @@ extension CustomDiagramViewModel {
     // MARK: - Inline Editing
 
     func updateNodeName(_ nodeID: UUID, name: String) {
+        recordUndo()
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             nodes[idx].name = name
             save()
@@ -86,6 +91,7 @@ extension CustomDiagramViewModel {
     }
 
     func updatePropertyText(_ nodeID: UUID, memberID: UUID, text: String) {
+        recordUndo()
         guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[nodeIndex].content,
               let memberIndex = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
@@ -100,6 +106,7 @@ extension CustomDiagramViewModel {
     }
 
     func updateMethodText(_ nodeID: UUID, memberID: UUID, text: String) {
+        recordUndo()
         guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[nodeIndex].content,
               let memberIndex = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
@@ -122,6 +129,7 @@ extension CustomDiagramViewModel {
     }
 
     func addInlineProperty(to nodeID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.properties.append(.init(name: "newProperty", type: "Type"))
@@ -130,6 +138,7 @@ extension CustomDiagramViewModel {
     }
 
     func addInlineMethod(to nodeID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
         content.methods.append(.init(name: "newMethod", type: "Void"))
@@ -139,6 +148,7 @@ extension CustomDiagramViewModel {
 
     /// Update the free-form text of a note node.
     func updateNoteText(_ nodeID: UUID, text: String) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .note = nodes[idx].content else { return }
         nodes[idx].content = .note(text: text)

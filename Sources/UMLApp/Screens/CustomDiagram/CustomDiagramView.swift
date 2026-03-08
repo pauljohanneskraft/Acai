@@ -39,6 +39,22 @@ struct CustomDiagramView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
+                    viewModel.undo()
+                } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(!viewModel.canUndo)
+                .help("Undo (⌘Z)")
+
+                Button {
+                    viewModel.redo()
+                } label: {
+                    Label("Redo", systemImage: "arrow.uturn.forward")
+                }
+                .disabled(!viewModel.canRedo)
+                .help("Redo (⇧⌘Z)")
+
+                Button {
                     sidebarTab = .catalog
                     showSidebar.toggle()
                 } label: {
@@ -80,6 +96,12 @@ struct CustomDiagramView: View {
 
                 Button("") { viewModel.selectAll() }
                     .keyboardShortcut("a", modifiers: .command)
+
+                Button("") { viewModel.undo() }
+                    .keyboardShortcut("z", modifiers: .command)
+
+                Button("") { viewModel.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
             }
             .hidden()
         }
@@ -97,7 +119,7 @@ struct CustomDiagramView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This action cannot be undone.")
+            Text("You can undo this action with ⌘Z.")
         }
     }
 

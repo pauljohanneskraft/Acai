@@ -23,6 +23,59 @@ final class GeneratedDiagramViewModel: ObservableObject {
     /// Shared, view-independent build + layout core (also used by the CLI image renderer).
     private var model: DiagramLayoutModel
 
+    // MARK: - Undo / Redo
+
+    /// Snapshot type that captures the undoable portion of the generated diagram state.
+    struct LayoutSnapshot: Equatable, Sendable {
+        var nodePositions: [String: CGPoint]
+        var userNodeSizes: [String: CGSize]
+    }
+
+    /// History manager backing Cmd+Z / Shift+Cmd+Z.
+    let history = DiagramHistoryManager<LayoutSnapshot>()
+
+    /// Whether there is a state to undo to.
+    var canUndo: Bool { history.canUndo }
+
+    /// Whether there is a state to redo to.
+    var canRedo: Bool { history.canRedo }
+
+    /// Captures the current layout state as a checkpoint before a mutation.
+    func recordUndo() {
+        history.checkpoint(LayoutSnapshot(
+            nodePositions: nodePositions,
+            userNodeSizes: userNodeSizes
+        ))
+    }
+
+    /// Record an undo checkpoint for an upcoming drag or resize gesture.
+    /// Call this once at the **beginning** of a gesture, before positions change.
+    func recordUndoForGesture() {
+        recordUndo()
+    }
+
+    /// Undo the last layout action, restoring the previous positions and sizes.
+    func undo() {
+        let current = LayoutSnapshot(
+            nodePositions: nodePositions,
+            userNodeSizes: userNodeSizes
+        )
+        guard let previous = history.undo(current: current) else { return }
+        nodePositions = previous.nodePositions
+        userNodeSizes = previous.userNodeSizes
+    }
+
+    /// Redo the last undone layout action.
+    func redo() {
+        let current = LayoutSnapshot(
+            nodePositions: nodePositions,
+            userNodeSizes: userNodeSizes
+        )
+        guard let next = history.redo(current: current) else { return }
+        nodePositions = next.nodePositions
+        userNodeSizes = next.userNodeSizes
+    }
+
     init(
         codebase: Codebase,
         artifact: CodeArtifact,

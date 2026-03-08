@@ -25,6 +25,46 @@ final class CustomDiagramViewModel: ObservableObject {
     /// Actual measured sizes of rendered node views (updated by GeometryReader).
     var measuredNodeSizes: [UUID: CGSize] = [:]
 
+    // MARK: - Undo / Redo
+
+    /// Snapshot type that captures the undoable portion of the diagram state.
+    struct DiagramSnapshot: Equatable, Sendable {
+        var nodes: [CustomDiagram.Node]
+        var edges: [CustomDiagram.Edge]
+    }
+
+    /// History manager backing Cmd+Z / Shift+Cmd+Z.
+    let history = DiagramHistoryManager<DiagramSnapshot>()
+
+    /// Whether there is a state to undo to.
+    var canUndo: Bool { history.canUndo }
+
+    /// Whether there is a state to redo to.
+    var canRedo: Bool { history.canRedo }
+
+    /// Captures the current state as a checkpoint before a mutation.
+    func recordUndo() {
+        history.checkpoint(DiagramSnapshot(nodes: nodes, edges: edges))
+    }
+
+    /// Undo the last action, restoring the previous diagram state.
+    func undo() {
+        let current = DiagramSnapshot(nodes: nodes, edges: edges)
+        guard let previous = history.undo(current: current) else { return }
+        nodes = previous.nodes
+        edges = previous.edges
+        save()
+    }
+
+    /// Redo the last undone action.
+    func redo() {
+        let current = DiagramSnapshot(nodes: nodes, edges: edges)
+        guard let next = history.redo(current: current) else { return }
+        nodes = next.nodes
+        edges = next.edges
+        save()
+    }
+
     init() {}
 
     func configure(diagramID: UUID, browserModel: ProjectBrowserViewModel) {
@@ -42,6 +82,7 @@ final class CustomDiagramViewModel: ObservableObject {
     // MARK: - Node CRUD
 
     func addNode(kind: CustomDiagramNodeKind, name: String, at position: CGPoint) {
+        recordUndo()
         let node = CustomDiagram.Node(
             name: name,
             content: kind.defaultContent(),
@@ -53,6 +94,7 @@ final class CustomDiagramViewModel: ObservableObject {
     }
 
     func removeNode(_ nodeID: UUID) {
+        recordUndo()
         nodes.removeAll { $0.id == nodeID }
         edges.removeAll { $0.sourceNodeID == nodeID || $0.targetNodeID == nodeID }
         selectedNodeIDs.remove(nodeID)
@@ -75,6 +117,7 @@ final class CustomDiagramViewModel: ObservableObject {
 
     /// Increase the draw order of a node so it renders on top of siblings in the same layer.
     func moveNodeHigher(_ nodeID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
@@ -87,6 +130,7 @@ final class CustomDiagramViewModel: ObservableObject {
 
     /// Decrease the draw order of a node so it renders below siblings in the same layer.
     func moveNodeLower(_ nodeID: UUID) {
+        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
@@ -98,6 +142,7 @@ final class CustomDiagramViewModel: ObservableObject {
     }
 
     func updateNode(_ nodeID: UUID, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
+        recordUndo()
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             if let name { nodes[idx].name = name }
             if let kind {
@@ -117,18 +162,21 @@ final class CustomDiagramViewModel: ObservableObject {
     // MARK: - Edge CRUD
 
     func addEdge(from sourceID: UUID, to targetID: UUID, kind: Relationship.Kind) {
+        recordUndo()
         let edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
         edges.append(edge)
         save()
     }
 
     func removeEdge(_ edgeID: UUID) {
+        recordUndo()
         edges.removeAll { $0.id == edgeID }
         if selectedEdgeID == edgeID { selectedEdgeID = nil }
         save()
     }
 
     func updateEdge(_ edgeID: UUID, sourceID: UUID, targetID: UUID, kind: Relationship.Kind) {
+        recordUndo()
         guard let idx = edges.firstIndex(where: { $0.id == edgeID }) else { return }
         edges[idx].sourceNodeID = sourceID
         edges[idx].targetNodeID = targetID
@@ -160,6 +208,12 @@ final class CustomDiagramViewModel: ObservableObject {
     func clearSelection() {
         selectedNodeIDs.removeAll()
         selectedEdgeID = nil
+    }
+
+    /// Record an undo checkpoint for an upcoming drag or resize gesture.
+    /// Call this once at the **beginning** of a gesture, before positions change.
+    func recordUndoForGesture() {
+        recordUndo()
     }
 
     // MARK: - Persistence
