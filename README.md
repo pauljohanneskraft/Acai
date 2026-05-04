@@ -1,3 +1,5 @@
+<img src="Sources/UMLApp/Resources/Assets.xcassets/AppIcon.imageset/Icon-macOS-Default-1024x1024%401x.png" height="150" align="right">
+
 # UML — Code Diagramming for Your Codebases
 
 UML is a multi-language code analysis and diagramming toolkit. Point it at a codebase and it will parse your source (Swift, Kotlin, Java, TypeScript/JavaScript, and Dart), build a unified model of types and relationships, and generate UML-style diagrams (DOT/Graphviz). You can explore results in a macOS app or automate workflows with a CLI.
