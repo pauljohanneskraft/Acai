@@ -1,4 +1,4 @@
-name: Test
+name: Build, Lint and Test
 
 on:
   push:
@@ -6,12 +6,58 @@ on:
   pull_request:
 
 concurrency:
-  group: test-${{ github.ref }}
+  group: build-lint-test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  macos:
-    name: macOS
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-26
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build -v
+
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    container:
+      image: swift:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build -v
+
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:0.57.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict
+
+  test-macos:
+    name: Test (macOS)
     runs-on: macos-26
     steps:
       - name: Checkout code
@@ -41,8 +87,8 @@ jobs:
           fail_ci_if_error: false
         continue-on-error: true
 
-  linux:
-    name: Linux
+  test-linux:
+    name: Test (Linux)
     runs-on: ubuntu-latest
     container:
       image: swift:latest
