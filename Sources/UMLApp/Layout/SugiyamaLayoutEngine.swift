@@ -85,6 +85,66 @@ struct SugiyamaLayoutEngine: Sendable {
         return LayoutResult(positions: finalPositions)
     }
 
+    /// Hierarchically partitions nodes by their `group` key, treated as a `"/"`-separated
+    /// path (e.g. a directory path `Sources/UMLCore/ClassDiagram`). Each path level is laid
+    /// out as its own block and nested inside its parent, so a box drawn around any prefix
+    /// wraps a contiguous, non-overlapping region. A single-component group (e.g. a product
+    /// name) collapses to one level — equivalent to the old flat per-group layout.
+    ///
+    /// `padding` leaves room inside each block for the group box border and its name tab;
+    /// because it is applied at every level, deeper groups nest visibly inside shallower ones.
+    func layoutByGroup(nodes: [NodeInput], edges: [EdgeInput], depth: Int = 0, padding: CGFloat = 32) -> LayoutResult {
+        guard !nodes.isEmpty else { return LayoutResult(positions: [:]) }
+        let nodeSizes = Dictionary(nodes.map { ($0.id, $0.size) }, uniquingKeysWith: { first, _ in first })
+
+        func components(_ node: NodeInput) -> [String] {
+            (node.group ?? "").split(separator: "/").map(String.init)
+        }
+        func intraEdges(_ groupNodes: [NodeInput]) -> [EdgeInput] {
+            let ids = Set(groupNodes.map(\.id))
+            return edges.filter { ids.contains($0.sourceID) && ids.contains($0.targetID) }
+        }
+
+        var blocks: [(size: CGSize, positions: [String: CGPoint])] = []
+        func addBlock(_ positions: [String: CGPoint]) {
+            guard !positions.isEmpty else { return }
+            let normalized = normalizeToOrigin(positions, nodeSizes: nodeSizes, padding: padding)
+            let bounds = computeBounds(positions: normalized, nodeSizes: nodeSizes)
+            blocks.append(
+                (
+                    size: CGSize(width: bounds.width + padding * 2, height: bounds.height + padding * 2),
+                    positions: normalized
+                ))
+        }
+
+        // Nodes whose path ends at this level are laid out directly (no deeper box); the
+        // rest recurse, grouped by their next path component (name-sorted for stable order).
+        let direct = nodes.filter { components($0).count <= depth }
+        if !direct.isEmpty {
+            addBlock(layout(nodes: direct, edges: intraEdges(direct)).positions)
+        }
+        let nested = Dictionary(grouping: nodes.filter { components($0).count > depth }) { components($0)[depth] }
+        for key in nested.keys.sorted() {
+            let sub = nested[key]!
+            addBlock(layoutByGroup(nodes: sub, edges: intraEdges(sub), depth: depth + 1, padding: padding).positions)
+        }
+
+        return LayoutResult(positions: placeBlocksInGrid(blocks))
+    }
+
+    /// Shifts a block's positions so its top-left node corner sits at `(padding, padding)`.
+    private func normalizeToOrigin(
+        _ positions: [String: CGPoint],
+        nodeSizes: [String: CGSize],
+        padding: CGFloat
+    ) -> [String: CGPoint] {
+        guard !positions.isEmpty else { return positions }
+        let (minX, minY) = minCorner(of: positions, nodeSizes: nodeSizes)
+        return positions.mapValues {
+            CGPoint(x: $0.x - minX + padding, y: $0.y - minY + padding)
+        }
+    }
+
     // MARK: - Connected Components
 
     private func findConnectedComponents(

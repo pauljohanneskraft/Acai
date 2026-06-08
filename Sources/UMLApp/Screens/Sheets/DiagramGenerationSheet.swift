@@ -47,7 +47,11 @@ struct DiagramGenerationSheet: View {
                         Toggle("Show Dependency", isOn: $configuration.showDependency)
                     }
 
-                    Toggle("Group by Directory", isOn: $configuration.groupByDirectory)
+                    Picker("Grouping", selection: $configuration.grouping) {
+                        Text("None").tag(GeneratedDiagram.Configuration.Grouping.none)
+                        Text("Directory").tag(GeneratedDiagram.Configuration.Grouping.directory)
+                        Text("Product").tag(GeneratedDiagram.Configuration.Grouping.product)
+                    }
                     Toggle("Show External Types", isOn: $configuration.showExternalTypes)
                 }
             }

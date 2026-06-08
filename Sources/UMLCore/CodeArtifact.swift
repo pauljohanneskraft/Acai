@@ -63,12 +63,14 @@ extension CodeArtifact {
 
         for ext in extensions {
             guard let targetName = ext.extensionOf else { continue }
-            if let index = resolvedTypes.firstIndex(where: { $0.name == targetName }) {
-                resolvedTypes[index].members.append(contentsOf: ext.members)
-                resolvedTypes[index].nestedTypes.append(contentsOf: ext.nestedTypes)
-            } else {
-                resolvedTypes.append(ext)
+            // Only resolve extensions whose base type belongs to the codebase. Extensions of
+            // external types (e.g. `extension SIMD3`, `extension Array`) are dropped rather
+            // than shown as standalone nodes.
+            guard let index = resolvedTypes.firstIndex(where: { $0.name == targetName }) else {
+                continue
             }
+            resolvedTypes[index].members.append(contentsOf: ext.members)
+            resolvedTypes[index].nestedTypes.append(contentsOf: ext.nestedTypes)
             for inherited in ext.inheritedTypes {
                 resolvedRelationships.append(
                     Relationship(kind: .conformance, source: targetName, target: inherited.name)

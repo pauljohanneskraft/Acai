@@ -41,6 +41,9 @@ optionalTargets.append(
         ]
     )
 )
+optionalTargets.append(
+    .testTarget(name: "UMLAppTests", dependencies: ["UMLApp", "UMLCore"])
+)
 #endif
 
 

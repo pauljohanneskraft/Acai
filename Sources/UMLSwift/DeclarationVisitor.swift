@@ -82,6 +82,12 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visitPost(_ node: ProtocolDeclSyntax) {
         guard functionBodyDepth == 0 else { return }
+        // Protocol requirements can't carry their own access modifier — they inherit
+        // the protocol's access level. Override the per-member default accordingly.
+        let access = typeStack[typeStack.count - 1].accessLevel
+        for index in typeStack[typeStack.count - 1].members.indices {
+            typeStack[typeStack.count - 1].members[index].accessLevel = access
+        }
         popType()
     }
 

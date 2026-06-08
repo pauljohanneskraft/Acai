@@ -6,7 +6,10 @@ enum TypeExtractor {
 
     // MARK: - Access Level
 
-    static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
+    /// Access level of a Swift declaration. When no explicit modifier is present,
+    /// returns Swift's implicit default of `internal` (this is language-specific —
+    /// e.g. Kotlin defaults to `public` — which is why the default lives in `UMLSwift`).
+    static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel {
         for modifier in modifiers {
             switch modifier.name.tokenKind {
             case .keyword(.public):
@@ -25,7 +28,7 @@ enum TypeExtractor {
                 continue
             }
         }
-        return nil
+        return .internal
     }
 
     // MARK: - Modifiers

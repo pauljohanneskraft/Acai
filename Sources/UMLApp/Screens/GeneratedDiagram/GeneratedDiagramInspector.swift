@@ -74,7 +74,11 @@ struct GeneratedDiagramSidebar: View {
             }
 
             Section("Layout") {
-                Toggle("Group by Directory", isOn: config.groupByDirectory)
+                Picker("Grouping", selection: config.grouping) {
+                    Text("None").tag(GeneratedDiagram.Configuration.Grouping.none)
+                    Text("Directory").tag(GeneratedDiagram.Configuration.Grouping.directory)
+                    Text("Product").tag(GeneratedDiagram.Configuration.Grouping.product)
+                }
                 Toggle("Show External Types", isOn: config.showExternalTypes)
             }
 
