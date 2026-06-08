@@ -34,9 +34,13 @@ extension CodeArtifact {
     // MARK: - Inheritance vs conformance (BUG-3, in-codebase only)
 
     /// Reclassifies an `.inheritance` edge to `.conformance` when its target resolves
-    /// to a `protocol` declared in this codebase. External first-parents are left as-is.
+    /// to a `protocol`/`interface` declared in this codebase. External first-parents are
+    /// left as-is.
     public func reclassifyingRelationshipKinds() -> CodeArtifact {
-        let protocolIds = Set(Self.allTypes(types).filter { $0.kind == .protocol }.map(\.id))
+        let protocolIds = Set(
+            Self.allTypes(types)
+                .filter { $0.kind == .protocol || $0.kind == .interface }
+                .map(\.id))
         guard !protocolIds.isEmpty else { return self }
         var copy = self
         copy.relationships = relationships.map { rel in
