@@ -12,8 +12,12 @@ struct GeneratedDiagramNode: Identifiable, Sendable {
     let methods: [DiagramMember]
     let enumCases: [DiagramEnumCase]
     let genericParameters: [String]
-    /// The directory containing this type's source file (used for grouping).
-    let directoryGroup: String?
+    /// The full relative directory path of this type's source file (e.g.
+    /// `Sources/UMLCore/ClassDiagram`), used for hierarchical directory grouping.
+    let directoryPath: String?
+    /// The compiled product (build target / module) this type belongs to,
+    /// derived from its source-file path. Used for product grouping and package boxes.
+    let productGroup: String?
 
     init(from type: TypeDeclaration, configuration: GeneratedDiagram.Configuration? = nil) {
         self.id = type.id
@@ -50,24 +54,21 @@ struct GeneratedDiagramNode: Identifiable, Sendable {
             self.enumCases = []
         }
 
-        // Extract directory from file path for grouping.
+        // Extract the full directory path (all components except the file name) for
+        // hierarchical grouping, plus the compiled product for product grouping.
         if let filePath = type.location?.filePath {
-            // Use the last two path components of the directory for a meaningful group name.
-            let url = URL(fileURLWithPath: filePath)
-            let dir = url.deletingLastPathComponent()
-            let components = dir.pathComponents
-            if components.count >= 2 {
-                self.directoryGroup = components.suffix(2).joined(separator: "/")
-            } else {
-                self.directoryGroup = dir.lastPathComponent
-            }
+            let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
+            self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
+            self.productGroup = BuildProduct.productName(forFilePath: filePath)
         } else {
-            self.directoryGroup = nil
+            self.directoryPath = nil
+            self.productGroup = nil
         }
     }
 
-    /// Returns true if the member's access level is at or above the minimum.
-    private static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
+    /// Returns true if the given access level is at or above the minimum. Used both for
+    /// member visibility and for hiding whole types below the minimum access level.
+    static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
         let order = accessOrder(memberAccess ?? .internal)
         let minOrder = accessOrder(minimum)

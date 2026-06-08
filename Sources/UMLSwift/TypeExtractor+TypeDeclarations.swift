@@ -15,7 +15,8 @@ extension TypeExtractor {
             kind: .class,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(from: node.genericParameterClause),
+            genericParameters: extractGenericParameters(
+                from: node.genericParameterClause, whereClause: node.genericWhereClause),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
@@ -33,7 +34,8 @@ extension TypeExtractor {
             kind: .struct,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(from: node.genericParameterClause),
+            genericParameters: extractGenericParameters(
+                from: node.genericParameterClause, whereClause: node.genericWhereClause),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
@@ -51,7 +53,8 @@ extension TypeExtractor {
             kind: .enum,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(from: node.genericParameterClause),
+            genericParameters: extractGenericParameters(
+                from: node.genericParameterClause, whereClause: node.genericWhereClause),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
@@ -71,6 +74,9 @@ extension TypeExtractor {
             kind: .protocol,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
+            genericParameters: node.primaryAssociatedTypeClause?.primaryAssociatedTypes.map {
+                GenericParameter(name: $0.name.text)
+            } ?? [],
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
@@ -111,7 +117,8 @@ extension TypeExtractor {
             kind: .typeAlias,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(from: node.genericParameterClause),
+            genericParameters: extractGenericParameters(
+                from: node.genericParameterClause, whereClause: node.genericWhereClause),
             inheritedTypes: [extractTypeReference(from: node.initializer.value)],
             annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
@@ -126,12 +133,13 @@ extension TypeExtractor {
             id: qualifiedName,
             name: name,
             qualifiedName: qualifiedName,
-            kind: .class,
+            kind: .actor,
             accessLevel: extractAccessLevel(from: node.modifiers),
             modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(from: node.genericParameterClause),
+            genericParameters: extractGenericParameters(
+                from: node.genericParameterClause, whereClause: node.genericWhereClause),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: ["@actor"] + extractAttributes(from: node.attributes),
+            annotations: extractAttributes(from: node.attributes),
             namespace: namespace,
             location: sourceLocation(of: node, fileName: fileName)
         )

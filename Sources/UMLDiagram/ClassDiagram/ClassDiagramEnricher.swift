@@ -53,58 +53,38 @@ public enum ClassDiagramEnricher {
         _ artifact: CodeArtifact,
         options: EnrichmentOptions = .init()
     ) -> Result {
-        // 1. Flatten nested types, giving them proper display names and unique IDs.
-        let flatTypes = flattenTypes(artifact.types)
+        // All structural enrichment (extension resolution, name→id resolution,
+        // inheritance/conformance reclassification, inferred composition/aggregation/
+        // dependency edges, dedup) is owned by UMLCore and runs exactly once here.
+        // It is idempotent, so an already-enriched artifact (e.g. from AnalysisService)
+        // is unaffected.
+        let base = artifact.enriched()
 
-        // 2. Build name → ID resolution map.
+        // Flatten nested types, giving them display names that include nesting context.
+        let flatTypes = flattenTypes(base.types)
         let resolver = TypeResolver(types: flatTypes)
+        var relationships = base.relationships.map { resolver.resolve($0) }
 
-        // 3. Resolve existing relationships.
-        var relationships = artifact.relationships.map { resolver.resolve($0) }
-
-        // 4. Infer composition / aggregation from property types.
-        if options.inferCompositionFromProperties {
-            relationships.append(contentsOf: inferPropertyRelationships(flatTypes, resolver: resolver))
+        // Honour the inference toggles by filtering the kinds UMLCore inferred.
+        if !options.inferCompositionFromProperties {
+            relationships.removeAll { $0.kind == .composition || $0.kind == .aggregation }
+        }
+        if !options.inferDependencyFromMethods {
+            relationships.removeAll { $0.kind == .dependency }
         }
 
-        // 5. Infer dependency from method parameter/return types.
-        if options.inferDependencyFromMethods {
-            relationships.append(contentsOf: inferMethodDependencies(flatTypes, resolver: resolver))
-        }
-
-        // 6. Remove redundant inferred edges where a stronger relationship exists
-        //    (e.g. don't show dependency A→B if inheritance A→B already exists).
-        relationships = removeRedundantEdges(relationships)
-
-        // 7. Deduplicate.
-        relationships = deduplicate(relationships)
-
-        // 8. Handle external types.
-        //
-        // Parser-produced edge kinds (inheritance, conformance, extension, nesting,
-        // association) are ALWAYS preserved — removing them would be a regression
-        // from the pre-enrichment behaviour where DOT rendered every edge.
-        //
-        // Inferred edge kinds (composition, aggregation, dependency) to external
-        // targets are only kept when `showExternalTypes` is enabled.
+        // External types: parser-produced edges (inheritance/conformance/…) are always
+        // kept; inferred edges to external targets only when `showExternalTypes` is set.
         let knownIds = Set(flatTypes.map(\.id))
-
         let inferredKinds: Set<Relationship.Kind> = [.composition, .aggregation, .dependency]
-
         if !options.showExternalTypes {
             relationships = relationships.filter { rel in
-                // Always keep edges where both endpoints are known.
                 if knownIds.contains(rel.source) && knownIds.contains(rel.target) { return true }
-                // Always keep parser-produced edge kinds even to external targets.
                 return !inferredKinds.contains(rel.kind)
             }
         }
 
-        // Create placeholder nodes for every external target still referenced.
-        let externalTypes = identifyExternalTypes(
-            relationships: relationships, knownIds: knownIds)
-
-        // 9. Build directory groups.
+        let externalTypes = identifyExternalTypes(relationships: relationships, knownIds: knownIds)
         let directoryGroups = buildDirectoryGroups(flatTypes)
 
         return Result(
@@ -207,97 +187,6 @@ public enum ClassDiagramEnricher {
         }
     }
 
-    // MARK: - Infer Property Relationships
-
-    private static func inferPropertyRelationships(
-        _ types: [TypeDeclaration],
-        resolver: TypeResolver
-    ) -> [Relationship] {
-        var result: [Relationship] = []
-
-        for type in types {
-            for member in type.members where member.kind == .property || member.kind == .subscript {
-                guard let typeRef = member.type else { continue }
-                let refNames = extractReferencedTypeNames(from: typeRef)
-
-                for refName in refNames {
-                    guard !isPrimitive(refName) else { continue }
-                    let targetId = resolver.resolveId(refName)
-                    guard targetId != type.id else { continue } // skip self-references
-
-                    let isCollection = typeRef.isArray || isCollectionType(typeRef.name)
-                    let kind: Relationship.Kind = isCollection ? .aggregation : .composition
-
-                    result.append(Relationship(
-                        kind: kind,
-                        source: type.id,
-                        target: targetId,
-                        targetLabel: isCollection ? "*" : "1",
-                        label: member.name
-                    ))
-                }
-            }
-        }
-        return result
-    }
-
-    // MARK: - Infer Method Dependencies
-
-    private static func inferMethodDependencies(
-        _ types: [TypeDeclaration],
-        resolver: TypeResolver
-    ) -> [Relationship] {
-        var result: [Relationship] = []
-
-        for type in types {
-            var seen = Set<String>()
-
-            for member in type.members where member.kind == .method || member.kind == .initializer {
-                collectDependencies(
-                    from: member, sourceType: type, resolver: resolver,
-                    seen: &seen, result: &result
-                )
-            }
-        }
-        return result
-    }
-
-    private static func collectDependencies(
-        from member: Member,
-        sourceType type: TypeDeclaration,
-        resolver: TypeResolver,
-        seen: inout Set<String>,
-        result: inout [Relationship]
-    ) {
-        // Return type.
-        if let returnType = member.type {
-            appendDependencies(from: returnType, sourceId: type.id, resolver: resolver,
-                               seen: &seen, result: &result)
-        }
-
-        // Parameter types.
-        for param in member.parameters {
-            guard let paramType = param.type else { continue }
-            appendDependencies(from: paramType, sourceId: type.id, resolver: resolver,
-                               seen: &seen, result: &result)
-        }
-    }
-
-    private static func appendDependencies(
-        from typeRef: TypeReference,
-        sourceId: String,
-        resolver: TypeResolver,
-        seen: inout Set<String>,
-        result: inout [Relationship]
-    ) {
-        for refName in extractReferencedTypeNames(from: typeRef) {
-            guard !isPrimitive(refName) else { continue }
-            let targetId = resolver.resolveId(refName)
-            guard targetId != sourceId, seen.insert(targetId).inserted else { continue }
-            result.append(Relationship(kind: .dependency, source: sourceId, target: targetId))
-        }
-    }
-
     // MARK: - External Types
 
     private static func identifyExternalTypes(
@@ -322,54 +211,6 @@ public enum ClassDiagramEnricher {
         }
     }
 
-    // MARK: - Redundancy Removal
-
-    /// Removes weaker inferred edges when a stronger explicit relationship already exists.
-    ///
-    /// Priority (strongest → weakest):
-    /// `inheritance` / `conformance` / `extension` > `composition` / `aggregation` > `dependency`
-    private static func removeRedundantEdges(_ relationships: [Relationship]) -> [Relationship] {
-        // Build a set of existing strong pairs.
-        var strongPairs = Set<String>() // "source→target" for inheritance/conformance/extension
-        var mediumPairs = Set<String>() // for composition/aggregation
-
-        for rel in relationships {
-            let key = "\(rel.source)→\(rel.target)"
-            switch rel.kind {
-            case .inheritance, .conformance, .extension:
-                strongPairs.insert(key)
-            case .composition, .aggregation:
-                mediumPairs.insert(key)
-            default:
-                break
-            }
-        }
-
-        return relationships.filter { rel in
-            let key = "\(rel.source)→\(rel.target)"
-            switch rel.kind {
-            case .composition, .aggregation:
-                // Remove if a strong relationship already covers this pair.
-                return !strongPairs.contains(key)
-            case .dependency:
-                // Remove if any stronger relationship covers this pair.
-                return !strongPairs.contains(key) && !mediumPairs.contains(key)
-            default:
-                return true
-            }
-        }
-    }
-
-    // MARK: - Deduplication
-
-    private static func deduplicate(_ relationships: [Relationship]) -> [Relationship] {
-        var seen = Set<String>()
-        return relationships.filter { rel in
-            let key = "\(rel.source)→\(rel.target):\(rel.kind.rawValue)"
-            return seen.insert(key).inserted
-        }
-    }
-
     // MARK: - Directory Groups
 
     private static func buildDirectoryGroups(_ types: [TypeDeclaration]) -> [String: [String]] {
@@ -389,60 +230,9 @@ public enum ClassDiagramEnricher {
 
     // MARK: - Type Reference Helpers
 
-    /// Extracts all non-primitive, non-collection type names from a `TypeReference`,
-    /// including types buried in generic arguments.
-    private static func extractReferencedTypeNames(from ref: TypeReference) -> [String] {
-        var names: [String] = []
-        let baseName = ref.name
-        if !isPrimitive(baseName) && !isCollectionType(baseName) {
-            names.append(baseName)
-        }
-        for arg in ref.genericArguments {
-            names.append(contentsOf: extractReferencedTypeNames(from: arg))
-        }
-        return names
-    }
-
-    /// Returns `true` for built-in / primitive type names that should never produce edges.
+    /// Returns `true` for built-in / primitive type names that should never be shown
+    /// as external placeholder nodes. Delegates to the shared UMLCore classification.
     static func isPrimitive(_ name: String) -> Bool {
-        primitiveTypes.contains(name)
+        CodeArtifact.isPrimitive(name)
     }
-
-    /// Returns `true` for well-known collection type names.
-    private static func isCollectionType(_ name: String) -> Bool {
-        collectionTypes.contains(name)
-    }
-
-    // MARK: - Known Type Sets
-
-    private static let primitiveTypes: Set<String> = [
-        // Common
-        "void", "Void", "Unit", "Nothing", "Never", "Any", "AnyObject", "any",
-        "Self", "self", "this",
-        // Swift
-        "String", "Int", "Double", "Float", "Bool", "Character", "UInt",
-        "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64",
-        "CGFloat", "Data", "Date", "URL", "UUID", "Error", "Sendable", "Codable",
-        "Equatable", "Hashable", "Comparable", "Identifiable", "CustomStringConvertible",
-        // Java / Kotlin
-        "int", "long", "short", "byte", "float", "double", "boolean", "char",
-        "Integer", "Long", "Short", "Byte", "Float", "Double", "Boolean", "Character",
-        "Object", "Number", "Comparable", "Serializable", "Cloneable",
-        // JS / TS
-        "string", "number", "boolean", "undefined", "null", "symbol", "bigint",
-        "unknown", "never", "object", "Promise", "Function",
-        // Dart
-        "dynamic", "num", "var", "inferred",
-        // Optional wrappers
-        "Optional"
-    ]
-
-    private static let collectionTypes: Set<String> = [
-        "List", "ArrayList", "LinkedList", "Vector", "Stack", "Queue", "Deque",
-        "ArrayDeque", "PriorityQueue",
-        "Set", "HashSet", "TreeSet", "LinkedHashSet", "MutableSet",
-        "Map", "HashMap", "TreeMap", "LinkedHashMap", "MutableMap",
-        "Array", "MutableList", "Iterable", "Collection", "Sequence",
-        "Dictionary"
-    ]
 }

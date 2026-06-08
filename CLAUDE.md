@@ -11,8 +11,7 @@ A Swift 6 SwiftPM package that parses source code in five languages and emits UM
 - Build: `swift build`
 - Test: `swift test --parallel`
 - Single test: `swift test --filter UMLKotlinTests` (target) or `--filter UMLKotlinTests/SomeTest/testCase`
-- Lint: `swiftlint lint --strict`
-- Format: `swift format --in-place --recursive --configuration .swift-format Sources Tests` (uses the toolchain `swift format`, not the `swift-format` binary)
+- Lint: `swiftlint lint --strict` (also handles formatting — there is no separate formatter)
 
 Release binaries are **not** plain `swift build` — use the scripts in `Scripts/` (they build `-c release --arch arm64` and assemble the `.app` bundle): `cli_create.sh`, `cli_install.sh`, `app_create.sh`, `app_install.sh` (+ matching `*_uninstall.sh`).
 
@@ -36,7 +35,7 @@ Layered, one module per concern (see `Package.swift`):
 
 ## Style
 
-- 4-space indentation, 120-column lines (`.swift-format`, `.swiftlint.yml`).
+- 4-space indentation, 120-column lines (`.swiftlint.yml`).
 - Type nesting capped at 2 levels; cyclomatic complexity warns at 10.
 - Parsers are stateless `struct`s conforming to `CodeParser`.
 

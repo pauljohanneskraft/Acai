@@ -70,6 +70,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             switch tk {
             case .class:
                 "Class"
+            case .actor:
+                "Actor"
             case .struct:
                 "Struct"
             case .enum:
@@ -127,6 +129,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             switch tk {
             case .class:
                 "c.square"
+            case .actor:
+                "bolt.square"
             case .struct:
                 "s.square"
             case .enum:

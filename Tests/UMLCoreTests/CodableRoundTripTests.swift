@@ -204,6 +204,25 @@ struct CodableRoundTripTests {
         })
     }
 
+    @Test func resolvingExtensionsDropsExternalBaseTypes() {
+        // `extension SIMD3` where SIMD3 isn't defined in the codebase must not appear.
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
+            types: [
+                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class),
+                TypeDeclaration(
+                    id: "extension.SIMD3", name: "SIMD3", qualifiedName: "SIMD3",
+                    kind: .extension,
+                    inheritedTypes: [TypeReference(name: "CustomProtocol")],
+                    members: [Member(name: "magnitude", kind: .property)],
+                    extensionOf: "SIMD3")
+            ]
+        )
+        let resolved = artifact.resolvingExtensions()
+        #expect(resolved.types.map(\.name) == ["Foo"])
+        #expect(!resolved.relationships.contains { $0.source == "SIMD3" })
+    }
+
     // MARK: - Helper
 
     private func roundTrip<T: Codable & Equatable>(_ value: T) throws -> T {

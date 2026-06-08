@@ -1,5 +1,6 @@
 public enum TypeKind: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
     case `class`
+    case actor
     case `struct`
     case `enum`
     case `protocol`
@@ -37,6 +38,8 @@ public enum TypeKind: String, Codable, Equatable, Hashable, Sendable, CaseIterab
             "record"
         case .mixin:
             "mixin"
+        case .actor:
+            "actor"
         case .class, .extension:
             nil
         }

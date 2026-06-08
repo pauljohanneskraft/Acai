@@ -29,6 +29,40 @@ struct SwiftTypeTests {
         #expect(animal.members.count == 4) // 2 props + init + method
     }
 
+    @Test func implicitTypeAccessDefaultsToInternal() {
+        // No access modifier in Swift means `internal`, not "unknown"/public.
+        let source = """
+        class Implicit {}
+        public class Exposed {}
+        private struct Hidden {}
+        """
+        let artifact = parser.parse(source: source, fileName: "Defaults.swift")
+        let byName = Dictionary(uniqueKeysWithValues: artifact.types.map { ($0.name, $0) })
+        #expect(byName["Implicit"]?.accessLevel == .internal)
+        #expect(byName["Exposed"]?.accessLevel == .public)
+        #expect(byName["Hidden"]?.accessLevel == .private)
+    }
+
+    @Test func protocolMembersInheritProtocolAccess() {
+        // Protocol requirements have no access modifier of their own; they take the
+        // protocol's. A public protocol's members are public; an implicit (internal) one's are internal.
+        let source = """
+        public protocol Service {
+            var id: Int { get }
+            func run()
+        }
+        protocol Hidden {
+            func helper()
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Protocols.swift")
+        let byName = Dictionary(uniqueKeysWithValues: artifact.types.map { ($0.name, $0) })
+        #expect(byName["Service"]?.accessLevel == .public)
+        #expect(byName["Service"]?.members.allSatisfy { $0.accessLevel == .public } == true)
+        #expect(byName["Hidden"]?.accessLevel == .internal)
+        #expect(byName["Hidden"]?.members.allSatisfy { $0.accessLevel == .internal } == true)
+    }
+
     @Test func structWithProtocolConformance() {
         let source = """
         struct Point: Equatable, Hashable {
@@ -159,7 +193,7 @@ struct SwiftTypeTests {
         let artifact = parser.parse(source: source, fileName: "DataStore.swift")
         #expect(artifact.types.count == 1)
         #expect(artifact.types[0].name == "DataStore")
-        #expect(artifact.types[0].annotations.contains("@actor"))
+        #expect(artifact.types[0].kind == .actor)
         #expect(artifact.types[0].members.count == 2) // items + add
     }
 

@@ -47,11 +47,15 @@ final class GeneratedDiagramViewModel: ObservableObject {
             resolved = resolved.filteringGeneratedDartTypes()
         }
 
-        // Build nodes from type declarations, applying configuration filters.
-        nodes = resolved.types.map { .init(from: $0, configuration: configuration) }
+        // Hide whole types whose access level is below the minimum, then build nodes.
+        let visibleTypes = resolved.types.filter {
+            GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
+        }
+        nodes = visibleTypes.map { .init(from: $0, configuration: configuration) }
 
-        // Build edges, filtering by configuration.
-        let typeIds = Set(resolved.types.map(\.id))
+        // Build edges, filtering by configuration. Edges to hidden types are dropped
+        // because their endpoints are no longer in the known-type set.
+        let typeIds = Set(visibleTypes.map(\.id))
         edges = buildEdges(from: resolved.relationships, knownTypeIds: typeIds)
 
         // Estimate sizes and run initial layout.
@@ -105,28 +109,106 @@ final class GeneratedDiagramViewModel: ObservableObject {
     // MARK: - Apply Configuration
 
     func applyConfiguration(_ newConfig: GeneratedDiagram.Configuration, artifact: CodeArtifact) {
+        let groupingChanged = newConfig.grouping != configuration.grouping
         self.configuration = newConfig
-        self.restoredPositions = nodePositions // Keep current positions
+        // Drop saved positions when the grouping changes so the layout actually reflows;
+        // otherwise keep current positions so unrelated tweaks don't disturb them.
+        self.restoredPositions = groupingChanged ? nil : nodePositions
         hasPerformedMeasuredLayout = false
         buildDiagram()
     }
 
     // MARK: - Layout
 
+    /// Extra space baked into every node's layout footprint so neighbours never touch
+    /// and small size-estimate errors can't produce visual overlap.
+    private static let layoutMargin: CGFloat = 28
+
     func performLayout() {
         let engine = SugiyamaLayoutEngine()
+        let margin = Self.layoutMargin
         let inputs = nodes.map {
-            SugiyamaLayoutEngine.NodeInput(
+            // Lay out using the node's *displayed* size (user-resized > measured > estimated),
+            // inflated by a uniform margin so the result has breathing room.
+            let size = effectiveSize(for: $0.id)
+            return SugiyamaLayoutEngine.NodeInput(
                 id: $0.id,
-                size: nodeSizes[$0.id] ?? CGSize(width: 200, height: 100),
-                group: $0.directoryGroup
+                size: CGSize(width: size.width + margin * 2, height: size.height + margin * 2),
+                group: groupKey(for: $0)
             )
         }
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.sourceID, targetID: $0.targetID, kind: $0.kind)
         }
-        let result = engine.layout(nodes: inputs, edges: edgeInputs)
+        // Any grouping mode partitions the graph per group so each group box is a
+        // contiguous, non-overlapping block; ungrouped uses the component-based layout.
+        let result = configuration.grouping == .none
+            ? engine.layout(nodes: inputs, edges: edgeInputs)
+            : engine.layoutByGroup(nodes: inputs, edges: edgeInputs)
         nodePositions = result.positions
+    }
+
+    /// The clustering key for a node under the active grouping mode.
+    private func groupKey(for node: GeneratedDiagramNode) -> String? {
+        switch configuration.grouping {
+        case .none:
+            return nil
+        case .directory:
+            return node.directoryPath
+        case .product:
+            return node.productGroup
+        }
+    }
+
+    // MARK: - Grouping Boxes
+
+    /// A labelled box wrapping all nodes of one group (a directory level or a compiled
+    /// product). `depth` is its nesting level (1 = outermost), used for z-order and inset.
+    struct GroupingBox: Identifiable {
+        let id: String
+        let label: String
+        let rect: CGRect
+        let depth: Int
+    }
+
+    /// Nested bounding boxes for the active grouping mode, computed from the *current* node
+    /// rects so they always wrap their nodes after drags, resizes and measured-size updates.
+    /// One box per path prefix of every node's group key (so `Sources/UMLCore/ClassDiagram`
+    /// yields a box at each of the three levels), giving the multi-layer nesting. Empty when
+    /// grouping is `.none`. The hierarchical layout keeps each prefix contiguous, so the
+    /// boxes nest without overlapping.
+    var groupingBoxes: [GroupingBox] {
+        guard configuration.grouping != .none else { return [] }
+        var byPrefix: [String: (label: String, depth: Int, rect: CGRect)] = [:]
+        for node in nodes {
+            guard let group = groupKey(for: node), let rect = nodeRect(for: node.id) else { continue }
+            let components = group.split(separator: "/").map(String.init)
+            for depth in 1...components.count {
+                let key = components.prefix(depth).joined(separator: "/")
+                if let existing = byPrefix[key] {
+                    byPrefix[key] = (existing.label, existing.depth, existing.rect.union(rect))
+                } else {
+                    byPrefix[key] = (components[depth - 1], depth, rect)
+                }
+            }
+        }
+        // Every box reserves a node-free strip at its top for its title tab — so even a
+        // single-node box shows its name (boxes are drawn *behind* the nodes, so a tab that
+        // overlaps a node would be hidden). Each ancestor level adds one more tab-height, so
+        // a parent's tab clears its child's even when they share a top-left corner. Draw
+        // shallower (outer) boxes first so deeper ones render on top.
+        let maxDepth = byPrefix.values.map(\.depth).max() ?? 1
+        let titleStrip: CGFloat = 30
+        let levelStep: CGFloat = 30
+        return byPrefix
+            .map { key, value in
+                let inset = titleStrip + CGFloat(maxDepth - value.depth) * levelStep
+                return GroupingBox(
+                    id: key, label: value.label,
+                    rect: value.rect.insetBy(dx: -inset, dy: -inset), depth: value.depth
+                )
+            }
+            .sorted { $0.depth < $1.depth }
     }
 
     // MARK: - Selection

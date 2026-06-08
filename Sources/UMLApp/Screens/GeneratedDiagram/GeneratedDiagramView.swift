@@ -107,6 +107,7 @@ struct GeneratedDiagramView: View {
             }
         }, autoPanController: canvasAutoPanController, content: {
             ZStack {
+                GroupingBoxLayer(viewModel: viewModel)
                 nodeLayer
                 edgeLayer
                 resizeHandleLayer
@@ -292,8 +293,11 @@ struct GeneratedDiagramView: View {
             }
     }
 
-    // MARK: - Save & Center
+}
 
+// MARK: - Save & Center
+
+extension GeneratedDiagramView {
     private func savePositions() {
         model.updateGeneratedDiagramPositions(
             diagramID: diagram.id,

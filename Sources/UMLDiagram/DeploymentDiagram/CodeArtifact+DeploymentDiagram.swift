@@ -156,7 +156,7 @@ extension CodeArtifact {
 
     private static func deploymentArtifactKind(for kind: TypeKind) -> DeploymentDiagram.Artifact.Kind {
         switch kind {
-        case .class, .object, .record:
+        case .class, .actor, .object, .record:
             return .executable
         case .protocol, .interface, .trait:
             return .library
