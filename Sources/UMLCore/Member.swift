@@ -2,6 +2,9 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     public var name: String
     public var kind: MemberKind
     public var accessLevel: AccessLevel?
+    /// The access level of the setter, when narrower than the getter
+    /// (e.g. `private(set)`). `nil` when the setter matches `accessLevel`.
+    public var setAccessLevel: AccessLevel?
     public var modifiers: [Modifier]
     public var type: TypeReference?
     public var parameters: [Parameter]
@@ -20,6 +23,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         name: String,
         kind: MemberKind,
         accessLevel: AccessLevel? = nil,
+        setAccessLevel: AccessLevel? = nil,
         modifiers: [Modifier] = [],
         type: TypeReference? = nil,
         parameters: [Parameter] = [],
@@ -32,6 +36,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.name = name
         self.kind = kind
         self.accessLevel = accessLevel
+        self.setAccessLevel = setAccessLevel
         self.modifiers = modifiers
         self.type = type
         self.parameters = parameters

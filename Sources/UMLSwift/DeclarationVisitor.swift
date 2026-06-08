@@ -6,6 +6,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var types: [TypeDeclaration] = []
     private var relationships: [Relationship] = []
     private var freestandingFunctions: [Member] = []
+    private var globalVariables: [Member] = []
     private var typeStack: [TypeDeclaration] = []
 
     // MARK: - Call-site collection state
@@ -27,7 +28,8 @@ final class DeclarationVisitor: SyntaxVisitor {
             metadata: .init(sourceLanguage: .swift, filePaths: [fileName]),
             types: types,
             relationships: relationships,
-            freestandingFunctions: freestandingFunctions
+            freestandingFunctions: freestandingFunctions,
+            globalVariables: globalVariables
         )
     }
 
@@ -131,18 +133,24 @@ final class DeclarationVisitor: SyntaxVisitor {
     // MARK: - Members
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
+        // Always balance the depth counter against `visitPost`, even for nested
+        // functions we don't descend into — otherwise the counter underflows and
+        // every later declaration in the file is silently dropped.
+        let isNested = functionBodyDepth > 0
+        functionBodyDepth += 1
         // Inside another function body: skip the nested function entirely.
-        guard functionBodyDepth == 0 else { return .skipChildren }
+        guard !isNested else { return .skipChildren }
 
         // Capture the property map for this type before we descend.
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
-        functionBodyDepth += 1
         return .visitChildren   // descend so FunctionCallExprSyntax nodes are visited
     }
 
     override func visitPost(_ node: FunctionDeclSyntax) {
         functionBodyDepth -= 1
+        // Only the top-of-body function becomes a member; nested ones are skipped.
+        guard functionBodyDepth == 0 else { return }
         let member = TypeExtractor.extractFunction(
             from: node, fileName: fileName, callSites: pendingCallSites)
         pendingCallSites = []
@@ -155,27 +163,36 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
-        guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
+        // Skip local variables inside function bodies.
+        guard functionBodyDepth == 0 else { return .skipChildren }
         let members = TypeExtractor.extractVariable(from: node, fileName: fileName)
-        typeStack[typeStack.count - 1].members.append(contentsOf: members)
+        if typeStack.isEmpty {
+            // Top-level (module-scope) `let`/`var`.
+            globalVariables.append(contentsOf: members)
+        } else {
+            typeStack[typeStack.count - 1].members.append(contentsOf: members)
+        }
         return .skipChildren
     }
 
     override func visit(_ node: InitializerDeclSyntax) -> SyntaxVisitorContinueKind {
-        guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
+        // Balance the depth counter against `visitPost` unconditionally (see the
+        // function-decl note above).
+        let isNested = functionBodyDepth > 0
+        functionBodyDepth += 1
+        guard !isNested, !typeStack.isEmpty else { return .skipChildren }
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
-        functionBodyDepth += 1
         return .visitChildren
     }
 
     override func visitPost(_ node: InitializerDeclSyntax) {
         functionBodyDepth -= 1
+        guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
         let member = TypeExtractor.extractInitializer(
             from: node, fileName: fileName, callSites: pendingCallSites)
         pendingCallSites = []
         callSitePropertyMap = [:]
-        guard !typeStack.isEmpty else { return }
         typeStack[typeStack.count - 1].members.append(member)
     }
 
@@ -197,6 +214,25 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
         let cases = TypeExtractor.extractEnumCases(from: node, fileName: fileName)
         typeStack[typeStack.count - 1].enumCases.append(contentsOf: cases)
+        return .skipChildren
+    }
+
+    override func visit(_ node: AssociatedTypeDeclSyntax) -> SyntaxVisitorContinueKind {
+        guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
+        typeStack[typeStack.count - 1].associatedTypes.append(
+            TypeExtractor.extractAssociatedType(from: node))
+        return .skipChildren
+    }
+
+    // MARK: - Conditional Compilation
+
+    override func visit(_ node: IfConfigDeclSyntax) -> SyntaxVisitorContinueKind {
+        // Walk only the first clause to avoid double-counting declarations that
+        // appear in multiple #if/#else branches. Without build settings we can't
+        // know which branch is active; the first (#if) is the closest approximation.
+        if let firstClause = node.clauses.first {
+            walk(firstClause)
+        }
         return .skipChildren
     }
 

@@ -7,10 +7,13 @@ enum RelationshipExtractor {
 
     /// Expands a potentially composed type (`A & B & C`) into individual type names.
     private static func expandTypeNames(_ typeSyntax: TypeSyntax) -> [String] {
+        // Route through `extractTypeReference` so attributes (`@unchecked`,
+        // `@retroactive`, `@MainActor`) and optional/array sugar are stripped,
+        // keeping edge endpoints consistent with `TypeDeclaration.inheritedTypes`.
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
-            return composition.elements.map { $0.type.trimmedDescription }
+            return composition.elements.map { TypeExtractor.extractTypeReference(from: $0.type).name }
         }
-        return [typeSyntax.trimmedDescription]
+        return [TypeExtractor.extractTypeReference(from: typeSyntax).name]
     }
 
     // MARK: - Extraction
@@ -57,16 +60,11 @@ enum RelationshipExtractor {
     }
 
     static func extract(from node: ExtensionDeclSyntax, typeId: String) -> [Relationship] {
-        let extendedName = node.extendedType.trimmedDescription
-        var results = [Relationship(kind: .extension, source: typeId, target: extendedName)]
-        if let clause = node.inheritanceClause {
-            for inherited in clause.inheritedTypes {
-                for target in expandTypeNames(inherited.type) {
-                    results.append(Relationship(kind: .conformance, source: extendedName, target: target))
-                }
-            }
-        }
-        return results
+        // Extensions emit no relationships at parse time. `CodeArtifact.resolvingExtensions()`
+        // is the single source of truth: it merges in-codebase extension conformances (so the
+        // edge source is the real target id) and drops extensions of external types. Emitting
+        // here as well produced dangling `.extension` edges and duplicate conformances.
+        []
     }
 
     static func extract(from node: ActorDeclSyntax, typeId: String) -> [Relationship] {

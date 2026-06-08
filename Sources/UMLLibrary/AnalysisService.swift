@@ -125,10 +125,10 @@ public struct AnalysisService: Sendable {
             }
         }
 
-        if spec.language == .swift {
-            artifact = artifact.resolvingExtensions()
-        }
-        return artifact
+        // Run the generalizable enrichment pipeline (extension resolution, name→id
+        // resolution, inheritance/conformance reclassification, inferred structural
+        // edges, dedup) so the emitted artifact is fully resolved for every language.
+        return artifact.enriched()
     }
 }
 

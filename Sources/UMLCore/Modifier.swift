@@ -37,4 +37,10 @@ public enum Modifier: String, Codable, Equatable, Hashable, Sendable, CaseIterab
     case late
     case external
     case covariant
+    case indirect
+    case dynamic
+    case prefix
+    case postfix
+    case infix
+    case isolated
 }

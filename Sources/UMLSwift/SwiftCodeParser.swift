@@ -12,6 +12,9 @@ public struct SwiftCodeParser: CodeParser {
         let sourceFile = Parser.parse(source: source)
         let visitor = DeclarationVisitor(fileName: fileName)
         visitor.walk(sourceFile)
-        return visitor.buildArtifact()
+        var artifact = visitor.buildArtifact()
+        // Surface malformed input rather than silently returning a partial tree.
+        artifact.metadata.hasParseErrors = sourceFile.hasError
+        return artifact
     }
 }

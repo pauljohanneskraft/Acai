@@ -193,7 +193,7 @@ struct SwiftTypeTests {
         let artifact = parser.parse(source: source, fileName: "DataStore.swift")
         #expect(artifact.types.count == 1)
         #expect(artifact.types[0].name == "DataStore")
-        #expect(artifact.types[0].annotations.contains("@actor"))
+        #expect(artifact.types[0].kind == .actor)
         #expect(artifact.types[0].members.count == 2) // items + add
     }
 

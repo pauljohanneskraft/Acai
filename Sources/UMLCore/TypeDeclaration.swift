@@ -6,6 +6,8 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var accessLevel: AccessLevel?
     public var modifiers: [Modifier]
     public var genericParameters: [GenericParameter]
+    /// Protocol `associatedtype` requirements (distinct from generic parameters).
+    public var associatedTypes: [GenericParameter]
     public var inheritedTypes: [TypeReference]
     public var members: [Member]
     public var enumCases: [EnumCase]
@@ -23,6 +25,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         accessLevel: AccessLevel? = nil,
         modifiers: [Modifier] = [],
         genericParameters: [GenericParameter] = [],
+        associatedTypes: [GenericParameter] = [],
         inheritedTypes: [TypeReference] = [],
         members: [Member] = [],
         enumCases: [EnumCase] = [],
@@ -39,6 +42,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         self.accessLevel = accessLevel
         self.modifiers = modifiers
         self.genericParameters = genericParameters
+        self.associatedTypes = associatedTypes
         self.inheritedTypes = inheritedTypes
         self.members = members
         self.enumCases = enumCases
