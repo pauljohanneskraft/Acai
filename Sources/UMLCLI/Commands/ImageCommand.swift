@@ -1,5 +1,6 @@
 #if os(macOS)
 import ArgumentParser
+import CoreGraphics
 import Foundation
 import UMLLibrary
 import UMLRender

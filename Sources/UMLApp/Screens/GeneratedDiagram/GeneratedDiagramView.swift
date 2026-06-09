@@ -305,25 +305,20 @@ struct GeneratedDiagramView: View {
 // MARK: - Image Export
 
 extension GeneratedDiagramView {
-    /// Renders the current diagram (WYSIWYG, including user drags) to PNG and prompts to save.
+    /// Prompts for a destination, then renders the current diagram (WYSIWYG, including user drags)
+    /// to PNG and writes it. Rendering happens only after the user confirms, so cancelling the save
+    /// panel wastes no work — important for large diagrams where rendering is slow.
     private func exportImage() {
-        let data: Data
-        do {
-            data = try viewModel.exportPNGData()
-        } catch {
-            print("Image export failed: \(error)")
-            return
-        }
         #if os(macOS)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = "\(diagram.name).png"
-        if panel.runModal() == .OK, let url = panel.url {
-            do {
-                try data.write(to: url, options: .atomic)
-            } catch {
-                print("Image export failed: \(error)")
-            }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try viewModel.exportPNGData()
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("Image export failed: \(error)")
         }
         #endif
     }
