@@ -100,7 +100,11 @@ public enum DiagramImageRenderer {
         // codebases otherwise produce bitmaps CoreGraphics cannot encode.
         let pointSize = max(bounds.width, bounds.height) + padding * 2
         let maxScale = maxPixelDimension / max(pointSize, 1)
-        let effectiveScale = max(0.1, min(scale, maxScale))
+        // Floor the *requested* scale to a small positive value (guards against a zero/negative
+        // `--scale`), then take the ceiling last so the result can never exceed `maxScale` — even
+        // when `maxScale` itself drops below the floor for very large diagrams.
+        let requestedScale = max(scale, 0.1)
+        let effectiveScale = min(requestedScale, maxScale)
 
         let renderer = ImageRenderer(content: view)
         renderer.scale = effectiveScale

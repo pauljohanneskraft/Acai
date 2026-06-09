@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if os(macOS)
 import ArgumentParser
 import Foundation
 import UMLLibrary
@@ -10,7 +10,7 @@ extension UMLCommand {
     ///
     /// macOS-only: image rendering relies on SwiftUI's `ImageRenderer`, which needs a GUI /
     /// window-server session. On other platforms this subcommand is not registered.
-    struct Image: ParsableCommand {
+    struct Image: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "image",
             abstract: "Render a class diagram to a PNG image (macOS only)"
@@ -55,7 +55,7 @@ extension UMLCommand {
             }
         }
 
-        mutating func run() throws {
+        mutating func run() async throws {
             let artifact = try loadArtifact()
 
             var configuration = DiagramConfiguration()
@@ -66,7 +66,7 @@ extension UMLCommand {
                 configuration.showMethods = false
             }
 
-            let data = try MainActor.assumeIsolated {
+            let data = try await MainActor.run {
                 try DiagramImageRenderer.renderPNG(
                     artifact: artifact,
                     configuration: configuration,
