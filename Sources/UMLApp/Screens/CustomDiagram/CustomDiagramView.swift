@@ -110,12 +110,7 @@ struct CustomDiagramView: View {
             isPresented: $showDeleteConfirmation
         ) {
             Button("Delete", role: .destructive) {
-                if let edgeID = viewModel.selectedEdgeID {
-                    viewModel.removeEdge(edgeID)
-                }
-                for id in viewModel.selectedNodeIDs {
-                    viewModel.removeNode(id)
-                }
+                viewModel.deleteSelection()
             }
             Button("Cancel", role: .cancel) {}
         } message: {

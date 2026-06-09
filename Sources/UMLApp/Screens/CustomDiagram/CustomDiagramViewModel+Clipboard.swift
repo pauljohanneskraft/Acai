@@ -44,6 +44,8 @@ extension CustomDiagramViewModel {
             edges.removeAll { $0.sourceNodeID == id || $0.targetNodeID == id }
             selectedNodeIDs.remove(id)
         }
+        // Connected edges may have been removed as a side-effect, so drop any stale edge selection.
+        selectedEdgeID = nil
         save()
     }
 

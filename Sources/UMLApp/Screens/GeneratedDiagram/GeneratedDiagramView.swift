@@ -74,6 +74,7 @@ struct GeneratedDiagramView: View {
                 .help("Redo (⇧⌘Z)")
 
                 Button {
+                    viewModel.recordUndo()
                     viewModel.performLayout()
                     centerDiagram()
                 } label: {
@@ -106,23 +107,7 @@ struct GeneratedDiagramView: View {
                 }
             }
         }
-        .background {
-            // Hidden buttons to capture keyboard shortcuts
-            Group {
-                Button("") {
-                    viewModel.undo()
-                    savePositions()
-                }
-                .keyboardShortcut("z", modifiers: .command)
-
-                Button("") {
-                    viewModel.redo()
-                    savePositions()
-                }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
-            }
-            .hidden()
-        }
+        .background { keyboardShortcuts }
         .navigationTitle(diagram.name)
         .task { @MainActor in
             try? await Task.sleep(for: .milliseconds(1))
@@ -364,6 +349,24 @@ extension GeneratedDiagramView {
 // MARK: - Save & Center
 
 extension GeneratedDiagramView {
+    /// Hidden buttons that capture the Undo / Redo keyboard shortcuts.
+    @ViewBuilder private var keyboardShortcuts: some View {
+        Group {
+            Button("") {
+                viewModel.undo()
+                savePositions()
+            }
+            .keyboardShortcut("z", modifiers: .command)
+
+            Button("") {
+                viewModel.redo()
+                savePositions()
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+        .hidden()
+    }
+
     private func savePositions() {
         model.updateGeneratedDiagramPositions(
             diagramID: diagram.id,

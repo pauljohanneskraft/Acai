@@ -101,6 +101,23 @@ final class CustomDiagramViewModel: ObservableObject {
         save()
     }
 
+    /// Delete the current selection (the selected edge and/or all selected nodes) as a single
+    /// undoable action, so one ⌘Z restores everything at once.
+    func deleteSelection() {
+        guard !selectedNodeIDs.isEmpty || selectedEdgeID != nil else { return }
+        recordUndo()
+        if let edgeID = selectedEdgeID {
+            edges.removeAll { $0.id == edgeID }
+            selectedEdgeID = nil
+        }
+        for id in selectedNodeIDs {
+            nodes.removeAll { $0.id == id }
+            edges.removeAll { $0.sourceNodeID == id || $0.targetNodeID == id }
+        }
+        selectedNodeIDs.removeAll()
+        save()
+    }
+
     func moveNode(_ nodeID: UUID, to position: CGPoint) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             nodes[idx].positionX = Double(position.x)
@@ -117,8 +134,8 @@ final class CustomDiagramViewModel: ObservableObject {
 
     /// Increase the draw order of a node so it renders on top of siblings in the same layer.
     func moveNodeHigher(_ nodeID: UUID) {
-        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
+        recordUndo()
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
         let maxOrder = siblings.map(\.drawOrder).max() ?? 0
@@ -130,8 +147,8 @@ final class CustomDiagramViewModel: ObservableObject {
 
     /// Decrease the draw order of a node so it renders below siblings in the same layer.
     func moveNodeLower(_ nodeID: UUID) {
-        recordUndo()
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
+        recordUndo()
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
         let minOrder = siblings.map(\.drawOrder).min() ?? 0
@@ -142,8 +159,8 @@ final class CustomDiagramViewModel: ObservableObject {
     }
 
     func updateNode(_ nodeID: UUID, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
-        recordUndo()
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
+            recordUndo()
             if let name { nodes[idx].name = name }
             if let kind {
                 // When switching between type kinds, preserve existing members.
@@ -176,8 +193,8 @@ final class CustomDiagramViewModel: ObservableObject {
     }
 
     func updateEdge(_ edgeID: UUID, sourceID: UUID, targetID: UUID, kind: Relationship.Kind) {
-        recordUndo()
         guard let idx = edges.firstIndex(where: { $0.id == edgeID }) else { return }
+        recordUndo()
         edges[idx].sourceNodeID = sourceID
         edges[idx].targetNodeID = targetID
         edges[idx].kind = kind
