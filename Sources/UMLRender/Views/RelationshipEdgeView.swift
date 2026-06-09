@@ -3,23 +3,30 @@ import UMLCore
 
 /// Draws a relationship line between two node rectangles with appropriate
 /// UML arrow heads and line styles.
-struct RelationshipEdgeView: View, Equatable {
+public struct RelationshipEdgeView: View, Equatable {
     let kind: Relationship.Kind
     let sourceRect: CGRect
     let targetRect: CGRect
 
-    nonisolated static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
+    public init(kind: Relationship.Kind, sourceRect: CGRect, targetRect: CGRect) {
+        self.kind = kind
+        self.sourceRect = sourceRect
+        self.targetRect = targetRect
+    }
+
+    nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect && lhs.kind == rhs.kind
     }
 
-    @State private var startPoint: CGPoint?
-    @State private var endPoint: CGPoint?
-
     private let edgeColor = Color(white: 0.4)
 
-    var body: some View {
+    public var body: some View {
+        // Connection points are derived synchronously from the rects (rather than via
+        // `@State`/`onChange`) so the view renders correctly in a one-shot `ImageRenderer`
+        // snapshot, where change callbacks never fire.
+        let (startPoint, endPoint) = connectionPoints(from: sourceRect, to: targetRect)
         ZStack {
-            if let startPoint, let endPoint {
+            Group {
                 let lineAngle = Self.angle(from: startPoint, to: endPoint)
 
                 let linePath = Path { path in
@@ -71,11 +78,6 @@ struct RelationshipEdgeView: View, Equatable {
                     sourcePath.stroke(edgeColor, lineWidth: style.lineWidth)
                 }
             }
-        }
-        .onChange(of: self) {
-            let (startPoint, endPoint) = connectionPoints(from: sourceRect, to: targetRect)
-            self.startPoint = startPoint
-            self.endPoint = endPoint
         }
     }
 

@@ -1,29 +1,20 @@
 import SwiftUI
 
-/// Canvas layer that draws a labelled box behind each group under the active grouping mode.
-struct GroupingBoxLayer: View {
-    @ObservedObject var viewModel: GeneratedDiagramViewModel
-
-    var body: some View {
-        ForEach(viewModel.groupingBoxes) { box in
-            GroupingBoxView(label: box.label)
-                .frame(width: box.rect.width, height: box.rect.height)
-                .position(x: box.rect.midX, y: box.rect.midY)
-        }
-    }
-}
-
 /// Box drawn behind a group of type nodes that share the same grouping key (a directory
 /// or a compiled product/module). Rendered as a rounded rectangle with a small name tab
 /// in the top-left corner, echoing UML package notation.
-struct GroupingBoxView: View {
+public struct GroupingBoxView: View {
     let label: String
+
+    public init(label: String) {
+        self.label = label
+    }
 
     private let cornerRadius: CGFloat = 10
     private let cornerPadding: CGFloat = 4
     private let tabHeight: CGFloat = 22
 
-    var body: some View {
+    public var body: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(Color.accentColor.opacity(0.05))

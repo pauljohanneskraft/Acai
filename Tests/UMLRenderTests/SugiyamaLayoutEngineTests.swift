@@ -1,7 +1,7 @@
 import CoreGraphics
 import Testing
 import UMLCore
-@testable import UMLApp
+@testable import UMLRender
 
 @Suite("Sugiyama Layout Engine")
 struct SugiyamaLayoutEngineTests {

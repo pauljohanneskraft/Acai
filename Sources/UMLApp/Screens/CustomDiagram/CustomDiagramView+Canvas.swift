@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLRender
 
 // MARK: - Canvas Layers & Node Interaction
 

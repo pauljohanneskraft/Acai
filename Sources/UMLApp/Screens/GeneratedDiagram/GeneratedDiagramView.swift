@@ -1,5 +1,7 @@
 import SwiftUI
 import UMLCore
+import UMLRender
+import UniformTypeIdentifiers
 
 /// View for a stored (generated) diagram that persists positions and supports re-generation.
 struct GeneratedDiagramView: View {
@@ -73,6 +75,11 @@ struct GeneratedDiagramView: View {
                     )
                 } label: {
                     Label("Save as Custom", systemImage: "document.on.document")
+                }
+                Button {
+                    exportImage()
+                } label: {
+                    Label("Export Image", systemImage: "photo")
                 }
                 Button {
                     showSidebar.toggle()
@@ -293,6 +300,33 @@ struct GeneratedDiagramView: View {
             }
     }
 
+}
+
+// MARK: - Image Export
+
+extension GeneratedDiagramView {
+    /// Renders the current diagram (WYSIWYG, including user drags) to PNG and prompts to save.
+    private func exportImage() {
+        let data: Data
+        do {
+            data = try viewModel.exportPNGData()
+        } catch {
+            print("Image export failed: \(error)")
+            return
+        }
+        #if os(macOS)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = "\(diagram.name).png"
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                print("Image export failed: \(error)")
+            }
+        }
+        #endif
+    }
 }
 
 // MARK: - Save & Center

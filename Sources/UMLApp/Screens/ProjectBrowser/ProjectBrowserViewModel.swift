@@ -3,6 +3,7 @@ import SwiftUI
 import UMLLibrary
 import UMLCore
 import UMLDiagram
+import UMLRender
 
 @MainActor
 final class ProjectBrowserViewModel: ObservableObject {

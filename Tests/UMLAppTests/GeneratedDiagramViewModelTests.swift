@@ -1,5 +1,6 @@
 import Testing
 import UMLCore
+import UMLRender
 @testable import UMLApp
 
 @Suite("Generated Diagram View Model")
