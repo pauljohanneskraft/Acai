@@ -1,4 +1,5 @@
 import SwiftUI
+import UMLRender
 
 /// Sheet for configuring and generating a diagram from a codebase.
 struct DiagramGenerationSheet: View {

@@ -4,8 +4,30 @@ import PackageDescription
 
 var optionalProducts: [Product] = []
 var optionalTargets: [Target] = []
+// Extra dependencies added to UMLCLI only on SwiftUI-capable hosts (macOS), where the
+// SwiftUI-based image renderer (`UMLRender`) exists. Kept empty on Linux so the CLI builds.
+var cliOptionalDependencies: [Target.Dependency] = []
 
 #if canImport(SwiftUI)
+// MARK: SwiftUI rendering library, shared by the app and the CLI image command.
+optionalProducts.append(
+    .library(name: "UMLRender", targets: ["UMLRender"])
+)
+optionalTargets.append(
+    .target(
+        name: "UMLRender",
+        dependencies: [
+            "UMLCore",
+            "UMLDiagram",
+            "UMLLibrary",
+        ]
+    )
+)
+optionalTargets.append(
+    .testTarget(name: "UMLRenderTests", dependencies: ["UMLRender", "UMLCore", "UMLLibrary"])
+)
+cliOptionalDependencies.append(.target(name: "UMLRender", condition: .when(platforms: [.macOS])))
+
 optionalProducts.append(
     .executable(
         name: "UMLApp",
@@ -25,6 +47,7 @@ optionalTargets.append(
             "UMLDart",
             "UMLDiagram",
             "UMLLibrary",
+            "UMLRender",
         ],
         exclude: ["Resources/Info.plist"],
         resources: [
@@ -171,7 +194,7 @@ let package = Package(
                 "UMLLibrary",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Yams", package: "Yams"),
-            ],
+            ] + cliOptionalDependencies,
         ),
 
         // MARK: Tests

@@ -3,23 +3,23 @@ import UMLCore
 
 // MARK: - Diagram Node
 
-struct GeneratedDiagramNode: Identifiable, Sendable {
-    let id: String
-    let name: String
-    let kind: TypeKind
-    let stereotype: String?
-    let properties: [DiagramMember]
-    let methods: [DiagramMember]
-    let enumCases: [DiagramEnumCase]
-    let genericParameters: [String]
+public struct GeneratedDiagramNode: Identifiable, Sendable {
+    public let id: String
+    public let name: String
+    public let kind: TypeKind
+    public let stereotype: String?
+    public let properties: [DiagramMember]
+    public let methods: [DiagramMember]
+    public let enumCases: [DiagramEnumCase]
+    public let genericParameters: [String]
     /// The full relative directory path of this type's source file (e.g.
     /// `Sources/UMLCore/ClassDiagram`), used for hierarchical directory grouping.
-    let directoryPath: String?
+    public let directoryPath: String?
     /// The compiled product (build target / module) this type belongs to,
     /// derived from its source-file path. Used for product grouping and package boxes.
-    let productGroup: String?
+    public let productGroup: String?
 
-    init(from type: TypeDeclaration, configuration: GeneratedDiagram.Configuration? = nil) {
+    public init(from type: TypeDeclaration, configuration: DiagramConfiguration? = nil) {
         self.id = type.id
         self.name = type.name
         self.kind = type.kind
@@ -68,7 +68,7 @@ struct GeneratedDiagramNode: Identifiable, Sendable {
 
     /// Returns true if the given access level is at or above the minimum. Used both for
     /// member visibility and for hiding whole types below the minimum access level.
-    static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
+    public static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
         let order = accessOrder(memberAccess ?? .internal)
         let minOrder = accessOrder(minimum)
@@ -98,15 +98,15 @@ struct GeneratedDiagramNode: Identifiable, Sendable {
 
 // MARK: - Diagram Member
 
-struct DiagramMember: Identifiable, Sendable {
-    let id: String
-    let accessSymbol: String
-    let name: String
-    let displayText: String
-    let isStatic: Bool
-    let isAbstract: Bool
+public struct DiagramMember: Identifiable, Sendable {
+    public let id: String
+    public let accessSymbol: String
+    public let name: String
+    public let displayText: String
+    public let isStatic: Bool
+    public let isAbstract: Bool
 
-    init(from member: Member, isMethod: Bool) {
+    public init(from member: Member, isMethod: Bool) {
         self.id = "\(member.name)_\(member.kind.rawValue)_\(member.type?.name ?? "")"
         self.accessSymbol = member.accessLevel?.umlSymbol ?? "~"
         self.name = member.name
@@ -123,11 +123,11 @@ struct DiagramMember: Identifiable, Sendable {
 
 // MARK: - Diagram Enum Case
 
-struct DiagramEnumCase: Identifiable, Sendable {
-    let id: String
-    let displayText: String
+public struct DiagramEnumCase: Identifiable, Sendable {
+    public let id: String
+    public let displayText: String
 
-    init(from enumCase: EnumCase) {
+    public init(from enumCase: EnumCase) {
         self.id = enumCase.name
         self.displayText = UMLMemberFormatting.formatEnumCase(enumCase)
     }
@@ -135,13 +135,13 @@ struct DiagramEnumCase: Identifiable, Sendable {
 
 // MARK: - Diagram Edge
 
-struct GeneratedDiagramEdge: Identifiable, Sendable {
-    let id: String
-    let sourceID: String
-    let targetID: String
-    let kind: Relationship.Kind
+public struct GeneratedDiagramEdge: Identifiable, Sendable {
+    public let id: String
+    public let sourceID: String
+    public let targetID: String
+    public let kind: Relationship.Kind
 
-    init(from rel: Relationship) {
+    public init(from rel: Relationship) {
         self.id = "\(rel.source)-\(rel.kind.rawValue)-\(rel.target)"
         self.sourceID = rel.source
         self.targetID = rel.target

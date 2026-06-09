@@ -4,25 +4,37 @@ import UMLCore
 // MARK: - Display Data Types
 
 /// A pre-formatted member line for display in a UML type box.
-struct MemberDisplayItem: Identifiable {
-    let id: String
-    let text: String
-    let isStatic: Bool
-    let isAbstract: Bool
+public struct MemberDisplayItem: Identifiable {
+    public let id: String
+    public let text: String
+    public let isStatic: Bool
+    public let isAbstract: Bool
+
+    public init(id: String, text: String, isStatic: Bool, isAbstract: Bool) {
+        self.id = id
+        self.text = text
+        self.isStatic = isStatic
+        self.isAbstract = isAbstract
+    }
 }
 
 /// A pre-formatted enum case line for display in a UML type box.
-struct EnumCaseDisplayItem: Identifiable {
-    let id: String
-    let text: String
+public struct EnumCaseDisplayItem: Identifiable {
+    public let id: String
+    public let text: String
+
+    public init(id: String, text: String) {
+        self.id = id
+        self.text = text
+    }
 }
 
 // MARK: - UML Type Box View
 
 /// Renders a code-type node as a three-compartment UML class box.
-/// Used by both generated diagrams (from `DiagramNode`) and custom diagrams
+/// Used by both generated diagrams (from `GeneratedDiagramNode`) and custom diagrams
 /// (from `CustomDiagram.Node` + `TypeNodeContent`).
-struct TypeNodeView: View {
+public struct TypeNodeView: View {
     let name: String
     let kind: TypeKind
     let stereotype: String?
@@ -32,7 +44,30 @@ struct TypeNodeView: View {
     let enumCases: [EnumCaseDisplayItem]
     let isSelected: Bool
 
-    var body: some View {
+    /// Primitive designated initializer. Both the generated-diagram and custom-diagram
+    /// convenience initializers (the latter lives in `UMLApp`) delegate here, so it must
+    /// be `public` to be reachable from a cross-module extension.
+    public init(
+        name: String,
+        kind: TypeKind,
+        stereotype: String?,
+        genericParameters: [String],
+        properties: [MemberDisplayItem],
+        methods: [MemberDisplayItem],
+        enumCases: [EnumCaseDisplayItem],
+        isSelected: Bool
+    ) {
+        self.name = name
+        self.kind = kind
+        self.stereotype = stereotype
+        self.genericParameters = genericParameters
+        self.properties = properties
+        self.methods = methods
+        self.enumCases = enumCases
+        self.isSelected = isSelected
+    }
+
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             headerSection
             kindDivider
@@ -236,68 +271,28 @@ struct TypeNodeView: View {
 // MARK: - UMLTypeBoxView Convenience Initializers
 
 extension TypeNodeView {
-    init(node: GeneratedDiagramNode, isSelected: Bool) {
-        self.name = node.name
-        self.kind = node.kind
-        self.stereotype = node.stereotype
-        self.genericParameters = node.genericParameters
-        self.isSelected = isSelected
-
-        self.properties = node.properties
-            .removingDuplicates(by: \.id)
-            .map { m in
-                MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-            }
-        self.methods = node.methods
-            .removingDuplicates(by: \.id)
-            .map { m in
-                MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-            }
-        self.enumCases = node.enumCases
-            .removingDuplicates(by: \.id)
-            .map { enumCase in
-                EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
-            }
-    }
-
-    /// Create from a custom diagram node with type content.
-    init(node: CustomDiagram.Node, content: CustomDiagram.Node.TypeContent, isSelected: Bool) {
-        self.name = node.name
-        self.kind = content.typeKind
-        self.stereotype = CustomDiagram.Node.Content.type(content).stereotype
-        self.genericParameters = content.genericParameters
-        self.isSelected = isSelected
-
-        self.properties = content.properties.map { member in
-            MemberDisplayItem(
-                id: member.id.uuidString,
-                text: Self.formatCustomMember(member, isMethod: false),
-                isStatic: member.isStatic,
-                isAbstract: member.isAbstract
-            )
-        }
-        self.methods = content.methods.map { member in
-            MemberDisplayItem(
-                id: member.id.uuidString,
-                text: Self.formatCustomMember(member, isMethod: true),
-                isStatic: member.isStatic,
-                isAbstract: member.isAbstract
-            )
-        }
-        self.enumCases = content.enumCases.map { enumCase in
-            EnumCaseDisplayItem(
-                id: enumCase.id.uuidString,
-                text: enumCase.name + (enumCase.associatedValues.isEmpty ? "" : "(\(enumCase.associatedValues))")
-            )
-        }
-    }
-
-    private static func formatCustomMember(_ member: CustomDiagram.Node.Member, isMethod: Bool) -> String {
-        let symbol = member.accessLevel.umlSymbol
-        if isMethod {
-            return "\(symbol) \(member.name)(\(member.parameters))\(member.type.isEmpty ? "" : ": \(member.type)")"
-        } else {
-            return "\(symbol) \(member.name)\(member.type.isEmpty ? "" : ": \(member.type)")"
-        }
+    public init(node: GeneratedDiagramNode, isSelected: Bool) {
+        self.init(
+            name: node.name,
+            kind: node.kind,
+            stereotype: node.stereotype,
+            genericParameters: node.genericParameters,
+            properties: node.properties
+                .removingDuplicates(by: \.id)
+                .map { m in
+                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
+                },
+            methods: node.methods
+                .removingDuplicates(by: \.id)
+                .map { m in
+                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
+                },
+            enumCases: node.enumCases
+                .removingDuplicates(by: \.id)
+                .map { enumCase in
+                    EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
+                },
+            isSelected: isSelected
+        )
     }
 }

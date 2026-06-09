@@ -7,34 +7,48 @@ import UMLCore
 /// For typical codebases where many types are unrelated by inheritance, this
 /// engine groups types by directory, lays out each connected component
 /// separately, then arranges the component clusters in a grid.
-struct SugiyamaLayoutEngine: Sendable {
+public struct SugiyamaLayoutEngine: Sendable {
 
-    struct NodeInput: Sendable {
+    public struct NodeInput: Sendable {
         let id: String
         let size: CGSize
         /// Directory-based group for clustering unrelated types.
         let group: String?
+
+        public init(id: String, size: CGSize, group: String?) {
+            self.id = id
+            self.size = size
+            self.group = group
+        }
     }
 
-    struct EdgeInput: Sendable {
+    public struct EdgeInput: Sendable {
         let sourceID: String
         let targetID: String
         let kind: Relationship.Kind
+
+        public init(sourceID: String, targetID: String, kind: Relationship.Kind) {
+            self.sourceID = sourceID
+            self.targetID = targetID
+            self.kind = kind
+        }
     }
 
-    struct LayoutResult: Sendable {
-        var positions: [String: CGPoint]
+    public struct LayoutResult: Sendable {
+        public var positions: [String: CGPoint]
     }
 
     var horizontalSpacing: CGFloat = 50
     var verticalSpacing: CGFloat = 80
     var groupSpacing: CGFloat = 120
 
+    public init() {}
+
     /// Runs the full layout pipeline:
     /// 1. Find connected components (using all edge types).
     /// 2. Within each component, run Sugiyama (layer -> order -> coordinate).
     /// 3. Arrange components in a grid, respecting directory grouping.
-    func layout(nodes: [NodeInput], edges: [EdgeInput]) -> LayoutResult {
+    public func layout(nodes: [NodeInput], edges: [EdgeInput]) -> LayoutResult {
         guard !nodes.isEmpty else { return LayoutResult(positions: [:]) }
 
         let nodeMap = Dictionary(grouping: nodes) { $0.id }
@@ -93,7 +107,9 @@ struct SugiyamaLayoutEngine: Sendable {
     ///
     /// `padding` leaves room inside each block for the group box border and its name tab;
     /// because it is applied at every level, deeper groups nest visibly inside shallower ones.
-    func layoutByGroup(nodes: [NodeInput], edges: [EdgeInput], depth: Int = 0, padding: CGFloat = 32) -> LayoutResult {
+    public func layoutByGroup(
+        nodes: [NodeInput], edges: [EdgeInput], depth: Int = 0, padding: CGFloat = 32
+    ) -> LayoutResult {
         guard !nodes.isEmpty else { return LayoutResult(positions: [:]) }
         let nodeSizes = Dictionary(nodes.map { ($0.id, $0.size) }, uniquingKeysWith: { first, _ in first })
 

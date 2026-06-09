@@ -1,4 +1,5 @@
 import SwiftUI
+import UMLRender
 
 struct CustomNodeView: View {
     let node: CustomDiagram.Node

@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLRender
 
 /// Inspector tab choices for the generated diagram inspector.
 enum GeneratedDiagramSidebarTab {
