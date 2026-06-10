@@ -56,6 +56,23 @@ struct GeneratedDiagramView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
+                    performUndo()
+                } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(!viewModel.canUndo)
+                .help("Undo (⌘Z)")
+
+                Button {
+                    performRedo()
+                } label: {
+                    Label("Redo", systemImage: "arrow.uturn.forward")
+                }
+                .disabled(!viewModel.canRedo)
+                .help("Redo (⇧⌘Z)")
+
+                Button {
+                    viewModel.recordUndo()
                     viewModel.performLayout()
                     centerDiagram()
                 } label: {
@@ -88,6 +105,7 @@ struct GeneratedDiagramView: View {
                 }
             }
         }
+        .background { keyboardShortcuts }
         .navigationTitle(diagram.name)
         .task { @MainActor in
             try? await Task.sleep(for: .milliseconds(1))
@@ -225,6 +243,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
+                    viewModel.recordUndo()
                     activeResizeState = .init(
                         startSize: viewModel.effectiveSize(for: id),
                         startPosition: viewModel.nodePositions[id] ?? .zero
@@ -270,6 +289,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
                 if dragStartPositions.isEmpty {
+                    viewModel.recordUndo()
                     if !viewModel.selectedNodeIDs.contains(id) {
                         viewModel.selectedNodeIDs = [id]
                     }
@@ -327,6 +347,34 @@ extension GeneratedDiagramView {
 // MARK: - Save & Center
 
 extension GeneratedDiagramView {
+    /// Hidden buttons that capture the Undo / Redo keyboard shortcuts.
+    @ViewBuilder private var keyboardShortcuts: some View {
+        Group {
+            Button("") {
+                performUndo()
+            }
+            .keyboardShortcut("z", modifiers: .command)
+
+            Button("") {
+                performRedo()
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+        .hidden()
+    }
+
+    /// Undo and persist. Single entry point so the save can't be forgotten at a call site.
+    private func performUndo() {
+        viewModel.undo()
+        savePositions()
+    }
+
+    /// Redo and persist. Single entry point so the save can't be forgotten at a call site.
+    private func performRedo() {
+        viewModel.redo()
+        savePositions()
+    }
+
     private func savePositions() {
         model.updateGeneratedDiagramPositions(
             diagramID: diagram.id,

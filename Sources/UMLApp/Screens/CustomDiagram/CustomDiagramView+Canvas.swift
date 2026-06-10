@@ -156,6 +156,7 @@ extension CustomDiagramView {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
+                    viewModel.recordUndo()
                     activeResizeState = .init(
                         startSize: viewModel.nodeSize(id),
                         startPosition: viewModel.nodePosition(id) ?? .zero
@@ -186,6 +187,7 @@ extension CustomDiagramView {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
                 if dragStartPositions.isEmpty {
+                    viewModel.recordUndo()
                     if !viewModel.selectedNodeIDs.contains(id) {
                         viewModel.selectedNodeIDs = [id]
                     }

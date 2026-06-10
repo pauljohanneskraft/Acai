@@ -19,6 +19,9 @@ struct CustomDiagramView: View {
     @State var activeResizeState: DiagramResizeState?
     @State private var showDeleteConfirmation = false
     @State private var cursorLocation: CGPoint = .zero
+    /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
+    /// shortcuts yield to the field's native text undo.
+    @State private var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
@@ -38,6 +41,22 @@ struct CustomDiagramView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                Button {
+                    viewModel.undo()
+                } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(!viewModel.canUndo)
+                .help("Undo (⌘Z)")
+
+                Button {
+                    viewModel.redo()
+                } label: {
+                    Label("Redo", systemImage: "arrow.uturn.forward")
+                }
+                .disabled(!viewModel.canRedo)
+                .help("Redo (⇧⌘Z)")
+
                 Button {
                     sidebarTab = .catalog
                     showSidebar.toggle()
@@ -80,6 +99,14 @@ struct CustomDiagramView: View {
 
                 Button("") { viewModel.selectAll() }
                     .keyboardShortcut("a", modifiers: .command)
+
+                Button("") { viewModel.undo() }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .disabled(isEditingText)
+
+                Button("") { viewModel.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(isEditingText)
             }
             .hidden()
         }
@@ -88,16 +115,11 @@ struct CustomDiagramView: View {
             isPresented: $showDeleteConfirmation
         ) {
             Button("Delete", role: .destructive) {
-                if let edgeID = viewModel.selectedEdgeID {
-                    viewModel.removeEdge(edgeID)
-                }
-                for id in viewModel.selectedNodeIDs {
-                    viewModel.removeNode(id)
-                }
+                viewModel.deleteSelection()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This action cannot be undone.")
+            Text("You can undo this action with ⌘Z.")
         }
     }
 
@@ -219,7 +241,7 @@ struct CustomDiagramView: View {
                     onInsertNode: insertNode
                 )
             case .inspector:
-                CustomDiagramInspector(viewModel: viewModel)
+                CustomDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))

@@ -7,6 +7,7 @@ extension CustomDiagramViewModel {
     func addProperty(to nodeID: UUID, name: String, type: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.properties.append(.init(name: name, type: type))
         nodes[idx].content = .type(content)
         save()
@@ -25,6 +26,7 @@ extension CustomDiagramViewModel {
     func addMethod(to nodeID: UUID, name: String, returnType: String, parameters: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.methods.append(.init(name: name, type: returnType, parameters: parameters))
         nodes[idx].content = .type(content)
         save()
@@ -63,6 +65,7 @@ extension CustomDiagramViewModel {
     func removeProperty(from nodeID: UUID, memberID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.properties.removeAll { $0.id == memberID }
         nodes[idx].content = .type(content)
         save()
@@ -71,6 +74,7 @@ extension CustomDiagramViewModel {
     func removeMethod(from nodeID: UUID, memberID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.methods.removeAll { $0.id == memberID }
         nodes[idx].content = .type(content)
         save()
@@ -79,16 +83,18 @@ extension CustomDiagramViewModel {
     // MARK: - Inline Editing
 
     func updateNodeName(_ nodeID: UUID, name: String) {
-        if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
-            nodes[idx].name = name
-            save()
-        }
+        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }), nodes[idx].name != name else { return }
+        // Coalesce consecutive keystrokes in the same name field into one undo step.
+        recordUndo(coalescingKey: TextEditField.name(nodeID))
+        nodes[idx].name = name
+        save()
     }
 
     func updatePropertyText(_ nodeID: UUID, memberID: UUID, text: String) {
         guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[nodeIndex].content,
               let memberIndex = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
+        recordUndo()
         let parts = text.split(separator: ":", maxSplits: 1)
         content.properties[memberIndex].name = parts.first
             .map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
@@ -103,6 +109,7 @@ extension CustomDiagramViewModel {
         guard let nodeIndex = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[nodeIndex].content,
               let memberIndex = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
+        recordUndo()
         if let parenStart = text.firstIndex(of: "("),
            let parenEnd = text.firstIndex(of: ")") {
             content.methods[memberIndex].name = String(text[text.startIndex..<parenStart])
@@ -124,6 +131,7 @@ extension CustomDiagramViewModel {
     func addInlineProperty(to nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.properties.append(.init(name: "newProperty", type: "Type"))
         nodes[idx].content = .type(content)
         save()
@@ -132,6 +140,7 @@ extension CustomDiagramViewModel {
     func addInlineMethod(to nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
               case .type(var content) = nodes[idx].content else { return }
+        recordUndo()
         content.methods.append(.init(name: "newMethod", type: "Void"))
         nodes[idx].content = .type(content)
         save()
@@ -140,7 +149,9 @@ extension CustomDiagramViewModel {
     /// Update the free-form text of a note node.
     func updateNoteText(_ nodeID: UUID, text: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .note = nodes[idx].content else { return }
+              case .note(let existing) = nodes[idx].content, existing != text else { return }
+        // Coalesce consecutive keystrokes in the same note field into one undo step.
+        recordUndo(coalescingKey: TextEditField.note(nodeID))
         nodes[idx].content = .note(text: text)
         save()
     }

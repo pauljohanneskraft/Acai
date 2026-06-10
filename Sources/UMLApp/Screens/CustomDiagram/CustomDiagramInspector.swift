@@ -7,32 +7,45 @@ import UMLCore
 /// currently-selected node, edge, or multi-selection.
 struct CustomDiagramInspector: View {
     @ObservedObject var viewModel: CustomDiagramViewModel
+    /// Mirrors whether any text field here is focused, so the parent can suspend its ⌘Z/⇧⌘Z
+    /// shortcuts and let the focused field handle native text undo.
+    @Binding var isEditingText: Bool
 
     @State private var newPropertyText: String = ""
     @State private var newMethodText: String = ""
+    @FocusState private var focusedField: Field?
+
+    /// Text fields that, while focused, should own ⌘Z.
+    private enum Field: Hashable { case name, note, newProperty, newMethod }
 
     var body: some View {
-        if let edgeID = viewModel.selectedEdgeID,
-           let edge = viewModel.edges.first(where: { $0.id == edgeID }) {
-            edgeInspector(edge: edge)
-        } else if viewModel.selectedNodeIDs.count == 1,
-                  let nodeID = viewModel.selectedNodeIDs.first,
-                  let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
-            nodeInspector(node: node)
-        } else if viewModel.selectedNodeIDs.count > 1 {
-            multiNodeInspector
-        } else {
-            VStack(spacing: 12) {
-                Image(systemName: "cursorarrow.click")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
-                Text("Select a node or relationship to inspect")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+        Group {
+            if let edgeID = viewModel.selectedEdgeID,
+               let edge = viewModel.edges.first(where: { $0.id == edgeID }) {
+                edgeInspector(edge: edge)
+            } else if viewModel.selectedNodeIDs.count == 1,
+                      let nodeID = viewModel.selectedNodeIDs.first,
+                      let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
+                nodeInspector(node: node)
+            } else if viewModel.selectedNodeIDs.count > 1 {
+                multiNodeInspector
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "cursorarrow.click")
+                        .font(.title)
+                        .foregroundStyle(.secondary)
+                    Text("Select a node or relationship to inspect")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .onChange(of: focusedField) { _, newValue in
+            isEditingText = (newValue != nil)
+        }
+        .onDisappear { isEditingText = false }
     }
 
     // MARK: - Node Inspector
@@ -61,10 +74,11 @@ struct CustomDiagramInspector: View {
         Section {
             TextField("Name", text: Binding(
                 get: { node.name },
-                set: { viewModel.updateNode(node.id, name: $0, kind: node.content.kind) }
+                set: { viewModel.updateNodeName(node.id, name: $0) }
             ))
             .textFieldStyle(.roundedBorder)
             .font(.headline)
+            .focused($focusedField, equals: .name)
         } header: {
             Text("Name").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
         }
@@ -74,7 +88,7 @@ struct CustomDiagramInspector: View {
         Section {
             Picker("Kind", selection: Binding(
                 get: { node.content.kind },
-                set: { viewModel.updateNode(node.id, name: node.name, kind: $0) }
+                set: { viewModel.updateNode(node.id, kind: $0) }
             )) {
                 ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                     Section(group.rawValue) {
@@ -123,6 +137,7 @@ struct CustomDiagramInspector: View {
                 .font(.system(size: 12, design: .monospaced))
                 .frame(minHeight: 80)
                 .border(Color.secondary.opacity(0.3))
+                .focused($focusedField, equals: .note)
             } header: {
                 Text("Note Text").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             }
@@ -179,6 +194,7 @@ struct CustomDiagramInspector: View {
                 TextField("e.g. name: String", text: $newPropertyText)
                     .font(.system(size: 12, design: .monospaced))
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .newProperty)
                 Button {
                     viewModel.addPropertyFromText(to: nodeID, text: newPropertyText)
                     newPropertyText = ""
@@ -211,6 +227,7 @@ struct CustomDiagramInspector: View {
                 TextField("e.g. doWork(input: Int): String", text: $newMethodText)
                     .font(.system(size: 12, design: .monospaced))
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .newMethod)
                 Button {
                     viewModel.addMethodFromText(to: nodeID, text: newMethodText)
                     newMethodText = ""
@@ -223,8 +240,11 @@ struct CustomDiagramInspector: View {
             Text("Methods").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
         }
     }
+}
 
-    // MARK: - Edge Inspector
+// MARK: - Edge & Multi-Node Inspectors
+
+extension CustomDiagramInspector {
 
     private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
         ScrollView {
@@ -313,9 +333,7 @@ struct CustomDiagramInspector: View {
             .listStyle(.inset)
 
             Button(role: .destructive) {
-                for id in viewModel.selectedNodeIDs {
-                    viewModel.removeNode(id)
-                }
+                viewModel.deleteSelection()
             } label: {
                 Label("Delete Selected", systemImage: "trash")
                     .frame(maxWidth: .infinity)

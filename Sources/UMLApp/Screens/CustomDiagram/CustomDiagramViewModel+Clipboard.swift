@@ -36,11 +36,13 @@ extension CustomDiagramViewModel {
 
     /// Cut: copy selection then delete.
     func cutSelection() {
+        guard !selectedNodeIDs.isEmpty else { return }
         copySelection()
-        let toRemove = selectedNodeIDs
-        for id in toRemove {
-            removeNode(id)
-        }
+        recordUndo()
+        removeNodes(selectedNodeIDs)
+        // Connected edges may have been removed as a side-effect, so drop any stale edge selection.
+        selectedEdgeID = nil
+        save()
     }
 
     /// Paste from the system clipboard, offsetting positions so nodes don't overlap originals.
@@ -54,6 +56,8 @@ extension CustomDiagramViewModel {
         #endif
 
         guard !payload.nodes.isEmpty else { return }
+
+        recordUndo()
 
         // Build mapping from old IDs to new IDs.
         var idMapping: [UUID: UUID] = [:]
