@@ -6,6 +6,7 @@
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
+[![Documentation](https://img.shields.io/badge/docs-DocC-informational.svg)](https://pauljohanneskraft.github.io/UML/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
@@ -242,6 +243,8 @@ for relationship in artifact.relationships {
 From there, `UMLDiagram`'s `DOTGenerator` produces Graphviz, and on Apple platforms `UMLRender`'s `DiagramImageRenderer` produces a PNG.
 
 **Available products:** `UMLCore`, `UMLTreeSitter`, `UMLSwift`, `UMLKotlin`, `UMLJava`, `UMLJS`, `UMLDart`, `UMLDiagram`, `UMLLibrary`, and (Apple platforms only) `UMLRender`.
+
+Full API documentation for every module lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)** — start with the [Getting Started](https://pauljohanneskraft.github.io/UML/documentation/umllibrary/gettingstarted) guide. To build the docs locally, run `./Scripts/docs_generate.sh` and serve the output.
 
 ---
 
