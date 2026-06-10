@@ -21,14 +21,14 @@ so here's the lay of the land — follow a link whenever you want the full API f
 
 ### Start here
 
-- **[UMLLibrary](/UML/documentation/umllibrary/)** — the front door. ``AnalysisService`` finds the source
+- **[UMLLibrary](/documentation/umllibrary/)** — the front door. ``AnalysisService`` finds the source
   in a project (SPM, Xcode, Gradle, Maven, Node, Flutter…), runs the right parser for
   each file, and merges the results. Re-exports the core model, so importing this is
   usually all you need.
 
 ### The core model
 
-- **[UMLCore](/UML/documentation/umlcore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
+- **[UMLCore](/documentation/umlcore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
   (the parsed model), `TypeDeclaration`, `Member`, `Relationship`, and the `CodeParser`
   protocol every language parser conforms to. Start here if you want to understand the
   shape of the data.
