@@ -36,14 +36,10 @@ extension CustomDiagramViewModel {
 
     /// Cut: copy selection then delete.
     func cutSelection() {
+        guard !selectedNodeIDs.isEmpty else { return }
         copySelection()
         recordUndo()
-        let toRemove = selectedNodeIDs
-        for id in toRemove {
-            nodes.removeAll { $0.id == id }
-            edges.removeAll { $0.sourceNodeID == id || $0.targetNodeID == id }
-            selectedNodeIDs.remove(id)
-        }
+        removeNodes(selectedNodeIDs)
         // Connected edges may have been removed as a side-effect, so drop any stale edge selection.
         selectedEdgeID = nil
         save()

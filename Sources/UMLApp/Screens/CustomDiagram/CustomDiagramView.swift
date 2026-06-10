@@ -19,6 +19,9 @@ struct CustomDiagramView: View {
     @State var activeResizeState: DiagramResizeState?
     @State private var showDeleteConfirmation = false
     @State private var cursorLocation: CGPoint = .zero
+    /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
+    /// shortcuts yield to the field's native text undo.
+    @State private var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
@@ -99,9 +102,11 @@ struct CustomDiagramView: View {
 
                 Button("") { viewModel.undo() }
                     .keyboardShortcut("z", modifiers: .command)
+                    .disabled(isEditingText)
 
                 Button("") { viewModel.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(isEditingText)
             }
             .hidden()
         }
@@ -236,7 +241,7 @@ struct CustomDiagramView: View {
                     onInsertNode: insertNode
                 )
             case .inspector:
-                CustomDiagramInspector(viewModel: viewModel)
+                CustomDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))

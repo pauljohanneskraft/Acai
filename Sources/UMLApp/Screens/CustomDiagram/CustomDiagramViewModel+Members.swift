@@ -83,11 +83,11 @@ extension CustomDiagramViewModel {
     // MARK: - Inline Editing
 
     func updateNodeName(_ nodeID: UUID, name: String) {
-        if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
-            recordUndo()
-            nodes[idx].name = name
-            save()
-        }
+        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }), nodes[idx].name != name else { return }
+        // Coalesce consecutive keystrokes in the same name field into one undo step.
+        recordUndo(coalescingKey: TextEditField.name(nodeID))
+        nodes[idx].name = name
+        save()
     }
 
     func updatePropertyText(_ nodeID: UUID, memberID: UUID, text: String) {
@@ -149,8 +149,9 @@ extension CustomDiagramViewModel {
     /// Update the free-form text of a note node.
     func updateNoteText(_ nodeID: UUID, text: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .note = nodes[idx].content else { return }
-        recordUndo()
+              case .note(let existing) = nodes[idx].content, existing != text else { return }
+        // Coalesce consecutive keystrokes in the same note field into one undo step.
+        recordUndo(coalescingKey: TextEditField.note(nodeID))
         nodes[idx].content = .note(text: text)
         save()
     }

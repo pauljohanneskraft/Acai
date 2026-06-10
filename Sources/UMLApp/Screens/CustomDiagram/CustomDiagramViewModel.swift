@@ -6,7 +6,7 @@ import AppKit
 
 /// View model for the custom diagram editor.
 @MainActor
-final class CustomDiagramViewModel: ObservableObject {
+final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
 
@@ -36,34 +36,23 @@ final class CustomDiagramViewModel: ObservableObject {
     /// History manager backing Cmd+Z / Shift+Cmd+Z.
     let history = DiagramHistoryManager<DiagramSnapshot>()
 
-    /// Whether there is a state to undo to.
-    var canUndo: Bool { history.canUndo }
-
-    /// Whether there is a state to redo to.
-    var canRedo: Bool { history.canRedo }
-
-    /// Captures the current state as a checkpoint before a mutation.
-    func recordUndo() {
-        history.checkpoint(DiagramSnapshot(nodes: nodes, edges: edges))
+    /// Undoable state: the nodes and edges. (See `DiagramHistoryHosting`.)
+    var historySnapshot: DiagramSnapshot {
+        get { DiagramSnapshot(nodes: nodes, edges: edges) }
+        set {
+            nodes = newValue.nodes
+            edges = newValue.edges
+        }
     }
 
-    /// Undo the last action, restoring the previous diagram state.
-    func undo() {
-        let current = DiagramSnapshot(nodes: nodes, edges: edges)
-        guard let previous = history.undo(current: current) else { return }
-        nodes = previous.nodes
-        edges = previous.edges
-        save()
+    /// Coalescing keys for runs of consecutive text edits that should undo as a single step.
+    enum TextEditField: Hashable {
+        case name(UUID)
+        case note(UUID)
     }
 
-    /// Redo the last undone action.
-    func redo() {
-        let current = DiagramSnapshot(nodes: nodes, edges: edges)
-        guard let next = history.redo(current: current) else { return }
-        nodes = next.nodes
-        edges = next.edges
-        save()
-    }
+    /// Persist after an undo/redo restores a snapshot.
+    func persistAfterHistoryChange() { save() }
 
     init() {}
 
@@ -77,6 +66,8 @@ final class CustomDiagramViewModel: ObservableObject {
         guard let diagramID, let diagram = browserModel?.customDiagram(for: diagramID) else { return }
         nodes = diagram.nodes
         edges = diagram.edges
+        // Reloading replaces the whole diagram, so any in-memory undo history is now stale.
+        history.clear()
     }
 
     // MARK: - Node CRUD
@@ -95,10 +86,17 @@ final class CustomDiagramViewModel: ObservableObject {
 
     func removeNode(_ nodeID: UUID) {
         recordUndo()
-        nodes.removeAll { $0.id == nodeID }
-        edges.removeAll { $0.sourceNodeID == nodeID || $0.targetNodeID == nodeID }
-        selectedNodeIDs.remove(nodeID)
+        removeNodes([nodeID])
         save()
+    }
+
+    /// Remove the given nodes and any edges touching them, and drop them from the selection.
+    /// Does **not** record undo or save — callers own that so a batch removal is one undo step.
+    func removeNodes(_ ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        nodes.removeAll { ids.contains($0.id) }
+        edges.removeAll { ids.contains($0.sourceNodeID) || ids.contains($0.targetNodeID) }
+        selectedNodeIDs.subtract(ids)
     }
 
     /// Delete the current selection (the selected edge and/or all selected nodes) as a single
@@ -110,11 +108,7 @@ final class CustomDiagramViewModel: ObservableObject {
             edges.removeAll { $0.id == edgeID }
             selectedEdgeID = nil
         }
-        for id in selectedNodeIDs {
-            nodes.removeAll { $0.id == id }
-            edges.removeAll { $0.sourceNodeID == id || $0.targetNodeID == id }
-        }
-        selectedNodeIDs.removeAll()
+        removeNodes(selectedNodeIDs)
         save()
     }
 
@@ -135,26 +129,24 @@ final class CustomDiagramViewModel: ObservableObject {
     /// Increase the draw order of a node so it renders on top of siblings in the same layer.
     func moveNodeHigher(_ nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
-        recordUndo()
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
         let maxOrder = siblings.map(\.drawOrder).max() ?? 0
-        if nodes[idx].drawOrder <= maxOrder {
-            nodes[idx].drawOrder = maxOrder + 1
-        }
+        guard nodes[idx].drawOrder <= maxOrder else { return }
+        recordUndo()
+        nodes[idx].drawOrder = maxOrder + 1
         save()
     }
 
     /// Decrease the draw order of a node so it renders below siblings in the same layer.
     func moveNodeLower(_ nodeID: UUID) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
-        recordUndo()
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
         let minOrder = siblings.map(\.drawOrder).min() ?? 0
-        if nodes[idx].drawOrder >= minOrder {
-            nodes[idx].drawOrder = minOrder - 1
-        }
+        guard nodes[idx].drawOrder >= minOrder else { return }
+        recordUndo()
+        nodes[idx].drawOrder = minOrder - 1
         save()
     }
 
@@ -225,12 +217,6 @@ final class CustomDiagramViewModel: ObservableObject {
     func clearSelection() {
         selectedNodeIDs.removeAll()
         selectedEdgeID = nil
-    }
-
-    /// Record an undo checkpoint for an upcoming drag or resize gesture.
-    /// Call this once at the **beginning** of a gesture, before positions change.
-    func recordUndoForGesture() {
-        recordUndo()
     }
 
     // MARK: - Persistence

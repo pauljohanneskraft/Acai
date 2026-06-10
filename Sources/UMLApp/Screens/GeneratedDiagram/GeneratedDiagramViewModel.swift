@@ -4,7 +4,7 @@ import UMLCore
 import UMLRender
 
 @MainActor
-final class GeneratedDiagramViewModel: ObservableObject {
+final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     let codebase: Codebase
     let artifact: CodeArtifact
 
@@ -34,46 +34,16 @@ final class GeneratedDiagramViewModel: ObservableObject {
     /// History manager backing Cmd+Z / Shift+Cmd+Z.
     let history = DiagramHistoryManager<LayoutSnapshot>()
 
-    /// Whether there is a state to undo to.
-    var canUndo: Bool { history.canUndo }
-
-    /// Whether there is a state to redo to.
-    var canRedo: Bool { history.canRedo }
-
-    /// Captures the current layout state as a checkpoint before a mutation.
-    func recordUndo() {
-        history.checkpoint(LayoutSnapshot(
-            nodePositions: nodePositions,
-            userNodeSizes: userNodeSizes
-        ))
-    }
-
-    /// Record an undo checkpoint for an upcoming drag or resize gesture.
-    /// Call this once at the **beginning** of a gesture, before positions change.
-    func recordUndoForGesture() {
-        recordUndo()
-    }
-
-    /// Undo the last layout action, restoring the previous positions and sizes.
-    func undo() {
-        let current = LayoutSnapshot(
-            nodePositions: nodePositions,
-            userNodeSizes: userNodeSizes
-        )
-        guard let previous = history.undo(current: current) else { return }
-        nodePositions = previous.nodePositions
-        userNodeSizes = previous.userNodeSizes
-    }
-
-    /// Redo the last undone layout action.
-    func redo() {
-        let current = LayoutSnapshot(
-            nodePositions: nodePositions,
-            userNodeSizes: userNodeSizes
-        )
-        guard let next = history.redo(current: current) else { return }
-        nodePositions = next.nodePositions
-        userNodeSizes = next.userNodeSizes
+    /// Undoable state: node positions and user-overridden sizes. (See `DiagramHistoryHosting`.)
+    /// Persistence is the view's responsibility (it owns the canvas scale/offset), so there is
+    /// no `persistAfterHistoryChange` override — the view pairs `undo()`/`redo()` with
+    /// `savePositions()`.
+    var historySnapshot: LayoutSnapshot {
+        get { LayoutSnapshot(nodePositions: nodePositions, userNodeSizes: userNodeSizes) }
+        set {
+            nodePositions = newValue.nodePositions
+            userNodeSizes = newValue.userNodeSizes
+        }
     }
 
     init(
@@ -133,6 +103,8 @@ final class GeneratedDiagramViewModel: ObservableObject {
         // otherwise keep current positions so unrelated tweaks don't disturb them.
         self.restoredPositions = groupingChanged ? nil : nodePositions
         hasPerformedMeasuredLayout = false
+        // The rebuilt node set differs, so a stale snapshot must not be restorable.
+        history.clear()
         buildDiagram()
     }
 

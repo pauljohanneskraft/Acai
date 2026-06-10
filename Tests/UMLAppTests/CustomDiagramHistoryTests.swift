@@ -62,6 +62,43 @@ struct CustomDiagramHistoryTests {
         #expect(vm.nodes.isEmpty)
     }
 
+    @Test("Consecutive edits to one text field coalesce into a single undo step")
+    func textEditsCoalesce() {
+        let vm = model()
+        vm.addNode(kind: .type(.class), name: "A", at: .zero)
+        let id = vm.nodes[0].id
+
+        // Simulate per-keystroke updates to the same name field.
+        vm.updateNodeName(id, name: "Ab")
+        vm.updateNodeName(id, name: "Abc")
+        vm.updateNodeName(id, name: "Abcd")
+        #expect(vm.nodes[0].name == "Abcd")
+
+        // One undo reverts the whole run of keystrokes back to the pre-edit name.
+        vm.undo()
+        #expect(vm.nodes[0].name == "A")
+        #expect(vm.canUndo == true)
+
+        // The next undo removes the node (the add checkpoint) — i.e. the edits were one step.
+        vm.undo()
+        #expect(vm.nodes.isEmpty)
+    }
+
+    @Test("Cut with an empty selection records no checkpoint and keeps redo")
+    func emptyCutDoesNotTouchHistory() {
+        let vm = model()
+        vm.addNode(kind: .type(.class), name: "A", at: .zero)
+        vm.undo()
+        #expect(vm.canUndo == false)
+        #expect(vm.canRedo == true)
+
+        vm.selectedNodeIDs = []
+        vm.cutSelection()
+
+        #expect(vm.canUndo == false)
+        #expect(vm.canRedo == true)
+    }
+
     @Test("Deleting a multi-node selection is a single undo step")
     func deleteSelectionIsSingleUndo() {
         let vm = model()

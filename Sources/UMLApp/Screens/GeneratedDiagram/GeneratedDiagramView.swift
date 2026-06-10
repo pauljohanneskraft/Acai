@@ -56,8 +56,7 @@ struct GeneratedDiagramView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    viewModel.undo()
-                    savePositions()
+                    performUndo()
                 } label: {
                     Label("Undo", systemImage: "arrow.uturn.backward")
                 }
@@ -65,8 +64,7 @@ struct GeneratedDiagramView: View {
                 .help("Undo (⌘Z)")
 
                 Button {
-                    viewModel.redo()
-                    savePositions()
+                    performRedo()
                 } label: {
                     Label("Redo", systemImage: "arrow.uturn.forward")
                 }
@@ -245,7 +243,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
-                    viewModel.recordUndoForGesture()
+                    viewModel.recordUndo()
                     activeResizeState = .init(
                         startSize: viewModel.effectiveSize(for: id),
                         startPosition: viewModel.nodePositions[id] ?? .zero
@@ -291,7 +289,7 @@ struct GeneratedDiagramView: View {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
                 if dragStartPositions.isEmpty {
-                    viewModel.recordUndoForGesture()
+                    viewModel.recordUndo()
                     if !viewModel.selectedNodeIDs.contains(id) {
                         viewModel.selectedNodeIDs = [id]
                     }
@@ -353,18 +351,28 @@ extension GeneratedDiagramView {
     @ViewBuilder private var keyboardShortcuts: some View {
         Group {
             Button("") {
-                viewModel.undo()
-                savePositions()
+                performUndo()
             }
             .keyboardShortcut("z", modifiers: .command)
 
             Button("") {
-                viewModel.redo()
-                savePositions()
+                performRedo()
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
         }
         .hidden()
+    }
+
+    /// Undo and persist. Single entry point so the save can't be forgotten at a call site.
+    private func performUndo() {
+        viewModel.undo()
+        savePositions()
+    }
+
+    /// Redo and persist. Single entry point so the save can't be forgotten at a call site.
+    private func performRedo() {
+        viewModel.redo()
+        savePositions()
     }
 
     private func savePositions() {
