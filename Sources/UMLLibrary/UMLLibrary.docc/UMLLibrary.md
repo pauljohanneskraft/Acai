@@ -36,24 +36,24 @@ so here's the lay of the land — follow a link whenever you want the full API f
 ### Language parsers
 
 Each one is a stateless `CodeParser` you can use directly, or let ``AnalysisService`` pick
-for you. They turn source text into the same [UMLCore](/UML/documentation/umlcore/) model.
+for you. They turn source text into the same [UMLCore](/documentation/umlcore/) model.
 
-- **[UMLSwift](/UML/documentation/umlswift/)** — Swift, via Apple's native SwiftSyntax.
-- **[UMLKotlin](/UML/documentation/umlkotlin/)** — Kotlin (`.kt`, `.kts`).
-- **[UMLJS](/UML/documentation/umljs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
-- **[UMLJava](/UML/documentation/umljava/)** — Java.
-- **[UMLDart](/UML/documentation/umldart/)** — Dart.
-- **[UMLTreeSitter](/UML/documentation/umltreesitter/)** — the shared Tree-sitter helpers the four
+- **[UMLSwift](/documentation/umlswift/)** — Swift, via Apple's native SwiftSyntax.
+- **[UMLKotlin](/documentation/umlkotlin/)** — Kotlin (`.kt`, `.kts`).
+- **[UMLJS](/documentation/umljs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
+- **[UMLJava](/documentation/umljava/)** — Java.
+- **[UMLDart](/documentation/umldart/)** — Dart.
+- **[UMLTreeSitter](/documentation/umltreesitter/)** — the shared Tree-sitter helpers the four
   grammar-based parsers above are built on. Reach for this only if you're writing a new
   parser.
 
 ### Diagrams & rendering
 
-Turn a [UMLCore](/UML/documentation/umlcore/) model into something you can look at.
+Turn a [UMLCore](/documentation/umlcore/) model into something you can look at.
 
-- **[UMLDiagram](/UML/documentation/umldiagram/)** — generates Graphviz **DOT** from a model, with options
+- **[UMLDiagram](/documentation/umldiagram/)** — generates Graphviz **DOT** from a model, with options
   for inferred composition, dependency edges, external types, and grouping.
-- **[UMLRender](/UML/documentation/umlrender/)** — on Apple platforms, lays out and renders a model
+- **[UMLRender](/documentation/umlrender/)** — on Apple platforms, lays out and renders a model
   straight to a **PNG**, no Graphviz required.
 
 ## Topics
