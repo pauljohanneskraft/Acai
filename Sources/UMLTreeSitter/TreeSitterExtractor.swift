@@ -95,7 +95,7 @@ extension TreeSitterExtracting {
 
     // MARK: Artifact Assembly
 
-    /// Assembles the accumulated state into a `CodeArtifact`.
+    /// Assembles the accumulated state into a ``UMLCore/CodeArtifact``.
     public func buildArtifact(
         language: CodeArtifact.SourceLanguage
     ) -> CodeArtifact {
@@ -195,7 +195,7 @@ extension TreeSitterExtracting {
 /// walk infrastructure in the extension.
 public protocol CallSiteResolving: TreeSitterExtracting {
 
-    /// Resolves a single AST node to a `CallSite` if it
+    /// Resolves a single AST node to a ``UMLCore/CallSite`` if it
     /// represents a method call on a known property.
     ///
     /// Return `nil` for nodes that are not relevant call
