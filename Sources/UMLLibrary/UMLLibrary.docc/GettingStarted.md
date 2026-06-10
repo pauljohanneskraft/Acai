@@ -7,7 +7,7 @@ Analyze a codebase and produce a diagram in a few lines.
 ``AnalysisService`` is the front door. Hand it a folder and the languages you care about;
 it auto-discovers the source directories (SPM, Xcode, Gradle, Maven, Node, Flutter…),
 runs the right parser for each file in parallel, and merges everything into a single
-`CodeArtifact`. From there, [UMLDiagram](../../umldiagram/) renders Graphviz DOT.
+`CodeArtifact`. From there, [UMLDiagram](/UML/documentation/umldiagram/) renders Graphviz DOT.
 
 ### Analyze a project
 
@@ -42,7 +42,7 @@ through `ClassDiagramOptions` when you create the `DOTGenerator`.
 ### Render a PNG (Apple platforms)
 
 On macOS you can skip Graphviz entirely and render straight to an image with
-[UMLRender](../../umlrender/)'s `DiagramImageRenderer`.
+[UMLRender](/UML/documentation/umlrender/)'s `DiagramImageRenderer`.
 
 ### Parse a single file
 

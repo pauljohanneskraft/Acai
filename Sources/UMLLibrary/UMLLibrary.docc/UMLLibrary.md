@@ -21,14 +21,14 @@ so here's the lay of the land — follow a link whenever you want the full API f
 
 ### Start here
 
-- **[UMLLibrary](../umllibrary/)** — the front door. ``AnalysisService`` finds the source
+- **[UMLLibrary](/UML/documentation/umllibrary/)** — the front door. ``AnalysisService`` finds the source
   in a project (SPM, Xcode, Gradle, Maven, Node, Flutter…), runs the right parser for
   each file, and merges the results. Re-exports the core model, so importing this is
   usually all you need.
 
 ### The core model
 
-- **[UMLCore](../umlcore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
+- **[UMLCore](/UML/documentation/umlcore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
   (the parsed model), `TypeDeclaration`, `Member`, `Relationship`, and the `CodeParser`
   protocol every language parser conforms to. Start here if you want to understand the
   shape of the data.
@@ -36,24 +36,24 @@ so here's the lay of the land — follow a link whenever you want the full API f
 ### Language parsers
 
 Each one is a stateless `CodeParser` you can use directly, or let ``AnalysisService`` pick
-for you. They turn source text into the same [UMLCore](../umlcore/) model.
+for you. They turn source text into the same [UMLCore](/UML/documentation/umlcore/) model.
 
-- **[UMLSwift](../umlswift/)** — Swift, via Apple's native SwiftSyntax.
-- **[UMLKotlin](../umlkotlin/)** — Kotlin (`.kt`, `.kts`).
-- **[UMLJS](../umljs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
-- **[UMLJava](../umljava/)** — Java.
-- **[UMLDart](../umldart/)** — Dart.
-- **[UMLTreeSitter](../umltreesitter/)** — the shared Tree-sitter helpers the four
+- **[UMLSwift](/UML/documentation/umlswift/)** — Swift, via Apple's native SwiftSyntax.
+- **[UMLKotlin](/UML/documentation/umlkotlin/)** — Kotlin (`.kt`, `.kts`).
+- **[UMLJS](/UML/documentation/umljs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
+- **[UMLJava](/UML/documentation/umljava/)** — Java.
+- **[UMLDart](/UML/documentation/umldart/)** — Dart.
+- **[UMLTreeSitter](/UML/documentation/umltreesitter/)** — the shared Tree-sitter helpers the four
   grammar-based parsers above are built on. Reach for this only if you're writing a new
   parser.
 
 ### Diagrams & rendering
 
-Turn a [UMLCore](../umlcore/) model into something you can look at.
+Turn a [UMLCore](/UML/documentation/umlcore/) model into something you can look at.
 
-- **[UMLDiagram](../umldiagram/)** — generates Graphviz **DOT** from a model, with options
+- **[UMLDiagram](/UML/documentation/umldiagram/)** — generates Graphviz **DOT** from a model, with options
   for inferred composition, dependency edges, external types, and grouping.
-- **[UMLRender](../umlrender/)** — on Apple platforms, lays out and renders a model
+- **[UMLRender](/UML/documentation/umlrender/)** — on Apple platforms, lays out and renders a model
   straight to a **PNG**, no Graphviz required.
 
 ## Topics
