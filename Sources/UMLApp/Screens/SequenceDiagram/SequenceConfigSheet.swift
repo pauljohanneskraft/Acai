@@ -11,9 +11,9 @@ import UMLDiagram
 struct SequenceConfigSheet: View {
     let artifact: CodeArtifact
     /// Pre-fills the form when editing an existing diagram's configuration.
-    let initial: GeneratedDiagram.SequenceConfiguration?
+    let initial: SequenceDiagramConfiguration?
     let onCancel: () -> Void
-    let onCreate: (GeneratedDiagram.SequenceConfiguration) -> Void
+    let onCreate: (SequenceDiagramConfiguration) -> Void
 
     @State private var entryTypeName: String
     @State private var entryMethodName: String
@@ -32,9 +32,9 @@ struct SequenceConfigSheet: View {
 
     init(
         artifact: CodeArtifact,
-        initial: GeneratedDiagram.SequenceConfiguration? = nil,
+        initial: SequenceDiagramConfiguration? = nil,
         onCancel: @escaping () -> Void,
-        onCreate: @escaping (GeneratedDiagram.SequenceConfiguration) -> Void
+        onCreate: @escaping (SequenceDiagramConfiguration) -> Void
     ) {
         self.artifact = artifact
         self.initial = initial
@@ -183,7 +183,7 @@ struct SequenceConfigSheet: View {
         for row in mappingRows {
             if let concrete = row.selection { mapping[row.protocolName] = concrete }
         }
-        onCreate(GeneratedDiagram.SequenceConfiguration(
+        onCreate(SequenceDiagramConfiguration(
             entryTypeName: entryTypeName,
             entryMethodName: entryMethodName,
             maxDepth: maxDepth,

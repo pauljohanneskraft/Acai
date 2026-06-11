@@ -10,7 +10,7 @@ struct DiagramGenerationSheet: View {
 
     @State private var diagramName = ""
     @State private var selectedType: DiagramType = .classDiagram
-    @State private var configuration = GeneratedDiagram.Configuration()
+    @State private var configuration = ClassDiagramConfiguration()
     @State private var isGenerating = false
 
     private var codebase: Codebase? {
@@ -49,9 +49,9 @@ struct DiagramGenerationSheet: View {
                     }
 
                     Picker("Grouping", selection: $configuration.grouping) {
-                        Text("None").tag(GeneratedDiagram.Configuration.Grouping.none)
-                        Text("Directory").tag(GeneratedDiagram.Configuration.Grouping.directory)
-                        Text("Product").tag(GeneratedDiagram.Configuration.Grouping.product)
+                        Text("None").tag(ClassDiagramConfiguration.Grouping.none)
+                        Text("Directory").tag(ClassDiagramConfiguration.Grouping.directory)
+                        Text("Product").tag(ClassDiagramConfiguration.Grouping.product)
                     }
                     Toggle("Show External Types", isOn: $configuration.showExternalTypes)
                 }
@@ -83,6 +83,12 @@ struct DiagramGenerationSheet: View {
         }
     }
 
+    /// The content for the chosen type: the edited class configuration applies only to class
+    /// diagrams; every other kind gets its own default.
+    private var diagramContent: GeneratedDiagram.Content {
+        selectedType == .classDiagram ? .classDiagram(configuration) : .init(type: selectedType)
+    }
+
     private func generate() {
         isGenerating = true
 
@@ -95,8 +101,7 @@ struct DiagramGenerationSheet: View {
                     to: projectID,
                     codebaseID: codebaseID,
                     name: diagramName,
-                    type: selectedType,
-                    configuration: configuration
+                    content: diagramContent
                 ) {
                     model.selection = .generatedDiagram(id)
                 }
@@ -109,8 +114,7 @@ struct DiagramGenerationSheet: View {
             to: projectID,
             codebaseID: codebaseID,
             name: diagramName,
-            type: selectedType,
-            configuration: configuration
+            content: diagramContent
         ) {
             model.selection = .generatedDiagram(id)
         }

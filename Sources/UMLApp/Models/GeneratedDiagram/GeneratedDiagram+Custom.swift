@@ -91,7 +91,7 @@ extension GeneratedDiagram {
     /// editable (move, relabel, reorder, add/remove).
     private func convertSequenceToCustom(
         artifact: CodeArtifact,
-        configuration: SequenceConfiguration,
+        configuration: SequenceDiagramConfiguration,
         positions: [String: CGPoint],
         scale: CGFloat,
         offset: CGPoint

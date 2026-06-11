@@ -68,11 +68,11 @@ struct CodebaseDetailView: View {
                 artifact: artifact,
                 onCancel: { sequenceConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.addSequenceDiagram(
+                    if let id = model.addGeneratedDiagram(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         name: "\(context.codebaseName) — Sequence: \(config.entryTypeName).\(config.entryMethodName)",
-                        configuration: config
+                        content: .sequenceDiagram(config)
                     ) {
                         model.selection = .generatedDiagram(id)
                     }
@@ -248,8 +248,7 @@ struct CodebaseDetailView: View {
                 to: projectID,
                 codebaseID: codebase.id,
                 name: "\(codebase.name) — \(type.displayName)",
-                type: type,
-                configuration: .init()
+                content: GeneratedDiagram.Content(type: type)
             ) {
                 model.selection = .generatedDiagram(id)
             }

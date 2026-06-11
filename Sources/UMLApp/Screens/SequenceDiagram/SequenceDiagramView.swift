@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLDiagram
 import UMLRender
 import UniformTypeIdentifiers
 
@@ -26,7 +27,7 @@ struct SequenceDiagramView: View {
         self.artifact = artifact
         self.codebase = codebase
         let config = diagram.sequenceConfiguration
-            ?? GeneratedDiagram.SequenceConfiguration(entryTypeName: "", entryMethodName: "")
+            ?? SequenceDiagramConfiguration(entryTypeName: "", entryMethodName: "")
         self._viewModel = StateObject(wrappedValue: SequenceDiagramViewModel(
             artifact: artifact,
             configuration: config,

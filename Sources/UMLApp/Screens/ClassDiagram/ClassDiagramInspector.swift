@@ -16,7 +16,7 @@ struct ClassDiagramSidebar: View {
     let artifact: CodeArtifact
     @Binding var tab: ClassDiagramSidebarTab
 
-    @State private var configuration: GeneratedDiagram.Configuration?
+    @State private var configuration: ClassDiagramConfiguration?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,11 +42,11 @@ struct ClassDiagramSidebar: View {
     // MARK: - Configuration Inspector
 
     private var configurationInspector: some View {
-        let config = Binding<GeneratedDiagram.Configuration>(
-            get: { configuration ?? diagram.configuration },
+        let config = Binding<ClassDiagramConfiguration>(
+            get: { configuration ?? diagram.classConfiguration ?? .init() },
             set: { newValue in
                 configuration = newValue
-                model.updateGeneratedDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
+                model.updateClassDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
                 viewModel.applyConfiguration(newValue, artifact: artifact)
             }
         )
@@ -76,9 +76,9 @@ struct ClassDiagramSidebar: View {
 
             Section("Layout") {
                 Picker("Grouping", selection: config.grouping) {
-                    Text("None").tag(GeneratedDiagram.Configuration.Grouping.none)
-                    Text("Directory").tag(GeneratedDiagram.Configuration.Grouping.directory)
-                    Text("Product").tag(GeneratedDiagram.Configuration.Grouping.product)
+                    Text("None").tag(ClassDiagramConfiguration.Grouping.none)
+                    Text("Directory").tag(ClassDiagramConfiguration.Grouping.directory)
+                    Text("Product").tag(ClassDiagramConfiguration.Grouping.product)
                 }
                 Toggle("Show External Types", isOn: config.showExternalTypes)
             }

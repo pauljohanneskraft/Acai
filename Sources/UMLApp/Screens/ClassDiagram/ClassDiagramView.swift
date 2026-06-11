@@ -29,7 +29,7 @@ struct ClassDiagramView: View {
         self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(
             codebase: codebase,
             artifact: artifact,
-            configuration: diagram.configuration,
+            configuration: diagram.classConfiguration ?? .init(),
             restoredPositions: diagram.nodePositions.mapValues { $0.cgPoint },
             restoredSizes: restoredSizes
         ))

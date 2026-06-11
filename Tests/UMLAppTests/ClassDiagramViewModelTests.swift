@@ -17,13 +17,13 @@ struct ClassDiagramViewModelTests {
 
     private func viewModel(
         types: [TypeDeclaration],
-        configure: (inout GeneratedDiagram.Configuration) -> Void = { _ in }
+        configure: (inout ClassDiagramConfiguration) -> Void = { _ in }
     ) -> ClassDiagramViewModel {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
             types: types
         )
-        var config = GeneratedDiagram.Configuration()
+        var config = ClassDiagramConfiguration()
         configure(&config)
         return ClassDiagramViewModel(
             codebase: Codebase(name: "c", directoryPath: "/tmp"),

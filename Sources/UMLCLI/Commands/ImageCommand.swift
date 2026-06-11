@@ -34,7 +34,7 @@ extension UMLCommand {
         var output: String
 
         @Option(name: .long, help: "Grouping strategy: none, directory, product.")
-        var grouping: DiagramConfiguration.Grouping = .product
+        var grouping: ClassDiagramConfiguration.Grouping = .product
 
         @Option(name: .long, help: ArgumentHelp(
             "Only show members (and whole types) at or above this access level:" +
@@ -79,7 +79,7 @@ extension UMLCommand {
             if let sequenceFrom {
                 data = try await renderSequence(artifact: artifact, entryPoint: sequenceFrom)
             } else {
-                var configuration = DiagramConfiguration()
+                var configuration = ClassDiagramConfiguration()
                 configuration.grouping = grouping
                 configuration.minimumAccessLevel = minAccess
                 if hideMembers {
@@ -172,6 +172,6 @@ extension UMLCommand {
     }
 }
 
-extension DiagramConfiguration.Grouping: ExpressibleByArgument {}
+extension ClassDiagramConfiguration.Grouping: ExpressibleByArgument {}
 extension AccessLevel: ExpressibleByArgument {}
 #endif

@@ -21,7 +21,7 @@ public struct DiagramLayoutModel: Sendable {
 
     public let nodes: [GeneratedDiagramNode]
     public let edges: [GeneratedDiagramEdge]
-    public let configuration: DiagramConfiguration
+    public let configuration: ClassDiagramConfiguration
 
     /// Extra space baked into every node's layout footprint so neighbours never touch
     /// and small size-estimate errors can't produce visual overlap.
@@ -30,7 +30,7 @@ public struct DiagramLayoutModel: Sendable {
     /// Builds the nodes and edges for `artifact` under `configuration`: resolves extensions,
     /// optionally filters Dart-generated types, hides types below the access floor, and keeps
     /// only the relationships enabled in the configuration.
-    public init(artifact: CodeArtifact, configuration: DiagramConfiguration) {
+    public init(artifact: CodeArtifact, configuration: ClassDiagramConfiguration) {
         self.configuration = configuration
 
         var resolved = artifact.resolvingExtensions()
@@ -54,7 +54,7 @@ public struct DiagramLayoutModel: Sendable {
     private static func buildEdges(
         from relationships: [Relationship],
         knownTypeIds: Set<String>,
-        configuration: DiagramConfiguration
+        configuration: ClassDiagramConfiguration
     ) -> [GeneratedDiagramEdge] {
         guard configuration.showRelationships else { return [] }
         return relationships.compactMap { rel in

@@ -17,7 +17,7 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     @Published var participantOffsets: [String: CGFloat] = [:]
     @Published var selectedNodeIDs: Set<String> = []
 
-    private(set) var configuration: GeneratedDiagram.SequenceConfiguration
+    private(set) var configuration: SequenceDiagramConfiguration
 
     // MARK: - Undo / Redo
 
@@ -34,7 +34,7 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     init(
         artifact: CodeArtifact,
-        configuration: GeneratedDiagram.SequenceConfiguration,
+        configuration: SequenceDiagramConfiguration,
         restoredOffsets: [String: CGFloat] = [:]
     ) {
         self.artifact = artifact
@@ -45,7 +45,7 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     private static func generate(
         artifact: CodeArtifact,
-        configuration: GeneratedDiagram.SequenceConfiguration
+        configuration: SequenceDiagramConfiguration
     ) -> SequenceDiagram {
         artifact.sequenceDiagram(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
@@ -55,7 +55,7 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     }
 
     /// Re-runs the trace for a new configuration, dropping stale offsets and history.
-    func applyConfiguration(_ newConfiguration: GeneratedDiagram.SequenceConfiguration) {
+    func applyConfiguration(_ newConfiguration: SequenceDiagramConfiguration) {
         configuration = newConfiguration
         diagram = Self.generate(artifact: artifact, configuration: newConfiguration)
         participantOffsets = [:]

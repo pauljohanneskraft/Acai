@@ -42,7 +42,7 @@ public enum DiagramImageRenderer {
     /// SwiftUI measurement happens headlessly) and renders it to PNG data.
     public static func renderPNG(
         artifact: CodeArtifact,
-        configuration: DiagramConfiguration,
+        configuration: ClassDiagramConfiguration,
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding
     ) throws -> Data {

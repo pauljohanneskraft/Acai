@@ -32,7 +32,7 @@ struct DiagramLayoutModelTests {
     }
 
     @Test func relationshipsHiddenWhenDisabled() {
-        var config = DiagramConfiguration()
+        var config = ClassDiagramConfiguration()
         config.showRelationships = false
         let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
         #expect(model.edges.isEmpty)
@@ -60,7 +60,7 @@ struct DiagramLayoutModelTests {
     }
 
     @Test func directoryGroupingProducesBoxes() {
-        var config = DiagramConfiguration()
+        var config = ClassDiagramConfiguration()
         config.grouping = .directory
         let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
         let sizes = Dictionary(
@@ -72,7 +72,7 @@ struct DiagramLayoutModelTests {
     }
 
     @Test func noGroupingProducesNoBoxes() {
-        var config = DiagramConfiguration()
+        var config = ClassDiagramConfiguration()
         config.grouping = .none
         let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
         let boxes = model.groupingBoxes(positions: [:], sizes: [:])

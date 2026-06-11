@@ -19,7 +19,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     /// derived from its source-file path. Used for product grouping and package boxes.
     public let productGroup: String?
 
-    public init(from type: TypeDeclaration, configuration: DiagramConfiguration? = nil) {
+    public init(from type: TypeDeclaration, configuration: ClassDiagramConfiguration? = nil) {
         self.id = type.id
         self.name = type.name
         self.kind = type.kind

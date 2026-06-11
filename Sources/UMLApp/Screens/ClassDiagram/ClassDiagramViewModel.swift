@@ -18,7 +18,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
 
-    private var configuration: DiagramConfiguration
+    private var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
     /// Shared, view-independent build + layout core (also used by the CLI image renderer).
     private var model: DiagramLayoutModel
@@ -49,7 +49,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     init(
         codebase: Codebase,
         artifact: CodeArtifact,
-        configuration: DiagramConfiguration = .init(),
+        configuration: ClassDiagramConfiguration = .init(),
         restoredPositions: [String: CGPoint]? = nil,
         restoredSizes: [String: CGSize]? = nil
     ) {
@@ -96,7 +96,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Apply Configuration
 
-    func applyConfiguration(_ newConfig: DiagramConfiguration, artifact: CodeArtifact) {
+    func applyConfiguration(_ newConfig: ClassDiagramConfiguration, artifact: CodeArtifact) {
         let groupingChanged = newConfig.grouping != configuration.grouping
         self.configuration = newConfig
         // Drop saved positions when the grouping changes so the layout actually reflows;
