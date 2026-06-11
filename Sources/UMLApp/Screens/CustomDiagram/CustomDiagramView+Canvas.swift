@@ -94,18 +94,21 @@ extension CustomDiagramView {
     }
 
     /// An invisible tap strip over a fragment's operator tab, selecting its backing node.
+    /// Sized from the layout's `tabRect` (plus slack) so the whole tab is always clickable,
+    /// however long the operator name.
     private func fragmentTapTarget(
         _ fragment: SequenceLayoutModel.FragmentFrame,
         anchorY: CGFloat
     ) -> some View {
-        Rectangle()
+        let tab = fragment.tabRect.insetBy(dx: -4, dy: -3)
+        return Rectangle()
             .fill(Color.clear)
             .contentShape(Rectangle())
             #if os(macOS)
             .cursorOnHover(.pointingHand)
             #endif
-            .frame(width: 70, height: 22)
-            .position(x: fragment.rect.minX + 35, y: anchorY + fragment.rect.minY + 11)
+            .frame(width: tab.width, height: tab.height)
+            .position(x: tab.midX, y: anchorY + tab.midY)
             .onTapGesture(count: 2) {
                 viewModel.selectNode(fragment.id, extending: false)
                 sidebarTab = .inspector

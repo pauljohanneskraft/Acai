@@ -12,24 +12,27 @@ import UMLDiagram
 struct SequenceDiagramIntegrationTests {
 
     /// Parse the repo's `Sources/` once and share across tests (parsing is the expensive part).
-    private static let artifact: CodeArtifact = {
+    /// Stored as a `Result` so an analysis failure (e.g. a CI filesystem-layout difference)
+    /// fails every test with the *original* error instead of confusing empty-artifact asserts.
+    private static let analysisResult = Result { () throws -> CodeArtifact in
         // Tests/UMLLibraryTests/SequenceDiagramIntegrationTests.swift → repo root is two up.
         let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let sources = repoRoot.appendingPathComponent("Sources")
-        guard let artifact = try? AnalysisService.shared.analyzeProject(at: sources, allowedLanguages: []) else {
-            return CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []))
-        }
-        return artifact
-    }()
+        return try AnalysisService.shared.analyzeProject(at: sources, allowedLanguages: [])
+    }
+
+    private static func artifact() throws -> CodeArtifact {
+        try analysisResult.get()
+    }
 
     @Test("A known concrete-receiver call appears as a cross-participant message")
-    func knownEntryPointTracesCrossTypeCall() {
+    func knownEntryPointTracesCrossTypeCall() throws {
         // `ProjectBrowserViewModel.persistChanges` calls `store.save()` through the
         // explicitly-typed `store: ProjectStore` property.
-        let diagram = Self.artifact.sequenceDiagram(
+        let diagram = try Self.artifact().sequenceDiagram(
             entryPoint: ("ProjectBrowserViewModel", "persistChanges")
         )
 
@@ -43,16 +46,17 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("typeMapping resolves an existential receiver to a concrete detector")
-    func typeMappingResolvesExistentialReceiver() {
+    func typeMappingResolvesExistentialReceiver() throws {
+        let artifact = try Self.artifact()
         // `ProjectDiscovery.discoverSourceSpecs` dispatches through `any BuildSystemDetector`;
         // mapping it to the concrete `FallbackDetector` must redirect the lifeline and follow
         // the concrete implementation's body.
-        let unmapped = Self.artifact.sequenceDiagram(
+        let unmapped = artifact.sequenceDiagram(
             entryPoint: ("ProjectDiscovery", "discoverSourceSpecs")
         )
         #expect(unmapped.participants.map(\.name).contains("any BuildSystemDetector"))
 
-        let mapped = Self.artifact.sequenceDiagram(
+        let mapped = artifact.sequenceDiagram(
             entryPoint: ("ProjectDiscovery", "discoverSourceSpecs"),
             typeMapping: ["any BuildSystemDetector": "FallbackDetector"]
         )
@@ -65,8 +69,9 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("Every unambiguous concrete-receiver call site is traceable from its owning method")
-    func allUnambiguousCallSitesProduceCrossParticipantMessages() {
-        let types = Self.artifact.types
+    func allUnambiguousCallSitesProduceCrossParticipantMessages() throws {
+        let artifact = try Self.artifact()
+        let types = artifact.types
         // Only uniquely-named types: the generator keys lookups by simple name (first wins),
         // so duplicated names would make the assertion ambiguous rather than wrong.
         var nameCounts: [String: Int] = [:]
@@ -91,7 +96,7 @@ struct SequenceDiagramIntegrationTests {
                           receiverType.members.contains(where: { $0.name == site.methodName })
                     else { continue }
 
-                    let diagram = Self.artifact.sequenceDiagram(entryPoint: (type.name, member.name))
+                    let diagram = artifact.sequenceDiagram(entryPoint: (type.name, member.name))
                     let found = diagram.messages.contains {
                         $0.from == type.name && $0.to == receiver && $0.label == site.methodName
                     }

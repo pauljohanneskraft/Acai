@@ -101,6 +101,16 @@ public struct SequenceLayoutModel {
         public let separatorYs: [CGFloat]
         /// Guard labels with the y of the operand they belong to (just below its top edge).
         public let guards: [(label: String, y: CGFloat)]
+
+        /// The operator tab in the frame's top-left corner. Width tracks the operator name
+        /// (`critical` is wider than `alt`); shared by the rendering and the hit target so the
+        /// whole tab is always clickable.
+        public var tabRect: CGRect {
+            CGRect(
+                x: rect.minX, y: rect.minY,
+                width: CGFloat(kind.rawValue.count) * 7 + 22, height: 17
+            )
+        }
     }
 
     public let participants: [ParticipantFrame]

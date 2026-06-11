@@ -124,9 +124,9 @@ public struct SequenceFragmentView: View {
 
     private var tab: some View {
         let label = fragment.kind.rawValue
-        let width = CGFloat(label.count) * 7 + 22
-        let height: CGFloat = 17
-        let origin = fragment.rect.origin
+        let width = fragment.tabRect.width
+        let height = fragment.tabRect.height
+        let origin = fragment.tabRect.origin
         return ZStack {
             Path { path in
                 // Pentagon: rectangle with a clipped bottom-right corner.

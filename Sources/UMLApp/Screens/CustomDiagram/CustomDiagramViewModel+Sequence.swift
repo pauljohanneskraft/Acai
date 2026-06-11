@@ -19,15 +19,17 @@ extension CustomDiagramViewModel {
             .sorted { $0.positionX < $1.positionX }
     }
 
-    /// Message edges between lifelines, in time order. Edges whose endpoints aren't both
-    /// lifelines are ignored here and keep rendering as ordinary relationship lines.
+    /// Whether an edge is a sequence message: it carries a time order *and* connects two
+    /// lifelines. The single predicate behind canvas rendering and the inspector, so an edge
+    /// can never show as a message in one place and a relationship in the other.
+    func isMessageEdge(_ edge: CustomDiagram.Edge) -> Bool {
+        edge.messageOrder != nil && isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID)
+    }
+
+    /// Message edges between lifelines, in time order.
     var messageEdges: [CustomDiagram.Edge] {
-        let lifelineIDs = Set(lifelineNodes.map(\.id))
-        return edges
-            .filter {
-                $0.messageOrder != nil
-                    && lifelineIDs.contains($0.sourceNodeID) && lifelineIDs.contains($0.targetNodeID)
-            }
+        edges
+            .filter { isMessageEdge($0) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
     }
 

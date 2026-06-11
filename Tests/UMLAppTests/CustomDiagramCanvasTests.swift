@@ -69,4 +69,29 @@ struct CustomDiagramCanvasTests {
         #expect(Set(ids).count == ids.count)
         #expect(ids.allSatisfy { !$0.isEmpty })
     }
+
+    @Test("Re-pointing a message edge at a non-lifeline demotes it to a relationship")
+    func messageEdgeDemotesWhenEndpointLeavesLifelines() {
+        let vm = CustomDiagramViewModel()
+        vm.addNode(kind: .lifeline, name: "A", at: .zero)
+        vm.addNode(kind: .lifeline, name: "B", at: CGPoint(x: 200, y: 0))
+        vm.addNode(kind: .type(.class), name: "C", at: CGPoint(x: 400, y: 0))
+        let a = vm.nodes[0].id
+        let b = vm.nodes[1].id
+        let c = vm.nodes[2].id
+
+        // Edge between two lifelines auto-becomes a message…
+        vm.addEdge(from: a, to: b, kind: .dependency)
+        let edge = vm.edges[0]
+        #expect(vm.isMessageEdge(edge))
+        #expect(vm.messageEdges.count == 1)
+
+        // …and demotes (in the same model the canvas/inspector read) when re-pointed.
+        vm.updateEdge(edge.id, sourceID: a, targetID: c, kind: .dependency)
+        let updated = vm.edges[0]
+        #expect(!vm.isMessageEdge(updated))
+        #expect(updated.messageOrder == nil)
+        #expect(updated.messageKind == nil)
+        #expect(vm.messageEdges.isEmpty)
+    }
 }

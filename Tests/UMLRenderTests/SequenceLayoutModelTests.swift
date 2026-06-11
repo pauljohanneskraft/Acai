@@ -172,6 +172,24 @@ struct SequenceLayoutModelTests {
         #expect(frame.guards.count == 2)
     }
 
+    @Test("The operator tab tracks the operator name and sits at the frame's top-left")
+    func fragmentTabTracksOperatorName() {
+        func tabRect(_ kind: SequenceDiagram.Fragment.Kind) -> CGRect {
+            var d = diagram()
+            d.fragments = [.init(kind: kind, operands: [.init(firstOrder: 0, lastOrder: 1)])]
+            return SequenceLayoutModel(diagram: d).fragments[0].tabRect
+        }
+
+        let alt = tabRect(.alt)
+        let critical = tabRect(.critical)
+        #expect(critical.width > alt.width)
+
+        var d = diagram()
+        d.fragments = [.init(kind: .critical, operands: [.init(firstOrder: 0, lastOrder: 1)])]
+        let frame = SequenceLayoutModel(diagram: d).fragments[0]
+        #expect(frame.tabRect.origin == frame.rect.origin)
+    }
+
     @Test("A fragment covering no laid-out messages is dropped")
     func emptyFragmentIsDropped() {
         var d = diagram()

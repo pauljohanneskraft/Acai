@@ -166,14 +166,13 @@ struct CustomDiagramInspector: View {
 
     @ViewBuilder
     private func nodeRelationshipsSection(node: CustomDiagram.Node) -> some View {
-        // Sequence messages are listed separately from structural relationships — an edge with
-        // `messageOrder` is a time-ordered message, not a dependency, even though `Edge.kind`
-        // (non-optional) still carries a placeholder value for them.
+        // Sequence messages are listed separately from structural relationships, using the same
+        // predicate the canvas renders by (`isMessageEdge`), so the two can never disagree.
         let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
         let messages = relatedEdges
-            .filter { $0.messageOrder != nil }
+            .filter { viewModel.isMessageEdge($0) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
-        let relationships = relatedEdges.filter { $0.messageOrder == nil }
+        let relationships = relatedEdges.filter { !viewModel.isMessageEdge($0) }
 
         if !messages.isEmpty {
             messagesListSection(node: node, messages: messages)
@@ -314,9 +313,11 @@ struct CustomDiagramInspector: View {
 extension CustomDiagramInspector {
 
     private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
-        ScrollView {
+        // Same predicate the canvas renders by, so the editor always matches what's drawn.
+        let isMessage = viewModel.isMessageEdge(edge)
+        return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if edge.messageOrder != nil {
+                if isMessage {
                     messageSection(edge: edge)
                 } else {
                     edgePickersSection(edge: edge)
@@ -326,7 +327,7 @@ extension CustomDiagramInspector {
                     viewModel.removeEdge(edge.id)
                     viewModel.selectedEdgeID = nil
                 } label: {
-                    Label(edge.messageOrder != nil ? "Delete Message" : "Delete Relationship",
+                    Label(isMessage ? "Delete Message" : "Delete Relationship",
                           systemImage: "trash")
                         .frame(maxWidth: .infinity)
                 }

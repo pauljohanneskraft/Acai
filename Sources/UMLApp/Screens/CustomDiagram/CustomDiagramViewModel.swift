@@ -214,6 +214,13 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
         edges[idx].sourceNodeID = sourceID
         edges[idx].targetNodeID = targetID
         edges[idx].kind = kind
+        // A message only exists between two lifelines: re-pointing an endpoint elsewhere
+        // demotes the edge to a plain relationship (same undo step), keeping the data
+        // consistent with how the canvas and inspector classify it.
+        if edges[idx].messageOrder != nil && !(isLifeline(sourceID) && isLifeline(targetID)) {
+            edges[idx].messageOrder = nil
+            edges[idx].messageKind = nil
+        }
         save()
     }
 

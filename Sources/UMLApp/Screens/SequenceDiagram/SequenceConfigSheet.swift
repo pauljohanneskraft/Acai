@@ -160,8 +160,9 @@ struct SequenceConfigSheet: View {
         var seen: Set<String> = []
         for participant in preview.participants where !seen.contains(participant.name) {
             seen.insert(participant.name)
-            guard isAbstraction(participant.name) else { continue }
-            let candidates = conformerNames(ofTypeNamed: participant.name)
+            // Resolves existential spellings (`any P`) too; the mapping key stays the raw
+            // participant name because the generator substitutes receiver strings verbatim.
+            let candidates = artifact.conformerNames(ofAbstractionNamed: participant.name)
             guard !candidates.isEmpty else { continue }
             rows.append(MappingRow(
                 id: participant.name,
@@ -212,23 +213,6 @@ struct SequenceConfigSheet: View {
             .sorted()
     }
 
-    private func isAbstraction(_ typeName: String) -> Bool {
-        guard let type = artifact.types.first(where: { $0.name == typeName }) else { return false }
-        return type.kind == .protocol || type.kind == .interface
-    }
-
-    /// Concrete types that conform to / inherit from the named type, found via relationship
-    /// edges (target = the abstraction's id). Relationships are id-based after enrichment.
-    private func conformerNames(ofTypeNamed typeName: String) -> [String] {
-        guard let type = artifact.types.first(where: { $0.name == typeName }) else { return [] }
-        let conformerIDs = artifact.relationships
-            .filter { $0.target == type.id && ($0.kind == .conformance || $0.kind == .inheritance) }
-            .map(\.source)
-        return conformerIDs
-            .compactMap { id in artifact.types.first(where: { $0.id == id })?.name }
-            .uniqued()
-            .sorted()
-    }
 }
 
 private extension Sequence where Element: Hashable {
