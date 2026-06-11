@@ -1,29 +1,43 @@
 import SwiftUI
 import UMLCore
+import UMLRender
 #if os(macOS)
 import AppKit
 #endif
 
 /// View model for the custom diagram editor.
 @MainActor
-final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
+final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
 
     @Published var nodes: [CustomDiagram.Node] = []
     @Published var edges: [CustomDiagram.Edge] = []
-    @Published var selectedNodeIDs: Set<UUID> = []
-    @Published var selectedEdgeID: UUID?
+    @Published var selectedNodeIDs: Set<String> = [] {
+        didSet {
+            // Keep the click order in sync no matter how the set is mutated (taps, marquee,
+            // shared canvas gestures): drop deselected ids, append newly selected ones.
+            selectionOrder.removeAll { !selectedNodeIDs.contains($0) }
+            for id in selectedNodeIDs where !selectionOrder.contains(id) {
+                selectionOrder.append(id)
+            }
+        }
+    }
+    /// Selected node ids in the order they were selected. Edge/message creation reads this so
+    /// "first selected → second selected" determines the arrow direction (a `Set` alone would
+    /// make the direction random).
+    @Published private(set) var selectionOrder: [String] = []
+    @Published var selectedEdgeID: String?
     @Published var selectionRect: CGRect?
     /// When set, the user is in "draw relationship" mode: dragging from a node creates an edge.
     @Published var pendingRelationshipKind: Relationship.Kind?
     /// While dragging to draw a relationship, the source node.
-    @Published var relationshipDragSourceID: UUID?
+    @Published var relationshipDragSourceID: String?
     /// The current endpoint (canvas coords) of the relationship being drawn.
     @Published var relationshipDragEndpoint: CGPoint?
 
     /// Actual measured sizes of rendered node views (updated by GeometryReader).
-    var measuredNodeSizes: [UUID: CGSize] = [:]
+    var measuredNodeSizes: [String: CGSize] = [:]
 
     // MARK: - Undo / Redo
 
@@ -47,8 +61,8 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     /// Coalescing keys for runs of consecutive text edits that should undo as a single step.
     enum TextEditField: Hashable {
-        case name(UUID)
-        case note(UUID)
+        case name(String)
+        case note(String)
     }
 
     /// Persist after an undo/redo restores a snapshot.
@@ -84,7 +98,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
         save()
     }
 
-    func removeNode(_ nodeID: UUID) {
+    func removeNode(_ nodeID: String) {
         recordUndo()
         removeNodes([nodeID])
         save()
@@ -92,7 +106,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     /// Remove the given nodes and any edges touching them, and drop them from the selection.
     /// Does **not** record undo or save — callers own that so a batch removal is one undo step.
-    func removeNodes(_ ids: Set<UUID>) {
+    func removeNodes(_ ids: Set<String>) {
         guard !ids.isEmpty else { return }
         nodes.removeAll { ids.contains($0.id) }
         edges.removeAll { ids.contains($0.sourceNodeID) || ids.contains($0.targetNodeID) }
@@ -112,14 +126,18 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
         save()
     }
 
-    func moveNode(_ nodeID: UUID, to position: CGPoint) {
+    func moveNode(_ nodeID: String, to position: CGPoint) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             nodes[idx].positionX = Double(position.x)
-            nodes[idx].positionY = Double(position.y)
+            // Lifelines slide horizontally only — vertically they are pinned to the shared
+            // header row, exactly like the generated sequence view.
+            if case .lifeline = nodes[idx].content {} else {
+                nodes[idx].positionY = Double(position.y)
+            }
         }
     }
 
-    func resizeNode(_ nodeID: UUID, width: CGFloat, height: CGFloat) {
+    func resizeNode(_ nodeID: String, width: CGFloat, height: CGFloat) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             nodes[idx].width = max(80, Double(width))
             nodes[idx].height = max(50, Double(height))
@@ -127,7 +145,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     }
 
     /// Increase the draw order of a node so it renders on top of siblings in the same layer.
-    func moveNodeHigher(_ nodeID: UUID) {
+    func moveNodeHigher(_ nodeID: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
@@ -139,7 +157,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     }
 
     /// Decrease the draw order of a node so it renders below siblings in the same layer.
-    func moveNodeLower(_ nodeID: UUID) {
+    func moveNodeLower(_ nodeID: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
         let siblings = nodes.filter { $0.isResizable == isContainer && $0.id != nodeID }
@@ -150,7 +168,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
         save()
     }
 
-    func updateNode(_ nodeID: UUID, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
+    func updateNode(_ nodeID: String, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             recordUndo()
             if let name { nodes[idx].name = name }
@@ -170,32 +188,45 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     // MARK: - Edge CRUD
 
-    func addEdge(from sourceID: UUID, to targetID: UUID, kind: Relationship.Kind) {
+    func addEdge(from sourceID: String, to targetID: String, kind: Relationship.Kind) {
         recordUndo()
-        let edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
+        var edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
+        // An edge between two lifelines is a sequence message: append it at the end of the
+        // timeline as a synchronous call (order/kind editable in the inspector).
+        if isLifeline(sourceID) && isLifeline(targetID) {
+            edge.messageOrder = (edges.compactMap(\.messageOrder).max() ?? 0) + 1
+            edge.messageKind = .synchronous
+        }
         edges.append(edge)
         save()
     }
 
-    func removeEdge(_ edgeID: UUID) {
+    func removeEdge(_ edgeID: String) {
         recordUndo()
         edges.removeAll { $0.id == edgeID }
         if selectedEdgeID == edgeID { selectedEdgeID = nil }
         save()
     }
 
-    func updateEdge(_ edgeID: UUID, sourceID: UUID, targetID: UUID, kind: Relationship.Kind) {
+    func updateEdge(_ edgeID: String, sourceID: String, targetID: String, kind: Relationship.Kind) {
         guard let idx = edges.firstIndex(where: { $0.id == edgeID }) else { return }
         recordUndo()
         edges[idx].sourceNodeID = sourceID
         edges[idx].targetNodeID = targetID
         edges[idx].kind = kind
+        // A message only exists between two lifelines: re-pointing an endpoint elsewhere
+        // demotes the edge to a plain relationship (same undo step), keeping the data
+        // consistent with how the canvas and inspector classify it.
+        if edges[idx].messageOrder != nil && !(isLifeline(sourceID) && isLifeline(targetID)) {
+            edges[idx].messageOrder = nil
+            edges[idx].messageKind = nil
+        }
         save()
     }
 
     // MARK: - Selection
 
-    func selectNode(_ nodeID: UUID, extending: Bool) {
+    func selectNode(_ nodeID: String, extending: Bool) {
         if extending {
             if selectedNodeIDs.contains(nodeID) {
                 selectedNodeIDs.remove(nodeID)
@@ -240,12 +271,17 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     // MARK: - Helpers
 
-    func nodePosition(_ nodeID: UUID) -> CGPoint? {
+    func nodePosition(_ nodeID: String) -> CGPoint? {
         guard let node = nodes.first(where: { $0.id == nodeID }) else { return nil }
         return CGPoint(x: node.positionX, y: node.positionY)
     }
 
-    func nodeSize(_ nodeID: UUID) -> CGSize {
+    /// `CanvasInteraction` size accessor (custom diagrams compute this in `nodeSize`).
+    func effectiveSize(for id: String) -> CGSize {
+        nodeSize(id)
+    }
+
+    func nodeSize(_ nodeID: String) -> CGSize {
         guard let node = nodes.first(where: { $0.id == nodeID }) else {
             return CGSize(width: 120, height: 60)
         }
@@ -281,6 +317,12 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
             // Default container size before user resizes.
             let width = max(200, CGFloat(node.name.count) * 8.5 + 60)
             return CGSize(width: width, height: 150)
+        case .lifeline:
+            // Match the generated sequence view's header sizing exactly.
+            return CGSize(
+                width: SequenceLayoutModel.headerWidth(for: node.name),
+                height: SequenceLayoutModel.headerHeight
+            )
         default:
             // Simple labeled elements (actor, use case, component, etc.)
             let width = max(100, CGFloat(node.name.count) * 8.5 + 40)
@@ -288,7 +330,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting {
         }
     }
 
-    func nodeRect(_ nodeID: UUID) -> CGRect {
+    func nodeRect(_ nodeID: String) -> CGRect {
         let pos = nodePosition(nodeID) ?? .zero
         let size = nodeSize(nodeID)
         return CGRect(x: pos.x - size.width / 2, y: pos.y - size.height / 2, width: size.width, height: size.height)

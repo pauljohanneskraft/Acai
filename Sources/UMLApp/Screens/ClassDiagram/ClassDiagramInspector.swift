@@ -3,26 +3,26 @@ import UMLCore
 import UMLRender
 
 /// Inspector tab choices for the generated diagram inspector.
-enum GeneratedDiagramSidebarTab {
+enum ClassDiagramSidebarTab {
     case settings, inspector
 }
 
 /// Inspector sidebar for the generated diagram view, showing configuration
 /// options and details of the currently-selected nodes.
-struct GeneratedDiagramSidebar: View {
-    @ObservedObject var viewModel: GeneratedDiagramViewModel
+struct ClassDiagramSidebar: View {
+    @ObservedObject var viewModel: ClassDiagramViewModel
     @EnvironmentObject private var model: ProjectBrowserViewModel
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
-    @Binding var tab: GeneratedDiagramSidebarTab
+    @Binding var tab: ClassDiagramSidebarTab
 
-    @State private var configuration: GeneratedDiagram.Configuration?
+    @State private var configuration: ClassDiagramConfiguration?
 
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(GeneratedDiagramSidebarTab.settings)
-                Text("Inspector").tag(GeneratedDiagramSidebarTab.inspector)
+                Text("Settings").tag(ClassDiagramSidebarTab.settings)
+                Text("Inspector").tag(ClassDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -42,11 +42,11 @@ struct GeneratedDiagramSidebar: View {
     // MARK: - Configuration Inspector
 
     private var configurationInspector: some View {
-        let config = Binding<GeneratedDiagram.Configuration>(
-            get: { configuration ?? diagram.configuration },
+        let config = Binding<ClassDiagramConfiguration>(
+            get: { configuration ?? diagram.classConfiguration ?? .init() },
             set: { newValue in
                 configuration = newValue
-                model.updateGeneratedDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
+                model.updateClassDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
                 viewModel.applyConfiguration(newValue, artifact: artifact)
             }
         )
@@ -76,9 +76,9 @@ struct GeneratedDiagramSidebar: View {
 
             Section("Layout") {
                 Picker("Grouping", selection: config.grouping) {
-                    Text("None").tag(GeneratedDiagram.Configuration.Grouping.none)
-                    Text("Directory").tag(GeneratedDiagram.Configuration.Grouping.directory)
-                    Text("Product").tag(GeneratedDiagram.Configuration.Grouping.product)
+                    Text("None").tag(ClassDiagramConfiguration.Grouping.none)
+                    Text("Directory").tag(ClassDiagramConfiguration.Grouping.directory)
+                    Text("Product").tag(ClassDiagramConfiguration.Grouping.product)
                 }
                 Toggle("Show External Types", isOn: config.showExternalTypes)
             }

@@ -127,19 +127,34 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Generated Diagram CRUD
 
+    /// Creates a generated diagram of any kind; `content` carries the type together with its
+    /// type-specific configuration.
     func addGeneratedDiagram(
         to projectID: UUID,
         codebaseID: UUID,
         name: String,
-        type: DiagramType,
-        configuration: GeneratedDiagram.Configuration
+        content: GeneratedDiagram.Content
     ) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = GeneratedDiagram(name: name, type: type, codebaseID: codebaseID, configuration: configuration)
+        let diagram = GeneratedDiagram(name: name, content: content, codebaseID: codebaseID)
         store.projects[projectIndex].generatedDiagramIDs.append(diagram.id)
         store.saveGeneratedDiagram(diagram)
         persistChanges()
         return diagram.id
+    }
+
+    /// Updates the entry-point configuration of a sequence diagram and clears its saved
+    /// participant positions (the participant set may have changed).
+    func updateSequenceConfiguration(
+        diagramID: UUID,
+        configuration: SequenceDiagramConfiguration
+    ) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
+        diagram.sequenceConfiguration = configuration
+        diagram.nodePositions = [:]
+        diagram.lastModified = Date()
+        store.saveGeneratedDiagram(diagram)
+        objectWillChange.send()
     }
 
     func updateGeneratedDiagramPositions(
@@ -162,9 +177,10 @@ final class ProjectBrowserViewModel: ObservableObject {
         objectWillChange.send()
     }
 
-    func updateGeneratedDiagramConfiguration(diagramID: UUID, configuration: GeneratedDiagram.Configuration) {
+    /// Updates the rendering configuration of a class diagram (no-op for other types).
+    func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
-        diagram.configuration = configuration
+        diagram.classConfiguration = configuration
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)
         objectWillChange.send()

@@ -30,6 +30,14 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     case entity
     case note
 
+    // MARK: - Sequence Diagram Elements
+
+    /// A sequence-diagram lifeline (participant). Created when a sequence diagram is saved as a
+    /// custom diagram, and available in the catalog for building sequence diagrams by hand.
+    case lifeline
+    /// A sequence-diagram combined fragment (`loop`/`alt`/`opt`/…) framing a span of messages.
+    case fragment
+
     // MARK: - Identifiable
 
     var id: String {
@@ -58,6 +66,10 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "entity"
         case .note:
             "note"
+        case .lifeline:
+            "lifeline"
+        case .fragment:
+            "fragment"
         }
     }
 
@@ -119,6 +131,10 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "Entity"
         case .note:
             "Note"
+        case .lifeline:
+            "Lifeline"
+        case .fragment:
+            "Fragment (loop/alt/opt)"
         }
     }
 
@@ -176,6 +192,10 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "tablecells"
         case .note:
             "note.text"
+        case .lifeline:
+            "arrow.down.to.line"
+        case .fragment:
+            "rectangle.dashed.badge.record"
         }
     }
 
@@ -207,6 +227,10 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             .entity
         case .note:
             .note(text: "")
+        case .lifeline:
+            .lifeline(.object)
+        case .fragment:
+            .fragment(.init())
         }
     }
     // swiftlint:enable cyclomatic_complexity
@@ -216,6 +240,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     /// The catalog section this element kind belongs to.
     enum CatalogGroup: String, CaseIterable {
         case classDiagram = "Class Diagram"
+        case sequenceDiagram = "Sequence Diagram"
         case useCaseDiagram = "Use Case Diagram"
         case componentDeployment = "Component / Deployment"
         case general = "General"
@@ -225,6 +250,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         switch self {
         case .type:
             .classDiagram
+        case .lifeline, .fragment:
+            .sequenceDiagram
         case .actor, .useCase, .boundary:
             .useCaseDiagram
         case .component, .package, .deploymentNode,
@@ -239,6 +266,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     static let allCases: [CustomDiagramNodeKind] = {
         var items: [CustomDiagramNodeKind] = TypeKind.allCases.map { .type($0) }
         items += [
+            .lifeline, .fragment,
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
             .entity, .note

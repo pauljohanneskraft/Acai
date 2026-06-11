@@ -1,5 +1,6 @@
 import Foundation
 import UMLCore
+import UMLDiagram
 
 extension GeneratedDiagram {
 
@@ -9,7 +10,13 @@ extension GeneratedDiagram {
         scale: CGFloat,
         offset: CGPoint
     ) -> CustomDiagram {
-        var ids: [String: UUID] = [:]
+        if case .sequenceDiagram(let config) = content {
+            return convertSequenceToCustom(
+                artifact: artifact, configuration: config,
+                positions: positions, scale: scale, offset: offset
+            )
+        }
+        var ids: [String: String] = [:]
 
         let nodes = buildCustomNodes(
             from: artifact,
@@ -32,12 +39,12 @@ extension GeneratedDiagram {
     private func buildCustomNodes(
         from artifact: CodeArtifact,
         positions: [String: CGPoint],
-        ids: inout [String: UUID]
+        ids: inout [String: String]
     ) -> [CustomDiagram.Node] {
         var nodes: [CustomDiagram.Node] = []
 
         for type in artifact.types {
-            let nodeID = UUID()
+            let nodeID = UUID().uuidString
             ids[type.name] = nodeID
             let livePos = positions[type.name]
             let storedPos = nodePositions[type.name]
@@ -75,9 +82,72 @@ extension GeneratedDiagram {
         )
     }
 
+    // MARK: - Sequence → Custom
+
+    /// Converts a sequence diagram into an editable custom diagram: each participant becomes a
+    /// lifeline node and every message (calls *and* returns) becomes a time-ordered message
+    /// edge. The custom editor renders these through the same sequence layout the generated
+    /// view uses, so the converted diagram looks identical to its original while staying fully
+    /// editable (move, relabel, reorder, add/remove).
+    private func convertSequenceToCustom(
+        artifact: CodeArtifact,
+        configuration: SequenceDiagramConfiguration,
+        positions: [String: CGPoint],
+        scale: CGFloat,
+        offset: CGPoint
+    ) -> CustomDiagram {
+        let sequence = artifact.sequenceDiagram(
+            entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
+            maxDepth: configuration.maxDepth,
+            typeMapping: configuration.typeMapping
+        )
+
+        // One lifeline node per participant, at the exact x its lifeline had in the generated
+        // view (the caller passes the live layout positions; the stride is only a fallback).
+        var nodeIDByName: [String: String] = [:]
+        var nodes: [CustomDiagram.Node] = []
+        for (index, participant) in sequence.participants.enumerated() {
+            let nodeID = UUID().uuidString
+            nodeIDByName[participant.name] = nodeID
+            let x = positions[participant.id]?.x ?? CGFloat(index) * 180 + 120
+            nodes.append(CustomDiagram.Node(
+                id: nodeID,
+                name: participant.name,
+                content: .lifeline(participant.kind),
+                positionX: Double(x),
+                positionY: 100
+            ))
+        }
+
+        let edges: [CustomDiagram.Edge] = sequence.messages
+            .sorted { $0.order < $1.order }
+            .compactMap { message in
+                guard let source = nodeIDByName[message.from],
+                      let target = nodeIDByName[message.to] else { return nil }
+                return CustomDiagram.Edge(
+                    sourceNodeID: source,
+                    targetNodeID: target,
+                    kind: .dependency,
+                    label: message.label,
+                    messageOrder: message.order,
+                    messageKind: message.kind
+                )
+            }
+
+        return CustomDiagram(
+            name: name + " (Custom)",
+            diagramType: .sequenceDiagram,
+            nodes: nodes,
+            edges: edges,
+            canvasScale: scale,
+            canvasOffsetX: offset.x,
+            canvasOffsetY: offset.y
+        )
+    }
+
     private func buildCustomEdges(
         from artifact: CodeArtifact,
-        ids: [String: UUID]
+        ids: [String: String]
     ) -> [CustomDiagram.Edge] {
         let typeNames = Set(artifact.types.map(\.name))
         return artifact.relationships.compactMap { rel in

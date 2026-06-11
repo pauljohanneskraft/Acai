@@ -13,7 +13,7 @@ struct CustomDiagramView: View {
 
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
-    @State var dragStartPositions: [UUID: CGPoint] = [:]
+    @State var dragStartPositions: [String: CGPoint] = [:]
     @State var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State var activeResizeState: DiagramResizeState?
@@ -41,21 +41,7 @@ struct CustomDiagramView: View {
         }
         .toolbar {
             ToolbarItemGroup {
-                Button {
-                    viewModel.undo()
-                } label: {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                }
-                .disabled(!viewModel.canUndo)
-                .help("Undo (⌘Z)")
-
-                Button {
-                    viewModel.redo()
-                } label: {
-                    Label("Redo", systemImage: "arrow.uturn.forward")
-                }
-                .disabled(!viewModel.canRedo)
-                .help("Redo (⇧⌘Z)")
+                UndoRedoToolbarButtons(model: viewModel, onChange: {})
 
                 Button {
                     sidebarTab = .catalog
@@ -99,17 +85,10 @@ struct CustomDiagramView: View {
 
                 Button("") { viewModel.selectAll() }
                     .keyboardShortcut("a", modifiers: .command)
-
-                Button("") { viewModel.undo() }
-                    .keyboardShortcut("z", modifiers: .command)
-                    .disabled(isEditingText)
-
-                Button("") { viewModel.redo() }
-                    .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(isEditingText)
             }
             .hidden()
         }
+        .undoRedoKeyboardShortcuts(model: viewModel, enabled: !isEditingText, onChange: {})
         .alert(
             deleteAlertTitle,
             isPresented: $showDeleteConfirmation
@@ -134,30 +113,24 @@ struct CustomDiagramView: View {
     // MARK: - Canvas
 
     private var canvasArea: some View {
-        InfiniteCanvas(scale: $canvasScale, offset: $canvasOffset, onSelectionRect: { rect in
-            viewModel.selectNodes(in: rect)
-        }, onBackgroundTap: {
-            viewModel.clearSelection()
-        }, autoPanDragLocation: activeDragCanvasLocation, onAutoPanDelta: { canvasDelta in
-            for nodeID in viewModel.selectedNodeIDs {
-                if let pos = viewModel.nodePosition(nodeID) {
-                    viewModel.moveNode(nodeID, to: CGPoint(
-                        x: pos.x + canvasDelta.width,
-                        y: pos.y + canvasDelta.height
-                    ))
-                }
-            }
-        }, autoPanController: canvasAutoPanController, content: {
+        PannableCanvas(
+            model: viewModel,
+            scale: $canvasScale,
+            offset: $canvasOffset,
+            activeDragCanvasLocation: activeDragCanvasLocation,
+            autoPanController: canvasAutoPanController
+        ) {
             ZStack {
                 containerNodeLayer
+                sequenceLayer
                 regularNodeLayer
                 edgeLayer
                 resizeHandleLayer
             }
-        })
+        }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
-                viewModel.measuredNodeSizes[UUID(uuidString: id) ?? UUID()] = size
+                viewModel.measuredNodeSizes[id] = size
             }
         }
         .onContinuousHover { phase in

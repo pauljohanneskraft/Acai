@@ -1,13 +1,16 @@
 import Foundation
 import UMLCore
+import UMLDiagram
 import UMLRender
 
 struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
-    var type: DiagramType
+    /// The diagram's type together with its type-specific configuration. A single enum carries
+    /// both the kind and its settings, so each new configurable type adds exactly one case here
+    /// instead of a separate optional property per type.
+    var content: Content
     var codebaseID: UUID
-    var configuration: Configuration
     var nodePositions: [String: NodePosition] = [:]
     /// User-overridden node sizes (from resize handles).
     var nodeSizes: [String: NodeSize] = [:]
@@ -19,10 +22,69 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension GeneratedDiagram {
-    /// The diagram's rendering configuration. The type itself lives in `UMLRender`
-    /// (shared with the CLI image renderer); this alias keeps the historical
-    /// `GeneratedDiagram.Configuration` spelling used throughout the app.
-    typealias Configuration = DiagramConfiguration
+    /// The diagram's type paired with its type-specific configuration.
+    enum Content: Codable, Hashable, Sendable {
+        case classDiagram(ClassDiagramConfiguration)
+        case sequenceDiagram(SequenceDiagramConfiguration)
+        case stateDiagram
+        case useCaseDiagram
+        case deploymentDiagram
+
+        /// Default content for a freshly created diagram of the given type: each kind gets its
+        /// own default configuration (none is privileged over the others).
+        init(type: DiagramType) {
+            switch type {
+            case .classDiagram:
+                self = .classDiagram(.init())
+            case .sequenceDiagram:
+                self = .sequenceDiagram(.init(entryTypeName: "", entryMethodName: ""))
+            case .stateDiagram:
+                self = .stateDiagram
+            case .useCaseDiagram:
+                self = .useCaseDiagram
+            case .deploymentDiagram:
+                self = .deploymentDiagram
+            }
+        }
+
+        var type: DiagramType {
+            switch self {
+            case .classDiagram:
+                .classDiagram
+            case .sequenceDiagram:
+                .sequenceDiagram
+            case .stateDiagram:
+                .stateDiagram
+            case .useCaseDiagram:
+                .useCaseDiagram
+            case .deploymentDiagram:
+                .deploymentDiagram
+            }
+        }
+    }
+
+    /// The diagram type, derived from `content`.
+    var type: DiagramType { content.type }
+
+    /// The class-diagram configuration, when this is a class diagram.
+    var classConfiguration: ClassDiagramConfiguration? {
+        get {
+            if case .classDiagram(let config) = content { config } else { nil }
+        }
+        set {
+            if let newValue, case .classDiagram = content { content = .classDiagram(newValue) }
+        }
+    }
+
+    /// The sequence configuration, when this is a sequence diagram.
+    var sequenceConfiguration: SequenceDiagramConfiguration? {
+        get {
+            if case .sequenceDiagram(let config) = content { config } else { nil }
+        }
+        set {
+            if let newValue, case .sequenceDiagram = content { content = .sequenceDiagram(newValue) }
+        }
+    }
 }
 
 extension GeneratedDiagram {

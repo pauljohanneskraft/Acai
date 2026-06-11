@@ -61,7 +61,9 @@ extension ProjectBrowserViewModel {
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
               var artifact = artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
 
-        if diagram.configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
+        // Sequence diagrams have no class configuration; default to hiding generated Dart types.
+        let hideGeneratedDartTypes = diagram.classConfiguration?.hideGeneratedDartTypes ?? true
+        if hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
             artifact = artifact.filteringGeneratedDartTypes()
         }
         let customDiagram = diagram.convertToCustom(

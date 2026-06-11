@@ -60,13 +60,13 @@ extension CustomDiagramViewModel {
         recordUndo()
 
         // Build mapping from old IDs to new IDs.
-        var idMapping: [UUID: UUID] = [:]
+        var idMapping: [String: String] = [:]
         for node in payload.nodes {
-            idMapping[node.id] = UUID()
+            idMapping[node.id] = UUID().uuidString
         }
 
         let offset: Double = 30.0
-        var newSelection = Set<UUID>()
+        var newSelection = Set<String>()
 
         for var node in payload.nodes {
             let newID = idMapping[node.id]!
@@ -80,7 +80,7 @@ extension CustomDiagramViewModel {
         for var edge in payload.edges {
             guard let newSource = idMapping[edge.sourceNodeID],
                   let newTarget = idMapping[edge.targetNodeID] else { continue }
-            edge.id = UUID()
+            edge.id = UUID().uuidString
             edge.sourceNodeID = newSource
             edge.targetNodeID = newTarget
             edges.append(edge)

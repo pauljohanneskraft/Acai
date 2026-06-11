@@ -7,6 +7,16 @@ struct CodebaseDetailView: View {
     let codebaseID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var isIndexing = false
+    /// Set when the user clicks "Sequence Diagram"; drives the configuration popup.
+    @State private var sequenceConfigContext: SequenceConfigContext?
+
+    /// Identifies the codebase a pending sequence-diagram configuration belongs to.
+    private struct SequenceConfigContext: Identifiable {
+        let projectID: UUID
+        let codebaseID: UUID
+        let codebaseName: String
+        var id: UUID { codebaseID }
+    }
 
     private var codebase: Codebase? {
         model.codebase(for: codebaseID)
@@ -40,10 +50,35 @@ struct CodebaseDetailView: View {
                     }
                 }
             }
+            .sheet(item: $sequenceConfigContext) { context in
+                sequenceConfigSheet(for: context)
+            }
         } else {
             Text("Codebase not found")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
+    @ViewBuilder
+    private func sequenceConfigSheet(for context: SequenceConfigContext) -> some View {
+        if let artifact = model.artifact(for: context.codebaseID) {
+            SequenceConfigSheet(
+                artifact: artifact,
+                onCancel: { sequenceConfigContext = nil },
+                onCreate: { config in
+                    if let id = model.addGeneratedDiagram(
+                        to: context.projectID,
+                        codebaseID: context.codebaseID,
+                        name: "\(context.codebaseName) — Sequence: \(config.entryTypeName).\(config.entryMethodName)",
+                        content: .sequenceDiagram(config)
+                    ) {
+                        model.selection = .generatedDiagram(id)
+                    }
+                    sequenceConfigContext = nil
+                }
+            )
         }
     }
 
@@ -199,14 +234,21 @@ struct CodebaseDetailView: View {
     private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
         Button {
             guard let projectID else { return }
+            // Sequence diagrams always open the configuration popup (entry point + interface
+            // resolution) rather than generating immediately.
+            if type == .sequenceDiagram {
+                sequenceConfigContext = SequenceConfigContext(
+                    projectID: projectID, codebaseID: codebase.id, codebaseName: codebase.name
+                )
+                return
+            }
             if let existing = model.generatedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
                 model.selection = .generatedDiagram(existing.id)
             } else if let id = model.addGeneratedDiagram(
                 to: projectID,
                 codebaseID: codebase.id,
                 name: "\(codebase.name) — \(type.displayName)",
-                type: type,
-                configuration: .init()
+                content: GeneratedDiagram.Content(type: type)
             ) {
                 model.selection = .generatedDiagram(id)
             }

@@ -52,7 +52,7 @@ struct CustomDiagramHistoryTests {
 
         // Calls whose guards fail on a bogus ID must not record a checkpoint
         // (which would clear the redo stack) nor make undo available.
-        let bogus = UUID()
+        let bogus = UUID().uuidString
         vm.addProperty(to: bogus, name: "x", type: "Int")
         vm.moveNodeHigher(bogus)
         vm.updateNoteText(bogus, text: "hi")

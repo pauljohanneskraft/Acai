@@ -4,7 +4,7 @@ import UMLRender
 /// Canvas layer that draws a labelled box behind each group under the active grouping mode.
 /// Bound to the live view model; the reusable `GroupingBoxView` it renders lives in `UMLRender`.
 struct GroupingBoxLayer: View {
-    @ObservedObject var viewModel: GeneratedDiagramViewModel
+    @ObservedObject var viewModel: ClassDiagramViewModel
 
     var body: some View {
         ForEach(viewModel.groupingBoxes) { box in

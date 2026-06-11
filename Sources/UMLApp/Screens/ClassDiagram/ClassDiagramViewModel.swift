@@ -4,7 +4,7 @@ import UMLCore
 import UMLRender
 
 @MainActor
-final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
+final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
 
@@ -18,7 +18,7 @@ final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
 
-    private var configuration: DiagramConfiguration
+    private var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
     /// Shared, view-independent build + layout core (also used by the CLI image renderer).
     private var model: DiagramLayoutModel
@@ -49,7 +49,7 @@ final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
     init(
         codebase: Codebase,
         artifact: CodeArtifact,
-        configuration: DiagramConfiguration = .init(),
+        configuration: ClassDiagramConfiguration = .init(),
         restoredPositions: [String: CGPoint]? = nil,
         restoredSizes: [String: CGSize]? = nil
     ) {
@@ -96,7 +96,7 @@ final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     // MARK: - Apply Configuration
 
-    func applyConfiguration(_ newConfig: DiagramConfiguration, artifact: CodeArtifact) {
+    func applyConfiguration(_ newConfig: ClassDiagramConfiguration, artifact: CodeArtifact) {
         let groupingChanged = newConfig.grouping != configuration.grouping
         self.configuration = newConfig
         // Drop saved positions when the grouping changes so the layout actually reflows;
@@ -159,6 +159,11 @@ final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     func moveNode(_ id: String, to position: CGPoint) {
         nodePositions[id] = position
+    }
+
+    /// Current center of a node (`CanvasInteraction`).
+    func nodePosition(_ id: String) -> CGPoint? {
+        nodePositions[id]
     }
 
     func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {

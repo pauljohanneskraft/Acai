@@ -3,9 +3,9 @@ import UMLCore
 import UMLRender
 @testable import UMLApp
 
-@Suite("Generated Diagram View Model")
+@Suite("Class Diagram View Model")
 @MainActor
-struct GeneratedDiagramViewModelTests {
+struct ClassDiagramViewModelTests {
 
     private func type(_ name: String, _ access: AccessLevel) -> TypeDeclaration {
         TypeDeclaration(
@@ -17,15 +17,15 @@ struct GeneratedDiagramViewModelTests {
 
     private func viewModel(
         types: [TypeDeclaration],
-        configure: (inout GeneratedDiagram.Configuration) -> Void = { _ in }
-    ) -> GeneratedDiagramViewModel {
+        configure: (inout ClassDiagramConfiguration) -> Void = { _ in }
+    ) -> ClassDiagramViewModel {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
             types: types
         )
-        var config = GeneratedDiagram.Configuration()
+        var config = ClassDiagramConfiguration()
         configure(&config)
-        return GeneratedDiagramViewModel(
+        return ClassDiagramViewModel(
             codebase: Codebase(name: "c", directoryPath: "/tmp"),
             artifact: artifact,
             configuration: config

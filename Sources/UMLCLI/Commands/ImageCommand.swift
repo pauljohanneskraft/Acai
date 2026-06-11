@@ -2,6 +2,7 @@
 import ArgumentParser
 import CoreGraphics
 import Foundation
+import UMLDiagram
 import UMLLibrary
 import UMLRender
 
@@ -33,7 +34,7 @@ extension UMLCommand {
         var output: String
 
         @Option(name: .long, help: "Grouping strategy: none, directory, product.")
-        var grouping: DiagramConfiguration.Grouping = .product
+        var grouping: ClassDiagramConfiguration.Grouping = .product
 
         @Option(name: .long, help: ArgumentHelp(
             "Only show members (and whole types) at or above this access level:" +
@@ -47,6 +48,21 @@ extension UMLCommand {
         @Option(name: .long, help: "Output resolution scale factor.")
         var scale: Double = 2
 
+        @Option(name: .long, help: ArgumentHelp(
+            "Render a sequence diagram traced from this entry point instead of a class diagram." +
+            " Format: \"TypeName.methodName\"."
+        ))
+        var sequenceFrom: String?
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Resolve an interface/protocol to a concrete type when tracing a sequence diagram." +
+            " Repeat for multiple: --map Protocol=Concrete --map Other=Impl."
+        ))
+        var map: [String] = []
+
+        @Option(name: .long, help: "Maximum sequence-diagram call-graph depth.")
+        var maxDepth: Int = 5
+
         mutating func validate() throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
@@ -59,25 +75,65 @@ extension UMLCommand {
         mutating func run() async throws {
             let artifact = try loadArtifact()
 
-            var configuration = DiagramConfiguration()
-            configuration.grouping = grouping
-            configuration.minimumAccessLevel = minAccess
-            if hideMembers {
-                configuration.showProperties = false
-                configuration.showMethods = false
-            }
-
-            let data = try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
-                    artifact: artifact,
-                    configuration: configuration,
-                    scale: CGFloat(scale)
-                )
+            let data: Data
+            if let sequenceFrom {
+                data = try await renderSequence(artifact: artifact, entryPoint: sequenceFrom)
+            } else {
+                var configuration = ClassDiagramConfiguration()
+                configuration.grouping = grouping
+                configuration.minimumAccessLevel = minAccess
+                if hideMembers {
+                    configuration.showProperties = false
+                    configuration.showMethods = false
+                }
+                data = try await MainActor.run {
+                    try DiagramImageRenderer.renderPNG(
+                        artifact: artifact,
+                        configuration: configuration,
+                        scale: CGFloat(scale)
+                    )
+                }
             }
 
             let outputURL = URL(fileURLWithPath: output)
             try data.write(to: outputURL, options: .atomic)
             print("Wrote image to \(output)")
+        }
+
+        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it to PNG.
+        private func renderSequence(artifact: CodeArtifact, entryPoint: String) async throws -> Data {
+            guard let dot = entryPoint.lastIndex(of: ".") else {
+                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
+            }
+            let typeName = String(entryPoint[..<dot])
+            let methodName = String(entryPoint[entryPoint.index(after: dot)...])
+            guard !typeName.isEmpty, !methodName.isEmpty else {
+                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
+            }
+
+            var typeMapping: [String: String] = [:]
+            for entry in map {
+                let parts = entry.split(separator: "=", maxSplits: 1).map(String.init)
+                guard parts.count == 2 else {
+                    throw ValidationError("--map must be in the form \"Protocol=Concrete\".")
+                }
+                typeMapping[parts[0]] = parts[1]
+            }
+
+            let diagram = artifact.sequenceDiagram(
+                entryPoint: (typeName, methodName),
+                maxDepth: maxDepth,
+                typeMapping: typeMapping
+            )
+            guard !diagram.participants.isEmpty else {
+                throw ValidationError(
+                    "No calls could be traced from \(entryPoint). Sequence diagrams follow "
+                    + "explicitly-typed property receivers; try another entry point or --map."
+                )
+            }
+            return try await MainActor.run {
+                try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale))
+            }
         }
 
         private func loadArtifact() throws -> CodeArtifact {
@@ -116,6 +172,6 @@ extension UMLCommand {
     }
 }
 
-extension DiagramConfiguration.Grouping: ExpressibleByArgument {}
+extension ClassDiagramConfiguration.Grouping: ExpressibleByArgument {}
 extension AccessLevel: ExpressibleByArgument {}
 #endif
