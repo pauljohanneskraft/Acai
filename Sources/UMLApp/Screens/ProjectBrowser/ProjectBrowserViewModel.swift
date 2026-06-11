@@ -142,6 +142,38 @@ final class ProjectBrowserViewModel: ObservableObject {
         return diagram.id
     }
 
+    /// Creates a sequence diagram (a `GeneratedDiagram` with `type == .sequenceDiagram`),
+    /// carrying its entry-point configuration. The diagram is regenerated from this on open.
+    func addSequenceDiagram(
+        to projectID: UUID,
+        codebaseID: UUID,
+        name: String,
+        configuration: GeneratedDiagram.SequenceConfiguration
+    ) -> UUID? {
+        guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
+        let diagram = GeneratedDiagram(
+            name: name, content: .sequenceDiagram(configuration), codebaseID: codebaseID
+        )
+        store.projects[projectIndex].generatedDiagramIDs.append(diagram.id)
+        store.saveGeneratedDiagram(diagram)
+        persistChanges()
+        return diagram.id
+    }
+
+    /// Updates the entry-point configuration of a sequence diagram and clears its saved
+    /// participant positions (the participant set may have changed).
+    func updateSequenceConfiguration(
+        diagramID: UUID,
+        configuration: GeneratedDiagram.SequenceConfiguration
+    ) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
+        diagram.sequenceConfiguration = configuration
+        diagram.nodePositions = [:]
+        diagram.lastModified = Date()
+        store.saveGeneratedDiagram(diagram)
+        objectWillChange.send()
+    }
+
     func updateGeneratedDiagramPositions(
         diagramID: UUID,
         positions: [String: CGPoint],

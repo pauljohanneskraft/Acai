@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLDiagram
 
 // MARK: - Inspector Sidebar
 
@@ -13,10 +14,11 @@ struct CustomDiagramInspector: View {
 
     @State private var newPropertyText: String = ""
     @State private var newMethodText: String = ""
-    @FocusState private var focusedField: Field?
+    /// Internal (not private) so the sequence-inspector extension file can focus fields too.
+    @FocusState var focusedField: Field?
 
     /// Text fields that, while focused, should own ⌘Z.
-    private enum Field: Hashable { case name, note, newProperty, newMethod }
+    enum Field: Hashable { case name, note, newProperty, newMethod }
 
     var body: some View {
         Group {
@@ -142,40 +144,105 @@ struct CustomDiagramInspector: View {
                 Text("Note Text").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             }
         }
+        if case .lifeline(let kind) = node.content {
+            Section {
+                Picker("Role", selection: Binding(
+                    get: { kind },
+                    set: { viewModel.updateLifelineKind(node.id, kind: $0) }
+                )) {
+                    ForEach(SequenceDiagram.Participant.Kind.allCases, id: \.self) { role in
+                        Text(role.rawValue.capitalized).tag(role)
+                    }
+                }
+                .labelsHidden()
+            } header: {
+                Text("Participant Role").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+            }
+        }
+        if case .fragment(let content) = node.content {
+            fragmentSection(nodeID: node.id, content: content)
+        }
     }
 
     @ViewBuilder
     private func nodeRelationshipsSection(node: CustomDiagram.Node) -> some View {
+        // Sequence messages are listed separately from structural relationships — an edge with
+        // `messageOrder` is a time-ordered message, not a dependency, even though `Edge.kind`
+        // (non-optional) still carries a placeholder value for them.
         let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
-        if !relatedEdges.isEmpty {
-            Section {
-                ForEach(relatedEdges) { edge in
-                    HStack {
-                        Text(edge.kind.rawValue)
-                            .font(.caption)
-                        Spacer()
-                        let otherID = edge.sourceNodeID == node.id ? edge.targetNodeID : edge.sourceNodeID
-                        let otherName = viewModel.nodes.first(where: { $0.id == otherID })?.name ?? "?"
-                        Text(otherName)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.selectedEdgeID = edge.id
-                    }
+        let messages = relatedEdges
+            .filter { $0.messageOrder != nil }
+            .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
+        let relationships = relatedEdges.filter { $0.messageOrder == nil }
+
+        if !messages.isEmpty {
+            messagesListSection(node: node, messages: messages)
+        }
+        if !relationships.isEmpty {
+            relationshipsListSection(node: node, relationships: relationships)
+        }
+    }
+
+    private func messagesListSection(node: CustomDiagram.Node, messages: [CustomDiagram.Edge]) -> some View {
+        Section {
+            ForEach(messages) { edge in
+                HStack {
+                    let outgoing = edge.sourceNodeID == node.id
+                    let otherID = outgoing ? edge.targetNodeID : edge.sourceNodeID
+                    let otherName = viewModel.nodes.first(where: { $0.id == otherID })?.name ?? "?"
+                    Text("\(edge.messageOrder ?? 0).")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                    Text(edge.label ?? (edge.messageKind == .return ? "(return)" : "(message)"))
+                        .font(.caption.monospaced())
+                    Spacer()
+                    Text(outgoing ? "→ \(otherName)" : "← \(otherName)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
                 }
-            } header: {
-                Text("Relationships (\(relatedEdges.count))")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    viewModel.selectedEdgeID = edge.id
+                }
             }
+        } header: {
+            Text("Messages (\(messages.count))")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func relationshipsListSection(
+        node: CustomDiagram.Node,
+        relationships: [CustomDiagram.Edge]
+    ) -> some View {
+        Section {
+            ForEach(relationships) { edge in
+                HStack {
+                    Text(edge.kind.rawValue)
+                        .font(.caption)
+                    Spacer()
+                    let otherID = edge.sourceNodeID == node.id ? edge.targetNodeID : edge.sourceNodeID
+                    let otherName = viewModel.nodes.first(where: { $0.id == otherID })?.name ?? "?"
+                    Text(otherName)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    viewModel.selectedEdgeID = edge.id
+                }
+            }
+        } header: {
+            Text("Relationships (\(relationships.count))")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 
     // MARK: - Member Sections
 
-    private func propertiesSection(nodeID: UUID, content: CustomDiagram.Node.TypeContent) -> some View {
+    private func propertiesSection(nodeID: String, content: CustomDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.properties) { prop in
                 HStack {
@@ -208,7 +275,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func methodsSection(nodeID: UUID, content: CustomDiagram.Node.TypeContent) -> some View {
+    private func methodsSection(nodeID: String, content: CustomDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.methods) { method in
                 HStack {
@@ -249,13 +316,18 @@ extension CustomDiagramInspector {
     private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                edgePickersSection(edge: edge)
+                if edge.messageOrder != nil {
+                    messageSection(edge: edge)
+                } else {
+                    edgePickersSection(edge: edge)
+                }
                 edgeSummary(edge: edge)
                 Button(role: .destructive) {
                     viewModel.removeEdge(edge.id)
                     viewModel.selectedEdgeID = nil
                 } label: {
-                    Label("Delete Relationship", systemImage: "trash")
+                    Label(edge.messageOrder != nil ? "Delete Message" : "Delete Relationship",
+                          systemImage: "trash")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)

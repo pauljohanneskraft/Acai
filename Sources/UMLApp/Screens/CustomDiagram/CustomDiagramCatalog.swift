@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLDiagram
 
 // MARK: - Catalog Sidebar
 
@@ -28,6 +29,15 @@ struct CustomDiagramCatalog: View {
                     .padding(.horizontal)
 
                 relationshipCatalog
+
+                Divider()
+                    .padding(.horizontal)
+
+                Text("Message Catalog")
+                    .font(.headline)
+                    .padding(.horizontal)
+
+                messageCatalog
             }
             .padding(.vertical)
         }
@@ -99,8 +109,8 @@ struct CustomDiagramCatalog: View {
 
     private func relationshipButton(label: String, kind: Relationship.Kind) -> some View {
         Button {
-            // If exactly two nodes are selected, create an edge between them.
-            let selected = Array(viewModel.selectedNodeIDs)
+            // Selection *order* determines direction: first selected → second selected.
+            let selected = viewModel.selectionOrder
             if selected.count == 2 {
                 viewModel.addEdge(from: selected[0], to: selected[1], kind: kind)
             }
@@ -116,5 +126,60 @@ struct CustomDiagramCatalog: View {
         }
         .buttonStyle(.plain)
         .disabled(viewModel.selectedNodeIDs.count != 2)
+    }
+
+    // MARK: - Message Catalog (sequence diagrams)
+
+    /// Buttons that append a message between the selected lifelines, at the end of the
+    /// timeline. Direction is first-selected → second-selected; one selected lifeline makes a
+    /// self-message. Order/kind/label are editable afterwards in the inspector.
+    private var messageCatalog: some View {
+        let lifelines = viewModel.orderedLifelineSelection
+        let twoSelected = lifelines.count == 2
+        let oneSelected = lifelines.count == 1
+        return VStack(spacing: 4) {
+            messageButton(label: "Message (sync)", icon: "arrow.right", kind: .synchronous,
+                          enabled: twoSelected)
+            messageButton(label: "Message (async)", icon: "arrow.right.to.line", kind: .asynchronous,
+                          enabled: twoSelected)
+            messageButton(label: "Return", icon: "arrowshape.turn.up.left", kind: .return,
+                          enabled: twoSelected)
+            messageButton(label: "Self-Message", icon: "arrow.uturn.down", kind: .synchronous,
+                          enabled: oneSelected, isSelf: true)
+            if !twoSelected && !oneSelected {
+                Text("Select one or two lifelines (⌘-click) to add messages.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+        }
+    }
+
+    private func messageButton(
+        label: String,
+        icon: String,
+        kind: SequenceDiagram.Message.Kind,
+        enabled: Bool,
+        isSelf: Bool = false
+    ) -> some View {
+        Button {
+            let lifelines = viewModel.orderedLifelineSelection
+            if isSelf, let only = lifelines.first {
+                viewModel.addMessage(from: only, to: only, kind: kind)
+            } else if lifelines.count == 2 {
+                viewModel.addMessage(from: lifelines[0], to: lifelines[1], kind: kind)
+            }
+        } label: {
+            HStack {
+                Image(systemName: icon)
+                    .frame(width: 20)
+                Text(label)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
     }
 }

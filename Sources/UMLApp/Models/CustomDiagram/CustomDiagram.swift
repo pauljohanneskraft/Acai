@@ -1,5 +1,6 @@
 import Foundation
 import UMLCore
+import UMLDiagram
 
 /// A fully user-defined diagram with manually placed nodes and edges.
 struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
@@ -19,7 +20,10 @@ struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
 
 extension CustomDiagram {
     struct Node: Identifiable, Codable, Hashable, Sendable {
-        var id: UUID = UUID()
+        /// String id (generated from a UUID, so still collision-free). Shared `String` node
+        /// identity lets the class/sequence/custom views use one `CanvasInteraction` protocol.
+        /// JSON-compatible with previously-saved `UUID` ids (both encode as the same string).
+        var id: String = UUID().uuidString
         var name: String
         var content: Content
         var positionX: Double = 0
@@ -45,11 +49,17 @@ extension CustomDiagram {
 
 extension CustomDiagram {
     struct Edge: Identifiable, Codable, Hashable, Sendable {
-        var id: UUID = UUID()
-        var sourceNodeID: UUID
-        var targetNodeID: UUID
+        var id: String = UUID().uuidString
+        var sourceNodeID: String
+        var targetNodeID: String
         var kind: Relationship.Kind
         var label: String?
+        /// Top-to-bottom order when this edge is a sequence-diagram message. `nil` for ordinary
+        /// relationship edges, which renders the edge as a relationship line instead of a
+        /// time-ordered message arrow.
+        var messageOrder: Int?
+        /// The message kind (sync/async/return/…) when `messageOrder` is set.
+        var messageKind: SequenceDiagram.Message.Kind?
     }
 }
 
@@ -79,12 +89,22 @@ extension CustomDiagram.Node {
         case entity
         /// A note — a dog-eared rectangle with free-form text.
         case note(text: String)
+        /// A sequence-diagram lifeline (participant header + vertical line). The associated kind
+        /// carries the participant's role (object, actor, boundary, …).
+        case lifeline(SequenceDiagram.Participant.Kind)
+        /// A sequence-diagram combined fragment (`loop`/`alt`/`opt`/…). Its frame is derived
+        /// from the message rows its operands cover, not from the node's position.
+        case fragment(FragmentContent)
 
         /// The element kind derived from this content.
         var kind: CustomDiagramNodeKind {
             switch self {
             case .type(let c):
                 .type(c.typeKind)
+            case .lifeline:
+                .lifeline
+            case .fragment:
+                .fragment
             case .actor:
                 .actor
             case .useCase:
@@ -137,12 +157,25 @@ extension CustomDiagram.Node {
                 "entity"
             case .note:
                 nil
+            case .lifeline(let kind):
+                kind.stereotype
+            case .fragment(let content):
+                content.kind.rawValue
             }
         }
 
         private static func defaultTypeStereotype(_ typeKind: TypeKind) -> String? {
             typeKind.stereotypeString
         }
+    }
+}
+
+extension CustomDiagram.Node {
+    /// Payload of a `.fragment` node: the combined-fragment operator plus its operands (guard +
+    /// covered message-order span). Mirrors `SequenceDiagram.Fragment` without the identity.
+    struct FragmentContent: Codable, Hashable, Sendable {
+        var kind: SequenceDiagram.Fragment.Kind = .loop
+        var operands: [SequenceDiagram.Fragment.Operand] = [.init(firstOrder: 1, lastOrder: 1)]
     }
 }
 

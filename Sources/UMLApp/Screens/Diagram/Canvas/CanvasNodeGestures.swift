@@ -1,0 +1,94 @@
+import SwiftUI
+
+/// Shared, group-aware node-drag gesture used by every diagram canvas: records one undo
+/// checkpoint at the start of a drag, moves the whole selection together, reports the dragged
+/// node's location for edge auto-pan, and commits (persists) on release.
+@MainActor
+func canvasNodeDragGesture<Model: CanvasInteraction>(
+    id: String,
+    model: Model,
+    dragStartPositions: Binding<[String: CGPoint]>,
+    activeDragCanvasLocation: Binding<CGPoint?>,
+    onCommit: @escaping () -> Void
+) -> some Gesture {
+    DragGesture(minimumDistance: 3)
+        .onChanged { value in
+            if dragStartPositions.wrappedValue.isEmpty {
+                model.recordUndo()
+                if !model.selectedNodeIDs.contains(id) {
+                    model.selectedNodeIDs = [id]
+                }
+                for nodeID in model.selectedNodeIDs {
+                    dragStartPositions.wrappedValue[nodeID] = model.nodePosition(nodeID)
+                }
+            }
+            let tx = value.translation.width
+            let ty = value.translation.height
+            for nodeID in model.selectedNodeIDs {
+                guard let start = dragStartPositions.wrappedValue[nodeID] else { continue }
+                model.moveNode(nodeID, to: CGPoint(x: start.x + tx, y: start.y + ty))
+            }
+            if let start = dragStartPositions.wrappedValue[id] {
+                activeDragCanvasLocation.wrappedValue = CGPoint(x: start.x + tx, y: start.y + ty)
+            }
+        }
+        .onEnded { _ in
+            dragStartPositions.wrappedValue = [:]
+            activeDragCanvasLocation.wrappedValue = nil
+            onCommit()
+        }
+}
+
+/// A reusable bottom-right resize handle that resizes a node while keeping its top-left fixed
+/// (the node center moves by half the size delta). Records one undo checkpoint per drag.
+struct CanvasResizeHandle<Model: CanvasInteraction>: View {
+    let id: String
+    @ObservedObject var model: Model
+    let position: CGPoint
+    let size: CGSize
+    @Binding var activeResizeState: DiagramResizeState?
+    let onCommit: () -> Void
+
+    var minWidth: CGFloat = 80
+    var minHeight: CGFloat = 50
+    var handleSize: CGFloat = 16
+
+    var body: some View {
+        Rectangle()
+            .fill(Color.clear)
+            #if os(macOS)
+            .cursorOnHover(.closedHand)
+            #endif
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle())
+            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
+            .gesture(resizeGesture)
+    }
+
+    private var resizeGesture: some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { value in
+                if activeResizeState == nil {
+                    model.recordUndo()
+                    activeResizeState = DiagramResizeState(
+                        startSize: model.effectiveSize(for: id),
+                        startPosition: model.nodePosition(id) ?? .zero
+                    )
+                }
+                guard let state = activeResizeState else { return }
+                let newW = max(minWidth, state.startSize.width + value.translation.width)
+                let newH = max(minHeight, state.startSize.height + value.translation.height)
+                let dw = newW - state.startSize.width
+                let dh = newH - state.startSize.height
+                model.resizeNode(id, width: newW, height: newH)
+                model.moveNode(id, to: CGPoint(
+                    x: state.startPosition.x + dw / 2,
+                    y: state.startPosition.y + dh / 2
+                ))
+            }
+            .onEnded { _ in
+                activeResizeState = nil
+                onCommit()
+            }
+    }
+}

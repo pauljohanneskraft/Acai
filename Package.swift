@@ -206,6 +206,6 @@ let package = Package(
         .testTarget(name: "UMLJavaTests", dependencies: ["UMLJava", "UMLCore"]),
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
-        .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary"])
+        .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"])
     ] + optionalTargets
 )

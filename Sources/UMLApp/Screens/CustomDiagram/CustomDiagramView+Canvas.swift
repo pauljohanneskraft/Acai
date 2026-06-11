@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLDiagram
 import UMLRender
 
 // MARK: - Canvas Layers & Node Interaction
@@ -9,7 +10,9 @@ extension CustomDiagramView {
     // MARK: - Edge Layer
 
     var edgeLayer: some View {
-        ForEach(viewModel.edges) { edge in
+        // Sequence messages are drawn by `sequenceLayer` through the shared layout.
+        let messageEdgeIDs = Set(viewModel.messageEdges.map(\.id))
+        return ForEach(viewModel.edges.filter { !messageEdgeIDs.contains($0.id) }) { edge in
             RelationshipEdgeView(
                 kind: edge.kind,
                 sourceRect: viewModel.nodeRect(edge.sourceNodeID),
@@ -42,11 +45,150 @@ extension CustomDiagramView {
 
     @ViewBuilder
     var regularNodeLayer: some View {
+        // Lifelines and fragments render through the sequence layer, not as free nodes.
         let nodes = viewModel.nodes
-            .filter { !$0.isResizable }
+            .filter { !$0.isResizable && !viewModel.isLifeline($0.id) && !viewModel.isFragment($0.id) }
             .sorted { $0.drawOrder < $1.drawOrder }
         ForEach(nodes) { node in
             nodeView(for: node)
+        }
+    }
+
+    // MARK: - Sequence Layer (lifelines + ordered messages)
+
+    /// Renders the diagram's sequence elements — lifelines, execution bars and time-ordered
+    /// message arrows — through the same `SequenceLayoutModel` / `SequenceEnsembleView` the
+    /// generated sequence view uses, so custom sequence diagrams look identical to generated
+    /// ones. Headers stay interactive custom nodes (select, drag, context menu); messages get
+    /// tap targets that select their backing edge for the inspector.
+    @ViewBuilder
+    var sequenceLayer: some View {
+        if let layout = viewModel.sequenceLayout {
+            let anchorY = viewModel.sequenceAnchorY
+
+            SequenceEnsembleView(layout: layout)
+                .offset(y: anchorY)
+                .allowsHitTesting(false)
+
+            // Tap targets over each message arrow, selecting the backing edge.
+            ForEach(layout.messages) { message in
+                messageTapTarget(message, anchorY: anchorY)
+            }
+
+            // Selected-fragment highlight + tap targets on the fragment tabs. (Fragment frames
+            // themselves are drawn by the ensemble; frame ids are the backing node ids.)
+            ForEach(layout.fragments) { fragment in
+                if viewModel.selectedNodeIDs.contains(fragment.id) {
+                    SequenceFragmentView(fragment: fragment, isSelected: true)
+                        .offset(y: anchorY)
+                        .allowsHitTesting(false)
+                }
+                fragmentTapTarget(fragment, anchorY: anchorY)
+            }
+
+            // Interactive participant headers.
+            ForEach(viewModel.lifelineNodes) { node in
+                lifelineHeader(for: node, anchorY: anchorY)
+            }
+        }
+    }
+
+    /// An invisible tap strip over a fragment's operator tab, selecting its backing node.
+    private func fragmentTapTarget(
+        _ fragment: SequenceLayoutModel.FragmentFrame,
+        anchorY: CGFloat
+    ) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .contentShape(Rectangle())
+            #if os(macOS)
+            .cursorOnHover(.pointingHand)
+            #endif
+            .frame(width: 70, height: 22)
+            .position(x: fragment.rect.minX + 35, y: anchorY + fragment.rect.minY + 11)
+            .onTapGesture(count: 2) {
+                viewModel.selectNode(fragment.id, extending: false)
+                sidebarTab = .inspector
+                showSidebar = true
+            }
+            .onTapGesture(count: 1) {
+                #if os(macOS)
+                let extending = NSEvent.modifierFlags.contains(.command)
+                #else
+                let extending = false
+                #endif
+                viewModel.selectNode(fragment.id, extending: extending)
+            }
+    }
+
+    private func messageTapTarget(_ message: SequenceLayoutModel.MessageLayout, anchorY: CGFloat) -> some View {
+        let width = max(abs(message.toX - message.fromX), 44)
+        let midX = (message.fromX + message.toX) / 2
+        let isSelected = viewModel.selectedEdgeID != nil
+            && viewModel.messageEdge(forLayoutID: message.id)?.id == viewModel.selectedEdgeID
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            #if os(macOS)
+            .cursorOnHover(.pointingHand)
+            #endif
+            // Cover the label above the arrow as well as the arrow itself.
+            .frame(width: width + 16, height: 30)
+            .position(x: midX, y: anchorY + message.y - 4)
+            .onTapGesture(count: 2) {
+                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                viewModel.selectedEdgeID = edge.id
+                sidebarTab = .inspector
+                showSidebar = true
+            }
+            .onTapGesture(count: 1) {
+                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
+            }
+    }
+
+    private func lifelineHeader(for node: CustomDiagram.Node, anchorY: CGFloat) -> some View {
+        let kind: SequenceDiagram.Participant.Kind =
+            if case .lifeline(let k) = node.content { k } else { .object }
+        let size = viewModel.nodeSize(node.id)
+        // Snap to the shared header row regardless of the node's stored y.
+        let position = CGPoint(
+            x: node.positionX,
+            y: anchorY + SequenceLayoutModel.headerHeight / 2
+        )
+        return ParticipantHeaderView(
+            name: node.name,
+            kind: kind,
+            isSelected: viewModel.selectedNodeIDs.contains(node.id)
+        )
+        .frame(width: size.width, height: size.height)
+        .position(position)
+        .onTapGesture(count: 2) {
+            viewModel.selectNode(node.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        }
+        .onTapGesture(count: 1) {
+            #if os(macOS)
+            let extending = NSEvent.modifierFlags.contains(.command)
+            #else
+            let extending = false
+            #endif
+            viewModel.selectNode(node.id, extending: extending)
+        }
+        .highPriorityGesture(canvasNodeDragGesture(
+            id: node.id,
+            model: viewModel,
+            dragStartPositions: $dragStartPositions,
+            activeDragCanvasLocation: $activeDragCanvasLocation,
+            onCommit: { viewModel.save() }
+        ))
+        .contextMenu {
+            nodeContextMenu(for: node)
         }
     }
 
@@ -70,38 +212,49 @@ extension CustomDiagramView {
                 #endif
                 viewModel.selectNode(node.id, extending: extending)
             }
-            .highPriorityGesture(nodeDragGesture(for: node.id))
+            .highPriorityGesture(canvasNodeDragGesture(
+                id: node.id,
+                model: viewModel,
+                dragStartPositions: $dragStartPositions,
+                activeDragCanvasLocation: $activeDragCanvasLocation,
+                onCommit: { viewModel.save() }
+            ))
             .contextMenu {
-                Button {
-                    viewModel.selectNode(node.id, extending: false)
-                    sidebarTab = .inspector
-                    showSidebar = true
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-
-                Divider()
-
-                Button {
-                    viewModel.moveNodeHigher(node.id)
-                } label: {
-                    Label("Move Higher", systemImage: "chevron.up")
-                }
-
-                Button {
-                    viewModel.moveNodeLower(node.id)
-                } label: {
-                    Label("Move Lower", systemImage: "chevron.down")
-                }
-
-                Divider()
-
-                Button(role: .destructive) {
-                    viewModel.removeNode(node.id)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
+                nodeContextMenu(for: node)
             }
+    }
+
+    @ViewBuilder
+    private func nodeContextMenu(for node: CustomDiagram.Node) -> some View {
+        Button {
+            viewModel.selectNode(node.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        } label: {
+            Label("Edit", systemImage: "pencil")
+        }
+
+        Divider()
+
+        Button {
+            viewModel.moveNodeHigher(node.id)
+        } label: {
+            Label("Move Higher", systemImage: "chevron.up")
+        }
+
+        Button {
+            viewModel.moveNodeLower(node.id)
+        } label: {
+            Label("Move Lower", systemImage: "chevron.down")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            viewModel.removeNode(node.id)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
     }
 
     @ViewBuilder
@@ -114,15 +267,7 @@ extension CustomDiagramView {
                 .contentShape(Rectangle().inset(by: 6))
         } else {
             CustomNodeView(node: node, isSelected: isSelected, size: nil)
-                .fixedSize()
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.preference(
-                            key: NodeSizePreferenceKey.self,
-                            value: [node.id.uuidString: geo.size]
-                        )
-                    }
-                )
+                .measuredNode(id: node.id)
         }
     }
 
@@ -135,86 +280,14 @@ extension CustomDiagramView {
         ForEach(nodes) { node in
             let pos = CGPoint(x: node.positionX, y: node.positionY)
             let size = viewModel.nodeSize(node.id)
-            edgeResizeHandles(for: node.id, at: pos, size: size)
+            CanvasResizeHandle(
+                id: node.id,
+                model: viewModel,
+                position: pos,
+                size: size,
+                activeResizeState: $activeResizeState,
+                onCommit: { viewModel.save() }
+            )
         }
-    }
-
-    func edgeResizeHandles(for id: UUID, at position: CGPoint, size: CGSize) -> some View {
-        let handleSize: CGFloat = 16
-        return Rectangle()
-            .fill(Color.clear)
-            #if os(macOS)
-            .cursorOnHover(.closedHand)
-            #endif
-            .frame(width: handleSize, height: handleSize)
-            .contentShape(Rectangle())
-            .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
-            .gesture(edgeResizeGesture(for: id))
-    }
-
-    func edgeResizeGesture(for id: UUID) -> some Gesture {
-        DragGesture(minimumDistance: 1)
-            .onChanged { value in
-                if activeResizeState == nil {
-                    viewModel.recordUndo()
-                    activeResizeState = .init(
-                        startSize: viewModel.nodeSize(id),
-                        startPosition: viewModel.nodePosition(id) ?? .zero
-                    )
-                }
-                guard let state = activeResizeState else { return }
-                let minW: CGFloat = 80, minH: CGFloat = 50
-
-                let newW = max(minW, state.startSize.width + value.translation.width)
-                let newH = max(minH, state.startSize.height + value.translation.height)
-                let dw = newW - state.startSize.width
-                let dh = newH - state.startSize.height
-                viewModel.resizeNode(id, width: newW, height: newH)
-                viewModel.moveNode(id, to: CGPoint(
-                    x: state.startPosition.x + dw / 2,
-                    y: state.startPosition.y + dh / 2
-                ))
-            }
-            .onEnded { _ in
-                activeResizeState = nil
-                viewModel.save()
-            }
-    }
-
-    // MARK: - Node Dragging (Group)
-
-    func nodeDragGesture(for id: UUID) -> some Gesture {
-        DragGesture(minimumDistance: 3)
-            .onChanged { value in
-                if dragStartPositions.isEmpty {
-                    viewModel.recordUndo()
-                    if !viewModel.selectedNodeIDs.contains(id) {
-                        viewModel.selectedNodeIDs = [id]
-                    }
-                    for nodeID in viewModel.selectedNodeIDs {
-                        dragStartPositions[nodeID] = viewModel.nodePosition(nodeID)
-                    }
-                }
-                let tx = value.translation.width
-                let ty = value.translation.height
-                for nodeID in viewModel.selectedNodeIDs {
-                    guard let start = dragStartPositions[nodeID] else { continue }
-                    viewModel.moveNode(nodeID, to: CGPoint(
-                        x: start.x + tx,
-                        y: start.y + ty
-                    ))
-                }
-                if let start = dragStartPositions[id] {
-                    activeDragCanvasLocation = CGPoint(
-                        x: start.x + tx,
-                        y: start.y + ty
-                    )
-                }
-            }
-            .onEnded { _ in
-                dragStartPositions = [:]
-                activeDragCanvasLocation = nil
-                viewModel.save()
-            }
     }
 }

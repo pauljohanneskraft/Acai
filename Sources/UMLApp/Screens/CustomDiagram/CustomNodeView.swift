@@ -34,6 +34,8 @@ struct CustomNodeView: View {
             )
         case .database:
             LabelNodeView.database(name: node.name, isSelected: isSelected)
+        case .lifeline(let kind):
+            ParticipantHeaderView(name: node.name, kind: kind, isSelected: isSelected)
         default:
             // component, deploymentNode, artifact, entity
             StereotypedBoxNodeView(

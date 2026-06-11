@@ -4,7 +4,7 @@ import UMLCore
 import UMLRender
 
 @MainActor
-final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
+final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
 
@@ -159,6 +159,11 @@ final class GeneratedDiagramViewModel: ObservableObject, DiagramHistoryHosting {
 
     func moveNode(_ id: String, to position: CGPoint) {
         nodePositions[id] = position
+    }
+
+    /// Current center of a node (`CanvasInteraction`).
+    func nodePosition(_ id: String) -> CGPoint? {
+        nodePositions[id]
     }
 
     func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {
