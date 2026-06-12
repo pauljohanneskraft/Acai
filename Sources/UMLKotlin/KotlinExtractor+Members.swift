@@ -164,17 +164,16 @@ extension KotlinExtractor {
             return ref.name == "Unit" ? nil : ref
         }()
 
-        let callSites = extractCallSites(
-            from: node.firstChild(withType: "function_body"),
-            knownProperties: knownProperties
-        )
+        let body = node.firstChild(withType: "function_body")
+        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
 
         return Member(
             name: name, kind: .method,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: returnType, parameters: params,
             genericParameters: generics, annotations: modifierInfo.annotations,
-            location: loc(node), callSites: callSites
+            location: loc(node), callSites: callSites,
+            assignments: extractAssignments(from: body)
         )
     }
 
@@ -265,8 +264,26 @@ extension KotlinExtractor {
             accessLevel: modifierInfo.accessLevel, modifiers: modifiers,
             type: typeRef,
             isComputed: isComputed,
-            annotations: modifierInfo.annotations, location: loc(node)
+            annotations: modifierInfo.annotations, location: loc(node),
+            initialValue: propertyInitializerValue(of: node)
         )
+    }
+
+    /// Classifies the property's initializer expression (the node after the
+    /// anonymous `=` token), when present. The expression may itself be an
+    /// anonymous token (`null`), so namedness is not required.
+    private func propertyInitializerValue(of node: Node) -> VariableAssignment.Value? {
+        var foundEq = false
+        for child in node.children() {
+            if !child.isNamed && text(child) == "=" {
+                foundEq = true
+                continue
+            }
+            if foundEq {
+                return classifyValue(child)
+            }
+        }
+        return nil
     }
 
     private func extractFirstTypeRef(from node: Node) -> TypeReference? {
@@ -295,15 +312,16 @@ extension KotlinExtractor {
         let params = extractFunctionValueParameters(
             node.firstChild(withType: "function_value_parameters")
         )
-        let callSites = extractCallSites(
-            from: node.firstChild(withType: "block"),
-            knownProperties: knownProperties
-        )
+        // The constructor body has no `block` wrapper; statements sit inline
+        // under the `secondary_constructor` node (between anonymous braces).
+        let body = node.firstChild(withType: "block")
+            ?? node.firstChild(withType: "statements")
         return Member(
             name: "init", kind: .initializer,
             accessLevel: modifierInfo.accessLevel,
             parameters: params, location: loc(node),
-            callSites: callSites
+            callSites: extractCallSites(from: body, knownProperties: knownProperties),
+            assignments: extractAssignments(from: body)
         )
     }
 

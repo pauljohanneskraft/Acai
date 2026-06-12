@@ -162,6 +162,9 @@ struct CustomDiagramInspector: View {
         if case .fragment(let content) = node.content {
             fragmentSection(nodeID: node.id, content: content)
         }
+        if case .state(let kind) = node.content {
+            stateKindSection(nodeID: node.id, kind: kind)
+        }
     }
 
     @ViewBuilder
@@ -313,12 +316,17 @@ struct CustomDiagramInspector: View {
 extension CustomDiagramInspector {
 
     private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
-        // Same predicate the canvas renders by, so the editor always matches what's drawn.
+        // Same predicates the canvas renders by, so the editor always matches what's drawn.
         let isMessage = viewModel.isMessageEdge(edge)
+        let isTransition = edge.transition != nil
+        let deleteTitle = isMessage ? "Delete Message"
+            : isTransition ? "Delete Transition" : "Delete Relationship"
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if isMessage {
                     messageSection(edge: edge)
+                } else if isTransition {
+                    transitionSection(edge: edge)
                 } else {
                     edgePickersSection(edge: edge)
                 }
@@ -327,8 +335,7 @@ extension CustomDiagramInspector {
                     viewModel.removeEdge(edge.id)
                     viewModel.selectedEdgeID = nil
                 } label: {
-                    Label(isMessage ? "Delete Message" : "Delete Relationship",
-                          systemImage: "trash")
+                    Label(deleteTitle, systemImage: "trash")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)

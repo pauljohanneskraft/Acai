@@ -2,96 +2,223 @@ import UMLCore
 
 extension CodeArtifact {
 
-    /// Returns `StateDiagram` instances derived from this artifact.
+    /// Builds a value-flow state diagram for the variable selected in `configuration`.
     ///
-    /// Two kinds of state machines are detected:
+    /// States are the distinct enumerable values (enum cases, literals, nil) that
+    /// the variable is assigned anywhere in the artifact, plus its declared initial
+    /// value. Within one member body, consecutive assignments form a transition
+    /// chain labeled with that member; each member's first assignment is also
+    /// reachable from the initial pseudo-state (which doubles as the "entry"
+    /// anchor, avoiding a per-method choice-node fan-out).
     ///
-    /// 1. **Direct enum state machines** — each `enum` type with at least one case
-    ///    becomes its own `StateDiagram`. Methods whose return type matches the enum
-    ///    name (or `Self`) are inferred as transitions and shown via choice nodes.
+    /// Call on a `resolvingExtensions()`-ed artifact so members declared in
+    /// extensions are visible.
     ///
-    /// 2. **State-pattern hosts** — concrete types (class, struct, actor) that have a
-    ///    stored property whose declared type is one of the artifact's own enums get an
-    ///    additional diagram titled `HostType (property: EnumType)`.  This reflects the
-    ///    common pattern of an object delegating its state to a dedicated enum.
-    public func stateDiagrams() -> [StateDiagram] {
-        // Index enum types that have at least one case
-        let enumsByName: [String: TypeDeclaration] = Dictionary(
-            types.filter { $0.kind == .enum && !$0.enumCases.isEmpty }
-                 .map { ($0.name, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+    /// Known v1 limitations (documented behaviour, not bugs):
+    /// - Branch-insensitive: assignments in different `if`/`switch` arms of the
+    ///   same body appear as one sequential chain.
+    /// - No scope tracking: a local variable shadowing the property is counted.
+    public func stateDiagram(configuration: StateDiagramConfiguration) throws -> StateDiagram {
+        let analysis = try StateAnalysis(artifact: self, configuration: configuration)
+        return try analysis.buildDiagram()
+    }
+}
 
-        var diagrams: [StateDiagram] = []
+/// Internal worker that locates the variable, validates its assignments, and
+/// assembles the diagram.
+private struct StateAnalysis {
+    let configuration: StateDiagramConfiguration
+    /// The variable's declaring member (for its initial value).
+    let variable: Member
+    /// Members whose bodies assign the variable, with the relevant assignments,
+    /// in declaration order.
+    let mutatingMembers: [(memberName: String, assignments: [VariableAssignment])]
 
-        // 1. One diagram per enum type
-        for enumType in enumsByName.values.sorted(by: { $0.name < $1.name }) {
-            diagrams.append(makeStateDiagram(from: enumType))
-        }
-
-        // 2. State-pattern hosts: types that hold a stored enum property
-        for type in types where type.kind == .class || type.kind == .struct || type.kind == .object {
-            for member in type.members where member.kind == .property && !member.isComputed {
-                guard let propType = member.type,
-                      let stateEnum = enumsByName[propType.name]
-                else { continue }
-                diagrams.append(makeStateDiagram(
-                    from: stateEnum,
-                    hostType: type,
-                    statePropertyName: member.name
-                ))
+    init(artifact: CodeArtifact, configuration: StateDiagramConfiguration) throws {
+        self.configuration = configuration
+        if let typeName = configuration.typeName {
+            guard let type = Self.findType(named: typeName, in: artifact.types),
+                  let property = type.members.first(where: {
+                      $0.kind == .property && !$0.isComputed && $0.name == configuration.variableName
+                  })
+            else {
+                throw StateDiagramAnalysisError.variableNotFound(
+                    typeName: typeName, variableName: configuration.variableName
+                )
             }
+            variable = property
+            mutatingMembers = Self.collectFromType(type, configuration: configuration)
+        } else {
+            guard let global = artifact.globalVariables.first(where: { $0.name == configuration.variableName })
+            else {
+                throw StateDiagramAnalysisError.variableNotFound(
+                    typeName: nil, variableName: configuration.variableName
+                )
+            }
+            variable = global
+            mutatingMembers = Self.collectGlobal(artifact, configuration: configuration)
         }
-
-        return diagrams
     }
 
-    // MARK: State diagram construction
+    // MARK: - Collection
 
-    private func makeStateDiagram(
-        from enumType: TypeDeclaration,
-        hostType: TypeDeclaration? = nil,
-        statePropertyName: String? = nil
-    ) -> StateDiagram {
-        let prefix = Self.safeId(enumType.id)
-        let initialId = "\(prefix)__initial"
-
-        let caseStates: [StateDiagram.State] = enumType.enumCases.map { c in
-            StateDiagram.State(id: "\(prefix)_\(Self.safeId(c.name))", name: c.name, kind: .normal)
+    private static func findType(named name: String, in types: [TypeDeclaration]) -> TypeDeclaration? {
+        for type in types {
+            if type.name == name || type.qualifiedName == name { return type }
+            if let nested = findType(named: name, in: type.nestedTypes) { return nested }
         }
+        return nil
+    }
 
-        // Entry: initial → first case
-        var transitions: [StateDiagram.Transition] = caseStates.first.map {
-            [StateDiagram.Transition(from: initialId, to: $0.id)]
-        } ?? []
-
-        // Methods returning Self / the enum name → model via a choice node
-        let transitionMethods = enumType.members.filter { member in
-            guard member.kind == .method, let ret = member.type else { return false }
-            return ret.name == enumType.name || ret.name == "Self"
-        }
-        var choiceStates: [StateDiagram.State] = []
-        for method in transitionMethods {
-            let choiceId = "\(prefix)__\(Self.safeId(method.name))"
-            choiceStates.append(StateDiagram.State(id: choiceId, name: method.name, kind: .choice))
-            for cs in caseStates {
-                transitions.append(StateDiagram.Transition(from: cs.id, to: choiceId, event: method.name))
+    /// Assignments to a property: bare/`self`-qualified targets, plus
+    /// `Type.variable` static writes naming the declaring type.
+    private static func collectFromType(
+        _ type: TypeDeclaration,
+        configuration: StateDiagramConfiguration
+    ) -> [(String, [VariableAssignment])] {
+        type.members.compactMap { member in
+            let relevant = member.assignments.filter {
+                $0.targetName == configuration.variableName
+                    && ($0.targetReceiver == nil || $0.targetReceiver == type.name)
             }
-            for cs in caseStates {
-                transitions.append(StateDiagram.Transition(from: choiceId, to: cs.id))
+            return relevant.isEmpty ? nil : (member.name, relevant)
+        }
+    }
+
+    /// Assignments to a global: scanned across free functions and all type
+    /// members, skipping types that declare their own property of the same name
+    /// (those writes target the property, not the global).
+    private static func collectGlobal(
+        _ artifact: CodeArtifact,
+        configuration: StateDiagramConfiguration
+    ) -> [(String, [VariableAssignment])] {
+        var result: [(String, [VariableAssignment])] = []
+        func relevant(_ member: Member) -> [VariableAssignment] {
+            member.assignments.filter {
+                $0.targetName == configuration.variableName && $0.targetReceiver == nil
+            }
+        }
+        for function in artifact.freestandingFunctions {
+            let assignments = relevant(function)
+            if !assignments.isEmpty { result.append((function.name, assignments)) }
+        }
+        func walk(_ types: [TypeDeclaration]) {
+            for type in types {
+                let shadowed = type.members.contains {
+                    $0.kind == .property && $0.name == configuration.variableName
+                }
+                if !shadowed {
+                    for member in type.members {
+                        let assignments = relevant(member)
+                        if !assignments.isEmpty {
+                            result.append(("\(type.name).\(member.name)", assignments))
+                        }
+                    }
+                }
+                walk(type.nestedTypes)
+            }
+        }
+        walk(artifact.types)
+        return result
+    }
+
+    // MARK: - Diagram Assembly
+
+    func buildDiagram() throws -> StateDiagram {
+        try validateBounded()
+
+        let initialKey = (variable.initialValue?.kind).flatMap { kind in
+            kind == .expression ? nil : variable.initialValue.map(Self.stateKey)
+        }
+
+        var stateKeys: [String] = []
+        func register(_ key: String) {
+            if !stateKeys.contains(key) { stateKeys.append(key) }
+        }
+        if let initialKey { register(initialKey) }
+        for (_, assignments) in mutatingMembers {
+            for assignment in assignments { register(Self.stateKey(assignment.value)) }
+        }
+
+        guard !stateKeys.isEmpty else {
+            throw StateDiagramAnalysisError.noAssignments(variableName: configuration.variableName)
+        }
+        guard stateKeys.count <= configuration.maxStates else {
+            throw StateDiagramAnalysisError.tooManyStates(
+                count: stateKeys.count, limit: configuration.maxStates
+            )
+        }
+
+        let initialId = "__initial"
+        var states = [StateDiagram.State(id: initialId, name: "", kind: .initial)]
+        states += stateKeys.map {
+            StateDiagram.State(id: Self.stateId(for: $0), name: $0, kind: .normal)
+        }
+
+        var transitions: [StateDiagram.Transition] = []
+        var seen = Set<String>()
+        func addTransition(from: String, to: String, event: String?) {
+            let key = "\(from)→\(to)→\(event ?? "")"
+            guard seen.insert(key).inserted else { return }
+            transitions.append(StateDiagram.Transition(from: from, to: to, event: event))
+        }
+
+        if let initialKey {
+            addTransition(from: initialId, to: Self.stateId(for: initialKey), event: nil)
+        }
+        for (memberName, assignments) in mutatingMembers {
+            let event = "\(memberName)()"
+            let ids = assignments.map { Self.stateId(for: Self.stateKey($0.value)) }
+            guard let first = ids.first else { continue }
+            addTransition(from: initialId, to: first, event: event)
+            for (from, to) in zip(ids, ids.dropFirst()) {
+                addTransition(from: from, to: to, event: event)
             }
         }
 
-        let allStates = [StateDiagram.State(id: initialId, name: "", kind: .initial)]
-            + caseStates + choiceStates
+        return StateDiagram(title: title, states: states, transitions: transitions)
+    }
 
-        let title: String
-        if let host = hostType, let prop = statePropertyName {
-            title = "\(host.qualifiedName) (\(prop): \(enumType.name))"
-        } else {
-            title = enumType.qualifiedName
+    /// Throws when any assignment makes the state space non-enumerable. The
+    /// declared initial value is exempt: a runtime initializer (e.g. `Date()`)
+    /// is ignored rather than poisoning an otherwise enumerable variable.
+    private func validateBounded() throws {
+        for (memberName, assignments) in mutatingMembers {
+            for assignment in assignments {
+                if assignment.op == .compound {
+                    throw StateDiagramAnalysisError.unboundedAssignment(
+                        memberName: memberName,
+                        reason: "the compound mutation '\(assignment.value.text)' "
+                            + "of '\(assignment.targetName)' depends on the previous value",
+                        location: assignment.location
+                    )
+                }
+                if assignment.value.kind == .expression {
+                    throw StateDiagramAnalysisError.unboundedAssignment(
+                        memberName: memberName,
+                        reason: "'\(assignment.targetName)' is assigned the "
+                            + "non-enumerable expression '\(assignment.value.text)'",
+                        location: assignment.location
+                    )
+                }
+            }
         }
+    }
 
-        return StateDiagram(title: title, states: allStates, transitions: transitions)
+    private var title: String {
+        if let typeName = configuration.typeName {
+            return "\(typeName).\(configuration.variableName)"
+        }
+        return "\(configuration.variableName) (global)"
+    }
+
+    /// Normalizes a value to its display/state key: enum-case receivers are
+    /// stripped so `.loading` and `State.loading` collapse into one state.
+    private static func stateKey(_ value: VariableAssignment.Value) -> String {
+        value.text
+    }
+
+    private static func stateId(for key: String) -> String {
+        "state_\(CodeArtifact.safeId(key))"
     }
 }

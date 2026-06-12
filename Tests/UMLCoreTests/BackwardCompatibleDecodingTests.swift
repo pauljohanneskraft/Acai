@@ -46,4 +46,38 @@ struct BackwardCompatibleDecodingTests {
         #expect(decoded.globalVariables.map(\.name) == ["shared"])
         #expect(decoded.types[0].associatedTypes.map(\.name) == ["Item"])
     }
+
+    @Test func legacyMemberWithoutAssignmentKeysDecodes() throws {
+        // No `assignments`, no `initialValue`, no `callSites` (predates all three).
+        let legacy = """
+        {
+          "name": "load", "kind": "method", "modifiers": [], "parameters": [],
+          "genericParameters": [], "isComputed": false, "annotations": []
+        }
+        """
+        let member = try JSONDecoder().decode(Member.self, from: Data(legacy.utf8))
+        #expect(member.name == "load")
+        #expect(member.callSites.isEmpty)
+        #expect(member.assignments.isEmpty)
+        #expect(member.initialValue == nil)
+    }
+
+    @Test func memberRoundTripPreservesAssignments() throws {
+        let member = Member(
+            name: "load",
+            kind: .method,
+            assignments: [VariableAssignment(
+                targetName: "state",
+                op: .assign,
+                value: .init(kind: .enumCase, text: "loading", receiverTypeName: "State"),
+                location: SourceLocation(filePath: "A.swift", line: 3, column: 9)
+            )],
+            initialValue: .init(kind: .booleanLiteral, text: "true")
+        )
+        let data = try JSONEncoder().encode(member)
+        let decoded = try JSONDecoder().decode(Member.self, from: data)
+        #expect(decoded == member)
+        #expect(decoded.assignments[0].value.kind == .enumCase)
+        #expect(decoded.initialValue?.text == "true")
+    }
 }

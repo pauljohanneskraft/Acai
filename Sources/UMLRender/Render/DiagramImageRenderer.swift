@@ -88,6 +88,33 @@ public enum DiagramImageRenderer {
         return try encodePNG(cgImage)
     }
 
+    // MARK: - State diagram
+
+    /// Lays out and renders a `StateDiagram` to PNG data, using the same shared views the
+    /// app canvas draws. `positionOverrides` (state-id → centre) let callers reproduce a
+    /// hand-arranged layout; pass `[:]` for the default arrangement.
+    public static func renderPNG(
+        stateDiagram: StateDiagram,
+        positionOverrides: [String: CGPoint] = [:],
+        scale: CGFloat = 2,
+        padding: CGFloat = defaultPadding
+    ) throws -> Data {
+        let layout = StateLayoutModel(diagram: stateDiagram, positionOverrides: positionOverrides)
+        let view = StateDiagramSnapshotView(layout: layout, padding: padding)
+
+        let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
+        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let requestedScale = max(scale, 0.1)
+        let effectiveScale = min(requestedScale, maxScale)
+
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = effectiveScale
+        guard let cgImage = renderer.cgImage else {
+            throw DiagramImageRenderError.renderingFailed
+        }
+        return try encodePNG(cgImage)
+    }
+
     // MARK: - From laid-out data (app WYSIWYG)
 
     /// Renders an already-laid-out diagram to PNG data. Positions/sizes are in any coordinate

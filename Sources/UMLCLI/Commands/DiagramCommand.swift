@@ -43,6 +43,15 @@ extension UMLCommand {
         @Flag(name: .long, help: "Hide type members from the diagram.")
         var noShowMembers: Bool = false
 
+        @Option(name: .long, help: ArgumentHelp(
+            "Render a value-flow state diagram for this variable instead of a class diagram." +
+            " Format: \"TypeName.variableName\", or just \"variableName\" for a global."
+        ))
+        var stateFrom: String?
+
+        @Option(name: .long, help: "Maximum number of distinct states before the analysis fails.")
+        var maxStates: Int = 20
+
         mutating func validate() throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
@@ -70,6 +79,24 @@ extension UMLCommand {
                 throw ValidationError("Either --from or --source must be specified.")
             }
 
+            let dot: String
+            if let stateFrom {
+                dot = try renderStateDOT(artifact: artifact, variable: stateFrom)
+            } else {
+                dot = try renderClassDOT(artifact: artifact)
+            }
+
+            if let outputPath = output {
+                let outputURL = URL(fileURLWithPath: outputPath)
+                try dot.write(to: outputURL, atomically: true, encoding: .utf8)
+                print("Wrote diagram to \(outputPath)")
+            } else {
+                print(dot)
+            }
+        }
+
+        /// Builds the class-diagram options from flags/config and renders the artifact as DOT.
+        private func renderClassDOT(artifact: CodeArtifact) throws -> String {
             var options = ClassDiagramOptions()
 
             if let configPath = config {
@@ -83,16 +110,20 @@ extension UMLCommand {
             if showMembers { options.showMembers = true }
             if noShowMembers { options.showMembers = false }
 
-            let generator = DOTGenerator(options: options)
-            let dot = generator.generate(from: artifact)
+            return DOTGenerator(options: options).generate(from: artifact)
+        }
 
-            if let outputPath = output {
-                let outputURL = URL(fileURLWithPath: outputPath)
-                try dot.write(to: outputURL, atomically: true, encoding: .utf8)
-                print("Wrote diagram to \(outputPath)")
-            } else {
-                print(dot)
+        /// Runs the value-flow state analysis for `variable` and renders the result as DOT.
+        private func renderStateDOT(artifact: CodeArtifact, variable: String) throws -> String {
+            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+            let diagram: StateDiagram
+            do {
+                diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+            } catch let error as StateDiagramAnalysisError {
+                throw ValidationError(error.message)
             }
+            let renderer = StateDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default)
+            return renderer.render(diagram)
         }
 
         private func loadArtifact(from value: String) throws -> CodeArtifact {

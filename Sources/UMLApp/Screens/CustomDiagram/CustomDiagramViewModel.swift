@@ -323,6 +323,11 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
                 width: SequenceLayoutModel.headerWidth(for: node.name),
                 height: SequenceLayoutModel.headerHeight
             )
+        case .state(let kind):
+            // Match the generated state view's node sizing exactly.
+            return StateLayoutModel.estimatedSize(
+                for: .init(id: node.id, name: node.name, kind: kind)
+            )
         default:
             // Simple labeled elements (actor, use case, component, etc.)
             let width = max(100, CGFloat(node.name.count) * 8.5 + 40)

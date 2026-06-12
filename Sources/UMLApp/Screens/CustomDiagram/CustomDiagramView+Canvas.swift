@@ -16,7 +16,10 @@ extension CustomDiagramView {
             RelationshipEdgeView(
                 kind: edge.kind,
                 sourceRect: viewModel.nodeRect(edge.sourceNodeID),
-                targetRect: viewModel.nodeRect(edge.targetNodeID)
+                targetRect: viewModel.nodeRect(edge.targetNodeID),
+                // Transitions draw their UML `event [guard] / action` label; ordinary
+                // relationship edges show their free-form label, when set.
+                label: edge.transition?.label ?? edge.label
             )
             .onTapGesture(count: 2) {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id

@@ -1,4 +1,5 @@
 import SwiftUI
+import UMLDiagram
 import UMLRender
 
 struct CustomNodeView: View {
@@ -36,6 +37,15 @@ struct CustomNodeView: View {
             LabelNodeView.database(name: node.name, isSelected: isSelected)
         case .lifeline(let kind):
             ParticipantHeaderView(name: node.name, kind: kind, isSelected: isSelected)
+        case .state(let kind):
+            // Shared with the generated state view for visual parity. The explicit frame
+            // (states size by kind + title) stops the flexible state box from greedily
+            // expanding under `.measuredNode`.
+            let size = StateLayoutModel.estimatedSize(
+                for: .init(id: node.id, name: node.name, kind: kind)
+            )
+            StateNodeView(name: node.name, kind: kind, isSelected: isSelected)
+                .frame(width: size.width, height: size.height)
         default:
             // component, deploymentNode, artifact, entity
             StereotypedBoxNodeView(
