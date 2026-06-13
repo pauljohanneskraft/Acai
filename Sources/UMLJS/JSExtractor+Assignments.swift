@@ -64,7 +64,14 @@ extension JSExtractor: AssignmentResolving {
             return .init(kind: .booleanLiteral, text: valueText)
         case "number":
             return .init(kind: .numericLiteral, text: valueText)
-        case "string", "template_string":
+        case "string":
+            return .init(kind: .stringLiteral, text: valueText)
+        case "template_string":
+            // A template string with substitutions (`x${y}`) is runtime-dependent
+            // and not statically enumerable, so it is not a fixed state.
+            if node.namedChildren().contains(where: { $0.nodeType == "template_substitution" }) {
+                return .init(kind: .expression, text: expressionSnippet(node))
+            }
             return .init(kind: .stringLiteral, text: valueText)
         case "null", "undefined":
             return .init(kind: .nilLiteral, text: valueText)

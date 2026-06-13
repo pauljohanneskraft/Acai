@@ -45,6 +45,20 @@ struct JSAssignmentTests {
         #expect(kinds == [.booleanLiteral, .numericLiteral, .stringLiteral, .nilLiteral, .nilLiteral])
     }
 
+    @Test func templateStringWithSubstitutionIsExpression() {
+        let source = """
+        class Loader {
+            update(): void {
+                this.plain = "idle";
+                this.literalTemplate = `idle`;
+                this.interpolated = `state is ${this.state}`;
+            }
+        }
+        """
+        let kinds = (member("update", in: source)?.assignments ?? []).map(\.value.kind)
+        #expect(kinds == [.stringLiteral, .stringLiteral, .expression])
+    }
+
     @Test func compoundAndIncrementAreCompound() {
         let source = """
         class Counter {

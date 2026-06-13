@@ -68,8 +68,17 @@ extension KotlinExtractor: AssignmentResolving {
         case "integer_literal", "hex_literal", "bin_literal",
              "long_literal", "unsigned_literal", "real_literal":
             return .init(kind: .numericLiteral, text: valueText)
-        case "string_literal", "character_literal":
+        case "character_literal":
             return .init(kind: .stringLiteral, text: valueText)
+        case "string_literal":
+            // A string with template substitutions ("$x", "${expr}") is
+            // runtime-dependent and not statically enumerable, so it is not a state.
+            let interpolated = node.namedChildren().contains {
+                $0.nodeType == "interpolated_expression" || $0.nodeType == "interpolated_identifier"
+            }
+            return interpolated
+                ? .init(kind: .expression, text: expressionSnippet(node))
+                : .init(kind: .stringLiteral, text: valueText)
         default:
             if valueText == "null" {
                 return .init(kind: .nilLiteral, text: "null")

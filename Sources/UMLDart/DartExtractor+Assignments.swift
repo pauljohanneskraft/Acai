@@ -75,6 +75,11 @@ extension DartExtractor: AssignmentResolving {
         case "decimal_integer_literal", "hex_integer_literal", "decimal_floating_point_literal":
             return .init(kind: .numericLiteral, text: valueText)
         case "string_literal":
+            // A string with interpolation ('$x', '${expr}') is runtime-dependent
+            // and not statically enumerable, so it is not a fixed state.
+            if node.namedChildren().contains(where: { $0.nodeType == "template_substitution" }) {
+                return .init(kind: .expression, text: expressionSnippet(node))
+            }
             return .init(kind: .stringLiteral, text: valueText)
         case "null_literal":
             return .init(kind: .nilLiteral, text: "null")

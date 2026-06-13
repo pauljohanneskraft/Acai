@@ -55,6 +55,10 @@ final class StateDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         } catch let error as StateDiagramAnalysisError {
             return .failure(error)
         } catch {
+            // `stateDiagram(configuration:)` only throws `StateDiagramAnalysisError`,
+            // so this is unreachable; trap it loudly in debug rather than reporting a
+            // misleading "no assignments" failure if that contract ever changes.
+            assertionFailure("unexpected state-diagram analysis error: \(error)")
             return .failure(.noAssignments(variableName: configuration.variableName))
         }
     }

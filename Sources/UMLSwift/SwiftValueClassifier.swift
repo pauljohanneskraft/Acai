@@ -37,7 +37,12 @@ enum SwiftValueClassifier {
         if expr.is(IntegerLiteralExprSyntax.self) || expr.is(FloatLiteralExprSyntax.self) {
             return .init(kind: .numericLiteral, text: expr.trimmedDescription)
         }
-        if expr.is(StringLiteralExprSyntax.self) {
+        if let string = expr.as(StringLiteralExprSyntax.self) {
+            // Interpolated strings (e.g. "\(x)") depend on runtime values and are
+            // not statically enumerable, so they are not fixed states.
+            if string.segments.contains(where: { $0.is(ExpressionSegmentSyntax.self) }) {
+                return .init(kind: .expression, text: snippet(expr))
+            }
             return .init(kind: .stringLiteral, text: expr.trimmedDescription)
         }
         if expr.is(NilLiteralExprSyntax.self) {

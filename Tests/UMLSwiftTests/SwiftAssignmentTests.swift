@@ -87,6 +87,21 @@ struct SwiftAssignmentTests {
         #expect(assignments.allSatisfy { $0.value.kind == .expression })
     }
 
+    @Test func interpolatedStringIsExpression() {
+        let source = """
+        class Loader {
+            func load() {
+                label = "idle"
+                detail = "state is \\(state)"
+            }
+        }
+        """
+        let assignments = member("load", in: source)?.assignments ?? []
+        #expect(assignments.count == 2)
+        #expect(assignments.first?.value.kind == .stringLiteral)
+        #expect(assignments.last?.value.kind == .expression)
+    }
+
     @Test func sourceOrderIsPreserved() {
         let source = """
         class Loader {

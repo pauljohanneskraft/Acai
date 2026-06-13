@@ -113,13 +113,28 @@ struct StateConfigSheet: View {
 
     // MARK: - Lookups
 
-    /// Names of types that declare at least one stored property.
+    /// Every type declaration (including nested ones) that declares at least one
+    /// stored property. Mirrors `StateAnalysis.findType`, which recurses into
+    /// `nestedTypes` and matches on `qualifiedName`.
+    private var typesWithStoredProperties: [TypeDeclaration] {
+        var result: [TypeDeclaration] = []
+        func walk(_ types: [TypeDeclaration]) {
+            for type in types {
+                if type.members.contains(where: { $0.kind == .property && !$0.isComputed }) {
+                    result.append(type)
+                }
+                walk(type.nestedTypes)
+            }
+        }
+        walk(artifact.types)
+        return result
+    }
+
+    /// Qualified names of types that declare at least one stored property.
+    /// Qualified (not simple) names so nested types are reachable and same-named
+    /// types don't collide.
     private var typeNamesWithStoredProperties: [String] {
-        artifact.types
-            .filter { type in type.members.contains { $0.kind == .property && !$0.isComputed } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
+        typesWithStoredProperties.map(\.qualifiedName).uniqued().sorted()
     }
 
     /// Variables in the selected scope: plausible state holders (enum-typed or
@@ -127,8 +142,8 @@ struct StateConfigSheet: View {
     private var variableNames: [String] {
         let members: [Member]
         switch scope {
-        case .type(let name):
-            members = artifact.types.first { $0.name == name }?
+        case .type(let qualifiedName):
+            members = typesWithStoredProperties.first { $0.qualifiedName == qualifiedName }?
                 .members.filter { $0.kind == .property && !$0.isComputed } ?? []
         case .globals:
             members = artifact.globalVariables

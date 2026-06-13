@@ -58,6 +58,19 @@ struct KotlinAssignmentTests {
         #expect(kinds == [.booleanLiteral, .numericLiteral, .stringLiteral, .numericLiteral, .nilLiteral])
     }
 
+    @Test func interpolatedStringIsExpression() {
+        let source = """
+        class Loader {
+            fun update() {
+                label = "idle"
+                detail = "state is $state"
+            }
+        }
+        """
+        let kinds = (member("update", in: source)?.assignments ?? []).map(\.value.kind)
+        #expect(kinds == [.stringLiteral, .expression])
+    }
+
     @Test func compoundAndIncrementAreCompound() {
         let source = """
         class Counter {
