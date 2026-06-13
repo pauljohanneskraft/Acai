@@ -50,6 +50,7 @@ struct ClassDiagramSidebar: View {
                 viewModel.applyConfiguration(newValue, artifact: artifact)
             }
         )
+        let typeNames = Array(Set(artifact.flattened().map(\.name))).sorted()
 
         return Form {
             Section("Visibility") {
@@ -82,6 +83,8 @@ struct ClassDiagramSidebar: View {
                 }
                 Toggle("Show External Types", isOn: config.showExternalTypes)
             }
+
+            FocusSection(configuration: config, typeNames: typeNames)
 
             Section("Dart") {
                 Toggle("Hide Generated Types", isOn: config.hideGeneratedDartTypes)
@@ -189,5 +192,99 @@ struct ClassDiagramSidebar: View {
             }
         }
         #endif
+    }
+}
+
+/// Class-diagram focus controls: enable focus, pick a root type, and tune depth, direction,
+/// relationship kinds, and edge inclusion. Mutations flow through the shared `configuration`
+/// binding, so the diagram rebuilds live.
+private struct FocusSection: View {
+    @Binding var configuration: ClassDiagramConfiguration
+    let typeNames: [String]
+
+    var body: some View {
+        Section("Focus") {
+            Toggle("Focus on a class", isOn: focusEnabled)
+
+            if configuration.focus != nil {
+                Picker("Root Type", selection: rootType) {
+                    ForEach(typeNames, id: \.self) { Text($0).tag($0) }
+                }
+
+                Toggle("Limit Depth", isOn: depthLimited)
+                if configuration.focus?.maxDepth != nil {
+                    Stepper("Depth: \(configuration.focus?.maxDepth ?? 1)", value: depthValue, in: 1...20)
+                }
+
+                Picker("Direction", selection: direction) {
+                    Text("Dependencies").tag(FocusConfiguration.Direction.dependencies)
+                    Text("Dependents").tag(FocusConfiguration.Direction.dependents)
+                    Text("Both").tag(FocusConfiguration.Direction.both)
+                }
+
+                DisclosureGroup("Relationship Kinds") {
+                    ForEach(Relationship.Kind.allCases, id: \.self) { kind in
+                        Toggle(kind.rawValue.capitalized, isOn: kindBinding(kind))
+                    }
+                }
+
+                Toggle("Include Interconnections", isOn: interconnections)
+            }
+        }
+    }
+
+    private var focusEnabled: Binding<Bool> {
+        Binding(
+            get: { configuration.focus != nil },
+            set: { configuration.focus = $0 ? FocusConfiguration(rootTypeName: typeNames.first ?? "") : nil }
+        )
+    }
+
+    private var rootType: Binding<String> {
+        Binding(
+            get: { configuration.focus?.rootTypeName ?? "" },
+            set: { configuration.focus?.rootTypeName = $0 }
+        )
+    }
+
+    private var depthLimited: Binding<Bool> {
+        Binding(
+            get: { configuration.focus?.maxDepth != nil },
+            set: { configuration.focus?.maxDepth = $0 ? 3 : nil }
+        )
+    }
+
+    private var depthValue: Binding<Int> {
+        Binding(
+            get: { configuration.focus?.maxDepth ?? 3 },
+            set: { configuration.focus?.maxDepth = $0 }
+        )
+    }
+
+    private var direction: Binding<FocusConfiguration.Direction> {
+        Binding(
+            get: { configuration.focus?.direction ?? .dependencies },
+            set: { configuration.focus?.direction = $0 }
+        )
+    }
+
+    private func kindBinding(_ kind: Relationship.Kind) -> Binding<Bool> {
+        Binding(
+            get: { configuration.focus?.includedRelationshipKinds.contains(kind) ?? false },
+            set: { include in
+                if include {
+                    configuration.focus?.includedRelationshipKinds.insert(kind)
+                } else {
+                    configuration.focus?.includedRelationshipKinds.remove(kind)
+                }
+            }
+        )
+    }
+
+    private var interconnections: Binding<Bool> {
+        Binding(
+            get: { configuration.focus?.includeInterconnections ?? true },
+            set: { configuration.focus?.includeInterconnections = $0 }
+        )
     }
 }

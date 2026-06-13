@@ -14,14 +14,19 @@ public struct EnrichmentOptions: Sendable {
     /// are included as lightweight "external" placeholder nodes rendered in gray.
     public var showExternalTypes: Bool
 
+    /// When set, restricts the result to one type and its surrounding subgraph.
+    public var focus: FocusConfiguration?
+
     public init(
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
-        showExternalTypes: Bool = false
+        showExternalTypes: Bool = false,
+        focus: FocusConfiguration? = nil
     ) {
         self.inferCompositionFromProperties = inferCompositionFromProperties
         self.inferDependencyFromMethods = inferDependencyFromMethods
         self.showExternalTypes = showExternalTypes
+        self.focus = focus
     }
 }
 
@@ -84,11 +89,23 @@ public enum ClassDiagramEnricher {
             }
         }
 
-        let externalTypes = identifyExternalTypes(relationships: relationships, knownIds: knownIds)
-        let directoryGroups = buildDirectoryGroups(flatTypes)
+        // Single-class focus: prune to the subgraph around one type. Applied last so
+        // externals and directory groups reflect the focused set.
+        var resultTypes = flatTypes
+        if let focus = options.focus {
+            let subset = CodeArtifact.focusedSubset(
+                types: flatTypes, relationships: relationships, configuration: focus
+            )
+            resultTypes = subset.types
+            relationships = subset.relationships
+        }
+
+        let resultKnownIds = Set(resultTypes.map(\.id))
+        let externalTypes = identifyExternalTypes(relationships: relationships, knownIds: resultKnownIds)
+        let directoryGroups = buildDirectoryGroups(resultTypes)
 
         return Result(
-            types: flatTypes,
+            types: resultTypes,
             relationships: relationships,
             externalTypes: externalTypes,
             directoryGroups: directoryGroups

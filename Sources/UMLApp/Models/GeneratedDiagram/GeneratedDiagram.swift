@@ -26,9 +26,8 @@ extension GeneratedDiagram {
     enum Content: Codable, Hashable, Sendable {
         case classDiagram(ClassDiagramConfiguration)
         case sequenceDiagram(SequenceDiagramConfiguration)
-        /// `nil` = not configured yet. The optional payload keeps legacy persisted
-        /// data decodable: synthesized Codable uses `decodeIfPresent` for it, so an
-        /// old `{"stateDiagram":{}}` decodes as `.stateDiagram(nil)`.
+        /// `nil` = not configured yet (the diagram exists but its state-variable spec
+        /// has not been chosen). A configured diagram carries its `StateDiagramConfiguration`.
         case stateDiagram(StateDiagramConfiguration?)
         case useCaseDiagram
         case deploymentDiagram

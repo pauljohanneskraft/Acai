@@ -67,6 +67,33 @@ extension UMLCommand {
         @Option(name: .long, help: "Maximum number of distinct states before the analysis fails.")
         var maxStates: Int = 20
 
+        @Option(name: .long, help: ArgumentHelp(
+            "Focus the class diagram on a single type, showing only the subgraph around it."
+            + " Pass the type name."
+        ))
+        var focus: String?
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Maximum focus traversal depth (1 = the type plus its direct neighbours)."
+            + " Omit for unlimited."
+        ))
+        var focusDepth: Int?
+
+        @Option(name: .long, help: "Focus traversal direction: dependencies, dependents, both.")
+        var focusDirection: FocusDirectionOption?
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Restrict focus to one or more relationship kinds (e.g. inheritance)."
+            + " Repeat the flag for multiple. Defaults to all kinds."
+        ))
+        var focusRelationship: [RelationshipKindOption] = []
+
+        @Flag(name: .long, help: ArgumentHelp(
+            "When focusing, draw only the edges actually walked, not every edge among the"
+            + " selected types."
+        ))
+        var noFocusInterconnections: Bool = false
+
         mutating func validate() throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
@@ -129,6 +156,16 @@ extension UMLCommand {
             if let selectedGroupBy = groupBy { options.groupBy = selectedGroupBy.groupingStrategy }
             if showMembers { options.showMembers = true }
             if noShowMembers { options.showMembers = false }
+
+            if let focusConfig = FocusOptionBuilder.make(
+                rootTypeName: focus,
+                depth: focusDepth,
+                direction: focusDirection,
+                relationshipKinds: focusRelationship,
+                includeInterconnections: !noFocusInterconnections
+            ) {
+                options.focus = focusConfig
+            }
 
             return DOTGenerator(options: options).generate(from: artifact)
         }

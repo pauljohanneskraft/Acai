@@ -22,7 +22,6 @@ extension CustomDiagram {
     struct Node: Identifiable, Codable, Hashable, Sendable {
         /// String id (generated from a UUID, so still collision-free). Shared `String` node
         /// identity lets the class/sequence/custom views use one `CanvasInteraction` protocol.
-        /// JSON-compatible with previously-saved `UUID` ids (both encode as the same string).
         var id: String = UUID().uuidString
         var name: String
         var content: Content
@@ -61,8 +60,7 @@ extension CustomDiagram {
         /// The message kind (sync/async/return/…) when `messageOrder` is set.
         var messageKind: SequenceDiagram.Message.Kind?
         /// Set when this edge is a state-machine transition between two state nodes; carries
-        /// the UML `event [guard] / action` parts. `nil` for ordinary relationship edges
-        /// (optional, so previously-saved diagrams decode unchanged).
+        /// the UML `event [guard] / action` parts. `nil` for ordinary relationship edges.
         var transition: Transition?
     }
 }
