@@ -44,6 +44,21 @@ extension UMLCommand {
         var noShowMembers: Bool = false
 
         @Option(name: .long, help: ArgumentHelp(
+            "Render a sequence diagram traced from this entry point instead of a class diagram." +
+            " Format: \"TypeName.methodName\"."
+        ))
+        var sequenceFrom: String?
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Resolve an interface/protocol to a concrete type when tracing a sequence diagram." +
+            " Repeat for multiple: --map Protocol=Concrete --map Other=Impl."
+        ))
+        var map: [String] = []
+
+        @Option(name: .long, help: "Maximum sequence-diagram call-graph depth.")
+        var maxDepth: Int = 5
+
+        @Option(name: .long, help: ArgumentHelp(
             "Render a value-flow state diagram for this variable instead of a class diagram." +
             " Format: \"TypeName.variableName\", or just \"variableName\" for a global."
         ))
@@ -61,6 +76,9 @@ extension UMLCommand {
             }
             if showMembers && noShowMembers {
                 throw ValidationError("Cannot specify both --show-members and --no-show-members.")
+            }
+            if sequenceFrom != nil && stateFrom != nil {
+                throw ValidationError("Specify either --sequence-from or --state-from, not both.")
             }
         }
 
@@ -80,7 +98,9 @@ extension UMLCommand {
             }
 
             let dot: String
-            if let stateFrom {
+            if let sequenceFrom {
+                dot = try renderSequenceDOT(artifact: artifact, entryPoint: sequenceFrom)
+            } else if let stateFrom {
                 dot = try renderStateDOT(artifact: artifact, variable: stateFrom)
             } else {
                 dot = try renderClassDOT(artifact: artifact)
@@ -111,6 +131,40 @@ extension UMLCommand {
             if noShowMembers { options.showMembers = false }
 
             return DOTGenerator(options: options).generate(from: artifact)
+        }
+
+        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it as DOT.
+        private func renderSequenceDOT(artifact: CodeArtifact, entryPoint: String) throws -> String {
+            guard let dot = entryPoint.lastIndex(of: ".") else {
+                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
+            }
+            let typeName = String(entryPoint[..<dot])
+            let methodName = String(entryPoint[entryPoint.index(after: dot)...])
+            guard !typeName.isEmpty, !methodName.isEmpty else {
+                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
+            }
+
+            var typeMapping: [String: String] = [:]
+            for entry in map {
+                let parts = entry.split(separator: "=", maxSplits: 1).map(String.init)
+                guard parts.count == 2 else {
+                    throw ValidationError("--map must be in the form \"Protocol=Concrete\".")
+                }
+                typeMapping[parts[0]] = parts[1]
+            }
+
+            let diagram = artifact.sequenceDiagram(
+                entryPoint: (typeName, methodName),
+                maxDepth: maxDepth,
+                typeMapping: typeMapping
+            )
+            guard !diagram.participants.isEmpty else {
+                throw ValidationError(
+                    "No calls could be traced from \(entryPoint). Sequence diagrams follow "
+                    + "explicitly-typed property receivers; try another entry point or --map."
+                )
+            }
+            return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
         }
 
         /// Runs the value-flow state analysis for `variable` and renders the result as DOT.

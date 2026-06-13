@@ -69,7 +69,7 @@ public struct SugiyamaLayoutEngine: Sendable {
         var componentLayouts: [(bounds: CGSize, positions: [String: CGPoint], group: String?)] = []
 
         for component in components {
-            let componentNodes = Array(component)
+            let componentNodes = component.sorted()
             let componentEdges = edges.filter {
                 component.contains($0.sourceID) && component.contains($0.targetID)
             }
@@ -186,8 +186,11 @@ public struct SugiyamaLayoutEngine: Sendable {
             components.append(component)
         }
 
-        // Sort: larger components first.
-        return components.sorted { $0.count > $1.count }
+        // Sort larger components first, breaking ties by smallest member id so the component
+        // order (and the grid arrangement built from it) is deterministic across runs.
+        return components.sorted {
+            $0.count != $1.count ? $0.count > $1.count : ($0.min() ?? "") < ($1.min() ?? "")
+        }
     }
 
     // MARK: - Layout Single Component (Sugiyama)
@@ -204,13 +207,15 @@ public struct SugiyamaLayoutEngine: Sendable {
             edges: edges.map { (source: $0.sourceID, target: $0.targetID, kind: $0.kind) }
         )
 
-        // Group nodes by layer.
+        // Group nodes by layer. `layerMap` is a dictionary, so iterate it in a stable order
+        // and sort each bucket by id: this seeds crossing minimization deterministically, so
+        // the final horizontal arrangement (and image width) is reproducible run-to-run.
         var layerBuckets: [Int: [String]] = [:]
-        for (nodeID, layer) in layerMap {
-            layerBuckets[layer, default: []].append(nodeID)
+        for nodeID in layerMap.keys.sorted() {
+            layerBuckets[layerMap[nodeID]!, default: []].append(nodeID)
         }
         let sortedLayerIndices = layerBuckets.keys.sorted()
-        var layers = sortedLayerIndices.map { layerBuckets[$0]! }
+        var layers = sortedLayerIndices.map { layerBuckets[$0]!.sorted() }
 
         // Phase 2: Crossing minimization.
         let componentAdj: [String: Set<String>] = adjacency.compactMapValues { neighbors in

@@ -24,6 +24,9 @@ extension FileManager {
                 result.append(fileURL)
             }
         }
-        return result
+        // `enumerator` yields files in a filesystem-dependent order. Sort by path so
+        // parse order — and therefore the order types appear in generated DOT — is
+        // stable across machines, which the golden-file regression tests rely on.
+        return result.sorted { $0.path < $1.path }
     }
 }

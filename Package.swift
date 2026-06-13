@@ -24,7 +24,7 @@ optionalTargets.append(
     )
 )
 optionalTargets.append(
-    .testTarget(name: "UMLRenderTests", dependencies: ["UMLRender", "UMLCore", "UMLLibrary"])
+    .testTarget(name: "UMLRenderTests", dependencies: ["UMLRender", "UMLCore", "UMLLibrary", "UMLDiagram"])
 )
 cliOptionalDependencies.append(.target(name: "UMLRender", condition: .when(platforms: [.macOS])))
 
@@ -206,6 +206,10 @@ let package = Package(
         .testTarget(name: "UMLJavaTests", dependencies: ["UMLJava", "UMLCore"]),
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
-        .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"])
+        .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
+
+        // MARK: Golden-file regression tests for the checked-in Examples/ exports.
+        // Cross-platform (no UMLRender dependency); the PNG checks live in UMLRenderTests.
+        .testTarget(name: "UMLExamplesTests", dependencies: ["UMLLibrary", "UMLDiagram", "UMLCore"])
     ] + optionalTargets
 )
