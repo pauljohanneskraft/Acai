@@ -130,20 +130,20 @@ struct SequenceDiagramView: View {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
             Button {
-                // Pass every participant's live x (not just dragged overrides) so the custom
+                // Pass every participant's live x (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
                 let layoutPositions = Dictionary(
                     viewModel.layout.participants.map { ($0.id, CGPoint(x: $0.lifelineX, y: 0)) },
                     uniquingKeysWith: { first, _ in first }
                 )
-                model.saveAsCustomDiagram(
+                model.saveAsFreeformDiagram(
                     id: diagram.id,
                     positions: layoutPositions,
                     scale: canvasScale,
                     offset: canvasOffset
                 )
             } label: {
-                Label("Save as Custom", systemImage: "document.on.document")
+                Label("Save as Freeform", systemImage: "document.on.document")
             }
             .disabled(viewModel.isEmpty)
             Button {

@@ -6,5 +6,5 @@ struct Project: Identifiable, Codable, Hashable {
     var subtitle: String
     var codebases: [Codebase] = []
     var generatedDiagramIDs: [UUID] = []
-    var customDiagramIDs: [UUID] = []
+    var freeformDiagramIDs: [UUID] = []
 }

@@ -32,8 +32,8 @@ public struct EnumCaseDisplayItem: Identifiable {
 // MARK: - UML Type Box View
 
 /// Renders a code-type node as a three-compartment UML class box.
-/// Used by both generated diagrams (from `GeneratedDiagramNode`) and custom diagrams
-/// (from `CustomDiagram.Node` + `TypeNodeContent`).
+/// Used by both generated diagrams (from `GeneratedDiagramNode`) and freeform diagrams
+/// (from `FreeformDiagram.Node` + `TypeNodeContent`).
 public struct TypeNodeView: View {
     let name: String
     let kind: TypeKind
@@ -44,7 +44,7 @@ public struct TypeNodeView: View {
     let enumCases: [EnumCaseDisplayItem]
     let isSelected: Bool
 
-    /// Primitive designated initializer. Both the generated-diagram and custom-diagram
+    /// Primitive designated initializer. Both the generated-diagram and freeform-diagram
     /// convenience initializers (the latter lives in `UMLApp`) delegate here, so it must
     /// be `public` to be reachable from a cross-module extension.
     public init(

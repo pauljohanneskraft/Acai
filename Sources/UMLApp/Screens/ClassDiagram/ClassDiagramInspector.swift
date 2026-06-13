@@ -16,8 +16,6 @@ struct ClassDiagramSidebar: View {
     let artifact: CodeArtifact
     @Binding var tab: ClassDiagramSidebarTab
 
-    @State private var configuration: ClassDiagramConfiguration?
-
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
@@ -41,22 +39,29 @@ struct ClassDiagramSidebar: View {
 
     // MARK: - Configuration Inspector
 
+    private var editor: ClassDiagramConfigEditor {
+        ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
+    }
+
     private var configurationInspector: some View {
+        let editor = self.editor
         let config = Binding<ClassDiagramConfiguration>(
-            get: { configuration ?? diagram.classConfiguration ?? .init() },
-            set: { newValue in
-                configuration = newValue
-                model.updateClassDiagramConfiguration(diagramID: diagram.id, configuration: newValue)
-                viewModel.applyConfiguration(newValue, artifact: artifact)
-            }
+            get: { viewModel.configuration },
+            set: { newValue in editor.mutate { $0 = newValue } }
         )
         let typeNames = Array(Set(artifact.flattened().map(\.name))).sorted()
 
         return Form {
             Section("Visibility") {
-                Toggle("Show Properties", isOn: config.showProperties)
-                Toggle("Show Methods", isOn: config.showMethods)
-                Toggle("Show Enum Cases", isOn: config.showEnumCases)
+                Toggle("Show Properties", isOn: editor.globalVisibility(
+                    \.showProperties, override: \.propertyVisibility))
+                Toggle("Show Methods", isOn: editor.globalVisibility(
+                    \.showMethods, override: \.methodVisibility))
+                Toggle("Show Enum Cases", isOn: editor.globalVisibility(
+                    \.showEnumCases, override: \.enumCaseVisibility))
+                Text("Toggling resets any per-type overrides set from a node's inspector or menu.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Picker("Min Access Level", selection: config.minimumAccessLevel) {
                     Text("All").tag(AccessLevel?.none)
@@ -116,6 +121,18 @@ struct ClassDiagramSidebar: View {
                     if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
                         Section(node.name) {
                             LabeledContent("Kind", value: node.kind.rawValue)
+
+                            DisclosureGroup("Visibility") {
+                                Toggle("Show Properties", isOn: editor.typeVisibility(
+                                    nodeID, override: \.propertyVisibility, default: \.showProperties))
+                                Toggle("Show Methods", isOn: editor.typeVisibility(
+                                    nodeID, override: \.methodVisibility, default: \.showMethods))
+                                if node.kind == .enum {
+                                    Toggle("Show Enum Cases", isOn: editor.typeVisibility(
+                                        nodeID, override: \.enumCaseVisibility, default: \.showEnumCases))
+                                }
+                            }
+
                             if !node.properties.isEmpty {
                                 DisclosureGroup("Properties (\(node.properties.count))") {
                                     ForEach(node.properties) { prop in

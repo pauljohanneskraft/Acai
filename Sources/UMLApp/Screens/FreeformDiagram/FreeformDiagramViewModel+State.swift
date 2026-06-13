@@ -3,12 +3,12 @@ import UMLDiagram
 
 // MARK: - State Elements (states + labeled transitions)
 //
-// Custom diagrams render their state nodes through the same `StateNodeView` the generated
-// state view uses, so a state diagram saved as a custom diagram looks identical to its
+// Freeform diagrams render their state nodes through the same `StateNodeView` the generated
+// state view uses, so a state diagram saved as a freeform diagram looks identical to its
 // generated original — while every state and transition stays an ordinary, fully editable
 // node/edge. Transitions are plain edges carrying a `transition` payload (event/guard/action).
 
-extension CustomDiagramViewModel {
+extension FreeformDiagramViewModel {
 
     /// Whether a node is a state-machine state.
     func isStateNode(_ nodeID: String) -> Bool {
@@ -26,7 +26,7 @@ extension CustomDiagramViewModel {
     /// straight onto the event/guard/action fields. `sourceID == targetID` makes a self-loop.
     func addTransition(from sourceID: String, to targetID: String) {
         recordUndo()
-        var edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .association)
+        var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .association)
         edge.transition = .init()
         edges.append(edge)
         selectedEdgeID = edge.id

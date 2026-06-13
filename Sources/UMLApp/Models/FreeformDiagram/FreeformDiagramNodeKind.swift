@@ -1,11 +1,11 @@
 import UMLCore
 import UMLDiagram
 
-/// Identifies the kind of element in a custom diagram.
+/// Identifies the kind of element in a freeform diagram.
 ///
 /// Used for **catalog selection** (picking which element to add) and **display logic**
 /// (icons, colours, labels). The actual per-node data lives in ``NodeContent``.
-enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
+enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     /// A code-analysis type (class, struct, enum, protocol, …).
     /// The associated `TypeKind` carries the specific kind.
@@ -34,7 +34,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     // MARK: - Sequence Diagram Elements
 
     /// A sequence-diagram lifeline (participant). Created when a sequence diagram is saved as a
-    /// custom diagram, and available in the catalog for building sequence diagrams by hand.
+    /// freeform diagram, and available in the catalog for building sequence diagrams by hand.
     case lifeline
     /// A sequence-diagram combined fragment (`loop`/`alt`/`opt`/…) framing a span of messages.
     case fragment
@@ -238,7 +238,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     // swiftlint:disable cyclomatic_complexity
     /// Creates a default ``NodeContent`` for this element kind.
-    func defaultContent() -> CustomDiagram.Node.Content {
+    func defaultContent() -> FreeformDiagram.Node.Content {
         switch self {
         case .type(let tk):
                 .type(.init(typeKind: tk))
@@ -306,8 +306,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     /// Every element kind available in the catalog, in display order. State kinds are
     /// limited to the flavours generated diagrams produce (no fork/join/composite yet).
-    static let allCases: [CustomDiagramNodeKind] = {
-        var items: [CustomDiagramNodeKind] = TypeKind.allCases.map { .type($0) }
+    static let allCases: [FreeformDiagramNodeKind] = {
+        var items: [FreeformDiagramNodeKind] = TypeKind.allCases.map { .type($0) }
         items += [
             .lifeline, .fragment,
             .state(.normal), .state(.initial), .state(.final), .state(.choice),
@@ -319,7 +319,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     }()
 
     /// Catalog items belonging to a given group.
-    static func cases(in group: CatalogGroup) -> [CustomDiagramNodeKind] {
+    static func cases(in group: CatalogGroup) -> [FreeformDiagramNodeKind] {
         allCases.filter { $0.catalogGroup == group }
     }
 }

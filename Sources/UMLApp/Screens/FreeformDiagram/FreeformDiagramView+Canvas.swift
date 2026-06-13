@@ -5,7 +5,7 @@ import UMLRender
 
 // MARK: - Canvas Layers & Node Interaction
 
-extension CustomDiagramView {
+extension FreeformDiagramView {
 
     // MARK: - Edge Layer
 
@@ -61,8 +61,8 @@ extension CustomDiagramView {
 
     /// Renders the diagram's sequence elements — lifelines, execution bars and time-ordered
     /// message arrows — through the same `SequenceLayoutModel` / `SequenceEnsembleView` the
-    /// generated sequence view uses, so custom sequence diagrams look identical to generated
-    /// ones. Headers stay interactive custom nodes (select, drag, context menu); messages get
+    /// generated sequence view uses, so freeform sequence diagrams look identical to generated
+    /// ones. Headers stay interactive freeform nodes (select, drag, context menu); messages get
     /// tap targets that select their backing edge for the inspector.
     @ViewBuilder
     var sequenceLayer: some View {
@@ -157,7 +157,7 @@ extension CustomDiagramView {
             }
     }
 
-    private func lifelineHeader(for node: CustomDiagram.Node, anchorY: CGFloat) -> some View {
+    private func lifelineHeader(for node: FreeformDiagram.Node, anchorY: CGFloat) -> some View {
         let kind: SequenceDiagram.Participant.Kind =
             if case .lifeline(let k) = node.content { k } else { .object }
         let size = viewModel.nodeSize(node.id)
@@ -198,7 +198,7 @@ extension CustomDiagramView {
         }
     }
 
-    func nodeView(for node: CustomDiagram.Node) -> some View {
+    func nodeView(for node: FreeformDiagram.Node) -> some View {
         let pos = CGPoint(x: node.positionX, y: node.positionY)
         let size = viewModel.nodeSize(node.id)
         let selected = viewModel.selectedNodeIDs.contains(node.id)
@@ -231,7 +231,7 @@ extension CustomDiagramView {
     }
 
     @ViewBuilder
-    private func nodeContextMenu(for node: CustomDiagram.Node) -> some View {
+    private func nodeContextMenu(for node: FreeformDiagram.Node) -> some View {
         Button {
             viewModel.selectNode(node.id, extending: false)
             sidebarTab = .inspector
@@ -264,15 +264,15 @@ extension CustomDiagramView {
     }
 
     @ViewBuilder
-    func nodeContent(node: CustomDiagram.Node, size: CGSize, isSelected: Bool) -> some View {
+    func nodeContent(node: FreeformDiagram.Node, size: CGSize, isSelected: Bool) -> some View {
         if node.isResizable {
-            CustomNodeView(node: node, isSelected: isSelected, size: size)
+            FreeformNodeView(node: node, isSelected: isSelected, size: size)
                 .frame(width: size.width, height: size.height)
                 // Disable hit testing on the outer frame edges so resize handles
                 // in the layer above can receive hover / drag.
                 .contentShape(Rectangle().inset(by: 6))
         } else {
-            CustomNodeView(node: node, isSelected: isSelected, size: nil)
+            FreeformNodeView(node: node, isSelected: isSelected, size: nil)
                 .measuredNode(id: node.id)
         }
     }

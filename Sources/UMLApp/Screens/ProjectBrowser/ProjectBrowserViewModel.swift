@@ -14,7 +14,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         case project(UUID)
         case codebase(UUID)
         case generatedDiagram(UUID)
-        case customDiagram(UUID)
+        case freeformDiagram(UUID)
     }
 
     init(store: ProjectStore = ProjectStore()) {
@@ -52,7 +52,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
         // Clean up diagram files
         for did in project.generatedDiagramIDs { store.deleteGeneratedDiagramFile(did) }
-        for did in project.customDiagramIDs { store.deleteCustomDiagramFile(did) }
+        for did in project.freeformDiagramIDs { store.deleteFreeformDiagramFile(did) }
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
         persistChanges()
@@ -132,11 +132,11 @@ final class ProjectBrowserViewModel: ObservableObject {
     func addGeneratedDiagram(
         to projectID: UUID,
         codebaseID: UUID,
-        name: String,
         content: GeneratedDiagram.Content
     ) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = GeneratedDiagram(name: name, content: content, codebaseID: codebaseID)
+        var diagram = GeneratedDiagram(name: "", content: content, codebaseID: codebaseID)
+        diagram.name = diagram.autoName(codebaseName: codebase(for: codebaseID)?.name ?? "")
         store.projects[projectIndex].generatedDiagramIDs.append(diagram.id)
         store.saveGeneratedDiagram(diagram)
         persistChanges()
@@ -152,6 +152,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.sequenceConfiguration = configuration
         diagram.nodePositions = [:]
+        if !diagram.isNameUserDefined {
+            diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
+        }
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
@@ -166,6 +169,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.stateConfiguration = configuration
         diagram.nodePositions = [:]
+        if !diagram.isNameUserDefined {
+            diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
+        }
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
@@ -203,6 +209,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     func renameGeneratedDiagram(_ diagramID: UUID, name: String) {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.name = name
+        diagram.isNameUserDefined = true
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
@@ -220,42 +227,42 @@ final class ProjectBrowserViewModel: ObservableObject {
         store.generatedDiagrams[diagramID]
     }
 
-    // MARK: - Custom Diagram CRUD
+    // MARK: - Freeform Diagram CRUD
 
-    func addCustomDiagram(to projectID: UUID, name: String, type: DiagramType) -> UUID? {
+    func addFreeformDiagram(to projectID: UUID, name: String) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = CustomDiagram(name: name, diagramType: type)
-        store.projects[projectIndex].customDiagramIDs.append(diagram.id)
-        store.saveCustomDiagram(diagram)
+        let diagram = FreeformDiagram(name: name)
+        store.projects[projectIndex].freeformDiagramIDs.append(diagram.id)
+        store.saveFreeformDiagram(diagram)
         persistChanges()
         return diagram.id
     }
 
-    func updateCustomDiagram(diagramID: UUID, diagram: CustomDiagram) {
+    func updateFreeformDiagram(diagramID: UUID, diagram: FreeformDiagram) {
         var updated = diagram
         updated.lastModified = Date()
-        store.saveCustomDiagram(updated)
+        store.saveFreeformDiagram(updated)
         objectWillChange.send()
     }
 
-    func renameCustomDiagram(_ diagramID: UUID, name: String) {
-        guard var diagram = store.customDiagrams[diagramID] else { return }
+    func renameFreeformDiagram(_ diagramID: UUID, name: String) {
+        guard var diagram = store.freeformDiagrams[diagramID] else { return }
         diagram.name = name
         diagram.lastModified = Date()
-        store.saveCustomDiagram(diagram)
+        store.saveFreeformDiagram(diagram)
         objectWillChange.send()
     }
 
-    func removeCustomDiagram(_ diagramID: UUID) {
+    func removeFreeformDiagram(_ diagramID: UUID) {
         for i in store.projects.indices {
-            store.projects[i].customDiagramIDs.removeAll { $0 == diagramID }
+            store.projects[i].freeformDiagramIDs.removeAll { $0 == diagramID }
         }
-        store.deleteCustomDiagramFile(diagramID)
+        store.deleteFreeformDiagramFile(diagramID)
         persistChanges()
     }
 
-    func customDiagram(for diagramID: UUID) -> CustomDiagram? {
-        store.customDiagrams[diagramID]
+    func freeformDiagram(for diagramID: UUID) -> FreeformDiagram? {
+        store.freeformDiagrams[diagramID]
     }
 
     // MARK: - Helpers
@@ -286,12 +293,8 @@ final class ProjectBrowserViewModel: ObservableObject {
     func projectForDiagram(_ diagramID: UUID) -> Project? {
         store.projects.first {
             $0.generatedDiagramIDs.contains(diagramID) ||
-            $0.customDiagramIDs.contains(diagramID)
+            $0.freeformDiagramIDs.contains(diagramID)
         }
-    }
-
-    func generatedDiagrams(for codebaseID: UUID) -> [GeneratedDiagram] {
-        store.generatedDiagrams.values.filter { $0.codebaseID == codebaseID }
     }
 
     /// All generated diagrams for a project.
@@ -300,9 +303,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         return project.generatedDiagramIDs.compactMap { store.generatedDiagrams[$0] }
     }
 
-    /// All custom diagrams for a project.
-    func customDiagramsForProject(_ projectID: UUID) -> [CustomDiagram] {
+    /// All freeform diagrams for a project.
+    func freeformDiagramsForProject(_ projectID: UUID) -> [FreeformDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
-        return project.customDiagramIDs.compactMap { store.customDiagrams[$0] }
+        return project.freeformDiagramIDs.compactMap { store.freeformDiagrams[$0] }
     }
 }

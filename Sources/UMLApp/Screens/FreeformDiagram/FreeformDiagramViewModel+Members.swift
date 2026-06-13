@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Member CRUD & Inline Editing
 
-extension CustomDiagramViewModel {
+extension FreeformDiagramViewModel {
 
     func addProperty(to nodeID: String, name: String, type: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),

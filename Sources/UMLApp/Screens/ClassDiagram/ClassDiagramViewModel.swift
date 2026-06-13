@@ -18,7 +18,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
 
-    private var configuration: ClassDiagramConfiguration
+    private(set) var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
     /// Shared, view-independent build + layout core (also used by the CLI image renderer).
     private var model: DiagramLayoutModel

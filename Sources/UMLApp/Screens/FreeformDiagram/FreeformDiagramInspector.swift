@@ -4,10 +4,10 @@ import UMLDiagram
 
 // MARK: - Inspector Sidebar
 
-/// Inspector panel for the custom diagram editor, showing details of the
+/// Inspector panel for the freeform diagram editor, showing details of the
 /// currently-selected node, edge, or multi-selection.
-struct CustomDiagramInspector: View {
-    @ObservedObject var viewModel: CustomDiagramViewModel
+struct FreeformDiagramInspector: View {
+    @ObservedObject var viewModel: FreeformDiagramViewModel
     /// Mirrors whether any text field here is focused, so the parent can suspend its ⌘Z/⇧⌘Z
     /// shortcuts and let the focused field handle native text undo.
     @Binding var isEditingText: Bool
@@ -52,7 +52,7 @@ struct CustomDiagramInspector: View {
 
     // MARK: - Node Inspector
 
-    private func nodeInspector(node: CustomDiagram.Node) -> some View {
+    private func nodeInspector(node: FreeformDiagram.Node) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 nodeNameSection(node: node)
@@ -72,7 +72,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodeNameSection(node: CustomDiagram.Node) -> some View {
+    private func nodeNameSection(node: FreeformDiagram.Node) -> some View {
         Section {
             TextField("Name", text: Binding(
                 get: { node.name },
@@ -86,15 +86,15 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodeKindSection(node: CustomDiagram.Node) -> some View {
+    private func nodeKindSection(node: FreeformDiagram.Node) -> some View {
         Section {
             Picker("Kind", selection: Binding(
                 get: { node.content.kind },
                 set: { viewModel.updateNode(node.id, kind: $0) }
             )) {
-                ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
+                ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                     Section(group.rawValue) {
-                        ForEach(CustomDiagramNodeKind.cases(in: group)) { elementKind in
+                        ForEach(FreeformDiagramNodeKind.cases(in: group)) { elementKind in
                             Text(elementKind.displayName).tag(elementKind)
                         }
                     }
@@ -106,7 +106,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func nodePositionSection(node: CustomDiagram.Node) -> some View {
+    private func nodePositionSection(node: FreeformDiagram.Node) -> some View {
         Section {
             HStack {
                 Text("X: \(Int(node.positionX))").font(.caption.monospaced())
@@ -125,7 +125,7 @@ struct CustomDiagramInspector: View {
     }
 
     @ViewBuilder
-    private func nodeContentSections(node: CustomDiagram.Node) -> some View {
+    private func nodeContentSections(node: FreeformDiagram.Node) -> some View {
         if case .type(let content) = node.content {
             propertiesSection(nodeID: node.id, content: content)
             methodsSection(nodeID: node.id, content: content)
@@ -168,7 +168,7 @@ struct CustomDiagramInspector: View {
     }
 
     @ViewBuilder
-    private func nodeRelationshipsSection(node: CustomDiagram.Node) -> some View {
+    private func nodeRelationshipsSection(node: FreeformDiagram.Node) -> some View {
         // Sequence messages are listed separately from structural relationships, using the same
         // predicate the canvas renders by (`isMessageEdge`), so the two can never disagree.
         let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
@@ -185,7 +185,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func messagesListSection(node: CustomDiagram.Node, messages: [CustomDiagram.Edge]) -> some View {
+    private func messagesListSection(node: FreeformDiagram.Node, messages: [FreeformDiagram.Edge]) -> some View {
         Section {
             ForEach(messages) { edge in
                 HStack {
@@ -215,8 +215,8 @@ struct CustomDiagramInspector: View {
     }
 
     private func relationshipsListSection(
-        node: CustomDiagram.Node,
-        relationships: [CustomDiagram.Edge]
+        node: FreeformDiagram.Node,
+        relationships: [FreeformDiagram.Edge]
     ) -> some View {
         Section {
             ForEach(relationships) { edge in
@@ -244,7 +244,7 @@ struct CustomDiagramInspector: View {
 
     // MARK: - Member Sections
 
-    private func propertiesSection(nodeID: String, content: CustomDiagram.Node.TypeContent) -> some View {
+    private func propertiesSection(nodeID: String, content: FreeformDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.properties) { prop in
                 HStack {
@@ -277,7 +277,7 @@ struct CustomDiagramInspector: View {
         }
     }
 
-    private func methodsSection(nodeID: String, content: CustomDiagram.Node.TypeContent) -> some View {
+    private func methodsSection(nodeID: String, content: FreeformDiagram.Node.TypeContent) -> some View {
         Section {
             ForEach(content.methods) { method in
                 HStack {
@@ -313,9 +313,9 @@ struct CustomDiagramInspector: View {
 
 // MARK: - Edge & Multi-Node Inspectors
 
-extension CustomDiagramInspector {
+extension FreeformDiagramInspector {
 
-    private func edgeInspector(edge: CustomDiagram.Edge) -> some View {
+    private func edgeInspector(edge: FreeformDiagram.Edge) -> some View {
         // Same predicates the canvas renders by, so the editor always matches what's drawn.
         let isMessage = viewModel.isMessageEdge(edge)
         let isTransition = edge.transition != nil
@@ -344,7 +344,7 @@ extension CustomDiagramInspector {
         }
     }
 
-    private func edgePickersSection(edge: CustomDiagram.Edge) -> some View {
+    private func edgePickersSection(edge: FreeformDiagram.Edge) -> some View {
         Section {
             Picker("Source", selection: Binding(
                 get: { edge.sourceNodeID },
@@ -385,7 +385,7 @@ extension CustomDiagramInspector {
         }
     }
 
-    private func edgeSummary(edge: CustomDiagram.Edge) -> some View {
+    private func edgeSummary(edge: FreeformDiagram.Edge) -> some View {
         let sourceName = viewModel.nodes.first(where: { $0.id == edge.sourceNodeID })?.name ?? "?"
         let targetName = viewModel.nodes.first(where: { $0.id == edge.targetNodeID })?.name ?? "?"
         return Text("\(sourceName) → \(targetName)")

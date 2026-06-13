@@ -4,17 +4,17 @@ import Testing
 import UMLCore
 @testable import UMLApp
 
-/// Regression tests for the undo/redo history of `CustomDiagramViewModel`.
+/// Regression tests for the undo/redo history of `FreeformDiagramViewModel`.
 ///
 /// These guard the rule that *only an actual mutation* may change the history:
 /// a guard-failing call must not push a no-op checkpoint or clear the redo stack.
 /// `save()` is a no-op without a configured `diagramID`, so no store is needed.
-@Suite("Custom Diagram Undo History")
+@Suite("Freeform Diagram Undo History")
 @MainActor
-struct CustomDiagramHistoryTests {
+struct FreeformDiagramHistoryTests {
 
-    private func model() -> CustomDiagramViewModel {
-        CustomDiagramViewModel()
+    private func model() -> FreeformDiagramViewModel {
+        FreeformDiagramViewModel()
     }
 
     @Test("A real mutation records an undo checkpoint")

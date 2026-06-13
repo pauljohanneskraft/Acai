@@ -2,23 +2,23 @@ import SwiftUI
 import UMLCore
 import UMLRender
 
-// MARK: - Custom-diagram convenience initializer
+// MARK: - Freeform-diagram convenience initializer
 //
-// `TypeNodeView` lives in `UMLRender` (shared with the CLI image renderer), but custom
+// `TypeNodeView` lives in `UMLRender` (shared with the CLI image renderer), but freeform
 // diagrams are an app-only concept, so this initializer stays here and delegates to the
 // shared view's primitive initializer.
 extension TypeNodeView {
-    /// Create from a custom diagram node with type content.
-    init(node: CustomDiagram.Node, content: CustomDiagram.Node.TypeContent, isSelected: Bool) {
+    /// Create from a freeform diagram node with type content.
+    init(node: FreeformDiagram.Node, content: FreeformDiagram.Node.TypeContent, isSelected: Bool) {
         self.init(
             name: node.name,
             kind: content.typeKind,
-            stereotype: CustomDiagram.Node.Content.type(content).stereotype,
+            stereotype: FreeformDiagram.Node.Content.type(content).stereotype,
             genericParameters: content.genericParameters,
             properties: content.properties.map { member in
                 MemberDisplayItem(
                     id: member.id.uuidString,
-                    text: Self.formatCustomMember(member, isMethod: false),
+                    text: Self.formatFreeformMember(member, isMethod: false),
                     isStatic: member.isStatic,
                     isAbstract: member.isAbstract
                 )
@@ -26,7 +26,7 @@ extension TypeNodeView {
             methods: content.methods.map { member in
                 MemberDisplayItem(
                     id: member.id.uuidString,
-                    text: Self.formatCustomMember(member, isMethod: true),
+                    text: Self.formatFreeformMember(member, isMethod: true),
                     isStatic: member.isStatic,
                     isAbstract: member.isAbstract
                 )
@@ -41,7 +41,7 @@ extension TypeNodeView {
         )
     }
 
-    private static func formatCustomMember(_ member: CustomDiagram.Node.Member, isMethod: Bool) -> String {
+    private static func formatFreeformMember(_ member: FreeformDiagram.Node.Member, isMethod: Bool) -> String {
         let symbol = member.accessLevel.umlSymbol
         if isMethod {
             return "\(symbol) \(member.name)(\(member.parameters))\(member.type.isEmpty ? "" : ": \(member.type)")"

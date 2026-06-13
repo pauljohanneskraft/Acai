@@ -5,12 +5,12 @@ import UMLDiagram
 // MARK: - Catalog Sidebar
 
 /// Sidebar panel listing available node kinds and relationship types
-/// for the custom diagram editor.
-struct CustomDiagramCatalog: View {
-    @ObservedObject var viewModel: CustomDiagramViewModel
+/// for the freeform diagram editor.
+struct FreeformDiagramCatalog: View {
+    @ObservedObject var viewModel: FreeformDiagramViewModel
     let canvasScale: CGFloat
     let canvasOffset: CGPoint
-    let onInsertNode: (CustomDiagramNodeKind, CGPoint) -> Void
+    let onInsertNode: (FreeformDiagramNodeKind, CGPoint) -> Void
 
     var body: some View {
         ScrollView {
@@ -56,9 +56,9 @@ struct CustomDiagramCatalog: View {
 
     private var nodeTypeCatalog: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
+            ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                 catalogSection(group.rawValue) {
-                    ForEach(CustomDiagramNodeKind.cases(in: group)) { kind in
+                    ForEach(FreeformDiagramNodeKind.cases(in: group)) { kind in
                         catalogButton(kind: kind)
                     }
                 }
@@ -80,7 +80,7 @@ struct CustomDiagramCatalog: View {
         }
     }
 
-    private func catalogButton(kind: CustomDiagramNodeKind) -> some View {
+    private func catalogButton(kind: FreeformDiagramNodeKind) -> some View {
         Button {
             let centerX = (450 - canvasOffset.x) / canvasScale
             let centerY = (300 - canvasOffset.y) / canvasScale

@@ -2,14 +2,14 @@ import SwiftUI
 import UMLCore
 import UniformTypeIdentifiers
 
-/// Editor view for custom (user-created) diagrams.
+/// Editor view for freeform (user-created) diagrams.
 /// Provides a canvas with drag-to-select, a catalog sidebar for adding nodes/edges,
 /// and inline editing of node members.
 @MainActor
-struct CustomDiagramView: View {
+struct FreeformDiagramView: View {
     let diagramID: UUID
     @EnvironmentObject private var browserModel: ProjectBrowserViewModel
-    @StateObject var viewModel = CustomDiagramViewModel()
+    @StateObject var viewModel = FreeformDiagramViewModel()
 
     @State private var canvasScale: CGFloat = 1.0
     @State private var canvasOffset: CGPoint = .zero
@@ -51,10 +51,10 @@ struct CustomDiagramView: View {
                 }
             }
         }
-        .navigationTitle(browserModel.customDiagram(for: diagramID)?.name ?? "Custom Diagram")
+        .navigationTitle(browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram")
         .onAppear {
             viewModel.configure(diagramID: diagramID, browserModel: browserModel)
-            if let diagram = browserModel.customDiagram(for: diagramID) {
+            if let diagram = browserModel.freeformDiagram(for: diagramID) {
                 if diagram.canvasScale > 0.01 {
                     canvasScale = CGFloat(diagram.canvasScale)
                     canvasOffset = CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY)
@@ -150,9 +150,9 @@ struct CustomDiagramView: View {
 
     @ViewBuilder
     private var canvasContextMenu: some View {
-        ForEach(CustomDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
+        ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
             Menu(group.rawValue) {
-                ForEach(CustomDiagramNodeKind.cases(in: group)) { kind in
+                ForEach(FreeformDiagramNodeKind.cases(in: group)) { kind in
                     Button {
                         let canvasPoint = CGPoint(
                             x: (cursorLocation.x - canvasOffset.x) / canvasScale,
@@ -169,7 +169,7 @@ struct CustomDiagramView: View {
 
     // MARK: - Insertion Helpers
 
-    private func insertNode(kind: CustomDiagramNodeKind, at canvasPoint: CGPoint) {
+    private func insertNode(kind: FreeformDiagramNodeKind, at canvasPoint: CGPoint) {
         let name = "New" + kind.displayName
             .replacingOccurrences(of: " / ", with: "")
             .replacingOccurrences(of: " ", with: "")
@@ -180,7 +180,7 @@ struct CustomDiagramView: View {
         guard let provider = providers.first else { return false }
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard let kindID = object as? String else { return }
-            guard let kind = CustomDiagramNodeKind.allCases.first(where: { $0.id == kindID }) else { return }
+            guard let kind = FreeformDiagramNodeKind.allCases.first(where: { $0.id == kindID }) else { return }
             Task { @MainActor in
                 let canvasPoint = CGPoint(
                     x: (screenLocation.x - canvasOffset.x) / canvasScale,
@@ -207,14 +207,14 @@ struct CustomDiagramView: View {
 
             switch sidebarTab {
             case .catalog:
-                CustomDiagramCatalog(
+                FreeformDiagramCatalog(
                     viewModel: viewModel,
                     canvasScale: canvasScale,
                     canvasOffset: canvasOffset,
                     onInsertNode: insertNode
                 )
             case .inspector:
-                CustomDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
+                FreeformDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))

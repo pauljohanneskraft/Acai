@@ -133,20 +133,20 @@ struct StateDiagramView: View {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
             Button {
-                // Pass every state's live centre (not just dragged overrides) so the custom
+                // Pass every state's live centre (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
                     uniquingKeysWith: { first, _ in first }
                 )
-                model.saveAsCustomDiagram(
+                model.saveAsFreeformDiagram(
                     id: diagram.id,
                     positions: layoutPositions,
                     scale: canvasScale,
                     offset: canvasOffset
                 )
             } label: {
-                Label("Save as Custom", systemImage: "document.on.document")
+                Label("Save as Freeform", systemImage: "document.on.document")
             }
             .disabled(viewModel.diagram == nil)
             Button {

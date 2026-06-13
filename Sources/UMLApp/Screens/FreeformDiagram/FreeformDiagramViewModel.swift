@@ -5,14 +5,14 @@ import UMLRender
 import AppKit
 #endif
 
-/// View model for the custom diagram editor.
+/// View model for the freeform diagram editor.
 @MainActor
-final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
+final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
 
-    @Published var nodes: [CustomDiagram.Node] = []
-    @Published var edges: [CustomDiagram.Edge] = []
+    @Published var nodes: [FreeformDiagram.Node] = []
+    @Published var edges: [FreeformDiagram.Edge] = []
     @Published var selectedNodeIDs: Set<String> = [] {
         didSet {
             // Keep the click order in sync no matter how the set is mutated (taps, marquee,
@@ -43,8 +43,8 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
 
     /// Snapshot type that captures the undoable portion of the diagram state.
     struct DiagramSnapshot: Equatable, Sendable {
-        var nodes: [CustomDiagram.Node]
-        var edges: [CustomDiagram.Edge]
+        var nodes: [FreeformDiagram.Node]
+        var edges: [FreeformDiagram.Edge]
     }
 
     /// History manager backing Cmd+Z / Shift+Cmd+Z.
@@ -77,7 +77,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
     }
 
     private func loadFromStore() {
-        guard let diagramID, let diagram = browserModel?.customDiagram(for: diagramID) else { return }
+        guard let diagramID, let diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         nodes = diagram.nodes
         edges = diagram.edges
         // Reloading replaces the whole diagram, so any in-memory undo history is now stale.
@@ -86,9 +86,9 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
 
     // MARK: - Node CRUD
 
-    func addNode(kind: CustomDiagramNodeKind, name: String, at position: CGPoint) {
+    func addNode(kind: FreeformDiagramNodeKind, name: String, at position: CGPoint) {
         recordUndo()
-        let node = CustomDiagram.Node(
+        let node = FreeformDiagram.Node(
             name: name,
             content: kind.defaultContent(),
             positionX: Double(position.x),
@@ -168,7 +168,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
         save()
     }
 
-    func updateNode(_ nodeID: String, name: String? = nil, kind: CustomDiagramNodeKind? = nil) {
+    func updateNode(_ nodeID: String, name: String? = nil, kind: FreeformDiagramNodeKind? = nil) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             recordUndo()
             if let name { nodes[idx].name = name }
@@ -190,7 +190,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
 
     func addEdge(from sourceID: String, to targetID: String, kind: Relationship.Kind) {
         recordUndo()
-        var edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
+        var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
         // An edge between two lifelines is a sequence message: append it at the end of the
         // timeline as a synchronous call (order/kind editable in the inspector).
         if isLifeline(sourceID) && isLifeline(targetID) {
@@ -253,20 +253,20 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
     // MARK: - Persistence
 
     func save() {
-        guard let diagramID, var diagram = browserModel?.customDiagram(for: diagramID) else { return }
+        guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         diagram.nodes = nodes
         diagram.edges = edges
-        browserModel?.updateCustomDiagram(diagramID: diagramID, diagram: diagram)
+        browserModel?.updateFreeformDiagram(diagramID: diagramID, diagram: diagram)
     }
 
     func saveCanvasState(scale: CGFloat, offset: CGPoint) {
-        guard let diagramID, var diagram = browserModel?.customDiagram(for: diagramID) else { return }
+        guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         diagram.nodes = nodes
         diagram.edges = edges
         diagram.canvasScale = Double(scale)
         diagram.canvasOffsetX = Double(offset.x)
         diagram.canvasOffsetY = Double(offset.y)
-        browserModel?.updateCustomDiagram(diagramID: diagramID, diagram: diagram)
+        browserModel?.updateFreeformDiagram(diagramID: diagramID, diagram: diagram)
     }
 
     // MARK: - Helpers
@@ -276,7 +276,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
         return CGPoint(x: node.positionX, y: node.positionY)
     }
 
-    /// `CanvasInteraction` size accessor (custom diagrams compute this in `nodeSize`).
+    /// `CanvasInteraction` size accessor (freeform diagrams compute this in `nodeSize`).
     func effectiveSize(for id: String) -> CGSize {
         nodeSize(id)
     }
@@ -297,7 +297,7 @@ final class CustomDiagramViewModel: ObservableObject, DiagramHistoryHosting, Can
         case .type(let content):
             let lineHeight: CGFloat = 18
             let hasStereotype = content.stereotype != nil ||
-                CustomDiagram.Node.Content.type(content).stereotype != nil
+                FreeformDiagram.Node.Content.type(content).stereotype != nil
             let headerHeight: CGFloat = hasStereotype ? 48 : 32
             let propHeight = CGFloat(max(content.properties.count, 1)) * lineHeight
             let methodHeight = CGFloat(max(content.methods.count, 1)) * lineHeight

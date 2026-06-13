@@ -5,7 +5,7 @@ import UMLDiagram
 /// Pure, headless-friendly layout for a `SequenceDiagram`: turns participants and
 /// time-ordered messages into concrete geometry (header rects, vertical lifelines,
 /// horizontal message arrows and execution-occurrence bars). Shared by the live app canvas,
-/// the custom-diagram editor and the CLI image export, so all draw identical diagrams —
+/// the freeform-diagram editor and the CLI image export, so all draw identical diagrams —
 /// mirroring how `DiagramLayoutModel` backs the class diagram.
 ///
 /// Coordinates originate at `(0, 0)` (top-left of the header row). Participants are placed

@@ -23,8 +23,10 @@ struct ProjectBrowserView: View {
                 model.selection = .project(id)
             case .codebase(let id):
                 model.selection = .codebase(id)
-            case .customDiagram(let id):
-                model.selection = .customDiagram(id)
+            case .generatedDiagram(let id):
+                model.selection = .generatedDiagram(id)
+            case .freeformDiagram(let id):
+                model.selection = .freeformDiagram(id)
             case .none:
                 break
             }
@@ -35,10 +37,11 @@ struct ProjectBrowserView: View {
                 sidebarSelection = .project(id)
             case .codebase(let id):
                 sidebarSelection = .codebase(id)
-            case .generatedDiagram:
+            case .generatedDiagram(let id):
+                sidebarSelection = .generatedDiagram(id)
                 columnVisibility = .detailOnly
-            case .customDiagram(let id):
-                sidebarSelection = .customDiagram(id)
+            case .freeformDiagram(let id):
+                sidebarSelection = .freeformDiagram(id)
                 columnVisibility = .detailOnly
             case .none:
                 break
@@ -93,20 +96,20 @@ struct ProjectBrowserView: View {
                                 }
                         }
 
-                        // Custom diagrams — sorted alphabetically
-                        let customDiagrams = model.customDiagramsForProject(project.id)
+                        // Generated diagrams — sorted alphabetically
+                        let generatedDiagrams = model.generatedDiagramsForProject(project.id)
                             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-                        ForEach(customDiagrams) { diagram in
+                        ForEach(generatedDiagrams) { diagram in
                             if renamingDiagramID == diagram.id {
                                 TextField("Name", text: $renamingText, onCommit: {
-                                    model.renameCustomDiagram(diagram.id, name: renamingText)
+                                    model.renameGeneratedDiagram(diagram.id, name: renamingText)
                                     renamingDiagramID = nil
                                 })
                                 .textFieldStyle(.roundedBorder)
                                 .font(.callout)
                             } else {
-                                Label(diagram.name, systemImage: diagram.diagramType.systemImage)
-                                    .tag(SidebarItem.customDiagram(diagram.id))
+                                Label(diagram.name, systemImage: diagram.type.systemImage)
+                                    .tag(SidebarItem.generatedDiagram(diagram.id))
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -115,7 +118,37 @@ struct ProjectBrowserView: View {
                                             Label("Rename", systemImage: "pencil")
                                         }
                                         Button(role: .destructive) {
-                                            model.removeCustomDiagram(diagram.id)
+                                            model.removeGeneratedDiagram(diagram.id)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                            }
+                        }
+
+                        // Freeform diagrams — sorted alphabetically
+                        let freeformDiagrams = model.freeformDiagramsForProject(project.id)
+                            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                        ForEach(freeformDiagrams) { diagram in
+                            if renamingDiagramID == diagram.id {
+                                TextField("Name", text: $renamingText, onCommit: {
+                                    model.renameFreeformDiagram(diagram.id, name: renamingText)
+                                    renamingDiagramID = nil
+                                })
+                                .textFieldStyle(.roundedBorder)
+                                .font(.callout)
+                            } else {
+                                Label(diagram.name, systemImage: FreeformDiagram.systemImage)
+                                    .tag(SidebarItem.freeformDiagram(diagram.id))
+                                    .contextMenu {
+                                        Button {
+                                            renamingText = diagram.name
+                                            renamingDiagramID = diagram.id
+                                        } label: {
+                                            Label("Rename", systemImage: "pencil")
+                                        }
+                                        Button(role: .destructive) {
+                                            model.removeFreeformDiagram(diagram.id)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -165,8 +198,8 @@ struct ProjectBrowserView: View {
                 .environmentObject(model)
         case .generatedDiagram(let diagramID):
             generatedDiagramDetail(diagramID: diagramID)
-        case .customDiagram(let diagramID):
-            customDiagramDetail(diagramID: diagramID)
+        case .freeformDiagram(let diagramID):
+            freeformDiagramDetail(diagramID: diagramID)
         case .none:
             emptyState
         }
@@ -203,9 +236,9 @@ struct ProjectBrowserView: View {
     }
 
     @ViewBuilder
-    private func customDiagramDetail(diagramID: UUID) -> some View {
-        if model.customDiagram(for: diagramID) != nil {
-            CustomDiagramView(diagramID: diagramID)
+    private func freeformDiagramDetail(diagramID: UUID) -> some View {
+        if model.freeformDiagram(for: diagramID) != nil {
+            FreeformDiagramView(diagramID: diagramID)
                 .id(diagramID)
                 .environmentObject(model)
         } else {
@@ -231,5 +264,6 @@ struct ProjectBrowserView: View {
 enum SidebarItem: Hashable {
     case project(UUID)
     case codebase(UUID)
-    case customDiagram(UUID)
+    case generatedDiagram(UUID)
+    case freeformDiagram(UUID)
 }
