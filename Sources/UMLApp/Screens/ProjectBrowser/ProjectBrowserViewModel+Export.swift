@@ -48,6 +48,46 @@ extension ProjectBrowserViewModel {
         #endif
     }
 
+    // MARK: Mermaid Export
+
+    /// Renders the codebase's class diagram as Mermaid (embeds directly in Markdown).
+    func generateMermaid(for codebaseID: UUID) -> String {
+        guard let codebase = codebase(for: codebaseID) else { return "classDiagram\n" }
+        let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
+
+        if var artifact = artifact(for: codebaseID) {
+            if artifact.metadata.sourceLanguage == .dart {
+                artifact = artifact.filteringGeneratedDartTypes()
+            }
+            return ClassDiagramMermaidRenderer().generate(from: artifact)
+        }
+
+        if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
+            if artifact.metadata.sourceLanguage == .dart {
+                artifact = artifact.filteringGeneratedDartTypes()
+            }
+            return ClassDiagramMermaidRenderer().generate(from: artifact)
+        }
+
+        return "classDiagram\n"
+    }
+
+    func exportMermaid(for codebaseID: UUID) {
+        let mermaid = generateMermaid(for: codebaseID)
+        #if os(macOS)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType.plainText]
+        panel.nameFieldStringValue = "\(codebase(for: codebaseID)?.name ?? "diagram").mmd"
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                try mermaid.data(using: .utf8)?.write(to: url, options: .atomic)
+            } catch {
+                print("Export failed: \(error)")
+            }
+        }
+        #endif
+    }
+
     // MARK: Save as Freeform Diagram
 
     /// Convert a stored diagram to a freeform diagram.

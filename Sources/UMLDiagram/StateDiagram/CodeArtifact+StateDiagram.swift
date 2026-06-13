@@ -219,6 +219,7 @@ private struct StateAnalysis {
     }
 
     private static func stateId(for key: String) -> String {
-        "state_\(CodeArtifact.safeId(key))"
+        let safe = key.map { ($0.isLetter || $0.isNumber) ? String($0) : "_" }.joined()
+        return "state_\(safe)"
     }
 }

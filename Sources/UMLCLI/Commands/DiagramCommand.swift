@@ -6,7 +6,7 @@ import UMLLibrary
 extension UMLCommand {
     struct Diagram: ParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Generate a DOT diagram from an analysis or source directory"
+            abstract: "Generate a diagram (DOT or Mermaid) from an analysis or source directory"
         )
 
         @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
@@ -25,8 +25,11 @@ extension UMLCommand {
         @Option(name: .long, help: "Path to a YAML configuration file.")
         var config: String?
 
-        @Option(name: .long, help: "Output file path for the DOT diagram. Prints to stdout if omitted.")
+        @Option(name: .long, help: "Output file path for the diagram. Prints to stdout if omitted.")
         var output: String?
+
+        @Option(name: .long, help: "Output format: dot (default), mermaid.")
+        var format: FormatOption?
 
         @Option(name: .long, help: "Graph layout direction: TB, LR, BT, RL.")
         var direction: DirectionOption?
@@ -66,6 +69,12 @@ extension UMLCommand {
 
         @Option(name: .long, help: "Maximum number of distinct states before the analysis fails.")
         var maxStates: Int = 20
+
+        @Flag(name: .long, help: ArgumentHelp(
+            "Render a package/module dependency diagram (one node per build module, with"
+            + " coupling metrics) instead of a class diagram."
+        ))
+        var package: Bool = false
 
         @Option(name: .long, help: ArgumentHelp(
             "Focus the class diagram on a single type, showing only the subgraph around it."
@@ -107,6 +116,10 @@ extension UMLCommand {
             if sequenceFrom != nil && stateFrom != nil {
                 throw ValidationError("Specify either --sequence-from or --state-from, not both.")
             }
+            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package].filter { $0 }.count
+            if modeFlags > 1 {
+                throw ValidationError("Specify only one of --sequence-from, --state-from, or --package.")
+            }
         }
 
         mutating func run() throws {
@@ -124,26 +137,29 @@ extension UMLCommand {
                 throw ValidationError("Either --from or --source must be specified.")
             }
 
-            let dot: String
+            let diagramFormat = format?.diagramFormat ?? .dot
+            let rendered: String
             if let sequenceFrom {
-                dot = try renderSequenceDOT(artifact: artifact, entryPoint: sequenceFrom)
+                rendered = try renderSequence(artifact: artifact, entryPoint: sequenceFrom, format: diagramFormat)
             } else if let stateFrom {
-                dot = try renderStateDOT(artifact: artifact, variable: stateFrom)
+                rendered = try renderState(artifact: artifact, variable: stateFrom, format: diagramFormat)
+            } else if package {
+                rendered = renderPackage(artifact: artifact, format: diagramFormat)
             } else {
-                dot = try renderClassDOT(artifact: artifact)
+                rendered = try renderClass(artifact: artifact, format: diagramFormat)
             }
 
             if let outputPath = output {
                 let outputURL = URL(fileURLWithPath: outputPath)
-                try dot.write(to: outputURL, atomically: true, encoding: .utf8)
+                try rendered.write(to: outputURL, atomically: true, encoding: .utf8)
                 print("Wrote diagram to \(outputPath)")
             } else {
-                print(dot)
+                print(rendered)
             }
         }
 
-        /// Builds the class-diagram options from flags/config and renders the artifact as DOT.
-        private func renderClassDOT(artifact: CodeArtifact) throws -> String {
+        /// Builds the class-diagram options from flags/config and renders the artifact.
+        private func renderClass(artifact: CodeArtifact, format: DiagramFormat) throws -> String {
             var options = ClassDiagramOptions()
 
             if let configPath = config {
@@ -167,11 +183,18 @@ extension UMLCommand {
                 options.focus = focusConfig
             }
 
-            return DOTGenerator(options: options).generate(from: artifact)
+            switch format {
+            case .dot:
+                return DOTGenerator(options: options).generate(from: artifact)
+            case .mermaid:
+                return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
+            }
         }
 
-        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it as DOT.
-        private func renderSequenceDOT(artifact: CodeArtifact, entryPoint: String) throws -> String {
+        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it.
+        private func renderSequence(
+            artifact: CodeArtifact, entryPoint: String, format: DiagramFormat
+        ) throws -> String {
             guard let dot = entryPoint.lastIndex(of: ".") else {
                 throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
             }
@@ -201,11 +224,18 @@ extension UMLCommand {
                     + "explicitly-typed property receivers; try another entry point or --map."
                 )
             }
-            return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+            switch format {
+            case .dot:
+                return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+            case .mermaid:
+                return SequenceDiagramMermaidRenderer().render(diagram)
+            }
         }
 
-        /// Runs the value-flow state analysis for `variable` and renders the result as DOT.
-        private func renderStateDOT(artifact: CodeArtifact, variable: String) throws -> String {
+        /// Runs the value-flow state analysis for `variable` and renders the result.
+        private func renderState(
+            artifact: CodeArtifact, variable: String, format: DiagramFormat
+        ) throws -> String {
             let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
@@ -213,8 +243,23 @@ extension UMLCommand {
             } catch let error as StateDiagramAnalysisError {
                 throw ValidationError(error.message)
             }
-            let renderer = StateDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default)
-            return renderer.render(diagram)
+            switch format {
+            case .dot:
+                return StateDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+            case .mermaid:
+                return StateDiagramMermaidRenderer().render(diagram)
+            }
+        }
+
+        /// Builds a package/module dependency diagram and renders it.
+        private func renderPackage(artifact: CodeArtifact, format: DiagramFormat) -> String {
+            let diagram = artifact.enriched().packageDependencyDiagram()
+            switch format {
+            case .dot:
+                return PackageDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+            case .mermaid:
+                return PackageDiagramMermaidRenderer().render(diagram)
+            }
         }
 
         private func loadArtifact(from value: String) throws -> CodeArtifact {

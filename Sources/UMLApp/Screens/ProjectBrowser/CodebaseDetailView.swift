@@ -153,14 +153,25 @@ struct CodebaseDetailView: View {
                 }
                 .disabled(isIndexing)
 
-                Button {
-                    model.exportDOT(for: codebase.id)
-                } label: {
-                    Label("Export DOT", systemImage: "square.and.arrow.up")
-                }
+                exportButtons(codebase: codebase)
             }
         }
         .padding()
+    }
+
+    @ViewBuilder
+    private func exportButtons(codebase: Codebase) -> some View {
+        Button {
+            model.exportDOT(for: codebase.id)
+        } label: {
+            Label("Export DOT", systemImage: "square.and.arrow.up")
+        }
+
+        Button {
+            model.exportMermaid(for: codebase.id)
+        } label: {
+            Label("Export Mermaid", systemImage: "square.and.arrow.up")
+        }
     }
 
     // MARK: - Statistics
