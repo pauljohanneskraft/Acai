@@ -4,15 +4,15 @@ import Testing
 import UMLCore
 @testable import UMLApp
 
-/// Behavioural tests for `CustomDiagramViewModel`'s canvas operations (move, resize, marquee
+/// Behavioural tests for `FreeformDiagramViewModel`'s canvas operations (move, resize, marquee
 /// selection). These pin the behavior that the shared canvas-interaction layer must preserve
 /// when the view is refactored onto it — a non-GUI safety net the manual drag check can't give.
-@Suite("Custom Diagram Canvas Operations")
+@Suite("Freeform Diagram Canvas Operations")
 @MainActor
-struct CustomDiagramCanvasTests {
+struct FreeformDiagramCanvasTests {
 
-    private func model(withNodesAt points: [CGPoint]) -> CustomDiagramViewModel {
-        let vm = CustomDiagramViewModel()
+    private func model(withNodesAt points: [CGPoint]) -> FreeformDiagramViewModel {
+        let vm = FreeformDiagramViewModel()
         for (i, p) in points.enumerated() {
             vm.addNode(kind: .type(.class), name: "N\(i)", at: p)
         }
@@ -72,7 +72,7 @@ struct CustomDiagramCanvasTests {
 
     @Test("Re-pointing a message edge at a non-lifeline demotes it to a relationship")
     func messageEdgeDemotesWhenEndpointLeavesLifelines() {
-        let vm = CustomDiagramViewModel()
+        let vm = FreeformDiagramViewModel()
         vm.addNode(kind: .lifeline, name: "A", at: .zero)
         vm.addNode(kind: .lifeline, name: "B", at: CGPoint(x: 200, y: 0))
         vm.addNode(kind: .type(.class), name: "C", at: CGPoint(x: 400, y: 0))

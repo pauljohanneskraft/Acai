@@ -5,15 +5,15 @@ import UMLRender
 
 // MARK: - Sequence Elements (lifelines + ordered messages)
 //
-// Custom diagrams render their sequence elements through the same `SequenceLayoutModel` /
+// Freeform diagrams render their sequence elements through the same `SequenceLayoutModel` /
 // `SequenceEnsembleView` the generated sequence view uses, so a sequence diagram saved as a
-// custom diagram looks identical to its generated original — while every lifeline and message
+// freeform diagram looks identical to its generated original — while every lifeline and message
 // stays an ordinary, fully editable node/edge.
 
-extension CustomDiagramViewModel {
+extension FreeformDiagramViewModel {
 
     /// All lifeline nodes, left-to-right by their canvas position.
-    var lifelineNodes: [CustomDiagram.Node] {
+    var lifelineNodes: [FreeformDiagram.Node] {
         nodes
             .filter { if case .lifeline = $0.content { true } else { false } }
             .sorted { $0.positionX < $1.positionX }
@@ -22,19 +22,19 @@ extension CustomDiagramViewModel {
     /// Whether an edge is a sequence message: it carries a time order *and* connects two
     /// lifelines. The single predicate behind canvas rendering and the inspector, so an edge
     /// can never show as a message in one place and a relationship in the other.
-    func isMessageEdge(_ edge: CustomDiagram.Edge) -> Bool {
+    func isMessageEdge(_ edge: FreeformDiagram.Edge) -> Bool {
         edge.messageOrder != nil && isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID)
     }
 
     /// Message edges between lifelines, in time order.
-    var messageEdges: [CustomDiagram.Edge] {
+    var messageEdges: [FreeformDiagram.Edge] {
         edges
             .filter { isMessageEdge($0) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
     }
 
     /// All combined-fragment nodes.
-    var fragmentNodes: [CustomDiagram.Node] {
+    var fragmentNodes: [FreeformDiagram.Node] {
         nodes.filter { if case .fragment = $0.content { true } else { false } }
     }
 
@@ -82,7 +82,7 @@ extension CustomDiagramViewModel {
     }
 
     /// The edge behind a laid-out message (layout message ids index `messageEdges`).
-    func messageEdge(forLayoutID id: Int) -> CustomDiagram.Edge? {
+    func messageEdge(forLayoutID id: Int) -> FreeformDiagram.Edge? {
         let ordered = messageEdges
         guard ordered.indices.contains(id) else { return nil }
         return ordered[id]
@@ -103,7 +103,7 @@ extension CustomDiagramViewModel {
     /// Append a message at the end of the timeline. `sourceID == targetID` makes a self-message.
     func addMessage(from sourceID: String, to targetID: String, kind: SequenceDiagram.Message.Kind) {
         recordUndo()
-        var edge = CustomDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .dependency)
+        var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .dependency)
         edge.messageOrder = (edges.compactMap(\.messageOrder).max() ?? 0) + 1
         edge.messageKind = kind
         edges.append(edge)

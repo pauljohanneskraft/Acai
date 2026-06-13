@@ -6,6 +6,9 @@ import UMLRender
 struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
+    /// `true` once the user has manually renamed the diagram. While `false`, the name is kept in
+    /// sync with the configuration (see `autoName(codebaseName:)`); a manual rename freezes it.
+    var isNameUserDefined: Bool = false
     /// The diagram's type together with its type-specific configuration. A single enum carries
     /// both the kind and its settings, so each new configurable type adds exactly one case here
     /// instead of a separate optional property per type.
@@ -67,6 +70,21 @@ extension GeneratedDiagram {
 
     /// The diagram type, derived from `content`.
     var type: DiagramType { content.type }
+
+    /// The name derived from the diagram's configuration, e.g. `"MyApp — Sequence: Foo.bar"`.
+    /// Used while `isNameUserDefined` is `false` so the name tracks configuration changes.
+    func autoName(codebaseName: String) -> String {
+        let prefix = codebaseName.isEmpty ? "" : "\(codebaseName) — "
+        switch content {
+        case .sequenceDiagram(let config):
+            return "\(prefix)Sequence: \(config.entryTypeName).\(config.entryMethodName)"
+        case .stateDiagram(let config?):
+            let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
+            return "\(prefix)State: \(variable)"
+        default:
+            return "\(prefix)\(content.type.displayName)"
+        }
+    }
 
     /// The class-diagram configuration, when this is a class diagram.
     var classConfiguration: ClassDiagramConfiguration? {

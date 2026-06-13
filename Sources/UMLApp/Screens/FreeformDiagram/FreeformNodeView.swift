@@ -2,8 +2,8 @@ import SwiftUI
 import UMLDiagram
 import UMLRender
 
-struct CustomNodeView: View {
-    let node: CustomDiagram.Node
+struct FreeformNodeView: View {
+    let node: FreeformDiagram.Node
     let isSelected: Bool
     /// Explicit size for resizable container nodes. `nil` for auto-sized nodes.
     var size: CGSize?

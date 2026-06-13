@@ -46,18 +46,18 @@ struct ProjectDetailView: View {
 
                     sectionHeader(title: "Diagrams")
 
-                    let customDiagrams = model.customDiagramsForProject(projectID)
+                    let freeformDiagrams = model.freeformDiagramsForProject(projectID)
                         .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-                    if customDiagrams.isEmpty {
-                        Text("No custom diagrams yet. Create one above.")
+                    if freeformDiagrams.isEmpty {
+                        Text("No freeform diagrams yet. Create one above.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal)
                             .padding(.bottom, 12)
                     } else {
                         LazyVStack(spacing: 1) {
-                            ForEach(customDiagrams) { diagram in
-                                customDiagramRow(diagram: diagram)
+                            ForEach(freeformDiagrams) { diagram in
+                                freeformDiagramRow(diagram: diagram)
                             }
                         }
                         .padding(.bottom, 8)
@@ -102,19 +102,9 @@ struct ProjectDetailView: View {
             } label: {
                 Label("Add codebase", systemImage: "plus")
             }
-            Menu {
-                ForEach(DiagramType.allCases) { type in
-                    Button {
-                        if let id = model.addCustomDiagram(
-                            to: projectID,
-                            name: "New \(type.displayName)",
-                            type: type
-                        ) {
-                            model.selection = .customDiagram(id)
-                        }
-                    } label: {
-                        Label(type.displayName, systemImage: type.systemImage)
-                    }
+            Button {
+                if let id = model.addFreeformDiagram(to: projectID, name: "New Freeform Diagram") {
+                    model.selection = .freeformDiagram(id)
                 }
             } label: {
                 Label("Add Diagram", systemImage: "plus")
@@ -211,20 +201,20 @@ struct ProjectDetailView: View {
         }
     }
 
-    // MARK: - Custom Diagram Row
+    // MARK: - Freeform Diagram Row
 
-    private func customDiagramRow(diagram: CustomDiagram) -> some View {
+    private func freeformDiagramRow(diagram: FreeformDiagram) -> some View {
         Button {
-            model.selection = .customDiagram(diagram.id)
+            model.selection = .freeformDiagram(diagram.id)
         } label: {
             HStack {
-                Image(systemName: diagram.diagramType.systemImage)
+                Image(systemName: FreeformDiagram.systemImage)
                     .foregroundStyle(.blue)
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(diagram.name)
                         .fontWeight(.medium)
-                    Text(diagram.diagramType.displayName)
+                    Text("Freeform Diagram")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -240,7 +230,7 @@ struct ProjectDetailView: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button(role: .destructive) {
-                model.removeCustomDiagram(diagram.id)
+                model.removeFreeformDiagram(diagram.id)
             } label: {
                 Label("Delete", systemImage: "trash")
             }

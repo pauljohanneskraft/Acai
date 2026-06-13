@@ -7,7 +7,7 @@ import UMLDiagram
 /// flat, without nested substates, in this version).
 ///
 /// Shared by the generated state-diagram canvas, the static snapshot, and the
-/// custom-diagram editor so all three look identical. Fixed light fills with
+/// freeform-diagram editor so all three look identical. Fixed light fills with
 /// explicit ink text, matching `TypeNodeView`'s visual language.
 public struct StateNodeView: View {
     let name: String

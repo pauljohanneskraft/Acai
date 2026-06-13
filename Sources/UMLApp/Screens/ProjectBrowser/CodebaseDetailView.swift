@@ -16,7 +16,6 @@ struct CodebaseDetailView: View {
     private struct ConfigContext: Identifiable {
         let projectID: UUID
         let codebaseID: UUID
-        let codebaseName: String
         var id: UUID { codebaseID }
     }
 
@@ -73,11 +72,9 @@ struct CodebaseDetailView: View {
                 artifact: artifact,
                 onCancel: { stateConfigContext = nil },
                 onCreate: { config in
-                    let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
                     if let id = model.addGeneratedDiagram(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
-                        name: "\(context.codebaseName) — State: \(variable)",
                         content: .stateDiagram(config)
                     ) {
                         model.selection = .generatedDiagram(id)
@@ -99,7 +96,6 @@ struct CodebaseDetailView: View {
                     if let id = model.addGeneratedDiagram(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
-                        name: "\(context.codebaseName) — Sequence: \(config.entryTypeName).\(config.entryMethodName)",
                         content: .sequenceDiagram(config)
                     ) {
                         model.selection = .generatedDiagram(id)
@@ -257,31 +253,22 @@ struct CodebaseDetailView: View {
         }
     }
 
-    /// A diagram type button — all look the same regardless of whether a diagram already exists.
-    /// Clicking opens the existing diagram or generates a new one.
+    /// A diagram type button. Each click creates a new generated diagram of that type; sequence
+    /// and state diagrams first open their configuration popup (entry point / variable selection).
     private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
         Button {
             guard let projectID else { return }
-            // Sequence and state diagrams always open their configuration popup
-            // (entry point / variable selection) rather than generating immediately.
             if type == .sequenceDiagram {
-                sequenceConfigContext = ConfigContext(
-                    projectID: projectID, codebaseID: codebase.id, codebaseName: codebase.name
-                )
+                sequenceConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
                 return
             }
             if type == .stateDiagram {
-                stateConfigContext = ConfigContext(
-                    projectID: projectID, codebaseID: codebase.id, codebaseName: codebase.name
-                )
+                stateConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
                 return
             }
-            if let existing = model.generatedDiagrams(for: codebase.id).first(where: { $0.type == type }) {
-                model.selection = .generatedDiagram(existing.id)
-            } else if let id = model.addGeneratedDiagram(
+            if let id = model.addGeneratedDiagram(
                 to: projectID,
                 codebaseID: codebase.id,
-                name: "\(codebase.name) — \(type.displayName)",
                 content: GeneratedDiagram.Content(type: type)
             ) {
                 model.selection = .generatedDiagram(id)

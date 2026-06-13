@@ -6,12 +6,12 @@ import AppKit
 
 // MARK: - Clipboard (Cut / Copy / Paste)
 
-extension CustomDiagramViewModel {
+extension FreeformDiagramViewModel {
 
     /// Internal clipboard representation.
     private struct ClipboardPayload: Codable {
-        var nodes: [CustomDiagram.Node]
-        var edges: [CustomDiagram.Edge]
+        var nodes: [FreeformDiagram.Node]
+        var edges: [FreeformDiagram.Edge]
     }
 
     private static var pasteboardType: String { "com.umlapp.diagram.nodes" }

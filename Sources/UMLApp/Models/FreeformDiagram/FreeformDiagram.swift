@@ -3,10 +3,9 @@ import UMLCore
 import UMLDiagram
 
 /// A fully user-defined diagram with manually placed nodes and edges.
-struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
+struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var name: String
-    var diagramType: DiagramType = .classDiagram
     var nodes: [Node] = []
     var edges: [Edge] = []
     var canvasScale: Double = 1.0
@@ -16,12 +15,16 @@ struct CustomDiagram: Identifiable, Codable, Hashable, Sendable {
     var createdDate: Date = Date()
     // periphery:ignore
     var lastModified: Date = Date()
+
+    /// The fixed icon for every freeform diagram. Freeform diagrams have no type, so the icon
+    /// is a constant (mirroring how each generated `DiagramType` has its own fixed icon).
+    static let systemImage = "scribble.variable"
 }
 
-extension CustomDiagram {
+extension FreeformDiagram {
     struct Node: Identifiable, Codable, Hashable, Sendable {
         /// String id (generated from a UUID, so still collision-free). Shared `String` node
-        /// identity lets the class/sequence/custom views use one `CanvasInteraction` protocol.
+        /// identity lets the class/sequence/freeform views use one `CanvasInteraction` protocol.
         var id: String = UUID().uuidString
         var name: String
         var content: Content
@@ -46,7 +49,7 @@ extension CustomDiagram {
     }
 }
 
-extension CustomDiagram {
+extension FreeformDiagram {
     struct Edge: Identifiable, Codable, Hashable, Sendable {
         var id: String = UUID().uuidString
         var sourceNodeID: String
@@ -65,7 +68,7 @@ extension CustomDiagram {
     }
 }
 
-extension CustomDiagram.Edge {
+extension FreeformDiagram.Edge {
     /// The label parts of a state-machine transition.
     struct Transition: Codable, Hashable, Sendable {
         var event: String?
@@ -84,7 +87,7 @@ extension CustomDiagram.Edge {
     }
 }
 
-extension CustomDiagram.Node {
+extension FreeformDiagram.Node {
     enum Content: Codable, Hashable, Sendable {
         /// A code type (class, struct, enum, protocol, …) with full UML class-box data.
         case type(TypeContent)
@@ -121,7 +124,7 @@ extension CustomDiagram.Node {
         case state(StateDiagram.State.Kind)
 
         /// The element kind derived from this content.
-        var kind: CustomDiagramNodeKind {
+        var kind: FreeformDiagramNodeKind {
             switch self {
             case .type(let c):
                 .type(c.typeKind)
@@ -198,7 +201,7 @@ extension CustomDiagram.Node {
     }
 }
 
-extension CustomDiagram.Node {
+extension FreeformDiagram.Node {
     /// Payload of a `.fragment` node: the combined-fragment operator plus its operands (guard +
     /// covered message-order span). Mirrors `SequenceDiagram.Fragment` without the identity.
     struct FragmentContent: Codable, Hashable, Sendable {
@@ -207,7 +210,7 @@ extension CustomDiagram.Node {
     }
 }
 
-extension CustomDiagram.Node {
+extension FreeformDiagram.Node {
     struct TypeContent: Codable, Hashable, Sendable {
         var typeKind: TypeKind
         var stereotype: String?
@@ -218,7 +221,7 @@ extension CustomDiagram.Node {
     }
 }
 
-extension CustomDiagram.Node {
+extension FreeformDiagram.Node {
     struct Member: Identifiable, Codable, Hashable, Sendable {
         var id: UUID = UUID()
         var name: String
@@ -242,7 +245,7 @@ extension CustomDiagram.Node {
     }
 }
 
-extension CustomDiagram.Node {
+extension FreeformDiagram.Node {
     struct EnumCase: Identifiable, Codable, Hashable, Sendable {
         var id: UUID = UUID()
         var name: String

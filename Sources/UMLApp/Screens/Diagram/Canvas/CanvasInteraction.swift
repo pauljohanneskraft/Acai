@@ -2,10 +2,10 @@ import CoreGraphics
 import SwiftUI
 
 /// The node-interaction surface the shared canvas primitives need, so the class, sequence and
-/// custom diagram views can share pan/zoom, drag, resize, marquee selection, measurement and
+/// freeform diagram views can share pan/zoom, drag, resize, marquee selection, measurement and
 /// undo/redo instead of each reimplementing them.
 ///
-/// Node identity is `String` everywhere (the custom diagram's ids are `UUID().uuidString`), so
+/// Node identity is `String` everywhere (the freeform diagram's ids are `UUID().uuidString`), so
 /// this protocol needs no `associatedtype`; the shared views stay generic over a concrete
 /// `Model: CanvasInteraction`. It refines `DiagramHistoryHosting` (undo/redo) and
 /// `ObservableObject` (so the shared views observe changes).

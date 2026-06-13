@@ -5,12 +5,12 @@ import UMLCore
 import UMLDiagram
 @testable import UMLApp
 
-/// "Save as Custom" for state diagrams: states become state nodes at their generated
-/// positions and every transition becomes a labeled transition edge, so the custom editor
+/// "Save as Freeform" for state diagrams: states become state nodes at their generated
+/// positions and every transition becomes a labeled transition edge, so the freeform editor
 /// (which renders through the same `StateNodeView`) shows an identical diagram.
-@Suite("State → Custom Conversion")
+@Suite("State → Freeform Conversion")
 @MainActor
-struct StateCustomConversionTests {
+struct StateFreeformConversionTests {
 
     private func artifact() -> CodeArtifact {
         CodeArtifact(
@@ -47,38 +47,37 @@ struct StateCustomConversionTests {
 
     @Test("States become state nodes with their kinds and positions")
     func statesBecomeStateNodes() {
-        let custom = stateDiagram().convertToCustom(
+        let freeform = stateDiagram().convertToFreeform(
             artifact: artifact(),
             positions: ["state_idle": CGPoint(x: 80, y: 200)],
             scale: 1, offset: .zero
         )
 
-        #expect(custom.diagramType == .stateDiagram)
         // __initial + idle + loading + loaded
-        #expect(custom.nodes.count == 4)
-        let kinds = custom.nodes.compactMap { node -> StateDiagram.State.Kind? in
+        #expect(freeform.nodes.count == 4)
+        let kinds = freeform.nodes.compactMap { node -> StateDiagram.State.Kind? in
             if case .state(let kind) = node.content { kind } else { nil }
         }
         #expect(kinds.count == 4)
         #expect(kinds.filter { $0 == .initial }.count == 1)
-        let idle = custom.nodes.first { $0.name == "idle" }
+        let idle = freeform.nodes.first { $0.name == "idle" }
         #expect(idle?.positionX == 80)
         #expect(idle?.positionY == 200)
     }
 
     @Test("Transitions become labeled transition edges")
     func transitionsBecomeEdges() {
-        let custom = stateDiagram().convertToCustom(
+        let freeform = stateDiagram().convertToFreeform(
             artifact: artifact(), positions: [:], scale: 1, offset: .zero
         )
 
-        #expect(!custom.edges.isEmpty)
-        #expect(custom.edges.allSatisfy { $0.transition != nil })
+        #expect(!freeform.edges.isEmpty)
+        #expect(freeform.edges.allSatisfy { $0.transition != nil })
         // The intra-method chain keeps its event label.
-        #expect(custom.edges.contains { $0.transition?.event == "load()" })
+        #expect(freeform.edges.contains { $0.transition?.event == "load()" })
         // Edge endpoints all resolve to nodes.
-        let nodeIDs = Set(custom.nodes.map(\.id))
-        for edge in custom.edges {
+        let nodeIDs = Set(freeform.nodes.map(\.id))
+        for edge in freeform.edges {
             #expect(nodeIDs.contains(edge.sourceNodeID))
             #expect(nodeIDs.contains(edge.targetNodeID))
         }
@@ -91,21 +90,20 @@ struct StateCustomConversionTests {
             content: .stateDiagram(.init(typeName: "Missing", variableName: "nope")),
             codebaseID: UUID()
         )
-        let custom = diagram.convertToCustom(
+        let freeform = diagram.convertToFreeform(
             artifact: artifact(), positions: [:], scale: 1, offset: .zero
         )
-        #expect(custom.diagramType == .stateDiagram)
-        #expect(custom.nodes.isEmpty)
-        #expect(custom.edges.isEmpty)
+        #expect(freeform.nodes.isEmpty)
+        #expect(freeform.edges.isEmpty)
     }
 
     @Test("Transition edge label formats as UML event [guard] / action")
     func transitionLabelFormatting() {
-        var transition = CustomDiagram.Edge.Transition(event: "load()")
+        var transition = FreeformDiagram.Edge.Transition(event: "load()")
         #expect(transition.label == "load()")
         transition.guardCondition = "ok"
         transition.action = "notify"
         #expect(transition.label == "load() [ok] / notify")
-        #expect(CustomDiagram.Edge.Transition().label == nil)
+        #expect(FreeformDiagram.Edge.Transition().label == nil)
     }
 }

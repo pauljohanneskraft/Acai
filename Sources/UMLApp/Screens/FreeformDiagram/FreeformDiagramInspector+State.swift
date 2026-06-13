@@ -7,11 +7,11 @@ import UMLDiagram
 // event, guard, action) and a state node's UML flavour. Split from the main inspector file,
 // which hosts the node/relationship sections.
 
-extension CustomDiagramInspector {
+extension FreeformDiagramInspector {
 
     /// Inspector for a state-transition edge: endpoints plus the UML
     /// `event [guard] / action` label parts.
-    func transitionSection(edge: CustomDiagram.Edge) -> some View {
+    func transitionSection(edge: FreeformDiagram.Edge) -> some View {
         let stateNodes = viewModel.nodes.filter { viewModel.isStateNode($0.id) }
         return Section {
             Picker("From", selection: Binding(
@@ -70,7 +70,7 @@ extension CustomDiagramInspector {
     }
 
     /// Pseudo-states have empty names; fall back to their kind for picker rows.
-    private func stateDisplayName(_ node: CustomDiagram.Node) -> String {
+    private func stateDisplayName(_ node: FreeformDiagram.Node) -> String {
         if !node.name.isEmpty { return node.name }
         if case .state(let kind) = node.content {
             return "(\(kind.rawValue))"

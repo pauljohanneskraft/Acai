@@ -8,7 +8,7 @@ import UMLCore
 ///     <projectID>.json     – Project struct (includes codebases, diagram IDs)
 ///   diagrams/
 ///     generated_<diagramID>.json  – GeneratedDiagram
-///     custom_<diagramID>.json     – CustomDiagram
+///     freeform_<diagramID>.json     – FreeformDiagram
 ///   artifacts/
 ///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
 /// ```
@@ -17,7 +17,7 @@ final class ProjectStore: ObservableObject {
 
     /// In-memory cache of loaded diagrams, keyed by ID.
     @Published var generatedDiagrams: [UUID: GeneratedDiagram] = [:]
-    @Published var customDiagrams: [UUID: CustomDiagram] = [:]
+    @Published var freeformDiagrams: [UUID: FreeformDiagram] = [:]
 
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
@@ -69,8 +69,8 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.generatedDiagramIDs {
                         loadGeneratedDiagram(diagramID)
                     }
-                    for diagramID in project.customDiagramIDs {
-                        loadCustomDiagram(diagramID)
+                    for diagramID in project.freeformDiagramIDs {
+                        loadFreeformDiagram(diagramID)
                     }
                     for codebase in project.codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
@@ -95,14 +95,14 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func loadCustomDiagram(_ id: UUID) {
-        guard customDiagrams[id] == nil else { return }
-        let url = diagramsDir.appendingPathComponent("custom_\(id.uuidString).json")
+    func loadFreeformDiagram(_ id: UUID) {
+        guard freeformDiagrams[id] == nil else { return }
+        let url = diagramsDir.appendingPathComponent("freeform_\(id.uuidString).json")
         do {
             let data = try Data(contentsOf: url)
-            customDiagrams[id] = try JSONDecoder().decode(CustomDiagram.self, from: data)
+            freeformDiagrams[id] = try JSONDecoder().decode(FreeformDiagram.self, from: data)
         } catch {
-            print("Failed to load custom diagram \(id): \(error)")
+            print("Failed to load freeform diagram \(id): \(error)")
         }
     }
 
@@ -132,8 +132,8 @@ final class ProjectStore: ObservableObject {
         for diagram in generatedDiagrams.values {
             saveGeneratedDiagram(diagram)
         }
-        for diagram in customDiagrams.values {
-            saveCustomDiagram(diagram)
+        for diagram in freeformDiagrams.values {
+            saveFreeformDiagram(diagram)
         }
         for (codebaseID, artifact) in artifacts {
             saveArtifact(artifact, for: codebaseID)
@@ -161,14 +161,14 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func saveCustomDiagram(_ diagram: CustomDiagram) {
-        customDiagrams[diagram.id] = diagram
+    func saveFreeformDiagram(_ diagram: FreeformDiagram) {
+        freeformDiagrams[diagram.id] = diagram
         let encoder = JSONEncoder()
-        let url = diagramsDir.appendingPathComponent("custom_\(diagram.id.uuidString).json")
+        let url = diagramsDir.appendingPathComponent("freeform_\(diagram.id.uuidString).json")
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save custom diagram \(diagram.id): \(error)")
+            print("Failed to save freeform diagram \(diagram.id): \(error)")
         }
     }
 
@@ -189,9 +189,9 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    func deleteCustomDiagramFile(_ id: UUID) {
-        customDiagrams.removeValue(forKey: id)
-        let url = diagramsDir.appendingPathComponent("custom_\(id.uuidString).json")
+    func deleteFreeformDiagramFile(_ id: UUID) {
+        freeformDiagrams.removeValue(forKey: id)
+        let url = diagramsDir.appendingPathComponent("freeform_\(id.uuidString).json")
         try? FileManager.default.removeItem(at: url)
     }
 

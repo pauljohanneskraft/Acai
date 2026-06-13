@@ -4,36 +4,35 @@ import UMLDiagram
 
 extension GeneratedDiagram {
 
-    func convertToCustom(
+    func convertToFreeform(
         artifact: CodeArtifact,
         positions: [String: CGPoint],
         scale: CGFloat,
         offset: CGPoint
-    ) -> CustomDiagram {
+    ) -> FreeformDiagram {
         if case .sequenceDiagram(let config) = content {
-            return convertSequenceToCustom(
+            return convertSequenceToFreeform(
                 artifact: artifact, configuration: config,
                 positions: positions, scale: scale, offset: offset
             )
         }
         if case .stateDiagram(let config) = content, let config {
-            return convertStateToCustom(
+            return convertStateToFreeform(
                 artifact: artifact, configuration: config,
                 positions: positions, scale: scale, offset: offset
             )
         }
         var ids: [String: String] = [:]
 
-        let nodes = buildCustomNodes(
+        let nodes = buildFreeformNodes(
             from: artifact,
             positions: positions,
             ids: &ids
         )
-        let edges = buildCustomEdges(from: artifact, ids: ids)
+        let edges = buildFreeformEdges(from: artifact, ids: ids)
 
-        return CustomDiagram(
-            name: name + " (Custom)",
-            diagramType: type,
+        return FreeformDiagram(
+            name: name + " (Freeform)",
             nodes: nodes,
             edges: edges,
             canvasScale: scale,
@@ -42,12 +41,12 @@ extension GeneratedDiagram {
         )
     }
 
-    private func buildCustomNodes(
+    private func buildFreeformNodes(
         from artifact: CodeArtifact,
         positions: [String: CGPoint],
         ids: inout [String: String]
-    ) -> [CustomDiagram.Node] {
-        var nodes: [CustomDiagram.Node] = []
+    ) -> [FreeformDiagram.Node] {
+        var nodes: [FreeformDiagram.Node] = []
 
         for type in artifact.types {
             let nodeID = UUID().uuidString
@@ -63,10 +62,10 @@ extension GeneratedDiagram {
                     typeKind: type.kind,
                     properties: type.members
                         .filter { $0.kind == .property || $0.kind == .subscript }
-                        .map { buildCustomMember(from: $0) },
+                        .map { buildFreeformMember(from: $0) },
                     methods: type.members
                         .filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
-                        .map { buildCustomMember(from: $0) },
+                        .map { buildFreeformMember(from: $0) },
                     enumCases: type.enumCases.map { .init(name: $0.name) },
                     genericParameters: type.genericParameters.map(\.name)
                 )),
@@ -78,7 +77,7 @@ extension GeneratedDiagram {
         return nodes
     }
 
-    private func buildCustomMember(from member: Member) -> CustomDiagram.Node.Member {
+    private func buildFreeformMember(from member: Member) -> FreeformDiagram.Node.Member {
         .init(
             name: member.name,
             type: member.type?.name ?? "",
@@ -88,20 +87,20 @@ extension GeneratedDiagram {
         )
     }
 
-    // MARK: - Sequence → Custom
+    // MARK: - Sequence → Freeform
 
-    /// Converts a sequence diagram into an editable custom diagram: each participant becomes a
+    /// Converts a sequence diagram into an editable freeform diagram: each participant becomes a
     /// lifeline node and every message (calls *and* returns) becomes a time-ordered message
-    /// edge. The custom editor renders these through the same sequence layout the generated
+    /// edge. The freeform editor renders these through the same sequence layout the generated
     /// view uses, so the converted diagram looks identical to its original while staying fully
     /// editable (move, relabel, reorder, add/remove).
-    private func convertSequenceToCustom(
+    private func convertSequenceToFreeform(
         artifact: CodeArtifact,
         configuration: SequenceDiagramConfiguration,
         positions: [String: CGPoint],
         scale: CGFloat,
         offset: CGPoint
-    ) -> CustomDiagram {
+    ) -> FreeformDiagram {
         let sequence = artifact.sequenceDiagram(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
             maxDepth: configuration.maxDepth,
@@ -111,12 +110,12 @@ extension GeneratedDiagram {
         // One lifeline node per participant, at the exact x its lifeline had in the generated
         // view (the caller passes the live layout positions; the stride is only a fallback).
         var nodeIDByName: [String: String] = [:]
-        var nodes: [CustomDiagram.Node] = []
+        var nodes: [FreeformDiagram.Node] = []
         for (index, participant) in sequence.participants.enumerated() {
             let nodeID = UUID().uuidString
             nodeIDByName[participant.name] = nodeID
             let x = positions[participant.id]?.x ?? CGFloat(index) * 180 + 120
-            nodes.append(CustomDiagram.Node(
+            nodes.append(FreeformDiagram.Node(
                 id: nodeID,
                 name: participant.name,
                 content: .lifeline(participant.kind),
@@ -125,12 +124,12 @@ extension GeneratedDiagram {
             ))
         }
 
-        let edges: [CustomDiagram.Edge] = sequence.messages
+        let edges: [FreeformDiagram.Edge] = sequence.messages
             .sorted { $0.order < $1.order }
             .compactMap { message in
                 guard let source = nodeIDByName[message.from],
                       let target = nodeIDByName[message.to] else { return nil }
-                return CustomDiagram.Edge(
+                return FreeformDiagram.Edge(
                     sourceNodeID: source,
                     targetNodeID: target,
                     kind: .dependency,
@@ -140,9 +139,8 @@ extension GeneratedDiagram {
                 )
             }
 
-        return CustomDiagram(
-            name: name + " (Custom)",
-            diagramType: .sequenceDiagram,
+        return FreeformDiagram(
+            name: name + " (Freeform)",
             nodes: nodes,
             edges: edges,
             canvasScale: scale,
@@ -151,25 +149,25 @@ extension GeneratedDiagram {
         )
     }
 
-    // MARK: - State → Custom
+    // MARK: - State → Freeform
 
-    /// Converts a state diagram into an editable custom diagram: each state becomes a state
-    /// node and every transition a labeled transition edge. The custom editor renders these
+    /// Converts a state diagram into an editable freeform diagram: each state becomes a state
+    /// node and every transition a labeled transition edge. The freeform editor renders these
     /// through the same `StateNodeView` the generated view uses, so the converted diagram
     /// looks identical to its original while staying fully editable.
-    private func convertStateToCustom(
+    private func convertStateToFreeform(
         artifact: CodeArtifact,
         configuration: StateDiagramConfiguration,
         positions: [String: CGPoint],
         scale: CGFloat,
         offset: CGPoint
-    ) -> CustomDiagram {
+    ) -> FreeformDiagram {
         // Analysis failures convert to an empty (but still editable) diagram.
         let state = (try? artifact.resolvingExtensions().stateDiagram(configuration: configuration))
             ?? StateDiagram()
 
         var nodeIDByStateID: [String: String] = [:]
-        var nodes: [CustomDiagram.Node] = []
+        var nodes: [FreeformDiagram.Node] = []
         for (index, diagramState) in state.states.enumerated() {
             let nodeID = UUID().uuidString
             nodeIDByStateID[diagramState.id] = nodeID
@@ -177,7 +175,7 @@ extension GeneratedDiagram {
             let storedPos = nodePositions[diagramState.id]
             let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? CGFloat(index) * 160 + 120
             let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 100
-            nodes.append(CustomDiagram.Node(
+            nodes.append(FreeformDiagram.Node(
                 id: nodeID,
                 name: diagramState.name,
                 content: .state(diagramState.kind),
@@ -186,10 +184,10 @@ extension GeneratedDiagram {
             ))
         }
 
-        let edges: [CustomDiagram.Edge] = state.transitions.compactMap { transition in
+        let edges: [FreeformDiagram.Edge] = state.transitions.compactMap { transition in
             guard let source = nodeIDByStateID[transition.from],
                   let target = nodeIDByStateID[transition.to] else { return nil }
-            var edge = CustomDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .association)
+            var edge = FreeformDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .association)
             edge.transition = .init(
                 event: transition.event,
                 guardCondition: transition.guardCondition,
@@ -198,9 +196,8 @@ extension GeneratedDiagram {
             return edge
         }
 
-        return CustomDiagram(
-            name: name + " (Custom)",
-            diagramType: .stateDiagram,
+        return FreeformDiagram(
+            name: name + " (Freeform)",
             nodes: nodes,
             edges: edges,
             canvasScale: scale,
@@ -209,10 +206,10 @@ extension GeneratedDiagram {
         )
     }
 
-    private func buildCustomEdges(
+    private func buildFreeformEdges(
         from artifact: CodeArtifact,
         ids: [String: String]
-    ) -> [CustomDiagram.Edge] {
+    ) -> [FreeformDiagram.Edge] {
         let typeNames = Set(artifact.types.map(\.name))
         return artifact.relationships.compactMap { rel in
             guard typeNames.contains(rel.source),

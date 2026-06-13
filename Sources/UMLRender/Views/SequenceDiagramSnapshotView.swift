@@ -47,7 +47,7 @@ public struct SequenceDiagramSnapshotView: View {
 
 /// The non-interactive body of a sequence diagram — dashed lifelines, execution-occurrence bars
 /// and message arrows — without the participant headers. Shared by the static snapshot, the
-/// generated-diagram canvas and the custom-diagram editor so all three look identical; callers
+/// generated-diagram canvas and the freeform-diagram editor so all three look identical; callers
 /// draw their own (interactive or plain) headers on top.
 public struct SequenceEnsembleView: View {
     let layout: SequenceLayoutModel
@@ -212,7 +212,7 @@ public struct SequenceParticipantHeader: View {
 }
 
 /// A standalone participant header (name + role stereotype), reused by the sequence snapshot and
-/// the custom-diagram lifeline node so both look identical.
+/// the freeform-diagram lifeline node so both look identical.
 ///
 /// Styled in the same visual language as `TypeNodeView` (fixed light fills with explicit ink
 /// text, monospaced fonts, kind-tinted border) so sequence diagrams match the rest of the app —

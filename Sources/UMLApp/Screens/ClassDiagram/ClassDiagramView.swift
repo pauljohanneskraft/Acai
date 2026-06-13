@@ -70,14 +70,14 @@ struct ClassDiagramView: View {
                     Label("Fit to View", systemImage: "rectangle.dashed")
                 }
                 Button {
-                    model.saveAsCustomDiagram(
+                    model.saveAsFreeformDiagram(
                         id: diagram.id,
                         positions: viewModel.nodePositions,
                         scale: canvasScale,
                         offset: canvasOffset
                     )
                 } label: {
-                    Label("Save as Custom", systemImage: "document.on.document")
+                    Label("Save as Freeform", systemImage: "document.on.document")
                 }
                 Button {
                     exportImage()

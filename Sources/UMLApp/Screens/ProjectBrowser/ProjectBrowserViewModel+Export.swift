@@ -5,7 +5,7 @@ import UMLCore
 import UMLDiagram
 import UniformTypeIdentifiers
 
-// MARK: - DOT Export & Custom Diagram Conversion
+// MARK: - DOT Export & Freeform Diagram Conversion
 
 extension ProjectBrowserViewModel {
 
@@ -48,10 +48,10 @@ extension ProjectBrowserViewModel {
         #endif
     }
 
-    // MARK: Save as Custom Diagram
+    // MARK: Save as Freeform Diagram
 
-    /// Convert a stored diagram to a custom diagram.
-    func saveAsCustomDiagram(
+    /// Convert a stored diagram to a freeform diagram.
+    func saveAsFreeformDiagram(
         id diagramId: UUID,
         positions: [String: CGPoint],
         scale: CGFloat,
@@ -66,15 +66,15 @@ extension ProjectBrowserViewModel {
         if hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
             artifact = artifact.filteringGeneratedDartTypes()
         }
-        let customDiagram = diagram.convertToCustom(
+        let freeformDiagram = diagram.convertToFreeform(
             artifact: artifact,
             positions: positions,
             scale: scale,
             offset: offset
         )
-        store.projects[pIdx].customDiagramIDs.append(customDiagram.id)
-        store.saveCustomDiagram(customDiagram)
+        store.projects[pIdx].freeformDiagramIDs.append(freeformDiagram.id)
+        store.saveFreeformDiagram(freeformDiagram)
         persistChanges()
-        selection = .customDiagram(customDiagram.id)
+        selection = .freeformDiagram(freeformDiagram.id)
     }
 }
