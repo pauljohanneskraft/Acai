@@ -75,8 +75,20 @@ extension DartExtractor {
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) {
+        // In the Dart grammar a member's `function_body` is a *sibling* of its
+        // signature node within the class body, so bodies are paired with the
+        // member that the immediately preceding child produced.
+        var previousChildAddedMember = false
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            if nodeType == "function_body" {
+                if previousChildAddedMember, !members.isEmpty {
+                    members[members.count - 1].assignments = extractAssignments(from: child)
+                }
+                previousChildAddedMember = false
+                continue
+            }
+            let countBefore = members.count
             if nodeType == "declaration" {
                 extractClassMemberDeclaration(
                     child, members: &members, nestedTypes: &nestedTypes, parentName: parentName
@@ -87,6 +99,7 @@ extension DartExtractor {
                     nestedTypes: &nestedTypes, parentName: parentName
                 )
             }
+            previousChildAddedMember = members.count == countBefore + 1
         }
     }
 
@@ -129,11 +142,18 @@ extension DartExtractor {
         parentName: String
     ) {
         var ignored: [TypeDeclaration] = []
+        // Same signature/body sibling pairing as `extractClassBody`.
+        var previousChildAddedMember = false
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            let countBefore = members.count
             switch nodeType {
             case "enum_constant":
                 if let enumCase = extractEnumConstant(child) { enumCases.append(enumCase) }
+            case "function_body":
+                if previousChildAddedMember, !members.isEmpty {
+                    members[members.count - 1].assignments = extractAssignments(from: child)
+                }
             case "declaration":
                 extractClassMemberDeclaration(
                     child, members: &members, nestedTypes: &ignored, parentName: parentName
@@ -144,6 +164,7 @@ extension DartExtractor {
                     nestedTypes: &ignored, parentName: parentName
                 )
             }
+            previousChildAddedMember = members.count == countBefore + 1
         }
     }
 

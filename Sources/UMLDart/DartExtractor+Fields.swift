@@ -76,7 +76,8 @@ extension DartExtractor {
             guard !name.isEmpty else { return nil }
             return makeFieldMember(
                 name: name, type: info.type,
-                attributes: attrs, location: loc(child)
+                attributes: attrs, location: loc(child),
+                initialValue: fieldInitializerValue(of: child)
             )
         }
     }
@@ -95,7 +96,8 @@ extension DartExtractor {
             guard !name.isEmpty else { return nil }
             return makeFieldMember(
                 name: name, type: info.type,
-                attributes: attrs, location: loc(child)
+                attributes: attrs, location: loc(child),
+                initialValue: fieldInitializerValue(of: child)
             )
         }
     }
@@ -120,12 +122,14 @@ extension DartExtractor {
 
     func makeFieldMember(
         name: String, type: TypeReference?,
-        attributes: FieldAttributes, location: SourceLocation
+        attributes: FieldAttributes, location: SourceLocation,
+        initialValue: VariableAssignment.Value? = nil
     ) -> Member {
         Member(
             name: name, kind: .property,
             accessLevel: accessLevel(for: name),
-            modifiers: attributes.modifiers, type: type, location: location
+            modifiers: attributes.modifiers, type: type, location: location,
+            initialValue: initialValue
         )
     }
 
@@ -142,7 +146,8 @@ extension DartExtractor {
             guard !varName.isEmpty else { return [] }
             return [makeFieldMember(
                 name: varName, type: fieldType,
-                attributes: attributes, location: loc(child)
+                attributes: attributes, location: loc(child),
+                initialValue: fieldInitializerValue(of: child)
             )]
         case "static_final_declaration":
             let varName = extractIdentifierName(child)
@@ -153,7 +158,8 @@ extension DartExtractor {
             attrs.isFinal = true
             return [makeFieldMember(
                 name: varName, type: fieldType,
-                attributes: attrs, location: loc(child)
+                attributes: attrs, location: loc(child),
+                initialValue: fieldInitializerValue(of: child)
             )]
         case "identifier":
             return processFieldIdentifier(

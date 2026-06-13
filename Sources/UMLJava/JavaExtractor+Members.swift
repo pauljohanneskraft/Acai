@@ -261,15 +261,16 @@ extension JavaExtractor {
             parameters = extractFormalParameters(paramsNode)
         }
 
-        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
-                                         knownProperties: knownProperties)
+        let body = node.child(byFieldName: "body")
+        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
 
         return Member(
             name: name, kind: .method,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: returnType, parameters: parameters, genericParameters: genericParams,
             annotations: modifierInfo.annotations, location: nodeLoc,
-            callSites: callSites
+            callSites: callSites,
+            assignments: extractAssignments(from: body)
         )
     }
 
@@ -289,15 +290,16 @@ extension JavaExtractor {
             parameters = extractFormalParameters(paramsNode)
         }
 
-        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
-                                         knownProperties: knownProperties)
+        let body = node.child(byFieldName: "body")
+        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
 
         return Member(
             name: name, kind: .initializer,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             parameters: parameters, genericParameters: genericParams,
             annotations: modifierInfo.annotations, location: nodeLoc,
-            callSites: callSites
+            callSites: callSites,
+            assignments: extractAssignments(from: body)
         )
     }
 
@@ -356,7 +358,8 @@ extension JavaExtractor {
         return Member(
             name: name, kind: .property,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            type: actualType, annotations: modifierInfo.annotations, location: loc
+            type: actualType, annotations: modifierInfo.annotations, location: loc,
+            initialValue: node.child(byFieldName: "value").map { classifyValue($0) }
         )
     }
 

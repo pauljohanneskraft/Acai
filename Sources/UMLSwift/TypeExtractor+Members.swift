@@ -8,7 +8,8 @@ extension TypeExtractor {
     static func extractFunction(
         from node: FunctionDeclSyntax,
         fileName: String,
-        callSites: [CallSite] = []
+        callSites: [CallSite] = [],
+        assignments: [VariableAssignment] = []
     ) -> Member {
         let modifiers = extractModifiers(from: node.modifiers)
         let accessLevel = extractAccessLevel(from: node.modifiers)
@@ -36,7 +37,8 @@ extension TypeExtractor {
             genericParameters: genericParams,
             annotations: annotations,
             location: sourceLocation(of: node, fileName: fileName),
-            callSites: callSites
+            callSites: callSites,
+            assignments: assignments
         )
     }
 
@@ -48,7 +50,12 @@ extension TypeExtractor {
         let location = sourceLocation(of: node, fileName: fileName)
         let bindings = Array(node.bindings)
 
-        func makeMember(name: String, type: TypeReference?, isComputed: Bool) -> Member {
+        func makeMember(
+            name: String,
+            type: TypeReference?,
+            isComputed: Bool,
+            initialValue: VariableAssignment.Value? = nil
+        ) -> Member {
             Member(
                 name: name,
                 kind: .property,
@@ -58,7 +65,8 @@ extension TypeExtractor {
                 type: type,
                 isComputed: isComputed,
                 annotations: annotations,
-                location: location
+                location: location,
+                initialValue: initialValue
             )
         }
 
@@ -73,7 +81,8 @@ extension TypeExtractor {
                 members.append(makeMember(
                     name: pattern.identifier.text,
                     type: annotationType.map { extractTypeReference(from: $0) },
-                    isComputed: isComputedBinding(binding)
+                    isComputed: isComputedBinding(binding),
+                    initialValue: binding.initializer.map { SwiftValueClassifier.classify($0.value) }
                 ))
             } else if let tuple = binding.pattern.as(TuplePatternSyntax.self) {
                 // Decompose `let (a, b) = …` into one member per element.
@@ -107,7 +116,8 @@ extension TypeExtractor {
     static func extractInitializer(
         from node: InitializerDeclSyntax,
         fileName: String,
-        callSites: [CallSite] = []
+        callSites: [CallSite] = [],
+        assignments: [VariableAssignment] = []
     ) -> Member {
         let accessLevel = extractAccessLevel(from: node.modifiers)
         var modifiers = extractModifiers(from: node.modifiers)
@@ -132,7 +142,8 @@ extension TypeExtractor {
             genericParameters: genericParams,
             annotations: annotations,
             location: sourceLocation(of: node, fileName: fileName),
-            callSites: callSites
+            callSites: callSites,
+            assignments: assignments
         )
     }
 

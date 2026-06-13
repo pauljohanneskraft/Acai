@@ -157,6 +157,20 @@ final class ProjectBrowserViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Updates the variable configuration of a state diagram and clears its saved
+    /// node positions (the state set may have changed).
+    func updateStateConfiguration(
+        diagramID: UUID,
+        configuration: StateDiagramConfiguration
+    ) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
+        diagram.stateConfiguration = configuration
+        diagram.nodePositions = [:]
+        diagram.lastModified = Date()
+        store.saveGeneratedDiagram(diagram)
+        objectWillChange.send()
+    }
+
     func updateGeneratedDiagramPositions(
         diagramID: UUID,
         positions: [String: CGPoint],

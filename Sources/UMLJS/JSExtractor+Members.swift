@@ -120,8 +120,8 @@ extension JSExtractor {
         let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
         let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
 
-        let callSites = extractCallSites(from: node.child(byFieldName: "body"),
-                                         knownProperties: knownProperties)
+        let body = node.child(byFieldName: "body")
+        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
 
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
@@ -134,7 +134,8 @@ extension JSExtractor {
             isComputed: sig.isComputed,
             annotations: annotations,
             location: nodeLoc,
-            callSites: callSites
+            callSites: callSites,
+            assignments: extractAssignments(from: body)
         )
     }
 
@@ -222,7 +223,8 @@ extension JSExtractor {
             modifiers: modifiers,
             type: propType,
             annotations: annotations,
-            location: nodeLoc
+            location: nodeLoc,
+            initialValue: node.child(byFieldName: "value").map { classifyValue($0) }
         )
     }
 

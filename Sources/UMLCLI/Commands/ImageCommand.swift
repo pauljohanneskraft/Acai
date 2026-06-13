@@ -63,12 +63,24 @@ extension UMLCommand {
         @Option(name: .long, help: "Maximum sequence-diagram call-graph depth.")
         var maxDepth: Int = 5
 
+        @Option(name: .long, help: ArgumentHelp(
+            "Render a value-flow state diagram for this variable instead of a class diagram." +
+            " Format: \"TypeName.variableName\", or just \"variableName\" for a global."
+        ))
+        var stateFrom: String?
+
+        @Option(name: .long, help: "Maximum number of distinct states before the analysis fails.")
+        var maxStates: Int = 20
+
         mutating func validate() throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
             }
             if from != nil && source != nil {
                 throw ValidationError("Specify either --from or --source, not both.")
+            }
+            if sequenceFrom != nil && stateFrom != nil {
+                throw ValidationError("Specify either --sequence-from or --state-from, not both.")
             }
         }
 
@@ -78,6 +90,8 @@ extension UMLCommand {
             let data: Data
             if let sequenceFrom {
                 data = try await renderSequence(artifact: artifact, entryPoint: sequenceFrom)
+            } else if let stateFrom {
+                data = try await renderState(artifact: artifact, variable: stateFrom)
             } else {
                 var configuration = ClassDiagramConfiguration()
                 configuration.grouping = grouping
@@ -133,6 +147,21 @@ extension UMLCommand {
             }
             return try await MainActor.run {
                 try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale))
+            }
+        }
+
+        /// Runs the value-flow state analysis for `variable` and renders the diagram to PNG.
+        private func renderState(artifact: CodeArtifact, variable: String) async throws -> Data {
+            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+            let diagram: StateDiagram
+            do {
+                diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+            } catch let error as StateDiagramAnalysisError {
+                throw ValidationError(error.message)
+            }
+            let renderScale = CGFloat(scale)
+            return try await MainActor.run {
+                try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: renderScale)
             }
         }
 

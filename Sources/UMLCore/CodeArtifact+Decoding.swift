@@ -62,3 +62,29 @@ extension TypeDeclaration {
         location = try container.decodeIfPresent(SourceLocation.self, forKey: .location)
     }
 }
+
+extension Member {
+    enum CodingKeys: String, CodingKey {
+        case name, kind, accessLevel, setAccessLevel, modifiers, type, parameters
+        case genericParameters, isComputed, annotations, location, callSites
+        case assignments, initialValue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        kind = try container.decode(MemberKind.self, forKey: .kind)
+        accessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .accessLevel)
+        setAccessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .setAccessLevel)
+        modifiers = try container.decodeIfPresent([Modifier].self, forKey: .modifiers) ?? []
+        type = try container.decodeIfPresent(TypeReference.self, forKey: .type)
+        parameters = try container.decodeIfPresent([Parameter].self, forKey: .parameters) ?? []
+        genericParameters = try container.decodeIfPresent([GenericParameter].self, forKey: .genericParameters) ?? []
+        isComputed = try container.decodeIfPresent(Bool.self, forKey: .isComputed) ?? false
+        annotations = try container.decodeIfPresent([String].self, forKey: .annotations) ?? []
+        location = try container.decodeIfPresent(SourceLocation.self, forKey: .location)
+        callSites = try container.decodeIfPresent([CallSite].self, forKey: .callSites) ?? []
+        assignments = try container.decodeIfPresent([VariableAssignment].self, forKey: .assignments) ?? []
+        initialValue = try container.decodeIfPresent(VariableAssignment.Value.self, forKey: .initialValue)
+    }
+}

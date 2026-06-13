@@ -7,15 +7,20 @@ public struct RelationshipEdgeView: View, Equatable {
     let kind: Relationship.Kind
     let sourceRect: CGRect
     let targetRect: CGRect
+    /// Optional text drawn beside the line's midpoint (e.g. a state-transition's
+    /// `event [guard] / action` label).
+    let label: String?
 
-    public init(kind: Relationship.Kind, sourceRect: CGRect, targetRect: CGRect) {
+    public init(kind: Relationship.Kind, sourceRect: CGRect, targetRect: CGRect, label: String? = nil) {
         self.kind = kind
         self.sourceRect = sourceRect
         self.targetRect = targetRect
+        self.label = label
     }
 
     nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
-        lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect && lhs.kind == rhs.kind
+        lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect
+            && lhs.kind == rhs.kind && lhs.label == rhs.label
     }
 
     private let edgeColor = Color(white: 0.4)
@@ -77,6 +82,18 @@ public struct RelationshipEdgeView: View, Equatable {
                     )
                     sourcePath.stroke(edgeColor, lineWidth: style.lineWidth)
                 }
+            }
+
+            if let label {
+                // Explicit ink so the label stays readable in dark mode against
+                // the light canvas (matching SequenceMessageView's labels).
+                Text(label)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(Color(white: 0.15))
+                    .position(
+                        x: (startPoint.x + endPoint.x) / 2,
+                        y: (startPoint.y + endPoint.y) / 2 - 8
+                    )
             }
         }
     }
