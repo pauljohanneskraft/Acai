@@ -32,7 +32,13 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         let props = type.members.filter { $0.kind == .property || $0.kind == .subscript }
         let meths = type.members.filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
 
-        if config.showProperties {
+        // Per-type overrides take precedence over the global defaults, letting a single type
+        // show or hide its members independently of the rest of the diagram.
+        let showProps = config.propertyVisibility[type.id] ?? config.showProperties
+        let showMeths = config.methodVisibility[type.id] ?? config.showMethods
+        let showEnums = config.enumCaseVisibility[type.id] ?? config.showEnumCases
+
+        if showProps {
             self.properties = props
                 .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
                 .map { DiagramMember(from: $0, isMethod: false) }
@@ -40,7 +46,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
             self.properties = []
         }
 
-        if config.showMethods {
+        if showMeths {
             self.methods = meths
                 .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
                 .map { DiagramMember(from: $0, isMethod: true) }
@@ -48,7 +54,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
             self.methods = []
         }
 
-        if config.showEnumCases {
+        if showEnums {
             self.enumCases = type.enumCases.map { DiagramEnumCase(from: $0) }
         } else {
             self.enumCases = []

@@ -59,7 +59,7 @@ extension ProjectBrowserViewModel {
     ) {
         guard let diagram = generatedDiagram(for: diagramId),
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
-              var artifact = artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
+              var artifact = store.artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
 
         // Sequence diagrams have no class configuration; default to hiding generated Dart types.
         let hideGeneratedDartTypes = diagram.classConfiguration?.hideGeneratedDartTypes ?? true

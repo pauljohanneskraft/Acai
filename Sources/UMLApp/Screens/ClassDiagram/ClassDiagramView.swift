@@ -138,6 +138,10 @@ struct ClassDiagramView: View {
 
     // MARK: - Node Layer
 
+    private var editor: ClassDiagramConfigEditor {
+        ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
+    }
+
     @ViewBuilder private var nodeLayer: some View {
         let nodes = viewModel.nodes.removingDuplicates { $0.id }
         ForEach(nodes) { node in
@@ -183,6 +187,15 @@ struct ClassDiagramView: View {
                         showSidebar = true
                     } label: {
                         Label("Details", systemImage: "info")
+                    }
+                    Divider()
+                    Toggle("Show Members", isOn: editor.typeVisibility(
+                        node.id, override: \.propertyVisibility, default: \.showProperties))
+                    Toggle("Show Functions", isOn: editor.typeVisibility(
+                        node.id, override: \.methodVisibility, default: \.showMethods))
+                    if node.kind == .enum {
+                        Toggle("Show Enum Cases", isOn: editor.typeVisibility(
+                            node.id, override: \.enumCaseVisibility, default: \.showEnumCases))
                     }
                 }
             }
