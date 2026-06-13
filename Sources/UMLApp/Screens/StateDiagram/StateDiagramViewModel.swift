@@ -13,7 +13,7 @@ import UMLRender
 final class StateDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let artifact: CodeArtifact
 
-    /// `nil` while unconfigured (legacy diagrams created before the config popup).
+    /// `nil` while the diagram has no state-variable spec chosen yet.
     @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
     /// Per-state centre overrides, keyed by state id.
     @Published var positionOverrides: [String: CGPoint] = [:]

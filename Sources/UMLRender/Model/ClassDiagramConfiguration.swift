@@ -30,6 +30,9 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// (e.g. `*.freezed.dart`, `*.g.dart`) as well as types whose names
     /// match common code-generation patterns.
     public var hideGeneratedDartTypes: Bool = true
+    /// When set, restricts the diagram to a single type and the slice of the
+    /// relationship graph around it. `nil` renders the whole codebase.
+    public var focus: FocusConfiguration?
 
     public init() {}
 }

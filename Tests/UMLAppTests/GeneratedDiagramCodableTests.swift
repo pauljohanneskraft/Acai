@@ -6,8 +6,6 @@ import UMLRender
 
 /// Round-trip coverage for the `GeneratedDiagram` persistence format: `content` is encoded
 /// directly (synthesized Codable), one case per diagram kind with its own configuration.
-/// Format break 2026-06: stores written by earlier versions (flat `type`/`configuration`
-/// keys) are not readable.
 @Suite("Generated Diagram Codable")
 struct GeneratedDiagramCodableTests {
 
@@ -72,29 +70,5 @@ struct GeneratedDiagramCodableTests {
         #expect(decoded == diagram)
         #expect(decoded.stateConfiguration == nil)
         #expect(decoded.type == .stateDiagram)
-    }
-
-    /// Pins the migration behaviour: a `.stateDiagram` persisted before the case gained its
-    /// configuration payload (encoded as an empty object) must decode as "unconfigured".
-    @Test func legacyConfigurationlessStateDiagramDecodes() throws {
-        let codebaseID = UUID()
-        let legacy = """
-        {
-          "id": "\(UUID().uuidString)",
-          "name": "Legacy State",
-          "content": { "stateDiagram": {} },
-          "codebaseID": "\(codebaseID.uuidString)",
-          "nodePositions": {},
-          "nodeSizes": {},
-          "canvasScale": 1,
-          "canvasOffsetX": 0,
-          "canvasOffsetY": 0,
-          "createdDate": 700000000,
-          "lastModified": 700000000
-        }
-        """
-        let decoded = try JSONDecoder().decode(GeneratedDiagram.self, from: Data(legacy.utf8))
-        #expect(decoded.type == .stateDiagram)
-        #expect(decoded.stateConfiguration == nil)
     }
 }

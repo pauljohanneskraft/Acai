@@ -27,6 +27,11 @@ public struct ClassDiagramOptions: Sendable {
     /// artifact are rendered as lightweight gray placeholder nodes.
     public var showExternalTypes: Bool
 
+    /// When set, restricts the diagram to a single type and the slice of the
+    /// relationship graph around it (see `FocusConfiguration`). `nil` renders the
+    /// whole codebase.
+    public var focus: FocusConfiguration?
+
     public init(
         layoutDirection: LayoutDirection = .topToBottom,
         showMembers: Bool = true,
@@ -41,7 +46,8 @@ public struct ClassDiagramOptions: Sendable {
         theme: DiagramTheme = .default,
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
-        showExternalTypes: Bool = false
+        showExternalTypes: Bool = false,
+        focus: FocusConfiguration? = nil
     ) {
         self.layoutDirection = layoutDirection
         self.showMembers = showMembers
@@ -57,6 +63,7 @@ public struct ClassDiagramOptions: Sendable {
         self.inferCompositionFromProperties = inferCompositionFromProperties
         self.inferDependencyFromMethods = inferDependencyFromMethods
         self.showExternalTypes = showExternalTypes
+        self.focus = focus
     }
 
     public enum LayoutDirection: String, Sendable {

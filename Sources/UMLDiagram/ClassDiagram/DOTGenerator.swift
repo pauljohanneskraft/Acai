@@ -15,7 +15,8 @@ public struct DOTGenerator: Sendable {
             options: EnrichmentOptions(
                 inferCompositionFromProperties: options.inferCompositionFromProperties,
                 inferDependencyFromMethods: options.inferDependencyFromMethods,
-                showExternalTypes: options.showExternalTypes
+                showExternalTypes: options.showExternalTypes,
+                focus: options.focus
             )
         )
 
