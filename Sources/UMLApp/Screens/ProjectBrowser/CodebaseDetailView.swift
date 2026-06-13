@@ -8,10 +8,12 @@ struct CodebaseDetailView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var isIndexing = false
     /// Set when the user clicks "Sequence Diagram"; drives the configuration popup.
-    @State private var sequenceConfigContext: SequenceConfigContext?
+    @State private var sequenceConfigContext: ConfigContext?
+    /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
+    @State private var stateConfigContext: ConfigContext?
 
-    /// Identifies the codebase a pending sequence-diagram configuration belongs to.
-    private struct SequenceConfigContext: Identifiable {
+    /// Identifies the codebase a pending diagram configuration belongs to.
+    private struct ConfigContext: Identifiable {
         let projectID: UUID
         let codebaseID: UUID
         let codebaseName: String
@@ -53,6 +55,9 @@ struct CodebaseDetailView: View {
             .sheet(item: $sequenceConfigContext) { context in
                 sequenceConfigSheet(for: context)
             }
+            .sheet(item: $stateConfigContext) { context in
+                stateConfigSheet(for: context)
+            }
         } else {
             Text("Codebase not found")
                 .foregroundStyle(.secondary)
@@ -60,9 +65,32 @@ struct CodebaseDetailView: View {
         }
     }
 
+    /// The state-diagram configuration popup, presented when "State Diagram" is clicked.
+    @ViewBuilder
+    private func stateConfigSheet(for context: ConfigContext) -> some View {
+        if let artifact = model.artifact(for: context.codebaseID) {
+            StateConfigSheet(
+                artifact: artifact,
+                onCancel: { stateConfigContext = nil },
+                onCreate: { config in
+                    let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
+                    if let id = model.addGeneratedDiagram(
+                        to: context.projectID,
+                        codebaseID: context.codebaseID,
+                        name: "\(context.codebaseName) — State: \(variable)",
+                        content: .stateDiagram(config)
+                    ) {
+                        model.selection = .generatedDiagram(id)
+                    }
+                    stateConfigContext = nil
+                }
+            )
+        }
+    }
+
     /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
     @ViewBuilder
-    private func sequenceConfigSheet(for context: SequenceConfigContext) -> some View {
+    private func sequenceConfigSheet(for context: ConfigContext) -> some View {
         if let artifact = model.artifact(for: context.codebaseID) {
             SequenceConfigSheet(
                 artifact: artifact,
@@ -234,10 +262,16 @@ struct CodebaseDetailView: View {
     private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
         Button {
             guard let projectID else { return }
-            // Sequence diagrams always open the configuration popup (entry point + interface
-            // resolution) rather than generating immediately.
+            // Sequence and state diagrams always open their configuration popup
+            // (entry point / variable selection) rather than generating immediately.
             if type == .sequenceDiagram {
-                sequenceConfigContext = SequenceConfigContext(
+                sequenceConfigContext = ConfigContext(
+                    projectID: projectID, codebaseID: codebase.id, codebaseName: codebase.name
+                )
+                return
+            }
+            if type == .stateDiagram {
+                stateConfigContext = ConfigContext(
                     projectID: projectID, codebaseID: codebase.id, codebaseName: codebase.name
                 )
                 return

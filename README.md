@@ -13,7 +13,7 @@
   <img src="Documentation/Images/app-hero.png" alt="The UML macOS app: a project sidebar, a class diagram on the canvas, and the toolbar" width="100%">
 </p>
 
-<sub>☝️ The macOS app exploring the bundled <a href="Examples/MediaLibrary"><code>Examples/MediaLibrary</code></a> sample.</sub>
+<sub>☝️ The macOS app exploring the bundled <a href="Examples/ClassDiagram"><code>Examples/ClassDiagram</code></a> sample.</sub>
 
 ---
 
@@ -63,7 +63,7 @@ Point UML at the whole repo and every language lands in one diagram, neatly
 grouped — here the bundled sample's Swift and Kotlin sides, side by side:
 
 <p align="center">
-  <img src="Documentation/Images/diagram-full.png" alt="A UML class diagram of the sample MediaLibrary project, with Swift and Kotlin grouped separately" width="100%">
+  <img src="Documentation/Images/diagram-full.png" alt="A UML class diagram of the sample media-library project, with languages grouped separately" width="100%">
 </p>
 
 Zoom in on one side for full member detail. Access levels show as `+` / `-`, and
@@ -165,7 +165,7 @@ uml image --source ./MyProject --grouping directory --min-access public --scale 
 
 > **macOS only.** Both paths render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `uml diagram` and render it with Graphviz (`dot -Tpng`).
 
-Every diagram in this README was produced by `uml image` from [`Examples/MediaLibrary`](Examples/MediaLibrary) — see [`Examples/README.md`](Examples/README.md) for the exact commands.
+The class diagrams in this README were produced by `uml image` from the samples in [`Examples/`](Examples) — see [`Examples/README.md`](Examples/README.md) for the exact commands, plus DOT/PNG exports of every diagram type in all supported languages.
 
 <p align="center">
   <img src="Documentation/Images/app-export.png" alt="The macOS save panel exporting a class diagram to PNG from the UML app" width="70%">

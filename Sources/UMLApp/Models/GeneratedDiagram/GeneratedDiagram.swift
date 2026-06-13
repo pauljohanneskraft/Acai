@@ -26,7 +26,10 @@ extension GeneratedDiagram {
     enum Content: Codable, Hashable, Sendable {
         case classDiagram(ClassDiagramConfiguration)
         case sequenceDiagram(SequenceDiagramConfiguration)
-        case stateDiagram
+        /// `nil` = not configured yet. The optional payload keeps legacy persisted
+        /// data decodable: synthesized Codable uses `decodeIfPresent` for it, so an
+        /// old `{"stateDiagram":{}}` decodes as `.stateDiagram(nil)`.
+        case stateDiagram(StateDiagramConfiguration?)
         case useCaseDiagram
         case deploymentDiagram
 
@@ -39,7 +42,7 @@ extension GeneratedDiagram {
             case .sequenceDiagram:
                 self = .sequenceDiagram(.init(entryTypeName: "", entryMethodName: ""))
             case .stateDiagram:
-                self = .stateDiagram
+                self = .stateDiagram(nil)
             case .useCaseDiagram:
                 self = .useCaseDiagram
             case .deploymentDiagram:
@@ -83,6 +86,16 @@ extension GeneratedDiagram {
         }
         set {
             if let newValue, case .sequenceDiagram = content { content = .sequenceDiagram(newValue) }
+        }
+    }
+
+    /// The state configuration, when this is a (configured) state diagram.
+    var stateConfiguration: StateDiagramConfiguration? {
+        get {
+            if case .stateDiagram(let config) = content { config } else { nil }
+        }
+        set {
+            if case .stateDiagram = content { content = .stateDiagram(newValue) }
         }
     }
 }

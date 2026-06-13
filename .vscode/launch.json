@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UML}",
+            "name": "Debug UMLApp",
+            "target": "UMLApp",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug UMLApp"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UML}",
+            "name": "Release UMLApp",
+            "target": "UMLApp",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release UMLApp"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UML}",
+            "name": "Debug UMLCLI",
+            "target": "UMLCLI",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug UMLCLI"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UML}",
+            "name": "Release UMLCLI",
+            "target": "UMLCLI",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release UMLCLI"
+        }
+    ]
+}

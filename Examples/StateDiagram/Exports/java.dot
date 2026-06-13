@@ -1,0 +1,23 @@
+digraph {
+  label="Download.state";
+  labelloc=t;
+  rankdir=TB;
+  bgcolor="white";
+  fontname="Helvetica";
+  fontsize=12;
+  node [fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "__initial" [shape=circle style=filled fillcolor="#333333" width=0.3 label=""];
+  "state_IDLE" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="IDLE"];
+  "state_REQUESTED" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="REQUESTED"];
+  "state_DOWNLOADING" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="DOWNLOADING"];
+  "state_VERIFYING" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="VERIFYING"];
+  "state_FINISHED" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="FINISHED"];
+  "state_FAILED" [shape=Mrecord style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="FAILED"];
+  "__initial" -> "state_IDLE" [color="#666666"];
+  "__initial" -> "state_REQUESTED" [color="#666666" label="run()"];
+  "state_REQUESTED" -> "state_DOWNLOADING" [color="#666666" label="run()"];
+  "state_DOWNLOADING" -> "state_VERIFYING" [color="#666666" label="run()"];
+  "state_VERIFYING" -> "state_FINISHED" [color="#666666" label="run()"];
+  "__initial" -> "state_FAILED" [color="#666666" label="fail()"];
+}

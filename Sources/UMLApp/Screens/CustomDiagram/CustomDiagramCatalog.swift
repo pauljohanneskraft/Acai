@@ -38,6 +38,15 @@ struct CustomDiagramCatalog: View {
                     .padding(.horizontal)
 
                 messageCatalog
+
+                Divider()
+                    .padding(.horizontal)
+
+                Text("Transition Catalog")
+                    .font(.headline)
+                    .padding(.horizontal)
+
+                transitionCatalog
             }
             .padding(.vertical)
         }
@@ -148,6 +157,43 @@ struct CustomDiagramCatalog: View {
                           enabled: oneSelected, isSelf: true)
             if !twoSelected && !oneSelected {
                 Text("Select one or two lifelines (⌘-click) to add messages.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+        }
+    }
+
+    // MARK: - Transition Catalog (state diagrams)
+
+    /// Button that connects the selected states with a transition. Direction is
+    /// first-selected → second-selected; one selected state makes a self-loop.
+    /// Event/guard/action are editable afterwards in the inspector.
+    private var transitionCatalog: some View {
+        let states = viewModel.orderedStateSelection
+        let twoSelected = states.count == 2
+        let oneSelected = states.count == 1
+        return VStack(spacing: 4) {
+            Button {
+                if twoSelected {
+                    viewModel.addTransition(from: states[0], to: states[1])
+                } else if oneSelected, let only = states.first {
+                    viewModel.addTransition(from: only, to: only)
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.right")
+                        .frame(width: 20)
+                    Text(oneSelected ? "Self-Transition" : "Transition")
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+            .disabled(!twoSelected && !oneSelected)
+            if !twoSelected && !oneSelected {
+                Text("Select one or two states (⌘-click) to add a transition.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)

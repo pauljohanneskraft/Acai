@@ -15,6 +15,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     // instead of treating nested declarations as new members.
     private var functionBodyDepth = 0
     private var pendingCallSites: [CallSite] = []
+    private var pendingAssignments: [VariableAssignment] = []
     // Maps stored-property name → declared type name for the current type.
     private var callSitePropertyMap: [String: String] = [:]
 
@@ -144,6 +145,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         // Capture the property map for this type before we descend.
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
+        pendingAssignments = []
         return .visitChildren   // descend so FunctionCallExprSyntax nodes are visited
     }
 
@@ -152,8 +154,10 @@ final class DeclarationVisitor: SyntaxVisitor {
         // Only the top-of-body function becomes a member; nested ones are skipped.
         guard functionBodyDepth == 0 else { return }
         let member = TypeExtractor.extractFunction(
-            from: node, fileName: fileName, callSites: pendingCallSites)
+            from: node, fileName: fileName, callSites: pendingCallSites,
+            assignments: pendingAssignments)
         pendingCallSites = []
+        pendingAssignments = []
         callSitePropertyMap = [:]
         if typeStack.isEmpty {
             freestandingFunctions.append(member)
@@ -183,6 +187,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
+        pendingAssignments = []
         return .visitChildren
     }
 
@@ -190,8 +195,10 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
         let member = TypeExtractor.extractInitializer(
-            from: node, fileName: fileName, callSites: pendingCallSites)
+            from: node, fileName: fileName, callSites: pendingCallSites,
+            assignments: pendingAssignments)
         pendingCallSites = []
+        pendingAssignments = []
         callSitePropertyMap = [:]
         typeStack[typeStack.count - 1].members.append(member)
     }
@@ -250,6 +257,55 @@ final class DeclarationVisitor: SyntaxVisitor {
                 ))
             }
         }
+        return .visitChildren
+    }
+
+    // MARK: - Assignment Collection
+
+    /// Collects assignments inside function/initializer bodies.
+    ///
+    /// The file is parsed without operator folding, so `x = expr` surfaces as a
+    /// `SequenceExprSyntax` whose elements are `[target, AssignmentExpr, value…]`,
+    /// and compound assignments as `[target, BinaryOperatorExpr(+=), value…]`.
+    override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
+        guard functionBodyDepth > 0 else { return .visitChildren }
+        let elements = Array(node.elements)
+        guard elements.count >= 3,
+              let target = SwiftValueClassifier.target(of: elements[0])
+        else { return .visitChildren }
+
+        let op: VariableAssignment.Operator
+        if elements[1].is(AssignmentExprSyntax.self) {
+            op = .assign
+        } else if let binaryOperator = elements[1].as(BinaryOperatorExprSyntax.self),
+                  SwiftValueClassifier.compoundAssignmentOperators.contains(binaryOperator.operator.text) {
+            op = .compound
+        } else {
+            return .visitChildren
+        }
+
+        // Compound results depend on the previous value, so record the whole
+        // statement as a non-enumerable expression. For plain assignments,
+        // exactly one RHS element is classifiable; longer tails (`a = b ? x : y`
+        // folds the ternary into one element, but `a = b = c` does not) are
+        // treated as non-enumerable expressions.
+        let value: VariableAssignment.Value
+        if op == .compound {
+            let joined = node.trimmedDescription.replacingOccurrences(of: "\n", with: " ")
+            value = .init(kind: .expression, text: String(joined.prefix(80)))
+        } else if elements.count == 3 {
+            value = SwiftValueClassifier.classify(elements[2])
+        } else {
+            let joined = elements[2...].map(\.trimmedDescription).joined(separator: " ")
+            value = .init(kind: .expression, text: String(joined.prefix(80)))
+        }
+        pendingAssignments.append(VariableAssignment(
+            targetName: target.name,
+            targetReceiver: target.receiver,
+            op: op,
+            value: value,
+            location: TypeExtractor.sourceLocation(of: node, fileName: fileName)
+        ))
         return .visitChildren
     }
 

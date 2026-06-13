@@ -60,6 +60,29 @@ extension CustomDiagram {
         var messageOrder: Int?
         /// The message kind (sync/async/return/…) when `messageOrder` is set.
         var messageKind: SequenceDiagram.Message.Kind?
+        /// Set when this edge is a state-machine transition between two state nodes; carries
+        /// the UML `event [guard] / action` parts. `nil` for ordinary relationship edges
+        /// (optional, so previously-saved diagrams decode unchanged).
+        var transition: Transition?
+    }
+}
+
+extension CustomDiagram.Edge {
+    /// The label parts of a state-machine transition.
+    struct Transition: Codable, Hashable, Sendable {
+        var event: String?
+        var guardCondition: String?
+        var action: String?
+
+        /// Formats as `event [guard] / action` per UML notation (mirrors
+        /// `StateDiagram.Transition.label`).
+        var label: String? {
+            var parts: [String] = []
+            if let event, !event.isEmpty { parts.append(event) }
+            if let guardCondition, !guardCondition.isEmpty { parts.append("[\(guardCondition)]") }
+            if let action, !action.isEmpty { parts.append("/ \(action)") }
+            return parts.isEmpty ? nil : parts.joined(separator: " ")
+        }
     }
 }
 
@@ -95,6 +118,9 @@ extension CustomDiagram.Node {
         /// A sequence-diagram combined fragment (`loop`/`alt`/`opt`/…). Its frame is derived
         /// from the message rows its operands cover, not from the node's position.
         case fragment(FragmentContent)
+        /// A state-machine state. The associated kind carries the UML flavour
+        /// (initial, normal, final, choice, …); the state's title is `node.name`.
+        case state(StateDiagram.State.Kind)
 
         /// The element kind derived from this content.
         var kind: CustomDiagramNodeKind {
@@ -105,6 +131,8 @@ extension CustomDiagram.Node {
                 .lifeline
             case .fragment:
                 .fragment
+            case .state(let stateKind):
+                .state(stateKind)
             case .actor:
                 .actor
             case .useCase:
@@ -161,6 +189,8 @@ extension CustomDiagram.Node {
                 kind.stereotype
             case .fragment(let content):
                 content.kind.rawValue
+            case .state:
+                nil
             }
         }
 

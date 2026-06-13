@@ -1,4 +1,5 @@
 import UMLCore
+import UMLDiagram
 
 /// Identifies the kind of element in a custom diagram.
 ///
@@ -38,12 +39,20 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     /// A sequence-diagram combined fragment (`loop`/`alt`/`opt`/…) framing a span of messages.
     case fragment
 
+    // MARK: - State Diagram Elements
+
+    /// A state-machine state. The associated `StateDiagram.State.Kind` carries the UML
+    /// flavour; the catalog offers `.normal`, `.initial`, `.final` and `.choice`.
+    case state(StateDiagram.State.Kind)
+
     // MARK: - Identifiable
 
     var id: String {
         switch self {
         case .type(let tk):
             "type.\(tk.rawValue)"
+        case .state(let sk):
+            "state.\(sk.rawValue)"
         case .actor:
             "actor"
         case .useCase:
@@ -135,6 +144,21 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "Lifeline"
         case .fragment:
             "Fragment (loop/alt/opt)"
+        case .state(let sk):
+            switch sk {
+            case .initial:
+                "Initial State"
+            case .final:
+                "Final State"
+            case .choice:
+                "Choice"
+            case .fork:
+                "Fork"
+            case .join:
+                "Join"
+            case .normal, .composite:
+                "State"
+            }
         }
     }
 
@@ -196,6 +220,19 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "arrow.down.to.line"
         case .fragment:
             "rectangle.dashed.badge.record"
+        case .state(let sk):
+            switch sk {
+            case .initial:
+                "circle.fill"
+            case .final:
+                "circle.circle"
+            case .choice:
+                "diamond"
+            case .fork, .join:
+                "minus.rectangle"
+            case .normal, .composite:
+                "capsule"
+            }
         }
     }
 
@@ -231,6 +268,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             .lifeline(.object)
         case .fragment:
             .fragment(.init())
+        case .state(let sk):
+            .state(sk)
         }
     }
     // swiftlint:enable cyclomatic_complexity
@@ -241,6 +280,7 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     enum CatalogGroup: String, CaseIterable {
         case classDiagram = "Class Diagram"
         case sequenceDiagram = "Sequence Diagram"
+        case stateDiagram = "State Diagram"
         case useCaseDiagram = "Use Case Diagram"
         case componentDeployment = "Component / Deployment"
         case general = "General"
@@ -252,6 +292,8 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             .classDiagram
         case .lifeline, .fragment:
             .sequenceDiagram
+        case .state:
+            .stateDiagram
         case .actor, .useCase, .boundary:
             .useCaseDiagram
         case .component, .package, .deploymentNode,
@@ -262,11 +304,13 @@ enum CustomDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         }
     }
 
-    /// Every element kind available in the catalog, in display order.
+    /// Every element kind available in the catalog, in display order. State kinds are
+    /// limited to the flavours generated diagrams produce (no fork/join/composite yet).
     static let allCases: [CustomDiagramNodeKind] = {
         var items: [CustomDiagramNodeKind] = TypeKind.allCases.map { .type($0) }
         items += [
             .lifeline, .fragment,
+            .state(.normal), .state(.initial), .state(.final), .state(.choice),
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
             .entity, .note

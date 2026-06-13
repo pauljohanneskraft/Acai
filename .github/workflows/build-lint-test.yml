@@ -62,6 +62,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Materialize LFS-tracked PNGs so the Examples/ image regression tests see real bytes.
+          lfs: true
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'

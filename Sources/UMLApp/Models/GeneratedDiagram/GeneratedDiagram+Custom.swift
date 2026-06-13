@@ -16,6 +16,12 @@ extension GeneratedDiagram {
                 positions: positions, scale: scale, offset: offset
             )
         }
+        if case .stateDiagram(let config) = content, let config {
+            return convertStateToCustom(
+                artifact: artifact, configuration: config,
+                positions: positions, scale: scale, offset: offset
+            )
+        }
         var ids: [String: String] = [:]
 
         let nodes = buildCustomNodes(
@@ -137,6 +143,64 @@ extension GeneratedDiagram {
         return CustomDiagram(
             name: name + " (Custom)",
             diagramType: .sequenceDiagram,
+            nodes: nodes,
+            edges: edges,
+            canvasScale: scale,
+            canvasOffsetX: offset.x,
+            canvasOffsetY: offset.y
+        )
+    }
+
+    // MARK: - State → Custom
+
+    /// Converts a state diagram into an editable custom diagram: each state becomes a state
+    /// node and every transition a labeled transition edge. The custom editor renders these
+    /// through the same `StateNodeView` the generated view uses, so the converted diagram
+    /// looks identical to its original while staying fully editable.
+    private func convertStateToCustom(
+        artifact: CodeArtifact,
+        configuration: StateDiagramConfiguration,
+        positions: [String: CGPoint],
+        scale: CGFloat,
+        offset: CGPoint
+    ) -> CustomDiagram {
+        // Analysis failures convert to an empty (but still editable) diagram.
+        let state = (try? artifact.resolvingExtensions().stateDiagram(configuration: configuration))
+            ?? StateDiagram()
+
+        var nodeIDByStateID: [String: String] = [:]
+        var nodes: [CustomDiagram.Node] = []
+        for (index, diagramState) in state.states.enumerated() {
+            let nodeID = UUID().uuidString
+            nodeIDByStateID[diagramState.id] = nodeID
+            let livePos = positions[diagramState.id]
+            let storedPos = nodePositions[diagramState.id]
+            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? CGFloat(index) * 160 + 120
+            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 100
+            nodes.append(CustomDiagram.Node(
+                id: nodeID,
+                name: diagramState.name,
+                content: .state(diagramState.kind),
+                positionX: Double(x),
+                positionY: Double(y)
+            ))
+        }
+
+        let edges: [CustomDiagram.Edge] = state.transitions.compactMap { transition in
+            guard let source = nodeIDByStateID[transition.from],
+                  let target = nodeIDByStateID[transition.to] else { return nil }
+            var edge = CustomDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .association)
+            edge.transition = .init(
+                event: transition.event,
+                guardCondition: transition.guardCondition,
+                action: transition.action
+            )
+            return edge
+        }
+
+        return CustomDiagram(
+            name: name + " (Custom)",
+            diagramType: .stateDiagram,
             nodes: nodes,
             edges: edges,
             canvasScale: scale,
