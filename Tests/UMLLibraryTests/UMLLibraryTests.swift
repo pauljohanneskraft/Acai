@@ -1,4 +1,5 @@
 import Testing
+import UMLCore
 import UMLDiagram
 import UMLDart
 import UMLKotlin
@@ -7,6 +8,24 @@ import UMLSwift
 
 @Suite("UML Library Tests")
 struct UMLLibraryTests {
+    @Test func parseErrorsAggregateAcrossMergedFiles() async throws {
+        let parser = KotlinCodeParser()
+        let cleanSource = """
+        class Ok(val name: String) {
+            fun greet(): String {
+                return name
+            }
+        }
+        """
+        let clean = parser.parse(source: cleanSource, fileName: "Ok.kt")
+        let broken = parser.parse(source: "class Broken { fun (", fileName: "Bad.kt")
+        #expect(clean.metadata.hasParseErrors == false)
+        #expect(broken.metadata.hasParseErrors == true)
+        // A single malformed file must flag the whole merged project, regardless of merge order.
+        #expect(clean.merging(with: broken).metadata.hasParseErrors == true)
+        #expect(broken.merging(with: clean).metadata.hasParseErrors == true)
+    }
+
     @Test func testKotlin() async throws {
         let source = """
         sealed class SuperClass {

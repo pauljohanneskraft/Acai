@@ -183,6 +183,46 @@ extension TreeSitterExtracting {
         }
         return map
     }
+
+    /// The simple names of every type discovered so far (recursively including
+    /// nested types). Used by call-site resolution to recognise statically-resolvable
+    /// `TypeName.method()` calls without misclassifying calls on unknown/external
+    /// receivers (which would create phantom diagram participants).
+    public func collectKnownTypeNames() -> Set<String> {
+        var names: Set<String> = []
+        func walk(_ decls: [TypeDeclaration]) {
+            for decl in decls {
+                names.insert(decl.name)
+                walk(decl.nestedTypes)
+            }
+        }
+        walk(types)
+        return names
+    }
+}
+
+// MARK: - CallSiteScope
+
+/// The statically-known context used to resolve a method call's receiver to a type.
+///
+/// Resolution stays deliberately conservative — a call site is only captured when its
+/// receiver is *provably* a known type: a typed stored property, an explicit `this`/`self`
+/// (a call on the enclosing instance), or a `TypeName.method()` where `TypeName` is a
+/// declared type. Anything else (locals, parameters, external/stdlib receivers) is dropped
+/// so the resulting sequence diagrams keep their near-zero-false-edge guarantee.
+public struct CallSiteScope: Sendable {
+    /// `propertyName: typeName` for the enclosing type's stored properties.
+    public var knownProperties: [String: String]
+    /// Simple names of types declared in the project so far (for `TypeName.method()`).
+    public var knownTypeNames: Set<String>
+
+    public init(
+        knownProperties: [String: String] = [:],
+        knownTypeNames: Set<String> = []
+    ) {
+        self.knownProperties = knownProperties
+        self.knownTypeNames = knownTypeNames
+    }
 }
 
 // MARK: - CallSiteResolving
@@ -196,13 +236,14 @@ extension TreeSitterExtracting {
 public protocol CallSiteResolving: TreeSitterExtracting {
 
     /// Resolves a single AST node to a ``UMLCore/CallSite`` if it
-    /// represents a method call on a known property.
+    /// represents a statically-resolvable method call (on a known property,
+    /// on `this`/`self`, or on a known type).
     ///
     /// Return `nil` for nodes that are not relevant call
-    /// expressions.
+    /// expressions, or whose receiver cannot be provably resolved.
     func resolveCallSite(
         _ node: Node,
-        knownProperties: [String: String]
+        scope: CallSiteScope
     ) -> CallSite?
 }
 
@@ -210,43 +251,32 @@ public protocol CallSiteResolving: TreeSitterExtracting {
 
 extension CallSiteResolving {
 
-    /// Extracts call sites from a body node using a map
-    /// of property names → types.
+    /// Extracts call sites from a body node using the statically-known ``CallSiteScope``.
     ///
-    /// Walks the AST recursively, calling
-    /// ``resolveCallSite(_:knownProperties:)`` on each node.
+    /// Walks the AST recursively, calling ``resolveCallSite(_:scope:)`` on each node.
+    /// Unlike property-only resolution, this is worth walking even when no properties are
+    /// known, because `this`/`self` and `TypeName.method()` calls are still resolvable.
     public func extractCallSites(
         from body: Node?,
-        knownProperties: [String: String]
+        scope: CallSiteScope
     ) -> [CallSite] {
-        guard let body, !knownProperties.isEmpty else { return [] }
+        guard let body else { return [] }
         var sites: [CallSite] = []
-        walkForCallSites(
-            body,
-            knownProperties: knownProperties,
-            into: &sites
-        )
+        walkForCallSites(body, scope: scope, into: &sites)
         return sites
     }
 
     /// Recursively walks AST nodes, collecting resolved call sites.
     private func walkForCallSites(
         _ node: Node,
-        knownProperties: [String: String],
+        scope: CallSiteScope,
         into sites: inout [CallSite]
     ) {
-        if let site = resolveCallSite(
-            node,
-            knownProperties: knownProperties
-        ) {
+        if let site = resolveCallSite(node, scope: scope) {
             sites.append(site)
         }
         for child in node.namedChildren() {
-            walkForCallSites(
-                child,
-                knownProperties: knownProperties,
-                into: &sites
-            )
+            walkForCallSites(child, scope: scope, into: &sites)
         }
     }
 }

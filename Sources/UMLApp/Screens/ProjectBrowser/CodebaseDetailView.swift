@@ -136,10 +136,18 @@ struct CodebaseDetailView: View {
 
                 Spacer()
 
-                if let date = codebase.lastIndexed {
-                    Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 2) {
+                    if let date = codebase.lastIndexed {
+                        Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if codebase.hasParseErrors {
+                        Label("Syntax errors detected", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .help("Some files could not be fully parsed; the diagram may be incomplete.")
+                    }
                 }
 
                 Button {

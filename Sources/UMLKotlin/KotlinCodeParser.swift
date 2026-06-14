@@ -17,6 +17,9 @@ public struct KotlinCodeParser: CodeParser {
             return CodeArtifact(metadata: .init(sourceLanguage: .kotlin, filePaths: [fileName]))
         }
         var extractor = KotlinExtractor(source: source, fileName: fileName)
-        return extractor.extract(from: root)
+        var artifact = extractor.extract(from: root)
+        // Tree-sitter always returns a best-effort tree; flag ERROR/missing nodes so partial output is surfaced.
+        artifact.metadata.hasParseErrors = root.hasError
+        return artifact
     }
 }

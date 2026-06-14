@@ -133,6 +133,7 @@ extension UMLCommand {
                 }
                 let allowedLanguages = language.map { $0.sourceLanguage }
                 artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+                artifact.warnIfParseErrors()
             } else {
                 throw ValidationError("Either --from or --source must be specified.")
             }
