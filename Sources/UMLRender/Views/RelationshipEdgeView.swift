@@ -10,17 +10,27 @@ public struct RelationshipEdgeView: View, Equatable {
     /// Optional text drawn beside the line's midpoint (e.g. a state-transition's
     /// `event [guard] / action` label).
     let label: String?
+    /// Multiplies the kind's default line width — used by the package diagram to encode a
+    /// dependency's weight as thickness. Defaults to `1` (unchanged for class/state edges).
+    let lineWidthScale: CGFloat
 
-    public init(kind: Relationship.Kind, sourceRect: CGRect, targetRect: CGRect, label: String? = nil) {
+    public init(
+        kind: Relationship.Kind,
+        sourceRect: CGRect,
+        targetRect: CGRect,
+        label: String? = nil,
+        lineWidthScale: CGFloat = 1
+    ) {
         self.kind = kind
         self.sourceRect = sourceRect
         self.targetRect = targetRect
         self.label = label
+        self.lineWidthScale = lineWidthScale
     }
 
     nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect
-            && lhs.kind == rhs.kind && lhs.label == rhs.label
+            && lhs.kind == rhs.kind && lhs.label == rhs.label && lhs.lineWidthScale == rhs.lineWidthScale
     }
 
     private let edgeColor = Color(white: 0.4)
@@ -56,7 +66,14 @@ public struct RelationshipEdgeView: View, Equatable {
                     .filledDiamond(at: startPoint, angle: lineAngle - .pi)
                 } else { .init() }
 
-                let style = kind.strokeStyle
+                let baseStyle = kind.strokeStyle
+                let style = StrokeStyle(
+                    lineWidth: baseStyle.lineWidth * lineWidthScale,
+                    lineCap: baseStyle.lineCap,
+                    lineJoin: baseStyle.lineJoin,
+                    dash: baseStyle.dash,
+                    dashPhase: baseStyle.dashPhase
+                )
 
                 linePath.stroke(edgeColor, style: style)
 

@@ -60,6 +60,19 @@ struct ClassDiagramExportTests {
         )
         #expect(generated == expected, "Class DOT for \(stem) drifted; regenerate per Examples/README.md")
     }
+
+    @Test("regenerated class Mermaid matches the checked-in golden", arguments: cases)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("ClassDiagram"), language: language
+        )
+        // Mirrors DiagramCommand.renderClass with `--format mermaid` and default options.
+        let generated = ClassDiagramMermaidRenderer(options: ClassDiagramOptions()).generate(from: artifact)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("ClassDiagram", "Exports", "\(stem).mmd")
+        )
+        #expect(generated == expected, "Class Mermaid for \(stem) drifted; regenerate per Examples/README.md")
+    }
 }
 
 @Suite("Sequence diagram DOT exports", .serialized)
@@ -90,6 +103,22 @@ struct SequenceDiagramExportTests {
         )
         #expect(generated == expected, "Sequence DOT for \(stem) drifted; regenerate per Examples/README.md")
     }
+
+    @Test("regenerated sequence Mermaid matches the checked-in golden", arguments: cases)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("SequenceDiagram"), language: language
+        )
+        let diagram = artifact.sequenceDiagram(
+            entryPoint: ("Checkout", "placeOrder"), maxDepth: 5, typeMapping: [:]
+        )
+        #expect(!diagram.participants.isEmpty, "\(stem) sequence trace produced no participants")
+        let generated = SequenceDiagramMermaidRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("SequenceDiagram", "Exports", "\(stem).mmd")
+        )
+        #expect(generated == expected, "Sequence Mermaid for \(stem) drifted; regenerate per Examples/README.md")
+    }
 }
 
 @Suite("State diagram DOT exports", .serialized)
@@ -119,5 +148,19 @@ struct StateDiagramExportTests {
             ExampleExports.examples("StateDiagram", "Exports", "\(stem).dot")
         )
         #expect(generated == expected, "State DOT for \(stem) drifted; regenerate per Examples/README.md")
+    }
+
+    @Test("regenerated state Mermaid matches the checked-in golden", arguments: cases)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("StateDiagram"), language: language
+        )
+        let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
+        let diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+        let generated = StateDiagramMermaidRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("StateDiagram", "Exports", "\(stem).mmd")
+        )
+        #expect(generated == expected, "State Mermaid for \(stem) drifted; regenerate per Examples/README.md")
     }
 }

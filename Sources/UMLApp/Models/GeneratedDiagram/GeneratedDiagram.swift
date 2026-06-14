@@ -33,7 +33,7 @@ extension GeneratedDiagram {
         /// has not been chosen). A configured diagram carries its `StateDiagramConfiguration`.
         case stateDiagram(StateDiagramConfiguration?)
         case useCaseDiagram
-        case deploymentDiagram
+        case packageDiagram
 
         /// Default content for a freshly created diagram of the given type: each kind gets its
         /// own default configuration (none is privileged over the others).
@@ -47,8 +47,8 @@ extension GeneratedDiagram {
                 self = .stateDiagram(nil)
             case .useCaseDiagram:
                 self = .useCaseDiagram
-            case .deploymentDiagram:
-                self = .deploymentDiagram
+            case .packageDiagram:
+                self = .packageDiagram
             }
         }
 
@@ -62,8 +62,8 @@ extension GeneratedDiagram {
                 .stateDiagram
             case .useCaseDiagram:
                 .useCaseDiagram
-            case .deploymentDiagram:
-                .deploymentDiagram
+            case .packageDiagram:
+                .packageDiagram
             }
         }
     }

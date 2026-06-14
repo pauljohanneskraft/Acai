@@ -1,0 +1,13 @@
+stateDiagram-v2
+    state "Idle" as state_Idle
+    state "Requested" as state_Requested
+    state "Downloading" as state_Downloading
+    state "Verifying" as state_Verifying
+    state "Finished" as state_Finished
+    state "Failed" as state_Failed
+    [*] --> state_Idle
+    [*] --> state_Requested : run()
+    state_Requested --> state_Downloading : run()
+    state_Downloading --> state_Verifying : run()
+    state_Verifying --> state_Finished : run()
+    [*] --> state_Failed : fail()

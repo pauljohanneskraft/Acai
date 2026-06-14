@@ -29,7 +29,7 @@ struct GeneratedDiagramNamingTests {
             (.classDiagram(.init()), .classDiagram),
             (.stateDiagram(nil), .stateDiagram),
             (.useCaseDiagram, .useCaseDiagram),
-            (.deploymentDiagram, .deploymentDiagram)
+            (.packageDiagram, .packageDiagram)
         ]
         for (content, type) in cases {
             let diagram = GeneratedDiagram(name: "", content: content, codebaseID: UUID())
@@ -44,7 +44,7 @@ struct GeneratedDiagramNamingTests {
     }
 
     @Test func newDiagramIsNotUserNamed() {
-        let diagram = GeneratedDiagram(name: "X", content: .deploymentDiagram, codebaseID: UUID())
+        let diagram = GeneratedDiagram(name: "X", content: .packageDiagram, codebaseID: UUID())
         #expect(diagram.isNameUserDefined == false)
     }
 }

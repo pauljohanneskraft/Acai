@@ -1,0 +1,64 @@
+classDiagram
+    class Library["Library"] {
+        playlists Playlist[]
+        constructor(playlists Playlist[])
+        addPlaylist(playlist Playlist) void
+        playlist(named string) Playlist | undefined
+    }
+    class MediaItem["MediaItem"] {
+        title string
+        duration number
+        genre Genre
+        constructor(title string, duration number, genre Genre)
+        play() void
+    }
+    class Playable["Playable"] {
+        <<interface>>
+        title string
+        duration number
+        play() void
+    }
+    class Genre["Genre"] {
+        <<enumeration>>
+        Pop
+        Rock
+        Jazz
+        Classical
+        Electronic
+        SpokenWord
+    }
+    class Player["Player"] {
+        -nowPlaying Playable | null
+        -library Library
+        constructor(library Library)
+        play(item Playable) void
+        playFirstItem(playlistNamed string) void
+    }
+    class Playlist["Playlist"] {
+        name string
+        items MediaItem[]
+        totalDuration number
+        constructor(name string, items MediaItem[])
+        add(item MediaItem) void
+    }
+    class Podcast["Podcast"] {
+        host string
+        episodeNumber number
+        constructor(title string, duration number, host string, episodeNumber number)
+        play() void
+    }
+    class Song["Song"] {
+        artist string
+        album string
+        constructor(title string, duration number, genre Genre, artist string, album string?)
+        play() void
+    }
+    Playable <|.. MediaItem
+    MediaItem <|-- Podcast
+    MediaItem <|-- Song
+    Library o-- Playlist : playlists
+    MediaItem *-- Genre : genre
+    Player *-- Library : library
+    Player ..> Playable
+    Playlist o-- MediaItem : items
+    Song ..> Genre

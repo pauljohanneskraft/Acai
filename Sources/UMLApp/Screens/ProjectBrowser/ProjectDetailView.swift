@@ -193,6 +193,9 @@ struct ProjectDetailView: View {
         Button { model.exportDOT(for: codebase.id) } label: {
             Label("Export DOT", systemImage: "square.and.arrow.up")
         }
+        Button { model.exportMermaid(for: codebase.id) } label: {
+            Label("Export Mermaid", systemImage: "square.and.arrow.up")
+        }
         Divider()
         Button(role: .destructive) {
             model.removeCodebase(codebase.id)

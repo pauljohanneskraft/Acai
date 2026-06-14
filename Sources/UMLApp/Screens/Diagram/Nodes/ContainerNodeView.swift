@@ -6,6 +6,25 @@ struct ContainerNodeView: View {
     let style: Style
     let isSelected: Bool
     let size: CGSize?
+    /// Overrides the style's body fill (e.g. the package diagram's zone-of-pain tint).
+    /// `nil` keeps the style's default fill, so freeform `.package` nodes look unchanged.
+    var fillColor: Color?
+
+    init(
+        name: String,
+        stereotype: String,
+        style: Style,
+        isSelected: Bool,
+        size: CGSize?,
+        fillColor: Color? = nil
+    ) {
+        self.name = name
+        self.stereotype = stereotype
+        self.style = style
+        self.isSelected = isSelected
+        self.size = size
+        self.fillColor = fillColor
+    }
 
     enum Style {
         case package, boundary, subsystem
@@ -77,7 +96,7 @@ struct ContainerNodeView: View {
             Spacer()
         }
         .frame(width: width, height: height)
-        .background(style.fillColor)
+        .background(fillColor ?? style.fillColor)
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
             RoundedRectangle(cornerRadius: 5)

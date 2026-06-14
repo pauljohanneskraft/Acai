@@ -45,7 +45,7 @@ struct GeneratedDiagramCodableTests {
     }
 
     @Test func configurationlessKindsRoundTrip() throws {
-        for content in [GeneratedDiagram.Content.useCaseDiagram, .deploymentDiagram] {
+        for content in [GeneratedDiagram.Content.useCaseDiagram, .packageDiagram] {
             let diagram = GeneratedDiagram(name: "X", content: content, codebaseID: UUID())
             let decoded = try roundTrip(diagram)
             #expect(decoded == diagram)

@@ -1,0 +1,65 @@
+classDiagram
+    class Library["Library"] {
+        +playlists Array~Playlist~
+        +init(playlists Array~Playlist~)
+        +addPlaylist(playlist Playlist)
+        +playlist(name String) Playlist?
+    }
+    class MediaItem["MediaItem"] {
+        +title String
+        +duration TimeInterval
+        +genre Genre
+        +init(title String, duration TimeInterval, genre Genre)
+        +play()
+    }
+    class Playable["Playable"] {
+        <<interface>>
+        +title String
+        +duration TimeInterval
+        +play()
+    }
+    class Genre["Genre"] {
+        <<enumeration>>
+        pop
+        rock
+        jazz
+        classical
+        electronic
+        spokenWord
+    }
+    class Player["Player"] {
+        -library Library
+        +nowPlaying Playable?
+        +init(library Library)
+        +play(item Playable)
+        +playFirstItem(name String)
+    }
+    class Playlist["Playlist"] {
+        <<struct>>
+        +name String
+        +items Array~MediaItem~
+        +totalDuration TimeInterval
+        +init(name String, items Array~MediaItem~)
+        +add(item MediaItem)
+    }
+    class Podcast["Podcast"] {
+        +host String
+        +episodeNumber Int
+        +init(title String, duration TimeInterval, host String, episodeNumber Int)
+        +play()
+    }
+    class Song["Song"] {
+        +artist String
+        +album String?
+        +init(title String, duration TimeInterval, genre Genre, artist String, album String?)
+        +play()
+    }
+    Playable <|.. MediaItem
+    MediaItem <|-- Podcast
+    MediaItem <|-- Song
+    Library o-- Playlist : playlists
+    MediaItem *-- Genre : genre
+    Player *-- Library : library
+    Player *-- Playable : nowPlaying
+    Playlist o-- MediaItem : items
+    Song ..> Genre
