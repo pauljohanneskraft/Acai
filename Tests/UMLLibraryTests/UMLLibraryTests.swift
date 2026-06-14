@@ -8,6 +8,58 @@ import UMLSwift
 
 @Suite("UML Library Tests")
 struct UMLLibraryTests {
+    /// The broadened call-site capture (self-calls + static calls) must reach the generated
+    /// sequence diagram, making it denser than property-receiver calls alone would.
+    @Test func sequenceDiagramIncludesSelfAndStaticCalls() {
+        let source = """
+        class Logger { static func log() {} }
+        class Helper { func process() {} }
+        class Worker {
+            var helper: Helper
+            func run() {
+                helper.process()
+                self.validate()
+                Logger.log()
+            }
+            func validate() {}
+        }
+        """
+        let artifact = SwiftCodeParser().parse(source: source, fileName: "Worker.swift")
+        let diagram = artifact.sequenceDiagram(entryPoint: ("Worker", "run"))
+        // Cross-type property call.
+        #expect(diagram.messages.contains {
+            $0.from == "Worker" && $0.to == "Helper" && $0.label == "process"
+        })
+        // Self-call renders as a self-message keyed on the caller.
+        #expect(diagram.messages.contains {
+            $0.from == "Worker" && $0.to == "Worker" && $0.label == "validate"
+        })
+        // Static `TypeName.method()` call.
+        #expect(diagram.messages.contains {
+            $0.from == "Worker" && $0.to == "Logger" && $0.label == "log"
+        })
+    }
+
+    /// Dart previously produced no call sites, so its sequence diagrams were always empty.
+    @Test func dartSequenceDiagramIsNoLongerEmpty() {
+        let source = """
+        class Helper {
+            void process() {}
+        }
+        class Worker {
+            Helper helper;
+            void run() {
+                helper.process();
+            }
+        }
+        """
+        let artifact = DartCodeParser().parse(source: source, fileName: "Worker.dart")
+        let diagram = artifact.sequenceDiagram(entryPoint: ("Worker", "run"))
+        #expect(diagram.messages.contains {
+            $0.from == "Worker" && $0.to == "Helper" && $0.label == "process"
+        })
+    }
+
     @Test func parseErrorsAggregateAcrossMergedFiles() async throws {
         let parser = KotlinCodeParser()
         let cleanSource = """

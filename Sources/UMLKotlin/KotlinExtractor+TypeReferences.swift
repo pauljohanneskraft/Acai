@@ -101,8 +101,11 @@ extension KotlinExtractor {
 
     // MARK: - Call Site Resolution
 
-    /// Resolves `receiver.method(args)` and `this.receiver.method(args)` call patterns.
-    func resolveCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+    /// Resolves statically-determinable Kotlin call patterns:
+    /// - `receiver.method(args)` / `this.receiver.method(args)` where `receiver` is a known property,
+    /// - `this.method(args)` — a call on the enclosing instance,
+    /// - `TypeName.method(args)` where `TypeName` is a known (companion/static) type.
+    func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call_expression",
               let navExpr = node.firstChild(withType: "navigation_expression")
         else { return nil }
@@ -113,25 +116,26 @@ extension KotlinExtractor {
         else { return nil }
         let methodName = text(methodNode)
 
-        // Resolve receiver variable name
-        var receiverVarName: String?
+        // Pattern: this.method(args) — a direct call on the enclosing instance.
+        if navExpr.firstChild(withType: "this_expression") != nil {
+            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
+        }
 
+        // Resolve receiver variable / type name.
+        var receiverName: String?
         if let firstId = navExpr.firstChild(withType: "simple_identifier") {
-            // Pattern: receiverVar.method(args)
-            receiverVarName = text(firstId)
+            // Pattern: receiver.method(args)
+            receiverName = text(firstId)
         } else if let innerNav = navExpr.firstChild(withType: "navigation_expression"),
                   innerNav.firstChild(withType: "this_expression") != nil,
                   let innerSuffix = innerNav.firstChild(withType: "navigation_suffix"),
                   let propId = innerSuffix.firstChild(withType: "simple_identifier") {
-            // Pattern: this.receiverVar.method(args)
-            receiverVarName = text(propId)
+            // Pattern: this.receiver.method(args)
+            receiverName = text(propId)
         }
 
-        guard let varName = receiverVarName,
-              let receiverType = knownProperties[varName]
-        else { return nil }
-
-        return CallSite(receiverType: receiverType, methodName: methodName, location: loc(node))
+        guard let name = receiverName else { return nil }
+        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
     }
 
     // MARK: - Generic Parameters

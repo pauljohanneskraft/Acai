@@ -223,6 +223,24 @@ public struct CallSiteScope: Sendable {
         self.knownProperties = knownProperties
         self.knownTypeNames = knownTypeNames
     }
+
+    /// Resolves a single-identifier receiver (`receiver.method()`) to a ``UMLCore/CallSite``:
+    /// a typed stored property resolves to its declared type; otherwise a name matching a
+    /// known type is treated as a static/`TypeName.method()` call. Returns `nil` for anything
+    /// not provably resolvable (locals, parameters, external receivers).
+    public func resolvedCallSite(
+        receiverName: String,
+        methodName: String,
+        location: SourceLocation?
+    ) -> CallSite? {
+        if let receiverType = knownProperties[receiverName] {
+            return CallSite(receiverType: receiverType, methodName: methodName, location: location)
+        }
+        if knownTypeNames.contains(receiverName) {
+            return CallSite(receiverType: receiverName, methodName: methodName, location: location)
+        }
+        return nil
+    }
 }
 
 // MARK: - CallSiteResolving

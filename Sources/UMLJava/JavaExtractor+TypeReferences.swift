@@ -8,31 +8,34 @@ extension JavaExtractor {
     /// Matches Java `method_invocation` nodes.
     ///
     /// Handles:
-    /// - `receiver.method(args)` — `object` field is an `identifier`.
-    /// - `this.receiver.method(args)` — `object` field is a `field_access` whose own
-    ///   `object` is `this`.
-    func resolveCallSite(_ node: Node, knownProperties: [String: String]) -> CallSite? {
+    /// - `receiver.method(args)` — `object` field is an `identifier` (a known property or type),
+    /// - `this.receiver.method(args)` — `object` is a `field_access` whose own `object` is `this`,
+    /// - `this.method(args)` — `object` field is `this` (a call on the enclosing instance),
+    /// - `TypeName.method(args)` — `object` is a known type (static call).
+    func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "method_invocation",
               let nameNode = node.child(byFieldName: "name"),
               let objectNode = node.child(byFieldName: "object")
         else { return nil }
 
         let methodName = text(nameNode)
-        var receiverVarName: String?
 
+        // Pattern: this.method(args) — a direct call on the enclosing instance.
+        if objectNode.nodeType == "this" {
+            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
+        }
+
+        var receiverName: String?
         if objectNode.nodeType == "identifier" {
-            receiverVarName = text(objectNode)
+            receiverName = text(objectNode)
         } else if objectNode.nodeType == "field_access",
                   objectNode.child(byFieldName: "object")?.nodeType == "this",
                   let fieldNode = objectNode.child(byFieldName: "field") {
-            receiverVarName = text(fieldNode)
+            receiverName = text(fieldNode)
         }
 
-        guard let varName = receiverVarName,
-              let receiverType = knownProperties[varName]
-        else { return nil }
-
-        return CallSite(receiverType: receiverType, methodName: methodName, location: loc(node))
+        guard let name = receiverName else { return nil }
+        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
     }
 
     // MARK: - Type References

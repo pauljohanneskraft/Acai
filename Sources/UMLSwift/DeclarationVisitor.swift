@@ -18,6 +18,9 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var pendingAssignments: [VariableAssignment] = []
     // Maps stored-property name → declared type name for the current type.
     private var callSitePropertyMap: [String: String] = [:]
+    // Simple names of every type pushed so far, used to recognise `TypeName.method()`
+    // static calls without misclassifying calls on unknown/external receivers.
+    private var knownTypeNames: Set<String> = []
 
     init(fileName: String) {
         self.fileName = fileName
@@ -249,9 +252,9 @@ final class DeclarationVisitor: SyntaxVisitor {
         if functionBodyDepth > 0,
            let memberAccess = node.calledExpression.as(MemberAccessExprSyntax.self) {
             let methodName = memberAccess.declName.baseName.text
-            if let receiverType = resolveCallSiteReceiver(from: memberAccess.base) {
+            if let resolved = resolveCallSiteReceiver(from: memberAccess.base) {
                 pendingCallSites.append(CallSite(
-                    receiverType: receiverType,
+                    receiverType: resolved.receiverType,
                     methodName: methodName,
                     location: TypeExtractor.sourceLocation(of: node, fileName: fileName)
                 ))
@@ -309,21 +312,41 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .visitChildren
     }
 
-    /// Resolves the declared type for a receiver expression using `callSitePropertyMap`.
+    /// A statically-resolved call-site receiver. `receiverType == nil` denotes a call on the
+    /// enclosing instance (`self.method()`), which the sequence-diagram generator renders as a
+    /// self-message keyed on the caller's type.
+    private struct ResolvedReceiver {
+        let receiverType: String?
+    }
+
+    /// Resolves the declared type for a receiver expression.
     ///
-    /// Handles:
-    /// - `varName.method()` — direct lookup
-    /// - `self.varName.method()` — strips the leading `self.` then looks up
-    private func resolveCallSiteReceiver(from base: ExprSyntax?) -> String? {
+    /// Handles (only when provably resolvable — otherwise returns `nil`, dropping the call):
+    /// - `varName.method()` — known stored property → its declared type,
+    /// - `self.varName.method()` — strips the leading `self.` then looks up the property,
+    /// - `self.method()` — a call on the enclosing instance (`receiverType == nil`),
+    /// - `TypeName.method()` — `TypeName` is a known type → a static call.
+    private func resolveCallSiteReceiver(from base: ExprSyntax?) -> ResolvedReceiver? {
         guard let base else { return nil }
 
         if let declRef = base.as(DeclReferenceExprSyntax.self) {
-            return callSitePropertyMap[declRef.baseName.text]
+            let name = declRef.baseName.text
+            if name == "self" {
+                return ResolvedReceiver(receiverType: nil)
+            }
+            if let propertyType = callSitePropertyMap[name] {
+                return ResolvedReceiver(receiverType: propertyType)
+            }
+            if knownTypeNames.contains(name) {
+                return ResolvedReceiver(receiverType: name)
+            }
+            return nil
         }
 
         if let memberAccess = base.as(MemberAccessExprSyntax.self),
-           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self" {
-            return callSitePropertyMap[memberAccess.declName.baseName.text]
+           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
+           let propertyType = callSitePropertyMap[memberAccess.declName.baseName.text] {
+            return ResolvedReceiver(receiverType: propertyType)
         }
 
         return nil
@@ -337,6 +360,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     private func pushType(_ type: TypeDeclaration) {
         typeStack.append(type)
+        knownTypeNames.insert(type.name)
     }
 
     private func popType() {

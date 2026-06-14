@@ -78,13 +78,15 @@ struct ClassDiagramExportTests {
 @Suite("Sequence diagram DOT exports", .serialized)
 struct SequenceDiagramExportTests {
 
-    /// Sequence tracing needs typed receivers, which Dart and plain JavaScript lack — so the
-    /// sample (and these goldens) cover the four languages that populate `callSites` with types.
+    /// Sequence tracing needs typed receivers. Plain JavaScript carries none, so it stays out;
+    /// the other five languages — including Dart, whose extractor now resolves call sites —
+    /// populate `callSites` with types and are covered here.
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", .swift),
         ("kotlin", .kotlin),
         ("java", .java),
-        ("typescript", .typeScript)
+        ("typescript", .typeScript),
+        ("dart", .dart)
     ]
 
     @Test("regenerated sequence DOT matches the checked-in golden", arguments: cases)
