@@ -12,6 +12,7 @@ struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
     var relationships: [Relationship] = []
     var freestandingFunctions: [Member] = []
     var currentNamespace: String?
+    var declaredTypeNames: Set<String> = []
 
     init(source: String, fileName: String) {
         self.context = SourceFileContext(source: source, fileName: fileName)
@@ -20,6 +21,11 @@ struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
+        declaredTypeNames = collectDeclaredTypeNames(
+            from: root,
+            declarationNodeTypes: ["class_declaration", "object_declaration"],
+            name: { $0.firstChild(withType: "type_identifier").map { self.text($0) } }
+        )
         walkSourceFile(root)
         resolveRelationshipNames()
         return buildArtifact(language: .kotlin)

@@ -28,8 +28,10 @@ public struct JSCodeParser: CodeParser {
         }
         var extractor = JSExtractor(source: source, fileName: fileName, isTypeScript: isTypeScript)
         var artifact = extractor.extract(from: root)
-        // Tree-sitter always returns a best-effort tree; flag ERROR/missing nodes so partial output is surfaced.
-        artifact.metadata.hasParseErrors = root.hasError
+        // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
+        if root.hasError {
+            artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
+        }
         return artifact
     }
 }

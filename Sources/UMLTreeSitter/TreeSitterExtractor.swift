@@ -25,6 +25,12 @@ public protocol TreeSitterExtracting {
     /// Accumulated type declarations discovered during extraction.
     var types: [TypeDeclaration] { get set }
 
+    /// Simple names of every type declared in the file, collected in one pre-pass over the
+    /// AST before bodies are extracted (so call-site resolution sees the *complete* set —
+    /// including the enclosing type, nested types, and forward-declared siblings — rather
+    /// than only types appended so far). Populate via ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
+    var declaredTypeNames: Set<String> { get set }
+
     /// Accumulated inter-type relationships discovered during extraction.
     var relationships: [Relationship] { get set }
 
@@ -184,20 +190,59 @@ extension TreeSitterExtracting {
         return map
     }
 
-    /// The simple names of every type discovered so far (recursively including
-    /// nested types). Used by call-site resolution to recognise statically-resolvable
-    /// `TypeName.method()` calls without misclassifying calls on unknown/external
-    /// receivers (which would create phantom diagram participants).
+    /// The complete set of type names declared in the file (see ``declaredTypeNames``).
+    /// Used by call-site resolution to recognise statically-resolvable `TypeName.method()`
+    /// calls without misclassifying calls on unknown/external receivers (which would create
+    /// phantom diagram participants).
     public func collectKnownTypeNames() -> Set<String> {
+        declaredTypeNames
+    }
+
+    /// One pre-pass over the raw AST collecting the simple name of every type declaration
+    /// (recursively, including nested types), so the full set is known before any body is
+    /// resolved. `name` extracts the declaration node's simple name (declarations whose name
+    /// can't be read — e.g. anonymous extensions — are skipped).
+    public func collectDeclaredTypeNames(
+        from root: Node,
+        declarationNodeTypes: Set<String>,
+        name: (Node) -> String?
+    ) -> Set<String> {
         var names: Set<String> = []
-        func walk(_ decls: [TypeDeclaration]) {
-            for decl in decls {
-                names.insert(decl.name)
-                walk(decl.nestedTypes)
+        func walk(_ node: Node) {
+            if let type = node.nodeType, declarationNodeTypes.contains(type), let typeName = name(node) {
+                names.insert(typeName)
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(walk)
             }
         }
-        walk(types)
+        walk(root)
         return names
+    }
+
+    /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes (the parser
+    /// could not make sense of the input) and `missing` nodes (a required token the source
+    /// omitted, inserted during recovery). Walks *all* children, not just named ones, since
+    /// error/missing nodes are frequently unnamed. Call only when `root.hasError`.
+    public func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
+        var diagnostics: [ParseDiagnostic] = []
+        func walk(_ node: Node) {
+            if node.isMissing {
+                diagnostics.append(ParseDiagnostic(
+                    location: loc(node), kind: .missing,
+                    message: "missing \(node.nodeType ?? "token")"
+                ))
+            } else if node.nodeType == "ERROR" {
+                diagnostics.append(ParseDiagnostic(
+                    location: loc(node), kind: .error, message: "unexpected syntax"
+                ))
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(walk)
+            }
+        }
+        walk(root)
+        return diagnostics
     }
 }
 

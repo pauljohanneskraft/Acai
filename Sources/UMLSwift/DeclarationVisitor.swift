@@ -18,12 +18,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var pendingAssignments: [VariableAssignment] = []
     // Maps stored-property name → declared type name for the current type.
     private var callSitePropertyMap: [String: String] = [:]
-    // Simple names of every type pushed so far, used to recognise `TypeName.method()`
-    // static calls without misclassifying calls on unknown/external receivers.
-    private var knownTypeNames: Set<String> = []
+    // Simple names of every type declared in the file, seeded up front (in one pre-pass)
+    // so `TypeName.method()` static calls resolve regardless of declaration order — including
+    // forward-declared siblings — without misclassifying calls on unknown/external receivers.
+    private let knownTypeNames: Set<String>
 
-    init(fileName: String) {
+    init(fileName: String, knownTypeNames: Set<String> = []) {
         self.fileName = fileName
+        self.knownTypeNames = knownTypeNames
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -360,7 +362,6 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     private func pushType(_ type: TypeDeclaration) {
         typeStack.append(type)
-        knownTypeNames.insert(type.name)
     }
 
     private func popType() {

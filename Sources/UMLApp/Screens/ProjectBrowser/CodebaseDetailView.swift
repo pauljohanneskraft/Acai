@@ -136,19 +136,7 @@ struct CodebaseDetailView: View {
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    if let date = codebase.lastIndexed {
-                        Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if codebase.hasParseErrors {
-                        Label("Syntax errors detected", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .help("Some files could not be fully parsed; the diagram may be incomplete.")
-                    }
-                }
+                indexStatus(codebase: codebase)
 
                 Button {
                     isIndexing = true
@@ -165,6 +153,25 @@ struct CodebaseDetailView: View {
             }
         }
         .padding()
+    }
+
+    private func indexStatus(codebase: Codebase) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            if let date = codebase.lastIndexed {
+                Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if codebase.hasParseErrors {
+                Label(
+                    "\(codebase.parseDiagnosticCount) syntax issue(s) detected",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .help("Some files could not be fully parsed; the diagram may be incomplete.")
+            }
+        }
     }
 
     @ViewBuilder

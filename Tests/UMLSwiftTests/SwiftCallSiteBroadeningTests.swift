@@ -40,4 +40,21 @@ struct SwiftCallSiteBroadeningTests {
         // A local variable's call is not provably resolvable and must be dropped.
         #expect(!sites.contains { $0.methodName == "doThing" })
     }
+
+    /// A static call on a sibling type declared *after* the caller must still resolve, now that
+    /// type names are collected in one pre-pass rather than incrementally as types are visited.
+    @Test func resolvesStaticCallOnForwardDeclaredSibling() {
+        let source = """
+        class Worker {
+            func run() {
+                Logger.log()
+            }
+        }
+        class Logger { static func log() {} }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.swift")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+    }
 }

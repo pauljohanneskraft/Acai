@@ -47,6 +47,7 @@ extension UMLCommand {
             } else {
                 throw ValidationError("Either --from or --source must be specified.")
             }
+            artifact.warnIfParseErrors()
 
             let metrics = artifact.computeMetrics()
             let encoder = JSONEncoder()

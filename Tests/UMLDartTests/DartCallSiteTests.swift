@@ -43,4 +43,23 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
         #expect(!sites.contains { $0.methodName == "doThing" })
     }
+
+    /// A static call on the *enclosing* type must resolve. Previously the current class was
+    /// appended to `types` only after its body was processed, so the type-name set was missing
+    /// it and the call was dropped; the up-front pre-pass fixes this.
+    @Test func resolvesStaticCallOnEnclosingType() {
+        let source = """
+        class Worker {
+            static void shared() {}
+
+            void run() {
+                Worker.shared();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "shared" && $0.receiverType == "Worker" })
+    }
 }

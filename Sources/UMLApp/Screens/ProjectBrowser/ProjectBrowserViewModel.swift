@@ -119,6 +119,7 @@ final class ProjectBrowserViewModel: ObservableObject {
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
+            store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = artifact.metadata.parseDiagnostics.count
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {

@@ -10,6 +10,7 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
     var relationships: [Relationship] = []
     var freestandingFunctions: [Member] = []
     var currentNamespace: String?
+    var declaredTypeNames: Set<String> = []
 
     init(source: String, fileName: String, isTypeScript: Bool) {
         self.context = SourceFileContext(source: source, fileName: fileName)
@@ -26,6 +27,14 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
+        declaredTypeNames = collectDeclaredTypeNames(
+            from: root,
+            declarationNodeTypes: [
+                "class_declaration", "class", "abstract_class_declaration",
+                "interface_declaration", "enum_declaration"
+            ],
+            name: { $0.child(byFieldName: "name").map { self.text($0) } }
+        )
         walkSourceFile(root)
 
         // Post-process: qualify type IDs with their namespace so edges resolve correctly.

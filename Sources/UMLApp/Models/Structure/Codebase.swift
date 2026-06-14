@@ -8,4 +8,6 @@ struct Codebase: Identifiable, Codable, Hashable {
     var lastIndexed: Date?
     /// `true` when the most recent index encountered files that could not be fully parsed.
     var hasParseErrors: Bool = false
+    /// Number of concrete parse problems found during the most recent index.
+    var parseDiagnosticCount: Int = 0
 }
