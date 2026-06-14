@@ -19,9 +19,19 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
 
     // MARK: - Shorthands
 
-    /// Builds a qualified ID from an optional namespace and a type name.
-    private static func qualifiedId(_ name: String, namespace: String?) -> String {
-        namespace.map { "\($0).\(name)" } ?? name
+    /// Qualifies every type id/qualifiedName with its enclosing structural prefix, recursing into
+    /// nested types, so a class inside `namespace Zoo` becomes `Zoo.Animal` (and a class inside
+    /// `namespace App { namespace Models { … } }` becomes `App.Models.User`). Top-level types are
+    /// unchanged (`prefix == nil` → id stays the simple name). Using the structural parent chain —
+    /// rather than each type's `namespace` field — keeps nested namespaces fully qualified, so
+    /// edges and inherited-type names to namespaced types resolve during enrichment.
+    private static func qualifyIDs(_ types: inout [TypeDeclaration], prefix: String?) {
+        for index in types.indices {
+            let qualified = prefix.map { "\($0).\(types[index].name)" } ?? types[index].name
+            types[index].id = qualified
+            types[index].qualifiedName = qualified
+            qualifyIDs(&types[index].nestedTypes, prefix: qualified)
+        }
     }
 
     // MARK: - Public Entry Point
@@ -38,12 +48,7 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
         walkSourceFile(root)
 
         // Post-process: qualify type IDs with their namespace so edges resolve correctly.
-        for i in types.indices {
-            let namespace = types[i].namespace
-            let qualifiedTypeName = Self.qualifiedId(types[i].name, namespace: namespace)
-            types[i].id = qualifiedTypeName
-            types[i].qualifiedName = qualifiedTypeName
-        }
+        Self.qualifyIDs(&types, prefix: nil)
 
         return CodeArtifact(
             metadata: .init(
