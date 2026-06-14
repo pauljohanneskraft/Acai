@@ -1,4 +1,8 @@
 sequenceDiagram
-    participant shop_Checkout as Checkout
-    participant shop_PaymentService as PaymentService
-    participant shop_PaymentGateway as PaymentGateway
+    participant Checkout as Checkout
+    participant PaymentService as PaymentService
+    participant PaymentGateway as PaymentGateway
+    Checkout->>PaymentService: charge
+    PaymentService->>PaymentGateway: authorize
+    PaymentGateway-->>PaymentService: 
+    PaymentService-->>Checkout: 

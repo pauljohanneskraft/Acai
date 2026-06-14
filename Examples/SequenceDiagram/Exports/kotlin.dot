@@ -8,43 +8,43 @@ digraph {
   node [fontname="Helvetica" fontsize=12];
   edge [fontname="Helvetica" fontsize=10];
   // Participants
-  "shop.Checkout_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="Checkout"];
-  "shop.PaymentService_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentService"];
-  "shop.PaymentGateway_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentGateway"];
-  { rank=same; "shop.Checkout_header"; "shop.PaymentService_header"; "shop.PaymentGateway_header"; }
+  "Checkout_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="Checkout"];
+  "PaymentService_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentService"];
+  "PaymentGateway_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentGateway"];
+  { rank=same; "Checkout_header"; "PaymentService_header"; "PaymentGateway_header"; }
 
   // Lifeline step nodes
   node [shape=none label="" width=0 height=0];
-  "shop.Checkout_step0";
-  "shop.PaymentService_step0";
-  "shop.PaymentGateway_step0";
-  { rank=same; "shop.Checkout_step0"; "shop.PaymentService_step0"; "shop.PaymentGateway_step0"; }
-  "shop.Checkout_step1";
-  "shop.PaymentService_step1";
-  "shop.PaymentGateway_step1";
-  { rank=same; "shop.Checkout_step1"; "shop.PaymentService_step1"; "shop.PaymentGateway_step1"; }
-  "shop.Checkout_step2";
-  "shop.PaymentService_step2";
-  "shop.PaymentGateway_step2";
-  { rank=same; "shop.Checkout_step2"; "shop.PaymentService_step2"; "shop.PaymentGateway_step2"; }
-  "shop.Checkout_step3";
-  "shop.PaymentService_step3";
-  "shop.PaymentGateway_step3";
-  { rank=same; "shop.Checkout_step3"; "shop.PaymentService_step3"; "shop.PaymentGateway_step3"; }
+  "Checkout_step0";
+  "PaymentService_step0";
+  "PaymentGateway_step0";
+  { rank=same; "Checkout_step0"; "PaymentService_step0"; "PaymentGateway_step0"; }
+  "Checkout_step1";
+  "PaymentService_step1";
+  "PaymentGateway_step1";
+  { rank=same; "Checkout_step1"; "PaymentService_step1"; "PaymentGateway_step1"; }
+  "Checkout_step2";
+  "PaymentService_step2";
+  "PaymentGateway_step2";
+  { rank=same; "Checkout_step2"; "PaymentService_step2"; "PaymentGateway_step2"; }
+  "Checkout_step3";
+  "PaymentService_step3";
+  "PaymentGateway_step3";
+  { rank=same; "Checkout_step3"; "PaymentService_step3"; "PaymentGateway_step3"; }
 
   // Lifelines
-  "shop.Checkout_header" -> "shop.Checkout_step0" [style=invis];
-  "shop.Checkout_step0" -> "shop.Checkout_step1" [style=invis];
-  "shop.Checkout_step1" -> "shop.Checkout_step2" [style=invis];
-  "shop.Checkout_step2" -> "shop.Checkout_step3" [style=invis];
-  "shop.PaymentService_header" -> "shop.PaymentService_step0" [style=invis];
-  "shop.PaymentService_step0" -> "shop.PaymentService_step1" [style=invis];
-  "shop.PaymentService_step1" -> "shop.PaymentService_step2" [style=invis];
-  "shop.PaymentService_step2" -> "shop.PaymentService_step3" [style=invis];
-  "shop.PaymentGateway_header" -> "shop.PaymentGateway_step0" [style=invis];
-  "shop.PaymentGateway_step0" -> "shop.PaymentGateway_step1" [style=invis];
-  "shop.PaymentGateway_step1" -> "shop.PaymentGateway_step2" [style=invis];
-  "shop.PaymentGateway_step2" -> "shop.PaymentGateway_step3" [style=invis];
+  "Checkout_header" -> "Checkout_step0" [style=invis];
+  "Checkout_step0" -> "Checkout_step1" [style=invis];
+  "Checkout_step1" -> "Checkout_step2" [style=invis];
+  "Checkout_step2" -> "Checkout_step3" [style=invis];
+  "PaymentService_header" -> "PaymentService_step0" [style=invis];
+  "PaymentService_step0" -> "PaymentService_step1" [style=invis];
+  "PaymentService_step1" -> "PaymentService_step2" [style=invis];
+  "PaymentService_step2" -> "PaymentService_step3" [style=invis];
+  "PaymentGateway_header" -> "PaymentGateway_step0" [style=invis];
+  "PaymentGateway_step0" -> "PaymentGateway_step1" [style=invis];
+  "PaymentGateway_step1" -> "PaymentGateway_step2" [style=invis];
+  "PaymentGateway_step2" -> "PaymentGateway_step3" [style=invis];
 
   // Messages
   node [shape=none label=""];

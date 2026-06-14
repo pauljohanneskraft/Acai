@@ -155,8 +155,11 @@ private struct SequenceTraversal {
         guard participantMap[typeName] == nil else { return }
         let decl = lookups.typesByName[typeName]
         participantOrder.append(typeName)
+        // Use the simple `typeName` as the id, matching the keys the traversal emits for
+        // message `from`/`to`. Using the declaration's qualified id here would diverge from
+        // the messages for namespaced languages (Kotlin/Java), leaving messages orphaned.
         participantMap[typeName] = SequenceDiagram.Participant(
-            id: decl?.id ?? typeName,
+            id: typeName,
             name: typeName,
             kind: participantKind(decl)
         )

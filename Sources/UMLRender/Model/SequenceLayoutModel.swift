@@ -161,8 +161,8 @@ public struct SequenceLayoutModel {
         // Lay out messages top-to-bottom while tracking execution occurrences: a call pushes an
         // activation on the receiver, the matching return pops it. Arrow endpoints sit on the
         // edges of the active bars so arrows visibly connect activations (UML 2 notation).
-        // Endpoints resolve by participant *name*, because the generator records
-        // `Message.from`/`to` as type names (while `Participant.id` is the type id).
+        // Endpoints resolve by participant *name*, which the generator also uses for
+        // `Message.from`/`to` and for `Participant.id` (both are the simple type name).
         var pass = ActivationPass(frameByName: frameByName)
 
         // The initiating participant gets an implicit root activation: it is "executing" for the

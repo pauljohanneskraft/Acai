@@ -52,6 +52,29 @@ struct SequenceDiagramTests {
         #expect(diagram.messages.map(\.order) == [0, 1])
     }
 
+    @Test func participantIDsMatchMessageEndpointsForNamespacedTypes() {
+        // Kotlin/Java give types a qualified `id` (e.g. "shop.Checkout") distinct from the simple
+        // name. Participants must key on the simple name the messages use, or every message is
+        // orphaned (which previously left namespaced sequence diagrams empty in DOT/Mermaid).
+        let checkout = TypeDeclaration(
+            id: "shop.Checkout", name: "Checkout", qualifiedName: "shop.Checkout", kind: .class,
+            members: [method("placeOrder", calls: [CallSite(receiverType: "PaymentService", methodName: "charge")])]
+        )
+        let service = TypeDeclaration(
+            id: "shop.PaymentService", name: "PaymentService", qualifiedName: "shop.PaymentService",
+            kind: .class, members: [method("charge")]
+        )
+        let diagram = artifact(types: [checkout, service]).sequenceDiagram(entryPoint: ("Checkout", "placeOrder"))
+
+        let participantIDs = Set(diagram.participants.map(\.id))
+        #expect(participantIDs == ["Checkout", "PaymentService"])
+        #expect(!diagram.messages.isEmpty)
+        for message in diagram.messages {
+            #expect(participantIDs.contains(message.from), "orphaned message.from: \(message.from)")
+            #expect(participantIDs.contains(message.to), "orphaned message.to: \(message.to)")
+        }
+    }
+
     @Test func messagesPreserveCallOrder() {
         let art = artifact(types: [
             type("Controller", members: [
