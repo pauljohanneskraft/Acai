@@ -100,4 +100,32 @@ struct PackageDiagramTests {
         #expect(mermaid.contains("ModuleA -->|2| ModuleB"))
         #expect(mermaid.contains("style ModuleA fill:"))
     }
+
+    @Test func mermaidIncludesTitleFrontMatter() {
+        let diagram = twoModuleArtifact().packageDependencyDiagram(title: "My Modules")
+        let mermaid = PackageDiagramMermaidRenderer().render(diagram)
+        #expect(mermaid.contains("title: My Modules"))
+        #expect(mermaid.contains("flowchart LR"))
+    }
+
+    @Test func dotIncludesTitleAndThickness() {
+        let diagram = twoModuleArtifact().packageDependencyDiagram(title: "My Modules")
+        let dot = PackageDiagramDOTRenderer().render(diagram)
+        #expect(dot.contains("label=\"My Modules\""))
+        #expect(dot.contains("labelloc=t"))
+        #expect(dot.contains("penwidth="))
+    }
+
+    // MARK: - Zone-of-pain color
+
+    @Test func zoneColorBucketsCoverFullRange() {
+        func node(_ instability: Double, _ abstractness: Double) -> PackageDependencyDiagram.Node {
+            .init(id: "x", name: "x", typeCount: 1, afferentCoupling: 0,
+                  efferentCoupling: 0, instability: instability, abstractness: abstractness)
+        }
+        #expect(node(0.9, 0.1).zoneColorHex == "#c8e6c9")  // D = 0.0 — balanced
+        #expect(node(0.6, 0.0).zoneColorHex == "#fff9c4")  // D = 0.4 — drifting
+        #expect(node(0.3, 0.0).zoneColorHex == "#ffe0b2")  // D = 0.7 — concerning
+        #expect(node(0.0, 0.0).zoneColorHex == "#ffcdd2")  // D = 1.0 — zone of pain
+    }
 }

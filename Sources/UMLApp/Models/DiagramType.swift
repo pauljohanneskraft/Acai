@@ -3,7 +3,7 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case sequenceDiagram = "sequence"
     case stateDiagram = "state"
     case useCaseDiagram = "useCase"
-    case deploymentDiagram = "deployment"
+    case packageDiagram = "package"
 
     var id: String { rawValue }
 
@@ -17,8 +17,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "State Diagram"
         case .useCaseDiagram:
             "Use Case Diagram"
-        case .deploymentDiagram:
-            "Deployment Diagram"
+        case .packageDiagram:
+            "Package Diagram"
         }
     }
 
@@ -32,8 +32,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "circle.hexagonpath"
         case .useCaseDiagram:
             "person.3"
-        case .deploymentDiagram:
-            "server.rack"
+        case .packageDiagram:
+            "shippingbox"
         }
     }
 }

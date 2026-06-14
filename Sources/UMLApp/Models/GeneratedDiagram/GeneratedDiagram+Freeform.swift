@@ -22,6 +22,11 @@ extension GeneratedDiagram {
                 positions: positions, scale: scale, offset: offset
             )
         }
+        if case .packageDiagram = content {
+            return convertPackageToFreeform(
+                artifact: artifact, positions: positions, scale: scale, offset: offset
+            )
+        }
         var ids: [String: String] = [:]
 
         let nodes = buildFreeformNodes(
@@ -194,6 +199,54 @@ extension GeneratedDiagram {
                 action: transition.action
             )
             return edge
+        }
+
+        return FreeformDiagram(
+            name: name + " (Freeform)",
+            nodes: nodes,
+            edges: edges,
+            canvasScale: scale,
+            canvasOffsetX: offset.x,
+            canvasOffsetY: offset.y
+        )
+    }
+
+    // MARK: - Package → Freeform
+
+    /// Converts a package diagram into an editable freeform diagram: each module becomes a UML
+    /// `.package` node (the same shape the generated view shows) and every cross-module dependency
+    /// a dependency edge. Coupling metrics aren't carried over — a hand-edited package diagram has
+    /// no analysis behind it — so the freeform copy is the pure package/dependency structure.
+    private func convertPackageToFreeform(
+        artifact: CodeArtifact,
+        positions: [String: CGPoint],
+        scale: CGFloat,
+        offset: CGPoint
+    ) -> FreeformDiagram {
+        let package = artifact.enriched().packageDependencyDiagram()
+
+        var nodeIDByModuleID: [String: String] = [:]
+        var nodes: [FreeformDiagram.Node] = []
+        for (index, module) in package.nodes.enumerated() {
+            let nodeID = UUID().uuidString
+            nodeIDByModuleID[module.id] = nodeID
+            let livePos = positions[module.id]
+            let storedPos = nodePositions[module.id]
+            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? CGFloat(index) * 200 + 120
+            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 120
+            nodes.append(FreeformDiagram.Node(
+                id: nodeID,
+                name: module.name,
+                content: .package,
+                positionX: Double(x),
+                positionY: Double(y)
+            ))
+        }
+
+        let edges: [FreeformDiagram.Edge] = package.edges.compactMap { edge in
+            guard let source = nodeIDByModuleID[edge.from],
+                  let target = nodeIDByModuleID[edge.to] else { return nil }
+            return FreeformDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .dependency)
         }
 
         return FreeformDiagram(

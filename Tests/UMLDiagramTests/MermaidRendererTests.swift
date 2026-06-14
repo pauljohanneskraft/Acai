@@ -57,6 +57,122 @@ struct MermaidRendererTests {
         #expect(mermaid.contains("Pet <|.. Cat"))
     }
 
+    @Test func classDiagramStructuralArrows() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: ["A", "B", "C", "D", "E"].map {
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+            },
+            relationships: [
+                Relationship(kind: .composition, source: "A", target: "B"),
+                Relationship(kind: .aggregation, source: "A", target: "C"),
+                Relationship(kind: .association, source: "A", target: "D"),
+                Relationship(kind: .dependency, source: "B", target: "C"),
+                Relationship(kind: .nesting, source: "D", target: "E")
+            ]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("A *-- B"))   // composition
+        #expect(mermaid.contains("A o-- C"))   // aggregation
+        #expect(mermaid.contains("A --> D"))   // association
+        #expect(mermaid.contains("B ..> C"))   // dependency
+        #expect(mermaid.contains("D *-- E"))   // nesting (containment)
+    }
+
+    @Test func classDiagramEnumCasesAndModifiers() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "Genre", name: "Genre", qualifiedName: "Genre", kind: .enum,
+                    members: [
+                        Member(name: "shared", kind: .property, accessLevel: .public,
+                               modifiers: [.static], type: TypeReference(name: "Int")),
+                        Member(name: "play", kind: .method, accessLevel: .public, modifiers: [.abstract])
+                    ],
+                    enumCases: [EnumCase(name: "rock"), EnumCase(name: "jazz")]
+                )
+            ]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("<<enumeration>>"))
+        #expect(mermaid.contains("rock"))
+        #expect(mermaid.contains("jazz"))
+        #expect(mermaid.contains("+shared Int$"))  // static → $ suffix
+        #expect(mermaid.contains("+play()*"))        // abstract → * suffix
+    }
+
+    @Test func classDiagramGenericsInClassName() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: [
+                TypeDeclaration(id: "Box", name: "Box", qualifiedName: "Box", kind: .struct,
+                                genericParameters: [GenericParameter(name: "T")])
+            ]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("class Box[\"Box<T>\"]"))
+        #expect(mermaid.contains("<<struct>>"))
+    }
+
+    @Test func classDiagramRendersExternalTypesWhenEnabled() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)],
+            relationships: [Relationship(kind: .dependency, source: "A", target: "ExternalThing")]
+        )
+        var options = ClassDiagramOptions()
+        options.showExternalTypes = true
+        let mermaid = ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
+        #expect(mermaid.contains("ExternalThing"))
+    }
+
+    @Test func classDiagramRelationshipLabel() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: [
+                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class),
+                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class)
+            ],
+            relationships: [Relationship(kind: .association, source: "A", target: "B", label: "uses")]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("A --> B : uses"))
+    }
+
+    @Test func classDiagramPlainClassHasNoBody() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: [TypeDeclaration(id: "Empty", name: "Empty", qualifiedName: "Empty", kind: .class)]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("class Empty[\"Empty\"]"))
+        #expect(!mermaid.contains("class Empty[\"Empty\"] {"))
+    }
+
+    @Test func classDiagramHonoursMemberToggles() {
+        var hideMembers = ClassDiagramOptions()
+        hideMembers.showMembers = false
+        #expect(!ClassDiagramMermaidRenderer(options: hideMembers).generate(from: classArtifact())
+            .contains("+name"))
+
+        var hideTypes = ClassDiagramOptions()
+        hideTypes.showMemberTypes = false
+        let mermaid = ClassDiagramMermaidRenderer(options: hideTypes).generate(from: classArtifact())
+        #expect(mermaid.contains("+name"))
+        #expect(!mermaid.contains("+name String"))
+        #expect(mermaid.contains("+speak()"))
+    }
+
+    @Test func classDiagramRespectsMinimumAccessLevel() {
+        var options = ClassDiagramOptions()
+        options.minimumAccessLevel = .public
+        let mermaid = ClassDiagramMermaidRenderer(options: options).generate(from: classArtifact())
+        // `tags` is private and filtered out; public `name` survives.
+        #expect(mermaid.contains("+name"))
+        #expect(!mermaid.contains("tags"))
+    }
+
     // MARK: - Sequence diagram
 
     @Test func sequenceDiagramMessagesAndReturns() {
@@ -76,6 +192,24 @@ struct MermaidRendererTests {
         #expect(mermaid.contains("participant LoginService as LoginService"))
         #expect(mermaid.contains("LoginService->>AuthService: authenticate"))
         #expect(mermaid.contains("AuthService-->>LoginService:"))
+    }
+
+    @Test func sequenceDiagramMessageKinds() {
+        let diagram = SequenceDiagram(
+            participants: [
+                .init(id: "A", name: "A", kind: .control),
+                .init(id: "B", name: "B", kind: .object)
+            ],
+            messages: [
+                .init(from: "A", to: "B", label: "make", kind: .create, order: 0),
+                .init(from: "A", to: "B", label: "ping", kind: .asynchronous, order: 1),
+                .init(from: "A", to: "B", label: "kill", kind: .destroy, order: 2)
+            ]
+        )
+        let mermaid = SequenceDiagramMermaidRenderer().render(diagram)
+        #expect(mermaid.contains("A-)B: ping"))        // asynchronous arrow
+        #expect(mermaid.contains("«create» make"))
+        #expect(mermaid.contains("«destroy» kill"))
     }
 
     // MARK: - State diagram

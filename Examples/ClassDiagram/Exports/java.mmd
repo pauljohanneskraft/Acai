@@ -1,0 +1,71 @@
+classDiagram
+    class medialibrary_Genre["Genre"] {
+        <<enumeration>>
+        POP
+        ROCK
+        JAZZ
+        CLASSICAL
+        ELECTRONIC
+        SPOKEN_WORD
+    }
+    class medialibrary_Library["Library"] {
+        -playlists List~Playlist~
+        +Library(playlists List~Playlist~)
+        +playlists() List~Playlist~
+        +addPlaylist(playlist Playlist) void
+        +playlist(named String) Playlist
+    }
+    class medialibrary_MediaItem["MediaItem"] {
+        -title String
+        -duration double
+        -genre Genre
+        +MediaItem(title String, duration double, genre Genre)
+        +title() String
+        +duration() double
+        +genre() Genre
+        +play() void
+    }
+    class medialibrary_Playable["Playable"] {
+        <<interface>>
+        title() String
+        duration() double
+        play() void
+    }
+    class medialibrary_Player["Player"] {
+        -library Library
+        -nowPlaying Playable
+        +Player(library Library)
+        +nowPlaying() Playable
+        +play(item Playable) void
+        +playFirstItem(playlistNamed String) void
+    }
+    class medialibrary_Playlist["Playlist"] {
+        -name String
+        -items List~MediaItem~
+        +Playlist(name String, items List~MediaItem~)
+        +name() String
+        +items() List~MediaItem~
+        +totalDuration() double
+        +add(item MediaItem) void
+    }
+    class medialibrary_Podcast["Podcast"] {
+        -host String
+        -episodeNumber int
+        +Podcast(title String, duration double, host String, episodeNumber int)
+        +play() void
+    }
+    class medialibrary_Song["Song"] {
+        -artist String
+        -album String
+        +Song(title String, duration double, genre Genre, artist String, album String)
+        +play() void
+    }
+    medialibrary_Playable <|.. medialibrary_MediaItem
+    medialibrary_MediaItem <|-- medialibrary_Podcast
+    medialibrary_MediaItem <|-- medialibrary_Song
+    medialibrary_Library o-- medialibrary_Playlist : playlists
+    medialibrary_MediaItem *-- medialibrary_Genre : genre
+    medialibrary_Player *-- medialibrary_Library : library
+    medialibrary_Player *-- medialibrary_Playable : nowPlaying
+    medialibrary_Playlist o-- medialibrary_MediaItem : items
+    medialibrary_Song ..> medialibrary_Genre
