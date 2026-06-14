@@ -110,7 +110,7 @@ extension DartExtractor {
 
     /// Resolves and attaches call sites for the recorded method bodies, using a scope built
     /// from the type's fully-extracted members (so all stored properties are known) plus the
-    /// project's known type names.
+    /// current file's known type names.
     func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(

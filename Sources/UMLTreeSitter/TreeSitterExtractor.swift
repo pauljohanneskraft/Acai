@@ -258,7 +258,7 @@ extension TreeSitterExtracting {
 public struct CallSiteScope: Sendable {
     /// `propertyName: typeName` for the enclosing type's stored properties.
     public var knownProperties: [String: String]
-    /// Simple names of types declared in the project so far (for `TypeName.method()`).
+    /// Simple names of types declared in the current file (for `TypeName.method()`).
     public var knownTypeNames: Set<String>
 
     public init(
