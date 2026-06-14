@@ -9,16 +9,10 @@ struct DOTClusterRenderer {
         let grouped = Dictionary(grouping: types) { $0.location?.filePath ?? "unknown" }
         return grouped.sorted(by: { $0.key < $1.key }).enumerated().map { index, pair in
             let (filePath, fileTypes) = pair
-            let label = filePath.dotEscaped
-            return """
-              subgraph cluster_\(index) {
-                label="\(label)";
-                style=rounded;
-                color="\(options.theme.nodeBorderColor)";
-                fontcolor="\(options.theme.fontColor)";
-            \(nodeRenderer.render(types: fileTypes))  }
-
-            """
+            return "  subgraph cluster_\(index) {\n"
+                + clusterOpen(label: filePath.dotEscaped)
+                + nodeRenderer.render(types: fileTypes)
+                + "  }\n\n"
         }.joined()
     }
 
@@ -30,16 +24,10 @@ struct DOTClusterRenderer {
             if namespace.isEmpty {
                 return nodeRenderer.render(types: namespaceTypes)
             }
-            let label = namespace.dotEscaped
-            return """
-              subgraph cluster_ns_\(index) {
-                label="\(label)";
-                style=rounded;
-                color="\(options.theme.nodeBorderColor)";
-                fontcolor="\(options.theme.fontColor)";
-            \(nodeRenderer.render(types: namespaceTypes))  }
-
-            """
+            return "  subgraph cluster_ns_\(index) {\n"
+                + clusterOpen(label: namespace.dotEscaped)
+                + nodeRenderer.render(types: namespaceTypes)
+                + "  }\n\n"
         }.joined()
     }
 
@@ -52,15 +40,20 @@ struct DOTClusterRenderer {
             let clusterTypes = typeIds.compactMap { typeIndex[$0] }
             guard !clusterTypes.isEmpty else { return "" }
             let label = (dir.isEmpty ? "root" : dir).dotEscaped
-            return """
-              subgraph cluster_dir_\(index) {
-                label="\(label)";
-                style=rounded;
-                color="\(options.theme.nodeBorderColor)";
-                fontcolor="\(options.theme.fontColor)";
-            \(nodeRenderer.render(types: clusterTypes))  }
-
-            """
+            return "  subgraph cluster_dir_\(index) {\n"
+                + clusterOpen(label: label)
+                + nodeRenderer.render(types: clusterTypes)
+                + "  }\n\n"
         }.joined()
+    }
+
+    /// The cluster's opening attribute lines. `color`/`fontcolor` are cosmetic, so they are only
+    /// emitted when a theme is set — structural output leaves cluster colouring to the consumer.
+    private func clusterOpen(label: String) -> String {
+        var out = "    label=\"\(label)\";\n    style=rounded;\n"
+        if let theme = options.theme {
+            out += "    color=\"\(theme.nodeBorderColor)\";\n    fontcolor=\"\(theme.fontColor)\";\n"
+        }
+        return out
     }
 }

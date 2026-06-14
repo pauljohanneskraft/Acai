@@ -7,12 +7,12 @@ import UMLCore
 /// Use cases are ellipses.
 /// All use cases are optionally wrapped in a system-boundary subgraph cluster.
 public struct UseCaseDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme
+    public let theme: DiagramTheme?
     public let fontName: String
     public let fontSize: Int
 
     public init(
-        theme: DiagramTheme = .default,
+        theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
@@ -20,6 +20,11 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
         self.fontName = fontName
         self.fontSize = fontSize
     }
+
+    /// `COLOR="…"` fragment for a `<FONT>` tag, empty when unthemed.
+    private func colorAttr(_ color: String?) -> String { color.map { " COLOR=\"\($0)\"" } ?? "" }
+    private func fontOpen(_ color: String?) -> String { color.map { "<FONT COLOR=\"\($0)\">" } ?? "" }
+    private func fontClose(_ color: String?) -> String { color != nil ? "</FONT>" : "" }
 
     // MARK: - Public API
 
@@ -43,16 +48,18 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
         actors.map { actor in
             let nodeId = actor.id.dotNodeID
             let stereotype = actor.isSystem ? "system" : "actor"
-            let fill = theme.nodeFillColor
-            let border = theme.nodeBorderColor
-            let font = theme.fontColor
+            let font = theme?.fontColor
             let label = "<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">" +
-                        "<TR><TD><FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">" +
+                        "<TR><TD><FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>" +
                         "&lt;&lt;\(stereotype)&gt;&gt;</FONT></TD></TR>" +
-                        "<TR><TD><FONT COLOR=\"\(font)\">\(actor.name.dotHTMLEscaped)</FONT></TD></TR>" +
+                        "<TR><TD>\(fontOpen(font))\(actor.name.dotHTMLEscaped)\(fontClose(font))</TD></TR>" +
                         "</TABLE>"
-            return "  \(nodeId) [label=<\(label)> shape=box style=\"rounded,filled\" " +
-                   "fillcolor=\"\(fill)\" color=\"\(border)\"];\n"
+            var style = ""
+            if let theme {
+                style = " style=\"rounded,filled\" fillcolor=\"\(theme.nodeFillColor)\""
+                    + " color=\"\(theme.nodeBorderColor)\""
+            }
+            return "  \(nodeId) [label=<\(label)> shape=box\(style)];\n"
         }.joined()
     }
 
@@ -62,8 +69,10 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
             out += "  subgraph cluster_system {\n"
             out += "    label=\"\(label.dotEscaped)\";\n"
             out += "    style=rounded;\n"
-            out += "    color=\"\(theme.nodeBorderColor)\";\n"
-            out += "    fontcolor=\"\(theme.fontColor)\";\n"
+            if let theme {
+                out += "    color=\"\(theme.nodeBorderColor)\";\n"
+                out += "    fontcolor=\"\(theme.fontColor)\";\n"
+            }
             out += useCases.map { renderUseCase($0, indent: "    ") }.joined()
             out += "  }\n"
         } else {
@@ -74,33 +83,35 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
 
     private func renderUseCase(_ uc: UseCaseDiagram.UseCase, indent: String) -> String {
         let nodeId = uc.id.dotNodeID
-        let font = theme.fontColor
-        let fill = theme.nodeFillColor
-        let border = theme.nodeBorderColor
-        return "\(indent)\(nodeId) [label=\"\(uc.name.dotEscaped)\" shape=ellipse " +
-               "style=filled fillcolor=\"\(fill)\" color=\"\(border)\" fontcolor=\"\(font)\"];\n"
+        var style = ""
+        if let theme {
+            style = " style=filled fillcolor=\"\(theme.nodeFillColor)\""
+                + " color=\"\(theme.nodeBorderColor)\" fontcolor=\"\(theme.fontColor)\""
+        }
+        return "\(indent)\(nodeId) [label=\"\(uc.name.dotEscaped)\" shape=ellipse\(style)];\n"
     }
 
     // MARK: - Edge rendering
 
     private func renderRelationships(_ relationships: [UseCaseDiagram.Relationship]) -> String {
-        relationships.map { rel in
+        let colorAttr = theme.map { " color=\"\($0.edgeColor)\"" } ?? ""
+        let fontAttr = theme.map { " fontcolor=\"\($0.fontColor)\"" } ?? ""
+        return relationships.map { rel in
             let source = rel.source.dotNodeID
             let target = rel.target.dotNodeID
-            let color = theme.edgeColor
             switch rel.kind {
             case .association:
-                return "  \(source) -> \(target) [arrowhead=none color=\"\(color)\"];\n"
+                return "  \(source) -> \(target) [arrowhead=none\(colorAttr)];\n"
             case .include:
                 return "  \(source) -> \(target) [style=dashed arrowhead=open " +
-                       "label=\"<<include>>\" fontcolor=\"\(theme.fontColor)\" color=\"\(color)\"];\n"
+                       "label=\"<<include>>\"\(fontAttr)\(colorAttr)];\n"
             case .extend:
                 var lbl = "<<extend>>"
                 if let cond = rel.condition { lbl += "\\n[\(cond)]" }
                 return "  \(source) -> \(target) [style=dashed arrowhead=open " +
-                       "label=\"\(lbl.dotEscaped)\" fontcolor=\"\(theme.fontColor)\" color=\"\(color)\"];\n"
+                       "label=\"\(lbl.dotEscaped)\"\(fontAttr)\(colorAttr)];\n"
             case .generalization:
-                return "  \(source) -> \(target) [arrowhead=empty style=solid color=\"\(color)\"];\n"
+                return "  \(source) -> \(target) [arrowhead=empty style=solid\(colorAttr)];\n"
             }
         }.joined()
     }
@@ -108,10 +119,10 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
     // MARK: - Graph attributes
 
     private func graphAttributes() -> String {
-        """
+        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
+        return """
           rankdir=LR;
-          bgcolor="\(theme.backgroundColor)";
-          compound=true;
+        \(background)  compound=true;
           fontname="\(fontName)";
           fontsize=\(fontSize);
           node [fontname="\(fontName)" fontsize=\(fontSize)];

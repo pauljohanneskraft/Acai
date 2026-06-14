@@ -2,15 +2,14 @@ digraph {
   label="Checkout.placeOrder()";
   labelloc=t;
   rankdir=TB;
-  bgcolor="white";
   fontname="Helvetica";
   fontsize=12;
   node [fontname="Helvetica" fontsize=12];
   edge [fontname="Helvetica" fontsize=10];
   // Participants
-  "Checkout_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="Checkout"];
-  "PaymentService_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentService"];
-  "PaymentGateway_header" [shape=box style=filled fillcolor="#f5f5f5" color="#333333" fontcolor="#333333" label="PaymentGateway"];
+  "Checkout_header" [shape=box label="Checkout"];
+  "PaymentService_header" [shape=box label="PaymentService"];
+  "PaymentGateway_header" [shape=box label="PaymentGateway"];
   { rank=same; "Checkout_header"; "PaymentService_header"; "PaymentGateway_header"; }
 
   // Lifeline step nodes
@@ -48,8 +47,8 @@ digraph {
 
   // Messages
   node [shape=none label=""];
-  "Checkout_step0" -> "PaymentService_step0" [color="#666666" fontcolor="#333333" label="charge" arrowhead=normal style=solid];
-  "PaymentService_step1" -> "PaymentGateway_step1" [color="#666666" fontcolor="#333333" label="authorize" arrowhead=normal style=solid];
-  "PaymentGateway_step2" -> "PaymentService_step2" [color="#666666" fontcolor="#333333" arrowhead=normal style=dashed];
-  "PaymentService_step3" -> "Checkout_step3" [color="#666666" fontcolor="#333333" arrowhead=normal style=dashed];
+  "Checkout_step0" -> "PaymentService_step0" [label="charge" arrowhead=normal style=solid];
+  "PaymentService_step1" -> "PaymentGateway_step1" [label="authorize" arrowhead=normal style=solid];
+  "PaymentGateway_step2" -> "PaymentService_step2" [arrowhead=normal style=dashed];
+  "PaymentService_step3" -> "Checkout_step3" [arrowhead=normal style=dashed];
 }

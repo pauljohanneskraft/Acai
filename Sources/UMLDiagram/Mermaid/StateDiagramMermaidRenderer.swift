@@ -4,18 +4,25 @@
 /// other states are declared with a stable id and a display label. Composite
 /// sub-states are flattened (the value-flow analyser does not currently emit them).
 public struct StateDiagramMermaidRenderer: Sendable {
-    public init() {}
+    private let theme: DiagramTheme?
+
+    public init(theme: DiagramTheme? = nil) {
+        self.theme = theme
+    }
 
     public func render(_ diagram: StateDiagram) -> String {
-        var lines = ["stateDiagram-v2"]
+        var lines: [String] = []
+        if let theme { lines.append(theme.mermaidInit()) }
+        lines.append("stateDiagram-v2")
 
+        var allocator = MermaidIDAllocator()
         var refMap: [String: String] = [:]
         for state in diagram.states {
             switch state.kind {
             case .initial, .final:
                 refMap[state.id] = "[*]"
             default:
-                let safe = state.id.mermaidSafeID
+                let safe = allocator.id(for: state.id)
                 refMap[state.id] = safe
                 lines.append("    state \"\(state.name.mermaidLabelEscaped)\" as \(safe)")
             }

@@ -61,6 +61,7 @@ extension DartExtractor {
             modifiers: modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
+            annotations: extractAnnotations(from: node),
             namespace: currentNamespace, location: nodeLoc
         )
     }
@@ -104,6 +105,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases,
+            annotations: extractAnnotations(from: node),
             namespace: currentNamespace, location: nodeLoc
         )
     }
@@ -173,6 +175,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
+            annotations: extractAnnotations(from: node),
             namespace: currentNamespace, location: loc(node)
         )
     }
@@ -197,6 +200,7 @@ extension DartExtractor {
             id: qualifiedName(displayName), name: displayName, qualifiedName: qualifiedName(displayName),
             kind: .extension,
             members: members, nestedTypes: nestedTypes,
+            annotations: extractAnnotations(from: node),
             extensionOf: extendedType,
             namespace: currentNamespace, location: nodeLoc
         )
@@ -238,6 +242,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
+            annotations: extractAnnotations(from: node),
             namespace: currentNamespace, location: nodeLoc
         )
     }

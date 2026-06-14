@@ -5,7 +5,11 @@ import Foundation
 /// Each module is a node labelled with its coupling metrics and shaded by its
 /// distance from the main sequence; edges carry the cross-module reference weight.
 public struct PackageDiagramMermaidRenderer: Sendable {
-    public init() {}
+    private let theme: DiagramTheme?
+
+    public init(theme: DiagramTheme? = nil) {
+        self.theme = theme
+    }
 
     public func render(_ diagram: PackageDependencyDiagram) -> String {
         var lines: [String] = []
@@ -14,11 +18,13 @@ public struct PackageDiagramMermaidRenderer: Sendable {
             lines.append("title: \(title)")
             lines.append("---")
         }
+        if let theme { lines.append(theme.mermaidInit()) }
         lines.append("flowchart LR")
 
+        var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         for node in diagram.nodes {
-            let safe = node.id.mermaidSafeID
+            let safe = allocator.id(for: node.id)
             idMap[node.id] = safe
             lines.append("    \(safe)[\"\(nodeLabel(node).mermaidLabelEscaped)\"]")
         }

@@ -11,7 +11,10 @@ public struct ClassDiagramOptions: Sendable {
     public var showGenericParameters: Bool
     public var fontName: String
     public var fontSize: Int
-    public var theme: DiagramTheme
+    /// The cosmetic colour palette. `nil` emits structural output (no background, fill, border or
+    /// font colours) so the consumer themes it at render time; set it for self-contained colours.
+    /// Semantic colours (e.g. inferred edge labels) are unaffected.
+    public var theme: DiagramTheme?
 
     // MARK: - Class-diagram enrichment options
 
@@ -43,7 +46,7 @@ public struct ClassDiagramOptions: Sendable {
         showGenericParameters: Bool = true,
         fontName: String = "Helvetica",
         fontSize: Int = 12,
-        theme: DiagramTheme = .default,
+        theme: DiagramTheme? = nil,
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
         showExternalTypes: Bool = false,
@@ -118,4 +121,17 @@ public struct DiagramTheme: Sendable {
         fontColor: "#cccccc",
         edgeColor: "#999999"
     )
+
+    /// A Mermaid init directive applying this palette through Mermaid's customizable `base`
+    /// theme. Prepended as the first line of the diagram; a host that doesn't override it picks
+    /// up these colours, while consumers that theme Mermaid themselves can drop the line.
+    public func mermaidInit() -> String {
+        "%%{init: {'theme':'base','themeVariables':{"
+            + "'primaryColor':'\(nodeFillColor)',"
+            + "'primaryBorderColor':'\(nodeBorderColor)',"
+            + "'primaryTextColor':'\(fontColor)',"
+            + "'lineColor':'\(edgeColor)',"
+            + "'background':'\(backgroundColor)'"
+            + "}}}%%"
+    }
 }

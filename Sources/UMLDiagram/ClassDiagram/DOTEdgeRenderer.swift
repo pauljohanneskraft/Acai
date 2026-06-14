@@ -29,24 +29,25 @@ struct DOTEdgeRenderer {
     }
 
     private func edgeAttributes(for kind: Relationship.Kind) -> String {
-        let color = options.theme.edgeColor
+        // Edge colour is cosmetic; arrowheads/styles are semantic and always emitted.
+        let colorAttr = options.theme.map { " color=\"\($0.edgeColor)\"" } ?? ""
         switch kind {
         case .inheritance:
-            return "arrowhead=empty style=solid color=\"\(color)\""
+            return "arrowhead=empty style=solid" + colorAttr
         case .conformance:
-            return "arrowhead=empty style=dashed color=\"\(color)\""
+            return "arrowhead=empty style=dashed" + colorAttr
         case .composition:
-            return "dir=back arrowtail=diamond color=\"\(color)\""
+            return "dir=back arrowtail=diamond" + colorAttr
         case .aggregation:
-            return "dir=back arrowtail=odiamond color=\"\(color)\""
+            return "dir=back arrowtail=odiamond" + colorAttr
         case .association:
-            return "arrowhead=vee style=solid color=\"\(color)\""
+            return "arrowhead=vee style=solid" + colorAttr
         case .dependency:
-            return "arrowhead=vee style=dashed color=\"\(color)\""
+            return "arrowhead=vee style=dashed" + colorAttr
         case .extension:
-            return "arrowhead=empty style=dotted color=\"\(color)\""
+            return "arrowhead=empty style=dotted" + colorAttr
         case .nesting:
-            return "arrowhead=dot style=solid color=\"\(color)\""
+            return "arrowhead=dot style=solid" + colorAttr
         }
     }
 }

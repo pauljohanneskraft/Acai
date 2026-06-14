@@ -52,10 +52,10 @@ public struct DOTGenerator: Sendable {
     }
 
     private func graphAttributes() -> String {
-        """
+        let background = options.theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
+        return """
           rankdir=\(options.layoutDirection.rawValue);
-          bgcolor="\(options.theme.backgroundColor)";
-          compound=true;
+        \(background)  compound=true;
           fontname="\(options.fontName)";
           fontsize=\(options.fontSize);
           node [shape=none margin=0 fontname="\(options.fontName)" fontsize=\(options.fontSize)];

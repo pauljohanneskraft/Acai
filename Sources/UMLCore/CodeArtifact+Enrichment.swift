@@ -17,8 +17,11 @@ extension CodeArtifact {
 
     // MARK: - Relationship name → id resolution (BUG-12 / GAP-7)
 
-    /// Rewrites relationship `source`/`target` from raw names to canonical type ids,
-    /// recursing into `nestedTypes` so edges to nested types resolve.
+    /// Rewrites relationship `source`/`target` and `inheritedTypes` names from raw names to
+    /// canonical type ids, recursing into `nestedTypes` so edges and supertype references to
+    /// nested types resolve. Running this in the language-agnostic pipeline means every
+    /// language (not just the tree-sitter extractors that opt in) gets consistent qualified
+    /// inherited-type names in inspector/detail views.
     public func resolvingRelationshipNames() -> CodeArtifact {
         let map = Self.buildNameToId(types)
         var copy = self
@@ -28,7 +31,25 @@ extension CodeArtifact {
             resolved.target = map[rel.target] ?? rel.target
             return resolved
         }
+        copy.types = Self.resolvingInheritedTypeNames(types, using: map)
         return copy
+    }
+
+    /// Rewrites each type's `inheritedTypes[].name` to its canonical id where known, recursing
+    /// into `nestedTypes`. Names with no mapping (external supertypes) are left untouched.
+    private static func resolvingInheritedTypeNames(
+        _ types: [TypeDeclaration], using map: [String: String]
+    ) -> [TypeDeclaration] {
+        types.map { type in
+            var copy = type
+            copy.inheritedTypes = type.inheritedTypes.map { ref in
+                var resolved = ref
+                resolved.name = map[ref.name] ?? ref.name
+                return resolved
+            }
+            copy.nestedTypes = resolvingInheritedTypeNames(type.nestedTypes, using: map)
+            return copy
+        }
     }
 
     // MARK: - Inheritance vs conformance (BUG-3, in-codebase only)

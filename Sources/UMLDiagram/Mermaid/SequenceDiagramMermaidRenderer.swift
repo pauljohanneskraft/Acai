@@ -1,13 +1,20 @@
 /// Renders a `SequenceDiagram` to a Mermaid `sequenceDiagram`.
 public struct SequenceDiagramMermaidRenderer: Sendable {
-    public init() {}
+    private let theme: DiagramTheme?
+
+    public init(theme: DiagramTheme? = nil) {
+        self.theme = theme
+    }
 
     public func render(_ diagram: SequenceDiagram) -> String {
-        var lines = ["sequenceDiagram"]
+        var lines: [String] = []
+        if let theme { lines.append(theme.mermaidInit()) }
+        lines.append("sequenceDiagram")
 
+        var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         for participant in diagram.participants {
-            let safe = participant.id.mermaidSafeID
+            let safe = allocator.id(for: participant.id)
             idMap[participant.id] = safe
             lines.append("    participant \(safe) as \(participant.name.mermaidLabelEscaped)")
         }

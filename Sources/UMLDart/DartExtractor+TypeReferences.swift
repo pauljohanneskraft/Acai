@@ -287,6 +287,32 @@ extension DartExtractor {
         return Array(Set(modifiers))
     }
 
+    // MARK: - Annotations
+
+    /// Collects annotation names from the direct `annotation` children of a node
+    /// (`@override`, `@Deprecated('msg')` → `@Deprecated`).
+    func extractAnnotations(from node: Node) -> [String] {
+        node.children().compactMap { $0.nodeType == "annotation" ? annotationText($0) : nil }
+    }
+
+    /// An `annotation` node's full source text (incl. the leading `@` and any arguments),
+    /// matching how the Kotlin and Java extractors store annotations — preserving argument
+    /// detail like `@Deprecated('reason')` rather than discarding it.
+    func annotationText(_ node: Node) -> String {
+        text(node)
+    }
+
+    /// Applies the collected annotations to every member added since `startIndex` (a single
+    /// declaration like `@override int a, b;` yields multiple fields that share the annotation).
+    func assignAnnotations(
+        _ annotations: [String], toMembersFrom startIndex: Int, in members: inout [Member]
+    ) {
+        guard !annotations.isEmpty, startIndex < members.count else { return }
+        for index in startIndex..<members.count {
+            members[index].annotations = annotations
+        }
+    }
+
     // MARK: - Access Level
 
     /// In Dart, identifiers starting with `_` are private to the library.

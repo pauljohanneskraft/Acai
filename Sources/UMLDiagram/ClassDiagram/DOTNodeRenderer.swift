@@ -29,26 +29,27 @@ struct DOTNodeRenderer {
     // MARK: - HTML label
 
     private func buildHTMLLabel(for type: TypeDeclaration) -> String {
-        let fill = options.theme.nodeFillColor
-        let border = options.theme.nodeBorderColor
-        let font = options.theme.fontColor
+        let font = options.theme?.fontColor
         let fontSize = options.fontSize
 
-        var html = "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" "
-        html += "BGCOLOR=\"\(fill)\" COLOR=\"\(border)\">"
+        var html = "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\""
+        if let theme = options.theme {
+            html += " BGCOLOR=\"\(theme.nodeFillColor)\" COLOR=\"\(theme.nodeBorderColor)\""
+        }
+        html += ">"
 
         // Header: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
         if let stereotype = stereotypeString(for: type.kind) {
-            html += "<FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">"
+            html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
-        html += "<B><FONT COLOR=\"\(font)\">"
+        html += "<B>\(fontOpen(font))"
         html += type.name.dotHTMLEscaped
         if options.showGenericParameters && !type.genericParameters.isEmpty {
             html += "&lt;\(type.genericParameters.map(\.name).joined(separator: ", "))&gt;"
         }
-        html += "</FONT></B>"
+        html += "\(fontClose(font))</B>"
         html += "</TD></TR>"
 
         guard options.showMembers else {
@@ -62,7 +63,7 @@ struct DOTNodeRenderer {
         // Properties compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"
         if properties.isEmpty {
-            html += "<FONT COLOR=\"\(font)\"> </FONT>"
+            html += "\(fontOpen(font)) \(fontClose(font))"
         } else {
             html += properties.map { renderMember($0) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
             html += "<BR ALIGN=\"LEFT\"/>"
@@ -72,7 +73,7 @@ struct DOTNodeRenderer {
         // Methods compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"
         if methods.isEmpty {
-            html += "<FONT COLOR=\"\(font)\"> </FONT>"
+            html += "\(fontOpen(font)) \(fontClose(font))"
         } else {
             html += methods.map { renderMember($0) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
             html += "<BR ALIGN=\"LEFT\"/>"
@@ -118,8 +119,8 @@ struct DOTNodeRenderer {
     // MARK: - Member rendering
 
     private func renderMember(_ member: Member) -> String {
-        let font = options.theme.fontColor
-        var result = "<FONT COLOR=\"\(font)\">"
+        let font = options.theme?.fontColor
+        var result = fontOpen(font)
         if options.showAccessLevelSymbols, let access = member.accessLevel {
             result += access.umlSymbol.dotHTMLEscaped + " "
         }
@@ -149,19 +150,36 @@ struct DOTNodeRenderer {
 
         if isAbstract { result += "</I>" }
         if isStatic { result += "</U>" }
-        result += "</FONT>"
+        result += fontClose(font)
         return result
     }
 
     private func renderEnumCase(_ enumCase: EnumCase) -> String {
-        let font = options.theme.fontColor
-        var result = "<FONT COLOR=\"\(font)\">"
+        let font = options.theme?.fontColor
+        var result = fontOpen(font)
         result += enumCase.name.dotHTMLEscaped
         if let raw = enumCase.rawValue {
             result += " = " + raw.dotHTMLEscaped
         }
-        result += "</FONT>"
+        result += fontClose(font)
         return result
+    }
+
+    // MARK: - Font color (structural when no theme)
+
+    /// `COLOR="…"` attribute fragment for a `<FONT>` tag, or empty when unthemed.
+    private func colorAttr(_ color: String?) -> String {
+        color.map { " COLOR=\"\($0)\"" } ?? ""
+    }
+
+    /// Opening `<FONT COLOR="…">` when themed, else empty — so structural output carries no colour.
+    private func fontOpen(_ color: String?) -> String {
+        color.map { "<FONT COLOR=\"\($0)\">" } ?? ""
+    }
+
+    /// Matching `</FONT>` for ``fontOpen(_:)`` (empty when unthemed).
+    private func fontClose(_ color: String?) -> String {
+        color != nil ? "</FONT>" : ""
     }
 
     // MARK: - Helpers

@@ -82,8 +82,14 @@ extension DartExtractor {
         // (memberIndex, bodyNode) pairs; call sites are resolved after the loop so the
         // scope can be built from the type's *complete* property/member set.
         var pendingBodies: [(index: Int, body: Node)] = []
+        // Annotations precede the member they decorate as siblings in the body.
+        var pendingAnnotations: [String] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            if nodeType == "annotation" {
+                pendingAnnotations.append(annotationText(child))
+                continue
+            }
             if nodeType == "function_body" {
                 if previousChildAddedMember, !members.isEmpty {
                     members[members.count - 1].assignments = extractAssignments(from: child)
@@ -103,6 +109,8 @@ extension DartExtractor {
                     nestedTypes: &nestedTypes, parentName: parentName
                 )
             }
+            assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
+            pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
         }
         attachCallSites(pendingBodies, to: &members)
@@ -164,8 +172,13 @@ extension DartExtractor {
         // Same signature/body sibling pairing as `extractClassBody`.
         var previousChildAddedMember = false
         var pendingBodies: [(index: Int, body: Node)] = []
+        var pendingAnnotations: [String] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            if nodeType == "annotation" {
+                pendingAnnotations.append(annotationText(child))
+                continue
+            }
             let countBefore = members.count
             switch nodeType {
             case "enum_constant":
@@ -185,6 +198,8 @@ extension DartExtractor {
                     nestedTypes: &ignored, parentName: parentName
                 )
             }
+            assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
+            pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
         }
         attachCallSites(pendingBodies, to: &members)

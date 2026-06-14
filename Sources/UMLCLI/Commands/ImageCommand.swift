@@ -109,6 +109,7 @@ extension UMLCommand {
             if sequenceFrom != nil && stateFrom != nil {
                 throw ValidationError("Specify either --sequence-from or --state-from, not both.")
             }
+            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         mutating func run() async throws {
