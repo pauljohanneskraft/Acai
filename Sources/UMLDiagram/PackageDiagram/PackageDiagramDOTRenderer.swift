@@ -8,12 +8,12 @@ import Foundation
 /// amber to red (deep in the zone of pain / uselessness). Edges are weighted by the
 /// number of cross-module references (thicker = more coupling).
 public struct PackageDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme
+    public let theme: DiagramTheme?
     public let fontName: String
     public let fontSize: Int
 
     public init(
-        theme: DiagramTheme = .default,
+        theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
@@ -36,9 +36,11 @@ public struct PackageDiagramDOTRenderer: Sendable {
         }
 
         for edge in diagram.edges {
-            var attrs = "color=\"\(theme.edgeColor)\" penwidth=\(penWidth(forWeight: edge.weight))"
-            attrs += " label=\"\(edge.weight)\""
-            out += "  \(edge.from.dotNodeID) -> \(edge.to.dotNodeID) [\(attrs)];\n"
+            var parts: [String] = []
+            if let theme { parts.append("color=\"\(theme.edgeColor)\"") }
+            parts.append("penwidth=\(penWidth(forWeight: edge.weight))")
+            parts.append("label=\"\(edge.weight)\"")
+            out += "  \(edge.from.dotNodeID) -> \(edge.to.dotNodeID) [\(parts.joined(separator: " "))];\n"
         }
 
         out += "}\n"
@@ -61,13 +63,13 @@ public struct PackageDiagramDOTRenderer: Sendable {
     }
 
     private func graphAttributes() -> String {
-        """
+        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
+        let nodeColor = theme.map { " color=\"\($0.nodeBorderColor)\" fontcolor=\"\($0.fontColor)\"" } ?? ""
+        return """
           rankdir=LR;
-          bgcolor="\(theme.backgroundColor)";
-          fontname="\(fontName)";
+        \(background)  fontname="\(fontName)";
           fontsize=\(fontSize);
-          node [shape=box style="rounded,filled" color="\(theme.nodeBorderColor)" \
-        fontcolor="\(theme.fontColor)" fontname="\(fontName)" fontsize=\(fontSize)];
+          node [shape=box style="rounded,filled"\(nodeColor) fontname="\(fontName)" fontsize=\(fontSize)];
           edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
 
         """

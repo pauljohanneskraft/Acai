@@ -4,18 +4,25 @@
 /// Composite states are rendered as `subgraph` clusters.
 /// Transitions become directed edges with `event [guard] / action` labels.
 public struct StateDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme
+    public let theme: DiagramTheme?
     public let fontName: String
     public let fontSize: Int
 
     public init(
-        theme: DiagramTheme = .default,
+        theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
         self.theme = theme
         self.fontName = fontName
         self.fontSize = fontSize
+    }
+
+    /// Cosmetic fill/border/font attributes for normal & choice states when themed, else empty.
+    private var nodeColorAttrs: String {
+        guard let theme else { return "" }
+        return " style=filled fillcolor=\"\(theme.nodeFillColor)\""
+            + " color=\"\(theme.nodeBorderColor)\" fontcolor=\"\(theme.fontColor)\""
     }
 
     // MARK: - Public API
@@ -55,8 +62,10 @@ public struct StateDiagramDOTRenderer: Sendable {
         var out = "  subgraph cluster_\(clusterIndex) {\n"
         out += "    label=\"\(state.name.dotEscaped)\";\n"
         out += "    style=rounded;\n"
-        out += "    color=\"\(theme.nodeBorderColor)\";\n"
-        out += "    fontcolor=\"\(theme.fontColor)\";\n"
+        if let theme {
+            out += "    color=\"\(theme.nodeBorderColor)\";\n"
+            out += "    fontcolor=\"\(theme.fontColor)\";\n"
+        }
         let (sub, next) = renderStates(state.substates, clusterIndex: clusterIndex + 1)
         out += sub.split(separator: "\n").map { "  " + $0 }.joined(separator: "\n") + "\n"
         out += "  }\n"
@@ -70,32 +79,31 @@ public struct StateDiagramDOTRenderer: Sendable {
     }
 
     private func nodeAttributes(for state: StateDiagram.State) -> String {
-        let fill = theme.nodeFillColor
-        let border = theme.nodeBorderColor
-        let font = theme.fontColor
+        // The solid dot/bar of a pseudo-state is semantic (it *is* the marker), so it is always
+        // filled: with the theme's border colour when themed (stays visible on the themed
+        // background), else black (visible on the default white canvas).
+        let marker = theme?.nodeBorderColor ?? "black"
 
         switch state.kind {
         case .initial:
-            return "[shape=circle style=filled fillcolor=\"\(border)\" width=0.3 label=\"\"]"
+            return "[shape=circle style=filled fillcolor=\"\(marker)\" width=0.3 label=\"\"]"
 
         case .final:
-            return "[shape=circle style=filled fillcolor=\"\(border)\" width=0.4 " +
+            return "[shape=circle style=filled fillcolor=\"\(marker)\" width=0.4 " +
                    "peripheries=2 label=\"\"]"
 
         case .choice:
-            return "[shape=diamond style=filled fillcolor=\"\(fill)\" color=\"\(border)\" " +
-                   "fontcolor=\"\(font)\" label=\"\(state.name.dotHTMLEscaped)\"]"
+            return "[shape=diamond\(nodeColorAttrs) label=\"\(state.name.dotHTMLEscaped)\"]"
 
         case .fork, .join:
-            return "[shape=rect style=filled fillcolor=\"\(border)\" width=1.5 height=0.15 label=\"\"]"
+            return "[shape=rect style=filled fillcolor=\"\(marker)\" width=1.5 height=0.15 label=\"\"]"
 
         case .normal, .composite:
             var label = state.name.dotHTMLEscaped
             if let entry = state.entryAction { label += "\\nentry/ \(entry.dotEscaped)" }
             if let doAct = state.doActivity { label += "\\ndo/ \(doAct.dotEscaped)" }
             if let exit  = state.exitAction { label += "\\nexit/ \(exit.dotEscaped)" }
-            return "[shape=Mrecord style=filled fillcolor=\"\(fill)\" color=\"\(border)\" " +
-                   "fontcolor=\"\(font)\" label=\"\(label)\"]"
+            return "[shape=Mrecord\(nodeColorAttrs) label=\"\(label)\"]"
         }
     }
 
@@ -105,22 +113,21 @@ public struct StateDiagramDOTRenderer: Sendable {
         transitions.map { t in
             let from = t.from.dotNodeID
             let to = t.to.dotNodeID
-            let color = theme.edgeColor
-            var attrs = "color=\"\(color)\""
-            if let lbl = t.label {
-                attrs += " label=\"\(lbl.dotEscaped)\""
-            }
-            return "  \(from) -> \(to) [\(attrs)];\n"
+            var parts: [String] = []
+            if let theme { parts.append("color=\"\(theme.edgeColor)\"") }
+            if let lbl = t.label { parts.append("label=\"\(lbl.dotEscaped)\"") }
+            let attrs = parts.isEmpty ? "" : " [\(parts.joined(separator: " "))]"
+            return "  \(from) -> \(to)\(attrs);\n"
         }.joined()
     }
 
     // MARK: - Graph attributes
 
     private func graphAttributes() -> String {
-        """
+        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
+        return """
           rankdir=TB;
-          bgcolor="\(theme.backgroundColor)";
-          fontname="\(fontName)";
+        \(background)  fontname="\(fontName)";
           fontsize=\(fontSize);
           node [fontname="\(fontName)" fontsize=\(fontSize)];
           edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];

@@ -120,6 +120,7 @@ extension UMLCommand {
             if modeFlags > 1 {
                 throw ValidationError("Specify only one of --sequence-from, --state-from, or --package.")
             }
+            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         mutating func run() throws {
@@ -227,9 +228,9 @@ extension UMLCommand {
             }
             switch format {
             case .dot:
-                return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+                return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
             case .mermaid:
-                return SequenceDiagramMermaidRenderer().render(diagram)
+                return SequenceDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
             }
         }
 
@@ -246,9 +247,9 @@ extension UMLCommand {
             }
             switch format {
             case .dot:
-                return StateDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+                return StateDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
             case .mermaid:
-                return StateDiagramMermaidRenderer().render(diagram)
+                return StateDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
             }
         }
 
@@ -257,9 +258,9 @@ extension UMLCommand {
             let diagram = artifact.enriched().packageDependencyDiagram()
             switch format {
             case .dot:
-                return PackageDiagramDOTRenderer(theme: theme?.diagramTheme ?? .default).render(diagram)
+                return PackageDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
             case .mermaid:
-                return PackageDiagramMermaidRenderer().render(diagram)
+                return PackageDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
             }
         }
 

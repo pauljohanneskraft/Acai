@@ -23,11 +23,14 @@ public struct ClassDiagramMermaidRenderer: Sendable {
             )
         )
 
-        var lines = ["classDiagram"]
+        var lines: [String] = []
+        if let theme = options.theme { lines.append(theme.mermaidInit()) }
+        lines.append("classDiagram")
+        var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         let types = enriched.types + (options.showExternalTypes ? enriched.externalTypes : [])
         for type in types {
-            let safe = type.id.mermaidSafeID
+            let safe = allocator.id(for: type.id)
             idMap[type.id] = safe
             lines.append(contentsOf: renderClass(type, safeID: safe))
         }

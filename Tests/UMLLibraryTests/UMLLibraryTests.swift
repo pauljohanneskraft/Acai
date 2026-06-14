@@ -40,6 +40,14 @@ struct UMLLibraryTests {
         })
     }
 
+    /// `parser(for:)` returns the registered parser, and `nil` (not a silent Swift fallback)
+    /// for an unregistered language — surfacing the "forgot to register a parser" bug.
+    @Test func parserLookupReturnsNilForUnregisteredLanguage() {
+        let service = AnalysisService(parsers: [SwiftCodeParser()])
+        #expect(service.parser(for: .swift)?.language == .swift)
+        #expect(service.parser(for: .kotlin) == nil)
+    }
+
     /// Dart previously produced no call sites, so its sequence diagrams were always empty.
     @Test func dartSequenceDiagramIsNoLongerEmpty() {
         let source = """

@@ -55,9 +55,13 @@ public struct AnalysisService: Sendable {
 
     // MARK: - Parser Registry
 
-    /// Returns the parser for the given language, falling back to Swift when none matches.
-    public func parser(for language: CodeArtifact.SourceLanguage) -> any CodeParser {
-        parsers.first { $0.language == language } ?? SwiftCodeParser()
+    /// Returns the parser registered for `language`, or `nil` when none is registered.
+    ///
+    /// Returning `nil` rather than silently substituting the Swift parser surfaces the bug of a
+    /// language reaching analysis without being wired into ``parsers`` (a trap when adding a
+    /// language) instead of masking it as mis-parsed Swift.
+    public func parser(for language: CodeArtifact.SourceLanguage) -> (any CodeParser)? {
+        parsers.first { $0.language == language }
     }
 
     // MARK: - Project Analysis
@@ -99,7 +103,13 @@ public struct AnalysisService: Sendable {
         _ spec: SourceSpec,
         rootURL: URL
     ) -> CodeArtifact? {
-        let codeParser = parser(for: spec.language)
+        guard let codeParser = parser(for: spec.language) else {
+            assertionFailure(
+                "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
+            )
+            print("Warning: No parser registered for language \(spec.language.rawValue); skipping it.")
+            return nil
+        }
         let exts = Set(codeParser.fileExtensions)
 
         let files = spec.sourceDirs

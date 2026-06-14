@@ -7,18 +7,25 @@
 /// - Invisible vertical edges along each lifeline establish the top-to-bottom ordering.
 /// - Message arrows are drawn between the corresponding step nodes.
 public struct SequenceDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme
+    public let theme: DiagramTheme?
     public let fontName: String
     public let fontSize: Int
 
     public init(
-        theme: DiagramTheme = .default,
+        theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
         self.theme = theme
         self.fontName = fontName
         self.fontSize = fontSize
+    }
+
+    /// Cosmetic node fill/border/font attributes when themed, else empty (structural outline).
+    private var nodeColorAttrs: String {
+        guard let theme else { return "" }
+        return " style=filled fillcolor=\"\(theme.nodeFillColor)\""
+            + " color=\"\(theme.nodeBorderColor)\" fontcolor=\"\(theme.fontColor)\""
     }
 
     // MARK: - Public API
@@ -62,9 +69,7 @@ public struct SequenceDiagramDOTRenderer: Sendable {
             let stereotype = participantStereotype(p.kind)
             var label = p.name.dotHTMLEscaped
             if let s = stereotype { label = "&lt;&lt;\(s)&gt;&gt;\\n\(label)" }
-            out += "  \(nodeId) [shape=box style=filled " +
-                   "fillcolor=\"\(theme.nodeFillColor)\" color=\"\(theme.nodeBorderColor)\" " +
-                   "fontcolor=\"\(theme.fontColor)\" label=\"\(label)\"];\n"
+            out += "  \(nodeId) [shape=box\(nodeColorAttrs) label=\"\(label)\"];\n"
         }
         if !participants.isEmpty {
             out += "  { rank=same; "
@@ -111,10 +116,11 @@ public struct SequenceDiagramDOTRenderer: Sendable {
         for (step, msg) in messages.enumerated() {
             let from = stepNodeID(msg.from, step: step)
             let to = stepNodeID(msg.to, step: step)
-            var attrs = "color=\"\(theme.edgeColor)\" fontcolor=\"\(theme.fontColor)\""
-            if let lbl = msg.label { attrs += " label=\"\(lbl.dotEscaped)\"" }
-            attrs += " " + arrowAttributes(for: msg.kind)
-            out += "  \(from) -> \(to) [\(attrs)];\n"
+            var parts: [String] = []
+            if let theme { parts.append("color=\"\(theme.edgeColor)\" fontcolor=\"\(theme.fontColor)\"") }
+            if let lbl = msg.label { parts.append("label=\"\(lbl.dotEscaped)\"") }
+            parts.append(arrowAttributes(for: msg.kind))
+            out += "  \(from) -> \(to) [\(parts.joined(separator: " "))];\n"
         }
     }
 
@@ -158,10 +164,10 @@ public struct SequenceDiagramDOTRenderer: Sendable {
     }
 
     private func graphAttributes() -> String {
-        """
+        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
+        return """
           rankdir=TB;
-          bgcolor="\(theme.backgroundColor)";
-          fontname="\(fontName)";
+        \(background)  fontname="\(fontName)";
           fontsize=\(fontSize);
           node [fontname="\(fontName)" fontsize=\(fontSize)];
           edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
