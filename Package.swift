@@ -124,6 +124,8 @@ let package = Package(
                 "UMLCore",
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftDiagnostics", package: "swift-syntax"),
+                .product(name: "SwiftParserDiagnostics", package: "swift-syntax"),
             ]
         ),
         .target(

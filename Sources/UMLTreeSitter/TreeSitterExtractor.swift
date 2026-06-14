@@ -25,6 +25,12 @@ public protocol TreeSitterExtracting {
     /// Accumulated type declarations discovered during extraction.
     var types: [TypeDeclaration] { get set }
 
+    /// Simple names of every type declared in the file, collected in one pre-pass over the
+    /// AST before bodies are extracted (so call-site resolution sees the *complete* set —
+    /// including the enclosing type, nested types, and forward-declared siblings — rather
+    /// than only types appended so far). Populate via ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
+    var declaredTypeNames: Set<String> { get set }
+
     /// Accumulated inter-type relationships discovered during extraction.
     var relationships: [Relationship] { get set }
 
@@ -183,6 +189,103 @@ extension TreeSitterExtracting {
         }
         return map
     }
+
+    /// The complete set of type names declared in the file (see ``declaredTypeNames``).
+    /// Used by call-site resolution to recognise statically-resolvable `TypeName.method()`
+    /// calls without misclassifying calls on unknown/external receivers (which would create
+    /// phantom diagram participants).
+    public func collectKnownTypeNames() -> Set<String> {
+        declaredTypeNames
+    }
+
+    /// One pre-pass over the raw AST collecting the simple name of every type declaration
+    /// (recursively, including nested types), so the full set is known before any body is
+    /// resolved. `name` extracts the declaration node's simple name (declarations whose name
+    /// can't be read — e.g. anonymous extensions — are skipped).
+    public func collectDeclaredTypeNames(
+        from root: Node,
+        declarationNodeTypes: Set<String>,
+        name: (Node) -> String?
+    ) -> Set<String> {
+        var names: Set<String> = []
+        func walk(_ node: Node) {
+            if let type = node.nodeType, declarationNodeTypes.contains(type), let typeName = name(node) {
+                names.insert(typeName)
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(walk)
+            }
+        }
+        walk(root)
+        return names
+    }
+
+    /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes (the parser
+    /// could not make sense of the input) and `missing` nodes (a required token the source
+    /// omitted, inserted during recovery). Walks *all* children, not just named ones, since
+    /// error/missing nodes are frequently unnamed. Call only when `root.hasError`.
+    public func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
+        var diagnostics: [ParseDiagnostic] = []
+        func walk(_ node: Node) {
+            if node.isMissing {
+                diagnostics.append(ParseDiagnostic(
+                    location: loc(node), kind: .missing,
+                    message: "missing \(node.nodeType ?? "token")"
+                ))
+            } else if node.nodeType == "ERROR" {
+                diagnostics.append(ParseDiagnostic(
+                    location: loc(node), kind: .error, message: "unexpected syntax"
+                ))
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(walk)
+            }
+        }
+        walk(root)
+        return diagnostics
+    }
+}
+
+// MARK: - CallSiteScope
+
+/// The statically-known context used to resolve a method call's receiver to a type.
+///
+/// Resolution stays deliberately conservative — a call site is only captured when its
+/// receiver is *provably* a known type: a typed stored property, an explicit `this`/`self`
+/// (a call on the enclosing instance), or a `TypeName.method()` where `TypeName` is a
+/// declared type. Anything else (locals, parameters, external/stdlib receivers) is dropped
+/// so the resulting sequence diagrams keep their near-zero-false-edge guarantee.
+public struct CallSiteScope: Sendable {
+    /// `propertyName: typeName` for the enclosing type's stored properties.
+    public var knownProperties: [String: String]
+    /// Simple names of types declared in the current file (for `TypeName.method()`).
+    public var knownTypeNames: Set<String>
+
+    public init(
+        knownProperties: [String: String] = [:],
+        knownTypeNames: Set<String> = []
+    ) {
+        self.knownProperties = knownProperties
+        self.knownTypeNames = knownTypeNames
+    }
+
+    /// Resolves a single-identifier receiver (`receiver.method()`) to a ``UMLCore/CallSite``:
+    /// a typed stored property resolves to its declared type; otherwise a name matching a
+    /// known type is treated as a static/`TypeName.method()` call. Returns `nil` for anything
+    /// not provably resolvable (locals, parameters, external receivers).
+    public func resolvedCallSite(
+        receiverName: String,
+        methodName: String,
+        location: SourceLocation?
+    ) -> CallSite? {
+        if let receiverType = knownProperties[receiverName] {
+            return CallSite(receiverType: receiverType, methodName: methodName, location: location)
+        }
+        if knownTypeNames.contains(receiverName) {
+            return CallSite(receiverType: receiverName, methodName: methodName, location: location)
+        }
+        return nil
+    }
 }
 
 // MARK: - CallSiteResolving
@@ -196,13 +299,14 @@ extension TreeSitterExtracting {
 public protocol CallSiteResolving: TreeSitterExtracting {
 
     /// Resolves a single AST node to a ``UMLCore/CallSite`` if it
-    /// represents a method call on a known property.
+    /// represents a statically-resolvable method call (on a known property,
+    /// on `this`/`self`, or on a known type).
     ///
     /// Return `nil` for nodes that are not relevant call
-    /// expressions.
+    /// expressions, or whose receiver cannot be provably resolved.
     func resolveCallSite(
         _ node: Node,
-        knownProperties: [String: String]
+        scope: CallSiteScope
     ) -> CallSite?
 }
 
@@ -210,43 +314,32 @@ public protocol CallSiteResolving: TreeSitterExtracting {
 
 extension CallSiteResolving {
 
-    /// Extracts call sites from a body node using a map
-    /// of property names → types.
+    /// Extracts call sites from a body node using the statically-known ``CallSiteScope``.
     ///
-    /// Walks the AST recursively, calling
-    /// ``resolveCallSite(_:knownProperties:)`` on each node.
+    /// Walks the AST recursively, calling ``resolveCallSite(_:scope:)`` on each node.
+    /// Unlike property-only resolution, this is worth walking even when no properties are
+    /// known, because `this`/`self` and `TypeName.method()` calls are still resolvable.
     public func extractCallSites(
         from body: Node?,
-        knownProperties: [String: String]
+        scope: CallSiteScope
     ) -> [CallSite] {
-        guard let body, !knownProperties.isEmpty else { return [] }
+        guard let body else { return [] }
         var sites: [CallSite] = []
-        walkForCallSites(
-            body,
-            knownProperties: knownProperties,
-            into: &sites
-        )
+        walkForCallSites(body, scope: scope, into: &sites)
         return sites
     }
 
     /// Recursively walks AST nodes, collecting resolved call sites.
     private func walkForCallSites(
         _ node: Node,
-        knownProperties: [String: String],
+        scope: CallSiteScope,
         into sites: inout [CallSite]
     ) {
-        if let site = resolveCallSite(
-            node,
-            knownProperties: knownProperties
-        ) {
+        if let site = resolveCallSite(node, scope: scope) {
             sites.append(site)
         }
         for child in node.namedChildren() {
-            walkForCallSites(
-                child,
-                knownProperties: knownProperties,
-                into: &sites
-            )
+            walkForCallSites(child, scope: scope, into: &sites)
         }
     }
 }

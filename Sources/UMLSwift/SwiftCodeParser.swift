@@ -1,5 +1,7 @@
 import SwiftSyntax
 import SwiftParser
+import SwiftDiagnostics
+import SwiftParserDiagnostics
 import UMLCore
 
 public struct SwiftCodeParser: CodeParser {
@@ -10,11 +12,27 @@ public struct SwiftCodeParser: CodeParser {
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
         let sourceFile = Parser.parse(source: source)
-        let visitor = DeclarationVisitor(fileName: fileName)
+        let knownTypeNames = TypeNameCollector.collect(from: sourceFile)
+        let visitor = DeclarationVisitor(fileName: fileName, knownTypeNames: knownTypeNames)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
-        // Surface malformed input rather than silently returning a partial tree.
-        artifact.metadata.hasParseErrors = sourceFile.hasError
+        // Surface malformed input rather than silently returning a partial tree. SwiftSyntax
+        // gives human-readable diagnostics with positions, so report them concretely.
+        if sourceFile.hasError {
+            let converter = SourceLocationConverter(fileName: fileName, tree: sourceFile)
+            artifact.metadata.parseDiagnostics = ParseDiagnosticsGenerator
+                .diagnostics(for: sourceFile)
+                .map { diagnostic in
+                    let position = diagnostic.location(converter: converter)
+                    return ParseDiagnostic(
+                        location: UMLCore.SourceLocation(
+                            filePath: fileName, line: position.line, column: position.column
+                        ),
+                        kind: .error,
+                        message: diagnostic.message
+                    )
+                }
+        }
         return artifact
     }
 }

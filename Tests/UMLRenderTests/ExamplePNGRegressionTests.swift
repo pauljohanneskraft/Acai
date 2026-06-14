@@ -113,7 +113,7 @@ struct ClassDiagramPNGTests {
 struct SequenceDiagramPNGTests {
 
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java), ("typescript", .typeScript)
+        ("swift", .swift), ("kotlin", .kotlin), ("java", .java), ("typescript", .typeScript), ("dart", .dart)
     ]
 
     @Test("sequence PNG is valid and re-renders to the same size", arguments: cases)

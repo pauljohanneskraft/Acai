@@ -27,6 +27,11 @@ public struct JSCodeParser: CodeParser {
             return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]))
         }
         var extractor = JSExtractor(source: source, fileName: fileName, isTypeScript: isTypeScript)
-        return extractor.extract(from: root)
+        var artifact = extractor.extract(from: root)
+        // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
+        if root.hasError {
+            artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
+        }
+        return artifact
     }
 }

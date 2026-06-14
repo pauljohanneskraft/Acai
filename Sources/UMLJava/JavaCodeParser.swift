@@ -17,6 +17,11 @@ public struct JavaCodeParser: CodeParser {
             return CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: [fileName]))
         }
         var extractor = JavaExtractor(source: source, fileName: fileName)
-        return extractor.extract(from: root)
+        var artifact = extractor.extract(from: root)
+        // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
+        if root.hasError {
+            artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
+        }
+        return artifact
     }
 }

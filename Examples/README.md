@@ -16,7 +16,7 @@ interfaces or enums, enum-case casing follows each language's convention, etc.).
 ```
 Examples/
   ClassDiagram/      Swift Kotlin Java TypeScript Dart              + Exports/
-  SequenceDiagram/   Swift Kotlin Java TypeScript                   + Exports/
+  SequenceDiagram/   Swift Kotlin Java TypeScript Dart              + Exports/
   StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart   + Exports/
 ```
 
@@ -32,7 +32,7 @@ images are the faithful view.) This is sample input, not a buildable package —
 | Diagram      | Languages                                   | Why |
 | ------------ | ------------------------------------------- | --- |
 | **Class**    | Swift, Kotlin, Java, TypeScript, Dart       | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. |
-| **Sequence** | Swift, Kotlin, Java, TypeScript             | Needs typed call receivers; Dart and plain JavaScript don't carry them. |
+| **Sequence** | Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers; plain JavaScript doesn't carry them, so it's the only omission. |
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart | Value-flow analysis only needs assignments, which every parser extracts. |
 
 ### The models
@@ -65,7 +65,7 @@ uml diagram --source Examples/ClassDiagram --language <lang> --format mermaid \
 uml image   --source Examples/ClassDiagram --language <lang> --grouping none \
     --output Examples/ClassDiagram/Exports/<lang>.png --scale 2
 
-# Sequence diagram (swift | kotlin | java | typescript) — uniform entry point
+# Sequence diagram (swift | kotlin | java | typescript | dart) — uniform entry point
 uml diagram --source Examples/SequenceDiagram --language <lang> \
     --sequence-from "Checkout.placeOrder" \
     --output Examples/SequenceDiagram/Exports/<lang>.dot

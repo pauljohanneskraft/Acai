@@ -211,7 +211,9 @@ extension UMLCommand {
                 throw ValidationError("Source directory does not exist: \(sourceDir)")
             }
             let allowedLanguages = language.map { $0.sourceLanguage }
-            return try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+            let artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+            artifact.warnIfParseErrors()
+            return artifact
         }
 
         private static func loadStoredArtifact(from value: String) throws -> CodeArtifact {

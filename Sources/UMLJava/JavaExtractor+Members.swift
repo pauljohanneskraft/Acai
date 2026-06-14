@@ -113,7 +113,7 @@ extension JavaExtractor {
         var nestedTypes: [TypeDeclaration] = []
         var enumCases: [EnumCase] = []
         let parentQualifiedName: String
-        var knownProperties: [String: String] = [:]
+        var scope: CallSiteScope = CallSiteScope()
     }
 
     /// Iterates over body children, dispatching each to the appropriate handler via the dispatch table.
@@ -139,12 +139,12 @@ extension JavaExtractor {
         switch role {
         case .method:
             appendIfPresent(
-                extractMethodDeclaration(child, knownProperties: context.knownProperties),
+                extractMethodDeclaration(child, scope: context.scope),
                 to: &context.members
             )
         case .constructor:
             appendIfPresent(
-                extractConstructorDeclaration(child, knownProperties: context.knownProperties),
+                extractConstructorDeclaration(child, scope: context.scope),
                 to: &context.members
             )
         case .field:
@@ -172,7 +172,10 @@ extension JavaExtractor {
         _ node: Node,
         context: inout BodyExtractionContext
     ) {
-        context.knownProperties = buildPropertyMap(from: context.members, node: node)
+        context.scope = CallSiteScope(
+            knownProperties: buildPropertyMap(from: context.members, node: node),
+            knownTypeNames: collectKnownTypeNames()
+        )
         extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
     }
 
@@ -241,7 +244,7 @@ extension JavaExtractor {
 
     func extractMethodDeclaration(
         _ node: Node,
-        knownProperties: [String: String] = [:]
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member? {
         let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
@@ -262,7 +265,7 @@ extension JavaExtractor {
         }
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
+        let callSites = extractCallSites(from: body, scope: scope)
 
         return Member(
             name: name, kind: .method,
@@ -278,7 +281,7 @@ extension JavaExtractor {
 
     func extractConstructorDeclaration(
         _ node: Node,
-        knownProperties: [String: String] = [:]
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member? {
         let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
@@ -291,7 +294,7 @@ extension JavaExtractor {
         }
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
+        let callSites = extractCallSites(from: body, scope: scope)
 
         return Member(
             name: name, kind: .initializer,

@@ -108,8 +108,6 @@ public struct AnalysisService: Sendable {
 
         guard !files.isEmpty else { return nil }
 
-        print("Parsing \(files.count) \(spec.language.rawValue) file(s)…")
-
         var artifact = CodeArtifact(
             metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
         )

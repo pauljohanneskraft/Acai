@@ -24,20 +24,24 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         public var sourceLanguage: SourceLanguage
         public var filePaths: [String]
         public var toolVersion: String?
+        /// Concrete parse problems (location + kind + message) gathered while parsing.
+        /// Empty when every source file parsed cleanly.
+        public var parseDiagnostics: [ParseDiagnostic]
+
         /// `true` when at least one source file could not be fully parsed
-        /// (best-effort tree contained missing/unexpected nodes).
-        public var hasParseErrors: Bool
+        /// (the best-effort tree contained missing/unexpected nodes).
+        public var hasParseErrors: Bool { !parseDiagnostics.isEmpty }
 
         public init(
             sourceLanguage: SourceLanguage,
             filePaths: [String] = [],
             toolVersion: String? = nil,
-            hasParseErrors: Bool = false
+            parseDiagnostics: [ParseDiagnostic] = []
         ) {
             self.sourceLanguage = sourceLanguage
             self.filePaths = filePaths
             self.toolVersion = toolVersion
-            self.hasParseErrors = hasParseErrors
+            self.parseDiagnostics = parseDiagnostics
         }
     }
 
@@ -58,7 +62,7 @@ extension CodeArtifact {
                 sourceLanguage: metadata.sourceLanguage,
                 filePaths: metadata.filePaths + other.metadata.filePaths,
                 toolVersion: metadata.toolVersion ?? other.metadata.toolVersion,
-                hasParseErrors: metadata.hasParseErrors || other.metadata.hasParseErrors
+                parseDiagnostics: metadata.parseDiagnostics + other.metadata.parseDiagnostics
             ),
             types: types + other.types,
             relationships: relationships + other.relationships,

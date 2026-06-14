@@ -8,13 +8,16 @@ extension JSExtractor {
     // MARK: - Class Body
 
     func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
-        let knownProperties = buildPropertyMapFromBody(bodyNode)
+        let scope = CallSiteScope(
+            knownProperties: buildPropertyMapFromBody(bodyNode),
+            knownTypeNames: collectKnownTypeNames()
+        )
 
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
             if let member = extractClassBodyMember(child, childType: childType,
                                                    parentName: typeDecl.name,
-                                                   knownProperties: knownProperties,
+                                                   scope: scope,
                                                    typeDecl: &typeDecl) {
                 typeDecl.members.append(member)
             }
@@ -25,13 +28,13 @@ extension JSExtractor {
         _ child: Node,
         childType: String,
         parentName: String,
-        knownProperties: [String: String],
+        scope: CallSiteScope,
         typeDecl: inout TypeDeclaration
     ) -> Member? {
         switch childType {
         case "method_definition", "abstract_method_definition":
             var member = extractMethodDefinition(child, parentName: parentName,
-                                                 knownProperties: knownProperties)
+                                                 scope: scope)
             if childType == "abstract_method_definition", isTypeScript,
                !member.modifiers.contains(.abstract) {
                 member.modifiers.append(.abstract)
@@ -105,7 +108,7 @@ extension JSExtractor {
     private func extractMethodDefinition(
         _ node: Node,
         parentName: String,
-        knownProperties: [String: String] = [:]
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member {
         let nodeLoc = loc(node)
         let nameNode = node.child(byFieldName: "name")
@@ -121,7 +124,7 @@ extension JSExtractor {
         let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
+        let callSites = extractCallSites(from: body, scope: scope)
 
         return Member(
             name: name.isEmpty ? "_anonymous" : name,

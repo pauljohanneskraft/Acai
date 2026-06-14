@@ -36,11 +36,16 @@ extension KotlinExtractor {
             }
         }
 
+        let scope = CallSiteScope(
+            knownProperties: knownProperties,
+            knownTypeNames: collectKnownTypeNames()
+        )
+
         let namedChildren = node.namedChildren()
         var bodyContext = BodyChildContext(
             siblings: namedChildren,
             typeDecl: typeDecl,
-            knownProperties: knownProperties,
+            scope: scope,
             skipEnumEntries: skipEnumEntries
         )
         for (index, child) in namedChildren.enumerated() {
@@ -52,7 +57,7 @@ extension KotlinExtractor {
     private struct BodyChildContext {
         let siblings: [Node]
         var typeDecl: TypeDeclaration
-        let knownProperties: [String: String]
+        let scope: CallSiteScope
         let skipEnumEntries: Bool
     }
 
@@ -67,7 +72,7 @@ extension KotlinExtractor {
         case "function_declaration":
             context.typeDecl.members.append(
                 extractFunctionDeclaration(
-                    child, knownProperties: context.knownProperties
+                    child, scope: context.scope
                 )
             )
         case "property_declaration":
@@ -83,7 +88,7 @@ extension KotlinExtractor {
             context.typeDecl.members.append(
                 extractSecondaryConstructor(
                     child,
-                    knownProperties: context.knownProperties
+                    scope: context.scope
                 )
             )
         case "companion_object":
@@ -142,7 +147,7 @@ extension KotlinExtractor {
 
     mutating func extractFunctionDeclaration(
         _ node: Node,
-        knownProperties: [String: String] = [:]
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? "_anonymous"
@@ -165,7 +170,7 @@ extension KotlinExtractor {
         }()
 
         let body = node.firstChild(withType: "function_body")
-        let callSites = extractCallSites(from: body, knownProperties: knownProperties)
+        let callSites = extractCallSites(from: body, scope: scope)
 
         return Member(
             name: name, kind: .method,
@@ -306,7 +311,7 @@ extension KotlinExtractor {
 
     func extractSecondaryConstructor(
         _ node: Node,
-        knownProperties: [String: String] = [:]
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let params = extractFunctionValueParameters(
@@ -320,7 +325,7 @@ extension KotlinExtractor {
             name: "init", kind: .initializer,
             accessLevel: modifierInfo.accessLevel,
             parameters: params, location: loc(node),
-            callSites: extractCallSites(from: body, knownProperties: knownProperties),
+            callSites: extractCallSites(from: body, scope: scope),
             assignments: extractAssignments(from: body)
         )
     }

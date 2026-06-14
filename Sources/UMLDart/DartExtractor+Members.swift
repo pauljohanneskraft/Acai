@@ -79,11 +79,15 @@ extension DartExtractor {
         // signature node within the class body, so bodies are paired with the
         // member that the immediately preceding child produced.
         var previousChildAddedMember = false
+        // (memberIndex, bodyNode) pairs; call sites are resolved after the loop so the
+        // scope can be built from the type's *complete* property/member set.
+        var pendingBodies: [(index: Int, body: Node)] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             if nodeType == "function_body" {
                 if previousChildAddedMember, !members.isEmpty {
                     members[members.count - 1].assignments = extractAssignments(from: child)
+                    pendingBodies.append((members.count - 1, child))
                 }
                 previousChildAddedMember = false
                 continue
@@ -100,6 +104,21 @@ extension DartExtractor {
                 )
             }
             previousChildAddedMember = members.count == countBefore + 1
+        }
+        attachCallSites(pendingBodies, to: &members)
+    }
+
+    /// Resolves and attaches call sites for the recorded method bodies, using a scope built
+    /// from the type's fully-extracted members (so all stored properties are known) plus the
+    /// current file's known type names.
+    func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
+        guard !pendingBodies.isEmpty else { return }
+        let scope = CallSiteScope(
+            knownProperties: buildPropertyMap(from: members),
+            knownTypeNames: collectKnownTypeNames()
+        )
+        for pending in pendingBodies where pending.index < members.count {
+            members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
         }
     }
 
@@ -144,6 +163,7 @@ extension DartExtractor {
         var ignored: [TypeDeclaration] = []
         // Same signature/body sibling pairing as `extractClassBody`.
         var previousChildAddedMember = false
+        var pendingBodies: [(index: Int, body: Node)] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             let countBefore = members.count
@@ -153,6 +173,7 @@ extension DartExtractor {
             case "function_body":
                 if previousChildAddedMember, !members.isEmpty {
                     members[members.count - 1].assignments = extractAssignments(from: child)
+                    pendingBodies.append((members.count - 1, child))
                 }
             case "declaration":
                 extractClassMemberDeclaration(
@@ -166,6 +187,7 @@ extension DartExtractor {
             }
             previousChildAddedMember = members.count == countBefore + 1
         }
+        attachCallSites(pendingBodies, to: &members)
     }
 
     private func extractEnumConstant(_ node: Node) -> EnumCase? {
