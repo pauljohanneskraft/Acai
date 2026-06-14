@@ -295,14 +295,11 @@ extension DartExtractor {
         node.children().compactMap { $0.nodeType == "annotation" ? annotationText($0) : nil }
     }
 
-    /// An `annotation` node's name: the node text already carries the leading `@`; arguments are
-    /// dropped at the first `(`, matching the decorator format the other language extractors store.
+    /// An `annotation` node's full source text (incl. the leading `@` and any arguments),
+    /// matching how the Kotlin and Java extractors store annotations — preserving argument
+    /// detail like `@Deprecated('reason')` rather than discarding it.
     func annotationText(_ node: Node) -> String {
-        let full = text(node)
-        if let paren = full.firstIndex(of: "(") {
-            return String(full[..<paren])
-        }
-        return full
+        text(node)
     }
 
     /// Applies the collected annotations to every member added since `startIndex` (a single

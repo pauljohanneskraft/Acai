@@ -20,14 +20,14 @@ struct DartAnnotationTests {
         """
         let artifact = parser.parse(source: source, fileName: "Foo.dart")
         let foo = artifact.types.first { $0.name == "Foo" }
-        // Type-level annotations (arguments dropped, leading `@` kept).
-        #expect(foo?.annotations == ["@deprecated", "@Deprecated"])
+        // Full annotation text is kept (leading `@` + arguments), matching Kotlin/Java.
+        #expect(foo?.annotations == ["@deprecated", "@Deprecated('use Bar')"])
 
         let name = foo?.members.first { $0.name == "name" }
         #expect(name?.annotations == ["@override"])
 
         let doThing = foo?.members.first { $0.name == "doThing" }
-        #expect(doThing?.annotations == ["@pragma"])
+        #expect(doThing?.annotations == ["@pragma('vm:prefer-inline')"])
     }
 
     @Test func unannotatedMembersStayEmpty() {
