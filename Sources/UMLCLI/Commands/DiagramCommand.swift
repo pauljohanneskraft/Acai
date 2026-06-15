@@ -76,6 +76,18 @@ extension UMLCommand {
         ))
         var package: Bool = false
 
+        @Flag(name: .long, help: ArgumentHelp(
+            "Render a static call graph (one node per method, edges for resolvable calls)"
+            + " instead of a class diagram."
+        ))
+        var callGraph: Bool = false
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Scope the call graph to a single type or build module:"
+            + " \"type:Name\" or \"module:Name\". Defaults to the whole codebase."
+        ))
+        var callGraphScope: String?
+
         @Option(name: .long, help: ArgumentHelp(
             "Focus the class diagram on a single type, showing only the subgraph around it."
             + " Pass the type name."
@@ -116,9 +128,14 @@ extension UMLCommand {
             if sequenceFrom != nil && stateFrom != nil {
                 throw ValidationError("Specify either --sequence-from or --state-from, not both.")
             }
-            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package].filter { $0 }.count
+            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, callGraph].filter { $0 }.count
             if modeFlags > 1 {
-                throw ValidationError("Specify only one of --sequence-from, --state-from, or --package.")
+                throw ValidationError(
+                    "Specify only one of --sequence-from, --state-from, --package, or --call-graph."
+                )
+            }
+            if callGraphScope != nil && !callGraph {
+                throw ValidationError("--call-graph-scope requires --call-graph.")
             }
             try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
         }
@@ -140,16 +157,20 @@ extension UMLCommand {
             }
 
             let diagramFormat = format?.diagramFormat ?? .dot
-            let rendered: String
+            let export: DiagramExport
             if let sequenceFrom {
-                rendered = try renderSequence(artifact: artifact, entryPoint: sequenceFrom, format: diagramFormat)
+                export = try sequenceExport(artifact: artifact, entryPoint: sequenceFrom)
             } else if let stateFrom {
-                rendered = try renderState(artifact: artifact, variable: stateFrom, format: diagramFormat)
+                export = try stateExport(artifact: artifact, variable: stateFrom)
             } else if package {
-                rendered = renderPackage(artifact: artifact, format: diagramFormat)
+                export = packageExport(artifact: artifact)
+            } else if callGraph {
+                export = try callGraphExport(artifact: artifact)
             } else {
-                rendered = try renderClass(artifact: artifact, format: diagramFormat)
+                export = try classExport(artifact: artifact)
             }
+            // Single format-dispatch site for every diagram type.
+            let rendered = export.render(diagramFormat)
 
             if let outputPath = output {
                 let outputURL = URL(fileURLWithPath: outputPath)
@@ -160,8 +181,8 @@ extension UMLCommand {
             }
         }
 
-        /// Builds the class-diagram options from flags/config and renders the artifact.
-        private func renderClass(artifact: CodeArtifact, format: DiagramFormat) throws -> String {
+        /// Builds the class-diagram options from flags/config and wraps both renderers.
+        private func classExport(artifact: CodeArtifact) throws -> DiagramExport {
             var options = ClassDiagramOptions()
 
             if let configPath = config {
@@ -185,18 +206,18 @@ extension UMLCommand {
                 options.focus = focusConfig
             }
 
-            switch format {
-            case .dot:
-                return DOTGenerator(options: options).generate(from: artifact)
-            case .mermaid:
-                return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
-            }
+            // Build the model once; both formats render from it.
+            let diagram = artifact.classDiagram(options: options)
+            return DiagramExport(
+                dot: { DOTGenerator(options: options).generate(from: diagram) },
+                mermaid: { ClassDiagramMermaidRenderer(options: options).generate(from: diagram) }
+            )
         }
 
-        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it.
-        private func renderSequence(
-            artifact: CodeArtifact, entryPoint: String, format: DiagramFormat
-        ) throws -> String {
+        /// Traces a sequence diagram from `entryPoint` ("Type.method") and wraps both renderers.
+        private func sequenceExport(
+            artifact: CodeArtifact, entryPoint: String
+        ) throws -> DiagramExport {
             guard let dot = entryPoint.lastIndex(of: ".") else {
                 throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
             }
@@ -226,18 +247,17 @@ extension UMLCommand {
                     + "explicitly-typed property receivers; try another entry point or --map."
                 )
             }
-            switch format {
-            case .dot:
-                return SequenceDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
-            case .mermaid:
-                return SequenceDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
-            }
+            let selectedTheme = theme?.diagramTheme
+            return DiagramExport(
+                dot: { SequenceDiagramDOTRenderer(theme: selectedTheme).render(diagram) },
+                mermaid: { SequenceDiagramMermaidRenderer(theme: selectedTheme).render(diagram) }
+            )
         }
 
-        /// Runs the value-flow state analysis for `variable` and renders the result.
-        private func renderState(
-            artifact: CodeArtifact, variable: String, format: DiagramFormat
-        ) throws -> String {
+        /// Runs the value-flow state analysis for `variable` and wraps both renderers.
+        private func stateExport(
+            artifact: CodeArtifact, variable: String
+        ) throws -> DiagramExport {
             let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
@@ -245,22 +265,70 @@ extension UMLCommand {
             } catch let error as StateDiagramAnalysisError {
                 throw ValidationError(error.message)
             }
-            switch format {
-            case .dot:
-                return StateDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
-            case .mermaid:
-                return StateDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
+            let selectedTheme = theme?.diagramTheme
+            return DiagramExport(
+                dot: { StateDiagramDOTRenderer(theme: selectedTheme).render(diagram) },
+                mermaid: { StateDiagramMermaidRenderer(theme: selectedTheme).render(diagram) }
+            )
+        }
+
+        /// Builds a package/module dependency diagram and wraps both renderers.
+        private func packageExport(artifact: CodeArtifact) -> DiagramExport {
+            let diagram = artifact.enriched().packageDependencyDiagram()
+            let selectedTheme = theme?.diagramTheme
+            return DiagramExport(
+                dot: { PackageDiagramDOTRenderer(theme: selectedTheme).render(diagram) },
+                mermaid: { PackageDiagramMermaidRenderer(theme: selectedTheme).render(diagram) }
+            )
+        }
+
+        /// Builds a static call graph (optionally scoped) and wraps both renderers.
+        private func callGraphExport(artifact: CodeArtifact) throws -> DiagramExport {
+            let scope = try parseCallGraphScope()
+            let graph = artifact.callGraph(scope: scope, title: callGraphTitle(for: scope))
+            guard !graph.nodes.isEmpty else {
+                throw ValidationError(
+                    "No resolvable calls found for the requested scope. Call graphs follow "
+                    + "explicitly-typed call receivers; try a wider scope or another language."
+                )
+            }
+            // Report resolution coverage on stderr so it doesn't pollute the diagram on stdout.
+            let percent = Int((graph.coverage.fraction * 100).rounded())
+            let coverageNote = "Call graph: resolved \(graph.coverage.resolved)/\(graph.coverage.total) "
+                + "call sites (\(percent)% coverage).\n"
+            FileHandle.standardError.write(Data(coverageNote.utf8))
+            let selectedTheme = theme?.diagramTheme
+            return DiagramExport(
+                dot: { CallGraphDOTRenderer(theme: selectedTheme).render(graph) },
+                mermaid: { CallGraphMermaidRenderer(theme: selectedTheme).render(graph) }
+            )
+        }
+
+        /// Parses `--call-graph-scope` (`"type:Name"` / `"module:Name"`) into a `CallGraphScope`.
+        private func parseCallGraphScope() throws -> CallGraphScope {
+            guard let raw = callGraphScope else { return .wholeCodebase }
+            let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
+            guard parts.count == 2, !parts[1].isEmpty else {
+                throw ValidationError("--call-graph-scope must be \"type:Name\" or \"module:Name\".")
+            }
+            switch parts[0] {
+            case "type":
+                return .type(parts[1])
+            case "module":
+                return .module(parts[1])
+            default:
+                throw ValidationError("--call-graph-scope must start with \"type:\" or \"module:\".")
             }
         }
 
-        /// Builds a package/module dependency diagram and renders it.
-        private func renderPackage(artifact: CodeArtifact, format: DiagramFormat) -> String {
-            let diagram = artifact.enriched().packageDependencyDiagram()
-            switch format {
-            case .dot:
-                return PackageDiagramDOTRenderer(theme: theme?.diagramTheme).render(diagram)
-            case .mermaid:
-                return PackageDiagramMermaidRenderer(theme: theme?.diagramTheme).render(diagram)
+        private func callGraphTitle(for scope: CallGraphScope) -> String {
+            switch scope {
+            case .wholeCodebase:
+                return "Call graph"
+            case .type(let name):
+                return "Call graph — \(name)"
+            case .module(let name):
+                return "Call graph — \(name) module"
             }
         }
 

@@ -3,19 +3,15 @@
 /// States are DOT nodes with shape variants chosen by `State.Kind`.
 /// Composite states are rendered as `subgraph` clusters.
 /// Transitions become directed edges with `event [guard] / action` labels.
-public struct StateDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme?
-    public let fontName: String
-    public let fontSize: Int
+public struct StateDiagramDOTRenderer: DOTRenderer {
+    public let renderOptions: DiagramRenderOptions
 
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
-        self.theme = theme
-        self.fontName = fontName
-        self.fontSize = fontSize
+        self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
     }
 
     /// Cosmetic fill/border/font attributes for normal & choice states when themed, else empty.
@@ -124,14 +120,6 @@ public struct StateDiagramDOTRenderer: Sendable {
     // MARK: - Graph attributes
 
     private func graphAttributes() -> String {
-        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
-        return """
-          rankdir=TB;
-        \(background)  fontname="\(fontName)";
-          fontsize=\(fontSize);
-          node [fontname="\(fontName)" fontsize=\(fontSize)];
-          edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
-
-        """
+        graphAttributes(rankdir: "TB")
     }
 }

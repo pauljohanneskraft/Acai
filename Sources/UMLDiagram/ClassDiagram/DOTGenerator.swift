@@ -1,25 +1,23 @@
 import UMLCore
 
-public struct DOTGenerator: Sendable {
+public struct DOTGenerator: DOTRenderer {
     private let options: ClassDiagramOptions
+
+    public var renderOptions: DiagramRenderOptions {
+        DiagramRenderOptions(theme: options.theme, fontName: options.fontName, fontSize: options.fontSize)
+    }
 
     public init(options: ClassDiagramOptions = ClassDiagramOptions()) {
         self.options = options
     }
 
+    /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
-        // Enrich the artifact: flatten nested types, resolve relationships,
-        // infer composition / aggregation / dependency edges, detect externals.
-        let enriched = ClassDiagramEnricher.enrich(
-            artifact,
-            options: EnrichmentOptions(
-                inferCompositionFromProperties: options.inferCompositionFromProperties,
-                inferDependencyFromMethods: options.inferDependencyFromMethods,
-                showExternalTypes: options.showExternalTypes,
-                focus: options.focus
-            )
-        )
+        generate(from: artifact.classDiagram(options: options))
+    }
 
+    /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).
+    public func generate(from enriched: ClassDiagram) -> String {
         let nodeRenderer = DOTNodeRenderer(options: options)
         let edgeRenderer = DOTEdgeRenderer(options: options)
         let clusterRenderer = DOTClusterRenderer(options: options)
@@ -52,15 +50,10 @@ public struct DOTGenerator: Sendable {
     }
 
     private func graphAttributes() -> String {
-        let background = options.theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
-        return """
-          rankdir=\(options.layoutDirection.rawValue);
-        \(background)  compound=true;
-          fontname="\(options.fontName)";
-          fontsize=\(options.fontSize);
-          node [shape=none margin=0 fontname="\(options.fontName)" fontsize=\(options.fontSize)];
-          edge [fontname="\(options.fontName)" fontsize=\(options.fontSize - 2)];
-
-        """
+        graphAttributes(
+            rankdir: options.layoutDirection.rawValue,
+            compound: true,
+            nodeDefaults: "shape=none margin=0 "
+        )
     }
 }

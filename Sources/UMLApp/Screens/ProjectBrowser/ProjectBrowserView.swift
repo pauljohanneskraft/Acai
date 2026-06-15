@@ -223,6 +223,10 @@ struct ProjectBrowserView: View {
                 PackageDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
                     .environmentObject(model)
+            case .callGraph:
+                CallGraphView(diagram: diagram, artifact: artifact, codebase: codebase)
+                    .id(diagramID)
+                    .environmentObject(model)
             default:
                 ClassDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
