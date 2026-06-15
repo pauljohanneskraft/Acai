@@ -5,6 +5,6 @@ digraph {
   node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=12];
   edge [fontname="Helvetica" fontsize=10];
   "Banking" [label="Banking\nI=1.00  A=0.00\n2 types" fillcolor="#c8e6c9"];
-  "Core" [label="Core\nI=0.00  A=0.00\n3 types" fillcolor="#ffcdd2"];
+  "Core" [label="Core\nI=0.00  A=0.33\n3 types" fillcolor="#ffe0b2"];
   "Banking" -> "Core" [penwidth=2.0 label="4"];
 }

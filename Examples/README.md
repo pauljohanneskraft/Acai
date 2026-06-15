@@ -36,7 +36,7 @@ images are the faithful view.) This is sample input, not a buildable package —
 | **Class**    | Swift, Kotlin, Java, TypeScript, Dart       | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. |
 | **Sequence** | Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers; plain JavaScript doesn't carry them, so it's the only omission. |
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart | Value-flow analysis only needs assignments, which every parser extracts. |
-| **Package**  | Swift, Kotlin, Java, TypeScript, Dart       | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. (Dart reports `A=0` — its parser doesn't yet count `abstract class` toward abstractness.) |
+| **Package**  | Swift, Kotlin, Java, TypeScript, Dart       | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction (Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`) counts toward abstractness, so all five report `A=0.33`. |
 | **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers (like Sequence); JavaScript is omitted. All five render the same order-submission graph. |
 
 ### The models
