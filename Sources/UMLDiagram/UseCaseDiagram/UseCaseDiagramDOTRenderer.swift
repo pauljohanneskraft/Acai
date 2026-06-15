@@ -6,19 +6,15 @@ import UMLCore
 /// System actors use `<<system>>`.
 /// Use cases are ellipses.
 /// All use cases are optionally wrapped in a system-boundary subgraph cluster.
-public struct UseCaseDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme?
-    public let fontName: String
-    public let fontSize: Int
+public struct UseCaseDiagramDOTRenderer: DOTRenderer {
+    public let renderOptions: DiagramRenderOptions
 
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
-        self.theme = theme
-        self.fontName = fontName
-        self.fontSize = fontSize
+        self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
     }
 
     /// `COLOR="…"` fragment for a `<FONT>` tag, empty when unthemed.
@@ -119,15 +115,6 @@ public struct UseCaseDiagramDOTRenderer: Sendable {
     // MARK: - Graph attributes
 
     private func graphAttributes() -> String {
-        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
-        return """
-          rankdir=LR;
-        \(background)  compound=true;
-          fontname="\(fontName)";
-          fontsize=\(fontSize);
-          node [fontname="\(fontName)" fontsize=\(fontSize)];
-          edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
-
-        """
+        graphAttributes(rankdir: "LR", compound: true)
     }
 }

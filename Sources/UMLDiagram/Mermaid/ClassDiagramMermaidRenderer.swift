@@ -12,17 +12,13 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         self.options = options
     }
 
+    /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
-        let enriched = ClassDiagramEnricher.enrich(
-            artifact,
-            options: EnrichmentOptions(
-                inferCompositionFromProperties: options.inferCompositionFromProperties,
-                inferDependencyFromMethods: options.inferDependencyFromMethods,
-                showExternalTypes: options.showExternalTypes,
-                focus: options.focus
-            )
-        )
+        generate(from: artifact.classDiagram(options: options))
+    }
 
+    /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).
+    public func generate(from enriched: ClassDiagram) -> String {
         var lines: [String] = []
         if let theme = options.theme { lines.append(theme.mermaidInit()) }
         lines.append("classDiagram")

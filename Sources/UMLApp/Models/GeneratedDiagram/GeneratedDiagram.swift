@@ -34,6 +34,9 @@ extension GeneratedDiagram {
         case stateDiagram(StateDiagramConfiguration?)
         case useCaseDiagram
         case packageDiagram
+        /// The call graph's scope (which methods are treated as callers). Defaults to the whole
+        /// codebase; carried so a future scope picker can persist a type/module focus.
+        case callGraph(CallGraphScope)
 
         /// Default content for a freshly created diagram of the given type: each kind gets its
         /// own default configuration (none is privileged over the others).
@@ -49,6 +52,8 @@ extension GeneratedDiagram {
                 self = .useCaseDiagram
             case .packageDiagram:
                 self = .packageDiagram
+            case .callGraph:
+                self = .callGraph(.wholeCodebase)
             }
         }
 
@@ -64,6 +69,8 @@ extension GeneratedDiagram {
                 .useCaseDiagram
             case .packageDiagram:
                 .packageDiagram
+            case .callGraph:
+                .callGraph
             }
         }
     }

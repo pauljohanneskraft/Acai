@@ -6,19 +6,15 @@
 /// - `{ rank=same }` constraints align all nodes at the same step horizontally.
 /// - Invisible vertical edges along each lifeline establish the top-to-bottom ordering.
 /// - Message arrows are drawn between the corresponding step nodes.
-public struct SequenceDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme?
-    public let fontName: String
-    public let fontSize: Int
+public struct SequenceDiagramDOTRenderer: DOTRenderer {
+    public let renderOptions: DiagramRenderOptions
 
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
-        self.theme = theme
-        self.fontName = fontName
-        self.fontSize = fontSize
+        self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
     }
 
     /// Cosmetic node fill/border/font attributes when themed, else empty (structural outline).
@@ -164,14 +160,6 @@ public struct SequenceDiagramDOTRenderer: Sendable {
     }
 
     private func graphAttributes() -> String {
-        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
-        return """
-          rankdir=TB;
-        \(background)  fontname="\(fontName)";
-          fontsize=\(fontSize);
-          node [fontname="\(fontName)" fontsize=\(fontSize)];
-          edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
-
-        """
+        graphAttributes(rankdir: "TB")
     }
 }

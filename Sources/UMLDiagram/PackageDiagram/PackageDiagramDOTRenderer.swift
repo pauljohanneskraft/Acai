@@ -7,19 +7,15 @@ import Foundation
 /// encodes the module's distance from the main sequence — green (balanced) through
 /// amber to red (deep in the zone of pain / uselessness). Edges are weighted by the
 /// number of cross-module references (thicker = more coupling).
-public struct PackageDiagramDOTRenderer: Sendable {
-    public let theme: DiagramTheme?
-    public let fontName: String
-    public let fontSize: Int
+public struct PackageDiagramDOTRenderer: DOTRenderer {
+    public let renderOptions: DiagramRenderOptions
 
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
         fontSize: Int = 12
     ) {
-        self.theme = theme
-        self.fontName = fontName
-        self.fontSize = fontSize
+        self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
     }
 
     public func render(_ diagram: PackageDependencyDiagram) -> String {
@@ -63,15 +59,10 @@ public struct PackageDiagramDOTRenderer: Sendable {
     }
 
     private func graphAttributes() -> String {
-        let background = theme.map { "  bgcolor=\"\($0.backgroundColor)\";\n" } ?? ""
         let nodeColor = theme.map { " color=\"\($0.nodeBorderColor)\" fontcolor=\"\($0.fontColor)\"" } ?? ""
-        return """
-          rankdir=LR;
-        \(background)  fontname="\(fontName)";
-          fontsize=\(fontSize);
-          node [shape=box style="rounded,filled"\(nodeColor) fontname="\(fontName)" fontsize=\(fontSize)];
-          edge [fontname="\(fontName)" fontsize=\(fontSize - 2)];
-
-        """
+        return graphAttributes(
+            rankdir: "LR",
+            nodeDefaults: "shape=box style=\"rounded,filled\"\(nodeColor) "
+        )
     }
 }
