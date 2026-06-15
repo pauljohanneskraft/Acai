@@ -45,6 +45,13 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     /// flavour; the catalog offers `.normal`, `.initial`, `.final` and `.choice`.
     case state(StateDiagram.State.Kind)
 
+    // MARK: - Call Graph Elements
+
+    /// A call-graph method (or free function). Created when a call graph is saved as a freeform
+    /// diagram, and available in the catalog for sketching call graphs by hand. The `Type.method`
+    /// label is the node's name.
+    case callGraphMethod
+
     // MARK: - Identifiable
 
     var id: String {
@@ -79,6 +86,8 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "lifeline"
         case .fragment:
             "fragment"
+        case .callGraphMethod:
+            "callGraphMethod"
         }
     }
 
@@ -144,6 +153,8 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "Lifeline"
         case .fragment:
             "Fragment (loop/alt/opt)"
+        case .callGraphMethod:
+            "Method"
         case .state(let sk):
             switch sk {
             case .initial:
@@ -220,6 +231,8 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             "arrow.down.to.line"
         case .fragment:
             "rectangle.dashed.badge.record"
+        case .callGraphMethod:
+            "function"
         case .state(let sk):
             switch sk {
             case .initial:
@@ -268,6 +281,8 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             .lifeline(.object)
         case .fragment:
             .fragment(.init())
+        case .callGraphMethod:
+            .method
         case .state(let sk):
             .state(sk)
         }
@@ -281,6 +296,7 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         case classDiagram = "Class Diagram"
         case sequenceDiagram = "Sequence Diagram"
         case stateDiagram = "State Diagram"
+        case callGraph = "Call Graph"
         case useCaseDiagram = "Use Case Diagram"
         case componentDeployment = "Component / Deployment"
         case general = "General"
@@ -294,6 +310,8 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
             .sequenceDiagram
         case .state:
             .stateDiagram
+        case .callGraphMethod:
+            .callGraph
         case .actor, .useCase, .boundary:
             .useCaseDiagram
         case .component, .package, .deploymentNode,
@@ -311,6 +329,7 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         items += [
             .lifeline, .fragment,
             .state(.normal), .state(.initial), .state(.final), .state(.choice),
+            .callGraphMethod,
             .actor, .useCase, .boundary,
             .component, .package, .deploymentNode, .database, .artifact, .subsystem,
             .entity, .note

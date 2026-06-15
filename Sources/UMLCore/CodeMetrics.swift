@@ -169,8 +169,11 @@ extension CodeArtifact {
             let efferentCount = efferent[name]?.count ?? 0
             let afferentCount = afferent[name]?.count ?? 0
             let total = efferentCount + afferentCount
+            // Abstract types per Martin's metric = interfaces/protocols *and* abstract classes.
+            // The `.abstract` modifier covers languages (e.g. Dart) whose abstraction idiom is an
+            // `abstract class` rather than a dedicated interface/protocol kind.
             let abstractCount = moduleTypeList.filter {
-                $0.kind == .protocol || $0.kind == .interface
+                $0.kind == .protocol || $0.kind == .interface || $0.modifiers.contains(.abstract)
             }.count
             return CodeMetrics.ModuleCoupling(
                 name: name,

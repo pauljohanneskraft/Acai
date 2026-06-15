@@ -34,6 +34,9 @@ extension GeneratedDiagram {
         case stateDiagram(StateDiagramConfiguration?)
         case useCaseDiagram
         case packageDiagram
+        /// The call graph's scope (which methods are treated as callers). Defaults to the whole
+        /// codebase; carried so a future scope picker can persist a type/module focus.
+        case callGraph(CallGraphScope)
 
         /// Default content for a freshly created diagram of the given type: each kind gets its
         /// own default configuration (none is privileged over the others).
@@ -49,6 +52,8 @@ extension GeneratedDiagram {
                 self = .useCaseDiagram
             case .packageDiagram:
                 self = .packageDiagram
+            case .callGraph:
+                self = .callGraph(.wholeCodebase)
             }
         }
 
@@ -64,6 +69,8 @@ extension GeneratedDiagram {
                 .useCaseDiagram
             case .packageDiagram:
                 .packageDiagram
+            case .callGraph:
+                .callGraph
             }
         }
     }
@@ -81,6 +88,15 @@ extension GeneratedDiagram {
         case .stateDiagram(let config?):
             let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
             return "\(prefix)State: \(variable)"
+        case .callGraph(let scope):
+            switch scope {
+            case .wholeCodebase:
+                return "\(prefix)Call Graph"
+            case .type(let name):
+                return "\(prefix)Call Graph: \(name)"
+            case .module(let name):
+                return "\(prefix)Call Graph: \(name)"
+            }
         default:
             return "\(prefix)\(content.type.displayName)"
         }
@@ -113,6 +129,16 @@ extension GeneratedDiagram {
         }
         set {
             if case .stateDiagram = content { content = .stateDiagram(newValue) }
+        }
+    }
+
+    /// The call-graph scope, when this is a call graph.
+    var callGraphScope: CallGraphScope? {
+        get {
+            if case .callGraph(let scope) = content { scope } else { nil }
+        }
+        set {
+            if let newValue, case .callGraph = content { content = .callGraph(newValue) }
         }
     }
 }

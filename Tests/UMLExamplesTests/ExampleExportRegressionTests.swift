@@ -123,6 +123,96 @@ struct SequenceDiagramExportTests {
     }
 }
 
+@Suite("Package diagram DOT exports", .serialized)
+struct PackageDiagramExportTests {
+
+    /// The package sample is multi-module by directory (`Core` and `Banking`), so unlike the
+    /// other examples it is scanned per-language **subdirectory** — scanning the parent would
+    /// fold every module under a single `Swift`/`Kotlin` group. Each language expresses the same
+    /// two-module model (per-parser metric nuances aside, e.g. Dart abstractness).
+    /// `dir` is the on-disk subdirectory (`TypeScript` is camel-cased, so it can't be derived
+    /// from `stem` via `capitalized`).
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift),
+        ("kotlin", "Kotlin", .kotlin),
+        ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript),
+        ("dart", "Dart", .dart)
+    ]
+
+    @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("PackageDiagram", dir), language: language
+        )
+        // Mirrors DiagramCommand.renderPackage (enriched + default theme/font).
+        let diagram = artifact.enriched().packageDependencyDiagram()
+        #expect(diagram.nodes.count == 2, "\(stem) package diagram should have Core + Banking modules")
+        let generated = PackageDiagramDOTRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("PackageDiagram", "Exports", "\(stem).dot")
+        )
+        #expect(generated == expected, "Package DOT for \(stem) drifted; regenerate per Examples/README.md")
+    }
+
+    @Test("regenerated package Mermaid matches the checked-in golden", arguments: cases)
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("PackageDiagram", dir), language: language
+        )
+        let diagram = artifact.enriched().packageDependencyDiagram()
+        let generated = PackageDiagramMermaidRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("PackageDiagram", "Exports", "\(stem).mmd")
+        )
+        #expect(generated == expected, "Package Mermaid for \(stem) drifted; regenerate per Examples/README.md")
+    }
+}
+
+@Suite("Call graph DOT exports", .serialized)
+struct CallGraphExportTests {
+
+    /// The call-graph sample (an order-submission fan-out) carries typed call receivers in
+    /// every language, so the resolved graph is identical bar the parser under test. JavaScript
+    /// is omitted (no typed receivers), as it is for the sequence diagram.
+    /// `dir` is the on-disk subdirectory (`TypeScript` is camel-cased).
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift),
+        ("kotlin", "Kotlin", .kotlin),
+        ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript),
+        ("dart", "Dart", .dart)
+    ]
+
+    @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("CallGraph", dir), language: language
+        )
+        // Mirrors DiagramCommand.callGraphExport (whole-codebase scope, default title/theme).
+        let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
+        #expect(!graph.edges.isEmpty, "\(stem) call graph produced no edges")
+        let generated = CallGraphDOTRenderer().render(graph)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("CallGraph", "Exports", "\(stem).dot")
+        )
+        #expect(generated == expected, "Call-graph DOT for \(stem) drifted; regenerate per Examples/README.md")
+    }
+
+    @Test("regenerated call-graph Mermaid matches the checked-in golden", arguments: cases)
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        let artifact = try ExampleExports.analyze(
+            ExampleExports.examples("CallGraph", dir), language: language
+        )
+        let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
+        let generated = CallGraphMermaidRenderer().render(graph)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("CallGraph", "Exports", "\(stem).mmd")
+        )
+        #expect(generated == expected, "Call-graph Mermaid for \(stem) drifted; regenerate per Examples/README.md")
+    }
+}
+
 @Suite("State diagram DOT exports", .serialized)
 struct StateDiagramExportTests {
 

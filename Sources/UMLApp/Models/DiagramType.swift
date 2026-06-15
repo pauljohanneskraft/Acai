@@ -4,6 +4,7 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case stateDiagram = "state"
     case useCaseDiagram = "useCase"
     case packageDiagram = "package"
+    case callGraph = "callGraph"
 
     var id: String { rawValue }
 
@@ -19,6 +20,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "Use Case Diagram"
         case .packageDiagram:
             "Package Diagram"
+        case .callGraph:
+            "Call Graph"
         }
     }
 
@@ -34,6 +37,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "person.3"
         case .packageDiagram:
             "shippingbox"
+        case .callGraph:
+            "point.3.connected.trianglepath.dotted"
         }
     }
 }

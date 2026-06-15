@@ -18,6 +18,8 @@ Examples/
   ClassDiagram/      Swift Kotlin Java TypeScript Dart              + Exports/
   SequenceDiagram/   Swift Kotlin Java TypeScript Dart              + Exports/
   StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart   + Exports/
+  PackageDiagram/    Swift Kotlin Java TypeScript Dart  (Core/ + Banking/ modules)  + Exports/
+  CallGraph/         Swift Kotlin Java TypeScript Dart                              + Exports/
 ```
 
 Each `Exports/` holds one `<language>.dot`, one `<language>.mmd` (Mermaid — embeds directly in
@@ -34,6 +36,8 @@ images are the faithful view.) This is sample input, not a buildable package —
 | **Class**    | Swift, Kotlin, Java, TypeScript, Dart       | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. |
 | **Sequence** | Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers; plain JavaScript doesn't carry them, so it's the only omission. |
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart | Value-flow analysis only needs assignments, which every parser extracts. |
+| **Package**  | Swift, Kotlin, Java, TypeScript, Dart       | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction (Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`) counts toward abstractness, so all five report `A=0.33`. |
+| **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers (like Sequence); JavaScript is omitted. All five render the same order-submission graph. |
 
 ### The models
 
@@ -41,11 +45,20 @@ images are the faithful view.) This is sample input, not a buildable package —
   `Song` / `Podcast` (inheritance), `Playlist` composing `[MediaItem]` and `Library`
   composing `[Playlist]` (composition), `Player` depending on `Library` / `Playable`
   (dependency), and a `Genre` enum.
+- **CallGraph** — an order-submission flow: `OrderController.submit` fans out to
+  `Validator.validate` and `OrderService.place`, which in turn calls `PaymentService.charge`
+  and `OrderRepository.save` — a small branching static call graph built from `callSites`.
 - **SequenceDiagram** — a checkout flow: `Checkout.placeOrder()` → `PaymentService.charge()`
   → `PaymentGateway.authorize()`, traced through explicitly-typed properties.
 - **StateDiagram** — a `Download` whose `state` advances through a pipeline: `run()` walks the
   happy path (`requested → downloading → verifying → finished`) as a sequence of assignments,
   which the value-flow analysis renders as a transition chain, while `fail()` branches off.
+- **PackageDiagram** — a two-module banking model: a `Core` module (`Money`, `Account`, and the
+  `AccountRepository` abstraction) and a `Banking` module (`TransferService`,
+  `InMemoryAccountRepository`) that depends on it, yielding a `Banking → Core` edge with the
+  modules' instability/abstractness metrics. Unlike the other examples (one type-name set reused
+  across languages), modules are **directories**, so each language lives in its own tree scanned
+  on its own.
 
 ## Regenerating the exports
 
@@ -86,6 +99,24 @@ uml diagram --source Examples/StateDiagram --language <lang> --format mermaid \
 uml image   --source Examples/StateDiagram --language <lang> \
     --state-from "Download.state" \
     --output Examples/StateDiagram/Exports/<lang>.png --scale 2
+
+# Package diagram (swift kotlin java typescript dart) — scanned per-language SUBDIR so the
+# Core/Banking directories become modules. <Lang> is the dir name (Swift, Kotlin, Java,
+# TypeScript, Dart); <lang> the lower-case stem (note: TypeScript dir vs typescript stem).
+uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package \
+    --output Examples/PackageDiagram/Exports/<lang>.dot
+uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package --format mermaid \
+    --output Examples/PackageDiagram/Exports/<lang>.mmd
+uml image   --source Examples/PackageDiagram/<Lang> --language <lang> --package \
+    --output Examples/PackageDiagram/Exports/<lang>.png --scale 2
+
+# Call graph (swift kotlin java typescript dart) — whole-codebase scope.
+uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
+    --output Examples/CallGraph/Exports/<lang>.dot
+uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --format mermaid \
+    --output Examples/CallGraph/Exports/<lang>.mmd
+uml image   --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
+    --output Examples/CallGraph/Exports/<lang>.png --scale 2
 ```
 
 > `uml image` is macOS-only — it renders with SwiftUI's `ImageRenderer`, which needs a

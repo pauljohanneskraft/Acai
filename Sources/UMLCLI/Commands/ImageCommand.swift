@@ -72,6 +72,18 @@ extension UMLCommand {
         @Option(name: .long, help: "Maximum number of distinct states before the analysis fails.")
         var maxStates: Int = 20
 
+        @Flag(name: .long, help: "Render a package/module dependency diagram instead of a class diagram.")
+        var package: Bool = false
+
+        @Flag(name: .long, help: "Render a static call graph instead of a class diagram.")
+        var callGraph: Bool = false
+
+        @Option(name: .long, help: ArgumentHelp(
+            "Scope the call graph to a single type or build module:"
+            + " \"type:Name\" or \"module:Name\". Defaults to the whole codebase."
+        ))
+        var callGraphScope: String?
+
         @Option(name: .long, help: ArgumentHelp(
             "Focus the class diagram on a single type, showing only the subgraph around it."
             + " Pass the type name."
@@ -106,8 +118,14 @@ extension UMLCommand {
             if from != nil && source != nil {
                 throw ValidationError("Specify either --from or --source, not both.")
             }
-            if sequenceFrom != nil && stateFrom != nil {
-                throw ValidationError("Specify either --sequence-from or --state-from, not both.")
+            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, callGraph].filter { $0 }.count
+            if modeFlags > 1 {
+                throw ValidationError(
+                    "Specify only one of --sequence-from, --state-from, --package, or --call-graph."
+                )
+            }
+            if callGraphScope != nil && !callGraph {
+                throw ValidationError("--call-graph-scope requires --call-graph.")
             }
             try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
         }
@@ -120,6 +138,14 @@ extension UMLCommand {
                 data = try await renderSequence(artifact: artifact, entryPoint: sequenceFrom)
             } else if let stateFrom {
                 data = try await renderState(artifact: artifact, variable: stateFrom)
+            } else if package {
+                let diagram = artifact.enriched().packageDependencyDiagram()
+                let renderScale = CGFloat(scale)
+                data = try await MainActor.run {
+                    try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale)
+                }
+            } else if callGraph {
+                data = try await renderCallGraph(artifact: artifact)
             } else {
                 var configuration = ClassDiagramConfiguration()
                 configuration.grouping = grouping
@@ -182,6 +208,39 @@ extension UMLCommand {
             }
             return try await MainActor.run {
                 try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale))
+            }
+        }
+
+        /// Builds a static call graph (optionally scoped) and renders it to PNG.
+        private func renderCallGraph(artifact: CodeArtifact) async throws -> Data {
+            let scope = try parseCallGraphScope()
+            let graph = artifact.callGraph(scope: scope)
+            guard !graph.edges.isEmpty else {
+                throw ValidationError(
+                    "No resolvable calls found for the requested scope. Call graphs follow "
+                    + "explicitly-typed call receivers; try a wider scope or another language."
+                )
+            }
+            let renderScale = CGFloat(scale)
+            return try await MainActor.run {
+                try DiagramImageRenderer.renderPNG(callGraph: graph, scale: renderScale)
+            }
+        }
+
+        /// Parses `--call-graph-scope` (`"type:Name"` / `"module:Name"`) into a `CallGraphScope`.
+        private func parseCallGraphScope() throws -> CallGraphScope {
+            guard let raw = callGraphScope else { return .wholeCodebase }
+            let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
+            guard parts.count == 2, !parts[1].isEmpty else {
+                throw ValidationError("--call-graph-scope must be \"type:Name\" or \"module:Name\".")
+            }
+            switch parts[0] {
+            case "type":
+                return .type(parts[1])
+            case "module":
+                return .module(parts[1])
+            default:
+                throw ValidationError("--call-graph-scope must start with \"type:\" or \"module:\".")
             }
         }
 

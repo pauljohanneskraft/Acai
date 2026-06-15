@@ -115,6 +115,58 @@ public enum DiagramImageRenderer {
         return try encodePNG(cgImage)
     }
 
+    // MARK: - Package diagram
+
+    /// Lays out and renders a `PackageDependencyDiagram` to PNG data, using the shared
+    /// `PackageLayoutModel` + `PackageDiagramSnapshotView`.
+    public static func renderPNG(
+        packageDiagram: PackageDependencyDiagram,
+        scale: CGFloat = 2,
+        padding: CGFloat = defaultPadding
+    ) throws -> Data {
+        let layout = PackageLayoutModel(diagram: packageDiagram)
+        return try renderSnapshot(
+            PackageDiagramSnapshotView(layout: layout, padding: padding),
+            contentSize: layout.contentSize, scale: scale, padding: padding
+        )
+    }
+
+    // MARK: - Call graph
+
+    /// Lays out and renders a `CallGraph` to PNG data, using the shared `CallGraphLayoutModel` +
+    /// `CallGraphSnapshotView`.
+    public static func renderPNG(
+        callGraph: CallGraph,
+        scale: CGFloat = 2,
+        padding: CGFloat = defaultPadding
+    ) throws -> Data {
+        let layout = CallGraphLayoutModel(graph: callGraph)
+        return try renderSnapshot(
+            CallGraphSnapshotView(layout: layout, padding: padding),
+            contentSize: layout.contentSize, scale: scale, padding: padding
+        )
+    }
+
+    /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, clamping the scale
+    /// so neither output dimension exceeds `maxPixelDimension`.
+    private static func renderSnapshot(
+        _ view: some View,
+        contentSize: CGSize,
+        scale: CGFloat,
+        padding: CGFloat
+    ) throws -> Data {
+        let pointSize = max(contentSize.width, contentSize.height) + padding * 2
+        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let effectiveScale = min(max(scale, 0.1), maxScale)
+
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = effectiveScale
+        guard let cgImage = renderer.cgImage else {
+            throw DiagramImageRenderError.renderingFailed
+        }
+        return try encodePNG(cgImage)
+    }
+
     // MARK: - From laid-out data (app WYSIWYG)
 
     /// Renders an already-laid-out diagram to PNG data. Positions/sizes are in any coordinate

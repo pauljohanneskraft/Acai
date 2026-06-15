@@ -328,6 +328,10 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
             return StateLayoutModel.estimatedSize(
                 for: .init(id: node.id, name: node.name, kind: kind)
             )
+        case .method:
+            // Match the generated call-graph node sizing (monospaced label box).
+            let width = max(120, CGFloat(node.name.count) * 7 + 32)
+            return CGSize(width: min(width, 320), height: 52)
         default:
             // Simple labeled elements (actor, use case, component, etc.)
             let width = max(100, CGFloat(node.name.count) * 8.5 + 40)

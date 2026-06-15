@@ -162,6 +162,20 @@ final class ProjectBrowserViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Updates the scope of a call graph and clears its saved node positions (the method set
+    /// changes with scope).
+    func updateCallGraphScope(diagramID: UUID, scope: CallGraphScope) {
+        guard var diagram = store.generatedDiagrams[diagramID] else { return }
+        diagram.callGraphScope = scope
+        diagram.nodePositions = [:]
+        if !diagram.isNameUserDefined {
+            diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
+        }
+        diagram.lastModified = Date()
+        store.saveGeneratedDiagram(diagram)
+        objectWillChange.send()
+    }
+
     /// Updates the variable configuration of a state diagram and clears its saved
     /// node positions (the state set may have changed).
     func updateStateConfiguration(

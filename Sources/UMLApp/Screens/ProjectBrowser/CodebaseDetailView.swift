@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLDiagram
 
 /// Main content area view displayed when a codebase is selected in the sidebar.
 /// Shows statistics, types, relationships, and diagram generation buttons.
@@ -11,6 +12,8 @@ struct CodebaseDetailView: View {
     @State private var sequenceConfigContext: ConfigContext?
     /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
     @State private var stateConfigContext: ConfigContext?
+    /// Set when the user clicks "Call Graph"; drives the scope-selection popup.
+    @State private var callGraphConfigContext: ConfigContext?
 
     /// Identifies the codebase a pending diagram configuration belongs to.
     private struct ConfigContext: Identifiable {
@@ -57,52 +60,13 @@ struct CodebaseDetailView: View {
             .sheet(item: $stateConfigContext) { context in
                 stateConfigSheet(for: context)
             }
+            .sheet(item: $callGraphConfigContext) { context in
+                callGraphConfigSheet(for: context)
+            }
         } else {
             Text("Codebase not found")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    /// The state-diagram configuration popup, presented when "State Diagram" is clicked.
-    @ViewBuilder
-    private func stateConfigSheet(for context: ConfigContext) -> some View {
-        if let artifact = model.artifact(for: context.codebaseID) {
-            StateConfigSheet(
-                artifact: artifact,
-                onCancel: { stateConfigContext = nil },
-                onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
-                        to: context.projectID,
-                        codebaseID: context.codebaseID,
-                        content: .stateDiagram(config)
-                    ) {
-                        model.selection = .generatedDiagram(id)
-                    }
-                    stateConfigContext = nil
-                }
-            )
-        }
-    }
-
-    /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
-    @ViewBuilder
-    private func sequenceConfigSheet(for context: ConfigContext) -> some View {
-        if let artifact = model.artifact(for: context.codebaseID) {
-            SequenceConfigSheet(
-                artifact: artifact,
-                onCancel: { sequenceConfigContext = nil },
-                onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
-                        to: context.projectID,
-                        codebaseID: context.codebaseID,
-                        content: .sequenceDiagram(config)
-                    ) {
-                        model.selection = .generatedDiagram(id)
-                    }
-                    sequenceConfigContext = nil
-                }
-            )
         }
     }
 
@@ -292,6 +256,10 @@ struct CodebaseDetailView: View {
                 stateConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
                 return
             }
+            if type == .callGraph {
+                callGraphConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
+                return
+            }
             if let id = model.addGeneratedDiagram(
                 to: projectID,
                 codebaseID: codebase.id,
@@ -338,5 +306,73 @@ struct CodebaseDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+    }
+}
+
+// MARK: - Diagram configuration sheets
+
+extension CodebaseDetailView {
+
+    /// The state-diagram configuration popup, presented when "State Diagram" is clicked.
+    @ViewBuilder
+    private func stateConfigSheet(for context: ConfigContext) -> some View {
+        if let artifact = model.artifact(for: context.codebaseID) {
+            StateConfigSheet(
+                artifact: artifact,
+                onCancel: { stateConfigContext = nil },
+                onCreate: { config in
+                    if let id = model.addGeneratedDiagram(
+                        to: context.projectID,
+                        codebaseID: context.codebaseID,
+                        content: .stateDiagram(config)
+                    ) {
+                        model.selection = .generatedDiagram(id)
+                    }
+                    stateConfigContext = nil
+                }
+            )
+        }
+    }
+
+    /// The call-graph scope popup, presented when "Call Graph" is clicked.
+    @ViewBuilder
+    private func callGraphConfigSheet(for context: ConfigContext) -> some View {
+        if let artifact = model.artifact(for: context.codebaseID) {
+            CallGraphConfigSheet(
+                artifact: artifact,
+                onCancel: { callGraphConfigContext = nil },
+                onCreate: { scope in
+                    if let id = model.addGeneratedDiagram(
+                        to: context.projectID,
+                        codebaseID: context.codebaseID,
+                        content: .callGraph(scope)
+                    ) {
+                        model.selection = .generatedDiagram(id)
+                    }
+                    callGraphConfigContext = nil
+                }
+            )
+        }
+    }
+
+    /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
+    @ViewBuilder
+    private func sequenceConfigSheet(for context: ConfigContext) -> some View {
+        if let artifact = model.artifact(for: context.codebaseID) {
+            SequenceConfigSheet(
+                artifact: artifact,
+                onCancel: { sequenceConfigContext = nil },
+                onCreate: { config in
+                    if let id = model.addGeneratedDiagram(
+                        to: context.projectID,
+                        codebaseID: context.codebaseID,
+                        content: .sequenceDiagram(config)
+                    ) {
+                        model.selection = .generatedDiagram(id)
+                    }
+                    sequenceConfigContext = nil
+                }
+            )
+        }
     }
 }

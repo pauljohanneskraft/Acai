@@ -146,3 +146,40 @@ struct StateDiagramPNGTests {
         }
     }
 }
+
+@Suite("Package diagram PNG exports")
+struct PackageDiagramPNGTests {
+
+    // `dir` is the on-disk subdirectory; the package sample is scanned per-language subdir.
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
+    ]
+
+    @Test("package PNG is valid and re-renders to the same size", arguments: cases)
+    @MainActor func image(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        try ExamplePNGs.validate(ExamplePNGs.examples("PackageDiagram", "Exports", "\(stem).png")) {
+            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("PackageDiagram", dir), languages: [language])
+            let diagram = artifact.enriched().packageDependencyDiagram()
+            return try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: 2)
+        }
+    }
+}
+
+@Suite("Call graph PNG exports")
+struct CallGraphPNGTests {
+
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
+    ]
+
+    @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases)
+    @MainActor func image(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
+        try ExamplePNGs.validate(ExamplePNGs.examples("CallGraph", "Exports", "\(stem).png")) {
+            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("CallGraph", dir), languages: [language])
+            let graph = artifact.callGraph(scope: .wholeCodebase)
+            return try DiagramImageRenderer.renderPNG(callGraph: graph, scale: 2)
+        }
+    }
+}

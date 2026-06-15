@@ -46,6 +46,8 @@ struct FreeformNodeView: View {
             )
             StateNodeView(name: node.name, kind: kind, isSelected: isSelected)
                 .frame(width: size.width, height: size.height)
+        case .method:
+            MethodNodeView(name: node.name, isSelected: isSelected)
         default:
             // component, deploymentNode, artifact, entity
             StereotypedBoxNodeView(
