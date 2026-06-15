@@ -286,7 +286,9 @@ extension UMLCommand {
         private func callGraphExport(artifact: CodeArtifact) throws -> DiagramExport {
             let scope = try parseCallGraphScope()
             let graph = artifact.callGraph(scope: scope, title: callGraphTitle(for: scope))
-            guard !graph.nodes.isEmpty else {
+            // Edges only exist for resolved calls; a node-only graph (callers whose call sites all
+            // went unresolved) is not a useful diagram, so treat it as "nothing to draw".
+            guard !graph.edges.isEmpty else {
                 throw ValidationError(
                     "No resolvable calls found for the requested scope. Call graphs follow "
                     + "explicitly-typed call receivers; try a wider scope or another language."

@@ -18,8 +18,8 @@ Examples/
   ClassDiagram/      Swift Kotlin Java TypeScript Dart              + Exports/
   SequenceDiagram/   Swift Kotlin Java TypeScript Dart              + Exports/
   StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart   + Exports/
-  PackageDiagram/    Swift Kotlin (each: Core/ + Banking/ modules)  + Exports/
-  CallGraph/         Swift Kotlin                                   + Exports/
+  PackageDiagram/    Swift Kotlin Java TypeScript Dart  (Core/ + Banking/ modules)  + Exports/
+  CallGraph/         Swift Kotlin Java TypeScript Dart                              + Exports/
 ```
 
 Each `Exports/` holds one `<language>.dot`, one `<language>.mmd` (Mermaid — embeds directly in
@@ -36,8 +36,8 @@ images are the faithful view.) This is sample input, not a buildable package —
 | **Class**    | Swift, Kotlin, Java, TypeScript, Dart       | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. |
 | **Sequence** | Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers; plain JavaScript doesn't carry them, so it's the only omission. |
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart | Value-flow analysis only needs assignments, which every parser extracts. |
-| **Package**  | Swift, Kotlin                               | Module grouping is path-based (`BuildProduct`), so the same two-module model in any language renders identically — two languages suffice to exercise the parsers' cross-module relationships. |
-| **CallGraph**| Swift, Kotlin                               | Needs typed call receivers (like Sequence); the two parsers that populate `callSites` with receiver types here both render the same graph. |
+| **Package**  | Swift, Kotlin, Java, TypeScript, Dart       | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. (Dart reports `A=0` — its parser doesn't yet count `abstract class` toward abstractness.) |
+| **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart       | Needs typed call receivers (like Sequence); JavaScript is omitted. All five render the same order-submission graph. |
 
 ### The models
 
@@ -100,19 +100,23 @@ uml image   --source Examples/StateDiagram --language <lang> \
     --state-from "Download.state" \
     --output Examples/StateDiagram/Exports/<lang>.png --scale 2
 
-# Package diagram (swift | kotlin) — scanned per-language SUBDIR so the Core/Banking
-# directories become modules; DOT + Mermaid only (no PNG golden). <Lang> is the
-# capitalised dir (Swift, Kotlin); <lang> the lower-case stem (swift, kotlin).
+# Package diagram (swift kotlin java typescript dart) — scanned per-language SUBDIR so the
+# Core/Banking directories become modules. <Lang> is the dir name (Swift, Kotlin, Java,
+# TypeScript, Dart); <lang> the lower-case stem (note: TypeScript dir vs typescript stem).
 uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package \
     --output Examples/PackageDiagram/Exports/<lang>.dot
 uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package --format mermaid \
     --output Examples/PackageDiagram/Exports/<lang>.mmd
+uml image   --source Examples/PackageDiagram/<Lang> --language <lang> --package \
+    --output Examples/PackageDiagram/Exports/<lang>.png --scale 2
 
-# Call graph (swift | kotlin) — whole-codebase scope; DOT + Mermaid only (no PNG golden).
+# Call graph (swift kotlin java typescript dart) — whole-codebase scope.
 uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
     --output Examples/CallGraph/Exports/<lang>.dot
 uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --format mermaid \
     --output Examples/CallGraph/Exports/<lang>.mmd
+uml image   --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
+    --output Examples/CallGraph/Exports/<lang>.png --scale 2
 ```
 
 > `uml image` is macOS-only — it renders with SwiftUI's `ImageRenderer`, which needs a

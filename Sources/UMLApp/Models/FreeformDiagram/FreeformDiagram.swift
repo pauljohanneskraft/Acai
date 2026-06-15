@@ -122,6 +122,8 @@ extension FreeformDiagram.Node {
         /// A state-machine state. The associated kind carries the UML flavour
         /// (initial, normal, final, choice, …); the state's title is `node.name`.
         case state(StateDiagram.State.Kind)
+        /// A call-graph method (or free function). The `Type.method` label is `node.name`.
+        case method
 
         /// The element kind derived from this content.
         var kind: FreeformDiagramNodeKind {
@@ -132,6 +134,8 @@ extension FreeformDiagram.Node {
                 .lifeline
             case .fragment:
                 .fragment
+            case .method:
+                .callGraphMethod
             case .state(let stateKind):
                 .state(stateKind)
             case .actor:
@@ -191,6 +195,8 @@ extension FreeformDiagram.Node {
             case .fragment(let content):
                 content.kind.rawValue
             case .state:
+                nil
+            case .method:
                 nil
             }
         }

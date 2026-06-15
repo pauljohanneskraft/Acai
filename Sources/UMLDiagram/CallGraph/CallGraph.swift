@@ -12,13 +12,14 @@ public struct CallGraph: Codable, Hashable, Sendable {
 
     // MARK: - Node
 
-    /// One method participating in the call graph (as a caller, a callee, or both).
+    /// One method (or free function) participating in the call graph (as a caller, a callee, or
+    /// both).
     public struct Node: Codable, Hashable, Sendable {
-        /// Stable id, `"TypeName.methodName"`.
+        /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions.
         public var id: String
-        /// The owning type's simple name.
+        /// The owning type's simple name; empty for a free function.
         public var typeName: String
-        /// The method name.
+        /// The method (or function) name.
         public var methodName: String
         /// `true` when the method belongs to the scoped focus (vs. an out-of-scope callee
         /// pulled in as a leaf), so the app can de-emphasise external leaves.
@@ -31,8 +32,11 @@ public struct CallGraph: Codable, Hashable, Sendable {
             self.inScope = inScope
         }
 
-        /// `"TypeName.methodName"` — the display label.
-        public var label: String { "\(typeName).\(methodName)" }
+        /// `"TypeName.methodName"` for methods, `"methodName"` for free functions — the display label.
+        public var label: String { typeName.isEmpty ? methodName : "\(typeName).\(methodName)" }
+
+        /// `true` for a free (top-level) function — it has no owning type.
+        public var isFreeFunction: Bool { typeName.isEmpty }
     }
 
     // MARK: - Edge

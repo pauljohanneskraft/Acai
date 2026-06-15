@@ -125,6 +125,77 @@ struct CallGraphTests {
         #expect(graph.nodes.first { $0.id == "B.work" }?.inScope == false)
     }
 
+    @Test func freeFunctionCallerAndCalleeAppear() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    members: [
+                        Member(name: "run", kind: .method, callSites: [
+                            CallSite(receiverType: nil, methodName: "log")
+                        ])
+                    ]
+                )
+            ],
+            freestandingFunctions: [
+                Member(name: "log", kind: .method, callSites: [
+                    CallSite(receiverType: nil, methodName: "format")
+                ]),
+                Member(name: "format", kind: .method)
+            ]
+        )
+        let graph = artifact.callGraph()
+        // A.run -> log (free function, implicit receiver), and log -> format (free->free).
+        #expect(graph.edges == [
+            CallGraph.Edge(from: "A.run", to: "log", weight: 1),
+            CallGraph.Edge(from: "log", to: "format", weight: 1)
+        ])
+        #expect(graph.nodes.first { $0.id == "log" }?.isFreeFunction == true)
+        #expect(graph.nodes.first { $0.id == "log" }?.label == "log")
+    }
+
+    @Test func sameTypeMethodWinsOverFreeFunctionOfSameName() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    members: [
+                        Member(name: "run", kind: .method, callSites: [
+                            CallSite(receiverType: nil, methodName: "helper")
+                        ]),
+                        Member(name: "helper", kind: .method)
+                    ]
+                )
+            ],
+            freestandingFunctions: [Member(name: "helper", kind: .method)]
+        )
+        let graph = artifact.callGraph()
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
+    }
+
+    @Test func typeScopeExcludesFreeFunctionsAsCallers() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    members: [Member(name: "run", kind: .method)]
+                )
+            ],
+            freestandingFunctions: [
+                Member(name: "log", kind: .method, callSites: [
+                    CallSite(receiverType: "A", methodName: "run")
+                ])
+            ]
+        )
+        // Whole codebase: the free function is a caller, so there's an edge.
+        #expect(!artifact.callGraph().edges.isEmpty)
+        // Type scope on A: free functions are not callers, and A.run has no calls → no edges.
+        #expect(artifact.callGraph(scope: .type("A")).edges.isEmpty)
+    }
+
     @Test func emptyWhenNoCallSites() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),

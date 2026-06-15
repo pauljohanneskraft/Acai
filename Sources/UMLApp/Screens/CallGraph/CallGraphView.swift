@@ -3,15 +3,53 @@ import UMLCore
 import UMLDiagram
 import UMLRender
 
-/// Movement-only view for a generated static call graph. Derives the graph from the artifact and
-/// lets the user drag method nodes on the shared canvas layer (`PannableCanvas`, drag gesture,
-/// undo/redo) like the package view. Methods render as rounded boxes (in-scope solid, out-of-scope
-/// callees dashed); calls are arrows whose thickness encodes their multiplicity. A banner reports
-/// how much of the observed call traffic could be statically resolved.
+/// Generated static call-graph screen. A thin wrapper that owns the scope re-configuration sheet
+/// and rebuilds the canvas (keyed by scope) when the scope changes, so re-scoping immediately
+/// re-derives the graph. The heavy lifting lives in `CallGraphCanvasView`.
 struct CallGraphView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+
+    @EnvironmentObject private var model: ProjectBrowserViewModel
+    @State private var isConfiguring = false
+
+    private var scope: CallGraphScope {
+        if case .callGraph(let configured) = diagram.content { return configured }
+        return .wholeCodebase
+    }
+
+    var body: some View {
+        CallGraphCanvasView(
+            diagram: diagram,
+            artifact: artifact,
+            scope: scope,
+            onConfigure: { isConfiguring = true }
+        )
+        .id(scope)
+        .sheet(isPresented: $isConfiguring) {
+            CallGraphConfigSheet(
+                artifact: artifact,
+                initial: scope,
+                onCancel: { isConfiguring = false },
+                onCreate: { newScope in
+                    model.updateCallGraphScope(diagramID: diagram.id, scope: newScope)
+                    isConfiguring = false
+                }
+            )
+        }
+    }
+}
+
+/// Movement-only canvas for a static call graph at a fixed scope. Lets the user drag method nodes
+/// on the shared canvas layer (`PannableCanvas`, drag gesture, undo/redo) like the package view.
+/// Methods render as rounded boxes (in-scope solid, out-of-scope callees dashed); calls are arrows
+/// whose thickness encodes their multiplicity. A banner reports static-resolution coverage.
+private struct CallGraphCanvasView: View {
+    let diagram: GeneratedDiagram
+    let artifact: CodeArtifact
+    let scope: CallGraphScope
+    let onConfigure: () -> Void
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: CallGraphViewModel
@@ -21,13 +59,13 @@ struct CallGraphView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
+    @State private var showSidebar = true
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope, onConfigure: @escaping () -> Void) {
         self.diagram = diagram
         self.artifact = artifact
-        self.codebase = codebase
-        let scope: CallGraphScope
-        if case .callGraph(let configured) = diagram.content { scope = configured } else { scope = .wholeCodebase }
+        self.scope = scope
+        self.onConfigure = onConfigure
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
             scope: scope,
@@ -38,16 +76,25 @@ struct CallGraphView: View {
     }
 
     var body: some View {
-        canvasContent
-            .overlay(alignment: .top) { coverageBanner }
-            .toolbar { toolbarContent }
-            .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
-            .navigationTitle(diagram.name)
-            .task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(1))
-                centerDiagram()
+        HSplitView {
+            canvasContent
+                .overlay(alignment: .top) { coverageBanner }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if showSidebar {
+                CallGraphInspector(
+                    graph: viewModel.graph,
+                    selectedNodeIDs: viewModel.selectedNodeIDs
+                ).frame(minWidth: 240, idealWidth: 300, maxWidth: 380)
             }
-            .onDisappear { savePositions() }
+        }
+        .toolbar { toolbarContent }
+        .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
+        .navigationTitle(diagram.name)
+        .task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1))
+            centerDiagram()
+        }
+        .onDisappear { savePositions() }
     }
 
     // MARK: - Coverage banner
@@ -143,6 +190,28 @@ struct CallGraphView: View {
                 centerDiagram()
             } label: {
                 Label("Fit to View", systemImage: "rectangle.dashed")
+            }
+            Button(action: onConfigure) {
+                Label("Configure Scope", systemImage: "slider.horizontal.3")
+            }
+            Button {
+                let layoutPositions = Dictionary(
+                    viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
+                    uniquingKeysWith: { first, _ in first }
+                )
+                model.saveAsFreeformDiagram(
+                    id: diagram.id,
+                    positions: layoutPositions,
+                    scale: canvasScale,
+                    offset: canvasOffset
+                )
+            } label: {
+                Label("Save as Freeform", systemImage: "document.on.document")
+            }
+            Button {
+                showSidebar.toggle()
+            } label: {
+                Label("Sidebar", systemImage: "sidebar.trailing")
             }
         }
     }

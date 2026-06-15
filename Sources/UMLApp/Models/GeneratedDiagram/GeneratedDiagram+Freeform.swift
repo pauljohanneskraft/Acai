@@ -27,6 +27,11 @@ extension GeneratedDiagram {
                 artifact: artifact, positions: positions, scale: scale, offset: offset
             )
         }
+        if case .callGraph(let scope) = content {
+            return convertCallGraphToFreeform(
+                artifact: artifact, scope: scope, positions: positions, scale: scale, offset: offset
+            )
+        }
         var ids: [String: String] = [:]
 
         let nodes = buildFreeformNodes(
@@ -246,6 +251,55 @@ extension GeneratedDiagram {
         let edges: [FreeformDiagram.Edge] = package.edges.compactMap { edge in
             guard let source = nodeIDByModuleID[edge.from],
                   let target = nodeIDByModuleID[edge.to] else { return nil }
+            return FreeformDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .dependency)
+        }
+
+        return FreeformDiagram(
+            name: name + " (Freeform)",
+            nodes: nodes,
+            edges: edges,
+            canvasScale: scale,
+            canvasOffsetX: offset.x,
+            canvasOffsetY: offset.y
+        )
+    }
+
+    // MARK: - Call Graph → Freeform
+
+    /// Converts a static call graph into an editable freeform diagram: each method becomes a
+    /// `.method` node (the same monospaced box the generated view shows) and every call a
+    /// dependency edge. The scope's coverage/leaf distinction isn't carried over — a hand-edited
+    /// call graph has no analysis behind it — so the freeform copy is the pure call structure.
+    private func convertCallGraphToFreeform(
+        artifact: CodeArtifact,
+        scope: CallGraphScope,
+        positions: [String: CGPoint],
+        scale: CGFloat,
+        offset: CGPoint
+    ) -> FreeformDiagram {
+        let graph = artifact.callGraph(scope: scope)
+
+        var nodeIDByGraphID: [String: String] = [:]
+        var nodes: [FreeformDiagram.Node] = []
+        for (index, method) in graph.nodes.enumerated() {
+            let nodeID = UUID().uuidString
+            nodeIDByGraphID[method.id] = nodeID
+            let livePos = positions[method.id]
+            let storedPos = nodePositions[method.id]
+            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? CGFloat(index) * 200 + 120
+            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 120
+            nodes.append(FreeformDiagram.Node(
+                id: nodeID,
+                name: method.label,
+                content: .method,
+                positionX: Double(x),
+                positionY: Double(y)
+            ))
+        }
+
+        let edges: [FreeformDiagram.Edge] = graph.edges.compactMap { edge in
+            guard let source = nodeIDByGraphID[edge.from],
+                  let target = nodeIDByGraphID[edge.to] else { return nil }
             return FreeformDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .dependency)
         }
 

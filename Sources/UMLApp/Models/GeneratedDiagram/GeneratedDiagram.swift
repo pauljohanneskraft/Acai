@@ -88,6 +88,15 @@ extension GeneratedDiagram {
         case .stateDiagram(let config?):
             let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
             return "\(prefix)State: \(variable)"
+        case .callGraph(let scope):
+            switch scope {
+            case .wholeCodebase:
+                return "\(prefix)Call Graph"
+            case .type(let name):
+                return "\(prefix)Call Graph: \(name)"
+            case .module(let name):
+                return "\(prefix)Call Graph: \(name)"
+            }
         default:
             return "\(prefix)\(content.type.displayName)"
         }
@@ -120,6 +129,16 @@ extension GeneratedDiagram {
         }
         set {
             if case .stateDiagram = content { content = .stateDiagram(newValue) }
+        }
+    }
+
+    /// The call-graph scope, when this is a call graph.
+    var callGraphScope: CallGraphScope? {
+        get {
+            if case .callGraph(let scope) = content { scope } else { nil }
+        }
+        set {
+            if let newValue, case .callGraph = content { content = .callGraph(newValue) }
         }
     }
 }

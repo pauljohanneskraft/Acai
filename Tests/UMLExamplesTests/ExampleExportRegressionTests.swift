@@ -128,17 +128,22 @@ struct PackageDiagramExportTests {
 
     /// The package sample is multi-module by directory (`Core` and `Banking`), so unlike the
     /// other examples it is scanned per-language **subdirectory** — scanning the parent would
-    /// fold every module under a single `Swift`/`Kotlin` group. Both languages express the same
-    /// two-module model, so the goldens are identical bar the parser under test.
-    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift),
-        ("kotlin", .kotlin)
+    /// fold every module under a single `Swift`/`Kotlin` group. Each language expresses the same
+    /// two-module model (per-parser metric nuances aside, e.g. Dart abstractness).
+    /// `dir` is the on-disk subdirectory (`TypeScript` is camel-cased, so it can't be derived
+    /// from `stem` via `capitalized`).
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift),
+        ("kotlin", "Kotlin", .kotlin),
+        ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript),
+        ("dart", "Dart", .dart)
     ]
 
     @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
         let artifact = try ExampleExports.analyze(
-            ExampleExports.examples("PackageDiagram", stem.capitalized), language: language
+            ExampleExports.examples("PackageDiagram", dir), language: language
         )
         // Mirrors DiagramCommand.renderPackage (enriched + default theme/font).
         let diagram = artifact.enriched().packageDependencyDiagram()
@@ -151,9 +156,9 @@ struct PackageDiagramExportTests {
     }
 
     @Test("regenerated package Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
         let artifact = try ExampleExports.analyze(
-            ExampleExports.examples("PackageDiagram", stem.capitalized), language: language
+            ExampleExports.examples("PackageDiagram", dir), language: language
         )
         let diagram = artifact.enriched().packageDependencyDiagram()
         let generated = PackageDiagramMermaidRenderer().render(diagram)
@@ -168,16 +173,21 @@ struct PackageDiagramExportTests {
 struct CallGraphExportTests {
 
     /// The call-graph sample (an order-submission fan-out) carries typed call receivers in
-    /// both languages, so the resolved graph is identical bar the parser under test.
-    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift),
-        ("kotlin", .kotlin)
+    /// every language, so the resolved graph is identical bar the parser under test. JavaScript
+    /// is omitted (no typed receivers), as it is for the sequence diagram.
+    /// `dir` is the on-disk subdirectory (`TypeScript` is camel-cased).
+    static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
+        ("swift", "Swift", .swift),
+        ("kotlin", "Kotlin", .kotlin),
+        ("java", "Java", .java),
+        ("typescript", "TypeScript", .typeScript),
+        ("dart", "Dart", .dart)
     ]
 
     @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
         let artifact = try ExampleExports.analyze(
-            ExampleExports.examples("CallGraph", stem.capitalized), language: language
+            ExampleExports.examples("CallGraph", dir), language: language
         )
         // Mirrors DiagramCommand.callGraphExport (whole-codebase scope, default title/theme).
         let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
@@ -190,9 +200,9 @@ struct CallGraphExportTests {
     }
 
     @Test("regenerated call-graph Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
         let artifact = try ExampleExports.analyze(
-            ExampleExports.examples("CallGraph", stem.capitalized), language: language
+            ExampleExports.examples("CallGraph", dir), language: language
         )
         let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
         let generated = CallGraphMermaidRenderer().render(graph)
