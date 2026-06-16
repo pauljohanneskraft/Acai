@@ -209,6 +209,7 @@ let package = Package(
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
+        .testTarget(name: "UMLCLITests", dependencies: ["UMLCLI", "UMLCore"]),
 
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no UMLRender dependency); the PNG checks live in UMLRenderTests.
