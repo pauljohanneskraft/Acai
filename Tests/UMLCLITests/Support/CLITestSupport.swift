@@ -1,0 +1,85 @@
+import ArgumentParser
+import Foundation
+import Testing
+@testable import UMLCLI
+
+/// Shared helpers for driving the CLI command tree in-process.
+///
+/// Commands are exercised through `UMLCommand.parseAsRoot`, which runs ArgumentParser's parsing
+/// *and* each command's `validate()`, so validation failures surface as thrown errors here exactly
+/// as they would on the real command line. `run()` paths are reached by casting the parsed root to
+/// the concrete subcommand. Filesystem fixtures live under a unique temp directory and are cleaned
+/// up by the caller; tests never touch the user's `~/.config/uml`.
+enum CLITestSupport {
+
+    // MARK: - Parsing
+
+    /// Parses `diagram`-subcommand `arguments` into the concrete `Diagram` command, failing the
+    /// test if the root resolves to anything else.
+    static func parseDiagram(_ arguments: [String]) throws -> UMLCommand.Diagram {
+        let root = try UMLCommand.parseAsRoot(["diagram"] + arguments)
+        return try #require(root as? UMLCommand.Diagram)
+    }
+
+    /// Parses `analyze`-subcommand `arguments` into the concrete `Analyze` command.
+    static func parseAnalyze(_ arguments: [String]) throws -> UMLCommand.Analyze {
+        let root = try UMLCommand.parseAsRoot(["analyze"] + arguments)
+        return try #require(root as? UMLCommand.Analyze)
+    }
+
+    /// The human-readable message ArgumentParser would print for `error`.
+    static func message(for error: Error) -> String {
+        UMLCommand.message(for: error)
+    }
+
+    /// The process exit code ArgumentParser would use for `error`.
+    static func exitCode(for error: Error) -> ExitCode {
+        UMLCommand.exitCode(for: error)
+    }
+
+    // MARK: - Filesystem fixtures
+
+    /// Creates a unique temporary directory and returns its URL. The caller is responsible for
+    /// removing it (see `withTempDirectory`).
+    static func makeTempDirectory() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("UMLCLITests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    /// Runs `body` with a fresh temp directory that is removed afterwards.
+    static func withTempDirectory<T>(_ body: (URL) throws -> T) throws -> T {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        return try body(dir)
+    }
+
+    /// Writes a minimal two-type Swift source file (one type calls the other) into `directory`,
+    /// producing a codebase that yields non-trivial class/sequence/call-graph diagrams.
+    @discardableResult
+    static func writeSampleSwiftSource(in directory: URL) throws -> URL {
+        let source = """
+        class Service {
+            let repository: Repository = Repository()
+            func run() {
+                repository.save()
+            }
+        }
+
+        class Repository {
+            func save() {}
+        }
+        """
+        let fileURL = directory.appendingPathComponent("Sample.swift")
+        try source.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
+    /// A path under the temp directory that is guaranteed not to exist yet.
+    static func nonexistentPath() -> String {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("UMLCLITests-missing-\(UUID().uuidString)")
+            .path
+    }
+}
