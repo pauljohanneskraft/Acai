@@ -19,11 +19,13 @@ struct DOTEdgeRenderer {
         if let label = rel.label {
             labels += " label=\"\(label.dotEscaped)\""
         }
-        if let sourceLabel = rel.sourceLabel {
-            labels += " taillabel=\"\(sourceLabel.dotEscaped)\""
-        }
-        if let targetLabel = rel.targetLabel {
-            labels += " headlabel=\"\(targetLabel.dotEscaped)\""
+        if options.showMultiplicities {
+            if let sourceLabel = rel.sourceLabel {
+                labels += " taillabel=\"\(sourceLabel.dotEscaped)\""
+            }
+            if let targetLabel = rel.targetLabel {
+                labels += " headlabel=\"\(targetLabel.dotEscaped)\""
+            }
         }
         return "  \(source) -> \(target) [\(attrs)\(labels)];\n"
     }

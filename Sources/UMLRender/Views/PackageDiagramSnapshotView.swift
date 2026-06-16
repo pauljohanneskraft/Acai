@@ -8,10 +8,12 @@ import UMLDiagram
 public struct PackageDiagramSnapshotView: View {
     let layout: PackageLayoutModel
     let padding: CGFloat
+    let palette: DiagramPalette
 
-    public init(layout: PackageLayoutModel, padding: CGFloat = 40) {
+    public init(layout: PackageLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light) {
         self.layout = layout
         self.padding = padding
+        self.palette = palette
     }
 
     public var body: some View {
@@ -32,7 +34,8 @@ public struct PackageDiagramSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(Color.white)
+        .background(palette.canvasBackground)
+        .environment(\.diagramPalette, palette)
     }
 
     private func moduleBox(_ node: PackageLayoutModel.NodeFrame) -> some View {

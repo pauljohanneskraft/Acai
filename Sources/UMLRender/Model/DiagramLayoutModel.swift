@@ -83,7 +83,7 @@ public struct DiagramLayoutModel: Sendable {
                 break
             }
 
-            return GeneratedDiagramEdge(from: rel)
+            return GeneratedDiagramEdge(from: rel, showMultiplicities: configuration.showMultiplicities)
         }
     }
 

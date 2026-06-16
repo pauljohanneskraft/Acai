@@ -7,10 +7,12 @@ import UMLDiagram
 public struct CallGraphSnapshotView: View {
     let layout: CallGraphLayoutModel
     let padding: CGFloat
+    let palette: DiagramPalette
 
-    public init(layout: CallGraphLayoutModel, padding: CGFloat = 40) {
+    public init(layout: CallGraphLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light) {
         self.layout = layout
         self.padding = padding
+        self.palette = palette
     }
 
     public var body: some View {
@@ -31,24 +33,25 @@ public struct CallGraphSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(Color.white)
+        .background(palette.canvasBackground)
+        .environment(\.diagramPalette, palette)
     }
 
     private func methodBox(_ node: CallGraphLayoutModel.NodeFrame) -> some View {
         let method = node.node
         return Text(method.label)
             .font(.system(size: 12, design: .monospaced))
-            .foregroundColor(Color(white: 0.1))
+            .foregroundColor(palette.primaryInk)
             .lineLimit(1)
             .truncationMode(.middle)
             .padding(.horizontal, 8)
             .frame(width: node.rect.width, height: node.rect.height)
-            .background(method.inScope ? Color(red: 0.89, green: 0.95, blue: 0.99) : Color(white: 0.96))
+            .background(method.inScope ? palette.callGraphInScopeFill : palette.callGraphOutOfScopeFill)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        Color(white: 0.5),
+                        palette.neutralBorder,
                         style: StrokeStyle(lineWidth: 1, dash: method.inScope ? [] : [4, 3])
                     )
             )

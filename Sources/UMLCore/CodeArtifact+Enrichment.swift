@@ -104,10 +104,11 @@ extension CodeArtifact {
                 let targetId = resolveId(refName)
                 guard targetId != type.id else { continue }
                 let isCollection = typeRef.isArray || isCollectionType(typeRef.name)
+                let multiplicity: String = isCollection ? "*" : (typeRef.isOptional ? "0..1" : "1")
                 edges.append(Relationship(
                     kind: isCollection ? .aggregation : .composition,
                     source: type.id, target: targetId,
-                    targetLabel: isCollection ? "*" : "1", label: member.name))
+                    targetLabel: multiplicity, label: member.name))
             }
         }
         return edges

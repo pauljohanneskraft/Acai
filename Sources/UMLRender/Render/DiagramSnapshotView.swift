@@ -17,6 +17,7 @@ public struct DiagramSnapshotView: View {
     let groupingBoxes: [DiagramLayoutModel.GroupingBox]
     let contentSize: CGSize
     let padding: CGFloat
+    let palette: DiagramPalette
 
     public init(
         nodes: [GeneratedDiagramNode],
@@ -25,7 +26,8 @@ public struct DiagramSnapshotView: View {
         sizes: [String: CGSize],
         groupingBoxes: [DiagramLayoutModel.GroupingBox],
         contentSize: CGSize,
-        padding: CGFloat
+        padding: CGFloat,
+        palette: DiagramPalette = .light
     ) {
         self.nodes = nodes
         self.edges = edges
@@ -34,6 +36,7 @@ public struct DiagramSnapshotView: View {
         self.groupingBoxes = groupingBoxes
         self.contentSize = contentSize
         self.padding = padding
+        self.palette = palette
     }
 
     private func size(for id: String) -> CGSize {
@@ -60,7 +63,10 @@ public struct DiagramSnapshotView: View {
             ForEach(edges.removingDuplicates(by: \.id)) { edge in
                 if let sourceRect = rect(for: edge.sourceID),
                    let targetRect = rect(for: edge.targetID) {
-                    RelationshipEdgeView(kind: edge.kind, sourceRect: sourceRect, targetRect: targetRect)
+                    RelationshipEdgeView(
+                        kind: edge.kind, sourceRect: sourceRect, targetRect: targetRect,
+                        sourceLabel: edge.sourceLabel, targetLabel: edge.targetLabel
+                    )
                 }
             }
 
@@ -76,6 +82,7 @@ public struct DiagramSnapshotView: View {
         }
         .frame(width: contentSize.width, height: contentSize.height)
         .padding(padding)
-        .background(Color.white)
+        .background(palette.canvasBackground)
+        .environment(\.diagramPalette, palette)
     }
 }

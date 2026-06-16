@@ -19,7 +19,7 @@ digraph UML {
   "medialibrary.Library" -> "medialibrary.Playlist" [dir=back arrowtail=odiamond label="playlists" headlabel="*"];
   "medialibrary.MediaItem" -> "medialibrary.Genre" [dir=back arrowtail=diamond label="genre" headlabel="1"];
   "medialibrary.Player" -> "medialibrary.Library" [dir=back arrowtail=diamond label="library" headlabel="1"];
-  "medialibrary.Player" -> "medialibrary.Playable" [dir=back arrowtail=diamond label="nowPlaying" headlabel="1"];
+  "medialibrary.Player" -> "medialibrary.Playable" [dir=back arrowtail=diamond label="nowPlaying" headlabel="0..1"];
   "medialibrary.Playlist" -> "medialibrary.MediaItem" [dir=back arrowtail=odiamond label="items" headlabel="*"];
   "medialibrary.Song" -> "medialibrary.Genre" [arrowhead=vee style=dashed];
 }

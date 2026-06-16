@@ -56,9 +56,9 @@ classDiagram
     medialibrary_Playable <|.. medialibrary_MediaItem
     medialibrary_MediaItem <|-- medialibrary_Podcast
     medialibrary_MediaItem <|-- medialibrary_Song
-    medialibrary_Library o-- medialibrary_Playlist : playlists
-    medialibrary_MediaItem *-- medialibrary_Genre : genre
-    medialibrary_Player *-- medialibrary_Library : library
-    medialibrary_Player *-- medialibrary_Playable : nowPlaying
-    medialibrary_Playlist o-- medialibrary_MediaItem : items
+    medialibrary_Library o-- "*" medialibrary_Playlist : playlists
+    medialibrary_MediaItem *-- "1" medialibrary_Genre : genre
+    medialibrary_Player *-- "1" medialibrary_Library : library
+    medialibrary_Player *-- "0..1" medialibrary_Playable : nowPlaying
+    medialibrary_Playlist o-- "*" medialibrary_MediaItem : items
     medialibrary_Song ..> medialibrary_Genre

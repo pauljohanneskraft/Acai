@@ -1,4 +1,5 @@
 import SwiftUI
+import UMLRender
 
 struct ContainerNodeView: View {
     let name: String
@@ -29,36 +30,15 @@ struct ContainerNodeView: View {
     enum Style {
         case package, boundary, subsystem
 
-        var fillColor: Color {
+        /// The palette colour family backing this style.
+        var tint: ContainerTint {
             switch self {
             case .package:
-                Color(red: 0.96, green: 0.93, blue: 0.88)
+                .package
             case .boundary:
-                Color(red: 1.0, green: 0.97, blue: 0.90)
+                .boundary
             case .subsystem:
-                Color(red: 0.90, green: 0.96, blue: 0.98)
-            }
-        }
-
-        var headerColor: Color {
-            switch self {
-            case .package:
-                Color(red: 0.91, green: 0.86, blue: 0.78)
-            case .boundary:
-                Color(red: 0.96, green: 0.92, blue: 0.82)
-            case .subsystem:
-                Color(red: 0.82, green: 0.92, blue: 0.96)
-            }
-        }
-
-        var borderColor: Color {
-            switch self {
-            case .package:
-                Color(red: 0.68, green: 0.58, blue: 0.42)
-            case .boundary:
-                Color(red: 0.78, green: 0.65, blue: 0.35)
-            case .subsystem:
-                Color(red: 0.40, green: 0.65, blue: 0.75)
+                .subsystem
             }
         }
 
@@ -67,10 +47,13 @@ struct ContainerNodeView: View {
         }
     }
 
+    @Environment(\.diagramPalette) private var palette
+
     var body: some View {
         let width = size?.width ?? 200
         let height = size?.height ?? 150
-        let border = isSelected ? Color.accentColor : style.borderColor
+        let styleBorder = palette.containerBorder(style.tint)
+        let border = isSelected ? Color.accentColor : styleBorder
         let lineWidth: CGFloat = isSelected ? 2 : 1
 
         VStack(alignment: .leading, spacing: 0) {
@@ -78,14 +61,14 @@ struct ContainerNodeView: View {
             VStack(spacing: 1) {
                 Text("<<\(stereotype)>>")
                     .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(style.borderColor)
+                    .foregroundColor(styleBorder)
                 Text(name)
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(Color(white: 0.1))
+                    .foregroundColor(palette.primaryInk)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 5)
-            .background(style.headerColor)
+            .background(palette.containerHeader(style.tint))
 
             // Divider
             Rectangle()
@@ -96,7 +79,7 @@ struct ContainerNodeView: View {
             Spacer()
         }
         .frame(width: width, height: height)
-        .background(fillColor ?? style.fillColor)
+        .background(fillColor ?? palette.containerFill(style.tint))
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
             RoundedRectangle(cornerRadius: 5)

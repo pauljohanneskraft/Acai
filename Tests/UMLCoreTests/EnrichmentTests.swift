@@ -30,6 +30,46 @@ struct EnrichmentTests {
         CodeArtifact(metadata: .init(sourceLanguage: .swift), types: types, relationships: rels)
     }
 
+    // MARK: GAP-8 — inferred multiplicity labels
+
+    @Test func optionalScalarPropertyYieldsZeroOrOneMultiplicity() {
+        let car = type("Car", kind: .class, members: [
+            Member(name: "engine", kind: .property, type: TypeReference(name: "Engine", isOptional: true))
+        ])
+        let engine = type("Engine", kind: .class)
+        let resolved = artifact([car, engine]).enriched()
+
+        let edge = resolved.relationships.first { $0.source == "Car" && $0.target == "Engine" }
+        #expect(edge?.targetLabel == "0..1")
+    }
+
+    @Test func scalarAndCollectionPropertiesKeepOneAndStarMultiplicities() {
+        let car = type("Car", kind: .class, members: [
+            Member(name: "engine", kind: .property, type: TypeReference(name: "Engine")),
+            Member(name: "wheels", kind: .property, type: TypeReference(name: "Wheel", isArray: true))
+        ])
+        let resolved = artifact([car, type("Engine", kind: .class), type("Wheel", kind: .class)]).enriched()
+
+        #expect(resolved.relationships.first { $0.target == "Engine" }?.targetLabel == "1")
+        #expect(resolved.relationships.first { $0.target == "Wheel" }?.targetLabel == "*")
+    }
+
+    // MARK: Stereotypes (kind + annotations)
+
+    @Test func annotationStereotypeWinsOverKind() {
+        var user = type("User", kind: .class)
+        user.annotations = ["@Entity"]
+        #expect(user.stereotype() == "entity")
+        // Disabling annotation stereotypes falls back to the kind (a class has none).
+        #expect(user.stereotype(includeAnnotations: false) == nil)
+    }
+
+    @Test func kindStereotypeUsedWhenNoKnownAnnotation() {
+        var widget = type("Widget", kind: .protocol)
+        widget.annotations = ["@SomethingUnknown"]
+        #expect(widget.stereotype() == "interface")
+    }
+
     // MARK: BUG-1 / BUG-2 / BUG-6 — extension relationships
 
     @Test func extensionResolutionMergesMembersWithoutDanglingOrDuplicateEdges() {

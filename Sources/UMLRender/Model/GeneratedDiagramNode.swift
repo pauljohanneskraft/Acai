@@ -20,13 +20,14 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public let productGroup: String?
 
     public init(from type: TypeDeclaration, configuration: ClassDiagramConfiguration? = nil) {
+        let config = configuration ?? .init()
+
         self.id = type.id
         self.name = type.name
         self.kind = type.kind
-        self.stereotype = UMLMemberFormatting.stereotypeString(for: type.kind)
+        self.stereotype = type.stereotype(includeAnnotations: config.showAnnotationStereotypes)
         self.genericParameters = type.genericParameters.map(\.name)
 
-        let config = configuration ?? .init()
         let accessFilter = config.minimumAccessLevel
 
         let props = type.members.filter { $0.kind == .property || $0.kind == .subscript }
@@ -146,11 +147,19 @@ public struct GeneratedDiagramEdge: Identifiable, Sendable {
     public let sourceID: String
     public let targetID: String
     public let kind: Relationship.Kind
+    /// Multiplicity shown at the source (tail) end, e.g. `1` / `0..1` / `*`, or `nil`.
+    public let sourceLabel: String?
+    /// Multiplicity shown at the target (head) end, e.g. `1` / `0..1` / `*`, or `nil`.
+    public let targetLabel: String?
 
-    public init(from rel: Relationship) {
+    /// - Parameter showMultiplicities: when `false`, the source/target multiplicity labels
+    ///   are dropped so the edge renders without cardinality.
+    public init(from rel: Relationship, showMultiplicities: Bool = true) {
         self.id = "\(rel.source)-\(rel.kind.rawValue)-\(rel.target)"
         self.sourceID = rel.source
         self.targetID = rel.target
         self.kind = rel.kind
+        self.sourceLabel = showMultiplicities ? rel.sourceLabel : nil
+        self.targetLabel = showMultiplicities ? rel.targetLabel : nil
     }
 }

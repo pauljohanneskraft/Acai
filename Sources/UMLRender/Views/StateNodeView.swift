@@ -44,24 +44,26 @@ public struct StateNodeView: View {
         )
     }
 
-    private var ink: Color { Color(white: 0.1) }
-    private var borderColor: Color { isSelected ? .accentColor : Color(white: 0.45) }
+    @Environment(\.diagramPalette) private var palette
+
+    private var ink: Color { palette.primaryInk }
+    private var borderColor: Color { isSelected ? .accentColor : palette.neutralBorder }
     private var borderWidth: CGFloat { isSelected ? 2 : 1 }
 
     public var body: some View {
         switch kind {
         case .initial:
             Circle()
-                .fill(Color(white: 0.15))
+                .fill(palette.stateSolidFill)
                 .overlay(Circle().stroke(borderColor, lineWidth: isSelected ? 2 : 0))
         case .final:
             ZStack {
                 Circle().stroke(borderColor, lineWidth: borderWidth)
-                Circle().inset(by: 5).fill(Color(white: 0.15))
+                Circle().inset(by: 5).fill(palette.stateSolidFill)
             }
         case .choice:
             DiamondShape()
-                .fill(Color(red: 1.0, green: 0.98, blue: 0.9))
+                .fill(palette.choiceBackground)
                 .overlay(DiamondShape().stroke(borderColor, lineWidth: borderWidth))
                 .overlay(
                     Text(name)
@@ -71,7 +73,7 @@ public struct StateNodeView: View {
                 )
         case .fork, .join:
             RoundedRectangle(cornerRadius: 2)
-                .fill(Color(white: 0.15))
+                .fill(palette.stateSolidFill)
                 .overlay(RoundedRectangle(cornerRadius: 2).stroke(borderColor, lineWidth: isSelected ? 2 : 0))
         case .normal, .composite:
             stateBox
@@ -87,13 +89,13 @@ public struct StateNodeView: View {
             ForEach(actionRows, id: \.self) { row in
                 Text(row)
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(Color(white: 0.35))
+                    .foregroundColor(palette.mutedInk)
                     .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 8)
-        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
+        .background(palette.stateBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
@@ -164,15 +166,18 @@ public struct StateDiagramSnapshotView: View {
     let layout: StateLayoutModel
     let padding: CGFloat
     let selectedStateID: String?
+    let palette: DiagramPalette
 
     public init(
         layout: StateLayoutModel,
         padding: CGFloat = 40,
-        selectedStateID: String? = nil
+        selectedStateID: String? = nil,
+        palette: DiagramPalette = .light
     ) {
         self.layout = layout
         self.padding = padding
         self.selectedStateID = selectedStateID
+        self.palette = palette
     }
 
     public var body: some View {
@@ -187,6 +192,7 @@ public struct StateDiagramSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(Color.white)
+        .background(palette.canvasBackground)
+        .environment(\.diagramPalette, palette)
     }
 }

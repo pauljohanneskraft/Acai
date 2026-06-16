@@ -30,6 +30,15 @@ public struct ClassDiagramOptions: Sendable {
     /// artifact are rendered as lightweight gray placeholder nodes.
     public var showExternalTypes: Bool
 
+    /// When `true`, inferred association/aggregation/composition edges carry their
+    /// `*` / `0..1` / `1` multiplicity labels (`headlabel`/`taillabel` in DOT).
+    public var showMultiplicities: Bool
+
+    /// When `true`, stereotypes derived from real type annotations (e.g. `@Entity`→`«entity»`)
+    /// are emitted in addition to the kind-based stereotype. When `false`, only the
+    /// `TypeKind` stereotype is shown.
+    public var showAnnotationStereotypes: Bool
+
     /// When set, restricts the diagram to a single type and the slice of the
     /// relationship graph around it (see `FocusConfiguration`). `nil` renders the
     /// whole codebase.
@@ -50,6 +59,8 @@ public struct ClassDiagramOptions: Sendable {
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
         showExternalTypes: Bool = false,
+        showMultiplicities: Bool = true,
+        showAnnotationStereotypes: Bool = true,
         focus: FocusConfiguration? = nil
     ) {
         self.layoutDirection = layoutDirection
@@ -66,6 +77,8 @@ public struct ClassDiagramOptions: Sendable {
         self.inferCompositionFromProperties = inferCompositionFromProperties
         self.inferDependencyFromMethods = inferDependencyFromMethods
         self.showExternalTypes = showExternalTypes
+        self.showMultiplicities = showMultiplicities
+        self.showAnnotationStereotypes = showAnnotationStereotypes
         self.focus = focus
     }
 

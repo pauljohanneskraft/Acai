@@ -12,15 +12,18 @@ public struct SequenceDiagramSnapshotView: View {
     let layout: SequenceLayoutModel
     let padding: CGFloat
     let selectedParticipantID: String?
+    let palette: DiagramPalette
 
     public init(
         layout: SequenceLayoutModel,
         padding: CGFloat = 40,
-        selectedParticipantID: String? = nil
+        selectedParticipantID: String? = nil,
+        palette: DiagramPalette = .light
     ) {
         self.layout = layout
         self.padding = padding
         self.selectedParticipantID = selectedParticipantID
+        self.palette = palette
     }
 
     public var body: some View {
@@ -39,7 +42,8 @@ public struct SequenceDiagramSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(Color.white)
+        .background(palette.canvasBackground)
+        .environment(\.diagramPalette, palette)
     }
 }
 
@@ -89,8 +93,10 @@ public struct SequenceFragmentView: View {
         self.isSelected = isSelected
     }
 
-    private var ink: Color { Color(white: 0.25) }
-    private var borderColor: Color { isSelected ? .accentColor : Color(white: 0.45) }
+    @Environment(\.diagramPalette) private var palette
+
+    private var ink: Color { palette.secondaryInk }
+    private var borderColor: Color { isSelected ? .accentColor : palette.neutralBorder }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -137,7 +143,7 @@ public struct SequenceFragmentView: View {
                 path.addLine(to: CGPoint(x: origin.x, y: origin.y + height))
                 path.closeSubpath()
             }
-            .fill(Color(white: 0.93))
+            .fill(palette.subtleSurface)
             Path { path in
                 path.move(to: origin)
                 path.addLine(to: CGPoint(x: origin.x + width, y: origin.y))
@@ -149,7 +155,7 @@ public struct SequenceFragmentView: View {
             .stroke(borderColor, lineWidth: 1)
             Text(label)
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundColor(Color(white: 0.1))
+                .foregroundColor(palette.primaryInk)
                 .position(x: origin.x + width / 2 - 3, y: origin.y + height / 2)
         }
     }
@@ -166,10 +172,12 @@ public struct SequenceActivationBarView: View {
         self.bar = bar
     }
 
+    @Environment(\.diagramPalette) private var palette
+
     public var body: some View {
         Rectangle()
-            .fill(Color(white: 0.93))
-            .overlay(Rectangle().strokeBorder(Color(white: 0.45), lineWidth: 1))
+            .fill(palette.subtleSurface)
+            .overlay(Rectangle().strokeBorder(palette.neutralBorder, lineWidth: 1))
             .frame(width: bar.rect.width, height: bar.rect.height)
             .position(x: bar.rect.midX, y: bar.rect.midY)
     }
@@ -185,12 +193,14 @@ public struct SequenceLifelineView: View {
         self.participant = participant
     }
 
+    @Environment(\.diagramPalette) private var palette
+
     public var body: some View {
         Path { path in
             path.move(to: CGPoint(x: participant.lifelineX, y: participant.lifelineTop))
             path.addLine(to: CGPoint(x: participant.lifelineX, y: participant.lifelineBottom))
         }
-        .stroke(Color(white: 0.6), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+        .stroke(palette.edgeLine, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
     }
 }
 
@@ -228,25 +238,30 @@ public struct ParticipantHeaderView: View {
         self.isSelected = isSelected
     }
 
+    @Environment(\.diagramPalette) private var palette
+
     public var body: some View {
         VStack(spacing: 2) {
             if let stereotype = kind.stereotype {
                 Text("<<\(stereotype)>>")
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(kind.accentColor)
+                    .foregroundColor(palette.participantAccent(for: kind))
             }
             Text(name)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundColor(Color(white: 0.1))
+                .foregroundColor(palette.primaryInk)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 10)
-        .background(kind.fillColor)
+        .background(palette.participantFill(for: kind))
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
             RoundedRectangle(cornerRadius: 5)
-                .stroke(isSelected ? Color.accentColor : kind.borderColor, lineWidth: isSelected ? 2 : 1)
+                .stroke(
+                    isSelected ? Color.accentColor : palette.participantBorder(for: kind),
+                    lineWidth: isSelected ? 2 : 1
+                )
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }
@@ -262,7 +277,9 @@ public struct SequenceMessageView: View {
         self.message = message
     }
 
-    private var color: Color { Color(white: 0.3) }
+    @Environment(\.diagramPalette) private var palette
+
+    private var color: Color { palette.edgeLine }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -273,10 +290,10 @@ public struct SequenceMessageView: View {
             }
             if let label = message.label {
                 // Explicit ink (matching TypeNodeView's member rows) so the label stays
-                // readable in dark mode against the light canvas.
+                // readable against the canvas in both light and dark themes.
                 Text(label)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(Color(white: 0.15))
+                    .foregroundColor(palette.secondaryInk)
                     .position(labelPosition)
             }
         }
@@ -352,63 +369,6 @@ extension SequenceDiagram.Message.Kind {
             StrokeStyle(lineWidth: 1.5, dash: [6, 4])
         case .asynchronous:
             StrokeStyle(lineWidth: 1.5, dash: [2, 3])
-        }
-    }
-}
-
-extension SequenceDiagram.Participant.Kind {
-    /// Header fill tint, distinguishing participant roles at a glance. Fixed light pastels in
-    /// the same family as `TypeNodeView`'s kind backgrounds (explicit so dark mode can't invert).
-    var fillColor: Color {
-        switch self {
-        case .object:
-            Color(red: 0.95, green: 0.95, blue: 0.95)
-        case .actor:
-            Color(red: 0.93, green: 0.95, blue: 1.0)
-        case .boundary:
-            Color(red: 0.96, green: 0.93, blue: 1.0)
-        case .control:
-            Color(red: 1.0, green: 0.96, blue: 0.92)
-        case .entity:
-            Color(red: 0.93, green: 0.98, blue: 0.93)
-        case .database:
-            Color(red: 0.92, green: 0.98, blue: 0.98)
-        }
-    }
-
-    /// Border tone matching `fillColor`, mirroring `TypeNodeView`'s kind borders.
-    var borderColor: Color {
-        switch self {
-        case .object:
-            Color(red: 0.70, green: 0.70, blue: 0.70)
-        case .actor:
-            Color(red: 0.55, green: 0.62, blue: 0.85)
-        case .boundary:
-            Color(red: 0.68, green: 0.52, blue: 0.82)
-        case .control:
-            Color(red: 0.82, green: 0.68, blue: 0.45)
-        case .entity:
-            Color(red: 0.50, green: 0.72, blue: 0.50)
-        case .database:
-            Color(red: 0.45, green: 0.72, blue: 0.72)
-        }
-    }
-
-    /// Accent for the stereotype line, mirroring `TypeNodeView`'s kind colors.
-    var accentColor: Color {
-        switch self {
-        case .object:
-            .gray
-        case .actor:
-            .blue
-        case .boundary:
-            .purple
-        case .control:
-            .orange
-        case .entity:
-            .green
-        case .database:
-            .teal
         }
     }
 }

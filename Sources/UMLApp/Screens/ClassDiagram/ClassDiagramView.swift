@@ -130,7 +130,9 @@ struct ClassDiagramView: View {
                 RelationshipEdgeView(
                     kind: edge.kind,
                     sourceRect: sourceRect,
-                    targetRect: targetRect
+                    targetRect: targetRect,
+                    sourceLabel: edge.sourceLabel,
+                    targetLabel: edge.targetLabel
                 )
             }
         }

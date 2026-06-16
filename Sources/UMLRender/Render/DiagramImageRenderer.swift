@@ -44,7 +44,8 @@ public enum DiagramImageRenderer {
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let model = DiagramLayoutModel(artifact: artifact, configuration: configuration)
         let sizes = nodeSizes(for: model.nodes)
@@ -57,7 +58,8 @@ public enum DiagramImageRenderer {
             sizes: sizes,
             groupingBoxes: boxes,
             scale: scale,
-            padding: padding
+            padding: padding,
+            palette: palette
         )
     }
 
@@ -70,10 +72,11 @@ public enum DiagramImageRenderer {
         sequenceDiagram: SequenceDiagram,
         positionOverrides: [String: CGFloat] = [:],
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let layout = SequenceLayoutModel(diagram: sequenceDiagram, positionOverrides: positionOverrides)
-        let view = SequenceDiagramSnapshotView(layout: layout, padding: padding)
+        let view = SequenceDiagramSnapshotView(layout: layout, padding: padding, palette: palette)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
         let maxScale = maxPixelDimension / max(pointSize, 1)
@@ -97,10 +100,11 @@ public enum DiagramImageRenderer {
         stateDiagram: StateDiagram,
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let layout = StateLayoutModel(diagram: stateDiagram, positionOverrides: positionOverrides)
-        let view = StateDiagramSnapshotView(layout: layout, padding: padding)
+        let view = StateDiagramSnapshotView(layout: layout, padding: padding, palette: palette)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
         let maxScale = maxPixelDimension / max(pointSize, 1)
@@ -122,11 +126,12 @@ public enum DiagramImageRenderer {
     public static func renderPNG(
         packageDiagram: PackageDependencyDiagram,
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let layout = PackageLayoutModel(diagram: packageDiagram)
         return try renderSnapshot(
-            PackageDiagramSnapshotView(layout: layout, padding: padding),
+            PackageDiagramSnapshotView(layout: layout, padding: padding, palette: palette),
             contentSize: layout.contentSize, scale: scale, padding: padding
         )
     }
@@ -138,11 +143,12 @@ public enum DiagramImageRenderer {
     public static func renderPNG(
         callGraph: CallGraph,
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let layout = CallGraphLayoutModel(graph: callGraph)
         return try renderSnapshot(
-            CallGraphSnapshotView(layout: layout, padding: padding),
+            CallGraphSnapshotView(layout: layout, padding: padding, palette: palette),
             contentSize: layout.contentSize, scale: scale, padding: padding
         )
     }
@@ -178,7 +184,8 @@ public enum DiagramImageRenderer {
         sizes: [String: CGSize],
         groupingBoxes: [DiagramLayoutModel.GroupingBox],
         scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding
+        padding: CGFloat = defaultPadding,
+        palette: DiagramPalette = .light
     ) throws -> Data {
         let bounds = contentBounds(positions: positions, sizes: sizes, boxes: groupingBoxes)
 
@@ -200,7 +207,8 @@ public enum DiagramImageRenderer {
             sizes: sizes,
             groupingBoxes: normalizedBoxes,
             contentSize: CGSize(width: bounds.width, height: bounds.height),
-            padding: padding
+            padding: padding,
+            palette: palette
         )
 
         // Clamp the scale so neither output dimension exceeds `maxPixelDimension`; large

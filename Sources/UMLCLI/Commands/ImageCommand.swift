@@ -48,6 +48,14 @@ extension UMLCommand {
         @Option(name: .long, help: "Output resolution scale factor.")
         var scale: Double = 2
 
+        @Option(name: .long, help: "Colour theme for the rendered image: default (light) or dark.")
+        var theme: ThemeOption = .default
+
+        /// The render palette for the selected `--theme`.
+        private var palette: DiagramPalette {
+            theme == .dark ? .dark : .light
+        }
+
         @Option(name: .long, help: ArgumentHelp(
             "Render a sequence diagram traced from this entry point instead of a class diagram." +
             " Format: \"TypeName.methodName\"."
@@ -142,7 +150,7 @@ extension UMLCommand {
                 let diagram = artifact.enriched().packageDependencyDiagram()
                 let renderScale = CGFloat(scale)
                 data = try await MainActor.run {
-                    try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale)
+                    try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
                 }
             } else if callGraph {
                 data = try await renderCallGraph(artifact: artifact)
@@ -165,7 +173,8 @@ extension UMLCommand {
                     try DiagramImageRenderer.renderPNG(
                         artifact: artifact,
                         configuration: configuration,
-                        scale: CGFloat(scale)
+                        scale: CGFloat(scale),
+                        palette: palette
                     )
                 }
             }
@@ -207,7 +216,7 @@ extension UMLCommand {
                 )
             }
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale))
+                try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale), palette: palette)
             }
         }
 
@@ -223,7 +232,7 @@ extension UMLCommand {
             }
             let renderScale = CGFloat(scale)
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(callGraph: graph, scale: renderScale)
+                try DiagramImageRenderer.renderPNG(callGraph: graph, scale: renderScale, palette: palette)
             }
         }
 
@@ -255,7 +264,7 @@ extension UMLCommand {
             }
             let renderScale = CGFloat(scale)
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: renderScale)
+                try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: renderScale, palette: palette)
             }
         }
 

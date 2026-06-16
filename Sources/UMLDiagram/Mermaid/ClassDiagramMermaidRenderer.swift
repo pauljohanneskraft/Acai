@@ -45,7 +45,7 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         let header = "    class \(safeID)[\"\(displayName(for: type).mermaidLabelEscaped)\"]"
 
         var body: [String] = []
-        if let stereotype = type.kind.stereotypeString {
+        if let stereotype = stereotypeString(for: type) {
             body.append("        <<\(stereotype)>>")
         }
         if options.showMembers {
@@ -99,25 +99,49 @@ public struct ClassDiagramMermaidRenderer: Sendable {
     /// whole/part and parent/child orientation the DOT renderer uses.
     private func renderRelationship(_ rel: Relationship, idMap: [String: String]) -> String? {
         guard let source = idMap[rel.source], let target = idMap[rel.target] else { return nil }
-        let link: String
-        switch rel.kind {
-        case .inheritance:
-            link = "\(target) <|-- \(source)"
-        case .conformance:
-            link = "\(target) <|.. \(source)"
-        case .composition, .nesting:
-            link = "\(source) *-- \(target)"
-        case .aggregation:
-            link = "\(source) o-- \(target)"
-        case .association:
-            link = "\(source) --> \(target)"
-        case .dependency:
-            link = "\(source) ..> \(target)"
-        case .extension:
-            link = "\(source) ..|> \(target)"
-        }
+        // Source/target operands as Mermaid writes them: inheritance/conformance flip the
+        // arrow so the supertype leads, so the multiplicity labels follow the same operands.
+        let leadsWithTarget = rel.kind == .inheritance || rel.kind == .conformance
+        let leadID = leadsWithTarget ? target : source
+        let trailID = leadsWithTarget ? source : target
+        let leadLabel = leadsWithTarget ? rel.targetLabel : rel.sourceLabel
+        let trailLabel = leadsWithTarget ? rel.sourceLabel : rel.targetLabel
+
+        let link = "\(operand(leadID, label: leadLabel))\(arrow(for: rel.kind))"
+            + "\(operand(trailID, label: trailLabel, labelLeading: true))"
         guard let label = rel.label else { return "    \(link)" }
         return "    \(link) : \(label.mermaidTextEscaped)"
+    }
+
+    /// A relationship operand, optionally carrying a quoted multiplicity. Mermaid puts the
+    /// cardinality between the class id and the link, so a trailing operand's label leads it.
+    private func operand(_ id: String, label: String?, labelLeading: Bool = false) -> String {
+        guard options.showMultiplicities, let label else { return id }
+        let quoted = "\"\(label.mermaidTextEscaped)\""
+        return labelLeading ? "\(quoted) \(id)" : "\(id) \(quoted)"
+    }
+
+    private func arrow(for kind: Relationship.Kind) -> String {
+        switch kind {
+        case .inheritance:
+            " <|-- "
+        case .conformance:
+            " <|.. "
+        case .composition, .nesting:
+            " *-- "
+        case .aggregation:
+            " o-- "
+        case .association:
+            " --> "
+        case .dependency:
+            " ..> "
+        case .extension:
+            " ..|> "
+        }
+    }
+
+    private func stereotypeString(for type: TypeDeclaration) -> String? {
+        type.stereotype(includeAnnotations: options.showAnnotationStereotypes)
     }
 
     // MARK: - Helpers
