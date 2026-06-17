@@ -52,6 +52,13 @@ enum ExamplePNGs {
         try AnalysisService.shared.analyzeProject(at: directory, allowedLanguages: languages)
     }
 
+    /// The committed palettes: each suite is parametrised over these so the same assertions run
+    /// for every theme. `suffix` is appended to the file stem (light is the bare `<stem>.png`).
+    static let themes: [(suffix: String, palette: DiagramPalette)] = [
+        ("", .light),
+        (".dark", .dark)
+    ]
+
     /// Validates a committed PNG against a freshly-rendered one. `render` mirrors the CLI's
     /// `uml image` code path for that diagram; it may throw a render error on a headless host.
     @MainActor
@@ -98,13 +105,18 @@ struct ClassDiagramPNGTests {
         ("typescript", .typeScript), ("dart", .dart)
     ]
 
-    @Test("per-language class PNG is valid and re-renders to the same size", arguments: perLanguage)
-    @MainActor func perLanguageImage(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        try ExamplePNGs.validate(ExamplePNGs.examples("ClassDiagram", "Exports", "\(stem).png")) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("ClassDiagram"), languages: [language])
+    @Test("per-language class PNG is valid and re-renders to the same size", arguments: perLanguage, ExamplePNGs.themes)
+    @MainActor func perLanguageImage(
+        _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
+        _ theme: (suffix: String, palette: DiagramPalette)
+    ) throws {
+        try ExamplePNGs.validate(ExamplePNGs.examples("ClassDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")) {
+            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("ClassDiagram"), languages: [entry.language])
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = .none  // matches `uml image --grouping none`
-            return try DiagramImageRenderer.renderPNG(artifact: artifact, configuration: configuration, scale: 2)
+            return try DiagramImageRenderer.renderPNG(
+                artifact: artifact, configuration: configuration, scale: 2, palette: theme.palette
+            )
         }
     }
 }
@@ -116,14 +128,18 @@ struct SequenceDiagramPNGTests {
         ("swift", .swift), ("kotlin", .kotlin), ("java", .java), ("typescript", .typeScript), ("dart", .dart)
     ]
 
-    @Test("sequence PNG is valid and re-renders to the same size", arguments: cases)
-    @MainActor func image(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        try ExamplePNGs.validate(ExamplePNGs.examples("SequenceDiagram", "Exports", "\(stem).png")) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("SequenceDiagram"), languages: [language])
+    @Test("sequence PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
+    @MainActor func image(
+        _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
+        _ theme: (suffix: String, palette: DiagramPalette)
+    ) throws {
+        let name = "\(entry.stem)\(theme.suffix).png"
+        try ExamplePNGs.validate(ExamplePNGs.examples("SequenceDiagram", "Exports", name)) {
+            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("SequenceDiagram"), languages: [entry.language])
             let diagram = artifact.sequenceDiagram(
                 entryPoint: ("Checkout", "placeOrder"), maxDepth: 5, typeMapping: [:]
             )
-            return try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: 2)
+            return try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -136,13 +152,16 @@ struct StateDiagramPNGTests {
         ("typescript", .typeScript), ("javascript", .javaScript), ("dart", .dart)
     ]
 
-    @Test("state PNG is valid and re-renders to the same size", arguments: cases)
-    @MainActor func image(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        try ExamplePNGs.validate(ExamplePNGs.examples("StateDiagram", "Exports", "\(stem).png")) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("StateDiagram"), languages: [language])
+    @Test("state PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
+    @MainActor func image(
+        _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
+        _ theme: (suffix: String, palette: DiagramPalette)
+    ) throws {
+        try ExamplePNGs.validate(ExamplePNGs.examples("StateDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")) {
+            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("StateDiagram"), languages: [entry.language])
             let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
             let diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
-            return try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: 2)
+            return try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -156,12 +175,18 @@ struct PackageDiagramPNGTests {
         ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
     ]
 
-    @Test("package PNG is valid and re-renders to the same size", arguments: cases)
-    @MainActor func image(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        try ExamplePNGs.validate(ExamplePNGs.examples("PackageDiagram", "Exports", "\(stem).png")) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("PackageDiagram", dir), languages: [language])
+    @Test("package PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
+    @MainActor func image(
+        _ entry: (stem: String, dir: String, language: CodeArtifact.SourceLanguage),
+        _ theme: (suffix: String, palette: DiagramPalette)
+    ) throws {
+        let name = "\(entry.stem)\(theme.suffix).png"
+        try ExamplePNGs.validate(ExamplePNGs.examples("PackageDiagram", "Exports", name)) {
+            let artifact = try ExamplePNGs.analyze(
+                ExamplePNGs.examples("PackageDiagram", entry.dir), languages: [entry.language]
+            )
             let diagram = artifact.enriched().packageDependencyDiagram()
-            return try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: 2)
+            return try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -174,12 +199,17 @@ struct CallGraphPNGTests {
         ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
     ]
 
-    @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases)
-    @MainActor func image(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        try ExamplePNGs.validate(ExamplePNGs.examples("CallGraph", "Exports", "\(stem).png")) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("CallGraph", dir), languages: [language])
+    @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
+    @MainActor func image(
+        _ entry: (stem: String, dir: String, language: CodeArtifact.SourceLanguage),
+        _ theme: (suffix: String, palette: DiagramPalette)
+    ) throws {
+        try ExamplePNGs.validate(ExamplePNGs.examples("CallGraph", "Exports", "\(entry.stem)\(theme.suffix).png")) {
+            let artifact = try ExamplePNGs.analyze(
+                ExamplePNGs.examples("CallGraph", entry.dir), languages: [entry.language]
+            )
             let graph = artifact.callGraph(scope: .wholeCodebase)
-            return try DiagramImageRenderer.renderPNG(callGraph: graph, scale: 2)
+            return try DiagramImageRenderer.renderPNG(callGraph: graph, scale: 2, palette: theme.palette)
         }
     }
 }

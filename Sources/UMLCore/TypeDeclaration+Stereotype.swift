@@ -39,10 +39,12 @@ private extension String {
     /// list (`@Table(name="x")` → `table`) and any package qualifier
     /// (`jakarta.persistence.Entity` → `entity`) are stripped, then it is lowercased.
     var annotationName: String {
-        var name = self
+        // Trim leading/trailing whitespace and newlines up front so a leading "@" is reliably
+        // detected and multi-line / formatted annotations still match.
+        var name = trimmingCharacters(in: .whitespacesAndNewlines)
         if name.hasPrefix("@") { name.removeFirst() }
         if let paren = name.firstIndex(of: "(") { name = String(name[..<paren]) }
         if let dot = name.lastIndex(of: ".") { name = String(name[name.index(after: dot)...]) }
-        return name.trimmingCharacters(in: .whitespaces).lowercased()
+        return name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

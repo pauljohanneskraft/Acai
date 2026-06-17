@@ -69,6 +69,11 @@ supports (see the coverage table above) for `<lang>`:
 Each `uml diagram` command also takes `--format mermaid` to write the `.mmd` sibling (same source,
 entry point, and variable — only the output format and extension change).
 
+Each `uml image` command renders the light theme by default; add `--theme dark` and write to the
+`<lang>.dark.png` sibling to regenerate the dark-palette proof image (e.g.
+`uml image --source Examples/ClassDiagram --language swift --grouping none --theme dark
+--output Examples/ClassDiagram/Exports/swift.dark.png --scale 2`).
+
 ```sh
 # Class diagram — DOT + Mermaid + PNG per language (swift kotlin java typescript dart), macOS only for images
 uml diagram --source Examples/ClassDiagram --language <lang> \

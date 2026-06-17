@@ -70,6 +70,13 @@ struct EnrichmentTests {
         #expect(widget.stereotype() == "interface")
     }
 
+    @Test func annotationStereotypeToleratesWhitespaceNewlinesAndQualifiers() {
+        // Leading whitespace/newlines, package qualifiers and argument lists must still match.
+        var user = type("User", kind: .class)
+        user.annotations = ["\n  @jakarta.persistence.Table(name = \"users\")"]
+        #expect(user.stereotype() == "entity")
+    }
+
     // MARK: BUG-1 / BUG-2 / BUG-6 — extension relationships
 
     @Test func extensionResolutionMergesMembersWithoutDanglingOrDuplicateEdges() {
