@@ -7,7 +7,7 @@ public struct DOTGenerator: DOTRenderer {
         DiagramRenderOptions(theme: options.theme, fontName: options.fontName, fontSize: options.fontSize)
     }
 
-    public init(options: ClassDiagramOptions = ClassDiagramOptions()) {
+    public init(options: ClassDiagramOptions) {
         self.options = options
     }
 

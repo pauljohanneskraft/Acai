@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import UMLCore
 import UMLDiagram
+import UMLLibrary
 import UMLRender
 
 /// Backs the movement-only package diagram view. The `PackageDependencyDiagram` is derived from
@@ -29,7 +30,8 @@ final class PackageDiagramViewModel: ObservableObject, DiagramHistoryHosting, Ca
     // MARK: - Init
 
     init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:]) {
-        self.diagram = artifact.enriched().packageDependencyDiagram()
+        self.diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+            .packageDependencyDiagram()
         self.positionOverrides = restoredPositions
     }
 

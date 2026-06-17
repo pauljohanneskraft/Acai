@@ -21,7 +21,8 @@ struct JSTypeResolutionTests {
         let raw = parser.parse(source: source, fileName: "zoo.ts").flattened()
         #expect(raw.first { $0.name == "Dog" }?.inheritedTypes.first?.name == "Animal")
 
-        let enriched = parser.parse(source: source, fileName: "zoo.ts").enriched().flattened()
+        let enriched = parser.parse(source: source, fileName: "zoo.ts")
+            .enriched(configuration: parser.configuration).flattened()
         #expect(enriched.first { $0.name == "Animal" }?.id == "Zoo.Animal")
         #expect(enriched.first { $0.name == "Dog" }?.inheritedTypes.first?.name == "Zoo.Animal")
     }

@@ -93,7 +93,7 @@ enum ExamplePNGs {
     }
 
     static func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) throws -> CodeArtifact {
-        try AnalysisService.shared.analyzeProject(at: directory, allowedLanguages: languages)
+        try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
     }
 
     /// The committed palettes: each suite is parametrised over these so the same assertions run
@@ -172,7 +172,8 @@ struct ClassDiagramPNGTests {
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = .none  // matches `uml image --grouping none`
             return try DiagramImageRenderer.renderPNG(
-                artifact: artifact, configuration: configuration, scale: 2, palette: theme.palette
+                artifact: artifact, configuration: configuration,
+                language: artifact.standardLanguageConfiguration, scale: 2, palette: theme.palette
             )
         }
     }
@@ -242,7 +243,8 @@ struct PackageDiagramPNGTests {
             let artifact = try ExamplePNGs.analyze(
                 ExamplePNGs.examples("PackageDiagram", entry.dir), languages: [entry.language]
             )
-            let diagram = artifact.enriched().packageDependencyDiagram()
+            let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+                .packageDependencyDiagram()
             return try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }

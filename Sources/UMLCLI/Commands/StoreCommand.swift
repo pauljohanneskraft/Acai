@@ -29,7 +29,7 @@ extension UMLCommand {
             }
 
             let allowedLanguages = language.map { $0.sourceLanguage }
-            let artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
             artifact.warnIfParseErrors()
             let json = try artifact.encodedJSON()
 

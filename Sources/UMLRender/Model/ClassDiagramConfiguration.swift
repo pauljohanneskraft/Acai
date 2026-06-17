@@ -41,10 +41,10 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     public var showExternalTypes: Bool = false
     /// Access level filter — only show members at or above this level.
     public var minimumAccessLevel: AccessLevel?
-    /// When `true`, hides types originating from Dart generated files
-    /// (e.g. `*.freezed.dart`, `*.g.dart`) as well as types whose names
-    /// match common code-generation patterns.
-    public var hideGeneratedDartTypes: Bool = true
+    /// When `true`, hides types the source language marks as machine-generated (via its
+    /// `LanguageConfiguration.generatedCodeFilter` — e.g. Dart's `*.freezed.dart`/`*.g.dart`).
+    /// Has no effect for languages without a generated-code filter.
+    public var hideGeneratedTypes: Bool = true
     /// When set, restricts the diagram to a single type and the slice of the
     /// relationship graph around it. `nil` renders the whole codebase.
     public var focus: FocusConfiguration?
@@ -76,7 +76,17 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
         grouping = try container.decodeIfPresent(Grouping.self, forKey: .grouping) ?? .product
         showExternalTypes = try bool(.showExternalTypes, default: false)
         minimumAccessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccessLevel)
-        hideGeneratedDartTypes = try bool(.hideGeneratedDartTypes, default: true)
+        // Decode the current key, falling back to the pre-generalization `hideGeneratedDartTypes`
+        // key so diagrams saved before the rename keep loading.
+        let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
+        hideGeneratedTypes = try container.decodeIfPresent(Bool.self, forKey: .hideGeneratedTypes)
+            ?? legacy.decodeIfPresent(Bool.self, forKey: .hideGeneratedDartTypes)
+            ?? true
         focus = try container.decodeIfPresent(FocusConfiguration.self, forKey: .focus)
+    }
+
+    /// Keys that no longer correspond to a stored property but may still appear in saved diagrams.
+    private enum LegacyCodingKeys: String, CodingKey {
+        case hideGeneratedDartTypes
     }
 }

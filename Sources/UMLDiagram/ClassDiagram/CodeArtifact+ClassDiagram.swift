@@ -15,14 +15,15 @@ extension CodeArtifact {
     /// focus). Enrichment is idempotent, so calling this on an already-enriched artifact is a
     /// no-op. Renderers take the result so a class diagram is built once and rendered to any
     /// number of formats — matching `sequenceDiagram`/`stateDiagram`/`packageDependencyDiagram`.
-    public func classDiagram(options: ClassDiagramOptions = ClassDiagramOptions()) -> ClassDiagram {
+    public func classDiagram(options: ClassDiagramOptions) -> ClassDiagram {
         ClassDiagramEnricher.enrich(
             self,
             options: EnrichmentOptions(
                 inferCompositionFromProperties: options.inferCompositionFromProperties,
                 inferDependencyFromMethods: options.inferDependencyFromMethods,
                 showExternalTypes: options.showExternalTypes,
-                focus: options.focus
+                focus: options.focus,
+                language: options.language
             )
         )
     }

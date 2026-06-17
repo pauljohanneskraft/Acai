@@ -195,7 +195,9 @@ struct DOTNodeRenderer {
     }
 
     private func stereotypeString(for type: TypeDeclaration) -> String? {
-        type.stereotype(includeAnnotations: options.showAnnotationStereotypes)
+        type.stereotype(
+            annotationStereotypes: options.showAnnotationStereotypes ? options.language.annotationStereotypes : [:]
+        )
     }
 
     private func isProperty(_ member: Member) -> Bool {

@@ -21,7 +21,7 @@ struct SequenceDiagramIntegrationTests {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let sources = repoRoot.appendingPathComponent("Sources")
-        return try AnalysisService.shared.analyzeProject(at: sources, allowedLanguages: [])
+        return try AnalysisService.standard.analyzeProject(at: sources, allowedLanguages: [])
     }
 
     private static func artifact() throws -> CodeArtifact {

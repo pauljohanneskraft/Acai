@@ -7,11 +7,17 @@
 extension CodeArtifact {
 
     /// Runs the full enrichment pipeline in order.
-    public func enriched() -> CodeArtifact {
+    ///
+    /// `configuration` supplies the language's type-name classification (primitives/collections) used
+    /// when inferring structural edges. It is injected — never hard-coded here — so the agnostic
+    /// engine stays language-agnostic, and it is *required*: there is no real language with an empty
+    /// configuration, so there is deliberately no empty default to fall into. Because the pipeline is
+    /// idempotent, a re-run must use the *same* configuration as the first run to stay a no-op.
+    public func enriched(configuration: LanguageConfiguration) -> CodeArtifact {
         resolvingExtensions()
             .resolvingRelationshipNames()
             .reclassifyingRelationshipKinds()
-            .inferringStructuralEdges()
+            .inferringStructuralEdges(configuration: configuration)
             .deduplicatingRelationships()
     }
 
@@ -77,15 +83,16 @@ extension CodeArtifact {
 
     /// Adds composition/aggregation edges from property types, dependency edges from
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
-    public func inferringStructuralEdges() -> CodeArtifact {
+    /// `configuration` classifies primitive/collection type names (injected, language-supplied).
+    public func inferringStructuralEdges(configuration: LanguageConfiguration) -> CodeArtifact {
         let map = Self.buildNameToId(types)
         let resolveId: (String) -> String = { map[$0] ?? $0 }
 
         var edges: [Relationship] = []
         for type in Self.allTypes(types) {
-            edges.append(contentsOf: Self.propertyEdges(for: type, resolveId: resolveId))
-            edges.append(contentsOf: Self.methodEdges(for: type, resolveId: resolveId))
-            edges.append(contentsOf: Self.typeAliasEdges(for: type, resolveId: resolveId))
+            edges.append(contentsOf: Self.propertyEdges(for: type, resolveId: resolveId, configuration: configuration))
+            edges.append(contentsOf: Self.methodEdges(for: type, resolveId: resolveId, configuration: configuration))
+            edges.append(contentsOf: Self.typeAliasEdges(for: type, resolveId: resolveId, configuration: configuration))
         }
 
         var copy = self
@@ -95,15 +102,15 @@ extension CodeArtifact {
 
     /// Properties/subscripts → composition (scalar) or aggregation (collection).
     private static func propertyEdges(
-        for type: TypeDeclaration, resolveId: (String) -> String
+        for type: TypeDeclaration, resolveId: (String) -> String, configuration: LanguageConfiguration
     ) -> [Relationship] {
         var edges: [Relationship] = []
         for member in type.members where member.kind == .property || member.kind == .subscript {
             guard let typeRef = member.type else { continue }
-            for refName in extractReferencedTypeNames(from: typeRef) {
+            for refName in extractReferencedTypeNames(from: typeRef, configuration: configuration) {
                 let targetId = resolveId(refName)
                 guard targetId != type.id else { continue }
-                let isCollection = typeRef.isArray || isCollectionType(typeRef.name)
+                let isCollection = typeRef.isArray || configuration.isCollectionType(typeRef.name)
                 let multiplicity: String = isCollection ? "*" : (typeRef.isOptional ? "0..1" : "1")
                 edges.append(Relationship(
                     kind: isCollection ? .aggregation : .composition,
@@ -116,14 +123,14 @@ extension CodeArtifact {
 
     /// Method/initializer parameter & return types → dependency (deduped per type).
     private static func methodEdges(
-        for type: TypeDeclaration, resolveId: (String) -> String
+        for type: TypeDeclaration, resolveId: (String) -> String, configuration: LanguageConfiguration
     ) -> [Relationship] {
         var edges: [Relationship] = []
         var seen = Set<String>()
         for member in type.members where member.kind == .method || member.kind == .initializer {
             let refs = ([member.type].compactMap { $0 }) + member.parameters.compactMap(\.type)
             for ref in refs {
-                for refName in extractReferencedTypeNames(from: ref) {
+                for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                     let targetId = resolveId(refName)
                     guard targetId != type.id, seen.insert(targetId).inserted else { continue }
                     edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
@@ -135,12 +142,12 @@ extension CodeArtifact {
 
     /// `typealias` → dependency on its underlying type.
     private static func typeAliasEdges(
-        for type: TypeDeclaration, resolveId: (String) -> String
+        for type: TypeDeclaration, resolveId: (String) -> String, configuration: LanguageConfiguration
     ) -> [Relationship] {
         guard type.kind == .typeAlias else { return [] }
         var edges: [Relationship] = []
         for ref in type.inheritedTypes {
-            for refName in extractReferencedTypeNames(from: ref) {
+            for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                 let targetId = resolveId(refName)
                 guard targetId != type.id else { continue }
                 edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
@@ -279,43 +286,18 @@ extension CodeArtifact {
 
     // MARK: - Type-name classification
 
-    /// Non-primitive type names referenced by a `TypeReference`, incl. generic args.
-    static func extractReferencedTypeNames(from ref: TypeReference) -> [String] {
+    /// Type names referenced by a `TypeReference` (incl. generic args), excluding names the
+    /// language's `configuration` classifies as primitives or collection containers.
+    static func extractReferencedTypeNames(
+        from ref: TypeReference, configuration: LanguageConfiguration
+    ) -> [String] {
         var names: [String] = []
-        if !isPrimitive(ref.name) && !isCollectionType(ref.name) {
+        if !configuration.isPrimitive(ref.name) && !configuration.isCollectionType(ref.name) {
             names.append(ref.name)
         }
         for arg in ref.genericArguments {
-            names.append(contentsOf: extractReferencedTypeNames(from: arg))
+            names.append(contentsOf: extractReferencedTypeNames(from: arg, configuration: configuration))
         }
         return names
     }
-
-    public static func isPrimitive(_ name: String) -> Bool { primitiveTypes.contains(name) }
-    public static func isCollectionType(_ name: String) -> Bool { collectionTypes.contains(name) }
-
-    static let primitiveTypes: Set<String> = [
-        "void", "Void", "Unit", "Nothing", "Never", "Any", "AnyObject", "any",
-        "Self", "self", "this",
-        "String", "Int", "Double", "Float", "Bool", "Character", "UInt",
-        "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64",
-        "CGFloat", "Data", "Date", "URL", "UUID", "Error", "Sendable", "Codable",
-        "Equatable", "Hashable", "Comparable", "Identifiable", "CustomStringConvertible",
-        "int", "long", "short", "byte", "float", "double", "boolean", "char",
-        "Integer", "Long", "Short", "Byte", "Boolean",
-        "Object", "Number", "Serializable", "Cloneable",
-        "string", "number", "undefined", "null", "symbol", "bigint",
-        "unknown", "never", "object", "Promise", "Function",
-        "dynamic", "num", "var", "inferred",
-        "Optional"
-    ]
-
-    static let collectionTypes: Set<String> = [
-        "List", "ArrayList", "LinkedList", "Vector", "Stack", "Queue", "Deque",
-        "ArrayDeque", "PriorityQueue",
-        "Set", "HashSet", "TreeSet", "LinkedHashSet", "MutableSet",
-        "Map", "HashMap", "TreeMap", "LinkedHashMap", "MutableMap",
-        "Array", "MutableList", "Iterable", "Collection", "Sequence",
-        "Dictionary"
-    ]
 }

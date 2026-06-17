@@ -26,12 +26,21 @@ Linux must keep building, but that's verified by CI only — no local Linux gate
 
 Layered, one module per concern (see `Package.swift`):
 
-- `UMLCore` — data models. `CodeArtifact.SourceLanguage` is the language enum; `CodeParser` is the parser protocol (`language`, `fileExtensions`, `parse(source:fileName:)`).
+- `UMLCore` — the **language-agnostic engine**: data models, the enrichment pipeline, project discovery (`BuildSystemDetector`, `ProjectDiscovery`, `FallbackDetector`, `SourceSpec`), `AnalysisService` (orchestration), and the language abstractions. `CodeParser` is the parser protocol (`language`, `fileExtensions`, `parse(source:fileName:)`, `configuration`). `CodeArtifact.SourceLanguage` is an **open `RawRepresentable<String>` struct** with no built-in constants (each language defines its own). `LanguageConfiguration` carries a language's quirks; `LanguageRegistry` maps a language to its configuration.
 - `UMLTreeSitter` — shared Tree-sitter helpers, re-exports `SwiftTreeSitter`.
-- Per-language parsers, each depending on `UMLCore` (+ `UMLTreeSitter` for non-Swift): `UMLSwift` (SwiftSyntax), `UMLKotlin`, `UMLJS` (TS + JS), `UMLJava`, `UMLDart` (all Tree-sitter).
-- `UMLDiagram` — DOT/Graphviz generation.
-- `UMLLibrary` — coordination. `AnalysisService` holds the `[any CodeParser]` registry and dispatches by language; this is where parsers are wired in.
-- `UMLCLI`, `UMLApp` — entry points; both list every parser module as a dependency.
+- Per-language plugins, each depending on `UMLCore` (+ `UMLTreeSitter` for non-Swift) and **self-contained** (parser + its `SourceLanguage` constant + `LanguageConfiguration` + its build-system detector(s)): `UMLSwift` (SwiftSyntax; SPM/Xcode detectors), `UMLJS` (TS + JS; Node detector), `UMLJVM` (Java **and** Kotlin in one target because they share the JVM build systems + `JVMBuildSystemDetector`), `UMLDart` (Flutter detector). All non-Swift parsers are Tree-sitter.
+- `UMLDiagram` — DOT/Graphviz + Mermaid generation. Agnostic: it receives a `LanguageConfiguration` (via `ClassDiagramOptions.language`) rather than knowing any language.
+- `UMLLibrary` — the **composition root** (the only target that names the built-in languages). It depends on the language plugins, wires them into `AnalysisService.standard`, and `@_exported import`s `UMLCore`/`UMLDiagram` + the plugins so a single `import UMLLibrary` surfaces everything.
+- `UMLCLI`, `UMLApp` — entry points; depend on `UMLLibrary` (not the individual plugins).
+
+## The language-agnostic boundary (issue #69)
+
+This separation is load-bearing — keep it:
+
+- **No agnostic target may name or special-case a language or framework.** No `switch` over `SourceLanguage`, no hardcoded type-name tables, generated-file heuristics, or framework annotations in `UMLCore`/`UMLDiagram`/`UMLRender`/`UMLLibrary`'s agnostic surface. Such data lives in a parser's `LanguageConfiguration` and reaches the engine only by **parameter injection** (resolved from the `LanguageRegistry`, keyed on `artifact.metadata.sourceLanguage`).
+- `SourceLanguage` has **no built-in constants in UMLCore** — `.swift`, `.dart`, … are defined as extensions in their plugins, so an agnostic target literally cannot compile a reference to a specific language, and an external consumer adds a language from the outside the same way the built-ins do.
+- There is **no empty-`LanguageConfiguration` default** on any engine API: every real language has a non-empty config, so the config is a required parameter (an empty default would silently mis-classify). Tests opt into an explicit fixture.
+- `Modifier` and `TypeKind` stay **closed enums** by design — they are a shared vocabulary the diagram layer consumes exhaustively (this is the "sometimes a closed enum is right" case).
 
 ## Style
 
@@ -41,4 +50,4 @@ Layered, one module per concern (see `Package.swift`):
 
 ## Adding a language
 
-Use the `/add-language` skill — it covers the dep, target, parser, enum case, and `AnalysisService` registration in order.
+Use the `/add-language` skill. A language is a self-contained plugin: a new target (dep + parser), its `SourceLanguage` constant + `CodeParser.configuration` (primitives/collections, any framework stereotypes or generated-code filter, build-output dirs), its build-system detector(s), then registration in `UMLLibrary` (`AnalysisService.standard`). Do **not** add language data to any agnostic target.

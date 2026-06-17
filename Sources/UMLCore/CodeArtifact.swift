@@ -45,13 +45,29 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         }
     }
 
-    public enum SourceLanguage: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
-        case swift
-        case kotlin
-        case java
-        case typeScript
-        case javaScript
-        case dart
+    /// An open identifier for a source language.
+    ///
+    /// Deliberately a `RawRepresentable` struct rather than an enum: the built-in constants
+    /// (`.swift`, `.dart`, …) are defined in their respective language targets, never here, so an
+    /// agnostic target cannot name a specific language (it won't compile) and an external consumer
+    /// can introduce a brand-new language with `SourceLanguage(rawValue:)`. Single-value `Codable`
+    /// over `rawValue` keeps the JSON wire format identical to the former `String`-backed enum.
+    public struct SourceLanguage: RawRepresentable, Codable, Equatable, Hashable, Sendable {
+        public let rawValue: String
+
+        public init(rawValue: String) {
+            self.rawValue = rawValue
+        }
+
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            self.rawValue = try container.decode(String.self)
+        }
+
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(rawValue)
+        }
     }
 }
 
@@ -102,49 +118,21 @@ extension CodeArtifact {
         )
     }
 
-    // MARK: - Generated Dart File Filtering
+    // MARK: - Generated-Code Filtering
 
-    /// File-name suffixes used by Dart code-generators (freezed, build_runner,
-    /// json_serializable, auto_route, injectable, mockito, chopper, etc.).
-    private static let generatedDartFileSuffixes: [String] = [
-        ".freezed.dart",
-        ".g.dart",
-        ".gr.dart",
-        ".config.dart",
-        ".chopper.dart",
-        ".mocks.dart",
-        ".mapper.dart"
-    ]
-
-    /// Returns `true` when the file path looks like a Dart generated file.
-    private static func isDartGeneratedFile(_ path: String) -> Bool {
-        generatedDartFileSuffixes.contains(where: { path.hasSuffix($0) })
-    }
-
-    /// Returns `true` when the type name matches common Dart code-generation
-    /// naming patterns (e.g. `_$MyClass`, `$MyClassCopyWith`, `_MyClass`).
-    private static func isDartGeneratedTypeName(_ name: String) -> Bool {
-        // _$ClassName — freezed implementation classes
-        if name.hasPrefix("_$") { return true }
-        // $ClassNameCopyWith — freezed copy-with interfaces
-        if name.hasPrefix("$") && name.hasSuffix("CopyWith") { return true }
-        return false
-    }
-
-    /// Returns a new artifact with Dart generated types (and their relationships) removed.
+    /// Returns a new artifact with the language's generated types (and their relationships) removed.
     ///
-    /// Filtering is based on two heuristics:
-    /// 1. **Source file**: types whose `location.filePath` ends with a known generated
-    ///    suffix (`.freezed.dart`, `.g.dart`, etc.) are removed.
-    /// 2. **Type name**: types matching code-generation naming patterns
-    ///    (e.g. `_$Foo`, `$FooCopyWith`) are removed.
-    public func filteringGeneratedDartTypes() -> CodeArtifact {
+    /// The `filter` (supplied by the language's `LanguageConfiguration`) decides what counts as
+    /// generated, by file name (e.g. `.freezed.dart`, `.g.dart`) or by type-name pattern
+    /// (e.g. `_$Foo`, `$FooCopyWith`). This stays language-agnostic: the agnostic engine applies a
+    /// filter it is handed and never knows which language produced it.
+    public func filteringGeneratedTypes(using filter: GeneratedCodeFilter) -> CodeArtifact {
         let removedIDs: Set<String> = Set(
             types.filter { type in
-                if let path = type.location?.filePath, Self.isDartGeneratedFile(path) {
+                if let path = type.location?.filePath, filter.matchesFile(path) {
                     return true
                 }
-                return Self.isDartGeneratedTypeName(type.name)
+                return filter.matchesTypeName(type.name)
             }.map(\.id)
         )
 

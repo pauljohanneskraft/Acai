@@ -27,7 +27,7 @@ struct DartTypeResolutionTests {
         // Before enrichment Dart leaves the supertype name as written.
         #expect(dogRaw?.inheritedTypes.first?.name == "Animal")
 
-        let enriched = artifact.enriched()
+        let enriched = artifact.enriched(configuration: parser.configuration)
         let animal = enriched.types.first { $0.name == "Animal" }
         let dog = enriched.types.first { $0.name == "Dog" }
         #expect(animal?.id == "zoo.Animal")

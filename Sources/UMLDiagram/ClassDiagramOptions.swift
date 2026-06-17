@@ -44,6 +44,12 @@ public struct ClassDiagramOptions: Sendable {
     /// whole codebase.
     public var focus: FocusConfiguration?
 
+    /// The source language's quirks (type-name classification + annotation stereotypes), injected
+    /// by the caller from the registry keyed on `artifact.metadata.sourceLanguage`. Required — the
+    /// diagram layer stays agnostic by receiving this rather than knowing any language, and there is
+    /// no empty default to silently mis-classify into.
+    public var language: LanguageConfiguration
+
     public init(
         layoutDirection: LayoutDirection = .topToBottom,
         showMembers: Bool = true,
@@ -61,7 +67,8 @@ public struct ClassDiagramOptions: Sendable {
         showExternalTypes: Bool = false,
         showMultiplicities: Bool = true,
         showAnnotationStereotypes: Bool = true,
-        focus: FocusConfiguration? = nil
+        focus: FocusConfiguration? = nil,
+        language: LanguageConfiguration
     ) {
         self.layoutDirection = layoutDirection
         self.showMembers = showMembers
@@ -80,6 +87,7 @@ public struct ClassDiagramOptions: Sendable {
         self.showMultiplicities = showMultiplicities
         self.showAnnotationStereotypes = showAnnotationStereotypes
         self.focus = focus
+        self.language = language
     }
 
     public enum LayoutDirection: String, Sendable {

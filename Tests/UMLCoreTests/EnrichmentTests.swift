@@ -59,9 +59,10 @@ struct EnrichmentTests {
     @Test func annotationStereotypeWinsOverKind() {
         var user = type("User", kind: .class)
         user.annotations = ["@Entity"]
-        #expect(user.stereotype() == "entity")
-        // Disabling annotation stereotypes falls back to the kind (a class has none).
-        #expect(user.stereotype(includeAnnotations: false) == nil)
+        // The annotation → stereotype map is injected (it lives in a language's configuration now).
+        #expect(user.stereotype(annotationStereotypes: ["entity": "entity"]) == "entity")
+        // With no annotation map, falls back to the kind (a class has none).
+        #expect(user.stereotype(annotationStereotypes: [:]) == nil)
     }
 
     @Test func kindStereotypeUsedWhenNoKnownAnnotation() {
@@ -74,7 +75,7 @@ struct EnrichmentTests {
         // Leading whitespace/newlines, package qualifiers and argument lists must still match.
         var user = type("User", kind: .class)
         user.annotations = ["\n  @jakarta.persistence.Table(name = \"users\")"]
-        #expect(user.stereotype() == "entity")
+        #expect(user.stereotype(annotationStereotypes: ["table": "entity"]) == "entity")
     }
 
     // MARK: BUG-1 / BUG-2 / BUG-6 — extension relationships

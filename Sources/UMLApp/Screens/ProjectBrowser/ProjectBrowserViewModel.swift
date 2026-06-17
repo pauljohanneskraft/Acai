@@ -100,14 +100,15 @@ final class ProjectBrowserViewModel: ObservableObject {
 
         do {
             let artifact = try await Task.detached(priority: .userInitiated) {
-                try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: [])
+                try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
             }.value
             let enriched = ClassDiagramEnricher.enrich(
                 artifact,
                 options: EnrichmentOptions(
                     inferCompositionFromProperties: true,
                     inferDependencyFromMethods: true,
-                    showExternalTypes: true
+                    showExternalTypes: true,
+                    language: artifact.standardLanguageConfiguration
                 )
             )
             let newArtifact = CodeArtifact(
@@ -303,7 +304,9 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func artifact(for codebaseID: UUID) -> CodeArtifact? {
-        store.artifact(for: codebaseID)?.resolvingExtensions().filteringGeneratedDartTypes()
+        guard let artifact = store.artifact(for: codebaseID)?.resolvingExtensions() else { return nil }
+        guard let filter = artifact.standardLanguageConfiguration.generatedCodeFilter else { return artifact }
+        return artifact.filteringGeneratedTypes(using: filter)
     }
 
     func projectForDiagram(_ diagramID: UUID) -> Project? {

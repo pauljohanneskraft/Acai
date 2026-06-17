@@ -18,7 +18,7 @@ import UMLDiagram
 let project = URL(filePath: "/path/to/your/project")
 
 // Discover, parse, and merge every Swift and Kotlin file under `project`.
-let artifact = try AnalysisService.shared.analyzeProject(
+let artifact = try AnalysisService.standard.analyzeProject(
     at: project,
     allowedLanguages: [.swift, .kotlin]
 )
@@ -31,13 +31,16 @@ Pass an empty `allowedLanguages` array to let UML analyze every language it reco
 ### Render a class diagram
 
 ```swift
-let dot = DOTGenerator().generate(from: artifact)
+// `language` carries the source language's quirks (type classification, stereotypes);
+// resolve it from the standard registry for the artifact's language.
+let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+let dot = DOTGenerator(options: options).generate(from: artifact)
 try dot.write(to: URL(filePath: "project.dot"), atomically: true, encoding: .utf8)
 // Render anywhere Graphviz runs:  dot -Tpng project.dot -o project.png
 ```
 
-Tune what shows up — inferred composition, dependency arrows, external types, grouping —
-through `ClassDiagramOptions` when you create the `DOTGenerator`.
+Tune what else shows up — inferred composition, dependency arrows, external types, grouping —
+through the rest of `ClassDiagramOptions`.
 
 ### Render a PNG (Apple platforms)
 

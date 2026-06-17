@@ -19,13 +19,19 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     /// derived from its source-file path. Used for product grouping and package boxes.
     public let productGroup: String?
 
-    public init(from type: TypeDeclaration, configuration: ClassDiagramConfiguration? = nil) {
+    public init(
+        from type: TypeDeclaration,
+        configuration: ClassDiagramConfiguration? = nil,
+        annotationStereotypes: [String: String] = [:]
+    ) {
         let config = configuration ?? .init()
 
         self.id = type.id
         self.name = type.name
         self.kind = type.kind
-        self.stereotype = type.stereotype(includeAnnotations: config.showAnnotationStereotypes)
+        self.stereotype = type.stereotype(
+            annotationStereotypes: config.showAnnotationStereotypes ? annotationStereotypes : [:]
+        )
         self.genericParameters = type.genericParameters.map(\.name)
 
         let accessFilter = config.minimumAccessLevel
