@@ -19,7 +19,6 @@ optionalTargets.append(
         dependencies: [
             "UMLCore",
             "UMLDiagram",
-            "UMLLibrary",
         ]
     )
 )
@@ -39,12 +38,6 @@ optionalTargets.append(
         name: "UMLApp",
         dependencies: [
             "UMLCore",
-            "UMLTreeSitter",
-            "UMLSwift",
-            "UMLKotlin",
-            "UMLJS",
-            "UMLJava",
-            "UMLDart",
             "UMLDiagram",
             "UMLLibrary",
             "UMLRender",
@@ -83,9 +76,8 @@ let package = Package(
         .library(name: "UMLCore", targets: ["UMLCore"]),
         .library(name: "UMLTreeSitter", targets: ["UMLTreeSitter"]),
         .library(name: "UMLSwift", targets: ["UMLSwift"]),
-        .library(name: "UMLKotlin", targets: ["UMLKotlin"]),
+        .library(name: "UMLJVM", targets: ["UMLJVM"]),
         .library(name: "UMLJS", targets: ["UMLJS"]),
-        .library(name: "UMLJava", targets: ["UMLJava"]),
         .library(name: "UMLDart", targets: ["UMLDart"]),
         .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
         .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
@@ -129,14 +121,6 @@ let package = Package(
             ]
         ),
         .target(
-            name: "UMLKotlin",
-            dependencies: [
-                "UMLCore",
-                "UMLTreeSitter",
-                .product(name: "TreeSitterKotlin", package: "tree-sitter-kotlin"),
-            ]
-        ),
-        .target(
             name: "UMLJS",
             dependencies: [
                 "UMLCore",
@@ -144,12 +128,15 @@ let package = Package(
                 .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
             ]
         ),
+        // MARK: JVM languages (Java + Kotlin) — one target because they share the JVM build
+        // systems and the `JVMBuildSystemDetector`.
         .target(
-            name: "UMLJava",
+            name: "UMLJVM",
             dependencies: [
                 "UMLCore",
                 "UMLTreeSitter",
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+                .product(name: "TreeSitterKotlin", package: "tree-sitter-kotlin"),
             ]
         ),
         .target(
@@ -167,18 +154,17 @@ let package = Package(
             dependencies: ["UMLCore"]
         ),
 
-        // MARK: UML Library
+        // MARK: Composition root — the only target that names the built-in languages. Wires the
+        // parsers + their detectors into `AnalysisService.standard` and re-exports the agnostic API.
         .target(
             name: "UMLLibrary",
             dependencies: [
                 "UMLCore",
-                "UMLTreeSitter",
-                "UMLSwift",
-                "UMLKotlin",
-                "UMLJS",
-                "UMLJava",
-                "UMLDart",
                 "UMLDiagram",
+                "UMLSwift",
+                "UMLJS",
+                "UMLJVM",
+                "UMLDart",
             ]
         ),
 
@@ -187,12 +173,6 @@ let package = Package(
             name: "UMLCLI",
             dependencies: [
                 "UMLCore",
-                "UMLTreeSitter",
-                "UMLSwift",
-                "UMLKotlin",
-                "UMLJS",
-                "UMLJava",
-                "UMLDart",
                 "UMLDiagram",
                 "UMLLibrary",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -203,9 +183,8 @@ let package = Package(
         // MARK: Tests
         .testTarget(name: "UMLCoreTests", dependencies: ["UMLCore"]),
         .testTarget(name: "UMLSwiftTests", dependencies: ["UMLSwift", "UMLCore"]),
-        .testTarget(name: "UMLKotlinTests", dependencies: ["UMLKotlin", "UMLCore"]),
         .testTarget(name: "UMLJSTests", dependencies: ["UMLJS", "UMLCore"]),
-        .testTarget(name: "UMLJavaTests", dependencies: ["UMLJava", "UMLCore"]),
+        .testTarget(name: "UMLJVMTests", dependencies: ["UMLJVM", "UMLCore"]),
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),

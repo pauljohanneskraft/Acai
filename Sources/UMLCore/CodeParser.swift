@@ -12,4 +12,10 @@ public protocol CodeParser: Sendable {
 
     /// Parse a single source file and return its type model.
     func parse(source: String, fileName: String) -> CodeArtifact
+
+    /// This language's quirks (type-name classification, framework stereotypes, generated-code
+    /// filtering, build-output directories) consumed by the agnostic pipeline via injection.
+    /// Required — every language states its configuration explicitly (a language with no quirks
+    /// returns `LanguageConfiguration()` outright rather than inheriting a hidden default).
+    var configuration: LanguageConfiguration { get }
 }

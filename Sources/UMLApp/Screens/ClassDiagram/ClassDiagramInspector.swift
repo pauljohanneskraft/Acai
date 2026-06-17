@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLCore
+import UMLLibrary
 import UMLRender
 
 /// Inspector tab choices for the generated diagram inspector.
@@ -99,11 +100,15 @@ struct ClassDiagramSidebar: View {
 
             FocusSection(configuration: config, typeNames: typeNames)
 
-            Section("Dart") {
-                Toggle("Hide Generated Types", isOn: config.hideGeneratedDartTypes)
-                Text("Hides types from .freezed.dart, .g.dart and other code-generated files.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            // Shown only for languages that declare a generated-code filter; the label and
+            // explanation come from that filter, so the app names no language itself.
+            if let filter = artifact.standardLanguageConfiguration.generatedCodeFilter {
+                Section(filter.displayName) {
+                    Toggle("Hide Generated Types", isOn: config.hideGeneratedTypes)
+                    Text(filter.explanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)

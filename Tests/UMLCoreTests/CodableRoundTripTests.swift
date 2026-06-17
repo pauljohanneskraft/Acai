@@ -163,9 +163,14 @@ struct CodableRoundTripTests {
     }
 
     @Test func sourceLanguages() throws {
-        for lang in CodeArtifact.SourceLanguage.allCases {
+        // `SourceLanguage` is an open struct (no `.allCases`); round-trip the built-in raw values
+        // plus an external one to prove the wire format is preserved for any language.
+        let rawValues = ["swift", "kotlin", "java", "typeScript", "javaScript", "dart", "python"]
+        for raw in rawValues {
+            let lang = CodeArtifact.SourceLanguage(rawValue: raw)
             let decoded = try roundTrip(lang)
             #expect(lang == decoded)
+            #expect(lang.rawValue == raw)
         }
     }
 

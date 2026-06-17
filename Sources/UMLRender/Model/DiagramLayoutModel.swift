@@ -28,14 +28,22 @@ public struct DiagramLayoutModel: Sendable {
     public static let layoutMargin: CGFloat = 28
 
     /// Builds the nodes and edges for `artifact` under `configuration`: resolves extensions,
-    /// optionally filters Dart-generated types, hides types below the access floor, and keeps
-    /// only the relationships enabled in the configuration.
-    public init(artifact: CodeArtifact, configuration: ClassDiagramConfiguration) {
+    /// optionally filters the source language's machine-generated types, hides types below the
+    /// access floor, and keeps only the relationships enabled in the configuration.
+    ///
+    /// `language` is the source language's configuration, injected by the caller from the registry
+    /// keyed on `artifact.metadata.sourceLanguage`; it supplies the generated-code filter and the
+    /// annotation → stereotype map. The layout model never names a language itself.
+    public init(
+        artifact: CodeArtifact,
+        configuration: ClassDiagramConfiguration,
+        language: LanguageConfiguration
+    ) {
         self.configuration = configuration
 
         var resolved = artifact.resolvingExtensions()
-        if configuration.hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
-            resolved = resolved.filteringGeneratedDartTypes()
+        if configuration.hideGeneratedTypes, let filter = language.generatedCodeFilter {
+            resolved = resolved.filteringGeneratedTypes(using: filter)
         }
 
         // Single-class focus: prune to the subgraph around one type before any
@@ -51,7 +59,12 @@ public struct DiagramLayoutModel: Sendable {
         let visibleTypes = resolved.types.filter {
             GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
         }
-        self.nodes = visibleTypes.map { GeneratedDiagramNode(from: $0, configuration: configuration) }
+        self.nodes = visibleTypes.map {
+            GeneratedDiagramNode(
+                from: $0, configuration: configuration,
+                annotationStereotypes: language.annotationStereotypes
+            )
+        }
 
         let typeIds = Set(visibleTypes.map(\.id))
         self.edges = Self.buildEdges(

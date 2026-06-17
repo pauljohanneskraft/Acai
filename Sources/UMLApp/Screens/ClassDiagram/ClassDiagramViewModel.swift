@@ -57,7 +57,10 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         self.artifact = artifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions
-        self.model = DiagramLayoutModel(artifact: artifact, configuration: configuration)
+        self.model = DiagramLayoutModel(
+            artifact: artifact, configuration: configuration,
+            language: artifact.standardLanguageConfiguration
+        )
         if let restoredSizes {
             self.userNodeSizes = restoredSizes
         }
@@ -67,7 +70,10 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     // MARK: - Build Diagram
 
     private func buildDiagram() {
-        model = DiagramLayoutModel(artifact: artifact, configuration: configuration)
+        model = DiagramLayoutModel(
+            artifact: artifact, configuration: configuration,
+            language: artifact.standardLanguageConfiguration
+        )
         nodes = model.nodes
         edges = model.edges
 

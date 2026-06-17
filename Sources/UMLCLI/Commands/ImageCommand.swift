@@ -147,7 +147,8 @@ extension UMLCommand {
             } else if let stateFrom {
                 data = try await renderState(artifact: artifact, variable: stateFrom)
             } else if package {
-                let diagram = artifact.enriched().packageDependencyDiagram()
+                let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+                    .packageDependencyDiagram()
                 let renderScale = CGFloat(scale)
                 data = try await MainActor.run {
                     try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
@@ -169,10 +170,12 @@ extension UMLCommand {
                     relationshipKinds: focusRelationship,
                     includeInterconnections: !noFocusInterconnections
                 )
+                let language = artifact.standardLanguageConfiguration
                 data = try await MainActor.run {
                     try DiagramImageRenderer.renderPNG(
                         artifact: artifact,
                         configuration: configuration,
+                        language: language,
                         scale: CGFloat(scale),
                         palette: palette
                     )
@@ -280,7 +283,7 @@ extension UMLCommand {
                 throw ValidationError("Source directory does not exist: \(sourceDir)")
             }
             let allowedLanguages = language.map { $0.sourceLanguage }
-            let artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
             artifact.warnIfParseErrors()
             return artifact
         }

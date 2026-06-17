@@ -1,6 +1,7 @@
 import Foundation
 import UMLCore
 import UMLDiagram
+import UMLLibrary
 
 extension GeneratedDiagram {
 
@@ -228,7 +229,8 @@ extension GeneratedDiagram {
         scale: CGFloat,
         offset: CGPoint
     ) -> FreeformDiagram {
-        let package = artifact.enriched().packageDependencyDiagram()
+        let package = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+            .packageDependencyDiagram()
 
         var nodeIDByModuleID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []

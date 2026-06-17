@@ -39,13 +39,16 @@ Each one is a stateless `CodeParser` you can use directly, or let ``AnalysisServ
 for you. They turn source text into the same [UMLCore](/documentation/umlcore/) model.
 
 - **[UMLSwift](/documentation/umlswift/)** — Swift, via Apple's native SwiftSyntax.
-- **[UMLKotlin](/documentation/umlkotlin/)** — Kotlin (`.kt`, `.kts`).
 - **[UMLJS](/documentation/umljs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
-- **[UMLJava](/documentation/umljava/)** — Java.
+- **[UMLJVM](/documentation/umljvm/)** — Java and Kotlin (`.java`, `.kt`, `.kts`); one module, as they
+  share the JVM build systems.
 - **[UMLDart](/documentation/umldart/)** — Dart.
-- **[UMLTreeSitter](/documentation/umltreesitter/)** — the shared Tree-sitter helpers the four
+- **[UMLTreeSitter](/documentation/umltreesitter/)** — the shared Tree-sitter helpers the
   grammar-based parsers above are built on. Reach for this only if you're writing a new
   parser.
+
+Each plugin is self-contained: it owns its parser, its `SourceLanguage`, its
+``LanguageConfiguration`` (the language's quirks), and its build-system detector(s).
 
 ### Diagrams & rendering
 

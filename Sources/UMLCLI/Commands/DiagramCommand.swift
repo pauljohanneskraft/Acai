@@ -150,7 +150,7 @@ extension UMLCommand {
                     throw ValidationError("Source directory does not exist: \(sourceDir)")
                 }
                 let allowedLanguages = language.map { $0.sourceLanguage }
-                artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+                artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
                 artifact.warnIfParseErrors()
             } else {
                 throw ValidationError("Either --from or --source must be specified.")
@@ -183,7 +183,7 @@ extension UMLCommand {
 
         /// Builds the class-diagram options from flags/config and wraps both renderers.
         private func classExport(artifact: CodeArtifact) throws -> DiagramExport {
-            var options = ClassDiagramOptions()
+            var options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
 
             if let configPath = config {
                 let yamlString = try String(contentsOf: URL(fileURLWithPath: configPath), encoding: .utf8)
@@ -274,7 +274,8 @@ extension UMLCommand {
 
         /// Builds a package/module dependency diagram and wraps both renderers.
         private func packageExport(artifact: CodeArtifact) -> DiagramExport {
-            let diagram = artifact.enriched().packageDependencyDiagram()
+            let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+                .packageDependencyDiagram()
             let selectedTheme = theme?.diagramTheme
             return DiagramExport(
                 dot: { PackageDiagramDOTRenderer(theme: selectedTheme).render(diagram) },

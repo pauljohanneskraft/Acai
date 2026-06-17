@@ -43,7 +43,7 @@ extension UMLCommand {
                     throw ValidationError("Source directory does not exist: \(sourceDir)")
                 }
                 let allowedLanguages = language.map { $0.sourceLanguage }
-                artifact = try AnalysisService.shared.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+                artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
             } else {
                 throw ValidationError("Either --from or --source must be specified.")
             }

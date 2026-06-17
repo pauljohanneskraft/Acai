@@ -8,7 +8,7 @@ import UMLCore
 public struct ClassDiagramMermaidRenderer: Sendable {
     private let options: ClassDiagramOptions
 
-    public init(options: ClassDiagramOptions = ClassDiagramOptions()) {
+    public init(options: ClassDiagramOptions) {
         self.options = options
     }
 
@@ -141,7 +141,9 @@ public struct ClassDiagramMermaidRenderer: Sendable {
     }
 
     private func stereotypeString(for type: TypeDeclaration) -> String? {
-        type.stereotype(includeAnnotations: options.showAnnotationStereotypes)
+        type.stereotype(
+            annotationStereotypes: options.showAnnotationStereotypes ? options.language.annotationStereotypes : [:]
+        )
     }
 
     // MARK: - Helpers

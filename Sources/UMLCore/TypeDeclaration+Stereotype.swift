@@ -4,33 +4,22 @@ extension TypeDeclaration {
 
     /// The UML stereotype label for this type.
     ///
-    /// When `includeAnnotations` is set and one of the type's annotations is a known,
+    /// When `annotationStereotypes` is non-empty and one of the type's annotations is a known,
     /// unambiguous marker (e.g. `@Entity` → `entity`), that stereotype wins; otherwise the
     /// kind-based stereotype (`TypeKind.stereotypeString`) is used. This is never inferred —
     /// a stereotype only ever comes from a real annotation or a real `TypeKind`.
-    public func stereotype(includeAnnotations: Bool = true) -> String? {
-        if includeAnnotations {
-            for annotation in annotations {
-                if let stereotype = Self.annotationStereotypes[annotation.annotationName] {
-                    return stereotype
-                }
+    ///
+    /// The annotation → stereotype map is supplied by the language's `LanguageConfiguration`
+    /// (e.g. Spring/JPA markers live in the JVM language target), so this core stays agnostic of
+    /// any framework's conventions. Pass `[:]` to use kind-based stereotypes only.
+    public func stereotype(annotationStereotypes: [String: String] = [:]) -> String? {
+        for annotation in annotations {
+            if let stereotype = annotationStereotypes[annotation.annotationName] {
+                return stereotype
             }
         }
         return kind.stereotypeString
     }
-
-    /// Known annotation → stereotype mappings, keyed by the bare annotation name (see
-    /// `String.annotationName`), matched case-insensitively. Constant reference data.
-    private static let annotationStereotypes: [String: String] = [
-        "entity": "entity",
-        "table": "entity",
-        "embeddable": "embeddable",
-        "repository": "repository",
-        "service": "service",
-        "controller": "controller",
-        "restcontroller": "controller",
-        "component": "component"
-    ]
 }
 
 private extension String {

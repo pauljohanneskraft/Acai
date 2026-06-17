@@ -17,16 +17,23 @@ public struct EnrichmentOptions: Sendable {
     /// When set, restricts the result to one type and its surrounding subgraph.
     public var focus: FocusConfiguration?
 
+    /// The language's type-name classification, injected so enrichment + external-type detection
+    /// stay agnostic. Must match the configuration used by the analysis pipeline for the same
+    /// artifact, since `enriched(configuration:)` is only idempotent under a consistent configuration.
+    public var language: LanguageConfiguration
+
     public init(
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
         showExternalTypes: Bool = false,
-        focus: FocusConfiguration? = nil
+        focus: FocusConfiguration? = nil,
+        language: LanguageConfiguration
     ) {
         self.inferCompositionFromProperties = inferCompositionFromProperties
         self.inferDependencyFromMethods = inferDependencyFromMethods
         self.showExternalTypes = showExternalTypes
         self.focus = focus
+        self.language = language
     }
 }
 
@@ -56,14 +63,14 @@ public enum ClassDiagramEnricher {
 
     public static func enrich(
         _ artifact: CodeArtifact,
-        options: EnrichmentOptions = .init()
+        options: EnrichmentOptions
     ) -> Result {
         // All structural enrichment (extension resolution, name→id resolution,
         // inheritance/conformance reclassification, inferred composition/aggregation/
         // dependency edges, dedup) is owned by UMLCore and runs exactly once here.
         // It is idempotent, so an already-enriched artifact (e.g. from AnalysisService)
         // is unaffected.
-        let base = artifact.enriched()
+        let base = artifact.enriched(configuration: options.language)
 
         // Flatten nested types, giving them display names that include nesting context.
         let flatTypes = flattenTypes(base.types)
@@ -101,7 +108,9 @@ public enum ClassDiagramEnricher {
         }
 
         let resultKnownIds = Set(resultTypes.map(\.id))
-        let externalTypes = identifyExternalTypes(relationships: relationships, knownIds: resultKnownIds)
+        let externalTypes = identifyExternalTypes(
+            relationships: relationships, knownIds: resultKnownIds, language: options.language
+        )
         let directoryGroups = buildDirectoryGroups(resultTypes)
 
         return Result(
@@ -208,14 +217,15 @@ public enum ClassDiagramEnricher {
 
     private static func identifyExternalTypes(
         relationships: [Relationship],
-        knownIds: Set<String>
+        knownIds: Set<String>,
+        language: LanguageConfiguration
     ) -> [TypeDeclaration] {
         var externalIds = Set<String>()
         for rel in relationships {
-            if !knownIds.contains(rel.source) && !isPrimitive(rel.source) {
+            if !knownIds.contains(rel.source) && !language.isPrimitive(rel.source) {
                 externalIds.insert(rel.source)
             }
-            if !knownIds.contains(rel.target) && !isPrimitive(rel.target) {
+            if !knownIds.contains(rel.target) && !language.isPrimitive(rel.target) {
                 externalIds.insert(rel.target)
             }
         }
@@ -243,13 +253,5 @@ public enum ClassDiagramEnricher {
             groups[directory, default: []].append(type.id)
         }
         return groups
-    }
-
-    // MARK: - Type Reference Helpers
-
-    /// Returns `true` for built-in / primitive type names that should never be shown
-    /// as external placeholder nodes. Delegates to the shared UMLCore classification.
-    static func isPrimitive(_ name: String) -> Bool {
-        CodeArtifact.isPrimitive(name)
     }
 }

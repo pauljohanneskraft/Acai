@@ -14,23 +14,32 @@ extension ProjectBrowserViewModel {
     func generateDOT(for codebaseID: UUID) -> String {
         guard let codebase = codebase(for: codebaseID) else { return "digraph UML { }" }
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
-        let options = ClassDiagramOptions(theme: DiagramThemeSelection.currentExportTheme)
 
-        if var artifact = artifact(for: codebaseID) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return DOTGenerator(options: options).generate(from: artifact)
+        if let artifact = artifact(for: codebaseID) {
+            return DOTGenerator(options: exportOptions(for: artifact))
+                .generate(from: hidingGeneratedTypes(artifact))
         }
 
-        if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return DOTGenerator(options: options).generate(from: artifact)
+        if let artifact = try? AnalysisService.standard.analyzeProject(at: url, allowedLanguages: []) {
+            return DOTGenerator(options: exportOptions(for: artifact))
+                .generate(from: hidingGeneratedTypes(artifact))
         }
 
         return "digraph UML { label=\"No analysis available\" }"
+    }
+
+    /// Export options carrying the current theme and the artifact's resolved language quirks.
+    private func exportOptions(for artifact: CodeArtifact) -> ClassDiagramOptions {
+        ClassDiagramOptions(
+            theme: DiagramThemeSelection.currentExportTheme,
+            language: artifact.standardLanguageConfiguration
+        )
+    }
+
+    /// Drops the source language's machine-generated types when it declares a generated-code filter.
+    private func hidingGeneratedTypes(_ artifact: CodeArtifact) -> CodeArtifact {
+        guard let filter = artifact.standardLanguageConfiguration.generatedCodeFilter else { return artifact }
+        return artifact.filteringGeneratedTypes(using: filter)
     }
 
     func exportDOT(for codebaseID: UUID) {
@@ -55,20 +64,15 @@ extension ProjectBrowserViewModel {
     func generateMermaid(for codebaseID: UUID) -> String {
         guard let codebase = codebase(for: codebaseID) else { return "classDiagram\n" }
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
-        let options = ClassDiagramOptions(theme: DiagramThemeSelection.currentExportTheme)
 
-        if var artifact = artifact(for: codebaseID) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
+        if let artifact = artifact(for: codebaseID) {
+            return ClassDiagramMermaidRenderer(options: exportOptions(for: artifact))
+                .generate(from: hidingGeneratedTypes(artifact))
         }
 
-        if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
-            if artifact.metadata.sourceLanguage == .dart {
-                artifact = artifact.filteringGeneratedDartTypes()
-            }
-            return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
+        if let artifact = try? AnalysisService.standard.analyzeProject(at: url, allowedLanguages: []) {
+            return ClassDiagramMermaidRenderer(options: exportOptions(for: artifact))
+                .generate(from: hidingGeneratedTypes(artifact))
         }
 
         return "classDiagram\n"
@@ -103,10 +107,10 @@ extension ProjectBrowserViewModel {
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
               var artifact = store.artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
 
-        // Sequence diagrams have no class configuration; default to hiding generated Dart types.
-        let hideGeneratedDartTypes = diagram.classConfiguration?.hideGeneratedDartTypes ?? true
-        if hideGeneratedDartTypes && artifact.metadata.sourceLanguage == .dart {
-            artifact = artifact.filteringGeneratedDartTypes()
+        // Sequence diagrams have no class configuration; default to hiding generated types.
+        let hideGeneratedTypes = diagram.classConfiguration?.hideGeneratedTypes ?? true
+        if hideGeneratedTypes, let filter = artifact.standardLanguageConfiguration.generatedCodeFilter {
+            artifact = artifact.filteringGeneratedTypes(using: filter)
         }
         let freeformDiagram = diagram.convertToFreeform(
             artifact: artifact,

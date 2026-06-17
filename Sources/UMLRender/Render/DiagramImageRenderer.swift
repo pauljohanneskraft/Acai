@@ -43,11 +43,14 @@ public enum DiagramImageRenderer {
     public static func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
+        language: LanguageConfiguration,
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
         palette: DiagramPalette = .light
     ) throws -> Data {
-        let model = DiagramLayoutModel(artifact: artifact, configuration: configuration)
+        let model = DiagramLayoutModel(
+            artifact: artifact, configuration: configuration, language: language
+        )
         let sizes = nodeSizes(for: model.nodes)
         let positions = model.performLayout(sizes: sizes)
         let boxes = model.groupingBoxes(positions: positions, sizes: sizes)
