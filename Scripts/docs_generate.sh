@@ -20,9 +20,8 @@ readonly TARGETS=(
     UMLCore
     UMLTreeSitter
     UMLSwift
-    UMLKotlin
+    UMLJVM
     UMLJS
-    UMLJava
     UMLDart
     UMLDiagram
     UMLLibrary
