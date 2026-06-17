@@ -31,6 +31,12 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     public var showInheritance: Bool = true
     public var showComposition: Bool = true
     public var showDependency: Bool = true
+    /// When `true`, association/aggregation/composition edges show their `*` / `0..1` / `1`
+    /// multiplicity labels near the edge endpoints.
+    public var showMultiplicities: Bool = true
+    /// When `true`, stereotypes derived from real type annotations (e.g. `@Entity`→`«entity»`)
+    /// are shown in node headers in addition to the kind-based stereotype.
+    public var showAnnotationStereotypes: Bool = true
     public var grouping: Grouping = .product
     public var showExternalTypes: Bool = false
     /// Access level filter — only show members at or above this level.
@@ -65,6 +71,8 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
         showInheritance = try bool(.showInheritance, default: true)
         showComposition = try bool(.showComposition, default: true)
         showDependency = try bool(.showDependency, default: true)
+        showMultiplicities = try bool(.showMultiplicities, default: true)
+        showAnnotationStereotypes = try bool(.showAnnotationStereotypes, default: true)
         grouping = try container.decodeIfPresent(Grouping.self, forKey: .grouping) ?? .product
         showExternalTypes = try bool(.showExternalTypes, default: false)
         minimumAccessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccessLevel)

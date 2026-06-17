@@ -1,4 +1,5 @@
 import SwiftUI
+import UMLRender
 
 /// A reusable infinite canvas container that supports pan (trackpad), zoom (scroll wheel / pinch),
 /// a selection rectangle (click-drag), and edge auto-panning during node drags.
@@ -32,6 +33,8 @@ struct InfiniteCanvas<Content: View>: View {
 
     @State private var selectionStart: CGPoint?
     @State private var selectionCurrent: CGPoint?
+
+    @Environment(\.diagramPalette) private var palette
 
     let content: () -> Content
 
@@ -73,7 +76,7 @@ struct InfiniteCanvas<Content: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
-            .background(Color(white: 0.96))
+            .background(palette.canvasBackground)
             .gesture(selectionGesture)
             .onTapGesture {
                 onBackgroundTap?()

@@ -10,6 +10,10 @@ public struct RelationshipEdgeView: View, Equatable {
     /// Optional text drawn beside the line's midpoint (e.g. a state-transition's
     /// `event [guard] / action` label).
     let label: String?
+    /// Multiplicity drawn near the source (tail) endpoint, e.g. `1` / `*` / `0..1`.
+    let sourceLabel: String?
+    /// Multiplicity drawn near the target (head) endpoint.
+    let targetLabel: String?
     /// Multiplies the kind's default line width — used by the package diagram to encode a
     /// dependency's weight as thickness. Defaults to `1` (unchanged for class/state edges).
     let lineWidthScale: CGFloat
@@ -19,21 +23,26 @@ public struct RelationshipEdgeView: View, Equatable {
         sourceRect: CGRect,
         targetRect: CGRect,
         label: String? = nil,
+        sourceLabel: String? = nil,
+        targetLabel: String? = nil,
         lineWidthScale: CGFloat = 1
     ) {
         self.kind = kind
         self.sourceRect = sourceRect
         self.targetRect = targetRect
         self.label = label
+        self.sourceLabel = sourceLabel
+        self.targetLabel = targetLabel
         self.lineWidthScale = lineWidthScale
     }
 
     nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect
             && lhs.kind == rhs.kind && lhs.label == rhs.label && lhs.lineWidthScale == rhs.lineWidthScale
+            && lhs.sourceLabel == rhs.sourceLabel && lhs.targetLabel == rhs.targetLabel
     }
 
-    private let edgeColor = Color(white: 0.4)
+    @Environment(\.diagramPalette) private var palette
 
     public var body: some View {
         // Connection points are derived synchronously from the rects (rather than via
@@ -75,17 +84,17 @@ public struct RelationshipEdgeView: View, Equatable {
                     dashPhase: baseStyle.dashPhase
                 )
 
-                linePath.stroke(edgeColor, style: style)
+                linePath.stroke(palette.edgeLine, style: style)
 
                 // Arrow head at target
                 switch kind {
                 case .inheritance, .conformance, .extension:
                     // Empty triangle: stroke only (unfilled)
-                    arrowPath.fill(Color(white: 0.96))
-                    arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
+                    arrowPath.fill(palette.edgeDecorationFill)
+                    arrowPath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
                 case .association, .dependency, .nesting:
                     // Open arrow: stroke only
-                    arrowPath.stroke(edgeColor, lineWidth: style.lineWidth)
+                    arrowPath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
                 default:
                     EmptyView()
                 }
@@ -94,10 +103,10 @@ public struct RelationshipEdgeView: View, Equatable {
                 if kind.hasSourceDecoration {
                     sourcePath.fill(
                         kind.isSourceDecorationFilled
-                            ? edgeColor
-                            : Color(white: 0.96)
+                            ? palette.edgeLine
+                            : palette.edgeDecorationFill
                     )
-                    sourcePath.stroke(edgeColor, lineWidth: style.lineWidth)
+                    sourcePath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
                 }
             }
 
@@ -106,13 +115,33 @@ public struct RelationshipEdgeView: View, Equatable {
                 // the light canvas (matching SequenceMessageView's labels).
                 Text(label)
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(Color(white: 0.15))
+                    .foregroundColor(palette.edgeLabelInk)
                     .position(
                         x: (startPoint.x + endPoint.x) / 2,
                         y: (startPoint.y + endPoint.y) / 2 - 8
                     )
             }
+
+            if let sourceLabel {
+                multiplicityLabel(sourceLabel, near: startPoint, toward: endPoint)
+            }
+            if let targetLabel {
+                multiplicityLabel(targetLabel, near: endPoint, toward: startPoint)
+            }
         }
+    }
+
+    /// A small cardinality label nudged in from `anchor` along the edge (and to one side)
+    /// so it sits beside the endpoint rather than under the node or the arrow head.
+    private func multiplicityLabel(_ text: String, near anchor: CGPoint, toward other: CGPoint) -> some View {
+        let dx = other.x - anchor.x
+        let dy = other.y - anchor.y
+        let length = max(0.001, (dx * dx + dy * dy).squareRoot())
+        let (ux, uy) = (dx / length, dy / length)
+        return Text(text)
+            .font(.system(size: 9, design: .monospaced))
+            .foregroundColor(palette.edgeLabelInk)
+            .position(x: anchor.x + ux * 16 - uy * 9, y: anchor.y + uy * 16 + ux * 9)
     }
 
     // MARK: - Connection Points

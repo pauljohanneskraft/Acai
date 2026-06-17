@@ -56,9 +56,9 @@ classDiagram
     Playable <|.. MediaItem
     MediaItem <|-- Podcast
     MediaItem <|-- Song
-    Library o-- Playlist : playlists
-    MediaItem *-- Genre : genre
-    Player *-- Library : library
+    Library o-- "*" Playlist : playlists
+    MediaItem *-- "1" Genre : genre
+    Player *-- "1" Library : library
     Player ..> Playable
-    Playlist o-- MediaItem : items
+    Playlist o-- "*" MediaItem : items
     Song ..> Genre

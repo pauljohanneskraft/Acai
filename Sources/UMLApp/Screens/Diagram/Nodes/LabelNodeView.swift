@@ -1,65 +1,55 @@
 import SwiftUI
+import UMLRender
 
 struct LabelNodeView: View {
-    private static let actorBackgroundColor = Color(red: 0.95, green: 0.99, blue: 0.99)
-    private static let actorBorderColor = Color(red: 0.45, green: 0.72, blue: 0.72)
-    private static let actorIconColor = Color(red: 0.30, green: 0.60, blue: 0.60)
+    /// Which labelled role this node represents; drives the icon and the palette colours.
+    enum Role {
+        case actor, database
 
-    static func actor(
-        name: String,
-        isSelected: Bool
-    ) -> LabelNodeView {
-        .init(
-            name: name,
-            systemImageName: "person",
-            isSelected: isSelected,
-            backgroundColor: actorBackgroundColor,
-            iconColor: actorIconColor,
-            borderColor: actorBorderColor
-        )
+        var systemImageName: String {
+            switch self {
+            case .actor:
+                "person"
+            case .database:
+                "cylinder"
+            }
+        }
     }
 
-    private static let databaseBackgroundColor = Color(red: 1.0, green: 0.96, blue: 0.97)
-    private static let databaseBorderColor = Color(red: 0.82, green: 0.52, blue: 0.58)
-    private static let databaseIconColor = Color(red: 0.72, green: 0.40, blue: 0.48)
+    static func actor(name: String, isSelected: Bool) -> LabelNodeView {
+        .init(name: name, role: .actor, isSelected: isSelected)
+    }
 
-    static func database(
-        name: String,
-        isSelected: Bool
-    ) -> LabelNodeView {
-        .init(
-            name: name,
-            systemImageName: "cylinder",
-            isSelected: isSelected,
-            backgroundColor: databaseBackgroundColor,
-            iconColor: databaseIconColor,
-            borderColor: databaseBorderColor
-        )
+    static func database(name: String, isSelected: Bool) -> LabelNodeView {
+        .init(name: name, role: .database, isSelected: isSelected)
     }
 
     let name: String
-    let systemImageName: String
+    let role: Role
     let isSelected: Bool
-    let backgroundColor: Color
-    let iconColor: Color
-    let borderColor: Color
+
+    @Environment(\.diagramPalette) private var palette
+
+    private var fill: Color { role == .actor ? palette.actorFill : palette.databaseFill }
+    private var border: Color { role == .actor ? palette.actorBorder : palette.databaseBorder }
+    private var icon: Color { role == .actor ? palette.actorIcon : palette.databaseIcon }
 
     var body: some View {
         VStack(spacing: 4) {
-            Image(systemName: systemImageName)
+            Image(systemName: role.systemImageName)
                 .font(.system(size: 28))
-                .foregroundColor(iconColor)
+                .foregroundColor(icon)
             Text(name)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(Color(white: 0.1))
+                .foregroundColor(palette.primaryInk)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(backgroundColor)
+        .background(fill)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(isSelected ? Color.accentColor : borderColor, lineWidth: isSelected ? 2 : 1)
+                .stroke(isSelected ? Color.accentColor : border, lineWidth: isSelected ? 2 : 1)
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }

@@ -79,6 +79,42 @@ struct MermaidRendererTests {
         #expect(mermaid.contains("D *-- E"))   // nesting (containment)
     }
 
+    private func multiplicityArtifact() -> CodeArtifact {
+        CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: ["Library", "Book"].map {
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+            },
+            relationships: [
+                Relationship(kind: .aggregation, source: "Library", target: "Book",
+                             targetLabel: "*", label: "books")
+            ]
+        )
+    }
+
+    @Test func classDiagramEmitsMultiplicities() {
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: multiplicityArtifact())
+        #expect(mermaid.contains("Library o-- \"*\" Book : books"))
+    }
+
+    @Test func classDiagramOmitsMultiplicitiesWhenDisabled() {
+        let options = ClassDiagramOptions(showMultiplicities: false)
+        let mermaid = ClassDiagramMermaidRenderer(options: options).generate(from: multiplicityArtifact())
+        #expect(mermaid.contains("Library o-- Book : books"))
+        #expect(!mermaid.contains("\"*\""))
+    }
+
+    @Test func classDiagramEmitsAnnotationStereotype() {
+        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class)
+        entity.annotations = ["@Entity"]
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: ["U.java"]), types: [entity])
+
+        #expect(ClassDiagramMermaidRenderer().generate(from: artifact).contains("<<entity>>"))
+
+        let options = ClassDiagramOptions(showAnnotationStereotypes: false)
+        #expect(!ClassDiagramMermaidRenderer(options: options).generate(from: artifact).contains("<<entity>>"))
+    }
+
     @Test func classDiagramEnumCasesAndModifiers() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),

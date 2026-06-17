@@ -29,6 +29,30 @@ struct DOTGeneratorTests {
         #expect(dot.contains("String"))
     }
 
+    @Test func multiplicityHeadLabelAndToggle() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
+            types: ["Player", "Track"].map {
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+            },
+            relationships: [
+                Relationship(kind: .composition, source: "Player", target: "Track",
+                             targetLabel: "0..1", label: "nowPlaying")
+            ]
+        )
+        #expect(DOTGenerator().generate(from: artifact).contains("headlabel=\"0..1\""))
+
+        let options = ClassDiagramOptions(showMultiplicities: false)
+        #expect(!DOTGenerator(options: options).generate(from: artifact).contains("headlabel"))
+    }
+
+    @Test func annotationStereotypeInHeader() {
+        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class)
+        entity.annotations = ["@Entity"]
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: ["U.java"]), types: [entity])
+        #expect(DOTGenerator().generate(from: artifact).contains("&lt;&lt;entity&gt;&gt;"))
+    }
+
     @Test func inheritanceEdge() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),

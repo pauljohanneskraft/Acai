@@ -40,7 +40,7 @@ struct DOTNodeRenderer {
 
         // Header: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
-        if let stereotype = stereotypeString(for: type.kind) {
+        if let stereotype = stereotypeString(for: type) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
@@ -104,7 +104,7 @@ struct DOTNodeRenderer {
 
         // Header only: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
-        if let stereotype = stereotypeString(for: type.kind) {
+        if let stereotype = stereotypeString(for: type) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
@@ -194,8 +194,8 @@ struct DOTNodeRenderer {
         return typeString
     }
 
-    private func stereotypeString(for kind: TypeKind) -> String? {
-        kind.stereotypeString
+    private func stereotypeString(for type: TypeDeclaration) -> String? {
+        type.stereotype(includeAnnotations: options.showAnnotationStereotypes)
     }
 
     private func isProperty(_ member: Member) -> Bool {

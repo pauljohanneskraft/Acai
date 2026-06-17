@@ -14,19 +14,20 @@ extension ProjectBrowserViewModel {
     func generateDOT(for codebaseID: UUID) -> String {
         guard let codebase = codebase(for: codebaseID) else { return "digraph UML { }" }
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
+        let options = ClassDiagramOptions(theme: DiagramThemeSelection.currentExportTheme)
 
         if var artifact = artifact(for: codebaseID) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
             }
-            return DOTGenerator().generate(from: artifact)
+            return DOTGenerator(options: options).generate(from: artifact)
         }
 
         if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
             }
-            return DOTGenerator().generate(from: artifact)
+            return DOTGenerator(options: options).generate(from: artifact)
         }
 
         return "digraph UML { label=\"No analysis available\" }"
@@ -54,19 +55,20 @@ extension ProjectBrowserViewModel {
     func generateMermaid(for codebaseID: UUID) -> String {
         guard let codebase = codebase(for: codebaseID) else { return "classDiagram\n" }
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
+        let options = ClassDiagramOptions(theme: DiagramThemeSelection.currentExportTheme)
 
         if var artifact = artifact(for: codebaseID) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
             }
-            return ClassDiagramMermaidRenderer().generate(from: artifact)
+            return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
         }
 
         if var artifact = try? AnalysisService.shared.analyzeProject(at: url, allowedLanguages: []) {
             if artifact.metadata.sourceLanguage == .dart {
                 artifact = artifact.filteringGeneratedDartTypes()
             }
-            return ClassDiagramMermaidRenderer().generate(from: artifact)
+            return ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
         }
 
         return "classDiagram\n"

@@ -19,7 +19,7 @@ digraph UML {
   "Library" -> "Playlist" [dir=back arrowtail=odiamond label="playlists" headlabel="*"];
   "MediaItem" -> "Genre" [dir=back arrowtail=diamond label="genre" headlabel="1"];
   "Player" -> "Library" [dir=back arrowtail=diamond label="library" headlabel="1"];
-  "Player" -> "Playable" [dir=back arrowtail=diamond label="nowPlaying" headlabel="1"];
+  "Player" -> "Playable" [dir=back arrowtail=diamond label="nowPlaying" headlabel="0..1"];
   "Playlist" -> "MediaItem" [dir=back arrowtail=odiamond label="items" headlabel="*"];
   "Song" -> "Genre" [arrowhead=vee style=dashed];
 }

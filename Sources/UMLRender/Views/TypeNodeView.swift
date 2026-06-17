@@ -44,6 +44,8 @@ public struct TypeNodeView: View {
     let enumCases: [EnumCaseDisplayItem]
     let isSelected: Bool
 
+    @Environment(\.diagramPalette) private var palette
+
     /// Primitive designated initializer. Both the generated-diagram and freeform-diagram
     /// convenience initializers (the latter lives in `UMLApp`) delegate here, so it must
     /// be `public` to be reachable from a cross-module extension.
@@ -79,11 +81,11 @@ public struct TypeNodeView: View {
                 enumCasesSection
             }
         }
-        .background(kindBodyBackground)
+        .background(palette.bodyBackground(for: kind))
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
             RoundedRectangle(cornerRadius: 5)
-                .stroke(isSelected ? Color.accentColor : kindBorderColor, lineWidth: isSelected ? 2 : 1)
+                .stroke(isSelected ? Color.accentColor : palette.border(for: kind), lineWidth: isSelected ? 2 : 1)
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }
@@ -95,17 +97,17 @@ public struct TypeNodeView: View {
             if let stereotype {
                 Text("<<\(stereotype)>>")
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(kindColor)
+                    .foregroundColor(palette.accent(for: kind))
             }
             Text(displayName)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundColor(Color(white: 0.1))
+                .foregroundColor(palette.primaryInk)
                 .if(isInterface) { $0.italic() }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(kindHeaderBackground)
+        .background(palette.headerBackground(for: kind))
     }
 
     private var displayName: String {
@@ -163,7 +165,7 @@ public struct TypeNodeView: View {
             ForEach(enumCases) { ec in
                 Text(ec.text)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(Color(white: 0.15))
+                    .foregroundColor(palette.secondaryInk)
             }
         }
         .padding(.horizontal, 10)
@@ -177,7 +179,7 @@ public struct TypeNodeView: View {
             .font(.system(size: 11, design: .monospaced))
             .if(member.isStatic) { $0.underline() }
             .if(member.isAbstract) { $0.italic() }
-            .foregroundColor(Color(white: 0.15))
+            .foregroundColor(palette.secondaryInk)
             .lineLimit(1)
     }
 
@@ -185,86 +187,8 @@ public struct TypeNodeView: View {
 
     private var kindDivider: some View {
         Rectangle()
-            .fill(kindBorderColor.opacity(0.5))
+            .fill(palette.border(for: kind).opacity(0.5))
             .frame(height: 1)
-    }
-
-    // MARK: - Kind-based solid colors
-
-    private var kindColor: Color {
-        switch kind {
-        case .protocol, .interface:
-            .blue
-        case .struct, .record:
-            .green
-        case .enum:
-            .orange
-        case .class:
-            .purple
-        case .trait:
-            .teal
-        case .mixin:
-            .indigo
-        default:
-            .gray
-        }
-    }
-
-    private var kindHeaderBackground: Color {
-        switch kind {
-        case .protocol, .interface:
-            Color(red: 0.93, green: 0.95, blue: 1.0)
-        case .struct, .record:
-            Color(red: 0.93, green: 0.98, blue: 0.93)
-        case .enum:
-            Color(red: 1.0, green: 0.96, blue: 0.92)
-        case .class:
-            Color(red: 0.96, green: 0.93, blue: 1.0)
-        case .trait:
-            Color(red: 0.92, green: 0.98, blue: 0.98)
-        case .mixin:
-            Color(red: 0.95, green: 0.93, blue: 1.0)
-        default:
-            Color(red: 0.95, green: 0.95, blue: 0.95)
-        }
-    }
-
-    private var kindBodyBackground: Color {
-        switch kind {
-        case .protocol, .interface:
-            Color(red: 0.97, green: 0.98, blue: 1.0)
-        case .struct, .record:
-            Color(red: 0.97, green: 0.99, blue: 0.97)
-        case .enum:
-            Color(red: 1.0, green: 0.99, blue: 0.97)
-        case .class:
-            Color(red: 0.99, green: 0.97, blue: 1.0)
-        case .trait:
-            Color(red: 0.97, green: 0.99, blue: 0.99)
-        case .mixin:
-            Color(red: 0.98, green: 0.97, blue: 1.0)
-        default:
-            Color(red: 0.98, green: 0.98, blue: 0.98)
-        }
-    }
-
-    private var kindBorderColor: Color {
-        switch kind {
-        case .protocol, .interface:
-            Color(red: 0.55, green: 0.62, blue: 0.85)
-        case .struct, .record:
-            Color(red: 0.50, green: 0.72, blue: 0.50)
-        case .enum:
-            Color(red: 0.82, green: 0.68, blue: 0.45)
-        case .class:
-            Color(red: 0.68, green: 0.52, blue: 0.82)
-        case .trait:
-            Color(red: 0.45, green: 0.72, blue: 0.72)
-        case .mixin:
-            Color(red: 0.58, green: 0.52, blue: 0.82)
-        default:
-            Color(red: 0.70, green: 0.70, blue: 0.70)
-        }
     }
 }
 

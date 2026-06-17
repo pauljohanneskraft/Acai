@@ -77,7 +77,15 @@ struct ClassDiagramSidebar: View {
                     Toggle("Inheritance", isOn: config.showInheritance)
                     Toggle("Composition", isOn: config.showComposition)
                     Toggle("Dependency", isOn: config.showDependency)
+                    Toggle("Multiplicities", isOn: config.showMultiplicities)
                 }
+            }
+
+            Section("Stereotypes") {
+                Toggle("Annotation Stereotypes", isOn: config.showAnnotationStereotypes)
+                Text("Shows «entity» and similar stereotypes derived from type annotations.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Layout") {

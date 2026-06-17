@@ -18,6 +18,7 @@ struct UMLApp: App {
     var body: some Scene {
         WindowGroup {
             ProjectBrowserView()
+                .modifier(DiagramThemeProvider())
         }
     }
 }
