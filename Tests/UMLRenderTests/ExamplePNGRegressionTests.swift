@@ -1,4 +1,6 @@
+import CoreGraphics
 import Foundation
+import ImageIO
 import Testing
 @testable import UMLRender
 import UMLCore
@@ -36,6 +38,48 @@ enum ExamplePNGs {
     static func hasPNGMagic(_ data: Data) -> Bool {
         Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47]
     }
+
+    /// Decodes PNG `data` into a `side`×`side` grayscale luminance grid (0–255), squashing aspect
+    /// ratio. Both images being compared share dimensions, so the squash is consistent. Returns
+    /// `nil` if the image can't be decoded.
+    static func luminanceGrid(_ data: Data, side: Int = 96) -> [UInt8]? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+        var buffer = [UInt8](repeating: 0, count: side * side)
+        guard let context = CGContext(
+            data: &buffer, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else { return nil }
+        // Opaque white ground so transparent regions read as background, then draw scaled to fill.
+        context.setFillColor(gray: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side))
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+        return buffer
+    }
+
+    /// The side of the comparison grid and the per-cell luminance delta (0–255) that counts as a
+    /// real change. Downsampling to 256² averages ~300 source pixels per cell, so anti-aliasing /
+    /// font drift sinks toward zero while a genuine localized change (an added label, a recoloured
+    /// node) still pushes its cells past the delta.
+    static let comparisonSide = 256
+    static let perCellDelta = 16
+
+    /// The fraction of grid cells whose luminance differs by more than ``perCellDelta``. Measured
+    /// separation: re-rendering the same diagram yields 0 changed cells; a stale class render
+    /// missing its multiplicity labels yields 5–12; a theme swap or dropped node lights up nearly
+    /// all of them. `nil` if either image can't be decoded.
+    static func changedCellFraction(_ lhs: Data, _ rhs: Data) -> Double? {
+        guard let a = luminanceGrid(lhs, side: comparisonSide),
+              let b = luminanceGrid(rhs, side: comparisonSide) else { return nil }
+        let changed = zip(a, b).reduce(0) { abs(Int($1.0) - Int($1.1)) > perCellDelta ? $0 + 1 : $0 }
+        return Double(changed) / Double(a.count)
+    }
+
+    /// The most a committed golden may perceptually differ from a fresh render before it is treated
+    /// as stale. Below the smallest observed real change (5 cells ≈ 7.6e-5) and far above the
+    /// same-content floor (0), so a content change fails while anti-aliasing drift does not.
+    static let maxChangedFraction = 5.0e-5
 
     /// Reads (width, height) from the IHDR chunk of a PNG: bytes 16..<20 and 20..<24, big-endian.
     static func pngPixelSize(_ data: Data) -> (width: Int, height: Int)? {
@@ -92,6 +136,19 @@ enum ExamplePNGs {
         #expect(
             close(actual.width, expected.width) && close(actual.height, expected.height),
             "\(url.lastPathComponent) size drifted: committed \(expected), re-rendered \(actual)"
+        )
+
+        // Content: the committed golden must still match what the current renderer produces. A
+        // dimension match alone is blind to in-bounds changes (e.g. multiplicity labels), so this
+        // compares the actual pixels via a downsampled, AA-tolerant perceptual diff.
+        guard let changed = changedCellFraction(committed, fresh) else {
+            Issue.record("Could not compute perceptual diff for \(url.lastPathComponent)")
+            return
+        }
+        let changedCells = Int(changed * 65536)
+        #expect(
+            changed <= maxChangedFraction,
+            "\(url.lastPathComponent) content drifted (\(changedCells) cells); regenerate per Examples/README.md"
         )
     }
 }
