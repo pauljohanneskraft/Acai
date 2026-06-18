@@ -48,7 +48,7 @@ extension UMLCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Render a sequence diagram traced from this entry point instead of a class diagram." +
-            " Format: \"TypeName.methodName\"."
+            " Format: \"TypeName.methodName\", or \"functionName\" for a top-level function."
         ))
         var sequenceFrom: String?
 
@@ -214,18 +214,12 @@ extension UMLCommand {
             )
         }
 
-        /// Traces a sequence diagram from `entryPoint` ("Type.method") and wraps both renderers.
+        /// Traces a sequence diagram from `entryPoint` ("Type.method", or a bare top-level function
+        /// name) and wraps both renderers.
         private func sequenceExport(
             artifact: CodeArtifact, entryPoint: String
         ) throws -> DiagramExport {
-            guard let dot = entryPoint.lastIndex(of: ".") else {
-                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
-            }
-            let typeName = String(entryPoint[..<dot])
-            let methodName = String(entryPoint[entryPoint.index(after: dot)...])
-            guard !typeName.isEmpty, !methodName.isEmpty else {
-                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
-            }
+            let (typeName, methodName) = try parseSequenceEntryPoint(entryPoint)
 
             var typeMapping: [String: String] = [:]
             for entry in map {

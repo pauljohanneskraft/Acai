@@ -48,6 +48,10 @@ struct CodebaseDetailView: View {
                         Divider()
                         CodebaseTypesSection(codebase: codebase, artifact: artifact)
                         Divider()
+                        if !artifact.freestandingFunctions.isEmpty {
+                            CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
+                            Divider()
+                        }
                         CodebaseRelationshipsSection(artifact: artifact)
                     } else {
                         notIndexedSection(codebase: codebase)

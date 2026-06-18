@@ -157,8 +157,16 @@ extension PythonExtractor {
     /// - `receiver.method(...)` — `receiver` resolved as a known property,
     /// - `TypeName.method(...)` — `TypeName` resolved as a declared type (static call).
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
-        guard node.nodeType == "call",
-              let funcNode = node.child(byFieldName: "function"), funcNode.nodeType == "attribute",
+        guard node.nodeType == "call", let funcNode = node.child(byFieldName: "function") else { return nil }
+
+        // Bare call `name(...)` — an implicit receiver. Recorded with no receiver type; the diagram
+        // layers resolve it to a top-level function against the whole-artifact view (or drop it,
+        // e.g. builtins/constructors), so a call to a free function becomes its own participant.
+        if funcNode.nodeType == "identifier" {
+            return CallSite(receiverType: nil, methodName: text(funcNode), location: loc(node))
+        }
+
+        guard funcNode.nodeType == "attribute",
               let attr = funcNode.child(byFieldName: "attribute"),
               let object = funcNode.child(byFieldName: "object") else { return nil }
 

@@ -29,10 +29,12 @@ struct DiagramCommandRunTests {
     @Test func malformedSequenceEntryPointThrows() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
-            for bad in ["NoDot", ".method", "Type."] {
+            // A leading/trailing dot is malformed; a bare name (no dot) is now a valid form — it
+            // denotes a top-level function entry point.
+            for bad in [".method", "Type."] {
                 try expectRunError(
                     ["--source", dir.path, "--sequence-from", bad],
-                    contains: "--sequence-from must be in the form"
+                    contains: "--sequence-from must be"
                 )
             }
         }

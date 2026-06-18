@@ -40,8 +40,14 @@ struct SequenceConfigSheet: View {
         self.initial = initial
         self.onCancel = onCancel
         self.onCreate = onCreate
-        _entryTypeName = State(initialValue: initial?.entryTypeName ?? "")
-        _entryMethodName = State(initialValue: initial?.entryMethodName ?? "")
+        let initialType = initial?.entryTypeName ?? ""
+        let initialMethod = initial?.entryMethodName ?? ""
+        // A saved free-function entry stores an empty type name; reselect the group so re-editing
+        // shows the right picker state.
+        let isFreeFunctionEntry = initialType.isEmpty && !initialMethod.isEmpty
+            && artifact.freestandingFunctions.contains { $0.name == initialMethod }
+        _entryTypeName = State(initialValue: isFreeFunctionEntry ? Self.freeFunctionGroup : initialType)
+        _entryMethodName = State(initialValue: initialMethod)
         _maxDepth = State(initialValue: initial?.maxDepth ?? 5)
     }
 
@@ -153,7 +159,7 @@ struct SequenceConfigSheet: View {
     /// move to the resolution phase, otherwise create immediately.
     private func advance() {
         let preview = artifact.sequenceDiagram(
-            entryPoint: (entryTypeName, entryMethodName),
+            entryPoint: (resolvedEntryTypeName, entryMethodName),
             maxDepth: maxDepth
         )
         var rows: [MappingRow] = []
@@ -185,7 +191,7 @@ struct SequenceConfigSheet: View {
             if let concrete = row.selection { mapping[row.protocolName] = concrete }
         }
         onCreate(SequenceDiagramConfiguration(
-            entryTypeName: entryTypeName,
+            entryTypeName: resolvedEntryTypeName,
             entryMethodName: entryMethodName,
             maxDepth: maxDepth,
             typeMapping: mapping
@@ -194,17 +200,36 @@ struct SequenceConfigSheet: View {
 
     // MARK: - Lookups
 
-    /// Names of types that declare at least one method — valid entry-point types.
+    /// Pseudo-"type" group that lists the codebase's top-level (free) functions as entry points.
+    /// Maps to an empty entry-type name, which `sequenceDiagram(entryPoint:)` resolves against
+    /// `freestandingFunctions`.
+    static let freeFunctionGroup = "⟨Top-Level Functions⟩"
+
+    /// The entry-type name passed to the engine: the free-function group resolves to an empty
+    /// string (the core's signal for a top-level-function entry point).
+    private var resolvedEntryTypeName: String {
+        entryTypeName == Self.freeFunctionGroup ? "" : entryTypeName
+    }
+
+    private var freeFunctionNames: [String] {
+        artifact.freestandingFunctions.map(\.name).uniqued().sorted()
+    }
+
+    /// Names of types that declare at least one method — valid entry-point types. The top-level
+    /// functions group is offered first when the codebase has any free functions.
     private var callableTypeNames: [String] {
-        artifact.types
+        let typeNames = artifact.types
             .filter { $0.members.contains { $0.kind == .method } }
             .map(\.name)
             .uniqued()
             .sorted()
+        return freeFunctionNames.isEmpty ? typeNames : [Self.freeFunctionGroup] + typeNames
     }
 
-    /// Method names on the currently selected entry type.
+    /// Method names on the currently selected entry type, or the top-level functions when the
+    /// free-function group is selected.
     private var methodNames: [String] {
+        if entryTypeName == Self.freeFunctionGroup { return freeFunctionNames }
         guard let type = artifact.types.first(where: { $0.name == entryTypeName }) else { return [] }
         return type.members
             .filter { $0.kind == .method }

@@ -116,6 +116,108 @@ struct SequenceDiagramTests {
         #expect(call?.label == "step")
     }
 
+    // MARK: - Free (top-level) functions
+
+    private func artifact(
+        types: [TypeDeclaration], freeFunctions: [Member]
+    ) -> CodeArtifact {
+        CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
+            types: types,
+            freestandingFunctions: freeFunctions
+        )
+    }
+
+    @Test func freeFunctionEntryPoint() {
+        // An empty type name selects a top-level function as the entry point.
+        let art = artifact(
+            types: [type("Service", members: [method("run")])],
+            freeFunctions: [method("main", calls: [CallSite(receiverType: "Service", methodName: "run")])]
+        )
+
+        let diagram = art.sequenceDiagram(entryPoint: ("", "main"))
+
+        #expect(diagram.participants.map(\.name) == ["main", "Service"])
+        // The free-function lifeline is marked `.control` to set it apart from object lifelines.
+        #expect(diagram.participants.first?.kind == .control)
+        let call = diagram.messages.first { $0.kind == .synchronous }
+        #expect(call?.from == "main")
+        #expect(call?.to == "Service")
+        #expect(call?.label == "run")
+    }
+
+    @Test func callToFreeFunctionBecomesDistinctParticipant() {
+        // A method calling a top-level function used to render as a mislabeled self-call; now the
+        // function is its own lifeline.
+        let art = artifact(
+            types: [type("Worker", members: [
+                method("run", calls: [CallSite(receiverType: nil, methodName: "log")])
+            ])],
+            freeFunctions: [method("log")]
+        )
+
+        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+
+        #expect(diagram.participants.map(\.name) == ["Worker", "log"])
+        let call = diagram.messages.first { $0.kind == .synchronous }
+        #expect(call?.from == "Worker")
+        #expect(call?.to == "log")
+        #expect(call?.label == "log")
+    }
+
+    @Test func freeFunctionCallsFreeFunction() {
+        let art = artifact(
+            types: [],
+            freeFunctions: [
+                method("main", calls: [CallSite(receiverType: nil, methodName: "helper")]),
+                method("helper")
+            ]
+        )
+
+        let diagram = art.sequenceDiagram(entryPoint: ("", "main"))
+
+        #expect(diagram.participants.map(\.name) == ["main", "helper"])
+        #expect(diagram.messages.contains {
+            $0.kind == .synchronous && $0.from == "main" && $0.to == "helper"
+        })
+    }
+
+    @Test func unresolvedImplicitReceiverCallIsDropped() {
+        // An implicit-receiver call that matches neither a same-type method nor a free function —
+        // a builtin, a local's method, or an inherited `self.x()` whose body isn't in the artifact —
+        // is dropped rather than drawn as a dead-end self-message. (Behavior change: such calls
+        // previously rendered as a `Caller → Caller` self-message; this matches the call graph.)
+        let art = artifact(
+            types: [type("Worker", kind: .class, members: [
+                method("run", calls: [CallSite(receiverType: nil, methodName: "inheritedSetup")])
+            ])],
+            freeFunctions: []
+        )
+
+        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+
+        #expect(diagram.participants.map(\.name) == ["Worker"])
+        #expect(diagram.messages.isEmpty)
+    }
+
+    @Test func sameTypeMethodWinsOverFreeFunctionOfSameName() {
+        // `step` is both a Worker method and a free function. The implicit-receiver call must
+        // resolve to the same-type method (a self-call), not the free function.
+        let art = artifact(
+            types: [type("Worker", members: [
+                method("run", calls: [CallSite(receiverType: nil, methodName: "step")]),
+                method("step")
+            ])],
+            freeFunctions: [method("step")]
+        )
+
+        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+
+        #expect(diagram.participants.map(\.name) == ["Worker"])
+        let call = diagram.messages.first { $0.kind == .synchronous }
+        #expect(call?.to == "Worker")
+    }
+
     // MARK: - Depth / recursion
 
     @Test func maxDepthStopsExpansion() {

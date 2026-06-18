@@ -84,7 +84,11 @@ extension GeneratedDiagram {
         let prefix = codebaseName.isEmpty ? "" : "\(codebaseName) — "
         switch content {
         case .sequenceDiagram(let config):
-            return "\(prefix)Sequence: \(config.entryTypeName).\(config.entryMethodName)"
+            // A top-level-function entry has an empty type name; show just the function.
+            let entry = config.entryTypeName.isEmpty
+                ? config.entryMethodName
+                : "\(config.entryTypeName).\(config.entryMethodName)"
+            return "\(prefix)Sequence: \(entry)"
         case .stateDiagram(let config?):
             let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
             return "\(prefix)State: \(variable)"
