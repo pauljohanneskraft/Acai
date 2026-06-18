@@ -16,7 +16,8 @@ extension UMLCommand {
         var source: String?
 
         @Option(name: .long, help: ArgumentHelp(
-            "Limit analysis to one or more languages when using --source." +
+            "Limit analysis to one or more languages when using --source" +
+            " (swift, kotlin, java, typescript, javascript, dart, python)." +
             " Repeat the flag for multiple: --language kotlin --language java."
         ))
         var language: [LanguageOption] = []

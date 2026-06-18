@@ -13,7 +13,7 @@ extension UMLCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Limit analysis to one or more languages" +
-            " (swift, kotlin, java, typescript, javascript)." +
+            " (swift, kotlin, java, typescript, javascript, dart, python)." +
             " Repeat the flag for multiple:" +
             " --language kotlin --language java."
         ))

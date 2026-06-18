@@ -8,7 +8,7 @@ UML reads your source the way a compiler's front end would — it actually parse
 it doesn't grep for keywords — and builds **one unified model** of your types and how
 they relate. From that model it draws class diagrams: the boxes, the members, and the
 inheritance / composition / dependency arrows between them. It works across **Swift,
-Kotlin, Java, TypeScript/JavaScript, and Dart**, in a single mixed-language picture,
+Kotlin, Java, TypeScript/JavaScript, Dart, and Python**, in a single mixed-language picture,
 with nothing to annotate and no build to run first.
 
 If you only read one page, make it <doc:GettingStarted> — one call to ``AnalysisService``

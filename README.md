@@ -98,7 +98,7 @@ custom one and take it from there.
 
 ## Why UML?
 
-- 🌍 **Multi-language out of the box** — one tool for polyglot repos, not five.
+- 🌍 **Multi-language out of the box** — one tool for polyglot repos, not six.
 - ⚡️ **Zero configuration** — point it at a directory and go.
 - 🎨 **Tweak what you see** — filter members, methods, access levels; group by file or namespace; pick a theme; drag the layout into shape.
 - 🖼 **Export to PNG or DOT** — a pixel-perfect image of your on-screen layout, or standard Graphviz you can render anywhere.
@@ -115,6 +115,7 @@ custom one and take it from there.
 | Java                    | Tree-sitter |
 | TypeScript / JavaScript | Tree-sitter |
 | Dart                    | Tree-sitter |
+| Python                  | Tree-sitter |
 
 Mix and match — UML produces one unified model across all of them.
 
