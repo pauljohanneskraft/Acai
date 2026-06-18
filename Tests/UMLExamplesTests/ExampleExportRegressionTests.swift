@@ -45,7 +45,8 @@ struct ClassDiagramExportTests {
         ("kotlin", .kotlin),
         ("java", .java),
         ("typescript", .typeScript),
-        ("dart", .dart)
+        ("dart", .dart),
+        ("python", .python)
     ]
 
     @Test("regenerated class DOT matches the checked-in golden", arguments: cases)
@@ -88,7 +89,8 @@ struct SequenceDiagramExportTests {
         ("kotlin", .kotlin),
         ("java", .java),
         ("typescript", .typeScript),
-        ("dart", .dart)
+        ("dart", .dart),
+        ("python", .python)
     ]
 
     @Test("regenerated sequence DOT matches the checked-in golden", arguments: cases)
@@ -139,7 +141,8 @@ struct PackageDiagramExportTests {
         ("kotlin", "Kotlin", .kotlin),
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
-        ("dart", "Dart", .dart)
+        ("dart", "Dart", .dart),
+        ("python", "Python", .python)
     ]
 
     @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
@@ -185,7 +188,8 @@ struct CallGraphExportTests {
         ("kotlin", "Kotlin", .kotlin),
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
-        ("dart", "Dart", .dart)
+        ("dart", "Dart", .dart),
+        ("python", "Python", .python)
     ]
 
     @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
@@ -228,7 +232,8 @@ struct StateDiagramExportTests {
         ("java", .java),
         ("typescript", .typeScript),
         ("javascript", .javaScript),
-        ("dart", .dart)
+        ("dart", .dart),
+        ("python", .python)
     ]
 
     @Test("regenerated state DOT matches the checked-in golden", arguments: cases)

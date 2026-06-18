@@ -2,7 +2,7 @@
 
 # UML — See Your Codebase
 
-**Point UML at a folder of source code and get a UML class diagram back.** No annotations, no project files, no setup — across Swift, Kotlin, Java, TypeScript/JavaScript, and Dart. Explore visually in the native macOS app, or wire the `uml` CLI into your build and docs.
+**Point UML at a folder of source code and get a UML class diagram back.** No annotations, no project files, no setup — across Swift, Kotlin, Java, TypeScript/JavaScript, Dart, and Python. Explore visually in the native macOS app, or wire the `uml` CLI into your build and docs.
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
@@ -181,7 +181,7 @@ UML is a layered Swift package — one module per concern, so you can pull in on
  Source files
      │  per-language parsers (SwiftSyntax / Tree-sitter)
      ▼
- UMLSwift · UMLKotlin · UMLJava · UMLJS · UMLDart
+ UMLSwift · UMLKotlin · UMLJava · UMLJS · UMLDart · UMLPython
      │  one unified model
      ▼
  UMLCore  ──►  UMLLibrary (AnalysisService: discovery + dispatch)
@@ -193,7 +193,7 @@ UML is a layered Swift package — one module per concern, so you can pull in on
 ```
 
 - **`UMLCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol.
-- **Per-language parsers** — `UMLSwift` uses SwiftSyntax; `UMLKotlin`, `UMLJava`, `UMLJS`, and `UMLDart` use Tree-sitter (shared helpers live in `UMLTreeSitter`).
+- **Per-language parsers** — `UMLSwift` uses SwiftSyntax; `UMLKotlin`, `UMLJava`, `UMLJS`, `UMLDart`, and `UMLPython` use Tree-sitter (shared helpers live in `UMLTreeSitter`).
 - **`UMLLibrary`** — `AnalysisService` holds the parser registry and dispatches by language; it's the one entry point you usually want.
 - **`UMLDiagram`** — turns the model into DOT/Graphviz.
 - **`UMLRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `uml image` command (Apple platforms only).
@@ -242,7 +242,7 @@ for relationship in artifact.relationships {
 
 From there, `UMLDiagram`'s `DOTGenerator` produces Graphviz, and on Apple platforms `UMLRender`'s `DiagramImageRenderer` produces a PNG.
 
-**Available products:** `UMLCore`, `UMLTreeSitter`, `UMLSwift`, `UMLKotlin`, `UMLJava`, `UMLJS`, `UMLDart`, `UMLDiagram`, `UMLLibrary`, and (Apple platforms only) `UMLRender`.
+**Available products:** `UMLCore`, `UMLTreeSitter`, `UMLSwift`, `UMLKotlin`, `UMLJava`, `UMLJS`, `UMLDart`, `UMLPython`, `UMLDiagram`, `UMLLibrary`, and (Apple platforms only) `UMLRender`.
 
 Full API documentation for every module lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)** — start with the [Getting Started](https://pauljohanneskraft.github.io/UML/documentation/umllibrary/gettingstarted) guide. To build the docs locally, run `./Scripts/docs_generate.sh` and serve the output.
 

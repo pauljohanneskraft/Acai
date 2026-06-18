@@ -1,0 +1,64 @@
+classDiagram
+    class Library["Library"] {
+        +playlists list~Playlist~
+        +__init__(playlists list~Playlist~?)
+        +addPlaylist(playlist Playlist) None
+        +playlist(named str) Playlist?
+    }
+    class MediaItem["MediaItem"] {
+        +title str
+        +duration float
+        +genre Genre
+        +__init__(title str, duration float, genre Genre)
+        +play() None
+    }
+    class Playable["Playable"] {
+        <<interface>>
+        +title str
+        +duration float
+        +play() None
+    }
+    class Genre["Genre"] {
+        <<enumeration>>
+        POP
+        ROCK
+        JAZZ
+        CLASSICAL
+        ELECTRONIC
+        SPOKEN_WORD
+    }
+    class Player["Player"] {
+        +library Library
+        +nowPlaying Playable?
+        +__init__(library Library)
+        +play(item Playable) None
+        +playFirstItem(playlistNamed str) None
+    }
+    class Playlist["Playlist"] {
+        +name str
+        +items list~MediaItem~
+        +totalDuration float
+        +__init__(name str, items list~MediaItem~?)
+        +add(item MediaItem) None
+    }
+    class Podcast["Podcast"] {
+        +host str
+        +episodeNumber int
+        +__init__(title str, duration float, host str, episodeNumber int)
+        +play() None
+    }
+    class Song["Song"] {
+        +artist str
+        +album str?
+        +__init__(title str, duration float, genre Genre, artist str, album str?)
+        +play() None
+    }
+    Playable <|.. MediaItem
+    MediaItem <|-- Podcast
+    MediaItem <|-- Song
+    Library o-- "*" Playlist : playlists
+    MediaItem *-- "1" Genre : genre
+    Player *-- "1" Library : library
+    Player *-- "0..1" Playable : nowPlaying
+    Playlist o-- "*" MediaItem : items
+    Song ..> Genre
