@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Swift 6 SwiftPM package that parses source code in five languages and emits UML class diagrams in DOT/Graphviz format. Shipped as a CLI (`UMLCLI` → `uml`) and a macOS 15+ SwiftUI app (`UMLApp`).
+A Swift 6 SwiftPM package that parses source code in six languages and emits UML class diagrams in DOT/Graphviz format. Shipped as a CLI (`UMLCLI` → `uml`) and a macOS 15+ SwiftUI app (`UMLApp`).
 
 ## Commands
 
@@ -28,7 +28,7 @@ Layered, one module per concern (see `Package.swift`):
 
 - `UMLCore` — the **language-agnostic engine**: data models, the enrichment pipeline, project discovery (`BuildSystemDetector`, `ProjectDiscovery`, `FallbackDetector`, `SourceSpec`), `AnalysisService` (orchestration), and the language abstractions. `CodeParser` is the parser protocol (`language`, `fileExtensions`, `parse(source:fileName:)`, `configuration`). `CodeArtifact.SourceLanguage` is an **open `RawRepresentable<String>` struct** with no built-in constants (each language defines its own). `LanguageConfiguration` carries a language's quirks; `LanguageRegistry` maps a language to its configuration.
 - `UMLTreeSitter` — shared Tree-sitter helpers, re-exports `SwiftTreeSitter`.
-- Per-language plugins, each depending on `UMLCore` (+ `UMLTreeSitter` for non-Swift) and **self-contained** (parser + its `SourceLanguage` constant + `LanguageConfiguration` + its build-system detector(s)): `UMLSwift` (SwiftSyntax; SPM/Xcode detectors), `UMLJS` (TS + JS; Node detector), `UMLJVM` (Java **and** Kotlin in one target because they share the JVM build systems + `JVMBuildSystemDetector`), `UMLDart` (Flutter detector). All non-Swift parsers are Tree-sitter.
+- Per-language plugins, each depending on `UMLCore` (+ `UMLTreeSitter` for non-Swift) and **self-contained** (parser + its `SourceLanguage` constant + `LanguageConfiguration` + its build-system detector(s)): `UMLSwift` (SwiftSyntax; SPM/Xcode detectors), `UMLJS` (TS + JS; Node detector), `UMLJVM` (Java **and** Kotlin in one target because they share the JVM build systems + `JVMBuildSystemDetector`), `UMLDart` (Flutter detector), `UMLPython` (`PythonDetector` for `pyproject.toml`/`setup.py`; vendors the grammar's `scanner.c` via the `CPythonScanner` target — see `Package.swift`). All non-Swift parsers are Tree-sitter.
 - `UMLDiagram` — DOT/Graphviz + Mermaid generation. Agnostic: it receives a `LanguageConfiguration` (via `ClassDiagramOptions.language`) rather than knowing any language.
 - `UMLLibrary` — the **composition root** (the only target that names the built-in languages). It depends on the language plugins, wires them into `AnalysisService.standard`, and `@_exported import`s `UMLCore`/`UMLDiagram` + the plugins so a single `import UMLLibrary` surfaces everything.
 - `UMLCLI`, `UMLApp` — entry points; depend on `UMLLibrary` (not the individual plugins).

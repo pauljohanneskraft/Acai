@@ -25,7 +25,8 @@ extension UMLCommand {
         var source: String?
 
         @Option(name: .long, help: ArgumentHelp(
-            "Limit analysis to one or more languages when using --source." +
+            "Limit analysis to one or more languages when using --source" +
+            " (swift, kotlin, java, typescript, javascript, dart, python)." +
             " Repeat the flag for multiple: --language kotlin --language java."
         ))
         var language: [LanguageOption] = []
@@ -58,7 +59,7 @@ extension UMLCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Render a sequence diagram traced from this entry point instead of a class diagram." +
-            " Format: \"TypeName.methodName\"."
+            " Format: \"TypeName.methodName\", or \"functionName\" for a top-level function."
         ))
         var sequenceFrom: String?
 
@@ -187,16 +188,10 @@ extension UMLCommand {
             print("Wrote image to \(output)")
         }
 
-        /// Traces a sequence diagram from `entryPoint` ("Type.method") and renders it to PNG.
+        /// Traces a sequence diagram from `entryPoint` ("Type.method", or a bare top-level function
+        /// name) and renders it to PNG.
         private func renderSequence(artifact: CodeArtifact, entryPoint: String) async throws -> Data {
-            guard let dot = entryPoint.lastIndex(of: ".") else {
-                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
-            }
-            let typeName = String(entryPoint[..<dot])
-            let methodName = String(entryPoint[entryPoint.index(after: dot)...])
-            guard !typeName.isEmpty, !methodName.isEmpty else {
-                throw ValidationError("--sequence-from must be in the form \"TypeName.methodName\".")
-            }
+            let (typeName, methodName) = try parseSequenceEntryPoint(entryPoint)
 
             var typeMapping: [String: String] = [:]
             for entry in map {

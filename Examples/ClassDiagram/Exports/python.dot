@@ -1,0 +1,25 @@
+digraph UML {
+  rankdir=TB;
+  compound=true;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=none margin=0 fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "Library" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Library</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ playlists: list&lt;Playlist&gt;<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(playlists: list&lt;Playlist&gt;?)<BR ALIGN="LEFT"/>+ addPlaylist(playlist: Playlist): None<BR ALIGN="LEFT"/>+ playlist(named: str): Playlist?<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "MediaItem" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>MediaItem</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ title: str<BR ALIGN="LEFT"/>+ duration: float<BR ALIGN="LEFT"/>+ genre: Genre<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(title: str, duration: float, genre: Genre)<BR ALIGN="LEFT"/>+ play(): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Playable" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;interface&gt;&gt;</FONT><BR/><B>Playable</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ title: str<BR ALIGN="LEFT"/>+ duration: float<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ play(): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Genre" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;enumeration&gt;&gt;</FONT><BR/><B>Genre</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT">POP = "pop"<BR ALIGN="LEFT"/>ROCK = "rock"<BR ALIGN="LEFT"/>JAZZ = "jazz"<BR ALIGN="LEFT"/>CLASSICAL = "classical"<BR ALIGN="LEFT"/>ELECTRONIC = "electronic"<BR ALIGN="LEFT"/>SPOKEN_WORD = "spokenWord"<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Player" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Player</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ library: Library<BR ALIGN="LEFT"/>+ nowPlaying: Playable?<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(library: Library)<BR ALIGN="LEFT"/>+ play(item: Playable): None<BR ALIGN="LEFT"/>+ playFirstItem(playlistNamed: str): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Playlist" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Playlist</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ name: str<BR ALIGN="LEFT"/>+ items: list&lt;MediaItem&gt;<BR ALIGN="LEFT"/>+ totalDuration: float<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(name: str, items: list&lt;MediaItem&gt;?)<BR ALIGN="LEFT"/>+ add(item: MediaItem): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Podcast" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Podcast</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ host: str<BR ALIGN="LEFT"/>+ episodeNumber: int<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(title: str, duration: float, host: str, episodeNumber: int)<BR ALIGN="LEFT"/>+ play(): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Song" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Song</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ artist: str<BR ALIGN="LEFT"/>+ album: str?<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">+ __init__(title: str, duration: float, genre: Genre, artist: str, album: str?)<BR ALIGN="LEFT"/>+ play(): None<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "MediaItem" -> "Playable" [arrowhead=empty style=dashed];
+  "Podcast" -> "MediaItem" [arrowhead=empty style=solid];
+  "Song" -> "MediaItem" [arrowhead=empty style=solid];
+  "Library" -> "Playlist" [dir=back arrowtail=odiamond label="playlists" headlabel="*"];
+  "MediaItem" -> "Genre" [dir=back arrowtail=diamond label="genre" headlabel="1"];
+  "Player" -> "Library" [dir=back arrowtail=diamond label="library" headlabel="1"];
+  "Player" -> "Playable" [dir=back arrowtail=diamond label="nowPlaying" headlabel="0..1"];
+  "Playlist" -> "MediaItem" [dir=back arrowtail=odiamond label="items" headlabel="*"];
+  "Song" -> "Genre" [arrowhead=vee style=dashed];
+}

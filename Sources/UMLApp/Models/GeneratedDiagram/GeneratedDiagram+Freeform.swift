@@ -120,11 +120,14 @@ extension GeneratedDiagram {
 
         // One lifeline node per participant, at the exact x its lifeline had in the generated
         // view (the caller passes the live layout positions; the stride is only a fallback).
-        var nodeIDByName: [String: String] = [:]
+        // Keyed by participant *id* (what messages reference), not name: distinct participants can
+        // share a name (a type and a free function), so a name-keyed map would merge them and drop
+        // edges.
+        var nodeIDByParticipantID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []
         for (index, participant) in sequence.participants.enumerated() {
             let nodeID = UUID().uuidString
-            nodeIDByName[participant.name] = nodeID
+            nodeIDByParticipantID[participant.id] = nodeID
             let x = positions[participant.id]?.x ?? CGFloat(index) * 180 + 120
             nodes.append(FreeformDiagram.Node(
                 id: nodeID,
@@ -138,8 +141,8 @@ extension GeneratedDiagram {
         let edges: [FreeformDiagram.Edge] = sequence.messages
             .sorted { $0.order < $1.order }
             .compactMap { message in
-                guard let source = nodeIDByName[message.from],
-                      let target = nodeIDByName[message.to] else { return nil }
+                guard let source = nodeIDByParticipantID[message.from],
+                      let target = nodeIDByParticipantID[message.to] else { return nil }
                 return FreeformDiagram.Edge(
                     sourceNodeID: source,
                     targetNodeID: target,

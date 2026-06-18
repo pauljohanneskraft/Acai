@@ -59,12 +59,17 @@ public struct DiagramLayoutModel: Sendable {
         let visibleTypes = resolved.types.filter {
             GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
         }
+        // Collapse nodes that share an id: distinct types can carry the same id when a language
+        // doesn't qualify by module (e.g. two top-level Python classes of the same name in
+        // different files). A diagram node set keyed by id must be unique — otherwise downstream
+        // `Dictionary(uniqueKeysWithValues:)` layout maps trap. First declaration wins, matching
+        // the view layer, which already renders `nodes.removingDuplicates { $0.id }`.
         self.nodes = visibleTypes.map {
             GeneratedDiagramNode(
                 from: $0, configuration: configuration,
                 annotationStereotypes: language.annotationStereotypes
             )
-        }
+        }.removingDuplicates { $0.id }
 
         let typeIds = Set(visibleTypes.map(\.id))
         self.edges = Self.buildEdges(

@@ -8,3 +8,4 @@
 @_exported import UMLJS
 @_exported import UMLJVM
 @_exported import UMLDart
+@_exported import UMLPython

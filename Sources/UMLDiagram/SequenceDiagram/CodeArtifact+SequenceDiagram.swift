@@ -57,22 +57,50 @@ extension CodeArtifact {
         maxDepth: Int = 5,
         typeMapping: [String: String] = [:]
     ) -> SequenceDiagram {
-        let diagramTitle = title ?? "\(entryPoint.typeName).\(entryPoint.methodName)()"
+        // An empty `typeName` selects a top-level (free) function entry point; otherwise the entry
+        // is a method on the named type.
+        let isFreeEntry = entryPoint.typeName.isEmpty
+        let diagramTitle = title ?? (isFreeEntry
+            ? "\(entryPoint.methodName)()"
+            : "\(entryPoint.typeName).\(entryPoint.methodName)()")
 
-        let lookups = SequenceTraversalLookups(types: types)
+        let lookups = SequenceTraversalLookups(types: types, freeFunctions: freestandingFunctions)
 
-        guard
-            let entryType   = lookups.typesByName[entryPoint.typeName],
-            let entryMember = lookups.membersByKey["\(entryPoint.typeName).\(entryPoint.methodName)"]
-        else {
-            return SequenceDiagram(title: diagramTitle)
+        let entryId: String
+        let entryName: String
+        let entryDecl: TypeDeclaration?
+        let entryMember: Member
+        if isFreeEntry {
+            guard let function = lookups.freeFunctionsByName[entryPoint.methodName] else {
+                return SequenceDiagram(title: diagramTitle)
+            }
+            // Free functions share the participant keyspace with types, so namespace their ids to
+            // avoid colliding with a same-named type; the bare name stays the display label.
+            entryId = SequenceTraversal.freeFunctionID(entryPoint.methodName)
+            entryName = entryPoint.methodName
+            entryDecl = nil
+            entryMember = function
+        } else {
+            guard
+                let entryType = lookups.typesByName[entryPoint.typeName],
+                let member = lookups.membersByKey["\(entryPoint.typeName).\(entryPoint.methodName)"]
+            else {
+                return SequenceDiagram(title: diagramTitle)
+            }
+            entryId = entryType.name
+            entryName = entryType.name
+            entryDecl = entryType
+            entryMember = member
         }
 
         var traversal = SequenceTraversal(
             lookups: lookups, typeMapping: typeMapping,
             maxDepth: maxDepth, participantKind: participantKind(for:)
         )
-        traversal.run(entryType: entryType, entryMember: entryMember)
+        traversal.run(
+            entryId: entryId, entryName: entryName, entryDecl: entryDecl,
+            isFreeFunction: isFreeEntry, entryMember: entryMember
+        )
 
         let orderedParticipants = traversal.participantOrder.compactMap { traversal.participantMap[$0] }
         return SequenceDiagram(
@@ -108,8 +136,11 @@ extension CodeArtifact {
 private struct SequenceTraversalLookups {
     let typesByName: [String: TypeDeclaration]
     let membersByKey: [String: Member]
+    /// Top-level functions keyed by name — the fallback target for an implicit-receiver call that
+    /// doesn't match any method, and the resolver for a free-function entry point.
+    let freeFunctionsByName: [String: Member]
 
-    init(types: [TypeDeclaration]) {
+    init(types: [TypeDeclaration], freeFunctions: [Member]) {
         typesByName = Dictionary(types.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
         var members: [String: Member] = [:]
         for type in types {
@@ -118,6 +149,9 @@ private struct SequenceTraversalLookups {
             }
         }
         membersByKey = members
+        freeFunctionsByName = Dictionary(
+            freeFunctions.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first }
+        )
     }
 }
 
@@ -146,49 +180,108 @@ private struct SequenceTraversal {
         self.participantKind = participantKind
     }
 
-    mutating func run(entryType: TypeDeclaration, entryMember: Member) {
-        addParticipant(typeName: entryType.name)
-        traverse(callerTypeName: entryType.name, member: entryMember, depth: 0)
+    /// Participant id for a free (top-level) function. Namespaced so it can't collide with a type
+    /// of the same name in the shared participant keyspace; the bare name remains the display label.
+    static func freeFunctionID(_ name: String) -> String { "func:\(name)" }
+
+    mutating func run(
+        entryId: String, entryName: String, entryDecl: TypeDeclaration?,
+        isFreeFunction: Bool, entryMember: Member
+    ) {
+        addParticipant(id: entryId, name: entryName, decl: entryDecl, isFreeFunction: isFreeFunction)
+        traverse(callerId: entryId, member: entryMember, depth: 0)
     }
 
-    private mutating func addParticipant(typeName: String) {
-        guard participantMap[typeName] == nil else { return }
-        let decl = lookups.typesByName[typeName]
-        participantOrder.append(typeName)
-        // Use the simple `typeName` as the id, matching the keys the traversal emits for
-        // message `from`/`to`. Using the declaration's qualified id here would diverge from
-        // the messages for namespaced languages (Kotlin/Java), leaving messages orphaned.
-        participantMap[typeName] = SequenceDiagram.Participant(
-            id: typeName,
-            name: typeName,
-            kind: participantKind(decl)
+    private mutating func addParticipant(id: String, name: String, decl: TypeDeclaration?, isFreeFunction: Bool) {
+        guard participantMap[id] == nil else { return }
+        participantOrder.append(id)
+        // The `id` keys message `from`/`to` (a type's simple name, or a namespaced free-function id);
+        // `name` is the user-facing label. Using a declaration's qualified id here would diverge from
+        // the messages for namespaced languages (Kotlin/Java), leaving messages orphaned. A free
+        // function gets a `.control` lifeline to set it apart.
+        participantMap[id] = SequenceDiagram.Participant(
+            id: id,
+            name: name,
+            kind: isFreeFunction ? .control : participantKind(decl)
         )
     }
 
-    private mutating func traverse(callerTypeName: String, member: Member, depth: Int) {
-        let key = "\(callerTypeName).\(member.name)"
+    private mutating func traverse(callerId: String, member: Member, depth: Int) {
+        let key = "\(callerId).\(member.name)"
         guard !visited.contains(key), depth < maxDepth else { return }
         visited.insert(key)
 
         for site in member.callSites {
-            let declaredType = site.receiverType ?? callerTypeName
-            let concreteType = typeMapping[declaredType] ?? declaredType
-            addParticipant(typeName: concreteType)
+            // An implicit-receiver call that matches no method and no free function (a builtin, a
+            // local variable's method, …) can't be drawn as a meaningful message — drop it rather
+            // than emit a mislabeled self-call.
+            guard let target = resolveTarget(site: site, callerId: callerId) else { continue }
+            addParticipant(id: target.id, name: target.name, decl: target.decl, isFreeFunction: target.isFreeFunction)
 
             messages.append(SequenceDiagram.Message(
-                from: callerTypeName, to: concreteType,
+                from: callerId, to: target.id,
                 label: site.methodName, kind: .synchronous, order: messageOrder
             ))
             messageOrder += 1
 
-            if let calleeMember = lookups.membersByKey["\(concreteType).\(site.methodName)"] {
-                traverse(callerTypeName: concreteType, member: calleeMember, depth: depth + 1)
+            if let calleeMember = target.member {
+                traverse(callerId: target.id, member: calleeMember, depth: depth + 1)
             }
 
             messages.append(SequenceDiagram.Message(
-                from: concreteType, to: callerTypeName,
+                from: target.id, to: callerId,
                 label: nil, kind: .return, order: messageOrder
             ))
             messageOrder += 1
         }
-    }}
+    }
+
+    /// Resolves a call site to its participant id, callee body (if any), and whether the target is a
+    /// free function. Returns `nil` for an **implicit-receiver** call that matches neither a method
+    /// nor a free function, so the caller drops it — this covers a builtin (`print`), a call on a
+    /// local variable, *and* a `self.x()` whose method is only on a base class not in the artifact.
+    /// Dropping (rather than drawing a dead-end self-message) keeps the diagram clean and matches
+    /// the call graph's resolution.
+    ///
+    /// - An **explicit** receiver always yields a participant (the named type), even when its body
+    ///   isn't in the artifact — the message still shows the call, just without expansion.
+    /// - An implicit receiver prefers a same-type method (self-call), then a free function (its own
+    ///   lifeline).
+    private func resolveTarget(site: CallSite, callerId: String) -> ResolvedTarget? {
+        if let receiver = site.receiverType {
+            let concrete = typeMapping[receiver] ?? receiver
+            return ResolvedTarget(
+                id: concrete, name: concrete,
+                member: lookups.membersByKey["\(concrete).\(site.methodName)"],
+                decl: lookups.typesByName[concrete],
+                isFreeFunction: false
+            )
+        }
+        let concreteCaller = typeMapping[callerId] ?? callerId
+        if let member = lookups.membersByKey["\(concreteCaller).\(site.methodName)"] {
+            return ResolvedTarget(
+                id: concreteCaller, name: concreteCaller, member: member,
+                decl: lookups.typesByName[concreteCaller], isFreeFunction: false
+            )
+        }
+        if let function = lookups.freeFunctionsByName[site.methodName] {
+            return ResolvedTarget(
+                id: SequenceTraversal.freeFunctionID(site.methodName), name: site.methodName,
+                member: function, decl: nil, isFreeFunction: true
+            )
+        }
+        return nil
+    }
+}
+
+/// A call site resolved to its sequence participant: the lifeline `id` (keys message `from`/`to`),
+/// the user-facing `name`, the callee body to expand (`member`, `nil` when the body isn't in the
+/// artifact), the type declaration (`nil` for a free function), and whether it is a free function
+/// (gets a namespaced id + a `.control` lifeline).
+private struct ResolvedTarget {
+    let id: String
+    let name: String
+    let member: Member?
+    let decl: TypeDeclaration?
+    let isFreeFunction: Bool
+}

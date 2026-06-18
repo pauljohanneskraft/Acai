@@ -40,6 +40,8 @@ struct SequenceConfigSheet: View {
         self.initial = initial
         self.onCancel = onCancel
         self.onCreate = onCreate
+        // An empty entry-type name is the top-level (no class) scope — it round-trips directly, so
+        // re-editing a free-function entry restores the right picker state with no translation.
         _entryTypeName = State(initialValue: initial?.entryTypeName ?? "")
         _entryMethodName = State(initialValue: initial?.entryMethodName ?? "")
         _maxDepth = State(initialValue: initial?.maxDepth ?? 5)
@@ -75,7 +77,8 @@ struct SequenceConfigSheet: View {
 
             LabeledContent("Type") {
                 Picker("Type", selection: $entryTypeName) {
-                    Text("Select…").tag("")
+                    // No class selected = top-level scope; the method picker then lists free functions.
+                    Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
                     ForEach(callableTypeNames, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
@@ -86,13 +89,13 @@ struct SequenceConfigSheet: View {
                 }
             }
 
-            LabeledContent("Method") {
+            LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
                 Picker("Method", selection: $entryMethodName) {
                     Text("Select…").tag("")
                     ForEach(methodNames, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
-                .disabled(entryTypeName.isEmpty)
+                .disabled(methodNames.isEmpty)
             }
 
             LabeledContent("Max depth") {
@@ -139,7 +142,7 @@ struct SequenceConfigSheet: View {
             case .entryPoint:
                 Button("Next", action: advance)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(entryTypeName.isEmpty || entryMethodName.isEmpty)
+                    .disabled(entryMethodName.isEmpty)
             case .resolveInterfaces:
                 Button("Create", action: create)
                     .keyboardShortcut(.defaultAction)
@@ -194,6 +197,13 @@ struct SequenceConfigSheet: View {
 
     // MARK: - Lookups
 
+    /// The codebase's top-level (free) functions — the entry points available when no class is
+    /// selected (an empty entry-type name, which `sequenceDiagram(entryPoint:)` resolves against
+    /// `freestandingFunctions`).
+    private var freeFunctionNames: [String] {
+        artifact.freestandingFunctions.map(\.name).uniqued().sorted()
+    }
+
     /// Names of types that declare at least one method — valid entry-point types.
     private var callableTypeNames: [String] {
         artifact.types
@@ -203,8 +213,10 @@ struct SequenceConfigSheet: View {
             .sorted()
     }
 
-    /// Method names on the currently selected entry type.
+    /// Method names on the selected entry type, or the top-level functions when no class is
+    /// selected (empty type name).
     private var methodNames: [String] {
+        guard !entryTypeName.isEmpty else { return freeFunctionNames }
         guard let type = artifact.types.first(where: { $0.name == entryTypeName }) else { return [] }
         return type.members
             .filter { $0.kind == .method }

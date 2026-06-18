@@ -159,7 +159,7 @@ struct ClassDiagramPNGTests {
     // JavaScript is omitted: with no type annotations its class diagram shows only inheritance.
     static let perLanguage: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("dart", .dart)
+        ("typescript", .typeScript), ("dart", .dart), ("python", .python)
     ]
 
     @Test("per-language class PNG is valid and re-renders to the same size", arguments: perLanguage, ExamplePNGs.themes)
@@ -183,7 +183,8 @@ struct ClassDiagramPNGTests {
 struct SequenceDiagramPNGTests {
 
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java), ("typescript", .typeScript), ("dart", .dart)
+        ("swift", .swift), ("kotlin", .kotlin), ("java", .java), ("typescript", .typeScript), ("dart", .dart),
+        ("python", .python)
     ]
 
     @Test("sequence PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
@@ -207,7 +208,7 @@ struct StateDiagramPNGTests {
 
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("javascript", .javaScript), ("dart", .dart)
+        ("typescript", .typeScript), ("javascript", .javaScript), ("dart", .dart), ("python", .python)
     ]
 
     @Test("state PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
@@ -230,7 +231,7 @@ struct PackageDiagramPNGTests {
     // `dir` is the on-disk subdirectory; the package sample is scanned per-language subdir.
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
+        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python)
     ]
 
     @Test("package PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
@@ -255,7 +256,7 @@ struct CallGraphPNGTests {
 
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart)
+        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python)
     ]
 
     @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
