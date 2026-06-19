@@ -23,6 +23,7 @@ readonly TARGETS=(
     UMLJVM
     UMLJS
     UMLDart
+    UMLPython
     UMLDiagram
     UMLLibrary
     UMLRender

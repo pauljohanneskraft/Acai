@@ -11,7 +11,7 @@ inheritance / composition / dependency arrows between them. It works across **Sw
 Kotlin, Java, TypeScript/JavaScript, Dart, and Python**, in a single mixed-language picture,
 with nothing to annotate and no build to run first.
 
-If you only read one page, make it <doc:GettingStarted> — one call to ``AnalysisService``
+If you only read one page, make it <doc:GettingStarted> — one call to [AnalysisService](/documentation/umlcore/analysisservice)
 discovers, parses, and merges an entire project for you.
 
 ## A map of the modules
@@ -21,8 +21,8 @@ so here's the lay of the land — follow a link whenever you want the full API f
 
 ### Start here
 
-- **[UMLLibrary](/documentation/umllibrary/)** — the front door. ``AnalysisService`` finds the source
-  in a project (SPM, Xcode, Gradle, Maven, Node, Flutter…), runs the right parser for
+- **[UMLLibrary](/documentation/umllibrary/)** — the front door. [AnalysisService](/documentation/umlcore/analysisservice) finds the source
+  in a project (SPM, Xcode, Gradle, Maven, Node, Flutter, pip…), runs the right parser for
   each file, and merges the results. Re-exports the core model, so importing this is
   usually all you need.
 
@@ -35,7 +35,7 @@ so here's the lay of the land — follow a link whenever you want the full API f
 
 ### Language parsers
 
-Each one is a stateless `CodeParser` you can use directly, or let ``AnalysisService`` pick
+Each one is a stateless `CodeParser` you can use directly, or let [AnalysisService](/documentation/umlcore/analysisservice) pick
 for you. They turn source text into the same [UMLCore](/documentation/umlcore/) model.
 
 - **[UMLSwift](/documentation/umlswift/)** — Swift, via Apple's native SwiftSyntax.
@@ -43,12 +43,13 @@ for you. They turn source text into the same [UMLCore](/documentation/umlcore/) 
 - **[UMLJVM](/documentation/umljvm/)** — Java and Kotlin (`.java`, `.kt`, `.kts`); one module, as they
   share the JVM build systems.
 - **[UMLDart](/documentation/umldart/)** — Dart.
+- **[UMLPython](/documentation/umlpython/)** — Python (`.py`).
 - **[UMLTreeSitter](/documentation/umltreesitter/)** — the shared Tree-sitter helpers the
   grammar-based parsers above are built on. Reach for this only if you're writing a new
   parser.
 
 Each plugin is self-contained: it owns its parser, its `SourceLanguage`, its
-``LanguageConfiguration`` (the language's quirks), and its build-system detector(s).
+[LanguageConfiguration](/documentation/umlcore/languageconfiguration) (the language's quirks), and its build-system detector(s).
 
 ### Diagrams & rendering
 
@@ -64,23 +65,24 @@ Turn a [UMLCore](/documentation/umlcore/) model into something you can look at.
 ### Essentials
 
 - <doc:GettingStarted>
-- ``AnalysisService``
+- [AnalysisService](/documentation/umlcore/analysisservice)
 
 ### Project Discovery
 
-How ``AnalysisService`` finds the source folders inside a project before parsing. You don't
+How [AnalysisService](/documentation/umlcore/analysisservice) finds the source folders inside a project before parsing. You don't
 usually touch these directly — they power the automatic discovery.
 
-- ``ProjectDiscovery``
-- ``BuildSystemDetector``
-- ``SwiftPackageManagerDetector``
-- ``JVMBuildSystemDetector``
-- ``NodeDetector``
-- ``FlutterDetector``
-- ``XcodeDetector``
-- ``FallbackDetector``
-- ``SourceSpec``
+- [ProjectDiscovery](/documentation/umlcore/projectdiscovery)
+- [BuildSystemDetector](/documentation/umlcore/buildsystemdetector)
+- [SwiftPackageManagerDetector](/documentation/umlswift/swiftpackagemanagerdetector)
+- [JVMBuildSystemDetector](/documentation/umljvm/jvmbuildsystemdetector)
+- [NodeDetector](/documentation/umljs/nodedetector)
+- [FlutterDetector](/documentation/umldart/flutterdetector)
+- [PythonDetector](/documentation/umlpython/pythondetector)
+- [XcodeDetector](/documentation/umlswift/xcodedetector)
+- [FallbackDetector](/documentation/umlcore/fallbackdetector)
+- [SourceSpec](/documentation/umlcore/sourcespec)
 
 ### Supporting Types
 
-- ``UMLConstants``
+- [UMLConstants](/documentation/umlcore/umlconstants)

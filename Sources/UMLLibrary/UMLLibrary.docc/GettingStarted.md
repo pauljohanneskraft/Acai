@@ -4,8 +4,8 @@ Analyze a codebase and produce a diagram in a few lines.
 
 ## Overview
 
-``AnalysisService`` is the front door. Hand it a folder and the languages you care about;
-it auto-discovers the source directories (SPM, Xcode, Gradle, Maven, Node, Flutter…),
+[AnalysisService](/documentation/umlcore/analysisservice) is the front door. Hand it a folder and the languages you care about;
+it auto-discovers the source directories (SPM, Xcode, Gradle, Maven, Node, Flutter, pip…),
 runs the right parser for each file in parallel, and merges everything into a single
 `CodeArtifact`. From there, [UMLDiagram](/documentation/umldiagram/) renders Graphviz DOT.
 
