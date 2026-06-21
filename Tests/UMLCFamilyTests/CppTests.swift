@@ -49,8 +49,13 @@ struct CppTests {
         #expect(circle?.inheritedTypes.contains { $0.name == "Shape" } == true)
         #expect(artifact.relationships.contains { $0.kind == .inheritance && $0.target == "Shape" })
         // The pure virtual `area() const = 0` is recorded as abstract.
-        let area = artifact.types.first { $0.name == "Shape" }?.members.first { $0.name == "area" }
+        let shape = artifact.types.first { $0.name == "Shape" }
+        let area = shape?.members.first { $0.name == "area" }
         #expect(area?.modifiers.contains(.abstract) == true)
+        // A class with a pure-virtual member is itself an abstract type (so the abstractness
+        // metric counts it like an interface); the concrete subclass is not.
+        #expect(shape?.modifiers.contains(.abstract) == true)
+        #expect(circle?.modifiers.contains(.abstract) == false)
     }
 
     @Test func namespaceQualifiesType() {

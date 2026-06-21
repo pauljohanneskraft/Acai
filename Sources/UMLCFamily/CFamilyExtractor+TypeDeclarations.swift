@@ -29,9 +29,14 @@ extension CFamilyExtractor {
                               members: &members, nestedTypes: &nestedTypes)
         }
 
+        // A C++ record with a pure-virtual member (`… = 0;`, recorded as an `.abstract` method) is
+        // an abstract base class — the C++ idiom for an interface/protocol. Lift that onto the type
+        // so the agnostic abstractness metric counts it like a Java interface.
+        let isAbstract = members.contains { $0.modifiers.contains(.abstract) }
+
         return TypeDeclaration(
             id: typeId, name: name, qualifiedName: typeId, kind: kind,
-            accessLevel: .public,
+            accessLevel: .public, modifiers: isAbstract ? [.abstract] : [],
             inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
             namespace: currentNamespace, location: loc(node)
