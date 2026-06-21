@@ -144,9 +144,25 @@ extension CFamilyExtractor {
         if let body = node.child(byFieldName: "body") {
             let scope = CallSiteScope(knownProperties: [:], knownTypeNames: collectKnownTypeNames())
             member.callSites = extractCallSites(from: body, scope: scope)
+            // Expose the function's typed parameters so a `param->field = …` write inside the body
+            // can be attributed to the parameter's struct type; cleared once the body is analysed.
+            currentReceiverTypes = parameterReceiverTypes(member.parameters)
             member.assignments = extractAssignments(from: body)
+            currentReceiverTypes = [:]
         }
         return member
+    }
+
+    /// Maps each named parameter to its (pointer/reference-stripped) type name. Deliberately
+    /// over-inclusive: only parameters actually used as a `->`/`.` assignment receiver are
+    /// consulted, and the state analysis filters by the exact receiver type, so listing every
+    /// parameter is harmless and avoids depending on declaration order of the struct.
+    private func parameterReceiverTypes(_ parameters: [Parameter]) -> [String: String] {
+        var map: [String: String] = [:]
+        for parameter in parameters where !parameter.internalName.isEmpty {
+            if let typeName = parameter.type?.name { map[parameter.internalName] = typeName }
+        }
+        return map
     }
 
     private mutating func functionMember(from node: Node, ownerName: String?, access: AccessLevel) -> Member? {

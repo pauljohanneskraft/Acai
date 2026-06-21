@@ -53,17 +53,27 @@ extension CFamilyExtractor: AssignmentResolving {
     }
 
     /// The assigned target as `(name, receiver)`: a plain identifier (`state`), `this->field` /
-    /// `this.field` (receiver dropped), or `Type::field` (uppercase receiver kept).
+    /// `this.field` (receiver dropped), `param->field` where `param` is a typed parameter of the
+    /// enclosing free function (the parameter's struct type is kept as receiver), or `Type::field`
+    /// (uppercase receiver kept).
     private func assignmentTarget(_ node: Node) -> (name: String, receiver: String?)? {
         switch node.nodeType {
         case "identifier", "field_identifier":
             return (text(node), nil)
         case "field_expression":
             guard let receiver = node.child(byFieldName: "argument"),
-                  receiver.nodeType == "this",
                   let field = node.child(byFieldName: "field")
             else { return nil }
-            return (text(field), nil)
+            if receiver.nodeType == "this" {
+                return (text(field), nil)
+            }
+            // `param->field` / `param.field` resolves to the parameter's type, so the write feeds
+            // that struct's state machine even though it happens in a free function (C has no
+            // methods). Only the current free function's typed parameters are in scope.
+            if receiver.nodeType == "identifier", let receiverType = currentReceiverTypes[text(receiver)] {
+                return (text(field), receiverType)
+            }
+            return nil
         case "qualified_identifier":
             return parseAssignmentTarget(
                 text(node).replacingOccurrences(of: "::", with: "."))
@@ -88,6 +98,12 @@ extension CFamilyExtractor: AssignmentResolving {
         case "qualified_identifier":
             return enumCaseValue(fromAccessText: valueText.replacingOccurrences(of: "::", with: "."))
                 ?? .init(kind: .expression, text: expressionSnippet(node))
+        case "identifier":
+            // An unscoped enum constant (C's `state = DOWNLOADING`) is a bare identifier; classify
+            // it as an enumerable case when it names a known constant, else an opaque expression.
+            return declaredEnumConstants.contains(valueText)
+                ? .init(kind: .enumCase, text: valueText)
+                : .init(kind: .expression, text: expressionSnippet(node))
         default:
             return .init(kind: .expression, text: expressionSnippet(node))
         }

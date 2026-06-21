@@ -58,4 +58,38 @@ struct HeaderRoutingTests {
         #expect(CFamilyHeaderClassifier(source: "int n = std::max(1, 2);").looksLikeCpp)
         #expect(!CFamilyHeaderClassifier(source: "int n = max(1, 2);").looksLikeCpp)
     }
+
+    @Test func externCppBlockIsTheOnlyMarkerAndRoutesToCpp() {
+        // No `::`, no class/namespace/template — the `extern "C++"` linkage spec is the sole marker.
+        let source = """
+        extern "C++" {
+            void process(int value);
+        }
+        """
+        #expect(CFamilyHeaderClassifier(source: source).looksLikeCpp)
+        #expect(parser.parse(source: source, fileName: "linkage.h").metadata.sourceLanguage == .cpp)
+    }
+
+    @Test func externCppOnlyInACommentStaysC() {
+        let source = """
+        // This header is consumed via extern "C++" from the bridge.
+        struct Handle {
+            int id;
+        };
+        """
+        #expect(!CFamilyHeaderClassifier(source: source).looksLikeCpp)
+        #expect(parser.parse(source: source, fileName: "handle.h").metadata.sourceLanguage == .c)
+    }
+
+    @Test func externCppInsideAStringLiteralStaysC() {
+        // The text appears as data; its inner quotes are escaped, so it is not a linkage spec.
+        let source = """
+        const char *note = "compiled with extern \\"C++\\" linkage";
+        struct Buffer {
+            int length;
+        };
+        """
+        #expect(!CFamilyHeaderClassifier(source: source).looksLikeCpp)
+        #expect(parser.parse(source: source, fileName: "buffer.h").metadata.sourceLanguage == .c)
+    }
 }

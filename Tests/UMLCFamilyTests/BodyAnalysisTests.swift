@@ -71,3 +71,43 @@ struct CppBodyAnalysisTests {
         #expect(assignment?.value.receiverTypeName == "DownloadState")
     }
 }
+
+@Suite("C: Body analysis (struct mutation in free functions)")
+struct CBodyAnalysisTests {
+    let parser = CCodeParser()
+
+    @Test func structPointerMutationResolvesToReceiverTypeAndEnumCase() {
+        // C has no methods: a free function mutates the struct through a typed pointer parameter,
+        // and the unscoped enum constant on the right is an enumerable value.
+        let source = """
+        typedef enum { REQUESTED, DOWNLOADING, FINISHED } DownloadState;
+
+        typedef struct {
+            DownloadState state;
+        } Download;
+
+        void run(Download *download) {
+            download->state = DOWNLOADING;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "download.c")
+        let run = artifact.freestandingFunctions.first { $0.name == "run" }
+        let assignment = run?.assignments.first { $0.targetName == "state" }
+        #expect(assignment?.targetReceiver == "Download")
+        #expect(assignment?.value.kind == .enumCase)
+        #expect(assignment?.value.text == "DOWNLOADING")
+    }
+
+    @Test func nonParameterFieldMutationIsNotMisattributed() {
+        // A field write through an unknown receiver (not a typed parameter) is dropped, so it can't
+        // pollute a struct's state machine.
+        let source = """
+        void touch(void) {
+            other->state = 1;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "touch.c")
+        let touch = artifact.freestandingFunctions.first { $0.name == "touch" }
+        #expect(touch?.assignments.contains { $0.targetName == "state" } == false)
+    }
+}

@@ -21,6 +21,14 @@ struct CFamilyExtractor: TreeSitterExtracting {
     /// Simple names of every function/method declared in the file, collected in a pre-pass so an
     /// unqualified call `foo()` can be resolved to a free function / same-type method (and only then).
     var declaredFunctionNames: Set<String> = []
+    /// Names of every enum constant declared in the file, collected in a pre-pass so a bare
+    /// identifier on the right of an assignment (C's unscoped `state = DOWNLOADING`) can be
+    /// classified as an enumerable `.enumCase` value rather than an opaque expression.
+    var declaredEnumConstants: Set<String> = []
+    /// `parameterName: typeName` for the free function currently being analysed, so a
+    /// `param->field = …` write can be attributed to the parameter's struct type (state-machine
+    /// analysis). Empty outside a free-function body.
+    var currentReceiverTypes: [String: String] = [:]
 
     init(source: String, fileName: String, dialect: CFamilyDialect) {
         self.context = SourceFileContext(source: source, fileName: fileName)
@@ -36,6 +44,7 @@ struct CFamilyExtractor: TreeSitterExtracting {
             name: { $0.child(byFieldName: "name").map { self.text($0) } }
         )
         declaredFunctionNames = collectDeclaredFunctionNames(from: root)
+        declaredEnumConstants = collectEnumConstantNames(from: root)
         walkSourceFile(root)
         resolveRelationshipNames()
         return CodeArtifact(
@@ -164,6 +173,23 @@ struct CFamilyExtractor: TreeSitterExtracting {
             if node.nodeType == "function_declarator" {
                 let name = Self.lastComponent(of: parseDeclarator(node.child(byFieldName: "declarator")).name)
                 if !name.isEmpty { names.insert(name) }
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(walk)
+            }
+        }
+        walk(root)
+        return names
+    }
+
+    /// Collects the name of every `enumerator` in the file (the constants declared by each
+    /// `enum`/`enum class`), so an unscoped enum constant assigned to a variable is recognised as
+    /// an enumerable value for state-machine analysis.
+    private func collectEnumConstantNames(from root: Node) -> Set<String> {
+        var names: Set<String> = []
+        func walk(_ node: Node) {
+            if node.nodeType == "enumerator", let name = node.child(byFieldName: "name").map({ text($0) }) {
+                names.insert(name)
             }
             for index in 0..<node.childCount {
                 node.child(at: index).map(walk)

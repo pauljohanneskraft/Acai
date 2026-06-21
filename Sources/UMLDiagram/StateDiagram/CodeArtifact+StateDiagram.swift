@@ -47,7 +47,9 @@ private struct StateAnalysis {
                 )
             }
             variable = property
-            mutatingMembers = Self.collectFromType(type, configuration: configuration)
+            mutatingMembers = Self.collectFromType(
+                type, freeFunctions: artifact.freestandingFunctions, configuration: configuration
+            )
         } else {
             guard let global = artifact.globalVariables.first(where: { $0.name == configuration.variableName })
             else {
@@ -70,19 +72,30 @@ private struct StateAnalysis {
         return nil
     }
 
-    /// Assignments to a property: bare/`self`-qualified targets, plus
-    /// `Type.variable` static writes naming the declaring type.
+    /// Assignments to a property: bare/`self`-qualified targets and `Type.variable` static writes
+    /// naming the declaring type from the type's own members, plus writes from free functions that
+    /// mutate the type by reference (e.g. C's `void run(Download *d) { d->state = …; }`), which name
+    /// the type as the assignment receiver. Keyed on the receiver *type*, so this stays
+    /// language-agnostic and generalises to any by-reference struct mutation.
     private static func collectFromType(
         _ type: TypeDeclaration,
+        freeFunctions: [Member],
         configuration: StateDiagramConfiguration
     ) -> [(String, [VariableAssignment])] {
-        type.members.compactMap { member in
+        var result: [(String, [VariableAssignment])] = type.members.compactMap { member in
             let relevant = member.assignments.filter {
                 $0.targetName == configuration.variableName
                     && ($0.targetReceiver == nil || $0.targetReceiver == type.name)
             }
             return relevant.isEmpty ? nil : (member.name, relevant)
         }
+        for function in freeFunctions {
+            let relevant = function.assignments.filter {
+                $0.targetName == configuration.variableName && $0.targetReceiver == type.name
+            }
+            if !relevant.isEmpty { result.append((function.name, relevant)) }
+        }
+        return result
     }
 
     /// Assignments to a global: scanned across free functions and all type

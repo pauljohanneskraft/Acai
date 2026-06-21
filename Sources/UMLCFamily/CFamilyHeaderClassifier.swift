@@ -14,7 +14,8 @@ struct CFamilyHeaderClassifier {
 
     /// `true` when the header contains a construct that is valid C++ but not C.
     var looksLikeCpp: Bool {
-        let code = strippedCode
+        let scan = scanned
+        let code = scan.stripped
 
         // The scope-resolution operator is the single strongest, most common C++-only token.
         if code.contains("::") { return true }
@@ -30,7 +31,11 @@ struct CFamilyHeaderClassifier {
             return true
         }
 
-        return code.contains("extern \"C++\"")
+        // The `extern "C++"` linkage specification is itself a string literal, so it can only be
+        // seen in the string-preserving view. A C string whose *contents* spell `extern "C++"`
+        // must escape its inner quotes (`"extern \"C++\""`), which breaks this substring — so only
+        // a real (unescaped) linkage specification matches.
+        return scan.codePreservingStrings.contains("extern \"C++\"")
     }
 
     // MARK: - Helpers
@@ -73,13 +78,19 @@ struct CFamilyHeaderClassifier {
         character.isLetter || character.isNumber || character == "_"
     }
 
-    /// The source with line/block comments and string/char literals removed, so keyword scanning
-    /// sees only code.
-    private var strippedCode: String {
+    /// Two comment-free views of the source, produced in one pass:
+    /// - `stripped`: comments **and** string/char literals removed, so keyword scanning sees only
+    ///   structural code (a C++ marker named inside a string never misroutes the header).
+    /// - `codePreservingStrings`: comments removed but string/char literals kept verbatim — the
+    ///   only view in which the `extern "C++"` linkage specification (itself a string literal) is
+    ///   visible.
+    private var scanned: (stripped: String, codePreservingStrings: String) {
         enum State { case code, lineComment, blockComment, string, char }
         var state: State = .code
-        var output = ""
-        output.reserveCapacity(source.count)
+        var stripped = ""
+        var withStrings = ""
+        stripped.reserveCapacity(source.count)
+        withStrings.reserveCapacity(source.count)
         var iterator = source.makeIterator()
         var pending: Character? = iterator.next()
 
@@ -100,38 +111,52 @@ struct CFamilyHeaderClassifier {
                     _ = advance()
                 } else if character == "\"" {
                     state = .string
-                    output.append(" ")
+                    stripped.append(" ")
+                    withStrings.append(character)
                 } else if character == "'" {
                     state = .char
-                    output.append(" ")
+                    stripped.append(" ")
+                    withStrings.append(character)
                 } else {
-                    output.append(character)
+                    stripped.append(character)
+                    withStrings.append(character)
                 }
             case .lineComment:
                 if character == "\n" {
                     state = .code
-                    output.append("\n")
+                    stripped.append("\n")
+                    withStrings.append("\n")
                 }
             case .blockComment:
                 if character == "*", pending == "/" {
                     state = .code
                     _ = advance()
-                    output.append(" ")
+                    stripped.append(" ")
+                    withStrings.append(" ")
                 }
             case .string:
+                // Keep the literal verbatim (incl. escapes) in `withStrings`; `stripped` gets nothing.
                 if character == "\\" {
-                    _ = advance()
+                    withStrings.append(character)
+                    if let escaped = advance() { withStrings.append(escaped) }
                 } else if character == "\"" {
+                    withStrings.append(character)
                     state = .code
+                } else {
+                    withStrings.append(character)
                 }
             case .char:
                 if character == "\\" {
-                    _ = advance()
+                    withStrings.append(character)
+                    if let escaped = advance() { withStrings.append(escaped) }
                 } else if character == "'" {
+                    withStrings.append(character)
                     state = .code
+                } else {
+                    withStrings.append(character)
                 }
             }
         }
-        return output
+        return (stripped, withStrings)
     }
 }

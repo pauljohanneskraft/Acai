@@ -1,0 +1,54 @@
+digraph {
+  label="place_order()";
+  labelloc=t;
+  rankdir=TB;
+  fontname="Helvetica";
+  fontsize=12;
+  node [fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  // Participants
+  "func:place_order_header" [shape=box label="&lt;&lt;control&gt;&gt;\nplace_order"];
+  "func:charge_header" [shape=box label="&lt;&lt;control&gt;&gt;\ncharge"];
+  "func:authorize_header" [shape=box label="&lt;&lt;control&gt;&gt;\nauthorize"];
+  { rank=same; "func:place_order_header"; "func:charge_header"; "func:authorize_header"; }
+
+  // Lifeline step nodes
+  node [shape=none label="" width=0 height=0];
+  "func:place_order_step0";
+  "func:charge_step0";
+  "func:authorize_step0";
+  { rank=same; "func:place_order_step0"; "func:charge_step0"; "func:authorize_step0"; }
+  "func:place_order_step1";
+  "func:charge_step1";
+  "func:authorize_step1";
+  { rank=same; "func:place_order_step1"; "func:charge_step1"; "func:authorize_step1"; }
+  "func:place_order_step2";
+  "func:charge_step2";
+  "func:authorize_step2";
+  { rank=same; "func:place_order_step2"; "func:charge_step2"; "func:authorize_step2"; }
+  "func:place_order_step3";
+  "func:charge_step3";
+  "func:authorize_step3";
+  { rank=same; "func:place_order_step3"; "func:charge_step3"; "func:authorize_step3"; }
+
+  // Lifelines
+  "func:place_order_header" -> "func:place_order_step0" [style=invis];
+  "func:place_order_step0" -> "func:place_order_step1" [style=invis];
+  "func:place_order_step1" -> "func:place_order_step2" [style=invis];
+  "func:place_order_step2" -> "func:place_order_step3" [style=invis];
+  "func:charge_header" -> "func:charge_step0" [style=invis];
+  "func:charge_step0" -> "func:charge_step1" [style=invis];
+  "func:charge_step1" -> "func:charge_step2" [style=invis];
+  "func:charge_step2" -> "func:charge_step3" [style=invis];
+  "func:authorize_header" -> "func:authorize_step0" [style=invis];
+  "func:authorize_step0" -> "func:authorize_step1" [style=invis];
+  "func:authorize_step1" -> "func:authorize_step2" [style=invis];
+  "func:authorize_step2" -> "func:authorize_step3" [style=invis];
+
+  // Messages
+  node [shape=none label=""];
+  "func:place_order_step0" -> "func:charge_step0" [label="charge" arrowhead=normal style=solid];
+  "func:charge_step1" -> "func:authorize_step1" [label="authorize" arrowhead=normal style=solid];
+  "func:authorize_step2" -> "func:charge_step2" [arrowhead=normal style=dashed];
+  "func:charge_step3" -> "func:place_order_step3" [arrowhead=normal style=dashed];
+}

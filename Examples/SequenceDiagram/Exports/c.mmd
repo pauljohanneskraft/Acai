@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant func_place_order as place_order
+    participant func_charge as charge
+    participant func_authorize as authorize
+    func_place_order->>func_charge: charge
+    func_charge->>func_authorize: authorize
+    func_authorize-->>func_charge: 
+    func_charge-->>func_place_order: 
