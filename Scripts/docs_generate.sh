@@ -24,6 +24,7 @@ readonly TARGETS=(
     UMLJS
     UMLDart
     UMLPython
+    UMLCFamily
     UMLDiagram
     UMLLibrary
     UMLRender

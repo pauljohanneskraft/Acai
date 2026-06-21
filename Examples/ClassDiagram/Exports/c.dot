@@ -1,0 +1,21 @@
+digraph UML {
+  rankdir=TB;
+  compound=true;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=none margin=0 fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "Genre" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;enumeration&gt;&gt;</FONT><BR/><B>Genre</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT">GENRE_POP<BR ALIGN="LEFT"/>GENRE_ROCK<BR ALIGN="LEFT"/>GENRE_JAZZ<BR ALIGN="LEFT"/>GENRE_CLASSICAL<BR ALIGN="LEFT"/>GENRE_ELECTRONIC<BR ALIGN="LEFT"/>GENRE_SPOKEN_WORD<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "Library" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>Library</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ playlists: Playlist<BR ALIGN="LEFT"/>+ count: int<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "MediaItem" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>MediaItem</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ title: char<BR ALIGN="LEFT"/>+ duration: double<BR ALIGN="LEFT"/>+ genre: Genre<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Player" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>Player</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ library: Library<BR ALIGN="LEFT"/>+ now_playing: int<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Playlist" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>Playlist</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ name: char<BR ALIGN="LEFT"/>+ items: MediaItem<BR ALIGN="LEFT"/>+ count: int<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Podcast" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>Podcast</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ base: MediaItem<BR ALIGN="LEFT"/>+ host: char<BR ALIGN="LEFT"/>+ episode_number: int<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Song" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><FONT POINT-SIZE="10">&lt;&lt;struct&gt;&gt;</FONT><BR/><B>Song</B></TD></TR><HR/><TR><TD ALIGN="LEFT">+ base: MediaItem<BR ALIGN="LEFT"/>+ artist: char<BR ALIGN="LEFT"/>+ album: char<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Library" -> "Playlist" [dir=back arrowtail=diamond label="playlists" headlabel="1"];
+  "MediaItem" -> "Genre" [dir=back arrowtail=diamond label="genre" headlabel="1"];
+  "Player" -> "Library" [dir=back arrowtail=diamond label="library" headlabel="1"];
+  "Playlist" -> "MediaItem" [dir=back arrowtail=diamond label="items" headlabel="1"];
+  "Podcast" -> "MediaItem" [dir=back arrowtail=diamond label="base" headlabel="1"];
+  "Song" -> "MediaItem" [dir=back arrowtail=diamond label="base" headlabel="1"];
+}

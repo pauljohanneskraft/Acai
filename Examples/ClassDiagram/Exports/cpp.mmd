@@ -1,0 +1,59 @@
+classDiagram
+    class Library["Library"] {
+        -playlists_ std::vector~Playlist~
+        +addPlaylist(playlist Playlist) void
+        +playlist(named std::string) Playlist
+    }
+    class MediaItem["MediaItem"] {
+        -title_ std::string
+        -duration_ double
+        -genre_ Genre
+        +title() std::string
+        +duration() double
+        +play() void
+    }
+    class Genre["Genre"] {
+        <<enumeration>>
+        pop
+        rock
+        jazz
+        classical
+        electronic
+        spokenWord
+    }
+    class Playable["Playable"] {
+        +~Playable()
+        +title() std::string*
+        +duration() double*
+        +play() void*
+    }
+    class Player["Player"] {
+        -library_ Library
+        -nowPlaying_ Playable
+        +play(item Playable) void
+        +playFirstItem(playlistNamed std::string) void
+    }
+    class Playlist["Playlist"] {
+        -name_ std::string
+        -items_ std::vector~MediaItem~
+        +totalDuration() double
+        +add(item MediaItem) void
+    }
+    class Podcast["Podcast"] {
+        -host_ std::string
+        -episodeNumber_ int
+        +play() void
+    }
+    class Song["Song"] {
+        -artist_ std::string
+        -album_ std::string
+        +play() void
+    }
+    Playable <|-- MediaItem
+    MediaItem <|-- Podcast
+    MediaItem <|-- Song
+    Library o-- "*" Playlist : playlists_
+    MediaItem *-- "1" Genre : genre_
+    Player *-- "1" Library : library_
+    Player *-- "1" Playable : nowPlaying_
+    Playlist o-- "*" MediaItem : items_

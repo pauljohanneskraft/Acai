@@ -9,6 +9,8 @@ enum LanguageOption: String, ExpressibleByArgument, CaseIterable {
     case javascript
     case dart
     case python
+    case c
+    case cpp
 
     var sourceLanguage: CodeArtifact.SourceLanguage {
         switch self {
@@ -26,6 +28,10 @@ enum LanguageOption: String, ExpressibleByArgument, CaseIterable {
             return .dart
         case .python:
             return .python
+        case .c:
+            return .c
+        case .cpp:
+            return .cpp
         }
     }
 }

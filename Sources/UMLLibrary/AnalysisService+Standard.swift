@@ -4,6 +4,7 @@ import UMLJS
 import UMLJVM
 import UMLDart
 import UMLPython
+import UMLCFamily
 
 // The one place that names the built-in languages. Assembling the standard parser set and the
 // concrete build-system detectors here keeps `AnalysisService` (and the rest of the engine)
@@ -18,7 +19,9 @@ extension AnalysisService {
         JSCodeParser(isTypeScript: true),
         JSCodeParser(isTypeScript: false),
         DartCodeParser(),
-        PythonCodeParser()
+        PythonCodeParser(),
+        CCodeParser(),
+        CppCodeParser()
     ]
 
     /// The standard build-system detectors. Each concrete detector now lives in its language
@@ -31,7 +34,10 @@ extension AnalysisService {
             JVMBuildSystemDetector.maven,
             NodeDetector(),
             FlutterDetector(),
-            PythonDetector()
+            PythonDetector(),
+            CFamilyBuildSystemDetector.cmake,
+            CFamilyBuildSystemDetector.make,
+            CFamilyBuildSystemDetector.meson
         ]
     }
 

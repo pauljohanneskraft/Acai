@@ -1,0 +1,10 @@
+digraph {
+  rankdir=LR;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "Banking" [label="Banking\nI=1.00  A=0.00\n2 types" fillcolor="#c8e6c9"];
+  "Core" [label="Core\nI=0.00  A=0.00\n3 types" fillcolor="#ffcdd2"];
+  "Banking" -> "Core" [penwidth=1.5 label="2"];
+}

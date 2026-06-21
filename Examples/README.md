@@ -15,11 +15,11 @@ interfaces or enums, enum-case casing follows each language's convention, etc.).
 
 ```
 Examples/
-  ClassDiagram/      Swift Kotlin Java TypeScript Dart Python              + Exports/
-  SequenceDiagram/   Swift Kotlin Java TypeScript Dart Python              + Exports/
-  StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart Python   + Exports/
-  PackageDiagram/    Swift Kotlin Java TypeScript Dart Python  (Core/ + Banking/ modules)  + Exports/
-  CallGraph/         Swift Kotlin Java TypeScript Dart Python                              + Exports/
+  ClassDiagram/      Swift Kotlin Java TypeScript Dart Python C Cpp        + Exports/
+  SequenceDiagram/   Swift Kotlin Java TypeScript Dart Python Cpp          + Exports/
+  StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart Python Cpp   + Exports/
+  PackageDiagram/    Swift Kotlin Java TypeScript Dart Python C Cpp  (Core/ + Banking/ modules)  + Exports/
+  CallGraph/         Swift Kotlin Java TypeScript Dart Python C Cpp                            + Exports/
 ```
 
 Each `Exports/` holds one `<language>.dot`, one `<language>.mmd` (Mermaid — embeds directly in
@@ -33,11 +33,11 @@ images are the faithful view.) This is sample input, not a buildable package —
 
 | Diagram      | Languages                                   | Why |
 | ------------ | ------------------------------------------- | --- |
-| **Class**    | Swift, Kotlin, Java, TypeScript, Dart, Python       | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. Python carries types via hints, and its instance attributes come from `self.x = …` in `__init__`. |
-| **Sequence** | Swift, Kotlin, Java, TypeScript, Dart, Python       | Needs typed call receivers; plain JavaScript doesn't carry them, so it's the only omission. |
-| **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart, Python | Value-flow analysis only needs assignments, which every parser extracts. |
-| **Package**  | Swift, Kotlin, Java, TypeScript, Dart, Python       | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction (Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`, Python `ABC`) counts toward abstractness, so all six report `A=0.33`. |
-| **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart, Python       | Needs typed call receivers (like Sequence); JavaScript is omitted. All six render the same order-submission graph. |
+| **Class**    | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | JavaScript is omitted: with no type annotations its diagram shows only inheritance — see the [`StateDiagram`](StateDiagram) example for JS instead. Python carries types via hints, and its instance attributes come from `self.x = …` in `__init__`. C models the domain with `struct`s + composition; C++ with classes + inheritance. |
+| **Sequence** | Swift, Kotlin, Java, TypeScript, Dart, Python, C++  | Needs typed call receivers; plain JavaScript doesn't carry them, and C (procedural) has no methods, so both are omitted. |
+| **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart, Python, C++ | Value-flow analysis only needs assignments, which every parser extracts. C is omitted (no method bodies driving a member-state machine). |
+| **Package**  | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction (Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`, Python `ABC`) counts toward abstractness, so those six report `A=0.33`; C and C++ express it as a function-pointer table / pure-virtual class, so they report `A=0.00`. |
+| **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Needs typed call receivers (like Sequence); JavaScript is omitted. C resolves free-function → free-function calls; the rest render the same order-submission graph. |
 
 ### The models
 
@@ -75,7 +75,7 @@ Each `uml image` command renders the light theme by default; add `--theme dark` 
 --output Examples/ClassDiagram/Exports/swift.dark.png --scale 2`).
 
 ```sh
-# Class diagram — DOT + Mermaid + PNG per language (swift kotlin java typescript dart python), macOS only for images
+# Class diagram — DOT + Mermaid + PNG per language (swift kotlin java typescript dart python c cpp), macOS only for images
 uml diagram --source Examples/ClassDiagram --language <lang> \
     --output Examples/ClassDiagram/Exports/<lang>.dot
 uml diagram --source Examples/ClassDiagram --language <lang> --format mermaid \
@@ -83,7 +83,7 @@ uml diagram --source Examples/ClassDiagram --language <lang> --format mermaid \
 uml image   --source Examples/ClassDiagram --language <lang> --grouping none \
     --output Examples/ClassDiagram/Exports/<lang>.png --scale 2
 
-# Sequence diagram (swift | kotlin | java | typescript | dart | python) — uniform entry point
+# Sequence diagram (swift | kotlin | java | typescript | dart | python | cpp) — uniform entry point
 uml diagram --source Examples/SequenceDiagram --language <lang> \
     --sequence-from "Checkout.placeOrder" \
     --output Examples/SequenceDiagram/Exports/<lang>.dot
@@ -105,9 +105,10 @@ uml image   --source Examples/StateDiagram --language <lang> \
     --state-from "Download.state" \
     --output Examples/StateDiagram/Exports/<lang>.png --scale 2
 
-# Package diagram (swift kotlin java typescript dart python) — scanned per-language SUBDIR so the
+# Package diagram (swift kotlin java typescript dart python c cpp) — scanned per-language SUBDIR so the
 # Core/Banking directories become modules. <Lang> is the dir name (Swift, Kotlin, Java,
-# TypeScript, Dart, Python); <lang> the lower-case stem (note: TypeScript dir vs typescript stem).
+# TypeScript, Dart, Python, C, Cpp); <lang> the lower-case stem (note: TypeScript dir vs typescript
+# stem, and Cpp dir vs cpp stem).
 uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package \
     --output Examples/PackageDiagram/Exports/<lang>.dot
 uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package --format mermaid \
@@ -115,7 +116,7 @@ uml diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package 
 uml image   --source Examples/PackageDiagram/<Lang> --language <lang> --package \
     --output Examples/PackageDiagram/Exports/<lang>.png --scale 2
 
-# Call graph (swift kotlin java typescript dart python) — whole-codebase scope.
+# Call graph (swift kotlin java typescript dart python c cpp) — whole-codebase scope.
 uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
     --output Examples/CallGraph/Exports/<lang>.dot
 uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --format mermaid \

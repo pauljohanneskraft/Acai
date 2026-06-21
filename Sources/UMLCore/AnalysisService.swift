@@ -95,42 +95,88 @@ public struct AnalysisService: Sendable {
             print("Warning: No parser registered for language \(spec.language.rawValue); skipping it.")
             return nil
         }
+        let files = collectFiles(for: codeParser, in: spec)
+        guard !files.isEmpty else { return nil }
+
+        let parsed = parseFiles(files, using: codeParser, rootURL: rootURL)
+        return enrichPerLanguage(parsed, spec: spec, fallback: codeParser.configuration)
+    }
+
+    /// Collects the spec's source files for `codeParser`, skipping every registered language's
+    /// build-output/dependency directories (plus the universal VCS dir).
+    private func collectFiles(for codeParser: any CodeParser, in spec: SourceSpec) -> [URL] {
         let exts = Set(codeParser.fileExtensions)
-        // Skip every registered language's build-output/dependency directories (plus the universal
-        // VCS dir) so e.g. a JS project's `node_modules` is never walked.
         let excludedDirectories = registry.excludedDirectories
             .union(UMLConstants.defaultExcludedSourceDirectories)
-
-        let files = spec.sourceDirs
+        return spec.sourceDirs
             .flatMap {
                 FileManager.default.fileURLs(
                     in: $0, withExtensions: exts, excludingDirectories: excludedDirectories
                 )
             }
             .removingDuplicates { $0 }
+    }
 
-        guard !files.isEmpty else { return nil }
-
-        var artifact = CodeArtifact(
-            metadata: .init(sourceLanguage: spec.language, filePaths: [], toolVersion: "1.0.0")
-        )
-
+    /// Parses every file and groups the results by each file's *own* `metadata.sourceLanguage` rather
+    /// than the spec's nominal language. A parser may legitimately classify a file as a different
+    /// language than the one whose extensions discovered it — e.g. the C parser owns `.h`, but a
+    /// header containing C++ constructs is parsed as, and reports, C++. The returned `order` preserves
+    /// first-seen order so the merged artifact's top-level language is stable.
+    private func parseFiles(
+        _ files: [URL], using codeParser: any CodeParser, rootURL: URL
+    ) -> (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]) {
+        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
+        var order: [CodeArtifact.SourceLanguage] = []
         for file in files {
             let relativePath = file.relativePath(from: rootURL)
             do {
                 let source = try String(contentsOf: file, encoding: .utf8)
                 let parsed = codeParser.parse(source: source, fileName: relativePath)
-                artifact = artifact.merging(with: parsed)
+                let language = parsed.metadata.sourceLanguage
+                if let existing = byLanguage[language] {
+                    byLanguage[language] = existing.merging(with: parsed)
+                } else {
+                    byLanguage[language] = parsed
+                    order.append(language)
+                }
             } catch {
                 print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
             }
         }
+        return (byLanguage, order)
+    }
 
-        // Run the generalizable enrichment pipeline (extension resolution, name→id
-        // resolution, inheritance/conformance reclassification, inferred structural
-        // edges, dedup) so the emitted artifact is fully resolved for every language.
-        // The parser's configuration supplies the language's type-name classification.
-        return artifact.enriched(configuration: codeParser.configuration)
+    /// Runs the generalizable enrichment pipeline (extension resolution, name→id resolution,
+    /// inheritance/conformance reclassification, inferred structural edges, dedup) once per detected
+    /// language, each with *that* language's configuration (resolved from the registry, keyed on the
+    /// artifact's own `metadata.sourceLanguage` — never hard-coded here; `fallback` covers a language
+    /// the registry doesn't know). The spec's nominal language is emitted first so the merged
+    /// artifact's top-level `sourceLanguage` matches the spec when that language is present.
+    private func enrichPerLanguage(
+        _ parsed: (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]),
+        spec: SourceSpec,
+        fallback: LanguageConfiguration
+    ) -> CodeArtifact? {
+        var order = parsed.order
+        guard !order.isEmpty else { return nil }
+        if let index = order.firstIndex(of: spec.language), index != 0 {
+            order.remove(at: index)
+            order.insert(spec.language, at: 0)
+        }
+
+        var result: CodeArtifact?
+        for language in order {
+            guard let group = parsed.byLanguage[language] else { continue }
+            let configuration = registry.configuration(for: language) ?? fallback
+            let enriched = group.enriched(configuration: configuration)
+            result = result.map { $0.merging(with: enriched) } ?? enriched
+        }
+
+        guard var combined = result else { return nil }
+        if combined.metadata.toolVersion == nil {
+            combined.metadata.toolVersion = "1.0.0"
+        }
+        return combined
     }
 }
 

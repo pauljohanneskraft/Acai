@@ -46,7 +46,9 @@ struct ClassDiagramExportTests {
         ("java", .java),
         ("typescript", .typeScript),
         ("dart", .dart),
-        ("python", .python)
+        ("python", .python),
+        ("c", .c),
+        ("cpp", .cpp)
     ]
 
     @Test("regenerated class DOT matches the checked-in golden", arguments: cases)
@@ -90,7 +92,8 @@ struct SequenceDiagramExportTests {
         ("java", .java),
         ("typescript", .typeScript),
         ("dart", .dart),
-        ("python", .python)
+        ("python", .python),
+        ("cpp", .cpp)
     ]
 
     @Test("regenerated sequence DOT matches the checked-in golden", arguments: cases)
@@ -142,7 +145,9 @@ struct PackageDiagramExportTests {
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
         ("dart", "Dart", .dart),
-        ("python", "Python", .python)
+        ("python", "Python", .python),
+        ("c", "C", .c),
+        ("cpp", "Cpp", .cpp)
     ]
 
     @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
@@ -189,7 +194,9 @@ struct CallGraphExportTests {
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
         ("dart", "Dart", .dart),
-        ("python", "Python", .python)
+        ("python", "Python", .python),
+        ("c", "C", .c),
+        ("cpp", "Cpp", .cpp)
     ]
 
     @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
@@ -233,7 +240,8 @@ struct StateDiagramExportTests {
         ("typescript", .typeScript),
         ("javascript", .javaScript),
         ("dart", .dart),
-        ("python", .python)
+        ("python", .python),
+        ("cpp", .cpp)
     ]
 
     @Test("regenerated state DOT matches the checked-in golden", arguments: cases)
