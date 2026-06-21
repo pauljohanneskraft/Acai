@@ -8,8 +8,8 @@ UML reads your source the way a compiler's front end would — it actually parse
 it doesn't grep for keywords — and builds **one unified model** of your types and how
 they relate. From that model it draws class diagrams: the boxes, the members, and the
 inheritance / composition / dependency arrows between them. It works across **Swift,
-Kotlin, Java, TypeScript/JavaScript, Dart, and Python**, in a single mixed-language picture,
-with nothing to annotate and no build to run first.
+Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++**, in a single mixed-language
+picture, with nothing to annotate and no build to run first.
 
 If you only read one page, make it <doc:GettingStarted> — one call to [AnalysisService](/documentation/umlcore/analysisservice)
 discovers, parses, and merges an entire project for you.
@@ -44,6 +44,9 @@ for you. They turn source text into the same [UMLCore](/documentation/umlcore/) 
   share the JVM build systems.
 - **[UMLDart](/documentation/umldart/)** — Dart.
 - **[UMLPython](/documentation/umlpython/)** — Python (`.py`).
+- **[UMLCFamily](/documentation/umlcfamily/)** — C and C++ (`.c`, `.h`, `.cpp`, `.hpp`, …); one module,
+  as they share the C/C++ build systems. The C parser owns the shared `.h` extension and routes each
+  header to the C or C++ grammar by its contents.
 - **[UMLTreeSitter](/documentation/umltreesitter/)** — the shared Tree-sitter helpers the
   grammar-based parsers above are built on. Reach for this only if you're writing a new
   parser.

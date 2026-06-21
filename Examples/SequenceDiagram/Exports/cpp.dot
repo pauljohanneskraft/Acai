@@ -1,0 +1,54 @@
+digraph {
+  label="Checkout.placeOrder()";
+  labelloc=t;
+  rankdir=TB;
+  fontname="Helvetica";
+  fontsize=12;
+  node [fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  // Participants
+  "Checkout_header" [shape=box label="Checkout"];
+  "PaymentService_header" [shape=box label="PaymentService"];
+  "PaymentGateway_header" [shape=box label="PaymentGateway"];
+  { rank=same; "Checkout_header"; "PaymentService_header"; "PaymentGateway_header"; }
+
+  // Lifeline step nodes
+  node [shape=none label="" width=0 height=0];
+  "Checkout_step0";
+  "PaymentService_step0";
+  "PaymentGateway_step0";
+  { rank=same; "Checkout_step0"; "PaymentService_step0"; "PaymentGateway_step0"; }
+  "Checkout_step1";
+  "PaymentService_step1";
+  "PaymentGateway_step1";
+  { rank=same; "Checkout_step1"; "PaymentService_step1"; "PaymentGateway_step1"; }
+  "Checkout_step2";
+  "PaymentService_step2";
+  "PaymentGateway_step2";
+  { rank=same; "Checkout_step2"; "PaymentService_step2"; "PaymentGateway_step2"; }
+  "Checkout_step3";
+  "PaymentService_step3";
+  "PaymentGateway_step3";
+  { rank=same; "Checkout_step3"; "PaymentService_step3"; "PaymentGateway_step3"; }
+
+  // Lifelines
+  "Checkout_header" -> "Checkout_step0" [style=invis];
+  "Checkout_step0" -> "Checkout_step1" [style=invis];
+  "Checkout_step1" -> "Checkout_step2" [style=invis];
+  "Checkout_step2" -> "Checkout_step3" [style=invis];
+  "PaymentService_header" -> "PaymentService_step0" [style=invis];
+  "PaymentService_step0" -> "PaymentService_step1" [style=invis];
+  "PaymentService_step1" -> "PaymentService_step2" [style=invis];
+  "PaymentService_step2" -> "PaymentService_step3" [style=invis];
+  "PaymentGateway_header" -> "PaymentGateway_step0" [style=invis];
+  "PaymentGateway_step0" -> "PaymentGateway_step1" [style=invis];
+  "PaymentGateway_step1" -> "PaymentGateway_step2" [style=invis];
+  "PaymentGateway_step2" -> "PaymentGateway_step3" [style=invis];
+
+  // Messages
+  node [shape=none label=""];
+  "Checkout_step0" -> "PaymentService_step0" [label="charge" arrowhead=normal style=solid];
+  "PaymentService_step1" -> "PaymentGateway_step1" [label="authorize" arrowhead=normal style=solid];
+  "PaymentGateway_step2" -> "PaymentService_step2" [arrowhead=normal style=dashed];
+  "PaymentService_step3" -> "Checkout_step3" [arrowhead=normal style=dashed];
+}

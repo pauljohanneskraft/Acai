@@ -80,6 +80,7 @@ let package = Package(
         .library(name: "UMLJS", targets: ["UMLJS"]),
         .library(name: "UMLDart", targets: ["UMLDart"]),
         .library(name: "UMLPython", targets: ["UMLPython"]),
+        .library(name: "UMLCFamily", targets: ["UMLCFamily"]),
         .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
         .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
     ] + optionalProducts,
@@ -94,6 +95,11 @@ let package = Package(
         // work around the grammar's broken SwiftPM manifest, which never compiles `scanner.c`) is
         // coupled to this version's `parser.c` external-token table and must match it exactly.
         .package(url: "https://github.com/tree-sitter/tree-sitter-python", exact: "0.25.0"),
+        // C and C++ share the `UMLCFamily` target (like Java+Kotlin share `UMLJVM`). Both grammars
+        // ship working SwiftPM manifests — tree-sitter-cpp compiles its own `src/scanner.c`, so
+        // (unlike Python) no vendored scanner target is needed.
+        .package(url: "https://github.com/tree-sitter/tree-sitter-c", from: "0.24.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-cpp", from: "0.23.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
         .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
@@ -167,6 +173,18 @@ let package = Package(
                 .product(name: "TreeSitterPython", package: "tree-sitter-python"),
             ]
         ),
+        // MARK: C-family languages (C + C++) — one target because they share the C/C++ build
+        // systems (CMake/Make/Meson) + `CFamilyBuildSystemDetector` and most of their tree-sitter
+        // grammar (tree-sitter-cpp reuses tree-sitter-c's node types).
+        .target(
+            name: "UMLCFamily",
+            dependencies: [
+                "UMLCore",
+                "UMLTreeSitter",
+                .product(name: "TreeSitterC", package: "tree-sitter-c"),
+                .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
+            ]
+        ),
 
         // MARK: DOT/Graphviz diagram generator
         .target(
@@ -186,6 +204,7 @@ let package = Package(
                 "UMLJVM",
                 "UMLDart",
                 "UMLPython",
+                "UMLCFamily",
             ]
         ),
 
@@ -208,6 +227,7 @@ let package = Package(
         .testTarget(name: "UMLJVMTests", dependencies: ["UMLJVM", "UMLCore"]),
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLPythonTests", dependencies: ["UMLPython", "UMLCore"]),
+        .testTarget(name: "UMLCFamilyTests", dependencies: ["UMLCFamily", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
         .testTarget(name: "UMLCLITests", dependencies: ["UMLCLI", "UMLCore"]),

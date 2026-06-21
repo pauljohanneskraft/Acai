@@ -46,7 +46,9 @@ struct ClassDiagramExportTests {
         ("java", .java),
         ("typescript", .typeScript),
         ("dart", .dart),
-        ("python", .python)
+        ("python", .python),
+        ("c", .c),
+        ("cpp", .cpp)
     ]
 
     @Test("regenerated class DOT matches the checked-in golden", arguments: cases)
@@ -81,27 +83,32 @@ struct ClassDiagramExportTests {
 @Suite("Sequence diagram DOT exports", .serialized)
 struct SequenceDiagramExportTests {
 
-    /// Sequence tracing needs typed receivers. Plain JavaScript carries none, so it stays out;
-    /// the other five languages — including Dart, whose extractor now resolves call sites —
-    /// populate `callSites` with types and are covered here.
-    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift),
-        ("kotlin", .kotlin),
-        ("java", .java),
-        ("typescript", .typeScript),
-        ("dart", .dart),
-        ("python", .python)
+    /// Sequence tracing needs callable receivers. Plain JavaScript carries none, so it stays out;
+    /// the other languages populate `callSites`. The OO languages enter on the `Checkout.placeOrder`
+    /// method; C has no methods, so it enters on the free function `place_order` (empty type name)
+    /// and renders the same call chain as `.control` lifelines.
+    static let cases: [(
+        stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
+    )] = [
+        ("swift", .swift, ("Checkout", "placeOrder")),
+        ("kotlin", .kotlin, ("Checkout", "placeOrder")),
+        ("java", .java, ("Checkout", "placeOrder")),
+        ("typescript", .typeScript, ("Checkout", "placeOrder")),
+        ("dart", .dart, ("Checkout", "placeOrder")),
+        ("python", .python, ("Checkout", "placeOrder")),
+        ("cpp", .cpp, ("Checkout", "placeOrder")),
+        ("c", .c, ("", "place_order"))
     ]
 
     @Test("regenerated sequence DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesGolden(
+        stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
+    ) throws {
         let artifact = try ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagram"), language: language
         )
-        // Mirrors DiagramCommand.renderSequenceDOT for `Checkout.placeOrder` with defaults.
-        let diagram = artifact.sequenceDiagram(
-            entryPoint: ("Checkout", "placeOrder"), maxDepth: 5, typeMapping: [:]
-        )
+        // Mirrors DiagramCommand.renderSequenceDOT for the language's entry point with defaults.
+        let diagram = artifact.sequenceDiagram(entryPoint: entry, maxDepth: 5, typeMapping: [:])
         #expect(!diagram.participants.isEmpty, "\(stem) sequence trace produced no participants")
         let generated = SequenceDiagramDOTRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -111,13 +118,13 @@ struct SequenceDiagramExportTests {
     }
 
     @Test("regenerated sequence Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
+    func matchesMermaidGolden(
+        stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
+    ) throws {
         let artifact = try ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagram"), language: language
         )
-        let diagram = artifact.sequenceDiagram(
-            entryPoint: ("Checkout", "placeOrder"), maxDepth: 5, typeMapping: [:]
-        )
+        let diagram = artifact.sequenceDiagram(entryPoint: entry, maxDepth: 5, typeMapping: [:])
         #expect(!diagram.participants.isEmpty, "\(stem) sequence trace produced no participants")
         let generated = SequenceDiagramMermaidRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -142,7 +149,9 @@ struct PackageDiagramExportTests {
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
         ("dart", "Dart", .dart),
-        ("python", "Python", .python)
+        ("python", "Python", .python),
+        ("c", "C", .c),
+        ("cpp", "Cpp", .cpp)
     ]
 
     @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
@@ -189,7 +198,9 @@ struct CallGraphExportTests {
         ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript),
         ("dart", "Dart", .dart),
-        ("python", "Python", .python)
+        ("python", "Python", .python),
+        ("c", "C", .c),
+        ("cpp", "Cpp", .cpp)
     ]
 
     @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
@@ -224,8 +235,10 @@ struct CallGraphExportTests {
 @Suite("State diagram DOT exports", .serialized)
 struct StateDiagramExportTests {
 
-    /// All six languages express the same `Download.state` machine, so the state-from spec
-    /// is uniform; only the parser under test differs.
+    /// Every language expresses the same `Download.state` machine, so the state-from spec is
+    /// uniform; only the parser under test differs. C has no methods, so its transitions live in
+    /// free functions that mutate the struct by pointer (`d->state = …`); the value-flow analysis
+    /// attributes those writes to `Download` by receiver type.
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", .swift),
         ("kotlin", .kotlin),
@@ -233,7 +246,9 @@ struct StateDiagramExportTests {
         ("typescript", .typeScript),
         ("javascript", .javaScript),
         ("dart", .dart),
-        ("python", .python)
+        ("python", .python),
+        ("cpp", .cpp),
+        ("c", .c)
     ]
 
     @Test("regenerated state DOT matches the checked-in golden", arguments: cases)

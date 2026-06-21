@@ -1,0 +1,22 @@
+digraph {
+  label="Download.state";
+  labelloc=t;
+  rankdir=TB;
+  fontname="Helvetica";
+  fontsize=12;
+  node [fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "__initial" [shape=circle style=filled fillcolor="black" width=0.3 label=""];
+  "state_idle" [shape=Mrecord label="idle"];
+  "state_requested" [shape=Mrecord label="requested"];
+  "state_downloading" [shape=Mrecord label="downloading"];
+  "state_verifying" [shape=Mrecord label="verifying"];
+  "state_finished" [shape=Mrecord label="finished"];
+  "state_failed" [shape=Mrecord label="failed"];
+  "__initial" -> "state_idle";
+  "__initial" -> "state_requested" [label="run()"];
+  "state_requested" -> "state_downloading" [label="run()"];
+  "state_downloading" -> "state_verifying" [label="run()"];
+  "state_verifying" -> "state_finished" [label="run()"];
+  "__initial" -> "state_failed" [label="fail()"];
+}

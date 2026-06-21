@@ -15,8 +15,10 @@ struct SequenceLayoutModelTests {
                 .init(id: "C", name: "Gamma", kind: .object)
             ],
             messages: [
-                .init(from: "Alpha", to: "Beta", label: "one", kind: .synchronous, order: 0),
-                .init(from: "Beta", to: "Gamma", label: "two", kind: .synchronous, order: 1)
+                // `from`/`to` reference participant *ids* (as the generator emits), which here
+                // differ from the display names.
+                .init(from: "A", to: "B", label: "one", kind: .synchronous, order: 0),
+                .init(from: "B", to: "C", label: "two", kind: .synchronous, order: 1)
             ]
         )
     }
@@ -29,8 +31,8 @@ struct SequenceLayoutModelTests {
                 .init(id: "B", name: "Beta", kind: .object)
             ],
             messages: [
-                .init(from: "Alpha", to: "Beta", label: "work", kind: .synchronous, order: 0),
-                .init(from: "Beta", to: "Alpha", label: nil, kind: .return, order: 1)
+                .init(from: "A", to: "B", label: "work", kind: .synchronous, order: 0),
+                .init(from: "B", to: "A", label: nil, kind: .return, order: 1)
             ]
         )
     }
@@ -43,7 +45,7 @@ struct SequenceLayoutModelTests {
         #expect(xs == xs.sorted())
         #expect(Set(xs).count == 3)
 
-        // Messages resolve by participant *name* and step downward by order. Arrow endpoints
+        // Messages resolve by participant *id* and step downward by order. Arrow endpoints
         // sit on activation-bar edges, so they are near (within a bar width of) the lifelines.
         #expect(layout.messages.count == 2)
         #expect(layout.messages[0].y < layout.messages[1].y)
@@ -74,7 +76,7 @@ struct SequenceLayoutModelTests {
     func selfCall() {
         let selfDiagram = SequenceDiagram(
             participants: [.init(id: "A", name: "Alpha", kind: .object)],
-            messages: [.init(from: "Alpha", to: "Alpha", label: "loop", kind: .synchronous, order: 0)]
+            messages: [.init(from: "A", to: "A", label: "loop", kind: .synchronous, order: 0)]
         )
         let layout = SequenceLayoutModel(diagram: selfDiagram)
         #expect(layout.messages.count == 1)
@@ -119,8 +121,8 @@ struct SequenceLayoutModelTests {
         let nested = SequenceDiagram(
             participants: [.init(id: "A", name: "Alpha", kind: .object)],
             messages: [
-                .init(from: "Alpha", to: "Alpha", label: "step", kind: .synchronous, order: 0),
-                .init(from: "Alpha", to: "Alpha", label: nil, kind: .return, order: 1)
+                .init(from: "A", to: "A", label: "step", kind: .synchronous, order: 0),
+                .init(from: "A", to: "A", label: nil, kind: .return, order: 1)
             ]
         )
         let layout = SequenceLayoutModel(diagram: nested)

@@ -134,7 +134,7 @@ public struct SequenceLayoutModel {
         // participant keeps a stable *default* slot; an override moves only that header, leaving
         // its neighbours' slots untouched (so dragging one lifeline doesn't drag the rest).
         var frames: [ParticipantFrame] = []
-        var frameByName: [String: ParticipantFrame] = [:]
+        var frameByID: [String: ParticipantFrame] = [:]
         var defaultRightEdge: CGFloat = 0  // right edge of the previous *default* slot
         for participant in diagram.participants {
             let width = Self.headerWidth(for: participant.name)
@@ -154,20 +154,21 @@ public struct SequenceLayoutModel {
                 lifelineBottom: lifelineBottom
             )
             frames.append(frame)
-            frameByName[participant.name] = frame
+            frameByID[participant.id] = frame
         }
         self.participants = frames
 
         // Lay out messages top-to-bottom while tracking execution occurrences: a call pushes an
         // activation on the receiver, the matching return pops it. Arrow endpoints sit on the
         // edges of the active bars so arrows visibly connect activations (UML 2 notation).
-        // Endpoints resolve by participant *name*, which the generator also uses for
-        // `Message.from`/`to` and for `Participant.id` (both are the simple type name).
-        var pass = ActivationPass(frameByName: frameByName)
+        // Endpoints resolve by participant *id* — the key `Message.from`/`to` reference. For a
+        // type that is its simple name; for a free function it is a namespaced `func:` id distinct
+        // from the display name, so keying by name here would orphan every free-function message.
+        var pass = ActivationPass(frameByID: frameByID)
 
         // The initiating participant gets an implicit root activation: it is "executing" for the
         // whole interaction even though no message ever activates it.
-        if let first = ordered.first, frameByName[first.from] != nil {
+        if let first = ordered.first, frameByID[first.from] != nil {
             pass.push(on: first.from, at: (yByOrder[first.order] ?? messageAreaTop) - Self.activationCap)
         }
 
@@ -183,7 +184,7 @@ public struct SequenceLayoutModel {
         // Combined fragments: frame each one around the rows of the messages it covers. Larger
         // (outer) fragments first so nested fragments draw on top.
         self.fragments = diagram.fragments
-            .compactMap { Self.fragmentFrame($0, yByOrder: yByOrder, messages: ordered, frameByName: frameByName) }
+            .compactMap { Self.fragmentFrame($0, yByOrder: yByOrder, messages: ordered, frameByID: frameByID) }
             .sorted { $0.rect.width * $0.rect.height > $1.rect.width * $1.rect.height }
 
         let headerMaxX = frames.map(\.headerRect.maxX).max() ?? Self.headerWidth(for: diagram.title ?? "")
@@ -224,7 +225,7 @@ public struct SequenceLayoutModel {
         _ fragment: SequenceDiagram.Fragment,
         yByOrder: [Int: CGFloat],
         messages: [SequenceDiagram.Message],
-        frameByName: [String: ParticipantFrame]
+        frameByID: [String: ParticipantFrame]
     ) -> FragmentFrame? {
         let operands = fragment.operands.sorted { $0.firstOrder < $1.firstOrder }
 
@@ -245,7 +246,7 @@ public struct SequenceLayoutModel {
         }
         guard let firstSpan = spans.first, let lastSpan = spans.last else { return nil }
 
-        let lifelineXs = coveredNames.compactMap { frameByName[$0]?.lifelineX }
+        let lifelineXs = coveredNames.compactMap { frameByID[$0]?.lifelineX }
         guard let minLifelineX = lifelineXs.min(), let maxLifelineX = lifelineXs.max() else { return nil }
         let horizontalPad: CGFloat = 36
         let left = minLifelineX - horizontalPad
@@ -285,21 +286,21 @@ public struct SequenceLayoutModel {
 /// Mutable state for the message/activation layout pass: a stack of open activation bars per
 /// participant, the finished bars, and the laid-out messages with bar-edge arrow endpoints.
 private struct ActivationPass {
-    let frameByName: [String: SequenceLayoutModel.ParticipantFrame]
+    let frameByID: [String: SequenceLayoutModel.ParticipantFrame]
 
     private(set) var messages: [SequenceLayoutModel.MessageLayout] = []
     private(set) var bars: [SequenceLayoutModel.ActivationBar] = []
-    /// Open activations per participant name: the y where each began, bottom of stack first.
+    /// Open activations per participant id: the y where each began, bottom of stack first.
     private var open: [String: [CGFloat]] = [:]
     private var barID = 0
 
-    init(frameByName: [String: SequenceLayoutModel.ParticipantFrame]) {
-        self.frameByName = frameByName
+    init(frameByID: [String: SequenceLayoutModel.ParticipantFrame]) {
+        self.frameByID = frameByID
     }
 
     /// Centre x of the top activation bar on a participant (its lifeline when none is open).
     private func topBarCentreX(_ name: String) -> CGFloat {
-        guard let frame = frameByName[name] else { return 0 }
+        guard let frame = frameByID[name] else { return 0 }
         let depth = open[name]?.count ?? 0
         guard depth > 0 else { return frame.lifelineX }
         return frame.lifelineX + CGFloat(depth - 1) * SequenceLayoutModel.activationNestOffset
@@ -311,7 +312,7 @@ private struct ActivationPass {
 
     /// Pop the top activation of a participant, emitting its finished bar.
     private mutating func pop(on name: String, at y: CGFloat) {
-        guard let frame = frameByName[name], var stack = open[name], !stack.isEmpty else { return }
+        guard let frame = frameByID[name], var stack = open[name], !stack.isEmpty else { return }
         let start = stack.removeLast()
         open[name] = stack
         let centre = frame.lifelineX + CGFloat(stack.count) * SequenceLayoutModel.activationNestOffset
@@ -339,8 +340,8 @@ private struct ActivationPass {
 
     mutating func layOut(message: SequenceDiagram.Message, index: Int, y: CGFloat) {
         guard
-            let from = frameByName[message.from],
-            let to = frameByName[message.to]
+            let from = frameByID[message.from],
+            let to = frameByID[message.to]
         else { return }
         let half = SequenceLayoutModel.activationWidth / 2
         let isSelf = message.from == message.to
