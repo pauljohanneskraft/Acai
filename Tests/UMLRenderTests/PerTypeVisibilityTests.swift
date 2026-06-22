@@ -57,7 +57,7 @@ struct PerTypeVisibilityTests {
         {"showProperties": true, "showMethods": true, "showEnumCases": true,
          "showRelationships": true, "showInheritance": true, "showComposition": true,
          "showDependency": true, "grouping": "product", "showExternalTypes": false,
-         "hideGeneratedDartTypes": true}
+         "hideGeneratedTypes": true}
         """
         let config = try JSONDecoder().decode(ClassDiagramConfiguration.self, from: Data(json.utf8))
         #expect(config.propertyVisibility.isEmpty)

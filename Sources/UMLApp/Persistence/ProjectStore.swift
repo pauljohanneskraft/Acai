@@ -22,6 +22,22 @@ final class ProjectStore: ObservableObject {
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
 
+    /// The most recent load/save failure, surfaced to the UI (e.g. via an alert). Replaces the
+    /// old `print`-and-swallow so a failed write doesn't silently look successful.
+    @Published var lastError: StoreError?
+
+    /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
+    struct StoreError: Identifiable {
+        let id = UUID()
+        let message: String
+    }
+
+    /// Records a failure both to the console (for logs) and to `lastError` (for the UI).
+    func report(_ message: String) {
+        print(message)
+        lastError = StoreError(message: message)
+    }
+
     let baseDir: URL
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
@@ -43,7 +59,9 @@ final class ProjectStore: ObservableObject {
             self.baseDir = (appSupport ?? fileManager.homeDirectoryForCurrentUser)
                 .appendingPathComponent(bundleID, isDirectory: true)
             #else
-            self.baseDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            self.baseDir = (fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+                ?? fileManager.temporaryDirectory)
+                .appendingPathComponent("UMLApp", isDirectory: true)
             #endif
         }
         try? fileManager.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
@@ -76,11 +94,11 @@ final class ProjectStore: ObservableObject {
                         loadArtifact(for: codebase.id)
                     }
                 } catch {
-                    print("Failed to load project at \(projectURL): \(error)")
+                    report("Failed to load project at \(projectURL.lastPathComponent): \(error.localizedDescription)")
                 }
             }
         } catch {
-            print("Failed to load project directory: \(error)")
+            report("Failed to load project directory: \(error.localizedDescription)")
         }
     }
 
@@ -91,7 +109,7 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             generatedDiagrams[id] = try JSONDecoder().decode(GeneratedDiagram.self, from: data)
         } catch {
-            print("Failed to load generated diagram \(id): \(error)")
+            report("Failed to load a generated diagram: \(error.localizedDescription)")
         }
     }
 
@@ -102,7 +120,7 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             freeformDiagrams[id] = try JSONDecoder().decode(FreeformDiagram.self, from: data)
         } catch {
-            print("Failed to load freeform diagram \(id): \(error)")
+            report("Failed to load a freeform diagram: \(error.localizedDescription)")
         }
     }
 
@@ -113,7 +131,7 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             artifacts[codebaseID] = try JSONDecoder().decode(CodeArtifact.self, from: data)
         } catch {
-            print("Failed to load artifact for codebase \(codebaseID): \(error)")
+            report("Failed to load a stored analysis: \(error.localizedDescription)")
         }
     }
 
@@ -146,7 +164,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(project).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save project \(project.id): \(error)")
+            report("Failed to save project “\(project.title)”: \(error.localizedDescription)")
         }
     }
 
@@ -157,7 +175,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save generated diagram \(diagram.id): \(error)")
+            report("Failed to save diagram “\(diagram.name)”: \(error.localizedDescription)")
         }
     }
 
@@ -168,7 +186,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save freeform diagram \(diagram.id): \(error)")
+            report("Failed to save diagram “\(diagram.name)”: \(error.localizedDescription)")
         }
     }
 
@@ -179,7 +197,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(artifact).write(to: url, options: .atomic)
         } catch {
-            print("Failed to save artifact for codebase \(codebaseID): \(error)")
+            report("Failed to save analysis: \(error.localizedDescription)")
         }
     }
 

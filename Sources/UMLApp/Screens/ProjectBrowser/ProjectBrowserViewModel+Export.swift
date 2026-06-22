@@ -52,7 +52,7 @@ extension ProjectBrowserViewModel {
             do {
                 try dot.data(using: .utf8)?.write(to: url, options: .atomic)
             } catch {
-                print("Export failed: \(error)")
+                store.report("Export failed: \(error.localizedDescription)")
             }
         }
         #endif
@@ -88,7 +88,7 @@ extension ProjectBrowserViewModel {
             do {
                 try mermaid.data(using: .utf8)?.write(to: url, options: .atomic)
             } catch {
-                print("Export failed: \(error)")
+                store.report("Export failed: \(error.localizedDescription)")
             }
         }
         #endif

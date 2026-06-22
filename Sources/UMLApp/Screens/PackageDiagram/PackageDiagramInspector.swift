@@ -1,5 +1,6 @@
 import SwiftUI
 import UMLDiagram
+import UMLRender
 
 /// The package diagram's metrics sidebar. The canvas stays label-free (UML package shapes +
 /// thickness-weighted dependency arrows); every number — instability, abstractness, afferent/

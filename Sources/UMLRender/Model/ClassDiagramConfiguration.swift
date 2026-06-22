@@ -76,17 +76,7 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
         grouping = try container.decodeIfPresent(Grouping.self, forKey: .grouping) ?? .product
         showExternalTypes = try bool(.showExternalTypes, default: false)
         minimumAccessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccessLevel)
-        // Decode the current key, falling back to the pre-generalization `hideGeneratedDartTypes`
-        // key so diagrams saved before the rename keep loading.
-        let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
-        hideGeneratedTypes = try container.decodeIfPresent(Bool.self, forKey: .hideGeneratedTypes)
-            ?? legacy.decodeIfPresent(Bool.self, forKey: .hideGeneratedDartTypes)
-            ?? true
+        hideGeneratedTypes = try bool(.hideGeneratedTypes, default: true)
         focus = try container.decodeIfPresent(FocusConfiguration.self, forKey: .focus)
-    }
-
-    /// Keys that no longer correspond to a stored property but may still appear in saved diagrams.
-    private enum LegacyCodingKeys: String, CodingKey {
-        case hideGeneratedDartTypes
     }
 }

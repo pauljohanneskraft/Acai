@@ -38,7 +38,7 @@ extension KotlinExtractor {
 
         let scope = CallSiteScope(
             knownProperties: knownProperties,
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
 
         let namedChildren = node.namedChildren()

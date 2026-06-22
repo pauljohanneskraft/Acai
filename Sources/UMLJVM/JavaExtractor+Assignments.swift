@@ -65,6 +65,12 @@ extension JavaExtractor: AssignmentResolving {
             return .init(kind: .stringLiteral, text: valueText)
         case "null_literal":
             return .init(kind: .nilLiteral, text: "null")
+        case "identifier":
+            // An unscoped enum constant (`state = READY;`) is a bare identifier; classify it as an
+            // enumerable case when it names a known constant, else an opaque expression.
+            return declaredEnumConstants.contains(valueText)
+                ? .init(kind: .enumCase, text: valueText)
+                : .init(kind: .expression, text: expressionSnippet(node))
         default:
             if let enumCase = enumCaseValue(fromAccessText: valueText) {
                 return enumCase

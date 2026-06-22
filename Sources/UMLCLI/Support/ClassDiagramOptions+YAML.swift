@@ -36,7 +36,7 @@ extension ClassDiagramOptions {
         case "default":
             self.theme = .default
         default:
-            print("Warning: Unknown theme '\(themeStr)', using default.")
+            "Warning: Unknown theme '\(themeStr)', using default.".writeLineToStandardError()
         }
     }
 
@@ -50,7 +50,7 @@ extension ClassDiagramOptions {
         case "none":
             self.groupBy = .none
         default:
-            print("Warning: Unknown groupBy '\(groupStr)', using none.")
+            "Warning: Unknown groupBy '\(groupStr)', using none.".writeLineToStandardError()
         }
     }
 

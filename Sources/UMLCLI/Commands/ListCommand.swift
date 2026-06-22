@@ -30,7 +30,7 @@ extension UMLCommand {
                 return
             }
 
-            print(String(format: "%-20s  %-12s  %6s  %5s", "NAME", "LANGUAGE", "TYPES", "FILES"))
+            print(Row(name: "NAME", language: "LANGUAGE", types: "TYPES", files: "FILES").formatted)
             print(String(repeating: "-", count: 50))
 
             for file in jsonFiles.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
@@ -38,13 +38,32 @@ extension UMLCommand {
                 do {
                     let data = try Data(contentsOf: file)
                     let artifact = try JSONDecoder().decode(CodeArtifact.self, from: data)
-                    let lang = artifact.metadata.sourceLanguage.rawValue
-                    let typeCount = artifact.types.count
-                    let fileCount = artifact.metadata.filePaths.count
-                    print(String(format: "%-20s  %-12s  %6d  %5d", name, lang, typeCount, fileCount))
+                    let row = Row(
+                        name: name,
+                        language: artifact.metadata.sourceLanguage.rawValue,
+                        types: String(artifact.types.count),
+                        files: String(artifact.metadata.filePaths.count)
+                    )
+                    print(row.formatted)
                 } catch {
-                    print(String(format: "%-20s  %-12s", name, "(error reading)"))
+                    print(Row(name: name, language: "(error reading)", types: "", files: "").formatted)
                 }
+            }
+        }
+
+        /// One line of the `uml list` table. Columns are space-padded to fixed widths;
+        /// Swift `String`s can't go through C `%s`, so the table is assembled manually.
+        private struct Row {
+            var name: String
+            var language: String
+            var types: String
+            var files: String
+
+            var formatted: String {
+                name.paddedTrailing(to: 20) + "  "
+                    + language.paddedTrailing(to: 12) + "  "
+                    + types.paddedLeading(to: 6) + "  "
+                    + files.paddedLeading(to: 5)
             }
         }
     }

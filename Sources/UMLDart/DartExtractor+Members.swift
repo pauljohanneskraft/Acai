@@ -123,7 +123,7 @@ extension DartExtractor {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
         for pending in pendingBodies where pending.index < members.count {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)

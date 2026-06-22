@@ -190,14 +190,6 @@ extension TreeSitterExtracting {
         return map
     }
 
-    /// The complete set of type names declared in the file (see ``declaredTypeNames``).
-    /// Used by call-site resolution to recognise statically-resolvable `TypeName.method()`
-    /// calls without misclassifying calls on unknown/external receivers (which would create
-    /// phantom diagram participants).
-    public func collectKnownTypeNames() -> Set<String> {
-        declaredTypeNames
-    }
-
     /// One pre-pass over the raw AST collecting the simple name of every type declaration
     /// (recursively, including nested types), so the full set is known before any body is
     /// resolved. `name` extracts the declaration node's simple name (declarations whose name

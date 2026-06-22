@@ -2,17 +2,17 @@ import UMLCore
 
 enum UMLMemberFormatting {
 
-    static func formatProperty(_ member: Member) -> String {
+    static func formatProperty(_ member: Member, collectionTypeNames: Set<String> = []) -> String {
         var result = accessSymbol(member.accessLevel)
         result += " "
         result += member.name
         if let type = member.type {
-            result += ": " + typeRefString(type)
+            result += ": " + typeRefString(type, collectionTypeNames: collectionTypeNames)
         }
         return result
     }
 
-    static func formatMethod(_ member: Member) -> String {
+    static func formatMethod(_ member: Member, collectionTypeNames: Set<String> = []) -> String {
         var result = accessSymbol(member.accessLevel)
         result += " "
         result += member.name
@@ -20,14 +20,14 @@ enum UMLMemberFormatting {
         let paramStr = member.parameters.map { p in
             var parameterString = p.internalName
             if let parameterType = p.type {
-                parameterString += ": " + typeRefString(parameterType)
+                parameterString += ": " + typeRefString(parameterType, collectionTypeNames: collectionTypeNames)
             }
             return parameterString
         }.joined(separator: ", ")
         result += "(\(paramStr))"
 
         if let type = member.type {
-            result += ": " + typeRefString(type)
+            result += ": " + typeRefString(type, collectionTypeNames: collectionTypeNames)
         }
         return result
     }
@@ -40,18 +40,19 @@ enum UMLMemberFormatting {
         return result
     }
 
-    static func typeRefString(_ ref: TypeReference) -> String {
+    static func typeRefString(_ ref: TypeReference, collectionTypeNames: Set<String> = []) -> String {
         var typeString = ref.name
         if !ref.genericArguments.isEmpty {
-            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
+            typeString += "<" + ref.genericArguments
+                .map { typeRefString($0, collectionTypeNames: collectionTypeNames) }
+                .joined(separator: ", ") + ">"
         }
         if ref.isOptional { typeString += "?" }
-        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        // Append `[]` for an array unless the name is already a collection spelling in this
+        // language (passed down from the diagram's `LanguageConfiguration`), so we don't render
+        // `Array<T>[]`. The collection vocabulary is injected, never hardcoded here.
+        if ref.isArray && !collectionTypeNames.contains(ref.name) { typeString += "[]" }
         return typeString
-    }
-
-    static func stereotypeString(for kind: TypeKind) -> String? {
-        kind.stereotypeString
     }
 
     private static func accessSymbol(_ level: AccessLevel?) -> String {

@@ -226,11 +226,3 @@ struct SequenceConfigSheet: View {
     }
 
 }
-
-private extension Sequence where Element: Hashable {
-    /// Order-preserving de-duplication.
-    func uniqued() -> [Element] {
-        var seen: Set<Element> = []
-        return filter { seen.insert($0).inserted }
-    }
-}

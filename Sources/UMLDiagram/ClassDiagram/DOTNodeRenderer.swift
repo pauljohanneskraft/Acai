@@ -57,8 +57,8 @@ struct DOTNodeRenderer {
             return html
         }
 
-        let properties = filteredMembers(type.members.filter { isProperty($0) })
-        let methods = filteredMembers(type.members.filter { isMethod($0) })
+        let properties = type.members.filter(\.isProperty).visible(atLeast: options.minimumAccessLevel)
+        let methods = type.members.filter(\.isMethod).visible(atLeast: options.minimumAccessLevel)
 
         // Properties compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"
@@ -133,7 +133,7 @@ struct DOTNodeRenderer {
 
         result += member.name.dotHTMLEscaped
 
-        if isMethod(member) {
+        if member.isMethod {
             let paramStr = member.parameters.map { p in
                 var parameterString = p.internalName.dotHTMLEscaped
                 if options.showMemberTypes, let parameterType = p.type {
@@ -190,7 +190,10 @@ struct DOTNodeRenderer {
             typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
         }
         if ref.isOptional { typeString += "?" }
-        if ref.isArray && !typeString.hasPrefix("Array") { typeString += "[]" }
+        // Append `[]` for an array unless the name is already a collection spelling in this
+        // language (e.g. Swift `Array`, Kotlin `List`), so we don't render `Array<T>[]`. The
+        // collection vocabulary is injected via `options.language`, never hardcoded here.
+        if ref.isArray && !options.language.isCollectionType(ref.name) { typeString += "[]" }
         return typeString
     }
 
@@ -200,24 +203,4 @@ struct DOTNodeRenderer {
         )
     }
 
-    private func isProperty(_ member: Member) -> Bool {
-        member.kind == .property || member.kind == .subscript
-    }
-
-    private func isMethod(_ member: Member) -> Bool {
-        member.kind == .method || member.kind == .initializer || member.kind == .deinitializer
-    }
-
-    private func filteredMembers(_ members: [Member]) -> [Member] {
-        guard let minAccess = options.minimumAccessLevel else { return members }
-        let order: [AccessLevel: Int] = [
-            .private: 0, .filePrivate: 1, .internal: 2, .packagePrivate: 2,
-            .protected: 3, .public: 4, .open: 5
-        ]
-        guard let minRank = order[minAccess] else { return members }
-        return members.filter { member in
-            guard let access = member.accessLevel, let rank = order[access] else { return true }
-            return rank >= minRank
-        }
-    }
 }

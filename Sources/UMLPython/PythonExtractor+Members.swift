@@ -28,7 +28,7 @@ extension PythonExtractor {
 
         let scope = CallSiteScope(
             knownProperties: propertyMap(from: fields),
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
 
         decl.members.append(contentsOf: fields)

@@ -41,9 +41,4 @@ extension Node {
     public func hasDirectChildText(_ text: String, in context: SourceFileContext) -> Bool {
         children().contains { $0.text(in: context) == text }
     }
-
-    /// Returns the first direct child (named or anonymous) whose text equals `text`.
-    public func firstChild(withText text: String, in context: SourceFileContext) -> Node? {
-        children().first { $0.text(in: context) == text }
-    }
 }

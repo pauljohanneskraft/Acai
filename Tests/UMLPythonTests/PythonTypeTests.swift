@@ -105,6 +105,29 @@ struct PythonTypeTests {
         #expect(outer?.nestedTypes.map(\.name) == ["Inner"])
     }
 
+    /// A nested type's id is qualified with its enclosing type so it doesn't collide with a
+    /// top-level type sharing the same simple name.
+    @Test func nestedTypeIDIsQualified() {
+        let source = """
+        class Inner:
+            pass
+
+        class Outer:
+            class Inner:
+                pass
+        """
+        let artifact = parser.parse(source: source, fileName: "collision.py")
+        let topLevelInner = artifact.types.first { $0.name == "Inner" }
+        let outer = artifact.types.first { $0.name == "Outer" }
+        let nestedInner = outer?.nestedTypes.first { $0.name == "Inner" }
+
+        #expect(topLevelInner?.id == "Inner")
+        #expect(nestedInner?.id == "Outer.Inner")
+        #expect(nestedInner?.qualifiedName == "Outer.Inner")
+        // The two distinct `Inner` types must not share an id.
+        #expect(topLevelInner?.id != nestedInner?.id)
+    }
+
     @Test func genericBase() {
         let source = """
         from typing import Generic, TypeVar

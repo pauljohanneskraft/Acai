@@ -174,7 +174,7 @@ extension JavaExtractor {
     ) {
         context.scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: context.members, node: node),
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
         extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
     }

@@ -94,9 +94,8 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func reindex(codebaseID: UUID) async {
-        guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
-              let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID }) else { return }
-        let url = URL(fileURLWithPath: store.projects[pIndex].codebases[cIndex].directoryPath).standardizedFileURL
+        guard let codebase = codebase(for: codebaseID) else { return }
+        let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
 
         do {
             let artifact = try await Task.detached(priority: .userInitiated) {
@@ -117,6 +116,12 @@ final class ProjectBrowserViewModel: ObservableObject {
                 relationships: enriched.relationships,
                 freestandingFunctions: artifact.freestandingFunctions
             )
+            // Re-resolve indices after the suspension — the user may have deleted or reordered
+            // projects/codebases during the (potentially long) analysis, which would make any
+            // indices captured before the `await` point at the wrong codebase or out of bounds.
+            guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
+                  let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
+            else { return }
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
@@ -124,7 +129,7 @@ final class ProjectBrowserViewModel: ObservableObject {
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {
-            print("Reindex failed: \(error)")
+            store.report("Reindex failed: \(error.localizedDescription)")
         }
     }
 

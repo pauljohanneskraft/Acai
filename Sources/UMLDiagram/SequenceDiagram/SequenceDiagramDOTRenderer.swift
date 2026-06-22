@@ -114,7 +114,7 @@ public struct SequenceDiagramDOTRenderer: DOTRenderer {
             let to = stepNodeID(msg.to, step: step)
             var parts: [String] = []
             if let theme { parts.append("color=\"\(theme.edgeColor)\" fontcolor=\"\(theme.fontColor)\"") }
-            if let lbl = msg.label { parts.append("label=\"\(lbl.dotEscaped)\"") }
+            if let lbl = messageLabel(for: msg) { parts.append("label=\"\(lbl.dotEscaped)\"") }
             parts.append(arrowAttributes(for: msg.kind))
             out += "  \(from) -> \(to) [\(parts.joined(separator: " "))];\n"
         }
@@ -144,6 +144,30 @@ public struct SequenceDiagramDOTRenderer: DOTRenderer {
         }
     }
 
+    /// The message label combined with its `«create»`/`«destroy»` stereotype, mirroring the
+    /// Mermaid renderer. Returning a single value keeps the create/destroy stereotype from
+    /// emitting a second `label=` attribute (DOT keeps only the last, silently dropping the
+    /// user's own label).
+    private func messageLabel(for msg: SequenceDiagram.Message) -> String? {
+        let stereotype: String?
+        switch msg.kind {
+        case .create:
+            stereotype = "«create»"
+        case .destroy:
+            stereotype = "«destroy»"
+        case .synchronous, .asynchronous, .return:
+            stereotype = nil
+        }
+        switch (stereotype, msg.label) {
+        case let (stereotype?, label?):
+            return "\(stereotype) \(label)"
+        case let (stereotype?, nil):
+            return stereotype
+        case let (nil, label):
+            return label
+        }
+    }
+
     private func arrowAttributes(for kind: SequenceDiagram.Message.Kind) -> String {
         switch kind {
         case .synchronous:
@@ -153,9 +177,9 @@ public struct SequenceDiagramDOTRenderer: DOTRenderer {
         case .return:
             return "arrowhead=normal style=dashed"
         case .create:
-            return "arrowhead=normal style=dashed label=\"<<create>>\""
+            return "arrowhead=normal style=dashed"
         case .destroy:
-            return "arrowhead=normal style=solid label=\"<<destroy>>\""
+            return "arrowhead=normal style=solid"
         }
     }
 
