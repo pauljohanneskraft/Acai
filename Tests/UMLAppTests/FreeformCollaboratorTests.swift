@@ -21,8 +21,12 @@ struct FreeformCollaboratorTests {
         var selectionOrder: [String] = []
         private(set) var undoCheckpoints = 0
         private(set) var saves = 0
+        private(set) var lastCoalescingKey: AnyHashable?
 
-        func recordUndo(coalescingKey: AnyHashable?) { undoCheckpoints += 1 }
+        func recordUndo(coalescingKey: AnyHashable?) {
+            undoCheckpoints += 1
+            lastCoalescingKey = coalescingKey
+        }
         func save() { saves += 1 }
         func removeNodes(_ ids: Set<String>) {
             nodes.removeAll { ids.contains($0.id) }
@@ -100,6 +104,22 @@ struct FreeformCollaboratorTests {
         editor.reclassify(&edge)
         #expect(edge.messageOrder == nil)
         #expect(edge.messageKind == nil)
+    }
+
+    @Test func reclassifyBackfillsMissingKindForAlreadyOrderedMessage() {
+        let ctx = StubContext()
+        ctx.nodes = [lifeline("A", x: 0), lifeline("B", x: 100)]
+        let editor = SequenceEditor(context: ctx)
+
+        // A message between two lifelines that already has an order but no kind (older data).
+        var edge = FreeformDiagram.Edge(sourceNodeID: "A", targetNodeID: "B", kind: .dependency)
+        edge.messageOrder = 2
+        edge.messageKind = nil
+        editor.reclassify(&edge)
+
+        // The order is preserved and the missing kind is backfilled.
+        #expect(edge.messageOrder == 2)
+        #expect(edge.messageKind == .synchronous)
     }
 
     // MARK: - Member parsing
@@ -218,6 +238,39 @@ struct FreeformCollaboratorTests {
         #expect(content.methods[0].name == "doWork")
         #expect(content.methods[0].parameters == "input: Int")
         #expect(content.methods[0].type == "String")
+    }
+
+    @Test func updateMemberTextDoesNotWipeFieldsOnPartialInput() {
+        let ctx = StubContext()
+        ctx.nodes = [typeNode("T")]
+        let editor = TypeMemberEditor(context: ctx)
+        editor.addPropertyFromText(to: "T", text: "count: Int")
+        editor.addMethodFromText(to: "T", text: "doWork(input: Int): String")
+
+        guard case .type(let before) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+        let propID = before.properties[0].id
+        let methodID = before.methods[0].id
+
+        // Partial input mid-edit must not erase previously-entered type / parameters.
+        editor.updatePropertyText("T", memberID: propID, text: "count:")
+        editor.updateMethodText("T", memberID: methodID, text: "doWork(")
+
+        guard case .type(let after) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+        #expect(after.properties[0].type == "Int")
+        #expect(after.methods[0].parameters == "input: Int")
+        #expect(after.methods[0].type == "String")
+    }
+
+    @Test func memberTextEditsPassACoalescingKey() {
+        let ctx = StubContext()
+        ctx.nodes = [typeNode("T")]
+        let editor = TypeMemberEditor(context: ctx)
+        editor.addPropertyFromText(to: "T", text: "count: Int")
+        guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+
+        editor.updatePropertyText("T", memberID: content.properties[0].id, text: "counter: Int")
+        // A stable per-member key lets consecutive keystrokes coalesce into one undo step.
+        #expect(ctx.lastCoalescingKey != nil)
     }
 
     @Test func consecutiveNameEditsCoalesceIntoOneCheckpointPerField() {

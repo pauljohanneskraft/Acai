@@ -45,12 +45,15 @@ struct SequenceDiagramViewModelTests {
         #expect(vm.isEmpty)
     }
 
-    @Test func restoredPositionsSeedState() {
+    @Test func restoredPositionsSeedStateAndNormalizeVerticalToZero() {
+        // Older saved data may carry a non-zero y; it must normalize to 0 (lifelines move
+        // horizontally only) while the horizontal override is preserved.
         let vm = SequenceDiagramViewModel(
             artifact: artifact(), configuration: config(),
-            restoredPositions: ["Service": CGPoint(x: 99, y: 0)]
+            restoredPositions: ["Service": CGPoint(x: 99, y: 250)]
         )
         #expect(vm.positionOverrides["Service"]?.x == 99)
+        #expect(vm.positionOverrides["Service"]?.y == 0)
     }
 
     @Test func moveNodeRecordsDragAndLayoutPinsVertical() {

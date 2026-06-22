@@ -31,7 +31,9 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     ) {
         self.artifact = artifact
         self.configuration = configuration
-        self.positionOverrides = restoredPositions
+        // Lifelines move horizontally only; normalize any restored y (older saved data may carry a
+        // non-zero one) to 0 so stored positions round-trip cleanly. See `moveNode`.
+        self.positionOverrides = restoredPositions.mapValues { CGPoint(x: $0.x, y: 0) }
         self.diagram = Self.generate(artifact: artifact, configuration: configuration)
     }
 

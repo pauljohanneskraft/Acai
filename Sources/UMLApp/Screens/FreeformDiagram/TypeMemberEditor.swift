@@ -15,6 +15,7 @@ final class TypeMemberEditor {
     private enum TextEditField: Hashable {
         case name(String)
         case note(String)
+        case member(UUID)
     }
 
     func addProperty(to nodeID: String, name: String, type: String) {
@@ -61,25 +62,27 @@ final class TypeMemberEditor {
     }
 
     func updatePropertyText(_ nodeID: String, memberID: UUID, text: String) {
-        // Reuse the shared property parser; only overwrite the type when the text actually
-        // carries one (no colon ⇒ keep the existing type while the user is still typing).
+        // Reuse the shared property parser; only overwrite the type when the parsed value is
+        // non-empty, so partial input ("count:") doesn't erase a previously-entered type mid-edit.
+        // Consecutive keystrokes in the same member field coalesce into one undo step.
         let parsed = FreeformDiagram.Node.Member(propertyText: text)
-        context.updateTypeContent(nodeID) { content in
+        context.updateTypeContent(nodeID, coalescingKey: TextEditField.member(memberID)) { content in
             guard let i = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
             content.properties[i].name = parsed.name
-            if text.contains(":") { content.properties[i].type = parsed.type }
+            if !parsed.type.isEmpty { content.properties[i].type = parsed.type }
         }
     }
 
     func updateMethodText(_ nodeID: String, memberID: UUID, text: String) {
-        // Reuse the shared method parser; only overwrite the parameters / return type when the
-        // text carries them, so a half-typed signature doesn't wipe the other fields.
+        // Reuse the shared method parser; only overwrite parameters / return type when the parsed
+        // value is non-empty, so a half-typed signature ("doWork(") doesn't wipe the other fields.
+        // Consecutive keystrokes in the same member field coalesce into one undo step.
         let parsed = FreeformDiagram.Node.Member(methodText: text)
-        context.updateTypeContent(nodeID) { content in
+        context.updateTypeContent(nodeID, coalescingKey: TextEditField.member(memberID)) { content in
             guard let i = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
             content.methods[i].name = parsed.name
-            if text.contains("(") { content.methods[i].parameters = parsed.parameters }
-            if text.contains(":") { content.methods[i].type = parsed.type }
+            if !parsed.parameters.isEmpty { content.methods[i].parameters = parsed.parameters }
+            if !parsed.type.isEmpty { content.methods[i].type = parsed.type }
         }
     }
 

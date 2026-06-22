@@ -112,10 +112,10 @@ final class SequenceEditor {
     /// keeping "a message exists iff between two lifelines" enforced in one place.
     func reclassify(_ edge: inout FreeformDiagram.Edge) {
         if isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID) {
-            if edge.messageOrder == nil {
-                edge.messageOrder = nextMessageOrder
-                edge.messageKind = edge.messageKind ?? .synchronous
-            }
+            // Repair each field independently so an edge that already qualifies as a message but
+            // lacks a kind (older data / manual edits) still gets a sensible default.
+            if edge.messageOrder == nil { edge.messageOrder = nextMessageOrder }
+            if edge.messageKind == nil { edge.messageKind = .synchronous }
         } else {
             edge.messageOrder = nil
             edge.messageKind = nil
