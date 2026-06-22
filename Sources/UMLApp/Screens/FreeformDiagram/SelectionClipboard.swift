@@ -26,6 +26,9 @@ final class SelectionClipboard {
     func copySelection() {
         guard !context.selectedNodeIDs.isEmpty else { return }
         let selectedNodes = context.nodes.filter { context.selectedNodeIDs.contains($0.id) }
+        // Only edges with *both* endpoints selected are copied — a half-dangling edge has no second
+        // endpoint to re-attach to on paste. (Cut still deletes edges merely *touching* the
+        // selection, via `removeNodes`, because removing a node must remove its dangling edges.)
         let selectedEdges = context.edges.filter {
             context.selectedNodeIDs.contains($0.sourceNodeID)
                 && context.selectedNodeIDs.contains($0.targetNodeID)

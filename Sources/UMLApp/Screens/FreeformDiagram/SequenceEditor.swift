@@ -31,10 +31,14 @@ final class SequenceEditor {
         edge.messageOrder != nil && isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID)
     }
 
-    /// Message edges between lifelines, in time order.
+    /// Message edges between lifelines, in time order. Resolves the lifeline id set once so this
+    /// stays O(E + N) instead of re-scanning the node array per edge.
     var messageEdges: [FreeformDiagram.Edge] {
-        context.edges
-            .filter { isMessageEdge($0) }
+        let lifelineIDs = Set(lifelineNodes.map(\.id))
+        return context.edges
+            .filter { $0.messageOrder != nil
+                && lifelineIDs.contains($0.sourceNodeID)
+                && lifelineIDs.contains($0.targetNodeID) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
     }
 
@@ -86,13 +90,6 @@ final class SequenceEditor {
         return CGFloat(minY) - SequenceLayoutModel.headerHeight / 2
     }
 
-    /// The edge behind a laid-out message (layout message ids index `messageEdges`).
-    func messageEdge(forLayoutID id: Int) -> FreeformDiagram.Edge? {
-        let ordered = messageEdges
-        guard ordered.indices.contains(id) else { return nil }
-        return ordered[id]
-    }
-
     /// The display name of a lifeline node, for message-edge inspectors.
     func lifelineName(_ nodeID: String) -> String {
         context.nodes.first { $0.id == nodeID }?.name ?? "?"
@@ -105,11 +102,31 @@ final class SequenceEditor {
         context.selectionOrder.filter { isLifeline($0) }
     }
 
+    /// The next free time-order for a new message: one past the current maximum.
+    var nextMessageOrder: Int {
+        (context.edges.compactMap(\.messageOrder).max() ?? 0) + 1
+    }
+
+    /// Stamp an edge as a sequence message when it connects two lifelines, or clear its message
+    /// fields when it doesn't. The single rule behind both new-edge creation and edge re-pointing,
+    /// keeping "a message exists iff between two lifelines" enforced in one place.
+    func reclassify(_ edge: inout FreeformDiagram.Edge) {
+        if isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID) {
+            if edge.messageOrder == nil {
+                edge.messageOrder = nextMessageOrder
+                edge.messageKind = edge.messageKind ?? .synchronous
+            }
+        } else {
+            edge.messageOrder = nil
+            edge.messageKind = nil
+        }
+    }
+
     /// Append a message at the end of the timeline. `sourceID == targetID` makes a self-message.
     func addMessage(from sourceID: String, to targetID: String, kind: SequenceDiagram.Message.Kind) {
         context.recordUndo(coalescingKey: nil)
         var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .dependency)
-        edge.messageOrder = (context.edges.compactMap(\.messageOrder).max() ?? 0) + 1
+        edge.messageOrder = nextMessageOrder
         edge.messageKind = kind
         context.edges.append(edge)
         // Select the new message so the inspector opens straight onto label/kind/order.
@@ -150,8 +167,7 @@ final class SequenceEditor {
 
     /// Whether a node is a combined fragment.
     func isFragment(_ nodeID: String) -> Bool {
-        guard let node = context.nodes.first(where: { $0.id == nodeID }) else { return false }
-        if case .fragment = node.content { return true }
+        if case .fragment = context.node(nodeID)?.content { return true }
         return false
     }
 
@@ -166,8 +182,7 @@ final class SequenceEditor {
 
     /// Whether a node is a sequence lifeline.
     func isLifeline(_ nodeID: String) -> Bool {
-        guard let node = context.nodes.first(where: { $0.id == nodeID }) else { return false }
-        if case .lifeline = node.content { return true }
+        if case .lifeline = context.node(nodeID)?.content { return true }
         return false
     }
 }

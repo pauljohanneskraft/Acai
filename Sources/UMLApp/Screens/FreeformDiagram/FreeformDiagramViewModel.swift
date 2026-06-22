@@ -200,12 +200,9 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     func addEdge(from sourceID: String, to targetID: String, kind: Relationship.Kind) {
         recordUndo()
         var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
-        // An edge between two lifelines is a sequence message: append it at the end of the
-        // timeline as a synchronous call (order/kind editable in the inspector).
-        if sequence.isLifeline(sourceID) && sequence.isLifeline(targetID) {
-            edge.messageOrder = (edges.compactMap(\.messageOrder).max() ?? 0) + 1
-            edge.messageKind = .synchronous
-        }
+        // An edge between two lifelines is a sequence message: SequenceEditor owns that rule and
+        // stamps the next time-order / synchronous kind (both editable in the inspector).
+        sequence.reclassify(&edge)
         edges.append(edge)
         save()
     }
@@ -223,13 +220,10 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         edges[idx].sourceNodeID = sourceID
         edges[idx].targetNodeID = targetID
         edges[idx].kind = kind
-        // A message only exists between two lifelines: re-pointing an endpoint elsewhere
-        // demotes the edge to a plain relationship (same undo step), keeping the data
-        // consistent with how the canvas and inspector classify it.
-        if edges[idx].messageOrder != nil && !(sequence.isLifeline(sourceID) && sequence.isLifeline(targetID)) {
-            edges[idx].messageOrder = nil
-            edges[idx].messageKind = nil
-        }
+        // A message exists iff between two lifelines: re-pointing onto two lifelines promotes the
+        // edge to a message, re-pointing away demotes it (same undo step). SequenceEditor owns
+        // that rule so the canvas and inspector classify the edge consistently.
+        sequence.reclassify(&edges[idx])
         save()
     }
 
@@ -238,15 +232,10 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     /// Drives the shared `selectAll` / marquee defaults on `CanvasInteraction`.
     var allNodeIDs: [String] { nodes.map(\.id) }
 
-    // `selectNode` and `selectNodes(in:)` use the shared `CanvasInteraction` defaults. `clearSelection`
-    // and `selectAll` are overridden to also reset the selected edge.
-    func clearSelection() {
-        selectedNodeIDs.removeAll()
-        selectedEdgeID = nil
-    }
-
-    func selectAll() {
-        selectedNodeIDs = Set(nodes.map(\.id))
+    // Selection uses the shared `CanvasInteraction` defaults; this hook drops the freeform-only
+    // selected edge whenever the node selection is replaced (click, marquee, select-all, clear),
+    // so a node and an edge can never appear selected at once.
+    func selectionWillReplace() {
         selectedEdgeID = nil
     }
 

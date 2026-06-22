@@ -58,6 +58,9 @@ struct SequenceDiagramViewModelTests {
         let yBefore = vm.nodePosition("Service")?.y
         vm.moveNode("Service", to: CGPoint(x: 42, y: 999))
         #expect(vm.positionOverrides["Service"]?.x == 42)
+        // Lifelines move horizontally only: the override's y is pinned to 0 so nothing meaningless
+        // is persisted (a drag's vertical component must not leak into the saved positions).
+        #expect(vm.positionOverrides["Service"]?.y == 0)
         // Only the horizontal component reaches the layout, so the lifeline stays on the header row.
         #expect(vm.nodePosition("Service")?.y == yBefore)
     }

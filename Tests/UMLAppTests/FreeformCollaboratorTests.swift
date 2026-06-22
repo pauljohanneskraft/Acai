@@ -80,6 +80,91 @@ struct FreeformCollaboratorTests {
         #expect(editor.isLifeline("A") && !editor.isLifeline("C"))
     }
 
+    @Test func reclassifyPromotesBetweenLifelinesAndClearsOtherwise() {
+        let ctx = StubContext()
+        ctx.nodes = [lifeline("A", x: 0), lifeline("B", x: 100), typeNode("C")]
+        // An existing message at order 3 sets the high-water mark.
+        var existing = FreeformDiagram.Edge(sourceNodeID: "A", targetNodeID: "B", kind: .dependency)
+        existing.messageOrder = 3
+        ctx.edges = [existing]
+        let editor = SequenceEditor(context: ctx)
+
+        // Two lifelines and no order yet ⇒ stamped with the next order + synchronous kind.
+        var edge = FreeformDiagram.Edge(sourceNodeID: "B", targetNodeID: "A", kind: .dependency)
+        editor.reclassify(&edge)
+        #expect(edge.messageOrder == 4)
+        #expect(edge.messageKind == .synchronous)
+
+        // Re-pointing onto a non-lifeline clears the message fields.
+        edge.targetNodeID = "C"
+        editor.reclassify(&edge)
+        #expect(edge.messageOrder == nil)
+        #expect(edge.messageKind == nil)
+    }
+
+    // MARK: - Member parsing
+
+    @Test func memberPropertyTextParsing() {
+        #expect(FreeformDiagram.Node.Member(propertyText: "count: Int").name == "count")
+        #expect(FreeformDiagram.Node.Member(propertyText: "  count :  Int ").type == "Int")
+        // No colon ⇒ name only, empty type.
+        let bare = FreeformDiagram.Node.Member(propertyText: "flag")
+        #expect(bare.name == "flag")
+        #expect(bare.type.isEmpty)
+    }
+
+    @Test func memberMethodTextParsing() {
+        let full = FreeformDiagram.Node.Member(methodText: "doWork(input: Int): String")
+        #expect(full.name == "doWork")
+        #expect(full.parameters == "input: Int")
+        #expect(full.type == "String")
+
+        // Bare name, no parens / colon.
+        let bare = FreeformDiagram.Node.Member(methodText: "ping")
+        #expect(bare.name == "ping")
+        #expect(bare.parameters.isEmpty)
+        #expect(bare.type.isEmpty)
+
+        // Bare "name: Type" (no parens) — the unified parser now handles it for methods too.
+        let noParens = FreeformDiagram.Node.Member(methodText: "value: Int")
+        #expect(noParens.name == "value")
+        #expect(noParens.type == "Int")
+        #expect(noParens.parameters.isEmpty)
+    }
+
+    @Test func updateTypeContentIsNoOpForWrongKind() {
+        let ctx = StubContext()
+        ctx.nodes = [lifeline("L", x: 0)]   // not a `.type` node
+        ctx.updateTypeContent("L") { $0.properties.append(.init(name: "x", type: "Int")) }
+        // Wrong-kind node: no mutation, and the guard runs before recordUndo ⇒ no empty checkpoint.
+        #expect(ctx.undoCheckpoints == 0)
+        #expect(ctx.saves == 0)
+    }
+
+    // MARK: - SelectionClipboard
+
+    @Test func partialEdgeIsRemovedByCutButNotCopied() {
+        let ctx = StubContext()
+        ctx.nodes = [typeNode("A"), typeNode("B")]
+        ctx.edges = [FreeformDiagram.Edge(sourceNodeID: "A", targetNodeID: "B", kind: .association)]
+        let clipboard = SelectionClipboard(context: ctx)
+
+        // Select only A; the edge A→B is half-selected.
+        ctx.selectedNodeIDs = ["A"]
+        clipboard.copySelection()
+
+        // Pasting into a fresh context proves the half-dangling edge was not copied.
+        let dest = StubContext()
+        SelectionClipboard(context: dest).paste()
+        #expect(dest.nodes.count == 1)
+        #expect(dest.edges.isEmpty)
+
+        // Cut removes the node *and* the dangling edge touching it.
+        clipboard.cutSelection()
+        #expect(ctx.nodes.map(\.id) == ["B"])
+        #expect(ctx.edges.isEmpty)
+    }
+
     // MARK: - StateMachineEditor
 
     @Test func addTransitionCarriesPayloadAndSelectsEdge() {

@@ -41,6 +41,12 @@ protocol CanvasInteraction: ObservableObject, DiagramHistoryHosting {
 
     /// Select every node.
     func selectAll()
+
+    /// Hook invoked by the shared selection defaults whenever the node selection is *replaced*
+    /// (not extended), so a model with a secondary selection (e.g. a selected edge) can clear it.
+    /// A protocol requirement — not just an extension method — so the conformer's override is
+    /// dynamically dispatched from the default `selectNode`/`selectNodes`/`clearSelection`/`selectAll`.
+    func selectionWillReplace()
 }
 
 // Shared selection behavior. These are protocol *requirements* with defaults so a model can drop
@@ -48,6 +54,12 @@ protocol CanvasInteraction: ObservableObject, DiagramHistoryHosting {
 // — e.g. `FreeformDiagramViewModel` also clearing its selected edge — can still override and have
 // the override dispatched through generic `Model: CanvasInteraction` canvas code.
 extension CanvasInteraction {
+    /// Hook for a model with a secondary selection (e.g. `FreeformDiagramViewModel`'s selected
+    /// edge) to clear it whenever the node selection is *replaced* (not extended). Default: a
+    /// model with no secondary selection has nothing to clear. This keeps the "also drop the
+    /// edge" rule in one place instead of bolted onto each selection method.
+    func selectionWillReplace() {}
+
     func selectNode(_ id: String, extending: Bool) {
         if extending {
             if selectedNodeIDs.contains(id) {
@@ -56,12 +68,14 @@ extension CanvasInteraction {
                 selectedNodeIDs.insert(id)
             }
         } else {
+            selectionWillReplace()
             selectedNodeIDs = [id]
         }
     }
 
     /// Marquee selection: every node whose center (`nodePosition`) falls inside `rect`.
     func selectNodes(in rect: CGRect) {
+        selectionWillReplace()
         selectedNodeIDs = Set(allNodeIDs.filter { id in
             guard let pos = nodePosition(id) else { return false }
             return rect.contains(pos)
@@ -69,10 +83,12 @@ extension CanvasInteraction {
     }
 
     func clearSelection() {
+        selectionWillReplace()
         selectedNodeIDs.removeAll()
     }
 
     func selectAll() {
+        selectionWillReplace()
         selectedNodeIDs = Set(allNodeIDs)
     }
 

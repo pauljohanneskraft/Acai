@@ -17,8 +17,7 @@ final class StateMachineEditor {
 
     /// Whether a node is a state-machine state.
     func isStateNode(_ nodeID: String) -> Bool {
-        guard let node = context.nodes.first(where: { $0.id == nodeID }) else { return false }
-        if case .state = node.content { return true }
+        if case .state = context.node(nodeID)?.content { return true }
         return false
     }
 

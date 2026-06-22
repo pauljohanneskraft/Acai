@@ -76,6 +76,12 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     var defaultNodeSize: CGSize { CGSize(width: 120, height: SequenceLayoutModel.headerHeight) }
 
+    /// Lifelines slide horizontally only — pin the override's `y` to 0 so nothing meaningless is
+    /// persisted (the layout ignores `y`, and the saved positions round-trip cleanly).
+    func moveNode(_ id: String, to position: CGPoint) {
+        positionOverrides[id] = CGPoint(x: position.x, y: 0)
+    }
+
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {

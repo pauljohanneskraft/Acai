@@ -251,6 +251,42 @@ extension FreeformDiagram.Node {
     }
 }
 
+extension FreeformDiagram.Node.Member {
+    /// Parse a property line like `"name: String"` — the inverse of `displayString` for a
+    /// property. Splits on the first colon and trims both sides; a missing type becomes `""`.
+    init(propertyText: String) {
+        let parts = propertyText.split(separator: ":", maxSplits: 1)
+        let name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces)
+            ?? propertyText.trimmingCharacters(in: .whitespaces)
+        let type = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : ""
+        self.init(name: name, type: type)
+    }
+
+    /// Parse a method line like `"doWork(input: Int): String"` — the inverse of `displayString`
+    /// for a method. Falls back to a bare `name: Type` (no parens) or just a name.
+    init(methodText: String) {
+        let trimmed = methodText.trimmingCharacters(in: .whitespaces)
+        var name = trimmed
+        var parameters = ""
+        var returnType = ""
+        if let parenStart = trimmed.firstIndex(of: "("),
+           let parenEnd = trimmed.firstIndex(of: ")") {
+            name = String(trimmed[trimmed.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
+            parameters = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
+            let afterParen = trimmed[trimmed.index(after: parenEnd)...]
+            if let colonIdx = afterParen.firstIndex(of: ":") {
+                returnType = String(afterParen[afterParen.index(after: colonIdx)...])
+                    .trimmingCharacters(in: .whitespaces)
+            }
+        } else if let colonIdx = trimmed.firstIndex(of: ":") {
+            name = String(trimmed[trimmed.startIndex..<colonIdx]).trimmingCharacters(in: .whitespaces)
+            returnType = String(trimmed[trimmed.index(after: colonIdx)...])
+                .trimmingCharacters(in: .whitespaces)
+        }
+        self.init(name: name, type: returnType, parameters: parameters)
+    }
+}
+
 extension FreeformDiagram.Node {
     struct EnumCase: Identifiable, Codable, Hashable, Sendable {
         var id: UUID = UUID()

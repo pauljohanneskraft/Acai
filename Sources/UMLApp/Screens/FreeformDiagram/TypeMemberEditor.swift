@@ -18,79 +18,35 @@ final class TypeMemberEditor {
     }
 
     func addProperty(to nodeID: String, name: String, type: String) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.properties.append(.init(name: name, type: type))
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) { $0.properties.append(.init(name: name, type: type)) }
     }
 
     /// Parse a single string like "name: String" into a property and add it.
     func addPropertyFromText(to nodeID: String, text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        let parts = trimmed.split(separator: ":", maxSplits: 1)
-        let name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? trimmed
-        let type = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : ""
-        addProperty(to: nodeID, name: name, type: type)
+        context.updateTypeContent(nodeID) { $0.properties.append(.init(propertyText: trimmed)) }
     }
 
     func addMethod(to nodeID: String, name: String, returnType: String, parameters: String) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.methods.append(.init(name: name, type: returnType, parameters: parameters))
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) {
+            $0.methods.append(.init(name: name, type: returnType, parameters: parameters))
+        }
     }
 
     /// Parse a single string like "doWork(input: Int): String" into a method and add it.
     func addMethodFromText(to nodeID: String, text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-
-        var name = trimmed
-        var params = ""
-        var returnType = ""
-
-        if let parenStart = trimmed.firstIndex(of: "("),
-           let parenEnd = trimmed.firstIndex(of: ")") {
-            name = String(trimmed[trimmed.startIndex..<parenStart])
-                .trimmingCharacters(in: .whitespaces)
-            params = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
-            let afterParen = trimmed[trimmed.index(after: parenEnd)...]
-            if let colonIdx = afterParen.firstIndex(of: ":") {
-                returnType = String(
-                    afterParen[afterParen.index(after: colonIdx)...]
-                ).trimmingCharacters(in: .whitespaces)
-            }
-        } else if let colonIdx = trimmed.firstIndex(of: ":") {
-            name = String(trimmed[trimmed.startIndex..<colonIdx])
-                .trimmingCharacters(in: .whitespaces)
-            returnType = String(trimmed[trimmed.index(after: colonIdx)...])
-                .trimmingCharacters(in: .whitespaces)
-        }
-
-        addMethod(to: nodeID, name: name, returnType: returnType, parameters: params)
+        context.updateTypeContent(nodeID) { $0.methods.append(.init(methodText: trimmed)) }
     }
 
     func removeProperty(from nodeID: String, memberID: UUID) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.properties.removeAll { $0.id == memberID }
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) { $0.properties.removeAll { $0.id == memberID } }
     }
 
     func removeMethod(from nodeID: String, memberID: UUID) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.methods.removeAll { $0.id == memberID }
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) { $0.methods.removeAll { $0.id == memberID } }
     }
 
     // MARK: - Inline Editing
@@ -105,59 +61,34 @@ final class TypeMemberEditor {
     }
 
     func updatePropertyText(_ nodeID: String, memberID: UUID, text: String) {
-        guard let nodeIndex = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[nodeIndex].content,
-              let memberIndex = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
-        context.recordUndo(coalescingKey: nil)
-        let parts = text.split(separator: ":", maxSplits: 1)
-        content.properties[memberIndex].name = parts.first
-            .map(String.init)?.trimmingCharacters(in: .whitespaces) ?? text
-        if parts.count > 1 {
-            content.properties[memberIndex].type = String(parts[1]).trimmingCharacters(in: .whitespaces)
+        // Reuse the shared property parser; only overwrite the type when the text actually
+        // carries one (no colon ⇒ keep the existing type while the user is still typing).
+        let parsed = FreeformDiagram.Node.Member(propertyText: text)
+        context.updateTypeContent(nodeID) { content in
+            guard let i = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
+            content.properties[i].name = parsed.name
+            if text.contains(":") { content.properties[i].type = parsed.type }
         }
-        context.nodes[nodeIndex].content = .type(content)
-        context.save()
     }
 
     func updateMethodText(_ nodeID: String, memberID: UUID, text: String) {
-        guard let nodeIndex = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[nodeIndex].content,
-              let memberIndex = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
-        context.recordUndo(coalescingKey: nil)
-        if let parenStart = text.firstIndex(of: "("),
-           let parenEnd = text.firstIndex(of: ")") {
-            content.methods[memberIndex].name = String(text[text.startIndex..<parenStart])
-                .trimmingCharacters(in: .whitespaces)
-            content.methods[memberIndex].parameters = String(text[text.index(after: parenStart)..<parenEnd])
-            let afterParen = text[text.index(after: parenEnd)...]
-            if let colonIdx = afterParen.firstIndex(of: ":") {
-                content.methods[memberIndex].type = String(
-                    afterParen[afterParen.index(after: colonIdx)...]
-                ).trimmingCharacters(in: .whitespaces)
-            }
-        } else {
-            content.methods[memberIndex].name = text
+        // Reuse the shared method parser; only overwrite the parameters / return type when the
+        // text carries them, so a half-typed signature doesn't wipe the other fields.
+        let parsed = FreeformDiagram.Node.Member(methodText: text)
+        context.updateTypeContent(nodeID) { content in
+            guard let i = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
+            content.methods[i].name = parsed.name
+            if text.contains("(") { content.methods[i].parameters = parsed.parameters }
+            if text.contains(":") { content.methods[i].type = parsed.type }
         }
-        context.nodes[nodeIndex].content = .type(content)
-        context.save()
     }
 
     func addInlineProperty(to nodeID: String) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.properties.append(.init(name: "newProperty", type: "Type"))
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) { $0.properties.append(.init(name: "newProperty", type: "Type")) }
     }
 
     func addInlineMethod(to nodeID: String) {
-        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
-              case .type(var content) = context.nodes[idx].content else { return }
-        context.recordUndo(coalescingKey: nil)
-        content.methods.append(.init(name: "newMethod", type: "Void"))
-        context.nodes[idx].content = .type(content)
-        context.save()
+        context.updateTypeContent(nodeID) { $0.methods.append(.init(name: "newMethod", type: "Void")) }
     }
 
     /// Update the free-form text of a note node.
