@@ -92,7 +92,7 @@ struct SequenceFreeformConversionTests {
         vm.nodes = freeform.nodes
         vm.edges = freeform.edges
 
-        guard let layout = vm.sequenceLayout else {
+        guard let layout = vm.sequence.sequenceLayout else {
             Issue.record("expected a sequence layout for a diagram with lifelines")
             return
         }

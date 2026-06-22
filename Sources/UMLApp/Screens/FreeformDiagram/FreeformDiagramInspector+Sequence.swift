@@ -17,26 +17,26 @@ extension FreeformDiagramInspector {
                 get: { edge.sourceNodeID },
                 set: { viewModel.updateEdge(edge.id, sourceID: $0, targetID: edge.targetNodeID, kind: edge.kind) }
             )) {
-                ForEach(viewModel.lifelineNodes) { node in Text(node.name).tag(node.id) }
+                ForEach(viewModel.sequence.lifelineNodes) { node in Text(node.name).tag(node.id) }
             }
 
             Picker("To", selection: Binding(
                 get: { edge.targetNodeID },
                 set: { viewModel.updateEdge(edge.id, sourceID: edge.sourceNodeID, targetID: $0, kind: edge.kind) }
             )) {
-                ForEach(viewModel.lifelineNodes) { node in Text(node.name).tag(node.id) }
+                ForEach(viewModel.sequence.lifelineNodes) { node in Text(node.name).tag(node.id) }
             }
 
             TextField("Label", text: Binding(
                 get: { edge.label ?? "" },
-                set: { viewModel.updateMessageEdge(edge.id, label: $0) }
+                set: { viewModel.sequence.updateMessageEdge(edge.id, label: $0) }
             ))
             .textFieldStyle(.roundedBorder)
             .focused($focusedField, equals: .name)
 
             Picker("Kind", selection: Binding(
                 get: { edge.messageKind ?? .synchronous },
-                set: { viewModel.updateMessageEdge(edge.id, messageKind: $0) }
+                set: { viewModel.sequence.updateMessageEdge(edge.id, messageKind: $0) }
             )) {
                 Text("Synchronous").tag(SequenceDiagram.Message.Kind.synchronous)
                 Text("Asynchronous").tag(SequenceDiagram.Message.Kind.asynchronous)
@@ -47,7 +47,7 @@ extension FreeformDiagramInspector {
 
             Stepper(value: Binding(
                 get: { edge.messageOrder ?? 0 },
-                set: { viewModel.updateMessageEdge(edge.id, messageOrder: $0) }
+                set: { viewModel.sequence.updateMessageEdge(edge.id, messageOrder: $0) }
             )) {
                 Text("Order: \(edge.messageOrder ?? 0)")
             }
@@ -62,7 +62,7 @@ extension FreeformDiagramInspector {
         Section {
             Picker("Operator", selection: Binding(
                 get: { content.kind },
-                set: { viewModel.updateFragment(nodeID, kind: $0) }
+                set: { viewModel.sequence.updateFragment(nodeID, kind: $0) }
             )) {
                 ForEach(SequenceDiagram.Fragment.Kind.allCases, id: \.self) { kind in
                     Text(kind.rawValue).tag(kind)
@@ -77,7 +77,7 @@ extension FreeformDiagramInspector {
                 var operands = content.operands
                 let nextOrder = (operands.last?.lastOrder ?? 0) + 1
                 operands.append(.init(firstOrder: nextOrder, lastOrder: nextOrder))
-                viewModel.updateFragment(nodeID, operands: operands)
+                viewModel.sequence.updateFragment(nodeID, operands: operands)
             } label: {
                 Label("Add Operand", systemImage: "plus.circle")
             }
@@ -100,7 +100,7 @@ extension FreeformDiagramInspector {
                     set: { newValue in
                         var operands = content.operands
                         operands[index].guardLabel = newValue.isEmpty ? nil : newValue
-                        viewModel.updateFragment(nodeID, operands: operands,
+                        viewModel.sequence.updateFragment(nodeID, operands: operands,
                                                  coalescingKey: "fragmentGuard-\(nodeID)-\(index)")
                     }
                 ))
@@ -110,7 +110,7 @@ extension FreeformDiagramInspector {
                     Button(role: .destructive) {
                         var operands = content.operands
                         operands.remove(at: index)
-                        viewModel.updateFragment(nodeID, operands: operands)
+                        viewModel.sequence.updateFragment(nodeID, operands: operands)
                     } label: {
                         Image(systemName: "minus.circle")
                     }
@@ -123,7 +123,7 @@ extension FreeformDiagramInspector {
                     set: { newValue in
                         var operands = content.operands
                         operands[index].firstOrder = newValue
-                        viewModel.updateFragment(nodeID, operands: operands)
+                        viewModel.sequence.updateFragment(nodeID, operands: operands)
                     }
                 )) {
                     Text("From: \(operand.firstOrder)").font(.caption.monospaced())
@@ -133,7 +133,7 @@ extension FreeformDiagramInspector {
                     set: { newValue in
                         var operands = content.operands
                         operands[index].lastOrder = newValue
-                        viewModel.updateFragment(nodeID, operands: operands)
+                        viewModel.sequence.updateFragment(nodeID, operands: operands)
                     }
                 )) {
                     Text("To: \(operand.lastOrder)").font(.caption.monospaced())

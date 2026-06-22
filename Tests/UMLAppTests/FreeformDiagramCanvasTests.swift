@@ -83,15 +83,15 @@ struct FreeformDiagramCanvasTests {
         // Edge between two lifelines auto-becomes a message…
         vm.addEdge(from: a, to: b, kind: .dependency)
         let edge = vm.edges[0]
-        #expect(vm.isMessageEdge(edge))
-        #expect(vm.messageEdges.count == 1)
+        #expect(vm.sequence.isMessageEdge(edge))
+        #expect(vm.sequence.messageEdges.count == 1)
 
         // …and demotes (in the same model the canvas/inspector read) when re-pointed.
         vm.updateEdge(edge.id, sourceID: a, targetID: c, kind: .dependency)
         let updated = vm.edges[0]
-        #expect(!vm.isMessageEdge(updated))
+        #expect(!vm.sequence.isMessageEdge(updated))
         #expect(updated.messageOrder == nil)
         #expect(updated.messageKind == nil)
-        #expect(vm.messageEdges.isEmpty)
+        #expect(vm.sequence.messageEdges.isEmpty)
     }
 }

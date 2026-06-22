@@ -74,13 +74,13 @@ struct FreeformDiagramView: View {
                 }
                 .keyboardShortcut(.delete, modifiers: [])
 
-                Button("") { viewModel.copySelection() }
+                Button("") { viewModel.clipboard.copySelection() }
                     .keyboardShortcut("c", modifiers: .command)
 
-                Button("") { viewModel.cutSelection() }
+                Button("") { viewModel.clipboard.cutSelection() }
                     .keyboardShortcut("x", modifiers: .command)
 
-                Button("") { viewModel.paste() }
+                Button("") { viewModel.clipboard.paste() }
                     .keyboardShortcut("v", modifiers: .command)
 
                 Button("") { viewModel.selectAll() }

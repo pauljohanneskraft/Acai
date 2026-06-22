@@ -31,7 +31,7 @@ struct SequenceDiagramView: View {
         self._viewModel = StateObject(wrappedValue: SequenceDiagramViewModel(
             artifact: artifact,
             configuration: config,
-            restoredOffsets: diagram.nodePositions.mapValues { CGFloat($0.x) }
+            restoredPositions: diagram.nodePositions.mapValues { CGPoint(x: $0.x, y: $0.y) }
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -184,7 +184,7 @@ struct SequenceDiagramView: View {
     private func savePositions() {
         model.updateGeneratedDiagramPositions(
             diagramID: diagram.id,
-            positions: viewModel.participantOffsets.mapValues { CGPoint(x: $0, y: 0) },
+            positions: viewModel.positionOverrides,
             scale: canvasScale,
             offset: canvasOffset
         )

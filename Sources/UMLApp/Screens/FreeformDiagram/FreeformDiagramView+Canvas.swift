@@ -11,7 +11,7 @@ extension FreeformDiagramView {
 
     var edgeLayer: some View {
         // Sequence messages are drawn by `sequenceLayer` through the shared layout.
-        let messageEdgeIDs = Set(viewModel.messageEdges.map(\.id))
+        let messageEdgeIDs = Set(viewModel.sequence.messageEdges.map(\.id))
         return ForEach(viewModel.edges.filter { !messageEdgeIDs.contains($0.id) }) { edge in
             RelationshipEdgeView(
                 kind: edge.kind,
@@ -49,8 +49,9 @@ extension FreeformDiagramView {
     @ViewBuilder
     var regularNodeLayer: some View {
         // Lifelines and fragments render through the sequence layer, not as free nodes.
+        let sequence = viewModel.sequence
         let nodes = viewModel.nodes
-            .filter { !$0.isResizable && !viewModel.isLifeline($0.id) && !viewModel.isFragment($0.id) }
+            .filter { !$0.isResizable && !sequence.isLifeline($0.id) && !sequence.isFragment($0.id) }
             .sorted { $0.drawOrder < $1.drawOrder }
         ForEach(nodes) { node in
             nodeView(for: node)
@@ -66,8 +67,8 @@ extension FreeformDiagramView {
     /// tap targets that select their backing edge for the inspector.
     @ViewBuilder
     var sequenceLayer: some View {
-        if let layout = viewModel.sequenceLayout {
-            let anchorY = viewModel.sequenceAnchorY
+        if let layout = viewModel.sequence.sequenceLayout {
+            let anchorY = viewModel.sequence.sequenceAnchorY
 
             SequenceEnsembleView(layout: layout)
                 .offset(y: anchorY)
@@ -90,7 +91,7 @@ extension FreeformDiagramView {
             }
 
             // Interactive participant headers.
-            ForEach(viewModel.lifelineNodes) { node in
+            ForEach(viewModel.sequence.lifelineNodes) { node in
                 lifelineHeader(for: node, anchorY: anchorY)
             }
         }
@@ -131,7 +132,7 @@ extension FreeformDiagramView {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
         let isSelected = viewModel.selectedEdgeID != nil
-            && viewModel.messageEdge(forLayoutID: message.id)?.id == viewModel.selectedEdgeID
+            && viewModel.sequence.messageEdge(forLayoutID: message.id)?.id == viewModel.selectedEdgeID
         return RoundedRectangle(cornerRadius: 4)
             .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
             .overlay(
@@ -146,13 +147,13 @@ extension FreeformDiagramView {
             .frame(width: width + 16, height: 30)
             .position(x: midX, y: anchorY + message.y - 4)
             .onTapGesture(count: 2) {
-                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                guard let edge = viewModel.sequence.messageEdge(forLayoutID: message.id) else { return }
                 viewModel.selectedEdgeID = edge.id
                 sidebarTab = .inspector
                 showSidebar = true
             }
             .onTapGesture(count: 1) {
-                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                guard let edge = viewModel.sequence.messageEdge(forLayoutID: message.id) else { return }
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
             }
     }

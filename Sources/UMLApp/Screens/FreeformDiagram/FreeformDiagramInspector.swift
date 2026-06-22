@@ -76,7 +76,7 @@ struct FreeformDiagramInspector: View {
         Section {
             TextField("Name", text: Binding(
                 get: { node.name },
-                set: { viewModel.updateNodeName(node.id, name: $0) }
+                set: { viewModel.members.updateNodeName(node.id, name: $0) }
             ))
             .textFieldStyle(.roundedBorder)
             .font(.headline)
@@ -134,7 +134,7 @@ struct FreeformDiagramInspector: View {
             Section {
                 TextEditor(text: Binding(
                     get: { text },
-                    set: { viewModel.updateNoteText(node.id, text: $0) }
+                    set: { viewModel.members.updateNoteText(node.id, text: $0) }
                 ))
                 .font(.system(size: 12, design: .monospaced))
                 .frame(minHeight: 80)
@@ -148,7 +148,7 @@ struct FreeformDiagramInspector: View {
             Section {
                 Picker("Role", selection: Binding(
                     get: { kind },
-                    set: { viewModel.updateLifelineKind(node.id, kind: $0) }
+                    set: { viewModel.sequence.updateLifelineKind(node.id, kind: $0) }
                 )) {
                     ForEach(SequenceDiagram.Participant.Kind.allCases, id: \.self) { role in
                         Text(role.rawValue.capitalized).tag(role)
@@ -173,9 +173,9 @@ struct FreeformDiagramInspector: View {
         // predicate the canvas renders by (`isMessageEdge`), so the two can never disagree.
         let relatedEdges = viewModel.edges.filter { $0.sourceNodeID == node.id || $0.targetNodeID == node.id }
         let messages = relatedEdges
-            .filter { viewModel.isMessageEdge($0) }
+            .filter { viewModel.sequence.isMessageEdge($0) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
-        let relationships = relatedEdges.filter { !viewModel.isMessageEdge($0) }
+        let relationships = relatedEdges.filter { !viewModel.sequence.isMessageEdge($0) }
 
         if !messages.isEmpty {
             messagesListSection(node: node, messages: messages)
@@ -252,7 +252,7 @@ struct FreeformDiagramInspector: View {
                         .font(.system(size: 12, design: .monospaced))
                     Spacer()
                     Button(role: .destructive) {
-                        viewModel.removeProperty(from: nodeID, memberID: prop.id)
+                        viewModel.members.removeProperty(from: nodeID, memberID: prop.id)
                     } label: {
                         Image(systemName: "minus.circle")
                     }
@@ -265,7 +265,7 @@ struct FreeformDiagramInspector: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($focusedField, equals: .newProperty)
                 Button {
-                    viewModel.addPropertyFromText(to: nodeID, text: newPropertyText)
+                    viewModel.members.addPropertyFromText(to: nodeID, text: newPropertyText)
                     newPropertyText = ""
                 } label: {
                     Image(systemName: "plus.circle")
@@ -285,7 +285,7 @@ struct FreeformDiagramInspector: View {
                         .font(.system(size: 12, design: .monospaced))
                     Spacer()
                     Button(role: .destructive) {
-                        viewModel.removeMethod(from: nodeID, memberID: method.id)
+                        viewModel.members.removeMethod(from: nodeID, memberID: method.id)
                     } label: {
                         Image(systemName: "minus.circle")
                     }
@@ -298,7 +298,7 @@ struct FreeformDiagramInspector: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($focusedField, equals: .newMethod)
                 Button {
-                    viewModel.addMethodFromText(to: nodeID, text: newMethodText)
+                    viewModel.members.addMethodFromText(to: nodeID, text: newMethodText)
                     newMethodText = ""
                 } label: {
                     Image(systemName: "plus.circle")
@@ -317,7 +317,7 @@ extension FreeformDiagramInspector {
 
     private func edgeInspector(edge: FreeformDiagram.Edge) -> some View {
         // Same predicates the canvas renders by, so the editor always matches what's drawn.
-        let isMessage = viewModel.isMessageEdge(edge)
+        let isMessage = viewModel.sequence.isMessageEdge(edge)
         let isTransition = edge.transition != nil
         let deleteTitle = isMessage ? "Delete Message"
             : isTransition ? "Delete Transition" : "Delete Relationship"

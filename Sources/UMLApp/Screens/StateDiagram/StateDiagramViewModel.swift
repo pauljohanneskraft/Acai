@@ -10,7 +10,7 @@ import UMLRender
 /// positions are the only editable, undoable state. Conforms to `CanvasInteraction` so it
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
-final class StateDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
+final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let artifact: CodeArtifact
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
@@ -21,16 +21,7 @@ final class StateDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     private(set) var configuration: StateDiagramConfiguration?
 
-    // MARK: - Undo / Redo
-
     let history = DiagramHistoryManager<[String: CGPoint]>()
-
-    /// Undoable state: the node positions. Persistence is the view's responsibility (it owns
-    /// the canvas scale/offset), mirroring the sequence view model.
-    var historySnapshot: [String: CGPoint] {
-        get { positionOverrides }
-        set { positionOverrides = newValue }
-    }
 
     // MARK: - Init
 
@@ -91,43 +82,13 @@ final class StateDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         StateLayoutModel(diagram: diagram ?? StateDiagram(), positionOverrides: positionOverrides)
     }
 
-    // MARK: - CanvasInteraction
+    // MARK: - LayoutBackedCanvas
 
-    func nodePosition(_ id: String) -> CGPoint? {
-        guard let frame = layout.frame(for: id) else { return nil }
-        return CGPoint(x: frame.midX, y: frame.midY)
-    }
+    var allNodeIDs: [String] { layout.nodes.map(\.id) }
 
-    func moveNode(_ id: String, to position: CGPoint) {
-        positionOverrides[id] = position
-    }
+    func nodeFrame(_ id: String) -> CGRect? { layout.frame(for: id) }
 
-    func effectiveSize(for id: String) -> CGSize {
-        layout.frame(for: id)?.size ?? CGSize(width: 80, height: 40)
-    }
-
-    /// States are fixed-size; resizing is a no-op.
-    func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {}
-
-    func selectNode(_ id: String, extending: Bool) {
-        if extending {
-            if selectedNodeIDs.contains(id) { selectedNodeIDs.remove(id) } else { selectedNodeIDs.insert(id) }
-        } else {
-            selectedNodeIDs = [id]
-        }
-    }
-
-    func selectNodes(in rect: CGRect) {
-        selectedNodeIDs = Set(
-            layout.nodes
-                .filter { rect.contains(CGPoint(x: $0.rect.midX, y: $0.rect.midY)) }
-                .map(\.id)
-        )
-    }
-
-    func clearSelection() { selectedNodeIDs.removeAll() }
-
-    func selectAll() { selectedNodeIDs = Set(layout.nodes.map(\.id)) }
+    var defaultNodeSize: CGSize { CGSize(width: 80, height: 40) }
 
     // MARK: - Image Export
 

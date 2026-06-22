@@ -7,9 +7,24 @@ import AppKit
 
 /// View model for the freeform diagram editor.
 @MainActor
-final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
+final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction,
+    FreeformEditingContext {
     var diagramID: UUID?
     weak var browserModel: ProjectBrowserViewModel?
+
+    // MARK: - Editing collaborators
+    //
+    // Each owns one editing domain over the shared nodes/edges (via `FreeformEditingContext`), so
+    // this view model stays the canvas / history / selection / persistence facade the views observe.
+
+    /// Lifelines, ordered messages, and combined fragments.
+    lazy var sequence = SequenceEditor(context: self)
+    /// States and labeled transitions.
+    lazy var state = StateMachineEditor(context: self)
+    /// Type members and inline text (name / member / note) editing.
+    lazy var members = TypeMemberEditor(context: self)
+    /// Cut / copy / paste of the node-and-edge selection.
+    lazy var clipboard = SelectionClipboard(context: self)
 
     @Published var nodes: [FreeformDiagram.Node] = []
     @Published var edges: [FreeformDiagram.Edge] = []
@@ -57,12 +72,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
             nodes = newValue.nodes
             edges = newValue.edges
         }
-    }
-
-    /// Coalescing keys for runs of consecutive text edits that should undo as a single step.
-    enum TextEditField: Hashable {
-        case name(String)
-        case note(String)
     }
 
     /// Persist after an undo/redo restores a snapshot.
@@ -193,7 +202,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: kind)
         // An edge between two lifelines is a sequence message: append it at the end of the
         // timeline as a synchronous call (order/kind editable in the inspector).
-        if isLifeline(sourceID) && isLifeline(targetID) {
+        if sequence.isLifeline(sourceID) && sequence.isLifeline(targetID) {
             edge.messageOrder = (edges.compactMap(\.messageOrder).max() ?? 0) + 1
             edge.messageKind = .synchronous
         }
@@ -217,7 +226,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         // A message only exists between two lifelines: re-pointing an endpoint elsewhere
         // demotes the edge to a plain relationship (same undo step), keeping the data
         // consistent with how the canvas and inspector classify it.
-        if edges[idx].messageOrder != nil && !(isLifeline(sourceID) && isLifeline(targetID)) {
+        if edges[idx].messageOrder != nil && !(sequence.isLifeline(sourceID) && sequence.isLifeline(targetID)) {
             edges[idx].messageOrder = nil
             edges[idx].messageKind = nil
         }
@@ -226,27 +235,18 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     // MARK: - Selection
 
-    func selectNode(_ nodeID: String, extending: Bool) {
-        if extending {
-            if selectedNodeIDs.contains(nodeID) {
-                selectedNodeIDs.remove(nodeID)
-            } else {
-                selectedNodeIDs.insert(nodeID)
-            }
-        } else {
-            selectedNodeIDs = [nodeID]
-        }
-    }
+    /// Drives the shared `selectAll` / marquee defaults on `CanvasInteraction`.
+    var allNodeIDs: [String] { nodes.map(\.id) }
 
-    func selectNodes(in rect: CGRect) {
-        selectedNodeIDs = Set(nodes.filter { node in
-            let pos = CGPoint(x: node.positionX, y: node.positionY)
-            return rect.contains(pos)
-        }.map(\.id))
-    }
-
+    // `selectNode` and `selectNodes(in:)` use the shared `CanvasInteraction` defaults. `clearSelection`
+    // and `selectAll` are overridden to also reset the selected edge.
     func clearSelection() {
         selectedNodeIDs.removeAll()
+        selectedEdgeID = nil
+    }
+
+    func selectAll() {
+        selectedNodeIDs = Set(nodes.map(\.id))
         selectedEdgeID = nil
     }
 

@@ -53,9 +53,9 @@ struct FreeformDiagramHistoryTests {
         // Calls whose guards fail on a bogus ID must not record a checkpoint
         // (which would clear the redo stack) nor make undo available.
         let bogus = UUID().uuidString
-        vm.addProperty(to: bogus, name: "x", type: "Int")
+        vm.members.addProperty(to: bogus, name: "x", type: "Int")
         vm.moveNodeHigher(bogus)
-        vm.updateNoteText(bogus, text: "hi")
+        vm.members.updateNoteText(bogus, text: "hi")
 
         #expect(vm.canUndo == false)
         #expect(vm.canRedo == true)
@@ -69,9 +69,9 @@ struct FreeformDiagramHistoryTests {
         let id = vm.nodes[0].id
 
         // Simulate per-keystroke updates to the same name field.
-        vm.updateNodeName(id, name: "Ab")
-        vm.updateNodeName(id, name: "Abc")
-        vm.updateNodeName(id, name: "Abcd")
+        vm.members.updateNodeName(id, name: "Ab")
+        vm.members.updateNodeName(id, name: "Abc")
+        vm.members.updateNodeName(id, name: "Abcd")
         #expect(vm.nodes[0].name == "Abcd")
 
         // One undo reverts the whole run of keystrokes back to the pre-edit name.
@@ -93,7 +93,7 @@ struct FreeformDiagramHistoryTests {
         #expect(vm.canRedo == true)
 
         vm.selectedNodeIDs = []
-        vm.cutSelection()
+        vm.clipboard.cutSelection()
 
         #expect(vm.canUndo == false)
         #expect(vm.canRedo == true)

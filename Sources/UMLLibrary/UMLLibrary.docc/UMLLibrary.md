@@ -70,6 +70,10 @@ Turn a [UMLCore](/documentation/umlcore/) model into something you can look at.
 - <doc:GettingStarted>
 - [AnalysisService](/documentation/umlcore/analysisservice)
 
+### Contributing
+
+- <doc:AddingALanguage>
+
 ### Project Discovery
 
 How [AnalysisService](/documentation/umlcore/analysisservice) finds the source folders inside a project before parsing. You don't
