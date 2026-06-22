@@ -143,7 +143,7 @@ struct FreeformDiagramCatalog: View {
     /// timeline. Direction is first-selected → second-selected; one selected lifeline makes a
     /// self-message. Order/kind/label are editable afterwards in the inspector.
     private var messageCatalog: some View {
-        let lifelines = viewModel.orderedLifelineSelection
+        let lifelines = viewModel.sequence.orderedLifelineSelection
         let twoSelected = lifelines.count == 2
         let oneSelected = lifelines.count == 1
         return VStack(spacing: 4) {
@@ -170,15 +170,15 @@ struct FreeformDiagramCatalog: View {
     /// first-selected → second-selected; one selected state makes a self-loop.
     /// Event/guard/action are editable afterwards in the inspector.
     private var transitionCatalog: some View {
-        let states = viewModel.orderedStateSelection
+        let states = viewModel.state.orderedStateSelection
         let twoSelected = states.count == 2
         let oneSelected = states.count == 1
         return VStack(spacing: 4) {
             Button {
                 if twoSelected {
-                    viewModel.addTransition(from: states[0], to: states[1])
+                    viewModel.state.addTransition(from: states[0], to: states[1])
                 } else if oneSelected, let only = states.first {
-                    viewModel.addTransition(from: only, to: only)
+                    viewModel.state.addTransition(from: only, to: only)
                 }
             } label: {
                 HStack {
@@ -209,11 +209,11 @@ struct FreeformDiagramCatalog: View {
         isSelf: Bool = false
     ) -> some View {
         Button {
-            let lifelines = viewModel.orderedLifelineSelection
+            let lifelines = viewModel.sequence.orderedLifelineSelection
             if isSelf, let only = lifelines.first {
-                viewModel.addMessage(from: only, to: only, kind: kind)
+                viewModel.sequence.addMessage(from: only, to: only, kind: kind)
             } else if lifelines.count == 2 {
-                viewModel.addMessage(from: lifelines[0], to: lifelines[1], kind: kind)
+                viewModel.sequence.addMessage(from: lifelines[0], to: lifelines[1], kind: kind)
             }
         } label: {
             HStack {

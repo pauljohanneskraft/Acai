@@ -12,7 +12,7 @@ extension FreeformDiagramInspector {
     /// Inspector for a state-transition edge: endpoints plus the UML
     /// `event [guard] / action` label parts.
     func transitionSection(edge: FreeformDiagram.Edge) -> some View {
-        let stateNodes = viewModel.nodes.filter { viewModel.isStateNode($0.id) }
+        let stateNodes = viewModel.nodes.filter { viewModel.state.isStateNode($0.id) }
         return Section {
             Picker("From", selection: Binding(
                 get: { edge.sourceNodeID },
@@ -30,20 +30,20 @@ extension FreeformDiagramInspector {
 
             TextField("Event", text: Binding(
                 get: { edge.transition?.event ?? "" },
-                set: { viewModel.updateTransitionEdge(edge.id, event: $0) }
+                set: { viewModel.state.updateTransitionEdge(edge.id, event: $0) }
             ))
             .textFieldStyle(.roundedBorder)
             .focused($focusedField, equals: .name)
 
             TextField("Guard condition", text: Binding(
                 get: { edge.transition?.guardCondition ?? "" },
-                set: { viewModel.updateTransitionEdge(edge.id, guardCondition: $0) }
+                set: { viewModel.state.updateTransitionEdge(edge.id, guardCondition: $0) }
             ))
             .textFieldStyle(.roundedBorder)
 
             TextField("Action", text: Binding(
                 get: { edge.transition?.action ?? "" },
-                set: { viewModel.updateTransitionEdge(edge.id, action: $0) }
+                set: { viewModel.state.updateTransitionEdge(edge.id, action: $0) }
             ))
             .textFieldStyle(.roundedBorder)
         } header: {
@@ -56,7 +56,7 @@ extension FreeformDiagramInspector {
         Section {
             Picker("State kind", selection: Binding(
                 get: { kind },
-                set: { viewModel.updateStateKind(nodeID, kind: $0) }
+                set: { viewModel.state.updateStateKind(nodeID, kind: $0) }
             )) {
                 Text("State").tag(StateDiagram.State.Kind.normal)
                 Text("Initial").tag(StateDiagram.State.Kind.initial)

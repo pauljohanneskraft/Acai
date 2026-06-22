@@ -11,7 +11,7 @@ extension FreeformDiagramView {
 
     var edgeLayer: some View {
         // Sequence messages are drawn by `sequenceLayer` through the shared layout.
-        let messageEdgeIDs = Set(viewModel.messageEdges.map(\.id))
+        let messageEdgeIDs = Set(viewModel.sequence.messageEdges.map(\.id))
         return ForEach(viewModel.edges.filter { !messageEdgeIDs.contains($0.id) }) { edge in
             RelationshipEdgeView(
                 kind: edge.kind,
@@ -50,7 +50,15 @@ extension FreeformDiagramView {
     var regularNodeLayer: some View {
         // Lifelines and fragments render through the sequence layer, not as free nodes.
         let nodes = viewModel.nodes
-            .filter { !$0.isResizable && !viewModel.isLifeline($0.id) && !viewModel.isFragment($0.id) }
+            .filter { node in
+                guard !node.isResizable else { return false }
+                switch node.content {
+                case .lifeline, .fragment:
+                    return false
+                default:
+                    return true
+                }
+            }
             .sorted { $0.drawOrder < $1.drawOrder }
         ForEach(nodes) { node in
             nodeView(for: node)
@@ -66,8 +74,11 @@ extension FreeformDiagramView {
     /// tap targets that select their backing edge for the inspector.
     @ViewBuilder
     var sequenceLayer: some View {
-        if let layout = viewModel.sequenceLayout {
-            let anchorY = viewModel.sequenceAnchorY
+        if let layout = viewModel.sequence.sequenceLayout {
+            let anchorY = viewModel.sequence.sequenceAnchorY
+            // Resolve the backing edges once: layout message ids index this array (see
+            // `messageEdges`), so the tap targets don't each re-filter and re-sort the edges.
+            let messageEdges = viewModel.sequence.messageEdges
 
             SequenceEnsembleView(layout: layout)
                 .offset(y: anchorY)
@@ -75,7 +86,11 @@ extension FreeformDiagramView {
 
             // Tap targets over each message arrow, selecting the backing edge.
             ForEach(layout.messages) { message in
-                messageTapTarget(message, anchorY: anchorY)
+                messageTapTarget(
+                    message,
+                    edge: messageEdges.indices.contains(message.id) ? messageEdges[message.id] : nil,
+                    anchorY: anchorY
+                )
             }
 
             // Selected-fragment highlight + tap targets on the fragment tabs. (Fragment frames
@@ -90,7 +105,7 @@ extension FreeformDiagramView {
             }
 
             // Interactive participant headers.
-            ForEach(viewModel.lifelineNodes) { node in
+            ForEach(viewModel.sequence.lifelineNodes) { node in
                 lifelineHeader(for: node, anchorY: anchorY)
             }
         }
@@ -127,11 +142,14 @@ extension FreeformDiagramView {
             }
     }
 
-    private func messageTapTarget(_ message: SequenceLayoutModel.MessageLayout, anchorY: CGFloat) -> some View {
+    private func messageTapTarget(
+        _ message: SequenceLayoutModel.MessageLayout,
+        edge: FreeformDiagram.Edge?,
+        anchorY: CGFloat
+    ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
-        let isSelected = viewModel.selectedEdgeID != nil
-            && viewModel.messageEdge(forLayoutID: message.id)?.id == viewModel.selectedEdgeID
+        let isSelected = viewModel.selectedEdgeID != nil && edge?.id == viewModel.selectedEdgeID
         return RoundedRectangle(cornerRadius: 4)
             .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
             .overlay(
@@ -146,13 +164,13 @@ extension FreeformDiagramView {
             .frame(width: width + 16, height: 30)
             .position(x: midX, y: anchorY + message.y - 4)
             .onTapGesture(count: 2) {
-                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                guard let edge else { return }
                 viewModel.selectedEdgeID = edge.id
                 sidebarTab = .inspector
                 showSidebar = true
             }
             .onTapGesture(count: 1) {
-                guard let edge = viewModel.messageEdge(forLayoutID: message.id) else { return }
+                guard let edge else { return }
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
             }
     }

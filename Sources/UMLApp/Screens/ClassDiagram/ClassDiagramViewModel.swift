@@ -133,33 +133,8 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Selection
 
-    func selectNode(_ id: String, extending: Bool) {
-        if extending {
-            if selectedNodeIDs.contains(id) {
-                selectedNodeIDs.remove(id)
-            } else {
-                selectedNodeIDs.insert(id)
-            }
-        } else {
-            selectedNodeIDs = [id]
-        }
-    }
-
-    func selectAll() {
-        selectedNodeIDs = Set(nodes.map(\.id))
-    }
-
-    func clearSelection() {
-        selectedNodeIDs.removeAll()
-    }
-
-    /// Select nodes whose center falls within the given rectangle.
-    func selectNodes(in rect: CGRect) {
-        selectedNodeIDs = Set(nodes.filter { node in
-            guard let pos = nodePositions[node.id] else { return false }
-            return rect.contains(pos)
-        }.map(\.id))
-    }
+    /// Drives the shared `selectAll` / marquee defaults on `CanvasInteraction`.
+    var allNodeIDs: [String] { nodes.map(\.id) }
 
     // MARK: - Movement & Resize
 

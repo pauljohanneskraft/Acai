@@ -83,15 +83,69 @@ struct FreeformDiagramCanvasTests {
         // Edge between two lifelines auto-becomes a message…
         vm.addEdge(from: a, to: b, kind: .dependency)
         let edge = vm.edges[0]
-        #expect(vm.isMessageEdge(edge))
-        #expect(vm.messageEdges.count == 1)
+        #expect(vm.sequence.isMessageEdge(edge))
+        #expect(vm.sequence.messageEdges.count == 1)
 
         // …and demotes (in the same model the canvas/inspector read) when re-pointed.
         vm.updateEdge(edge.id, sourceID: a, targetID: c, kind: .dependency)
         let updated = vm.edges[0]
-        #expect(!vm.isMessageEdge(updated))
+        #expect(!vm.sequence.isMessageEdge(updated))
         #expect(updated.messageOrder == nil)
         #expect(updated.messageKind == nil)
-        #expect(vm.messageEdges.isEmpty)
+        #expect(vm.sequence.messageEdges.isEmpty)
+    }
+
+    @Test("Re-pointing a relationship onto two lifelines promotes it to a message")
+    func relationshipPromotesToMessageWhenRepointedBetweenLifelines() {
+        let vm = FreeformDiagramViewModel()
+        vm.addNode(kind: .lifeline, name: "A", at: .zero)
+        vm.addNode(kind: .lifeline, name: "B", at: CGPoint(x: 200, y: 0))
+        vm.addNode(kind: .type(.class), name: "C", at: CGPoint(x: 400, y: 0))
+        let a = vm.nodes[0].id
+        let b = vm.nodes[1].id
+        let c = vm.nodes[2].id
+
+        // Starts as a plain relationship (lifeline → type is not a message).
+        vm.addEdge(from: a, to: c, kind: .association)
+        let edge = vm.edges[0]
+        #expect(!vm.sequence.isMessageEdge(edge))
+        #expect(edge.messageOrder == nil)
+
+        // Re-pointing the type endpoint onto the second lifeline promotes it to a message.
+        vm.updateEdge(edge.id, sourceID: a, targetID: b, kind: .association)
+        let updated = vm.edges[0]
+        #expect(vm.sequence.isMessageEdge(updated))
+        #expect(updated.messageOrder == 1)
+        #expect(updated.messageKind == .synchronous)
+    }
+
+    @Test("Replacing the node selection clears a selected edge, but extending does not")
+    func selectionReplacementClearsSelectedEdge() {
+        let vm = model(withNodesAt: [.zero, CGPoint(x: 100, y: 0)])
+        let a = vm.nodes[0].id
+        let b = vm.nodes[1].id
+
+        // Single click (replace) clears a previously selected edge.
+        vm.selectedEdgeID = "edge-1"
+        vm.selectNode(a, extending: false)
+        #expect(vm.selectedEdgeID == nil)
+
+        // Marquee (replace) clears it too.
+        vm.selectedEdgeID = "edge-1"
+        vm.selectNodes(in: CGRect(x: -10, y: -10, width: 40, height: 40))
+        #expect(vm.selectedEdgeID == nil)
+
+        // Extending the selection leaves the edge selection intact.
+        vm.selectedEdgeID = "edge-keep"
+        vm.selectNode(b, extending: true)
+        #expect(vm.selectedEdgeID == "edge-keep")
+
+        // Clear / select-all also drop it.
+        vm.selectedEdgeID = "edge-1"
+        vm.clearSelection()
+        #expect(vm.selectedEdgeID == nil)
+        vm.selectedEdgeID = "edge-1"
+        vm.selectAll()
+        #expect(vm.selectedEdgeID == nil)
     }
 }

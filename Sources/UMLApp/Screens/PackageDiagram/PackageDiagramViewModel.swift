@@ -11,21 +11,14 @@ import UMLRender
 /// those positions are the only editable, undoable state. Conforms to `CanvasInteraction` so it
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
-final class PackageDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
+final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let diagram: PackageDependencyDiagram
 
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
 
-    // MARK: - Undo / Redo
-
     let history = DiagramHistoryManager<[String: CGPoint]>()
-
-    var historySnapshot: [String: CGPoint] {
-        get { positionOverrides }
-        set { positionOverrides = newValue }
-    }
 
     // MARK: - Init
 
@@ -47,41 +40,11 @@ final class PackageDiagramViewModel: ObservableObject, DiagramHistoryHosting, Ca
         diagram.nodes.first { $0.id == id }
     }
 
-    // MARK: - CanvasInteraction
+    // MARK: - LayoutBackedCanvas
 
-    func nodePosition(_ id: String) -> CGPoint? {
-        guard let frame = layout.frame(for: id) else { return nil }
-        return CGPoint(x: frame.midX, y: frame.midY)
-    }
+    var allNodeIDs: [String] { layout.nodes.map(\.id) }
 
-    func moveNode(_ id: String, to position: CGPoint) {
-        positionOverrides[id] = position
-    }
+    func nodeFrame(_ id: String) -> CGRect? { layout.frame(for: id) }
 
-    func effectiveSize(for id: String) -> CGSize {
-        layout.frame(for: id)?.size ?? CGSize(width: 140, height: 72)
-    }
-
-    /// Module boxes are fixed-size; resizing is a no-op.
-    func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {}
-
-    func selectNode(_ id: String, extending: Bool) {
-        if extending {
-            if selectedNodeIDs.contains(id) { selectedNodeIDs.remove(id) } else { selectedNodeIDs.insert(id) }
-        } else {
-            selectedNodeIDs = [id]
-        }
-    }
-
-    func selectNodes(in rect: CGRect) {
-        selectedNodeIDs = Set(
-            layout.nodes
-                .filter { rect.contains(CGPoint(x: $0.rect.midX, y: $0.rect.midY)) }
-                .map(\.id)
-        )
-    }
-
-    func clearSelection() { selectedNodeIDs.removeAll() }
-
-    func selectAll() { selectedNodeIDs = Set(layout.nodes.map(\.id)) }
+    var defaultNodeSize: CGSize { CGSize(width: 140, height: 72) }
 }

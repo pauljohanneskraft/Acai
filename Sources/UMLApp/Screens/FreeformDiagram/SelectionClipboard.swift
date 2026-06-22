@@ -1,12 +1,18 @@
-import SwiftUI
-import UMLCore
+import Foundation
 #if os(macOS)
 import AppKit
 #endif
 
-// MARK: - Clipboard (Cut / Copy / Paste)
+/// Cut / copy / paste for the freeform diagram's node-and-edge selection. Copy serialises the
+/// selected nodes (and the edges between them) to the system pasteboard; paste re-materialises them
+/// with fresh ids and a small offset so they don't land on top of the originals.
+@MainActor
+final class SelectionClipboard {
+    private unowned let context: any FreeformEditingContext
 
-extension FreeformDiagramViewModel {
+    init(context: any FreeformEditingContext) {
+        self.context = context
+    }
 
     /// Internal clipboard representation.
     private struct ClipboardPayload: Codable {
@@ -18,11 +24,14 @@ extension FreeformDiagramViewModel {
 
     /// Copy the currently selected nodes (and edges between them) to the system clipboard.
     func copySelection() {
-        guard !selectedNodeIDs.isEmpty else { return }
-        let selectedNodes = nodes.filter { selectedNodeIDs.contains($0.id) }
-        let selectedEdges = edges.filter {
-            selectedNodeIDs.contains($0.sourceNodeID)
-                && selectedNodeIDs.contains($0.targetNodeID)
+        guard !context.selectedNodeIDs.isEmpty else { return }
+        let selectedNodes = context.nodes.filter { context.selectedNodeIDs.contains($0.id) }
+        // Only edges with *both* endpoints selected are copied — a half-dangling edge has no second
+        // endpoint to re-attach to on paste. (Cut still deletes edges merely *touching* the
+        // selection, via `removeNodes`, because removing a node must remove its dangling edges.)
+        let selectedEdges = context.edges.filter {
+            context.selectedNodeIDs.contains($0.sourceNodeID)
+                && context.selectedNodeIDs.contains($0.targetNodeID)
         }
         let payload = ClipboardPayload(nodes: selectedNodes, edges: selectedEdges)
         guard let data = try? JSONEncoder().encode(payload) else { return }
@@ -36,13 +45,13 @@ extension FreeformDiagramViewModel {
 
     /// Cut: copy selection then delete.
     func cutSelection() {
-        guard !selectedNodeIDs.isEmpty else { return }
+        guard !context.selectedNodeIDs.isEmpty else { return }
         copySelection()
-        recordUndo()
-        removeNodes(selectedNodeIDs)
+        context.recordUndo(coalescingKey: nil)
+        context.removeNodes(context.selectedNodeIDs)
         // Connected edges may have been removed as a side-effect, so drop any stale edge selection.
-        selectedEdgeID = nil
-        save()
+        context.selectedEdgeID = nil
+        context.save()
     }
 
     /// Paste from the system clipboard, offsetting positions so nodes don't overlap originals.
@@ -57,7 +66,7 @@ extension FreeformDiagramViewModel {
 
         guard !payload.nodes.isEmpty else { return }
 
-        recordUndo()
+        context.recordUndo(coalescingKey: nil)
 
         // Build mapping from old IDs to new IDs.
         var idMapping: [String: String] = [:]
@@ -73,7 +82,7 @@ extension FreeformDiagramViewModel {
             node.id = newID
             node.positionX += offset
             node.positionY += offset
-            nodes.append(node)
+            context.nodes.append(node)
             newSelection.insert(newID)
         }
 
@@ -83,17 +92,11 @@ extension FreeformDiagramViewModel {
             edge.id = UUID().uuidString
             edge.sourceNodeID = newSource
             edge.targetNodeID = newTarget
-            edges.append(edge)
+            context.edges.append(edge)
         }
 
-        selectedNodeIDs = newSelection
-        selectedEdgeID = nil
-        save()
-    }
-
-    /// Select all nodes.
-    func selectAll() {
-        selectedNodeIDs = Set(nodes.map(\.id))
-        selectedEdgeID = nil
+        context.selectedNodeIDs = newSelection
+        context.selectedEdgeID = nil
+        context.save()
     }
 }

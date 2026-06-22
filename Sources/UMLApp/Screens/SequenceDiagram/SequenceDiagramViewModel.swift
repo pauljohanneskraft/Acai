@@ -6,40 +6,34 @@ import UMLRender
 
 /// Backs the movement-only sequence diagram view. The `SequenceDiagram` is regenerated from the
 /// stored entry-point configuration (so it tracks the code), while the user may slide participant
-/// lifelines horizontally; those offsets are the only editable, undoable state. Conforms to
-/// `CanvasInteraction` so it reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
+/// lifelines horizontally; those overrides are the only editable, undoable state. Conforms to
+/// `LayoutBackedCanvas` so it reuses the shared canvas (pan/zoom, drag, marquee, undo/redo) — only
+/// the `x` of each override matters (the layout pins lifelines to the header row).
 @MainActor
-final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
+final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let artifact: CodeArtifact
 
     @Published private(set) var diagram: SequenceDiagram
-    /// Per-participant horizontal-centre overrides, keyed by `Participant.id`.
-    @Published var participantOffsets: [String: CGFloat] = [:]
+    /// Per-participant centre overrides, keyed by `Participant.id`. Only `x` is honoured.
+    @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
 
     private(set) var configuration: SequenceDiagramConfiguration
 
-    // MARK: - Undo / Redo
-
-    let history = DiagramHistoryManager<[String: CGFloat]>()
-
-    /// Undoable state: the participant offsets. Persistence is the view's responsibility (it owns
-    /// the canvas scale/offset), mirroring the class view model.
-    var historySnapshot: [String: CGFloat] {
-        get { participantOffsets }
-        set { participantOffsets = newValue }
-    }
+    let history = DiagramHistoryManager<[String: CGPoint]>()
 
     // MARK: - Init
 
     init(
         artifact: CodeArtifact,
         configuration: SequenceDiagramConfiguration,
-        restoredOffsets: [String: CGFloat] = [:]
+        restoredPositions: [String: CGPoint] = [:]
     ) {
         self.artifact = artifact
         self.configuration = configuration
-        self.participantOffsets = restoredOffsets
+        // Lifelines move horizontally only; normalize any restored y (older saved data may carry a
+        // non-zero one) to 0 so stored positions round-trip cleanly. See `moveNode`.
+        self.positionOverrides = restoredPositions.mapValues { CGPoint(x: $0.x, y: 0) }
         self.diagram = Self.generate(artifact: artifact, configuration: configuration)
     }
 
@@ -58,7 +52,7 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     func applyConfiguration(_ newConfiguration: SequenceDiagramConfiguration) {
         configuration = newConfiguration
         diagram = Self.generate(artifact: artifact, configuration: newConfiguration)
-        participantOffsets = [:]
+        positionOverrides = [:]
         selectedNodeIDs = []
         history.clear()
     }
@@ -67,60 +61,35 @@ final class SequenceDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     // MARK: - Layout
 
-    /// Current geometry, honouring participant drags.
+    /// Current geometry, honouring participant drags (only the horizontal component is used).
     var layout: SequenceLayoutModel {
-        SequenceLayoutModel(diagram: diagram, positionOverrides: participantOffsets)
+        SequenceLayoutModel(diagram: diagram, positionOverrides: positionOverrides.mapValues(\.x))
     }
 
     private var frameByID: [String: SequenceLayoutModel.ParticipantFrame] {
         Dictionary(layout.participants.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    // MARK: - CanvasInteraction
+    // MARK: - LayoutBackedCanvas
 
-    func nodePosition(_ id: String) -> CGPoint? {
-        guard let frame = frameByID[id] else { return nil }
-        return CGPoint(x: frame.lifelineX, y: frame.headerRect.midY)
-    }
+    var allNodeIDs: [String] { layout.participants.map(\.id) }
 
-    /// Move a participant — horizontal only (the vertical position is fixed to the header row).
+    func nodeFrame(_ id: String) -> CGRect? { frameByID[id]?.headerRect }
+
+    var defaultNodeSize: CGSize { CGSize(width: 120, height: SequenceLayoutModel.headerHeight) }
+
+    /// Lifelines slide horizontally only — pin the override's `y` to 0 so nothing meaningless is
+    /// persisted (the layout ignores `y`, and the saved positions round-trip cleanly).
     func moveNode(_ id: String, to position: CGPoint) {
-        participantOffsets[id] = position.x
+        positionOverrides[id] = CGPoint(x: position.x, y: 0)
     }
-
-    func effectiveSize(for id: String) -> CGSize {
-        frameByID[id]?.headerRect.size ?? CGSize(width: 120, height: SequenceLayoutModel.headerHeight)
-    }
-
-    /// Participants are fixed-size; resizing is a no-op.
-    func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {}
-
-    func selectNode(_ id: String, extending: Bool) {
-        if extending {
-            if selectedNodeIDs.contains(id) { selectedNodeIDs.remove(id) } else { selectedNodeIDs.insert(id) }
-        } else {
-            selectedNodeIDs = [id]
-        }
-    }
-
-    func selectNodes(in rect: CGRect) {
-        selectedNodeIDs = Set(
-            layout.participants
-                .filter { rect.contains(CGPoint(x: $0.lifelineX, y: $0.headerRect.midY)) }
-                .map(\.id)
-        )
-    }
-
-    func clearSelection() { selectedNodeIDs.removeAll() }
-
-    func selectAll() { selectedNodeIDs = Set(layout.participants.map(\.id)) }
 
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
         try DiagramImageRenderer.renderPNG(
             sequenceDiagram: diagram,
-            positionOverrides: participantOffsets,
+            positionOverrides: positionOverrides.mapValues(\.x),
             scale: scale
         )
     }

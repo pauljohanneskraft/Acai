@@ -2,7 +2,7 @@
 
 # UML — See Your Codebase
 
-**Point UML at a folder of source code and get a UML class diagram back.** No annotations, no project files, no setup — across Swift, Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++. Explore visually in the native macOS app, or wire the `uml` CLI into your build and docs.
+**Point it at a folder. Get a diagram back.** No annotations, no project files, no build step — just your source code, parsed for real and drawn as a UML class diagram. Works across Swift, Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++, all in one picture. Explore it in the native macOS app, or wire the `uml` CLI into your build and docs.
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
@@ -17,11 +17,11 @@
 
 ---
 
-## What is this?
+## The pitch
 
-UML reads your source code the way a compiler's front end would — it actually parses it, it doesn't grep for keywords — and builds one unified model of your types and how they relate. From that model it draws **class diagrams**: the boxes, the members, and the inheritance / composition / dependency arrows between them.
+You've inherited a codebase. Or you're onboarding onto one. Or you just want to remember how the thing you wrote six months ago fits together. UML reads your source the way a compiler's front end would — it **actually parses** it, it doesn't grep for keywords — and builds one unified model of your types and how they relate. Then it draws the picture: the boxes, the members, and the inheritance / composition / dependency arrows between them.
 
-It works on a folder. Mixed-language repo? Point it at the root and you get every language in a single picture. There's nothing to annotate and no build to run first.
+It runs on a folder. Got a polyglot repo with Swift up front and a C core underneath? Point UML at the root and every language lands in the same diagram. Nothing to annotate, no build to run first.
 
 ---
 
@@ -29,16 +29,14 @@ It works on a folder. Mixed-language repo? Point it at the root and you get ever
 
 ### …with the app
 
-1. Build and install the app, then open it:
-   ```sh
-   git clone https://github.com/pauljohanneskraft/UML.git
-   cd UML
-   ./Scripts/app_create.sh && ./Scripts/app_install.sh
-   open -a UML
-   ```
-2. Add a **project**, point a **codebase** at any folder of source, and let it index.
-3. Open a **class diagram**. Drag nodes around, fold members away, group by folder or namespace, dial in an access level — the diagram updates live.
-4. Hit **Export Image** to save a PNG exactly as you've arranged it.
+```sh
+git clone https://github.com/pauljohanneskraft/UML.git
+cd UML
+./Scripts/app_create.sh && ./Scripts/app_install.sh
+open -a UML
+```
+
+Then: add a **project**, point a **codebase** at any folder of source, and let it index. Open a **class diagram**, drag the boxes where you want them, fold members away, group by folder or namespace, dial in an access level — the diagram updates live. Happy with the layout? Hit **Export Image** and you get a PNG exactly as you arranged it.
 
 ### …or from the command line
 
@@ -48,34 +46,30 @@ It works on a folder. Mixed-language repo? Point it at the root and you get ever
 # Render any codebase straight to a PNG (macOS):
 uml image --source ~/path/to/your/project --output project.png
 
-# …or emit DOT and render it anywhere with Graphviz:
+# …or emit DOT and render it anywhere Graphviz runs:
 uml diagram --source ~/path/to/your/project --output project.dot
 dot -Tpng project.dot -o project.png    # brew install graphviz
 ```
 
-That's it — no config file required for either path.
+No config file required for either path.
 
 ---
 
 ## What you get
 
-Point UML at the whole repo and every language lands in one diagram, neatly
-grouped — here the bundled sample's Swift and Kotlin sides, side by side:
+Point UML at the whole repo and every language lands in one diagram, neatly grouped — here the bundled sample's Swift and Kotlin sides, side by side:
 
 <p align="center">
   <img src="Documentation/Images/diagram-full.png" alt="A UML class diagram of the sample media-library project, with languages grouped separately" width="100%">
 </p>
 
-Zoom in on one side for full member detail. Access levels show as `+` / `-`, and
-the three UML relationships are all here: inheritance (hollow triangle),
-composition (filled diamond), and dependency (dashed arrow).
+Zoom in on one side for full member detail. Access levels show as `+` / `-`, and the three UML relationships are all here: inheritance (hollow triangle), composition (filled diamond), and dependency (dashed arrow).
 
 <p align="center">
   <img src="Documentation/Images/diagram-swift.png" alt="Detailed Swift class diagram with members, access symbols, and relationship arrows" width="90%">
 </p>
 
-Prefer the shape over the detail? Hide members for an architecture-at-a-glance
-overview:
+Prefer the shape over the detail? Hide members for an architecture-at-a-glance overview:
 
 <p align="center">
   <img src="Documentation/Images/diagram-types-only.png" alt="The same diagram with members hidden, showing only types and their relationships" width="90%">
@@ -85,10 +79,7 @@ overview:
 
 ## Draw your own, too
 
-Generated diagrams are the fast path, but the app also has a freeform editor.
-Drag types, actors, use cases, packages, and notes from the catalog onto an
-infinite canvas and wire them up by hand — or turn a generated diagram into a
-custom one and take it from there.
+Generated diagrams are the fast path, but the app also ships a freeform editor. Drag types, actors, use cases, packages, and notes from the catalog onto an infinite canvas and wire them up by hand — or take a generated diagram and keep editing from there. Sequence, state-machine, and call-graph elements are all in the box.
 
 <p align="center">
   <img src="Documentation/Images/app-custom-diagram.png" alt="The UML app's custom-diagram editor with the node catalog open" width="100%">
@@ -100,9 +91,23 @@ custom one and take it from there.
 
 - 🌍 **Multi-language out of the box** — one tool for polyglot repos, not six.
 - ⚡️ **Zero configuration** — point it at a directory and go.
-- 🎨 **Tweak what you see** — filter members, methods, access levels; group by file or namespace; pick a theme; drag the layout into shape.
+- 🎨 **Tweak what you see** — filter members, methods, and access levels; group by file or namespace; pick a theme; drag the layout into shape.
 - 🖼 **Export to PNG or DOT** — a pixel-perfect image of your on-screen layout, or standard Graphviz you can render anywhere.
 - 🤖 **Automatable** — a first-class CLI for CI, docs pipelines, and pre-commit hooks.
+- 🧩 **A library underneath** — the whole engine is a set of SwiftPM modules you can build on.
+
+---
+
+## Honest limitations
+
+No tool is magic, and this one is no exception. Worth knowing up front:
+
+- **PNG rendering is macOS-only.** Both the app's **Export Image** and the `uml image` command render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `uml diagram` and render it with Graphviz (`dot -Tpng`) — that path runs everywhere.
+- **It's static analysis.** UML reads source text; it does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table.
+- **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives you the full picture; for a JS example see [`Examples/StateDiagram`](Examples/StateDiagram).
+- **C is modeled with `struct`s.** C has no classes, so its domain shows up as structs plus composition, and method-receiver analysis maps free functions back to the type they mutate by pointer. Faithful, but it reads differently from the OO languages.
+
+The per-language nuances are documented in detail — and proven with checked-in exports — in [`Examples/README.md`](Examples/README.md).
 
 ---
 
@@ -119,8 +124,7 @@ custom one and take it from there.
 | C                       | Tree-sitter |
 | C++                     | Tree-sitter |
 
-Mix and match — UML produces one unified model across all of them. (C and C++ share the `.h` header
-extension; UML routes each header to the right grammar by its contents.)
+Mix and match — UML produces one unified model across all of them. (C and C++ share the `.h` header extension; UML routes each header to the right grammar by its contents.)
 
 ---
 
@@ -152,7 +156,7 @@ Two ways to get an image, with deliberately different options:
 | **Styling** | `--theme default\|dark`, `--direction TB\|LR\|BT\|RL`, `--config <yaml>` | `--scale <factor>` |
 | **Runs on** | every platform | macOS only |
 
-Both accept `--from <stored-name-or-json>` or `--source <dir>` (with optional repeated `--language`). Pair `--config myconfig.yaml` with `diagram` to lock options down for repeatable output.
+Both accept `--from <stored-name-or-json>` or `--source <dir>` (with optional repeated `--language`), and both can draw sequence, state, package, and call-graph diagrams via their respective flags. Pair `--config myconfig.yaml` with `diagram` to lock options down for repeatable output.
 
 ---
 
@@ -160,7 +164,7 @@ Both accept `--from <stored-name-or-json>` or `--source <dir>` (with optional re
 
 UML renders images two ways, for two jobs:
 
-- **In the app — “Export Image.”** Renders the diagram *exactly as you've arranged it*: your manual node positions, your resizes, your visibility settings. WYSIWYG, straight to a PNG.
+- **In the app — "Export Image."** Renders the diagram *exactly as you've arranged it*: your manual node positions, your resizes, your visibility settings. WYSIWYG, straight to a PNG.
 - **On the CLI — `uml image`.** Headless and scriptable, perfect for CI and docs. It runs the same SwiftUI layout and views as the app, so the output matches.
 
 ```sh
@@ -185,22 +189,24 @@ UML is a layered Swift package — one module per concern, so you can pull in on
  Source files
      │  per-language parsers (SwiftSyntax / Tree-sitter)
      ▼
- UMLSwift · UMLKotlin · UMLJava · UMLJS · UMLDart · UMLPython · UMLCFamily (C/C++)
+ UMLSwift · UMLJVM (Java/Kotlin) · UMLJS · UMLDart · UMLPython · UMLCFamily (C/C++)
      │  one unified model
      ▼
  UMLCore  ──►  UMLLibrary (AnalysisService: discovery + dispatch)
      │                         │
-     │                         ├──►  UMLDiagram  →  DOT / Graphviz
+     │                         ├──►  UMLDiagram  →  DOT / Graphviz / Mermaid
      │                         └──►  UMLRender   →  PNG (SwiftUI ImageRenderer + Sugiyama layout)
      ▼
  UMLCLI (uml)  ·  UMLApp (UML.app)
 ```
 
-- **`UMLCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol.
-- **Per-language parsers** — `UMLSwift` uses SwiftSyntax; `UMLJVM` (Java + Kotlin), `UMLJS`, `UMLDart`, `UMLPython`, and `UMLCFamily` (C + C++) use Tree-sitter (shared helpers live in `UMLTreeSitter`).
-- **`UMLLibrary`** — `AnalysisService` holds the parser registry and dispatches by language; it's the one entry point you usually want.
-- **`UMLDiagram`** — turns the model into DOT/Graphviz.
+- **`UMLCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol. The vocabulary everything else speaks.
+- **Per-language parsers** — `UMLSwift` uses SwiftSyntax; `UMLJVM` (Java + Kotlin), `UMLJS`, `UMLDart`, `UMLPython`, and `UMLCFamily` (C + C++) use Tree-sitter (shared helpers live in `UMLTreeSitter`). Each plugin is self-contained — its parser, its language config, its build-system detector.
+- **`UMLLibrary`** — the composition root. `AnalysisService` holds the parser registry and dispatches by language; importing this one module gives you everything.
+- **`UMLDiagram`** — turns the model into DOT/Graphviz and Mermaid.
 - **`UMLRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `uml image` command (Apple platforms only).
+
+Full module-by-module documentation lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)**.
 
 ---
 
@@ -231,7 +237,7 @@ Then analyze a directory and walk the model:
 import UMLCore
 import UMLLibrary
 
-let artifact = try AnalysisService.shared.analyzeProject(
+let artifact = try AnalysisService.standard.analyzeProject(
     at: URL(filePath: "/path/to/project"),
     allowedLanguages: [.swift, .kotlin]   // empty = every supported language
 )

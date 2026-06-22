@@ -45,23 +45,33 @@ struct SequenceDiagramViewModelTests {
         #expect(vm.isEmpty)
     }
 
-    @Test func restoredOffsetsSeedState() {
+    @Test func restoredPositionsSeedStateAndNormalizeVerticalToZero() {
+        // Older saved data may carry a non-zero y; it must normalize to 0 (lifelines move
+        // horizontally only) while the horizontal override is preserved.
         let vm = SequenceDiagramViewModel(
-            artifact: artifact(), configuration: config(), restoredOffsets: ["Service": 99]
+            artifact: artifact(), configuration: config(),
+            restoredPositions: ["Service": CGPoint(x: 99, y: 250)]
         )
-        #expect(vm.participantOffsets["Service"] == 99)
+        #expect(vm.positionOverrides["Service"]?.x == 99)
+        #expect(vm.positionOverrides["Service"]?.y == 0)
     }
 
-    @Test func moveNodeSetsHorizontalOffsetOnly() {
+    @Test func moveNodeRecordsDragAndLayoutPinsVertical() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+        let yBefore = vm.nodePosition("Service")?.y
         vm.moveNode("Service", to: CGPoint(x: 42, y: 999))
-        #expect(vm.participantOffsets["Service"] == 42)
+        #expect(vm.positionOverrides["Service"]?.x == 42)
+        // Lifelines move horizontally only: the override's y is pinned to 0 so nothing meaningless
+        // is persisted (a drag's vertical component must not leak into the saved positions).
+        #expect(vm.positionOverrides["Service"]?.y == 0)
+        // Only the horizontal component reaches the layout, so the lifeline stays on the header row.
+        #expect(vm.nodePosition("Service")?.y == yBefore)
     }
 
     @Test func resizeNodeIsNoOp() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
         vm.resizeNode("Service", width: 500, height: 500)
-        #expect(vm.participantOffsets.isEmpty)
+        #expect(vm.positionOverrides.isEmpty)
     }
 
     @Test func selectionTogglesExtendsAndClears() {
@@ -96,15 +106,15 @@ struct SequenceDiagramViewModelTests {
 
         vm.applyConfiguration(config(type: "Nope", method: "x"))
         #expect(vm.isEmpty)
-        #expect(vm.participantOffsets.isEmpty)
+        #expect(vm.positionOverrides.isEmpty)
         #expect(vm.selectedNodeIDs.isEmpty)
     }
 
-    @Test func historySnapshotMirrorsOffsets() {
+    @Test func historySnapshotMirrorsOverrides() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
-        vm.participantOffsets = ["Service": 7]
-        #expect(vm.historySnapshot == ["Service": 7])
-        vm.historySnapshot = ["Repository": 3]
-        #expect(vm.participantOffsets == ["Repository": 3])
+        vm.positionOverrides = ["Service": CGPoint(x: 7, y: 0)]
+        #expect(vm.historySnapshot == ["Service": CGPoint(x: 7, y: 0)])
+        vm.historySnapshot = ["Repository": CGPoint(x: 3, y: 0)]
+        #expect(vm.positionOverrides == ["Repository": CGPoint(x: 3, y: 0)])
     }
 }

@@ -3,18 +3,23 @@ import Foundation
 import UMLDiagram
 import UMLRender
 
-// MARK: - Sequence Elements (lifelines + ordered messages)
-//
-// Freeform diagrams render their sequence elements through the same `SequenceLayoutModel` /
-// `SequenceEnsembleView` the generated sequence view uses, so a sequence diagram saved as a
-// freeform diagram looks identical to its generated original — while every lifeline and message
-// stays an ordinary, fully editable node/edge.
+/// Sequence editing for the freeform diagram: lifelines, ordered messages, and combined fragments.
+///
+/// Freeform diagrams render their sequence elements through the same `SequenceLayoutModel` /
+/// `SequenceEnsembleView` the generated sequence view uses, so a sequence diagram saved as a
+/// freeform diagram looks identical to its generated original — while every lifeline and message
+/// stays an ordinary, fully editable node/edge.
+@MainActor
+final class SequenceEditor {
+    private unowned let context: any FreeformEditingContext
 
-extension FreeformDiagramViewModel {
+    init(context: any FreeformEditingContext) {
+        self.context = context
+    }
 
     /// All lifeline nodes, left-to-right by their canvas position.
     var lifelineNodes: [FreeformDiagram.Node] {
-        nodes
+        context.nodes
             .filter { if case .lifeline = $0.content { true } else { false } }
             .sorted { $0.positionX < $1.positionX }
     }
@@ -26,16 +31,20 @@ extension FreeformDiagramViewModel {
         edge.messageOrder != nil && isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID)
     }
 
-    /// Message edges between lifelines, in time order.
+    /// Message edges between lifelines, in time order. Resolves the lifeline id set once so this
+    /// stays O(E + N) instead of re-scanning the node array per edge.
     var messageEdges: [FreeformDiagram.Edge] {
-        edges
-            .filter { isMessageEdge($0) }
+        let lifelineIDs = Set(lifelineNodes.map(\.id))
+        return context.edges
+            .filter { $0.messageOrder != nil
+                && lifelineIDs.contains($0.sourceNodeID)
+                && lifelineIDs.contains($0.targetNodeID) }
             .sorted { ($0.messageOrder ?? 0) < ($1.messageOrder ?? 0) }
     }
 
     /// All combined-fragment nodes.
     var fragmentNodes: [FreeformDiagram.Node] {
-        nodes.filter { if case .fragment = $0.content { true } else { false } }
+        context.nodes.filter { if case .fragment = $0.content { true } else { false } }
     }
 
     /// The shared sequence geometry for this diagram's lifelines, messages and fragments, or
@@ -81,35 +90,48 @@ extension FreeformDiagramViewModel {
         return CGFloat(minY) - SequenceLayoutModel.headerHeight / 2
     }
 
-    /// The edge behind a laid-out message (layout message ids index `messageEdges`).
-    func messageEdge(forLayoutID id: Int) -> FreeformDiagram.Edge? {
-        let ordered = messageEdges
-        guard ordered.indices.contains(id) else { return nil }
-        return ordered[id]
-    }
-
     /// The display name of a lifeline node, for message-edge inspectors.
     func lifelineName(_ nodeID: String) -> String {
-        nodes.first { $0.id == nodeID }?.name ?? "?"
+        context.nodes.first { $0.id == nodeID }?.name ?? "?"
     }
 
     // MARK: Editing
 
     /// The selected lifeline ids in click order (drives message direction: first → second).
     var orderedLifelineSelection: [String] {
-        selectionOrder.filter { isLifeline($0) }
+        context.selectionOrder.filter { isLifeline($0) }
+    }
+
+    /// The next free time-order for a new message: one past the current maximum.
+    var nextMessageOrder: Int {
+        (context.edges.compactMap(\.messageOrder).max() ?? 0) + 1
+    }
+
+    /// Stamp an edge as a sequence message when it connects two lifelines, or clear its message
+    /// fields when it doesn't. The single rule behind both new-edge creation and edge re-pointing,
+    /// keeping "a message exists iff between two lifelines" enforced in one place.
+    func reclassify(_ edge: inout FreeformDiagram.Edge) {
+        if isLifeline(edge.sourceNodeID) && isLifeline(edge.targetNodeID) {
+            // Repair each field independently so an edge that already qualifies as a message but
+            // lacks a kind (older data / manual edits) still gets a sensible default.
+            if edge.messageOrder == nil { edge.messageOrder = nextMessageOrder }
+            if edge.messageKind == nil { edge.messageKind = .synchronous }
+        } else {
+            edge.messageOrder = nil
+            edge.messageKind = nil
+        }
     }
 
     /// Append a message at the end of the timeline. `sourceID == targetID` makes a self-message.
     func addMessage(from sourceID: String, to targetID: String, kind: SequenceDiagram.Message.Kind) {
-        recordUndo()
+        context.recordUndo(coalescingKey: nil)
         var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .dependency)
-        edge.messageOrder = (edges.compactMap(\.messageOrder).max() ?? 0) + 1
+        edge.messageOrder = nextMessageOrder
         edge.messageKind = kind
-        edges.append(edge)
+        context.edges.append(edge)
         // Select the new message so the inspector opens straight onto label/kind/order.
-        selectedEdgeID = edge.id
-        save()
+        context.selectedEdgeID = edge.id
+        context.save()
     }
 
     /// Update a message edge's label, kind and/or time order as one undoable step.
@@ -119,12 +141,12 @@ extension FreeformDiagramViewModel {
         messageKind: SequenceDiagram.Message.Kind? = nil,
         messageOrder: Int? = nil
     ) {
-        guard let idx = edges.firstIndex(where: { $0.id == edgeID }) else { return }
-        recordUndo(coalescingKey: label != nil ? "messageEdgeLabel-\(edgeID)" : nil)
-        if let label { edges[idx].label = label.isEmpty ? nil : label }
-        if let messageKind { edges[idx].messageKind = messageKind }
-        if let messageOrder { edges[idx].messageOrder = messageOrder }
-        save()
+        guard let idx = context.edges.firstIndex(where: { $0.id == edgeID }) else { return }
+        context.recordUndo(coalescingKey: label != nil ? "messageEdgeLabel-\(edgeID)" : nil)
+        if let label { context.edges[idx].label = label.isEmpty ? nil : label }
+        if let messageKind { context.edges[idx].messageKind = messageKind }
+        if let messageOrder { context.edges[idx].messageOrder = messageOrder }
+        context.save()
     }
 
     /// Update a fragment node's operator and/or operands as one undoable step.
@@ -134,35 +156,33 @@ extension FreeformDiagramViewModel {
         operands: [SequenceDiagram.Fragment.Operand]? = nil,
         coalescingKey: AnyHashable? = nil
     ) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .fragment(var content) = nodes[idx].content else { return }
-        recordUndo(coalescingKey: coalescingKey)
+        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
+              case .fragment(var content) = context.nodes[idx].content else { return }
+        context.recordUndo(coalescingKey: coalescingKey)
         if let kind { content.kind = kind }
         if let operands { content.operands = operands }
-        nodes[idx].content = .fragment(content)
-        save()
+        context.nodes[idx].content = .fragment(content)
+        context.save()
     }
 
     /// Whether a node is a combined fragment.
     func isFragment(_ nodeID: String) -> Bool {
-        guard let node = nodes.first(where: { $0.id == nodeID }) else { return false }
-        if case .fragment = node.content { return true }
+        if case .fragment = context.node(nodeID)?.content { return true }
         return false
     }
 
     /// Update a lifeline node's participant role (actor, boundary, control, …).
     func updateLifelineKind(_ nodeID: String, kind: SequenceDiagram.Participant.Kind) {
-        guard let idx = nodes.firstIndex(where: { $0.id == nodeID }),
-              case .lifeline = nodes[idx].content else { return }
-        recordUndo()
-        nodes[idx].content = .lifeline(kind)
-        save()
+        guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
+              case .lifeline = context.nodes[idx].content else { return }
+        context.recordUndo(coalescingKey: nil)
+        context.nodes[idx].content = .lifeline(kind)
+        context.save()
     }
 
     /// Whether a node is a sequence lifeline.
     func isLifeline(_ nodeID: String) -> Bool {
-        guard let node = nodes.first(where: { $0.id == nodeID }) else { return false }
-        if case .lifeline = node.content { return true }
+        if case .lifeline = context.node(nodeID)?.content { return true }
         return false
     }
 }
