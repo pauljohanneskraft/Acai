@@ -1,61 +1,61 @@
 import UMLCore
 
-enum UMLMemberFormatting {
+// UML text formatting for diagram members, as methods on the values being formatted.
 
-    static func formatProperty(_ member: Member, collectionTypeNames: Set<String> = []) -> String {
-        var result = accessSymbol(member.accessLevel)
-        result += " "
-        result += member.name
-        if let type = member.type {
-            result += ": " + typeRefString(type, collectionTypeNames: collectionTypeNames)
+extension Member {
+    /// The UML access symbol for this member (`~` when no access level is recorded).
+    var umlAccessSymbol: String { accessLevel?.umlSymbol ?? "~" }
+
+    /// The UML "attribute" compartment line: `<sym> name: Type`.
+    func umlPropertyLine(collectionTypeNames: Set<String> = []) -> String {
+        var result = "\(umlAccessSymbol) \(name)"
+        if let type {
+            result += ": " + type.umlDisplayString(collectionTypeNames: collectionTypeNames)
         }
         return result
     }
 
-    static func formatMethod(_ member: Member, collectionTypeNames: Set<String> = []) -> String {
-        var result = accessSymbol(member.accessLevel)
-        result += " "
-        result += member.name
-
-        let paramStr = member.parameters.map { p in
-            var parameterString = p.internalName
-            if let parameterType = p.type {
-                parameterString += ": " + typeRefString(parameterType, collectionTypeNames: collectionTypeNames)
+    /// The UML "operation" compartment line: `<sym> name(params): ReturnType`.
+    func umlMethodLine(collectionTypeNames: Set<String> = []) -> String {
+        let params = parameters.map { parameter -> String in
+            var rendered = parameter.internalName
+            if let type = parameter.type {
+                rendered += ": " + type.umlDisplayString(collectionTypeNames: collectionTypeNames)
             }
-            return parameterString
+            return rendered
         }.joined(separator: ", ")
-        result += "(\(paramStr))"
-
-        if let type = member.type {
-            result += ": " + typeRefString(type, collectionTypeNames: collectionTypeNames)
+        var result = "\(umlAccessSymbol) \(name)(\(params))"
+        if let type {
+            result += ": " + type.umlDisplayString(collectionTypeNames: collectionTypeNames)
         }
         return result
     }
+}
 
-    static func formatEnumCase(_ enumCase: EnumCase) -> String {
-        var result = enumCase.name
-        if let raw = enumCase.rawValue {
-            result += " = " + raw
+extension EnumCase {
+    /// The UML enum-case line: `name`, or `name = rawValue` when a raw value is present.
+    var umlCaseLine: String {
+        if let rawValue {
+            return "\(name) = \(rawValue)"
         }
-        return result
+        return name
     }
+}
 
-    static func typeRefString(_ ref: TypeReference, collectionTypeNames: Set<String> = []) -> String {
-        var typeString = ref.name
-        if !ref.genericArguments.isEmpty {
-            typeString += "<" + ref.genericArguments
-                .map { typeRefString($0, collectionTypeNames: collectionTypeNames) }
+extension TypeReference {
+    /// The display string: `Name<Args>?[]` — generic arguments, optionality, and an array suffix
+    /// unless the name is already a collection spelling in `collectionTypeNames` (so `Array<T>` /
+    /// `List<T>` don't render with a trailing `[]`). The collection vocabulary is injected, never
+    /// hardcoded here.
+    func umlDisplayString(collectionTypeNames: Set<String> = []) -> String {
+        var typeString = name
+        if !genericArguments.isEmpty {
+            typeString += "<" + genericArguments
+                .map { $0.umlDisplayString(collectionTypeNames: collectionTypeNames) }
                 .joined(separator: ", ") + ">"
         }
-        if ref.isOptional { typeString += "?" }
-        // Append `[]` for an array unless the name is already a collection spelling in this
-        // language (passed down from the diagram's `LanguageConfiguration`), so we don't render
-        // `Array<T>[]`. The collection vocabulary is injected, never hardcoded here.
-        if ref.isArray && !collectionTypeNames.contains(ref.name) { typeString += "[]" }
+        if isOptional { typeString += "?" }
+        if isArray && !collectionTypeNames.contains(name) { typeString += "[]" }
         return typeString
-    }
-
-    private static func accessSymbol(_ level: AccessLevel?) -> String {
-        level?.umlSymbol ?? "~"
     }
 }

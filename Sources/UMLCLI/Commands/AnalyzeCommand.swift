@@ -33,13 +33,7 @@ extension UMLCommand {
             artifact.warnIfParseErrors()
             let json = try artifact.encodedJSON()
 
-            if let outputPath = output {
-                let outputURL = URL(fileURLWithPath: outputPath)
-                try json.write(to: outputURL, atomically: true, encoding: .utf8)
-                print("Wrote analysis to \(outputPath)")
-            } else {
-                print(json)
-            }
+            try json.writeOutput(to: output, label: "analysis")
         }
     }
 }

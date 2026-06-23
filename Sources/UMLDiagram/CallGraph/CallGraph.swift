@@ -100,6 +100,6 @@ public enum CallGraphScope: Codable, Hashable, Sendable {
     case wholeCodebase
     /// Only methods declared on the type with this simple name.
     case type(String)
-    /// Only methods of types in this build module (see `BuildProduct`).
+    /// Only methods of types in this build module (see `ModuleResolver`).
     case module(String)
 }

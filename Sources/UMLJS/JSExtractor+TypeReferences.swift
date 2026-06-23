@@ -22,24 +22,15 @@ extension JSExtractor {
               let objectNode   = funcNode.child(byFieldName: "object")
         else { return nil }
 
-        let methodName = text(propertyNode)
-
-        // Pattern: this.method(args) — a direct call on the enclosing instance.
-        if objectNode.nodeType == "this" {
-            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
-        }
-
-        var receiverName: String?
-        if objectNode.nodeType == "identifier" {
-            receiverName = text(objectNode)
-        } else if objectNode.nodeType == "member_expression",
-                  objectNode.child(byFieldName: "object")?.nodeType == "this",
-                  let propNode = objectNode.child(byFieldName: "property") {
-            receiverName = text(propNode)
-        }
-
-        guard let name = receiverName else { return nil }
-        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
+        return resolveMemberCall(
+            receiver: objectNode,
+            methodName: text(propertyNode),
+            grammar: MemberCallGrammar(
+                selfNodeType: "this", memberAccessType: "member_expression", memberField: "property"
+            ),
+            scope: scope,
+            location: loc(node)
+        )
     }
 
     // MARK: - Parameters

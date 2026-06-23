@@ -118,9 +118,9 @@ extension CodeArtifact {
     func enriched() -> CodeArtifact { enriched(configuration: .test) }
 }
 
-extension ClassDiagramEnricher {
-    /// Test convenience mirroring the former `enrich(_:)` default using the `.test` fixture.
-    static func enrich(_ artifact: CodeArtifact) -> Result {
-        enrich(artifact, options: EnrichmentOptions(language: .test))
+extension ClassDiagram {
+    /// Test convenience building a `ClassDiagram` with the `.test` language fixture.
+    init(_ artifact: CodeArtifact) {
+        self.init(artifact: artifact, options: EnrichmentOptions(language: .test))
     }
 }

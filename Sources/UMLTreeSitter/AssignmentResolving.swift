@@ -19,6 +19,32 @@ public protocol AssignmentResolving: TreeSitterExtracting {
     func resolveAssignment(_ node: Node) -> VariableAssignment?
 }
 
+/// The grammar node types a language uses for each literal kind, so the shared literal classifier
+/// stays language-agnostic. Each set lists the node-type names that map to that literal kind.
+public struct LiteralNodeTypes: Sendable {
+    public var boolean: Set<String>
+    public var numeric: Set<String>
+    public var string: Set<String>
+    public var nilLiteral: Set<String>
+    /// Child node types that mark a string as interpolated (`"x${y}"`) — runtime-dependent, so it is
+    /// classified as an opaque expression rather than a fixed string state.
+    public var interpolationChildTypes: Set<String>
+
+    public init(
+        boolean: Set<String> = [],
+        numeric: Set<String> = [],
+        string: Set<String> = [],
+        nilLiteral: Set<String> = [],
+        interpolationChildTypes: Set<String> = []
+    ) {
+        self.boolean = boolean
+        self.numeric = numeric
+        self.string = string
+        self.nilLiteral = nilLiteral
+        self.interpolationChildTypes = interpolationChildTypes
+    }
+}
+
 // MARK: - AssignmentResolving Default Implementations
 
 extension AssignmentResolving {
@@ -75,6 +101,31 @@ extension AssignmentResolving {
         default:
             return nil
         }
+    }
+
+    /// Classifies a node as a literal value using the language's `types`, or returns `nil` when the
+    /// node is not a recognised literal — letting the caller apply language-specific fallbacks (bare
+    /// enum constants, text-matched keywords, etc.) and the shared `enumCaseValue` tail.
+    public func classifyLiteral(_ node: Node, _ types: LiteralNodeTypes) -> VariableAssignment.Value? {
+        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        let nodeType = node.nodeType ?? ""
+        if types.boolean.contains(nodeType) {
+            return .init(kind: .booleanLiteral, text: valueText)
+        }
+        if types.numeric.contains(nodeType) {
+            return .init(kind: .numericLiteral, text: valueText)
+        }
+        if types.string.contains(nodeType) {
+            let interpolated = !types.interpolationChildTypes.isEmpty
+                && node.namedChildren().contains { types.interpolationChildTypes.contains($0.nodeType ?? "") }
+            return interpolated
+                ? .init(kind: .expression, text: expressionSnippet(node))
+                : .init(kind: .stringLiteral, text: valueText)
+        }
+        if types.nilLiteral.contains(nodeType) {
+            return .init(kind: .nilLiteral, text: valueText)
+        }
+        return nil
     }
 
     /// Classifies an access expression's text as an enum-case value when it has

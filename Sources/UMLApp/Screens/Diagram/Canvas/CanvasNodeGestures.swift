@@ -39,6 +39,36 @@ func canvasNodeDragGesture<Model: CanvasInteraction>(
         }
 }
 
+extension View {
+    /// The shared node interaction for every layout-backed diagram canvas: cmd-click extends the
+    /// selection (a plain click replaces it), and a group-aware drag moves the whole selection,
+    /// committing on release.
+    @MainActor
+    func diagramNodeInteraction<Model: CanvasInteraction>(
+        id: String,
+        model: Model,
+        dragStartPositions: Binding<[String: CGPoint]>,
+        activeDragCanvasLocation: Binding<CGPoint?>,
+        onCommit: @escaping () -> Void
+    ) -> some View {
+        onTapGesture {
+            #if os(macOS)
+            let extending = NSEvent.modifierFlags.contains(.command)
+            #else
+            let extending = false
+            #endif
+            model.selectNode(id, extending: extending)
+        }
+        .highPriorityGesture(canvasNodeDragGesture(
+            id: id,
+            model: model,
+            dragStartPositions: dragStartPositions,
+            activeDragCanvasLocation: activeDragCanvasLocation,
+            onCommit: onCommit
+        ))
+    }
+}
+
 /// A reusable bottom-right resize handle that resizes a node while keeping its top-left fixed
 /// (the node center moves by half the size delta). Records one undo checkpoint per drag.
 struct CanvasResizeHandle<Model: CanvasInteraction>: View {

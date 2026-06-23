@@ -334,4 +334,51 @@ extension CallSiteResolving {
             walkForCallSites(child, scope: scope, into: &sites)
         }
     }
+
+    /// Resolves a member call's `receiver` to a ``UMLCore/CallSite`` using the receiver decision tree
+    /// shared by field-name-based grammars: `this.method()` → an unqualified self-call;
+    /// `receiver.method()` and `this.prop.method()` → resolved against `scope`. The grammar-specific
+    /// call-node unwrapping (finding the receiver node and method name) stays with the caller.
+    public func resolveMemberCall(
+        receiver: Node,
+        methodName: String,
+        grammar: MemberCallGrammar,
+        scope: CallSiteScope,
+        location: SourceLocation?
+    ) -> CallSite? {
+        // Pattern: this.method(args) — a direct call on the enclosing instance.
+        if receiver.nodeType == grammar.selfNodeType {
+            return CallSite(receiverType: nil, methodName: methodName, location: location)
+        }
+
+        var receiverName: String?
+        if receiver.nodeType == "identifier" {
+            receiverName = text(receiver)
+        } else if receiver.nodeType == grammar.memberAccessType,
+                  receiver.child(byFieldName: "object")?.nodeType == grammar.selfNodeType,
+                  let member = receiver.child(byFieldName: grammar.memberField) {
+            // Pattern: this.prop.method(args)
+            receiverName = text(member)
+        }
+
+        guard let name = receiverName else { return nil }
+        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: location)
+    }
+}
+
+/// The grammar node types a language uses for member-call receiver resolution (see
+/// ``CallSiteResolving/resolveMemberCall(receiver:methodName:grammar:scope:location:)``).
+public struct MemberCallGrammar: Sendable {
+    /// The node type of a `this`/`self` expression (e.g. `"this"`).
+    public let selfNodeType: String
+    /// The node type of a `<self>.<member>` access (e.g. `"field_access"`).
+    public let memberAccessType: String
+    /// The field name holding the member in that access (e.g. `"field"`).
+    public let memberField: String
+
+    public init(selfNodeType: String, memberAccessType: String, memberField: String) {
+        self.selfNodeType = selfNodeType
+        self.memberAccessType = memberAccessType
+        self.memberField = memberField
+    }
 }

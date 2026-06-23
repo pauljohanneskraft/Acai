@@ -46,32 +46,13 @@ struct PackageDiagramInspector: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            metricRow("Instability (I)", String(format: "%.2f", node.instability))
-            metricRow("Abstractness (A)", String(format: "%.2f", node.abstractness))
-            metricRow("Afferent (Ca)", "\(node.afferentCoupling)")
-            metricRow("Efferent (Ce)", "\(node.efferentCoupling)")
-            metricRow("Distance from main seq.", String(format: "%.2f", node.distanceFromMainSequence))
+            MetricRow("Instability (I)", String(format: "%.2f", node.instability))
+            MetricRow("Abstractness (A)", String(format: "%.2f", node.abstractness))
+            MetricRow("Afferent (Ca)", "\(node.afferentCoupling)")
+            MetricRow("Efferent (Ce)", "\(node.efferentCoupling)")
+            MetricRow("Distance from main seq.", String(format: "%.2f", node.distanceFromMainSequence))
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(highlighted ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(highlighted ? Color.accentColor : .clear, lineWidth: 1)
-        )
-    }
-
-    private func metricRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(value)
-                .font(.system(.caption, design: .monospaced))
-        }
+        .inspectorCard(highlighted: highlighted)
     }
 
     private var legend: some View {

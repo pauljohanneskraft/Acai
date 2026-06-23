@@ -46,13 +46,9 @@ struct SequenceDiagramView: View {
             }
         }
         .toolbar { toolbarContent }
-        .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
-        .navigationTitle(diagram.name)
-        .task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1))
-            centerDiagram()
-        }
-        .onDisappear { savePositions() }
+        .diagramCanvasLifecycle(
+            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+        )
         .sheet(isPresented: $showConfigSheet) {
             SequenceConfigSheet(
                 artifact: artifact,
@@ -95,21 +91,13 @@ struct SequenceDiagramView: View {
         )
         .frame(width: participant.headerRect.width, height: participant.headerRect.height)
         .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
-        .onTapGesture {
-            #if os(macOS)
-            let extending = NSEvent.modifierFlags.contains(.command)
-            #else
-            let extending = false
-            #endif
-            viewModel.selectNode(participant.id, extending: extending)
-        }
-        .highPriorityGesture(canvasNodeDragGesture(
+        .diagramNodeInteraction(
             id: participant.id,
             model: viewModel,
             dragStartPositions: $dragStartPositions,
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: savePositions
-        ))
+        )
     }
 
     // MARK: - Toolbar
@@ -201,17 +189,6 @@ struct SequenceDiagramView: View {
     }
 
     private func exportImage() {
-        #if os(macOS)
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "\(diagram.name).png"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let data = try viewModel.exportPNGData()
-            try data.write(to: url, options: .atomic)
-        } catch {
-            print("Image export failed: \(error)")
-        }
-        #endif
+        model.exportImage(named: diagram.name, using: viewModel)
     }
 }

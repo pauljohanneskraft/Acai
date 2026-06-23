@@ -2,7 +2,7 @@ import UMLCore
 
 /// Renders a `CodeArtifact` as a Mermaid `classDiagram`.
 ///
-/// Mirrors `DOTGenerator`: it runs the same `ClassDiagramEnricher` and honours the
+/// Mirrors `DOTGenerator`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
 public struct ClassDiagramMermaidRenderer: Sendable {

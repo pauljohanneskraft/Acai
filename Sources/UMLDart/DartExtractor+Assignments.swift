@@ -66,32 +66,28 @@ extension DartExtractor: AssignmentResolving {
         )
     }
 
+    /// Dart literal node types. A `string_literal` with a `template_substitution` child (`'$x'`/
+    /// `'${expr}'`) is runtime-dependent and falls through to an opaque expression.
+    private static let literalNodeTypes = LiteralNodeTypes(
+        numeric: ["decimal_integer_literal", "hex_integer_literal", "decimal_floating_point_literal"],
+        string: ["string_literal"],
+        nilLiteral: ["null_literal"],
+        interpolationChildTypes: ["template_substitution"]
+    )
+
     /// Classifies an assigned value node for static state analysis.
     /// `true`/`false` are anonymous tokens in the Dart grammar, so they are
     /// matched by text rather than node type.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
+        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
         let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-        switch node.nodeType {
-        case "decimal_integer_literal", "hex_integer_literal", "decimal_floating_point_literal":
-            return .init(kind: .numericLiteral, text: valueText)
-        case "string_literal":
-            // A string with interpolation ('$x', '${expr}') is runtime-dependent
-            // and not statically enumerable, so it is not a fixed state.
-            if node.namedChildren().contains(where: { $0.nodeType == "template_substitution" }) {
-                return .init(kind: .expression, text: expressionSnippet(node))
-            }
-            return .init(kind: .stringLiteral, text: valueText)
-        case "null_literal":
-            return .init(kind: .nilLiteral, text: "null")
-        default:
-            if valueText == "true" || valueText == "false" {
-                return .init(kind: .booleanLiteral, text: valueText)
-            }
-            if let enumCase = enumCaseValue(fromAccessText: valueText) {
-                return enumCase
-            }
-            return .init(kind: .expression, text: expressionSnippet(node))
+        if valueText == "true" || valueText == "false" {
+            return .init(kind: .booleanLiteral, text: valueText)
         }
+        if let enumCase = enumCaseValue(fromAccessText: valueText) {
+            return enumCase
+        }
+        return .init(kind: .expression, text: expressionSnippet(node))
     }
 
     /// Classifies a span of sibling nodes that together form one expression

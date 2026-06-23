@@ -37,9 +37,12 @@ public struct EnrichmentOptions: Sendable {
     }
 }
 
-/// Post-processes a `CodeArtifact` to produce a richer model for class-diagram rendering.
+/// The built class-diagram model — enriched types, resolved relationships, external placeholders
+/// and directory groups, ready to hand to a renderer. Named to match the `SequenceDiagram` /
+/// `StateDiagram` / `PackageDependencyDiagram` models so every diagram type follows the same
+/// "build a model, render the model" shape.
 ///
-/// Responsibilities:
+/// Constructing one from a `CodeArtifact` post-processes it:
 /// - Flattens nested types, giving them display names that include nesting context
 ///   (e.g. `Outer.Inner`) while keeping fully-qualified IDs for unique identification.
 /// - Resolves relationship source/target strings to match actual type IDs so edges
@@ -47,24 +50,30 @@ public struct EnrichmentOptions: Sendable {
 /// - Infers composition / aggregation edges from property types.
 /// - Infers dependency edges from method parameter/return types.
 /// - Identifies external types (referenced but not defined in the codebase).
-public enum ClassDiagramEnricher {
+public struct ClassDiagram: Sendable {
+    /// All types (including flattened nested types).
+    public var types: [TypeDeclaration]
+    /// Resolved and enriched relationships.
+    public var relationships: [Relationship]
+    /// Types referenced but not defined in the codebase (external dependencies).
+    public var externalTypes: [TypeDeclaration]
+    /// Maps each directory path to the type IDs it contains, for grouping.
+    public var directoryGroups: [String: [String]]
 
-    /// The enriched result ready for DOT rendering.
-    public struct Result: Sendable {
-        /// All types (including flattened nested types).
-        public var types: [TypeDeclaration]
-        /// Resolved and enriched relationships.
-        public var relationships: [Relationship]
-        /// Types referenced but not defined in the codebase (external dependencies).
-        public var externalTypes: [TypeDeclaration]
-        /// Maps each directory path to the type IDs it contains, for grouping.
-        public var directoryGroups: [String: [String]]
+    public init(
+        types: [TypeDeclaration],
+        relationships: [Relationship],
+        externalTypes: [TypeDeclaration],
+        directoryGroups: [String: [String]]
+    ) {
+        self.types = types
+        self.relationships = relationships
+        self.externalTypes = externalTypes
+        self.directoryGroups = directoryGroups
     }
 
-    public static func enrich(
-        _ artifact: CodeArtifact,
-        options: EnrichmentOptions
-    ) -> Result {
+    /// Builds the class-diagram model from `artifact` using `options`.
+    public init(artifact: CodeArtifact, options: EnrichmentOptions) {
         // All structural enrichment (extension resolution, name→id resolution,
         // inheritance/conformance reclassification, inferred composition/aggregation/
         // dependency edges, dedup) is owned by UMLCore and runs exactly once here.
@@ -73,7 +82,7 @@ public enum ClassDiagramEnricher {
         let base = artifact.enriched(configuration: options.language)
 
         // Flatten nested types, giving them display names that include nesting context.
-        let flatTypes = flattenTypes(base.types)
+        let flatTypes = Self.flattenTypes(base.types)
         let resolver = TypeResolver(types: flatTypes)
         var relationships = base.relationships.map { resolver.resolve($0) }
 
@@ -108,16 +117,13 @@ public enum ClassDiagramEnricher {
         }
 
         let resultKnownIds = Set(resultTypes.map(\.id))
-        let externalTypes = identifyExternalTypes(
-            relationships: relationships, knownIds: resultKnownIds, language: options.language
-        )
-        let directoryGroups = buildDirectoryGroups(resultTypes)
-
-        return Result(
+        self.init(
             types: resultTypes,
             relationships: relationships,
-            externalTypes: externalTypes,
-            directoryGroups: directoryGroups
+            externalTypes: Self.identifyExternalTypes(
+                relationships: relationships, knownIds: resultKnownIds, language: options.language
+            ),
+            directoryGroups: Self.buildDirectoryGroups(resultTypes)
         )
     }
 

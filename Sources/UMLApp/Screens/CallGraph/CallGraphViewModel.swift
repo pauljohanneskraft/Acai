@@ -44,4 +44,14 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func nodeFrame(_ id: String) -> CGRect? { layout.frame(for: id) }
 
     var defaultNodeSize: CGSize { CGSize(width: 120, height: 52) }
+
+    // MARK: - Image Export
+
+    func exportPNGData(scale: CGFloat = 2) throws -> Data {
+        try DiagramImageRenderer.renderPNG(
+            callGraph: graph,
+            positionOverrides: positionOverrides,
+            scale: scale
+        )
+    }
 }

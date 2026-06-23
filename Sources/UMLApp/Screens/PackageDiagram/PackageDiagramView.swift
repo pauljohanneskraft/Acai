@@ -2,6 +2,7 @@ import SwiftUI
 import UMLCore
 import UMLDiagram
 import UMLRender
+import UniformTypeIdentifiers
 
 /// Movement-only view for a generated package (module-dependency) diagram. Derives the diagram
 /// from the artifact and lets the user drag module nodes, on the shared canvas layer
@@ -48,13 +49,9 @@ struct PackageDiagramView: View {
             }
         }
         .toolbar { toolbarContent }
-        .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
-        .navigationTitle(diagram.name)
-        .task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1))
-            centerDiagram()
-        }
-        .onDisappear { savePositions() }
+        .diagramCanvasLifecycle(
+            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+        )
     }
 
     // MARK: - Canvas
@@ -104,21 +101,13 @@ struct PackageDiagramView: View {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .position(x: node.rect.midX, y: node.rect.midY)
-        .onTapGesture {
-            #if os(macOS)
-            let extending = NSEvent.modifierFlags.contains(.command)
-            #else
-            let extending = false
-            #endif
-            viewModel.selectNode(node.id, extending: extending)
-        }
-        .highPriorityGesture(canvasNodeDragGesture(
+        .diagramNodeInteraction(
             id: node.id,
             model: viewModel,
             dragStartPositions: $dragStartPositions,
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: savePositions
-        ))
+        )
     }
 
     /// Maps a dependency's weight to a line-width multiplier, clamped so the heaviest edges stay legible.
@@ -153,11 +142,20 @@ struct PackageDiagramView: View {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             Button {
+                exportImage()
+            } label: {
+                Label("Export Image", systemImage: "photo")
+            }
+            Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
         }
+    }
+
+    private func exportImage() {
+        model.exportImage(named: diagram.name, using: viewModel)
     }
 
     // MARK: - Persistence & layout

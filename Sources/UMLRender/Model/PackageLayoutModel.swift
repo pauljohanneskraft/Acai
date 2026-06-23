@@ -34,58 +34,16 @@ public struct PackageLayoutModel: Sendable {
     /// Lays out `diagram`, with `positionOverrides` (node-id → centre) taking precedence over
     /// computed positions — used to restore user drags.
     public init(diagram: PackageDependencyDiagram, positionOverrides: [String: CGPoint] = [:]) {
-        let sizes = Dictionary(
-            diagram.nodes.map { ($0.id, Self.estimatedSize(for: $0)) },
-            uniquingKeysWith: { first, _ in first }
-        )
-
-        let inputs = diagram.nodes.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: sizes[$0.id] ?? .zero, group: nil)
-        }
         // Feed each dependency as an inheritance edge to its target so depended-upon modules
         // (e.g. a core module) rise to the top layer and dependents flow downward.
-        let edgeInputs = diagram.edges.map {
-            SugiyamaLayoutEngine.EdgeInput(sourceID: $0.from, targetID: $0.to, kind: .inheritance)
-        }
-        var positions = SugiyamaLayoutEngine().layout(nodes: inputs, edges: edgeInputs).positions
-        for (id, point) in positionOverrides {
-            positions[id] = point
-        }
-
-        // Normalize so the content's top-left corner sits at the origin.
-        var minX: CGFloat = .greatestFiniteMagnitude
-        var minY: CGFloat = .greatestFiniteMagnitude
-        for node in diagram.nodes {
-            let size = sizes[node.id] ?? .zero
-            let center = positions[node.id] ?? .zero
-            minX = min(minX, center.x - size.width / 2)
-            minY = min(minY, center.y - size.height / 2)
-        }
-        if minX == .greatestFiniteMagnitude { minX = 0 }
-        if minY == .greatestFiniteMagnitude { minY = 0 }
-
-        var frames: [String: CGRect] = [:]
-        var maxX: CGFloat = 0
-        var maxY: CGFloat = 0
-        var nodeFrames: [NodeFrame] = []
-        for node in diagram.nodes {
-            let size = sizes[node.id] ?? .zero
-            let center = positions[node.id] ?? .zero
-            let rect = CGRect(
-                x: center.x - size.width / 2 - minX,
-                y: center.y - size.height / 2 - minY,
-                width: size.width,
-                height: size.height
-            )
-            frames[node.id] = rect
-            nodeFrames.append(NodeFrame(id: node.id, node: node, rect: rect))
-            maxX = max(maxX, rect.maxX)
-            maxY = max(maxY, rect.maxY)
-        }
-
-        nodes = nodeFrames
-        framesByID = frames
-        contentSize = CGSize(width: max(maxX, 1), height: max(maxY, 1))
+        let layout = DirectedGraphLayout(
+            nodeSizes: diagram.nodes.map { ($0.id, Self.estimatedSize(for: $0)) },
+            edges: diagram.edges.map { ($0.from, $0.to) },
+            positionOverrides: positionOverrides
+        )
+        framesByID = layout.framesByID
+        contentSize = layout.contentSize
+        nodes = diagram.nodes.map { NodeFrame(id: $0.id, node: $0, rect: layout.framesByID[$0.id] ?? .zero) }
         edges = diagram.edges.enumerated().map { index, edge in
             EdgeLayout(id: index, from: edge.from, to: edge.to, weight: edge.weight)
         }

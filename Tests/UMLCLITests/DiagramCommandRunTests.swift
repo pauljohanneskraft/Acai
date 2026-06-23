@@ -98,6 +98,26 @@ struct DiagramCommandRunTests {
         }
     }
 
+    @Test func minAccessHidesLowerVisibilityMembers() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            let source = """
+            public class Widget {
+                public func show() {}
+                private func helper() {}
+            }
+            """
+            try source.write(to: dir.appendingPathComponent("Widget.swift"), atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("diagram.dot")
+            var cmd = try CLITestSupport.parseDiagram(
+                ["--source", dir.path, "--language", "swift", "--min-access", "public", "--output", output.path]
+            )
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("show"))
+            #expect(!contents.contains("helper"))
+        }
+    }
+
     @Test func writesMermaidToOutputFile() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)

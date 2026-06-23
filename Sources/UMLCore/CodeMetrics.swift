@@ -149,7 +149,7 @@ extension CodeArtifact {
         var idToModule: [String: String] = [:]
         var moduleTypes: [String: [TypeDeclaration]] = [:]
         for type in flat {
-            let module = BuildProduct.productName(forFilePath: type.location?.filePath ?? "")
+            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
             idToModule[type.id] = module
             moduleTypes[module, default: []].append(type)
         }

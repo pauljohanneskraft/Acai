@@ -128,11 +128,12 @@ public enum DiagramImageRenderer {
     /// `PackageLayoutModel` + `PackageDiagramSnapshotView`.
     public static func renderPNG(
         packageDiagram: PackageDependencyDiagram,
+        positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
         palette: DiagramPalette = .light
     ) throws -> Data {
-        let layout = PackageLayoutModel(diagram: packageDiagram)
+        let layout = PackageLayoutModel(diagram: packageDiagram, positionOverrides: positionOverrides)
         return try renderSnapshot(
             PackageDiagramSnapshotView(layout: layout, padding: padding, palette: palette),
             contentSize: layout.contentSize, scale: scale, padding: padding
@@ -145,11 +146,12 @@ public enum DiagramImageRenderer {
     /// `CallGraphSnapshotView`.
     public static func renderPNG(
         callGraph: CallGraph,
+        positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
         palette: DiagramPalette = .light
     ) throws -> Data {
-        let layout = CallGraphLayoutModel(graph: callGraph)
+        let layout = CallGraphLayoutModel(graph: callGraph, positionOverrides: positionOverrides)
         return try renderSnapshot(
             CallGraphSnapshotView(layout: layout, padding: padding, palette: palette),
             contentSize: layout.contentSize, scale: scale, padding: padding

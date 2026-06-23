@@ -73,7 +73,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if let filePath = type.location?.filePath {
             let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
             self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
-            self.productGroup = BuildProduct.productName(forFilePath: filePath)
+            self.productGroup = ModuleResolver.standard.productName(forFilePath: filePath)
         } else {
             self.directoryPath = nil
             self.productGroup = nil
@@ -102,16 +102,14 @@ public struct DiagramMember: Identifiable, Sendable {
 
     public init(from member: Member, isMethod: Bool, collectionTypeNames: Set<String> = []) {
         self.id = "\(member.name)_\(member.kind.rawValue)_\(member.type?.name ?? "")"
-        self.accessSymbol = member.accessLevel?.umlSymbol ?? "~"
+        self.accessSymbol = member.umlAccessSymbol
         self.name = member.name
         self.isStatic = member.modifiers.contains(.static) || member.modifiers.contains(.class)
         self.isAbstract = member.modifiers.contains(.abstract)
 
-        if isMethod {
-            self.displayText = UMLMemberFormatting.formatMethod(member, collectionTypeNames: collectionTypeNames)
-        } else {
-            self.displayText = UMLMemberFormatting.formatProperty(member, collectionTypeNames: collectionTypeNames)
-        }
+        self.displayText = isMethod
+            ? member.umlMethodLine(collectionTypeNames: collectionTypeNames)
+            : member.umlPropertyLine(collectionTypeNames: collectionTypeNames)
     }
 }
 
@@ -123,7 +121,7 @@ public struct DiagramEnumCase: Identifiable, Sendable {
 
     public init(from enumCase: EnumCase) {
         self.id = enumCase.name
-        self.displayText = UMLMemberFormatting.formatEnumCase(enumCase)
+        self.displayText = enumCase.umlCaseLine
     }
 }
 

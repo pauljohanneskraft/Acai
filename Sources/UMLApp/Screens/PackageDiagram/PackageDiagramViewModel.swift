@@ -47,4 +47,14 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func nodeFrame(_ id: String) -> CGRect? { layout.frame(for: id) }
 
     var defaultNodeSize: CGSize { CGSize(width: 140, height: 72) }
+
+    // MARK: - Image Export
+
+    func exportPNGData(scale: CGFloat = 2) throws -> Data {
+        try DiagramImageRenderer.renderPNG(
+            packageDiagram: diagram,
+            positionOverrides: positionOverrides,
+            scale: scale
+        )
+    }
 }

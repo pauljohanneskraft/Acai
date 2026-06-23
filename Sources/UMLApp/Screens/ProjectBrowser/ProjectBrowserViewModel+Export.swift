@@ -5,9 +5,31 @@ import UMLCore
 import UMLDiagram
 import UniformTypeIdentifiers
 
+/// A diagram view model that can render its current diagram to PNG data.
+@MainActor
+protocol DiagramImageExporting {
+    func exportPNGData(scale: CGFloat) throws -> Data
+}
+
 // MARK: - DOT Export & Freeform Diagram Conversion
 
 extension ProjectBrowserViewModel {
+
+    /// Presents a save panel and writes the exporter's PNG, routing any failure to the error alert.
+    /// Shared by every generated-diagram view so the panel/write/error handling lives in one place.
+    func exportImage(named name: String, using exporter: any DiagramImageExporting) {
+        #if os(macOS)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = "\(name).png"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try exporter.exportPNGData(scale: 2).write(to: url, options: .atomic)
+        } catch {
+            store.report("Image export failed: \(error.localizedDescription)")
+        }
+        #endif
+    }
 
     // MARK: DOT Export
 
@@ -124,3 +146,11 @@ extension ProjectBrowserViewModel {
         selection = .freeformDiagram(freeformDiagram.id)
     }
 }
+
+// The generated-diagram view models all render their current diagram to PNG via the shared
+// `DiagramImageRenderer`, so the export panel can drive any of them uniformly.
+extension ClassDiagramViewModel: DiagramImageExporting {}
+extension SequenceDiagramViewModel: DiagramImageExporting {}
+extension StateDiagramViewModel: DiagramImageExporting {}
+extension PackageDiagramViewModel: DiagramImageExporting {}
+extension CallGraphViewModel: DiagramImageExporting {}

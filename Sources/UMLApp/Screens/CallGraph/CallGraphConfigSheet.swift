@@ -87,7 +87,7 @@ struct CallGraphConfigSheet: View {
     /// Build modules present in the codebase, derived from each type's file path.
     private var moduleNames: [String] {
         artifact.types
-            .map { BuildProduct.productName(forFilePath: $0.location?.filePath ?? "") }
+            .map { ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") }
             .uniqued()
             .sorted()
     }

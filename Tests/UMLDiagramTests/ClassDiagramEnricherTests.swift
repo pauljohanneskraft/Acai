@@ -211,7 +211,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let result = ClassDiagramEnricher.enrich(artifact)
+        let result = ClassDiagram(artifact)
         let boxEdges = result.relationships.filter { $0.source == "Box" }
         let targets = Set(boxEdges.map(\.target))
         #expect(targets.contains("Drawable"))
@@ -269,7 +269,7 @@ struct ClassDiagramEnricherTests {
         )
 
         let merged = file1.merging(with: file2)
-        let result = ClassDiagramEnricher.enrich(merged)
+        let result = ClassDiagram(merged)
 
         // Enricher must resolve "Animal" to "com.example.Animal".
         let inheritance = result.relationships.first { $0.kind == .inheritance }
@@ -310,7 +310,7 @@ struct ClassDiagramEnricherTests {
         )
 
         let merged = file1.merging(with: file2)
-        let result = ClassDiagramEnricher.enrich(merged)
+        let result = ClassDiagram(merged)
 
         // Enricher should infer a composition edge from Car to Engine.
         let compositions = result.relationships.filter {
