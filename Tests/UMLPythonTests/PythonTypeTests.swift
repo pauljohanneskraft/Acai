@@ -128,6 +128,22 @@ struct PythonTypeTests {
         #expect(topLevelInner?.id != nestedInner?.id)
     }
 
+    /// A nested type's inheritance edge uses its qualified id as the source, so id-based edge
+    /// pruning (`removingTypes`, keyed on `TypeDeclaration.id`) matches it without a dangling edge.
+    @Test func nestedTypeRelationshipUsesQualifiedSource() {
+        let source = """
+        class Base:
+            pass
+
+        class Outer:
+            class Inner(Base):
+                pass
+        """
+        let artifact = parser.parse(source: source, fileName: "nested_rel.py")
+        let inheritance = artifact.relationships.first { $0.kind == .inheritance && $0.target == "Base" }
+        #expect(inheritance?.source == "Outer.Inner")
+    }
+
     @Test func genericBase() {
         let source = """
         from typing import Generic, TypeVar

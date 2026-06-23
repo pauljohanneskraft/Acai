@@ -148,16 +148,10 @@ public struct ClassDiagramMermaidRenderer: Sendable {
 
     // MARK: - Helpers
 
+    /// The `Name<Args>?[]` display string from the shared `TypeReference` formatter, with `<>`
+    /// escaped for Mermaid. Shared so DOT, Mermaid, and the app canvas stay in sync.
     private func typeString(_ ref: TypeReference) -> String {
-        var result = ref.name
-        if !ref.genericArguments.isEmpty {
-            result += "<" + ref.genericArguments.map { typeString($0) }.joined(separator: ", ") + ">"
-        }
-        if ref.isOptional { result += "?" }
-        // Append `[]` for an array unless the name is already a collection spelling in this
-        // language (injected via `options.language`); never hardcode a language's collection name.
-        if ref.isArray && !options.language.isCollectionType(ref.name) { result += "[]" }
-        return result.mermaidGenerics
+        ref.umlDisplayString(collectionTypeNames: options.language.collectionTypeNames).mermaidGenerics
     }
 
 }

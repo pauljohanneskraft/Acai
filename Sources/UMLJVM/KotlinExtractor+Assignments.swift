@@ -73,7 +73,7 @@ extension KotlinExtractor: AssignmentResolving {
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueText = trimmedText(node)
         // Kotlin's `null` is a keyword node rather than a typed literal.
         if valueText == "null" {
             return .init(kind: .nilLiteral, text: "null")

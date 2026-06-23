@@ -63,10 +63,14 @@ extension JavaExtractor: AssignmentResolving {
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueText = trimmedText(node)
         if node.nodeType == "identifier" {
             // An unscoped enum constant (`state = READY;`) is a bare identifier; classify it as an
-            // enumerable case when it names a known constant, else an opaque expression.
+            // enumerable case when it names a known constant, else an opaque expression. This module
+            // does not track scopes (see `AssignmentResolving`), so a local/field/parameter that
+            // happens to share an enum-constant name is also treated as that case — an accepted
+            // false positive, kept rare in practice by the UPPER_CASE-constant vs lowerCamel-variable
+            // convention.
             return declaredEnumConstants.contains(valueText)
                 ? .init(kind: .enumCase, text: valueText)
                 : .init(kind: .expression, text: expressionSnippet(node))

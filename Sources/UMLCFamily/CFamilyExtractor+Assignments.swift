@@ -93,7 +93,7 @@ extension CFamilyExtractor: AssignmentResolving {
     /// (`State::ready`) and unscoped uppercase enum cases become `.enumCase` values.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueText = trimmedText(node)
         switch node.nodeType {
         case "qualified_identifier":
             return enumCaseValue(fromAccessText: valueText.replacingOccurrences(of: "::", with: "."))

@@ -184,17 +184,10 @@ struct DOTNodeRenderer {
 
     // MARK: - Helpers
 
+    /// The `Name<Args>?[]` display string, using the shared `TypeReference` formatter so DOT,
+    /// Mermaid, and the app canvas stay in sync. Caller HTML-escapes the result.
     private func typeRefString(_ ref: TypeReference) -> String {
-        var typeString = ref.name
-        if !ref.genericArguments.isEmpty {
-            typeString += "<" + ref.genericArguments.map { typeRefString($0) }.joined(separator: ", ") + ">"
-        }
-        if ref.isOptional { typeString += "?" }
-        // Append `[]` for an array unless the name is already a collection spelling in this
-        // language (e.g. Swift `Array`, Kotlin `List`), so we don't render `Array<T>[]`. The
-        // collection vocabulary is injected via `options.language`, never hardcoded here.
-        if ref.isArray && !options.language.isCollectionType(ref.name) { typeString += "[]" }
-        return typeString
+        ref.umlDisplayString(collectionTypeNames: options.language.collectionTypeNames)
     }
 
     private func stereotypeString(for type: TypeDeclaration) -> String? {

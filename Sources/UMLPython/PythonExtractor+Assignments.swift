@@ -46,7 +46,7 @@ extension PythonExtractor: AssignmentResolving {
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueText = trimmedText(node)
         if let enumCase = enumCaseValue(fromAccessText: valueText) {
             return enumCase
         }

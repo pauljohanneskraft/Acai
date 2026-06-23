@@ -118,6 +118,31 @@ struct DiagramCommandRunTests {
         }
     }
 
+    @Test func minAccessFiltersMiddleTiers() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            // Exercises the contested package/internal boundary: `package` outranks `internal`, so
+            // `--min-access packagePrivate` keeps the package member and drops the internal one.
+            let source = """
+            public class Widget {
+                public func shown() {}
+                package func packaged() {}
+                internal func hidden() {}
+            }
+            """
+            try source.write(to: dir.appendingPathComponent("Widget.swift"), atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("diagram.dot")
+            var cmd = try CLITestSupport.parseDiagram(
+                ["--source", dir.path, "--language", "swift",
+                 "--min-access", "packagePrivate", "--output", output.path]
+            )
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("shown"))
+            #expect(contents.contains("packaged"))
+            #expect(!contents.contains("hidden"))
+        }
+    }
+
     @Test func writesMermaidToOutputFile() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)

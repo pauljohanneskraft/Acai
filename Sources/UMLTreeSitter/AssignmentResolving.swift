@@ -103,27 +103,35 @@ extension AssignmentResolving {
         }
     }
 
+    /// The node's source text, trimmed of surrounding whitespace and newlines.
+    public func trimmedText(_ node: Node) -> String {
+        text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Classifies a node as a literal value using the language's `types`, or returns `nil` when the
     /// node is not a recognised literal — letting the caller apply language-specific fallbacks (bare
     /// enum constants, text-matched keywords, etc.) and the shared `enumCaseValue` tail.
+    ///
+    /// The node type is matched *before* the source text is extracted, so the common non-literal
+    /// path returns `nil` without paying for `text(node)` (the caller extracts it once for its own
+    /// fallbacks).
     public func classifyLiteral(_ node: Node, _ types: LiteralNodeTypes) -> VariableAssignment.Value? {
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
         let nodeType = node.nodeType ?? ""
         if types.boolean.contains(nodeType) {
-            return .init(kind: .booleanLiteral, text: valueText)
+            return .init(kind: .booleanLiteral, text: trimmedText(node))
         }
         if types.numeric.contains(nodeType) {
-            return .init(kind: .numericLiteral, text: valueText)
+            return .init(kind: .numericLiteral, text: trimmedText(node))
         }
         if types.string.contains(nodeType) {
             let interpolated = !types.interpolationChildTypes.isEmpty
                 && node.namedChildren().contains { types.interpolationChildTypes.contains($0.nodeType ?? "") }
             return interpolated
                 ? .init(kind: .expression, text: expressionSnippet(node))
-                : .init(kind: .stringLiteral, text: valueText)
+                : .init(kind: .stringLiteral, text: trimmedText(node))
         }
         if types.nilLiteral.contains(nodeType) {
-            return .init(kind: .nilLiteral, text: valueText)
+            return .init(kind: .nilLiteral, text: trimmedText(node))
         }
         return nil
     }
