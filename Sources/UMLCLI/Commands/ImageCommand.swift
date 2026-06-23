@@ -254,5 +254,4 @@ extension UMLCommand {
 }
 
 extension ClassDiagramConfiguration.Grouping: ExpressibleByArgument {}
-extension AccessLevel: ExpressibleByArgument {}
 #endif

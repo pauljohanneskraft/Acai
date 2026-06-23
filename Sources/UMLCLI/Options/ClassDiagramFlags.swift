@@ -46,3 +46,7 @@ struct ClassDiagramFlags: ParsableArguments {
         if noInferDependency { options.inferDependencyFromMethods = false }
     }
 }
+
+// Lives here (not in the macOS-only `ImageCommand`) so the always-compiled `--min-access` option
+// resolves the conformance on every platform, including Linux.
+extension AccessLevel: ExpressibleByArgument {}
