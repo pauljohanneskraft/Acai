@@ -1,6 +1,6 @@
 classDiagram
     class Library["Library"] {
-        +playlists List~Playlist~[]
+        +playlists List~Playlist~
         Library()
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
@@ -35,7 +35,7 @@ classDiagram
     }
     class Playlist["Playlist"] {
         +name String
-        +items List~MediaItem~[]
+        +items List~MediaItem~
         +totalDuration double
         Playlist(name)
         +add(item MediaItem) void

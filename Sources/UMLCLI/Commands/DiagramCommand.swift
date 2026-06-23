@@ -9,18 +9,7 @@ extension UMLCommand {
             abstract: "Generate a diagram (DOT or Mermaid) from an analysis or source directory"
         )
 
-        @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
-        var from: String?
-
-        @Option(name: .long, help: "Path to a source directory to analyze on the fly.")
-        var source: String?
-
-        @Option(name: .long, help: ArgumentHelp(
-            "Limit analysis to one or more languages when using --source" +
-            " (swift, kotlin, java, typescript, javascript, dart, python)." +
-            " Repeat the flag for multiple: --language kotlin --language java."
-        ))
-        var language: [LanguageOption] = []
+        @OptionGroup var artifactSource: ArtifactSource
 
         @Option(name: .long, help: "Path to a YAML configuration file.")
         var config: String?
@@ -31,20 +20,11 @@ extension UMLCommand {
         @Option(name: .long, help: "Output format: dot (default), mermaid.")
         var format: FormatOption?
 
-        @Option(name: .long, help: "Graph layout direction: TB, LR, BT, RL.")
-        var direction: DirectionOption?
-
         @Option(name: .long, help: "Color theme: default, dark.")
         var theme: ThemeOption?
 
-        @Option(name: .long, help: "Grouping strategy: file, namespace, none.")
-        var groupBy: GroupByOption?
-
-        @Flag(name: .long, help: "Show type members in the diagram.")
-        var showMembers: Bool = false
-
-        @Flag(name: .long, help: "Hide type members from the diagram.")
-        var noShowMembers: Bool = false
+        /// Class-diagram display flags (direction, grouping, member visibility, inference toggles).
+        @OptionGroup var classFlags: ClassDiagramFlags
 
         @Option(name: .long, help: ArgumentHelp(
             "Render a sequence diagram traced from this entry point instead of a class diagram." +
@@ -116,13 +96,8 @@ extension UMLCommand {
         var noFocusInterconnections: Bool = false
 
         mutating func validate() throws {
-            if from == nil && source == nil {
-                throw ValidationError("Either --from or --source must be specified.")
-            }
-            if from != nil && source != nil {
-                throw ValidationError("Specify either --from or --source, not both.")
-            }
-            if showMembers && noShowMembers {
+            try artifactSource.validate()
+            if classFlags.showMembers && classFlags.noShowMembers {
                 throw ValidationError("Cannot specify both --show-members and --no-show-members.")
             }
             if sequenceFrom != nil && stateFrom != nil {
@@ -141,20 +116,7 @@ extension UMLCommand {
         }
 
         mutating func run() throws {
-            let artifact: CodeArtifact
-            if let fromValue = from {
-                artifact = try loadArtifact(from: fromValue)
-            } else if let sourceDir = source {
-                let url = URL(fileURLWithPath: sourceDir).standardizedFileURL
-                guard FileManager.default.fileExists(atPath: url.path) else {
-                    throw ValidationError("Source directory does not exist: \(sourceDir)")
-                }
-                let allowedLanguages = language.map { $0.sourceLanguage }
-                artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
-                artifact.warnIfParseErrors()
-            } else {
-                throw ValidationError("Either --from or --source must be specified.")
-            }
+            let artifact = try artifactSource.resolve()
 
             let diagramFormat = format?.diagramFormat ?? .dot
             let export: DiagramExport
@@ -171,14 +133,7 @@ extension UMLCommand {
             }
             // Single format-dispatch site for every diagram type.
             let rendered = export.render(diagramFormat)
-
-            if let outputPath = output {
-                let outputURL = URL(fileURLWithPath: outputPath)
-                try rendered.write(to: outputURL, atomically: true, encoding: .utf8)
-                print("Wrote diagram to \(outputPath)")
-            } else {
-                print(rendered)
-            }
+            try rendered.writeOutput(to: output, label: "diagram")
         }
 
         /// Builds the class-diagram options from flags/config and wraps both renderers.
@@ -190,11 +145,8 @@ extension UMLCommand {
                 try options.applyYAMLConfig(yamlString)
             }
 
-            if let dir = direction { options.layoutDirection = dir.layoutDirection }
             if let selectedTheme = theme { options.theme = selectedTheme.diagramTheme }
-            if let selectedGroupBy = groupBy { options.groupBy = selectedGroupBy.groupingStrategy }
-            if showMembers { options.showMembers = true }
-            if noShowMembers { options.showMembers = false }
+            classFlags.apply(to: &options)
 
             if let focusConfig = FocusOptionBuilder.make(
                 rootTypeName: focus,
@@ -327,25 +279,6 @@ extension UMLCommand {
             case .module(let name):
                 return "Call graph — \(name) module"
             }
-        }
-
-        private func loadArtifact(from value: String) throws -> CodeArtifact {
-            let directURL = URL(fileURLWithPath: value)
-            if FileManager.default.fileExists(atPath: directURL.path) {
-                let data = try Data(contentsOf: directURL)
-                return try JSONDecoder().decode(CodeArtifact.self, from: data)
-            }
-
-            let storedURL = UMLConstants.analysisDirectory.appendingPathComponent("\(value).json")
-            if FileManager.default.fileExists(atPath: storedURL.path) {
-                let data = try Data(contentsOf: storedURL)
-                return try JSONDecoder().decode(CodeArtifact.self, from: data)
-            }
-
-            throw ValidationError(
-                "Could not find analysis '\(value)'. "
-                + "Provide a path to a .json file or the name of a stored analysis."
-            )
         }
     }
 }

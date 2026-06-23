@@ -46,7 +46,7 @@ extension PythonExtractor {
     /// Call-site scope for module-level functions: no instance properties, but declared types are
     /// still resolvable for `TypeName.method()` static calls.
     func moduleScope() -> CallSiteScope {
-        CallSiteScope(knownTypeNames: collectKnownTypeNames())
+        CallSiteScope(knownTypeNames: declaredTypeNames)
     }
 
     /// A module-level `x = …` (optionally annotated `x: T = …`) becomes a global variable.

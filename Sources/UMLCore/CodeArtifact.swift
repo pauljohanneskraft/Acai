@@ -141,9 +141,15 @@ extension CodeArtifact {
         )
 
         let filteredTypes = types.filter { !removedIDs.contains($0.id) }
+
+        // Edges to a removed type may still reference it by *name* (e.g. an unresolved external
+        // type). Remove those by name too — but only for names no surviving type claims, so a
+        // generated type doesn't take down a legitimately-kept type that shares its simple name.
+        let survivingNames = Set(filteredTypes.map(\.name))
+        let removedOnlyNames = removedNames.subtracting(survivingNames)
         let filteredRelationships = relationships.filter { rel in
             !removedIDs.contains(rel.source) && !removedIDs.contains(rel.target)
-                && !removedNames.contains(rel.source) && !removedNames.contains(rel.target)
+                && !removedOnlyNames.contains(rel.source) && !removedOnlyNames.contains(rel.target)
         }
 
         return CodeArtifact(

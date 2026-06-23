@@ -25,6 +25,13 @@ extension CFamilyExtractor {
         var members: [Member] = []
         var nestedTypes: [TypeDeclaration] = []
         if let body = node.child(byFieldName: "body") {
+            // Qualify nested records/enums against this record's id so a `struct Inner` nested in
+            // `Outer` becomes `Outer.Inner` rather than colliding with a top-level `Inner`. Only
+            // nested-type ids consult the namespace inside a record body, so top-level records are
+            // unaffected (the record's own `namespace` field is read after this restores).
+            let savedNamespace = currentNamespace
+            currentNamespace = typeId
+            defer { currentNamespace = savedNamespace }
             extractRecordBody(body, ownerName: name, defaultAccess: defaultAccess,
                               members: &members, nestedTypes: &nestedTypes)
         }

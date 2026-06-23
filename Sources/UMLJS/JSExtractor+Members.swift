@@ -10,7 +10,7 @@ extension JSExtractor {
     func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
         let scope = CallSiteScope(
             knownProperties: buildPropertyMapFromBody(bodyNode),
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
 
         for child in bodyNode.children() {

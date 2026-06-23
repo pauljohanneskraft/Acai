@@ -27,6 +27,12 @@ enum CLITestSupport {
         return try #require(root as? UMLCommand.Analyze)
     }
 
+    /// Parses `metrics`-subcommand `arguments` into the concrete `Metrics` command.
+    static func parseMetrics(_ arguments: [String]) throws -> UMLCommand.Metrics {
+        let root = try UMLCommand.parseAsRoot(["metrics"] + arguments)
+        return try #require(root as? UMLCommand.Metrics)
+    }
+
     /// The human-readable message ArgumentParser would print for `error`.
     static func message(for error: Error) -> String {
         UMLCommand.message(for: error)

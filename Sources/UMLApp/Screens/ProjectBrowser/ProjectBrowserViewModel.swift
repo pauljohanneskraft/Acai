@@ -94,16 +94,15 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func reindex(codebaseID: UUID) async {
-        guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
-              let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID }) else { return }
-        let url = URL(fileURLWithPath: store.projects[pIndex].codebases[cIndex].directoryPath).standardizedFileURL
+        guard let codebase = codebase(for: codebaseID) else { return }
+        let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
 
         do {
             let artifact = try await Task.detached(priority: .userInitiated) {
                 try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
             }.value
-            let enriched = ClassDiagramEnricher.enrich(
-                artifact,
+            let enriched = ClassDiagram(
+                artifact: artifact,
                 options: EnrichmentOptions(
                     inferCompositionFromProperties: true,
                     inferDependencyFromMethods: true,
@@ -117,6 +116,12 @@ final class ProjectBrowserViewModel: ObservableObject {
                 relationships: enriched.relationships,
                 freestandingFunctions: artifact.freestandingFunctions
             )
+            // Re-resolve indices after the suspension — the user may have deleted or reordered
+            // projects/codebases during the (potentially long) analysis, which would make any
+            // indices captured before the `await` point at the wrong codebase or out of bounds.
+            guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
+                  let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
+            else { return }
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
@@ -124,7 +129,7 @@ final class ProjectBrowserViewModel: ObservableObject {
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {
-            print("Reindex failed: \(error)")
+            store.report("Reindex failed: \(error.localizedDescription)")
         }
     }
 
@@ -146,52 +151,43 @@ final class ProjectBrowserViewModel: ObservableObject {
         return diagram.id
     }
 
-    /// Updates the entry-point configuration of a sequence diagram and clears its saved
-    /// participant positions (the participant set may have changed).
-    func updateSequenceConfiguration(
-        diagramID: UUID,
-        configuration: SequenceDiagramConfiguration
+    /// Applies `transform` to the stored diagram, then re-auto-names it (unless the user renamed it),
+    /// bumps `lastModified`, persists, and notifies. `clearPositions` drops saved node positions when
+    /// the configuration change can alter the node set.
+    private func mutateDiagram(
+        _ diagramID: UUID,
+        clearPositions: Bool,
+        _ transform: (inout GeneratedDiagram) -> Void
     ) {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
-        diagram.sequenceConfiguration = configuration
-        diagram.nodePositions = [:]
+        transform(&diagram)
+        if clearPositions {
+            diagram.nodePositions = [:]
+        }
         if !diagram.isNameUserDefined {
             diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
         }
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)
         objectWillChange.send()
+    }
+
+    /// Updates the entry-point configuration of a sequence diagram and clears its saved
+    /// participant positions (the participant set may have changed).
+    func updateSequenceConfiguration(diagramID: UUID, configuration: SequenceDiagramConfiguration) {
+        mutateDiagram(diagramID, clearPositions: true) { $0.sequenceConfiguration = configuration }
     }
 
     /// Updates the scope of a call graph and clears its saved node positions (the method set
     /// changes with scope).
     func updateCallGraphScope(diagramID: UUID, scope: CallGraphScope) {
-        guard var diagram = store.generatedDiagrams[diagramID] else { return }
-        diagram.callGraphScope = scope
-        diagram.nodePositions = [:]
-        if !diagram.isNameUserDefined {
-            diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
-        }
-        diagram.lastModified = Date()
-        store.saveGeneratedDiagram(diagram)
-        objectWillChange.send()
+        mutateDiagram(diagramID, clearPositions: true) { $0.callGraphScope = scope }
     }
 
     /// Updates the variable configuration of a state diagram and clears its saved
     /// node positions (the state set may have changed).
-    func updateStateConfiguration(
-        diagramID: UUID,
-        configuration: StateDiagramConfiguration
-    ) {
-        guard var diagram = store.generatedDiagrams[diagramID] else { return }
-        diagram.stateConfiguration = configuration
-        diagram.nodePositions = [:]
-        if !diagram.isNameUserDefined {
-            diagram.name = diagram.autoName(codebaseName: codebase(for: diagram.codebaseID)?.name ?? "")
-        }
-        diagram.lastModified = Date()
-        store.saveGeneratedDiagram(diagram)
-        objectWillChange.send()
+    func updateStateConfiguration(diagramID: UUID, configuration: StateDiagramConfiguration) {
+        mutateDiagram(diagramID, clearPositions: true) { $0.stateConfiguration = configuration }
     }
 
     func updateGeneratedDiagramPositions(
@@ -214,13 +210,10 @@ final class ProjectBrowserViewModel: ObservableObject {
         objectWillChange.send()
     }
 
-    /// Updates the rendering configuration of a class diagram (no-op for other types).
+    /// Updates the rendering configuration of a class diagram (no-op for other types). Positions are
+    /// kept — a render-option change never alters the type set.
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
-        guard var diagram = store.generatedDiagrams[diagramID] else { return }
-        diagram.classConfiguration = configuration
-        diagram.lastModified = Date()
-        store.saveGeneratedDiagram(diagram)
-        objectWillChange.send()
+        mutateDiagram(diagramID, clearPositions: false) { $0.classConfiguration = configuration }
     }
 
     func renameGeneratedDiagram(_ diagramID: UUID, name: String) {

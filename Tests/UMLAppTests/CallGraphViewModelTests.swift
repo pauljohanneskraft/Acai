@@ -68,4 +68,11 @@ struct CallGraphViewModelTests {
         vm.moveNode("A.run", to: CGPoint(x: 10, y: 20))
         #expect(vm.positionOverrides["A.run"] == CGPoint(x: 10, y: 20))
     }
+
+    @Test func exportsNonEmptyPNGData() throws {
+        let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
+        let data = try vm.exportPNGData(scale: 1)
+        // A valid PNG starts with the 8-byte signature.
+        #expect(data.starts(with: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+    }
 }

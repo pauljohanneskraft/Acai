@@ -34,59 +34,17 @@ public struct StateLayoutModel: Sendable {
     /// Lays out `diagram`, with `positionOverrides` (state-id → centre) taking
     /// precedence over computed positions — used to restore user drags.
     public init(diagram: StateDiagram, positionOverrides: [String: CGPoint] = [:]) {
-        let sizes = Dictionary(
-            diagram.states.map { ($0.id, Self.estimatedSize(for: $0)) },
-            uniquingKeysWith: { first, _ in first }
+        // `LayerAssignment` puts inheritance *targets* in the top layer, so feed each transition
+        // reversed (origin state as the "parent"), placing the initial pseudo-state at the top and
+        // flowing downward.
+        let layout = DirectedGraphLayout(
+            nodeSizes: diagram.states.map { ($0.id, Self.estimatedSize(for: $0)) },
+            edges: diagram.transitions.map { ($0.to, $0.from) },
+            positionOverrides: positionOverrides
         )
-
-        let inputs = diagram.states.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: sizes[$0.id] ?? .zero, group: nil)
-        }
-        // `LayerAssignment` puts inheritance *targets* in the top layer, so feed
-        // each transition reversed: its origin state is the "parent", which
-        // places the initial pseudo-state at the top and flows downward.
-        let edgeInputs = diagram.transitions.map {
-            SugiyamaLayoutEngine.EdgeInput(sourceID: $0.to, targetID: $0.from, kind: .inheritance)
-        }
-        var positions = SugiyamaLayoutEngine().layout(nodes: inputs, edges: edgeInputs).positions
-        for (id, point) in positionOverrides {
-            positions[id] = point
-        }
-
-        // Normalize so the content's top-left corner sits at the origin.
-        var minX: CGFloat = .greatestFiniteMagnitude
-        var minY: CGFloat = .greatestFiniteMagnitude
-        for state in diagram.states {
-            let size = sizes[state.id] ?? .zero
-            let center = positions[state.id] ?? .zero
-            minX = min(minX, center.x - size.width / 2)
-            minY = min(minY, center.y - size.height / 2)
-        }
-        if minX == .greatestFiniteMagnitude { minX = 0 }
-        if minY == .greatestFiniteMagnitude { minY = 0 }
-
-        var frames: [String: CGRect] = [:]
-        var maxX: CGFloat = 0
-        var maxY: CGFloat = 0
-        var nodeFrames: [NodeFrame] = []
-        for state in diagram.states {
-            let size = sizes[state.id] ?? .zero
-            let center = positions[state.id] ?? .zero
-            let rect = CGRect(
-                x: center.x - size.width / 2 - minX,
-                y: center.y - size.height / 2 - minY,
-                width: size.width,
-                height: size.height
-            )
-            frames[state.id] = rect
-            nodeFrames.append(NodeFrame(id: state.id, state: state, rect: rect))
-            maxX = max(maxX, rect.maxX)
-            maxY = max(maxY, rect.maxY)
-        }
-
-        nodes = nodeFrames
-        framesByID = frames
-        contentSize = CGSize(width: max(maxX, 1), height: max(maxY, 1))
+        framesByID = layout.framesByID
+        contentSize = layout.contentSize
+        nodes = diagram.states.map { NodeFrame(id: $0.id, state: $0, rect: layout.framesByID[$0.id] ?? .zero) }
         edges = diagram.transitions.enumerated().map { index, transition in
             EdgeLayout(id: index, from: transition.from, to: transition.to, label: transition.label)
         }

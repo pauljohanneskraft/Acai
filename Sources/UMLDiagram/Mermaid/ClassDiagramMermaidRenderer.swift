@@ -2,7 +2,7 @@ import UMLCore
 
 /// Renders a `CodeArtifact` as a Mermaid `classDiagram`.
 ///
-/// Mirrors `DOTGenerator`: it runs the same `ClassDiagramEnricher` and honours the
+/// Mirrors `DOTGenerator`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
 public struct ClassDiagramMermaidRenderer: Sendable {
@@ -49,8 +49,8 @@ public struct ClassDiagramMermaidRenderer: Sendable {
             body.append("        <<\(stereotype)>>")
         }
         if options.showMembers {
-            let properties = filteredMembers(type.members.filter(isProperty))
-            let methods = filteredMembers(type.members.filter(isMethod))
+            let properties = type.members.filter(\.isProperty).visible(atLeast: options.minimumAccessLevel)
+            let methods = type.members.filter(\.isMethod).visible(atLeast: options.minimumAccessLevel)
             body += properties.map { "        " + memberLine($0) }
             body += methods.map { "        " + memberLine($0) }
             body += type.enumCases.map { "        \($0.name)" }
@@ -72,7 +72,7 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         }
         line += member.name
 
-        if isMethod(member) {
+        if member.isMethod {
             let params = member.parameters.map { parameter -> String in
                 guard options.showMemberTypes, let type = parameter.type else { return parameter.internalName }
                 return "\(parameter.internalName) \(typeString(type))"
@@ -148,34 +148,10 @@ public struct ClassDiagramMermaidRenderer: Sendable {
 
     // MARK: - Helpers
 
+    /// The `Name<Args>?[]` display string from the shared `TypeReference` formatter, with `<>`
+    /// escaped for Mermaid. Shared so DOT, Mermaid, and the app canvas stay in sync.
     private func typeString(_ ref: TypeReference) -> String {
-        var result = ref.name
-        if !ref.genericArguments.isEmpty {
-            result += "<" + ref.genericArguments.map { typeString($0) }.joined(separator: ", ") + ">"
-        }
-        if ref.isOptional { result += "?" }
-        if ref.isArray && !result.hasPrefix("Array") { result += "[]" }
-        return result.mermaidGenerics
+        ref.umlDisplayString(collectionTypeNames: options.language.collectionTypeNames).mermaidGenerics
     }
 
-    private func isProperty(_ member: Member) -> Bool {
-        member.kind == .property || member.kind == .subscript
-    }
-
-    private func isMethod(_ member: Member) -> Bool {
-        member.kind == .method || member.kind == .initializer || member.kind == .deinitializer
-    }
-
-    private func filteredMembers(_ members: [Member]) -> [Member] {
-        guard let minAccess = options.minimumAccessLevel else { return members }
-        let order: [AccessLevel: Int] = [
-            .private: 0, .filePrivate: 1, .internal: 2, .packagePrivate: 2,
-            .protected: 3, .public: 4, .open: 5
-        ]
-        guard let minRank = order[minAccess] else { return members }
-        return members.filter { member in
-            guard let access = member.accessLevel, let rank = order[access] else { return true }
-            return rank >= minRank
-        }
-    }
 }

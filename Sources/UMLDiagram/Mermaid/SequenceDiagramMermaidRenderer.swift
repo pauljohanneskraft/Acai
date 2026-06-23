@@ -16,7 +16,7 @@ public struct SequenceDiagramMermaidRenderer: Sendable {
         for participant in diagram.participants {
             let safe = allocator.id(for: participant.id)
             idMap[participant.id] = safe
-            lines.append("    participant \(safe) as \(participant.name.mermaidLabelEscaped)")
+            lines.append("    \(participantLine(participant, id: safe))")
         }
 
         for message in diagram.messages.sorted(by: { $0.order < $1.order }) {
@@ -25,6 +25,20 @@ public struct SequenceDiagramMermaidRenderer: Sendable {
         }
 
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// The `participant`/`actor` declaration line. `.actor` participants use Mermaid's `actor`
+    /// keyword (a stick figure); other non-object kinds show their UML stereotype above the name,
+    /// matching the DOT renderer.
+    private func participantLine(_ participant: SequenceDiagram.Participant, id: String) -> String {
+        let name = participant.name.mermaidLabelEscaped
+        if participant.kind == .actor {
+            return "actor \(id) as \(name)"
+        }
+        if let stereotype = participant.kind.stereotype {
+            return "participant \(id) as «\(stereotype)»<br/>\(name)"
+        }
+        return "participant \(id) as \(name)"
     }
 
     private func arrowToken(for kind: SequenceDiagram.Message.Kind) -> String {

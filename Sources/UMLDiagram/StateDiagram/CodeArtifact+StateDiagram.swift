@@ -14,7 +14,7 @@ extension CodeArtifact {
     /// Call on a `resolvingExtensions()`-ed artifact so members declared in
     /// extensions are visible.
     ///
-    /// Known v1 limitations (documented behaviour, not bugs):
+    /// Known limitations (documented behaviour, not bugs):
     /// - Branch-insensitive: assignments in different `if`/`switch` arms of the
     ///   same body appear as one sequential chain.
     /// - No scope tracking: a local variable shadowing the property is counted.

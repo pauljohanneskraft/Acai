@@ -58,6 +58,30 @@ struct CppTests {
         #expect(circle?.modifiers.contains(.abstract) == false)
     }
 
+    /// A record nested inside another record gets an id qualified by its enclosing record, so it
+    /// doesn't collide with a top-level record sharing the same simple name.
+    @Test func nestedRecordIDIsQualified() {
+        let source = """
+        struct Inner {
+            int a;
+        };
+
+        struct Outer {
+            struct Inner {
+                int b;
+            };
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "nested.cpp")
+        let topLevelInner = artifact.types.first { $0.name == "Inner" }
+        let outer = artifact.types.first { $0.name == "Outer" }
+        let nestedInner = outer?.nestedTypes.first { $0.name == "Inner" }
+
+        #expect(topLevelInner?.id == "Inner")
+        #expect(nestedInner?.id == "Outer.Inner")
+        #expect(topLevelInner?.id != nestedInner?.id)
+    }
+
     @Test func namespaceQualifiesType() {
         let source = """
         namespace banking {

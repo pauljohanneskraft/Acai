@@ -82,19 +82,19 @@ extension CFamilyExtractor: AssignmentResolving {
         }
     }
 
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["true", "false"],
+        numeric: ["number_literal"],
+        string: ["string_literal", "concatenated_string", "raw_string_literal"],
+        nilLiteral: ["null", "nullptr"]
+    )
+
     /// Classifies an assigned value node for static state analysis. Scoped enum accesses
     /// (`State::ready`) and unscoped uppercase enum cases become `.enumCase` values.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
+        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
+        let valueText = trimmedText(node)
         switch node.nodeType {
-        case "number_literal":
-            return .init(kind: .numericLiteral, text: valueText)
-        case "string_literal", "concatenated_string", "raw_string_literal":
-            return .init(kind: .stringLiteral, text: valueText)
-        case "true", "false":
-            return .init(kind: .booleanLiteral, text: valueText)
-        case "null", "nullptr":
-            return .init(kind: .nilLiteral, text: valueText)
         case "qualified_identifier":
             return enumCaseValue(fromAccessText: valueText.replacingOccurrences(of: "::", with: "."))
                 ?? .init(kind: .expression, text: expressionSnippet(node))

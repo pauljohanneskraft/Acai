@@ -22,7 +22,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public init(
         from type: TypeDeclaration,
         configuration: ClassDiagramConfiguration? = nil,
-        annotationStereotypes: [String: String] = [:]
+        annotationStereotypes: [String: String] = [:],
+        collectionTypeNames: Set<String> = []
     ) {
         let config = configuration ?? .init()
 
@@ -36,8 +37,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
 
         let accessFilter = config.minimumAccessLevel
 
-        let props = type.members.filter { $0.kind == .property || $0.kind == .subscript }
-        let meths = type.members.filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
+        let props = type.members.filter(\.isProperty)
+        let meths = type.members.filter(\.isMethod)
 
         // Per-type overrides take precedence over the global defaults, letting a single type
         // show or hide its members independently of the rest of the diagram.
@@ -48,7 +49,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if showProps {
             self.properties = props
                 .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
-                .map { DiagramMember(from: $0, isMethod: false) }
+                .map { DiagramMember(from: $0, isMethod: false, collectionTypeNames: collectionTypeNames) }
         } else {
             self.properties = []
         }
@@ -56,7 +57,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if showMeths {
             self.methods = meths
                 .filter { Self.passesAccessFilter($0.accessLevel, minimum: accessFilter) }
-                .map { DiagramMember(from: $0, isMethod: true) }
+                .map { DiagramMember(from: $0, isMethod: true, collectionTypeNames: collectionTypeNames) }
         } else {
             self.methods = []
         }
@@ -72,7 +73,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if let filePath = type.location?.filePath {
             let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
             self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
-            self.productGroup = BuildProduct.productName(forFilePath: filePath)
+            self.productGroup = ModuleResolver.standard.productName(forFilePath: filePath)
         } else {
             self.directoryPath = nil
             self.productGroup = nil
@@ -80,32 +81,12 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     }
 
     /// Returns true if the given access level is at or above the minimum. Used both for
-    /// member visibility and for hiding whole types below the minimum access level.
+    /// member visibility and for hiding whole types below the minimum access level. Uses the single
+    /// `AccessLevel.visibilityRank` ordering shared with the DOT/Mermaid renderers (a `nil` level
+    /// counts as `.internal`).
     public static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
-        let order = accessOrder(memberAccess ?? .internal)
-        let minOrder = accessOrder(minimum)
-        return order >= minOrder
-    }
-
-    /// Numeric visibility ordering: higher = more visible.
-    private static func accessOrder(_ level: AccessLevel) -> Int {
-        switch level {
-        case .open:
-            return 6
-        case .public:
-            return 5
-        case .packagePrivate:
-            return 4
-        case .internal:
-            return 3
-        case .protected:
-            return 2
-        case .filePrivate:
-            return 1
-        case .private:
-            return 0
-        }
+        return (memberAccess ?? .internal).visibilityRank >= minimum.visibilityRank
     }
 }
 
@@ -119,18 +100,16 @@ public struct DiagramMember: Identifiable, Sendable {
     public let isStatic: Bool
     public let isAbstract: Bool
 
-    public init(from member: Member, isMethod: Bool) {
+    public init(from member: Member, isMethod: Bool, collectionTypeNames: Set<String> = []) {
         self.id = "\(member.name)_\(member.kind.rawValue)_\(member.type?.name ?? "")"
-        self.accessSymbol = member.accessLevel?.umlSymbol ?? "~"
+        self.accessSymbol = member.umlAccessSymbol
         self.name = member.name
         self.isStatic = member.modifiers.contains(.static) || member.modifiers.contains(.class)
         self.isAbstract = member.modifiers.contains(.abstract)
 
-        if isMethod {
-            self.displayText = UMLMemberFormatting.formatMethod(member)
-        } else {
-            self.displayText = UMLMemberFormatting.formatProperty(member)
-        }
+        self.displayText = isMethod
+            ? member.umlMethodLine(collectionTypeNames: collectionTypeNames)
+            : member.umlPropertyLine(collectionTypeNames: collectionTypeNames)
     }
 }
 
@@ -142,7 +121,7 @@ public struct DiagramEnumCase: Identifiable, Sendable {
 
     public init(from enumCase: EnumCase) {
         self.id = enumCase.name
-        self.displayText = UMLMemberFormatting.formatEnumCase(enumCase)
+        self.displayText = enumCase.umlCaseLine
     }
 }
 

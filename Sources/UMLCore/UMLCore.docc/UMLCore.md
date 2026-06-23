@@ -70,7 +70,7 @@ usually touch these directly — they power the automatic discovery.
 - ``AnalysisService``
 - ``ProjectDiscovery``
 - ``BuildSystemDetector``
-- ``BuildProduct``
+- ``ModuleResolver``
 - ``FallbackDetector``
 - ``SourceSpec``
 

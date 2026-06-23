@@ -56,30 +56,23 @@ extension JSExtractor: AssignmentResolving {
         )
     }
 
+    /// JS literal node types. A `template_string` with a `template_substitution` child (`x${y}`) is
+    /// runtime-dependent and falls through to an opaque expression.
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["true", "false"],
+        numeric: ["number"],
+        string: ["string", "template_string"],
+        nilLiteral: ["null", "undefined"],
+        interpolationChildTypes: ["template_substitution"]
+    )
+
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-        switch node.nodeType {
-        case "true", "false":
-            return .init(kind: .booleanLiteral, text: valueText)
-        case "number":
-            return .init(kind: .numericLiteral, text: valueText)
-        case "string":
-            return .init(kind: .stringLiteral, text: valueText)
-        case "template_string":
-            // A template string with substitutions (`x${y}`) is runtime-dependent
-            // and not statically enumerable, so it is not a fixed state.
-            if node.namedChildren().contains(where: { $0.nodeType == "template_substitution" }) {
-                return .init(kind: .expression, text: expressionSnippet(node))
-            }
-            return .init(kind: .stringLiteral, text: valueText)
-        case "null", "undefined":
-            return .init(kind: .nilLiteral, text: valueText)
-        default:
-            if let enumCase = enumCaseValue(fromAccessText: valueText) {
-                return enumCase
-            }
-            return .init(kind: .expression, text: expressionSnippet(node))
+        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
+        let valueText = trimmedText(node)
+        if let enumCase = enumCaseValue(fromAccessText: valueText) {
+            return enumCase
         }
+        return .init(kind: .expression, text: expressionSnippet(node))
     }
 }

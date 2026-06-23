@@ -54,4 +54,23 @@ extension View {
             .hidden()
         }
     }
+
+    /// The shared lifecycle wiring for every layout-backed diagram view: undo/redo shortcuts, the
+    /// navigation title, a one-frame-delayed initial fit, and a save on disappear. The toolbar stays
+    /// per-view (each diagram kind has its own buttons).
+    @MainActor
+    func diagramCanvasLifecycle<Model: CanvasInteraction>(
+        title: String,
+        model: Model,
+        onSave: @escaping () -> Void,
+        onCenter: @escaping () -> Void
+    ) -> some View {
+        undoRedoKeyboardShortcuts(model: model, onChange: onSave)
+            .navigationTitle(title)
+            .task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(1))
+                onCenter()
+            }
+            .onDisappear { onSave() }
+    }
 }

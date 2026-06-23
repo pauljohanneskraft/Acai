@@ -60,4 +60,24 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.assignments = assignments
         self.initialValue = initialValue
     }
+
+    /// Whether this member belongs in the "attributes" compartment of a class diagram.
+    public var isProperty: Bool { kind == .property || kind == .subscript }
+
+    /// Whether this member belongs in the "operations" compartment of a class diagram.
+    public var isMethod: Bool { kind == .method || kind == .initializer || kind == .deinitializer }
+
+    /// Whether this member is at least as visible as `minimum`. A `nil` access level counts as
+    /// `.internal` (the common default); a `nil` `minimum` keeps everything.
+    public func isVisible(atLeast minimum: AccessLevel?) -> Bool {
+        guard let minimum else { return true }
+        return (accessLevel ?? .internal).visibilityRank >= minimum.visibilityRank
+    }
+}
+
+extension Sequence where Element == Member {
+    /// The members at least as visible as `minimum` (see ``Member/isVisible(atLeast:)``).
+    public func visible(atLeast minimum: AccessLevel?) -> [Member] {
+        filter { $0.isVisible(atLeast: minimum) }
+    }
 }

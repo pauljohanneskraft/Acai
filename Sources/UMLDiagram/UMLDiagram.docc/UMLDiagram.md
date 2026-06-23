@@ -40,7 +40,7 @@ let dot = DOTGenerator(options: options).generate(from: artifact)
 - ``DOTGenerator``
 - ``ClassDiagramOptions``
 - ``ClassDiagramMermaidRenderer``
-- ``ClassDiagramEnricher``
+- ``ClassDiagram``
 - ``EnrichmentOptions``
 - ``ClassDiagramOptions/GroupingStrategy``
 - ``DiagramTheme``

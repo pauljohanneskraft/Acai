@@ -143,7 +143,7 @@ private struct CallGraphBuilder {
     }
 
     private func moduleName(of location: SourceLocation?) -> String {
-        BuildProduct.productName(forFilePath: location?.filePath ?? "")
+        ModuleResolver.standard.productName(forFilePath: location?.filePath ?? "")
     }
 
     // MARK: - Nodes

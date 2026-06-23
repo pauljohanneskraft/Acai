@@ -57,6 +57,7 @@ struct ProjectBrowserView: View {
                 model.addProject(title: title, subtitle: subtitle)
             }
         }
+        .modifier(StoreErrorAlert(store: model.store))
     }
 
     // MARK: - Sidebar (Left Column)
@@ -268,6 +269,24 @@ struct ProjectBrowserView: View {
             Text("Select a project or diagram")
                 .font(.title3)
                 .foregroundStyle(.secondary)
+        }
+    }
+}
+
+// MARK: - Store Error Alert
+
+/// Observes the `ProjectStore` directly (it's nested inside the view model, so the parent view
+/// doesn't re-render on its changes) and presents the latest persistence/export failure.
+private struct StoreErrorAlert: ViewModifier {
+    @ObservedObject var store: ProjectStore
+
+    func body(content: Content) -> some View {
+        content.alert(item: $store.lastError) { error in
+            Alert(
+                title: Text("Something went wrong"),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 }

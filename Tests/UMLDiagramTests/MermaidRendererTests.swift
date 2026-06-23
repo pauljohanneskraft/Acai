@@ -225,7 +225,10 @@ struct MermaidRendererTests {
         )
         let mermaid = SequenceDiagramMermaidRenderer().render(diagram)
         #expect(mermaid.hasPrefix("sequenceDiagram\n"))
-        #expect(mermaid.contains("participant LoginService as LoginService"))
+        // A `.control` participant carries its UML stereotype above the name (matching DOT); a plain
+        // `.object` participant does not.
+        #expect(mermaid.contains("participant LoginService as «control»<br/>LoginService"))
+        #expect(mermaid.contains("participant AuthService as AuthService"))
         #expect(mermaid.contains("LoginService->>AuthService: authenticate"))
         #expect(mermaid.contains("AuthService-->>LoginService:"))
     }

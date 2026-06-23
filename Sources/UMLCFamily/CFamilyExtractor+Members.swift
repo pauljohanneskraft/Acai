@@ -55,7 +55,7 @@ extension CFamilyExtractor {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: collectKnownTypeNames()
+            knownTypeNames: declaredTypeNames
         )
         for pending in pendingBodies where pending.index < members.count {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
@@ -142,7 +142,7 @@ extension CFamilyExtractor {
             return nil
         }
         if let body = node.child(byFieldName: "body") {
-            let scope = CallSiteScope(knownProperties: [:], knownTypeNames: collectKnownTypeNames())
+            let scope = CallSiteScope(knownProperties: [:], knownTypeNames: declaredTypeNames)
             member.callSites = extractCallSites(from: body, scope: scope)
             // Expose the function's typed parameters so a `param->field = …` write inside the body
             // can be attributed to the parameter's struct type; cleared once the body is analysed.

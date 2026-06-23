@@ -72,6 +72,44 @@ struct JavaAssignmentTests {
         #expect(assignments.allSatisfy { $0.targetName == "count" })
     }
 
+    @Test func unscopedEnumConstantAssignment() {
+        // A bare identifier naming a declared enum constant is classified as that enum case, even
+        // without the `Enum.` qualifier (`state = READY;`).
+        let source = """
+        enum State { READY, BUSY }
+        class Loader {
+            State state;
+            void start() {
+                state = READY;
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Test.java")
+        let assignment = artifact.types
+            .first { $0.name == "Loader" }?.members
+            .first { $0.name == "start" }?.assignments.first
+        #expect(assignment?.value == .init(kind: .enumCase, text: "READY"))
+    }
+
+    @Test func clashingVariableNameIsAcceptedFalsePositive() {
+        // Documents the accepted limitation: with no scope tracking, a bare identifier matching an
+        // enum-constant name is treated as that case even when it actually refers to a local.
+        let source = """
+        enum State { READY }
+        class Loader {
+            State state;
+            void start(State READY) {
+                state = READY;
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Test.java")
+        let assignment = artifact.types
+            .first { $0.name == "Loader" }?.members
+            .first { $0.name == "start" }?.assignments.first
+        #expect(assignment?.value.kind == .enumCase)
+    }
+
     @Test func nonEnumerableValueIsExpression() {
         let source = """
         class Loader {

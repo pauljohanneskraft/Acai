@@ -1,7 +1,7 @@
 sequenceDiagram
-    participant func_place_order as place_order
-    participant func_charge as charge
-    participant func_authorize as authorize
+    participant func_place_order as «control»<br/>place_order
+    participant func_charge as «control»<br/>charge
+    participant func_authorize as «control»<br/>authorize
     func_place_order->>func_charge: charge
     func_charge->>func_authorize: authorize
     func_authorize-->>func_charge: 

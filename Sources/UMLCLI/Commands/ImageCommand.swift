@@ -18,18 +18,7 @@ extension UMLCommand {
             abstract: "Render a class diagram to a PNG image (macOS only)"
         )
 
-        @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
-        var from: String?
-
-        @Option(name: .long, help: "Path to a source directory to analyze on the fly.")
-        var source: String?
-
-        @Option(name: .long, help: ArgumentHelp(
-            "Limit analysis to one or more languages when using --source" +
-            " (swift, kotlin, java, typescript, javascript, dart, python)." +
-            " Repeat the flag for multiple: --language kotlin --language java."
-        ))
-        var language: [LanguageOption] = []
+        @OptionGroup var artifactSource: ArtifactSource
 
         @Option(name: .long, help: "Output PNG file path.")
         var output: String
@@ -121,12 +110,7 @@ extension UMLCommand {
         var noFocusInterconnections: Bool = false
 
         mutating func validate() throws {
-            if from == nil && source == nil {
-                throw ValidationError("Either --from or --source must be specified.")
-            }
-            if from != nil && source != nil {
-                throw ValidationError("Specify either --from or --source, not both.")
-            }
+            try artifactSource.validate()
             let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, callGraph].filter { $0 }.count
             if modeFlags > 1 {
                 throw ValidationError(
@@ -140,7 +124,7 @@ extension UMLCommand {
         }
 
         mutating func run() async throws {
-            let artifact = try loadArtifact()
+            let artifact = try artifactSource.resolve()
 
             let data: Data
             if let sequenceFrom {
@@ -266,44 +250,8 @@ extension UMLCommand {
             }
         }
 
-        private func loadArtifact() throws -> CodeArtifact {
-            if let fromValue = from {
-                return try Self.loadStoredArtifact(from: fromValue)
-            }
-            guard let sourceDir = source else {
-                throw ValidationError("Either --from or --source must be specified.")
-            }
-            let url = URL(fileURLWithPath: sourceDir).standardizedFileURL
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                throw ValidationError("Source directory does not exist: \(sourceDir)")
-            }
-            let allowedLanguages = language.map { $0.sourceLanguage }
-            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
-            artifact.warnIfParseErrors()
-            return artifact
-        }
-
-        private static func loadStoredArtifact(from value: String) throws -> CodeArtifact {
-            let directURL = URL(fileURLWithPath: value)
-            if FileManager.default.fileExists(atPath: directURL.path) {
-                let data = try Data(contentsOf: directURL)
-                return try JSONDecoder().decode(CodeArtifact.self, from: data)
-            }
-
-            let storedURL = UMLConstants.analysisDirectory.appendingPathComponent("\(value).json")
-            if FileManager.default.fileExists(atPath: storedURL.path) {
-                let data = try Data(contentsOf: storedURL)
-                return try JSONDecoder().decode(CodeArtifact.self, from: data)
-            }
-
-            throw ValidationError(
-                "Could not find analysis '\(value)'. "
-                + "Provide a path to a .json file or the name of a stored analysis."
-            )
-        }
     }
 }
 
 extension ClassDiagramConfiguration.Grouping: ExpressibleByArgument {}
-extension AccessLevel: ExpressibleByArgument {}
 #endif

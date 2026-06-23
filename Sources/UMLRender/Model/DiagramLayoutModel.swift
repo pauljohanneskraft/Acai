@@ -67,7 +67,8 @@ public struct DiagramLayoutModel: Sendable {
         self.nodes = visibleTypes.map {
             GeneratedDiagramNode(
                 from: $0, configuration: configuration,
-                annotationStereotypes: language.annotationStereotypes
+                annotationStereotypes: language.annotationStereotypes,
+                collectionTypeNames: language.collectionTypeNames
             )
         }.removingDuplicates { $0.id }
 

@@ -91,13 +91,9 @@ struct ClassDiagramView: View {
                 }
             }
         }
-        .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
-        .navigationTitle(diagram.name)
-        .task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1))
-            centerDiagram()
-        }
-        .onDisappear { savePositions() }
+        .diagramCanvasLifecycle(
+            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+        )
     }
 
     // MARK: - Canvas Content
@@ -247,18 +243,7 @@ extension ClassDiagramView {
     /// to PNG and writes it. Rendering happens only after the user confirms, so cancelling the save
     /// panel wastes no work — important for large diagrams where rendering is slow.
     private func exportImage() {
-        #if os(macOS)
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "\(diagram.name).png"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let data = try viewModel.exportPNGData()
-            try data.write(to: url, options: .atomic)
-        } catch {
-            print("Image export failed: \(error)")
-        }
-        #endif
+        model.exportImage(named: diagram.name, using: viewModel)
     }
 }
 

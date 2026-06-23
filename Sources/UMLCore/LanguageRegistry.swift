@@ -10,10 +10,6 @@
 public struct LanguageRegistry: Sendable {
     private let configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration]
 
-    public init(_ configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration] = [:]) {
-        self.configurations = configurations
-    }
-
     /// Builds a registry from a parser set, taking each parser's `configuration`.
     public init(parsers: [any CodeParser]) {
         var configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration] = [:]

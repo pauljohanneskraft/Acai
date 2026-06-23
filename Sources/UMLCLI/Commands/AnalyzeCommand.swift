@@ -13,7 +13,7 @@ extension UMLCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Limit analysis to one or more languages" +
-            " (swift, kotlin, java, typescript, javascript, dart, python)." +
+            " (\(LanguageOption.allValuesList))." +
             " Repeat the flag for multiple:" +
             " --language kotlin --language java."
         ))
@@ -33,13 +33,7 @@ extension UMLCommand {
             artifact.warnIfParseErrors()
             let json = try artifact.encodedJSON()
 
-            if let outputPath = output {
-                let outputURL = URL(fileURLWithPath: outputPath)
-                try json.write(to: outputURL, atomically: true, encoding: .utf8)
-                print("Wrote analysis to \(outputPath)")
-            } else {
-                print(json)
-            }
+            try json.writeOutput(to: output, label: "analysis")
         }
     }
 }

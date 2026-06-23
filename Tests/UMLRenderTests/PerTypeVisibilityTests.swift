@@ -51,22 +51,6 @@ struct PerTypeVisibilityTests {
         #expect(collapsed.enumCases.isEmpty)
     }
 
-    @Test func decodesConfigurationMissingPerTypeKeys() throws {
-        // JSON saved before the per-type maps existed must still decode, with empty overrides.
-        let json = """
-        {"showProperties": true, "showMethods": true, "showEnumCases": true,
-         "showRelationships": true, "showInheritance": true, "showComposition": true,
-         "showDependency": true, "grouping": "product", "showExternalTypes": false,
-         "hideGeneratedDartTypes": true}
-        """
-        let config = try JSONDecoder().decode(ClassDiagramConfiguration.self, from: Data(json.utf8))
-        #expect(config.propertyVisibility.isEmpty)
-        #expect(config.methodVisibility.isEmpty)
-        #expect(config.enumCaseVisibility.isEmpty)
-        #expect(config.showProperties)
-        #expect(config.grouping == .product)
-    }
-
     @Test func configurationRoundTripsPerTypeOverrides() throws {
         var config = ClassDiagramConfiguration()
         config.methodVisibility["A"] = false

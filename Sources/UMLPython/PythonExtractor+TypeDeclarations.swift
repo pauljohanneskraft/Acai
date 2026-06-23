@@ -20,14 +20,18 @@ extension PythonExtractor {
 
     mutating func extractClass(_ node: Node, decorators: [String]) -> TypeDeclaration {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
-        let bases = extractBases(node, className: name)
+        // Qualify the id/qualifiedName with the enclosing type's namespace so a nested `Inner`
+        // doesn't collide with a top-level `Inner` (at the top level this is just `name`, so
+        // existing output is unchanged). The relationship source uses the qualified id to match.
+        let qualified = qualifiedName(name)
+        let bases = extractBases(node, className: qualified)
         let kind = classKind(forBaseNames: bases.allNames)
 
         var generics = bases.generics
         generics.append(contentsOf: extractDeclaredTypeParameters(node))
 
         var decl = TypeDeclaration(
-            id: name, name: name, qualifiedName: name, kind: kind,
+            id: qualified, name: name, qualifiedName: qualified, kind: kind,
             accessLevel: accessLevel(forName: name),
             genericParameters: generics,
             inheritedTypes: bases.inherited,
@@ -36,6 +40,10 @@ extension PythonExtractor {
         )
 
         if let body = node.child(byFieldName: "body") {
+            // Nested types declared in this body are qualified against this class's id.
+            let savedNamespace = currentNamespace
+            currentNamespace = qualified
+            defer { currentNamespace = savedNamespace }
             if kind == .enum {
                 parseEnumBody(body, into: &decl)
             } else {
@@ -129,7 +137,7 @@ extension PythonExtractor {
     /// For enum classes, class-body `NAME = value` assignments are enum cases (not properties);
     /// methods are still extracted as members.
     private mutating func parseEnumBody(_ body: Node, into decl: inout TypeDeclaration) {
-        let scope = CallSiteScope(knownTypeNames: collectKnownTypeNames())
+        let scope = CallSiteScope(knownTypeNames: declaredTypeNames)
         for child in body.namedChildren() {
             switch child.nodeType {
             case "expression_statement":

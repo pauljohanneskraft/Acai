@@ -4,7 +4,7 @@ extension CodeArtifact {
 
     /// Derives a `PackageDependencyDiagram` from this artifact.
     ///
-    /// Types are grouped into build modules via `BuildProduct.productName(forFilePath:)`
+    /// Types are grouped into build modules via `ModuleResolver.standard.productName(forFilePath:)`
     /// (one node per module). Every relationship whose endpoints live in different
     /// modules contributes to a weighted module→module edge; each distinct
     /// (source type → target type) crossing is counted once. Node metrics come
@@ -27,7 +27,7 @@ extension CodeArtifact {
 
         var idToModule: [String: String] = [:]
         for type in flattened() {
-            idToModule[type.id] = BuildProduct.productName(forFilePath: type.location?.filePath ?? "")
+            idToModule[type.id] = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
         }
 
         struct Pair: Hashable { let from: String; let to: String }

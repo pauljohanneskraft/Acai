@@ -36,23 +36,20 @@ extension PythonExtractor: AssignmentResolving {
         )
     }
 
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["true", "false"],
+        numeric: ["integer", "float"],
+        string: ["string", "concatenated_string"],
+        nilLiteral: ["none"]
+    )
+
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-        switch node.nodeType {
-        case "true", "false":
-            return .init(kind: .booleanLiteral, text: valueText)
-        case "integer", "float":
-            return .init(kind: .numericLiteral, text: valueText)
-        case "string", "concatenated_string":
-            return .init(kind: .stringLiteral, text: valueText)
-        case "none":
-            return .init(kind: .nilLiteral, text: valueText)
-        default:
-            if let enumCase = enumCaseValue(fromAccessText: valueText) {
-                return enumCase
-            }
-            return .init(kind: .expression, text: expressionSnippet(node))
+        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
+        let valueText = trimmedText(node)
+        if let enumCase = enumCaseValue(fromAccessText: valueText) {
+            return enumCase
         }
+        return .init(kind: .expression, text: expressionSnippet(node))
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 import UMLCore
 import UMLDiagram
 import UMLRender
+import UniformTypeIdentifiers
 
 /// Generated static call-graph screen. A thin wrapper that owns the scope re-configuration sheet
 /// and rebuilds the canvas (keyed by scope) when the scope changes, so re-scoping immediately
@@ -88,13 +89,9 @@ private struct CallGraphCanvasView: View {
             }
         }
         .toolbar { toolbarContent }
-        .undoRedoKeyboardShortcuts(model: viewModel, onChange: savePositions)
-        .navigationTitle(diagram.name)
-        .task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1))
-            centerDiagram()
-        }
-        .onDisappear { savePositions() }
+        .diagramCanvasLifecycle(
+            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+        )
     }
 
     // MARK: - Coverage banner
@@ -157,21 +154,13 @@ private struct CallGraphCanvasView: View {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .position(x: node.rect.midX, y: node.rect.midY)
-        .onTapGesture {
-            #if os(macOS)
-            let extending = NSEvent.modifierFlags.contains(.command)
-            #else
-            let extending = false
-            #endif
-            viewModel.selectNode(node.id, extending: extending)
-        }
-        .highPriorityGesture(canvasNodeDragGesture(
+        .diagramNodeInteraction(
             id: node.id,
             model: viewModel,
             dragStartPositions: $dragStartPositions,
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: savePositions
-        ))
+        )
     }
 
     /// Maps a call's multiplicity to a line-width multiplier, clamped so the heaviest edges stay legible.
@@ -209,11 +198,20 @@ private struct CallGraphCanvasView: View {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             Button {
+                exportImage()
+            } label: {
+                Label("Export Image", systemImage: "photo")
+            }
+            Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
         }
+    }
+
+    private func exportImage() {
+        model.exportImage(named: diagram.name, using: viewModel)
     }
 
     // MARK: - Persistence & layout

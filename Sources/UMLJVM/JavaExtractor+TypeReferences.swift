@@ -18,24 +18,15 @@ extension JavaExtractor {
               let objectNode = node.child(byFieldName: "object")
         else { return nil }
 
-        let methodName = text(nameNode)
-
-        // Pattern: this.method(args) — a direct call on the enclosing instance.
-        if objectNode.nodeType == "this" {
-            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
-        }
-
-        var receiverName: String?
-        if objectNode.nodeType == "identifier" {
-            receiverName = text(objectNode)
-        } else if objectNode.nodeType == "field_access",
-                  objectNode.child(byFieldName: "object")?.nodeType == "this",
-                  let fieldNode = objectNode.child(byFieldName: "field") {
-            receiverName = text(fieldNode)
-        }
-
-        guard let name = receiverName else { return nil }
-        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
+        return resolveMemberCall(
+            receiver: objectNode,
+            methodName: text(nameNode),
+            grammar: MemberCallGrammar(
+                selfNodeType: "this", memberAccessType: "field_access", memberField: "field"
+            ),
+            scope: scope,
+            location: loc(node)
+        )
     }
 
     // MARK: - Type References

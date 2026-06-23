@@ -87,16 +87,8 @@ struct CallGraphConfigSheet: View {
     /// Build modules present in the codebase, derived from each type's file path.
     private var moduleNames: [String] {
         artifact.types
-            .map { BuildProduct.productName(forFilePath: $0.location?.filePath ?? "") }
+            .map { ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") }
             .uniqued()
             .sorted()
-    }
-}
-
-private extension Sequence where Element: Hashable {
-    /// Order-preserving de-duplication.
-    func uniqued() -> [Element] {
-        var seen: Set<Element> = []
-        return filter { seen.insert($0).inserted }
     }
 }

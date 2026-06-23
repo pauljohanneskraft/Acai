@@ -174,7 +174,7 @@ public struct AnalysisService: Sendable {
 
         guard var combined = result else { return nil }
         if combined.metadata.toolVersion == nil {
-            combined.metadata.toolVersion = "1.0.0"
+            combined.metadata.toolVersion = UMLConstants.toolVersion
         }
         return combined
     }
@@ -182,10 +182,17 @@ public struct AnalysisService: Sendable {
 
 extension URL {
     /// Returns a path relative to `base`, or the last path component if unrelated.
+    /// Comparison is on a path-component boundary so a sibling directory sharing a name
+    /// prefix (e.g. `/a/foobar` against base `/a/foo`) is treated as unrelated rather than
+    /// yielding a corrupted `bar/...` relative path.
     func relativePath(from base: URL) -> String {
-        if path.hasPrefix(base.path) {
-            return String(path.dropFirst(base.path.count))
-                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let basePath = base.path.hasSuffix("/") ? String(base.path.dropLast()) : base.path
+        if path == basePath {
+            return ""
+        }
+        if path.hasPrefix(basePath + "/") {
+            return String(path.dropFirst(basePath.count + 1))
         }
         return lastPathComponent
-    }}
+    }
+}

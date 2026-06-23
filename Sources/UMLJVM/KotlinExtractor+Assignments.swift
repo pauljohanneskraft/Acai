@@ -59,34 +59,28 @@ extension KotlinExtractor: AssignmentResolving {
         )
     }
 
+    /// Kotlin literal node types. A `string_literal` with an interpolated child (`"$x"`/`"${expr}"`)
+    /// is runtime-dependent and falls through to an opaque expression; `character_literal` has no
+    /// such children, so it classifies as a plain string.
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["boolean_literal"],
+        numeric: ["integer_literal", "hex_literal", "bin_literal",
+                  "long_literal", "unsigned_literal", "real_literal"],
+        string: ["character_literal", "string_literal"],
+        interpolationChildTypes: ["interpolated_expression", "interpolated_identifier"]
+    )
+
     /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        let valueText = text(node).trimmingCharacters(in: .whitespacesAndNewlines)
-        switch node.nodeType {
-        case "boolean_literal":
-            return .init(kind: .booleanLiteral, text: valueText)
-        case "integer_literal", "hex_literal", "bin_literal",
-             "long_literal", "unsigned_literal", "real_literal":
-            return .init(kind: .numericLiteral, text: valueText)
-        case "character_literal":
-            return .init(kind: .stringLiteral, text: valueText)
-        case "string_literal":
-            // A string with template substitutions ("$x", "${expr}") is
-            // runtime-dependent and not statically enumerable, so it is not a state.
-            let interpolated = node.namedChildren().contains {
-                $0.nodeType == "interpolated_expression" || $0.nodeType == "interpolated_identifier"
-            }
-            return interpolated
-                ? .init(kind: .expression, text: expressionSnippet(node))
-                : .init(kind: .stringLiteral, text: valueText)
-        default:
-            if valueText == "null" {
-                return .init(kind: .nilLiteral, text: "null")
-            }
-            if let enumCase = enumCaseValue(fromAccessText: valueText) {
-                return enumCase
-            }
-            return .init(kind: .expression, text: expressionSnippet(node))
+        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
+        let valueText = trimmedText(node)
+        // Kotlin's `null` is a keyword node rather than a typed literal.
+        if valueText == "null" {
+            return .init(kind: .nilLiteral, text: "null")
         }
+        if let enumCase = enumCaseValue(fromAccessText: valueText) {
+            return enumCase
+        }
+        return .init(kind: .expression, text: expressionSnippet(node))
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A package/module **dependency diagram**: one node per build module (SwiftPM
-/// target, Gradle/Maven module, JS package — see `BuildProduct`), with a weighted
+/// target, Gradle/Maven module, JS package — see `ModuleResolver`), with a weighted
 /// edge for every cross-module reference. Each node carries Robert Martin's
 /// package metrics so the diagram doubles as a coupling/stability overview.
 public struct PackageDependencyDiagram: Codable, Hashable, Sendable {
