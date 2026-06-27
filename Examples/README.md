@@ -13,6 +13,11 @@ Examples/
   StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart Python C Cpp            + Exports/
   PackageDiagram/    Swift Kotlin Java TypeScript Dart Python C Cpp  (Core/ + Banking/)   + Exports/
   CallGraph/         Swift Kotlin Java TypeScript Dart Python C Cpp                       + Exports/
+  ClassDiagramDiff/    Swift Kotlin Java TypeScript Dart Python C Cpp        (Before/+After/) + Exports/
+  SequenceDiagramDiff/ Swift Kotlin Java TypeScript Dart Python C Cpp        (Before/+After/) + Exports/
+  StateDiagramDiff/    Swift Kotlin Java TypeScript JavaScript Dart Python C Cpp (Bef/+Aft/) + Exports/
+  PackageDiagramDiff/  Swift Kotlin Java TypeScript Dart Python C Cpp  (Before/+After/, modules) + Exports/
+  CallGraphDiff/       Swift Kotlin Java TypeScript Dart Python C Cpp        (Before/+After/) + Exports/
 ```
 
 Each `Exports/` holds one `<language>.dot`, one `<language>.mmd` (Mermaid — embeds directly in Markdown), and one `<language>.png` per language. There's deliberately **no** combined all-languages image: the languages reuse the same type names on purpose, so analysing them together would collide identically-named types into one merged graph. The per-language images are the faithful view. This is sample *input*, not a buildable package — no `Package.swift`, no Gradle build.
@@ -28,6 +33,7 @@ Not every language can express every diagram, and where one bows out there's a r
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart, Python, C, C++ | Value-flow analysis only needs assignments, which every parser extracts. C has no methods, so its transitions live in free functions that mutate the struct by pointer (`d->state = …`); the analysis attributes those writes to `Download` by receiver type. (C has no in-struct initializer, so it omits the `idle` initial-only state the others show.) |
 | **Package**  | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction counts toward abstractness, so the seven that express it as an abstract type — Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`, Python `ABC`, C++ pure-virtual `class` — report `A=0.33`. Only C reports `A=0.00`: its abstraction is a struct of function pointers, a concrete type. |
 | **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Needs typed call receivers (like Sequence); JavaScript is omitted. C resolves free-function → free-function calls; the rest render the same order-submission graph. |
+| **…Diff** (×5) | Each base diagram type's coverage | A `uml diff` between two revisions of one codebase (`Before/` + `After/`), rendered as that diagram type with its added/removed/changed elements **colour-coded — added green, removed red, changed amber, unchanged untinted**. One `*Diff/` tree per diagram type (`ClassDiagramDiff`, `SequenceDiagramDiff`, `StateDiagramDiff`, `PackageDiagramDiff`, `CallGraphDiff`), each mirroring that type's language coverage. **Mermaid caveat:** Mermaid's `sequenceDiagram`/`stateDiagram` syntaxes have no per-edge colour, so those two `.delta.mmd` are the union **uncolored** (the `.delta.dot` carries the colour); class/package/call-graph get colour in both. No PNG — the colours are the point and stay plain-text reviewable in the `.dot`/`.mmd`. |
 
 ### The models
 
@@ -38,6 +44,7 @@ Five little domains, each chosen to exercise a different corner of the analysis:
 - **SequenceDiagram** — a checkout flow. `Checkout.placeOrder()` → `PaymentService.charge()` → `PaymentGateway.authorize()`, traced through explicitly-typed properties.
 - **StateDiagram** — a `Download` whose `state` advances through a pipeline. `run()` walks the happy path (`requested → downloading → verifying → finished`) as a sequence of assignments, which the value-flow analysis renders as a transition chain, while `fail()` branches off.
 - **PackageDiagram** — a two-module banking model. A `Core` module (`Money`, `Account`, and the `AccountRepository` abstraction) and a `Banking` module (`TransferService`, `InMemoryAccountRepository`) that depends on it, yielding a `Banking → Core` edge with the modules' instability/abstractness metrics. Unlike the other examples (one type-name set reused across languages), modules are **directories**, so each language lives in its own tree scanned on its own.
+- **…Diff** (five trees) — each proves the **delta** rendering for one diagram type by analysing a `Before/` and an `After/` revision and rendering the union with changed elements tinted. The change is chosen to read naturally in each language (per-language-natural, not one shared model): **ClassDiagramDiff** drops an inheritance and adds a composition in the OO languages, and swaps one composition for another in C (no inheritance); **SequenceDiagramDiff** removes a `verify()` message and adds a `log()` one; **StateDiagramDiff** removes the `verifying` step so its two transitions appear added and the old direct edge removed; **PackageDiagramDiff** adds a new `Reporting` module depending on `Core`; **CallGraphDiff** adds the `OrderService.place → OrderRepository.save` call. `uml diff --diagram` (plus the matching diagram-type flag) renders each.
 
 ## Regenerating the exports
 
@@ -96,6 +103,52 @@ uml diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --
     --output Examples/CallGraph/Exports/<lang>.mmd
 uml image   --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
     --output Examples/CallGraph/Exports/<lang>.png --scale 2
+
+# Delta diagrams — `uml diff` between two revisions, colour-coding added/removed/changed elements.
+# <Lang> is the dir name; <lang> the lower-case stem. Each delta has a `.delta.dot`, a `.delta.mmd`
+# and a `.delta.png`. One block per diagram type — add the matching diagram-type flag; the class
+# form needs none. (Mermaid's sequence/state syntax can't colour edges, so those two `.delta.mmd`
+# are the union uncolored; the `.delta.dot` and `.delta.png` carry the colour for every type.)
+uml diff --source-old Examples/ClassDiagramDiff/<Lang>/Before \
+    --source-new Examples/ClassDiagramDiff/<Lang>/After --language <lang> --diagram dot \
+    --output Examples/ClassDiagramDiff/Exports/<lang>.delta.dot   # repeat with --diagram mermaid
+
+uml diff --source-old Examples/SequenceDiagramDiff/<Lang>/Before \
+    --source-new Examples/SequenceDiagramDiff/<Lang>/After --language <lang> \
+    --sequence-from "Checkout.placeOrder" --diagram dot \
+    --output Examples/SequenceDiagramDiff/Exports/<lang>.delta.dot   # C: --sequence-from place_order
+
+uml diff --source-old Examples/StateDiagramDiff/<Lang>/Before \
+    --source-new Examples/StateDiagramDiff/<Lang>/After --language <lang> \
+    --state-from "Download.state" --diagram dot \
+    --output Examples/StateDiagramDiff/Exports/<lang>.delta.dot
+
+uml diff --source-old Examples/PackageDiagramDiff/<Lang>/Before \
+    --source-new Examples/PackageDiagramDiff/<Lang>/After --language <lang> --package --diagram dot \
+    --output Examples/PackageDiagramDiff/Exports/<lang>.delta.dot
+
+uml diff --source-old Examples/CallGraphDiff/<Lang>/Before \
+    --source-new Examples/CallGraphDiff/<Lang>/After --language <lang> --call-graph --diagram dot \
+    --output Examples/CallGraphDiff/Exports/<lang>.delta.dot
+
+# Delta PNGs (macOS only) — `uml image` with --source-old renders the union with the same colour
+# coding, natively (matching the other example PNGs). Add the matching diagram-type flag per type.
+uml image --source-old Examples/ClassDiagramDiff/<Lang>/Before \
+    --source Examples/ClassDiagramDiff/<Lang>/After --language <lang> --grouping none \
+    --output Examples/ClassDiagramDiff/Exports/<lang>.delta.png --scale 2
+uml image --source-old Examples/SequenceDiagramDiff/<Lang>/Before \
+    --source Examples/SequenceDiagramDiff/<Lang>/After --language <lang> \
+    --sequence-from "Checkout.placeOrder" \
+    --output Examples/SequenceDiagramDiff/Exports/<lang>.delta.png --scale 2   # C: --sequence-from place_order
+uml image --source-old Examples/StateDiagramDiff/<Lang>/Before \
+    --source Examples/StateDiagramDiff/<Lang>/After --language <lang> --state-from "Download.state" \
+    --output Examples/StateDiagramDiff/Exports/<lang>.delta.png --scale 2
+uml image --source-old Examples/PackageDiagramDiff/<Lang>/Before \
+    --source Examples/PackageDiagramDiff/<Lang>/After --language <lang> --package \
+    --output Examples/PackageDiagramDiff/Exports/<lang>.delta.png --scale 2
+uml image --source-old Examples/CallGraphDiff/<Lang>/Before \
+    --source Examples/CallGraphDiff/<Lang>/After --language <lang> --call-graph \
+    --output Examples/CallGraphDiff/Exports/<lang>.delta.png --scale 2
 ```
 
 > `uml image` is macOS-only — it renders with SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, use `uml diagram … | dot -Tpng` to produce images via Graphviz instead.

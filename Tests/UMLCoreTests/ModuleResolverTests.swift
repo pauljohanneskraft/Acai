@@ -14,7 +14,7 @@ struct ModuleResolverTests {
 
     @Test func swiftPackageManagerTarget() {
         #expect(product("Sources/UMLCore/CodeArtifact.swift") == "UMLCore")
-        #expect(product("Sources/UMLDiagram/ClassDiagram/DOTGenerator.swift") == "UMLDiagram")
+        #expect(product("Sources/UMLDiagram/ClassDiagram/ClassDiagramDOTRenderer.swift") == "UMLDiagram")
     }
 
     @Test func swiftPackageManagerTestTarget() {

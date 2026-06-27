@@ -103,7 +103,7 @@ extension ClassDiagramOptions {
     }
 }
 
-extension DOTGenerator {
+extension ClassDiagramDOTRenderer {
     /// Test convenience: a generator with default options bound to the `.test` language fixture.
     init() { self.init(options: ClassDiagramOptions()) }
 }

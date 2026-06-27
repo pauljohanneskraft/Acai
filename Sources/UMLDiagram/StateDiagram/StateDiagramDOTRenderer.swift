@@ -6,12 +6,20 @@
 public struct StateDiagramDOTRenderer: DOTRenderer {
     public let renderOptions: DiagramRenderOptions
 
+    /// Optional per-transition colour override (a hex like `#2e7d32`). When it returns a non-`nil`
+    /// colour for a transition, that colour wins over `theme.edgeColor`; `nil` (or a `nil` closure)
+    /// leaves colouring unchanged. Used to tint a delta diagram's added/removed transitions.
+    /// Default `nil` keeps existing output byte-for-byte identical.
+    public let transitionColor: (@Sendable (StateDiagram.Transition) -> String?)?
+
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
-        fontSize: Int = 12
+        fontSize: Int = 12,
+        transitionColor: (@Sendable (StateDiagram.Transition) -> String?)? = nil
     ) {
         self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
+        self.transitionColor = transitionColor
     }
 
     /// Cosmetic fill/border/font attributes for normal & choice states when themed, else empty.
@@ -110,7 +118,9 @@ public struct StateDiagramDOTRenderer: DOTRenderer {
             let from = t.from.dotNodeID
             let to = t.to.dotNodeID
             var parts: [String] = []
-            if let theme { parts.append("color=\"\(theme.edgeColor)\"") }
+            // A per-transition override wins over the theme edge colour; neither present ⇒ no
+            // colour attribute (output unchanged).
+            if let color = transitionColor?(t) ?? theme?.edgeColor { parts.append("color=\"\(color)\"") }
             if let lbl = t.label { parts.append("label=\"\(lbl.dotEscaped)\"") }
             let attrs = parts.isEmpty ? "" : " [\(parts.joined(separator: " "))]"
             return "  \(from) -> \(to)\(attrs);\n"

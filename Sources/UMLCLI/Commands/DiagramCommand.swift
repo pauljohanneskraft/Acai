@@ -161,7 +161,7 @@ extension UMLCommand {
             // Build the model once; both formats render from it.
             let diagram = artifact.classDiagram(options: options)
             return DiagramExport(
-                dot: { DOTGenerator(options: options).generate(from: diagram) },
+                dot: { ClassDiagramDOTRenderer(options: options).generate(from: diagram) },
                 mermaid: { ClassDiagramMermaidRenderer(options: options).generate(from: diagram) }
             )
         }

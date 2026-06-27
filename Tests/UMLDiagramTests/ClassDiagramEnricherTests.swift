@@ -19,7 +19,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         // Should have a composition edge from Car to Engine
         #expect(dot.contains("\"Car\" -> \"Engine\""))
         #expect(dot.contains("arrowtail=diamond"))
@@ -39,7 +39,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         // Should have an aggregation edge from Car to Wheel
         #expect(dot.contains("\"Car\" -> \"Wheel\""))
         #expect(dot.contains("arrowtail=odiamond"))
@@ -61,7 +61,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         #expect(dot.contains("\"Service\" -> \"Logger\""))
         #expect(dot.contains("style=dashed"))
     }
@@ -77,7 +77,7 @@ struct ClassDiagramEnricherTests {
                 Relationship(kind: .inheritance, source: "Dog", target: "ExternalBase")
             ]
         )
-        let dot = DOTGenerator(options: options).generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         // External type should be rendered as a gray placeholder
         #expect(dot.contains("ExternalBase"))
         #expect(dot.contains("#E8E8E8")) // external node gray fill
@@ -99,7 +99,7 @@ struct ClassDiagramEnricherTests {
                 Relationship(kind: .inheritance, source: "Dog", target: "ExternalBase")
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         // Inheritance edge to ExternalBase is KEPT (parser-produced).
         #expect(dot.contains("ExternalBase"))
         // Composition edge to ExternalCollar is FILTERED (inferred, external target).
@@ -126,7 +126,7 @@ struct ClassDiagramEnricherTests {
                 Relationship(kind: .inheritance, source: "Dog", target: "Animal")
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         // Should have inheritance edge
         #expect(dot.contains("arrowhead=empty"))
         // Should NOT have composition edge (redundant with inheritance)
@@ -144,7 +144,7 @@ struct ClassDiagramEnricherTests {
                                 location: SourceLocation(filePath: "views/B.swift", line: 1, column: 1))
             ]
         )
-        let dot = DOTGenerator(options: options).generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         #expect(dot.contains("subgraph cluster_dir_"))
         #expect(dot.contains("models"))
         #expect(dot.contains("views"))
@@ -163,7 +163,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         #expect(dot.contains("Outer"))
         #expect(dot.contains("Inner"))
     }
@@ -182,7 +182,7 @@ struct ClassDiagramEnricherTests {
                 Relationship(kind: .inheritance, source: "Child", target: "Base")
             ]
         )
-        let dot = DOTGenerator().generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         // The enricher should resolve "Child" → "com.example.Child" and "Base" → "com.example.Base"
         #expect(dot.contains("\"com.example.Child\" -> \"com.example.Base\""))
     }
@@ -233,7 +233,7 @@ struct ClassDiagramEnricherTests {
                 )
             ]
         )
-        let dot = DOTGenerator(options: options).generate(from: artifact)
+        let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         #expect(!dot.contains("arrowtail=diamond"))
     }
 

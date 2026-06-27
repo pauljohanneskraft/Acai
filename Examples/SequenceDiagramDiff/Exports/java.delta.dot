@@ -1,0 +1,62 @@
+digraph {
+  label="Checkout.placeOrder()";
+  labelloc=t;
+  rankdir=TB;
+  fontname="Helvetica";
+  fontsize=12;
+  node [fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  // Participants
+  "Checkout_header" [shape=box label="Checkout"];
+  "PaymentService_header" [shape=box label="PaymentService"];
+  "AuditService_header" [shape=box label="AuditService"];
+  { rank=same; "Checkout_header"; "PaymentService_header"; "AuditService_header"; }
+
+  // Lifeline step nodes
+  node [shape=none label="" width=0 height=0];
+  "Checkout_step0";
+  "PaymentService_step0";
+  "AuditService_step0";
+  { rank=same; "Checkout_step0"; "PaymentService_step0"; "AuditService_step0"; }
+  "Checkout_step1";
+  "PaymentService_step1";
+  "AuditService_step1";
+  { rank=same; "Checkout_step1"; "PaymentService_step1"; "AuditService_step1"; }
+  "Checkout_step2";
+  "PaymentService_step2";
+  "AuditService_step2";
+  { rank=same; "Checkout_step2"; "PaymentService_step2"; "AuditService_step2"; }
+  "Checkout_step3";
+  "PaymentService_step3";
+  "AuditService_step3";
+  { rank=same; "Checkout_step3"; "PaymentService_step3"; "AuditService_step3"; }
+  "Checkout_step4";
+  "PaymentService_step4";
+  "AuditService_step4";
+  { rank=same; "Checkout_step4"; "PaymentService_step4"; "AuditService_step4"; }
+
+  // Lifelines
+  "Checkout_header" -> "Checkout_step0" [style=invis];
+  "Checkout_step0" -> "Checkout_step1" [style=invis];
+  "Checkout_step1" -> "Checkout_step2" [style=invis];
+  "Checkout_step2" -> "Checkout_step3" [style=invis];
+  "Checkout_step3" -> "Checkout_step4" [style=invis];
+  "PaymentService_header" -> "PaymentService_step0" [style=invis];
+  "PaymentService_step0" -> "PaymentService_step1" [style=invis];
+  "PaymentService_step1" -> "PaymentService_step2" [style=invis];
+  "PaymentService_step2" -> "PaymentService_step3" [style=invis];
+  "PaymentService_step3" -> "PaymentService_step4" [style=invis];
+  "AuditService_header" -> "AuditService_step0" [style=invis];
+  "AuditService_step0" -> "AuditService_step1" [style=invis];
+  "AuditService_step1" -> "AuditService_step2" [style=invis];
+  "AuditService_step2" -> "AuditService_step3" [style=invis];
+  "AuditService_step3" -> "AuditService_step4" [style=invis];
+
+  // Messages
+  node [shape=none label=""];
+  "Checkout_step0" -> "PaymentService_step0" [label="charge" arrowhead=normal style=solid];
+  "PaymentService_step1" -> "Checkout_step1" [arrowhead=normal style=dashed];
+  "Checkout_step2" -> "AuditService_step2" [color="#2e7d32" label="log" arrowhead=normal style=solid];
+  "AuditService_step3" -> "Checkout_step3" [color="#2e7d32" arrowhead=normal style=dashed];
+  "Checkout_step4" -> "PaymentService_step4" [color="#c62828" label="verify" arrowhead=normal style=solid];
+}

@@ -1,0 +1,10 @@
+flowchart LR
+    Banking["Banking<br/>I=1.00 A=0.00<br/>2 types"]
+    Core["Core<br/>I=0.00 A=0.33<br/>3 types"]
+    Reporting["Reporting<br/>I=1.00 A=0.00<br/>1 type"]
+    Banking -->|4| Core
+    Reporting -->|1| Core
+    style Banking fill:#c8e6c9
+    style Core fill:#ffe0b2
+    style Reporting fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    linkStyle 1 stroke:#2e7d32,stroke-width:2px

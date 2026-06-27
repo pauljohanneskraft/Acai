@@ -10,12 +10,22 @@ import Foundation
 public struct PackageDiagramDOTRenderer: DOTRenderer {
     public let renderOptions: DiagramRenderOptions
 
+    /// Optional per-node fill override (a hex, keyed on module id). When non-`nil` it replaces the
+    /// node's `zoneColorHex` tint — used to colour a delta diagram's added/removed modules.
+    public let nodeColor: (@Sendable (String) -> String?)?
+    /// Optional per-edge colour override (a hex, keyed on `(from, to)`). Wins over `theme.edgeColor`.
+    public let edgeColor: (@Sendable (String, String) -> String?)?
+
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
-        fontSize: Int = 12
+        fontSize: Int = 12,
+        nodeColor: (@Sendable (String) -> String?)? = nil,
+        edgeColor: (@Sendable (String, String) -> String?)? = nil
     ) {
         self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
+        self.nodeColor = nodeColor
+        self.edgeColor = edgeColor
     }
 
     public func render(_ diagram: PackageDependencyDiagram) -> String {
@@ -28,12 +38,17 @@ public struct PackageDiagramDOTRenderer: DOTRenderer {
 
         for node in diagram.nodes {
             out += "  \(node.id.dotNodeID) [label=\"\(nodeLabel(node).dotEscaped)\""
-            out += " fillcolor=\"\(node.zoneColorHex)\"];\n"
+            // Keep the distance-zone fill; a delta override colours the *border* instead.
+            out += " fillcolor=\"\(node.zoneColorHex)\""
+            if let border = nodeColor?(node.id) { out += " color=\"\(border)\" penwidth=3" }
+            out += "];\n"
         }
 
         for edge in diagram.edges {
             var parts: [String] = []
-            if let theme { parts.append("color=\"\(theme.edgeColor)\"") }
+            if let color = edgeColor?(edge.from, edge.to) ?? theme?.edgeColor {
+                parts.append("color=\"\(color)\"")
+            }
             parts.append("penwidth=\(penWidth(forWeight: edge.weight))")
             parts.append("label=\"\(edge.weight)\"")
             out += "  \(edge.from.dotNodeID) -> \(edge.to.dotNodeID) [\(parts.joined(separator: " "))];\n"

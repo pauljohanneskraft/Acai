@@ -36,9 +36,16 @@ struct ArtifactSource: ParsableArguments {
     /// a freshly analyzed source directory (`--source`). Parse warnings are surfaced to stderr in
     /// both cases so a partial diagram is never mistaken for a complete one.
     func resolve() throws -> CodeArtifact {
+        try Self.resolve(from: from, source: source, language: language)
+    }
+
+    /// The shared `--from` / `--source` resolution used by `resolve()` and by commands that need to
+    /// load more than one artifact (e.g. `diff`, which loads an old and a new side). Parse warnings
+    /// are surfaced to stderr so a partial artifact is never mistaken for a complete one.
+    static func resolve(from: String?, source: String?, language: [LanguageOption]) throws -> CodeArtifact {
         let artifact: CodeArtifact
         if let from {
-            artifact = try Self.loadStored(from)
+            artifact = try loadStored(from)
         } else if let source {
             let url = URL(fileURLWithPath: source).standardizedFileURL
             guard FileManager.default.fileExists(atPath: url.path) else {
@@ -56,7 +63,7 @@ struct ArtifactSource: ParsableArguments {
 
     /// Loads a stored artifact: a `.json` file path, or the name of a stored analysis. A file
     /// produced by `analyze`/`store` is already enriched.
-    private static func loadStored(_ value: String) throws -> CodeArtifact {
+    static func loadStored(_ value: String) throws -> CodeArtifact {
         let directURL = URL(fileURLWithPath: value)
         if FileManager.default.fileExists(atPath: directURL.path) {
             return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: directURL))

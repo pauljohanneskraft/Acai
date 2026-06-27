@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import UMLCore
 import UMLDiagram
+import UMLDiff
 import UMLLibrary
 import UMLRender
 
@@ -20,12 +21,43 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
+    /// The package-level diff when comparing against another revision; drives node/edge tinting.
+    private let diff: PackageDiagramDiff?
+
     // MARK: - Init
 
-    init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:]) {
-        self.diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
+    init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil) {
+        let new = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
             .packageDependencyDiagram()
+        if let comparisonArtifact {
+            let old = comparisonArtifact.enriched(configuration: comparisonArtifact.standardLanguageConfiguration)
+                .packageDependencyDiagram()
+            let diff = PackageDiagramDiff(old: old, new: new)
+            self.diff = diff
+            self.diagram = diff.union
+        } else {
+            self.diff = nil
+            self.diagram = new
+        }
         self.positionOverrides = restoredPositions
+    }
+
+    /// Whether the diagram is rendering a delta against a comparison revision.
+    var isDeltaMode: Bool { diff != nil }
+
+    /// The delta fill for a module node, or `nil` when unchanged / not in delta mode.
+    func nodeDeltaColor(id: String) -> Color? {
+        guard let diff, let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: id).rawValue)
+        else { return nil }
+        return Color(hex: hex)
+    }
+
+    /// The delta stroke for a dependency edge, or `nil` when unchanged / not in delta mode.
+    func edgeDeltaColor(from: String, to: String) -> Color? {
+        guard let diff,
+              let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofEdgeFrom: from, to: to).rawValue)
+        else { return nil }
+        return Color(hex: hex)
     }
 
     // MARK: - Layout

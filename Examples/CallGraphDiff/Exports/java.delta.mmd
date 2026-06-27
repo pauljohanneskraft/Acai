@@ -1,0 +1,12 @@
+flowchart LR
+    OrderController_submit["OrderController.submit"]
+    OrderRepository_save["OrderRepository.save"]
+    OrderService_place["OrderService.place"]
+    PaymentService_charge["PaymentService.charge"]
+    Validator_validate["Validator.validate"]
+    OrderController_submit --> OrderService_place
+    OrderController_submit --> Validator_validate
+    OrderService_place --> OrderRepository_save
+    OrderService_place --> PaymentService_charge
+    style OrderRepository_save stroke:#2e7d32,stroke-width:3px
+    linkStyle 2 stroke:#2e7d32,stroke-width:2px

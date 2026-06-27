@@ -5,6 +5,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case useCaseDiagram = "useCase"
     case packageDiagram = "package"
     case callGraph = "callGraph"
+    /// Not a diagram: validates the codebase against a declarative rules file and lists violations.
+    case architectureCheck = "architectureCheck"
 
     var id: String { rawValue }
 
@@ -22,6 +24,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "Package Diagram"
         case .callGraph:
             "Call Graph"
+        case .architectureCheck:
+            "Architecture Check"
         }
     }
 
@@ -39,6 +43,8 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "shippingbox"
         case .callGraph:
             "point.3.connected.trianglepath.dotted"
+        case .architectureCheck:
+            "checkmark.shield"
         }
     }
 }

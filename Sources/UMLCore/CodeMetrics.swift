@@ -38,6 +38,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var instability: Double
         /// Abstractness `A = abstractTypes / totalTypes`.
         public var abstractness: Double
+        /// Distance from the main sequence `D = |A + I - 1|` (0 = on the sequence, 1 = worst).
+        public var distanceFromMainSequence: Double
     }
 
     /// Per-type OO metrics.
@@ -175,13 +177,16 @@ extension CodeArtifact {
             let abstractCount = moduleTypeList.filter {
                 $0.kind == .protocol || $0.kind == .interface || $0.modifiers.contains(.abstract)
             }.count
+            let instability = total == 0 ? 0 : Double(efferentCount) / Double(total)
+            let abstractness = moduleTypeList.isEmpty ? 0 : Double(abstractCount) / Double(moduleTypeList.count)
             return CodeMetrics.ModuleCoupling(
                 name: name,
                 typeCount: moduleTypeList.count,
                 afferentCoupling: afferentCount,
                 efferentCoupling: efferentCount,
-                instability: total == 0 ? 0 : Double(efferentCount) / Double(total),
-                abstractness: moduleTypeList.isEmpty ? 0 : Double(abstractCount) / Double(moduleTypeList.count)
+                instability: instability,
+                abstractness: abstractness,
+                distanceFromMainSequence: abs(abstractness + instability - 1)
             )
         }
     }

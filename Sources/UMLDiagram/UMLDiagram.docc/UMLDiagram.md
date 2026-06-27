@@ -12,7 +12,7 @@ language: it receives a [LanguageConfiguration](/documentation/umlcore/languagec
 
 Five diagram families live here, all derived from the same artifact:
 
-- **Class diagrams** — ``DOTGenerator`` (DOT) and ``ClassDiagramMermaidRenderer`` (Mermaid), tuned
+- **Class diagrams** — ``ClassDiagramDOTRenderer`` (DOT) and ``ClassDiagramMermaidRenderer`` (Mermaid), tuned
   through ``ClassDiagramOptions`` (members, access filtering, inferred composition, dependency
   edges, external types, ``ClassDiagramOptions/GroupingStrategy``, ``DiagramTheme``,
   ``ClassDiagramOptions/LayoutDirection``).
@@ -30,14 +30,14 @@ platforms, or render the DOT with Graphviz (`dot -Tpng`) anywhere.
 
 ```swift
 let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
-let dot = DOTGenerator(options: options).generate(from: artifact)
+let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 ```
 
 ## Topics
 
 ### Class diagrams
 
-- ``DOTGenerator``
+- ``ClassDiagramDOTRenderer``
 - ``ClassDiagramOptions``
 - ``ClassDiagramMermaidRenderer``
 - ``ClassDiagram``

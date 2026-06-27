@@ -28,15 +28,26 @@ struct DOTNodeRenderer {
 
     // MARK: - HTML label
 
+    /// The opening `<TABLE …>` tag. A per-node delta override colours the node's *border* (not its
+    /// fill) with a thicker border, so added/removed/changed nodes stand out while the body text and
+    /// theme stay readable.
+    private func tableOpenTag(for type: TypeDeclaration) -> String {
+        let deltaBorder = options.nodeColorOverride?(type)
+        var tag = "<TABLE BORDER=\"\(deltaBorder == nil ? 1 : 2)\""
+            + " CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\""
+        if let theme = options.theme {
+            tag += " BGCOLOR=\"\(theme.nodeFillColor)\""
+        }
+        if let border = deltaBorder ?? options.theme?.nodeBorderColor {
+            tag += " COLOR=\"\(border)\""
+        }
+        return tag + ">"
+    }
+
     private func buildHTMLLabel(for type: TypeDeclaration) -> String {
         let font = options.theme?.fontColor
         let fontSize = options.fontSize
-
-        var html = "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\""
-        if let theme = options.theme {
-            html += " BGCOLOR=\"\(theme.nodeFillColor)\" COLOR=\"\(theme.nodeBorderColor)\""
-        }
-        html += ">"
+        var html = tableOpenTag(for: type)
 
         // Header: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"

@@ -1,0 +1,30 @@
+classDiagram
+    class Account["Account"]
+    class AdminUser["AdminUser"]
+    class LegacyAudit["LegacyAudit"] {
+        +review()
+    }
+    class OrderService["OrderService"] {
+        +gateway PaymentGateway
+        +__init__()
+        +place()
+    }
+    class PaymentGateway["PaymentGateway"]
+    class Receipt["Receipt"] {
+        +total str
+        +__init__()
+    }
+    class User["User"] {
+        +name str
+        +email str
+        +__init__()
+    }
+    style LegacyAudit stroke:#c62828,stroke-width:3px
+    style OrderService stroke:#f9a825,stroke-width:3px
+    style Receipt stroke:#2e7d32,stroke-width:3px
+    style User stroke:#f9a825,stroke-width:3px
+    User <|-- AdminUser
+    OrderService *-- "1" PaymentGateway : gateway
+    Account <|-- User
+    linkStyle 1 stroke:#2e7d32,stroke-width:2px
+    linkStyle 2 stroke:#c62828,stroke-width:2px

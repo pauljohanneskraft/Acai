@@ -1,0 +1,18 @@
+digraph UML {
+  rankdir=TB;
+  compound=true;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=none margin=0 fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "Account" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>Account</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "AdminUser" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>AdminUser</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "LegacyAudit" [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#c62828"><TR><TD ALIGN="CENTER"><B>LegacyAudit</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT">review(): void<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "OrderService" [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#f9a825"><TR><TD ALIGN="CENTER"><B>OrderService</B></TD></TR><HR/><TR><TD ALIGN="LEFT">gateway: PaymentGateway<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT">place(): void<BR ALIGN="LEFT"/></TD></TR></TABLE>>];
+  "PaymentGateway" [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD ALIGN="CENTER"><B>PaymentGateway</B></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "Receipt" [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#2e7d32"><TR><TD ALIGN="CENTER"><B>Receipt</B></TD></TR><HR/><TR><TD ALIGN="LEFT">total: string<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "User" [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#f9a825"><TR><TD ALIGN="CENTER"><B>User</B></TD></TR><HR/><TR><TD ALIGN="LEFT">name: string<BR ALIGN="LEFT"/>email: string<BR ALIGN="LEFT"/></TD></TR><HR/><TR><TD ALIGN="LEFT"> </TD></TR></TABLE>>];
+  "AdminUser" -> "User" [arrowhead=empty style=solid];
+  "OrderService" -> "PaymentGateway" [dir=back arrowtail=diamond color="#2e7d32" label="gateway" headlabel="1"];
+  "User" -> "Account" [arrowhead=empty style=solid color="#c62828"];
+}

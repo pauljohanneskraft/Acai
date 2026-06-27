@@ -43,6 +43,9 @@ public struct TypeNodeView: View {
     let methods: [MemberDisplayItem]
     let enumCases: [EnumCaseDisplayItem]
     let isSelected: Bool
+    /// Optional delta border tint (added/removed/changed); colours the node's outline rather than
+    /// its fill so the body text and theme stay readable. `nil` uses the themed border.
+    let borderOverride: Color?
 
     @Environment(\.diagramPalette) private var palette
 
@@ -57,7 +60,8 @@ public struct TypeNodeView: View {
         properties: [MemberDisplayItem],
         methods: [MemberDisplayItem],
         enumCases: [EnumCaseDisplayItem],
-        isSelected: Bool
+        isSelected: Bool,
+        borderOverride: Color? = nil
     ) {
         self.name = name
         self.kind = kind
@@ -67,6 +71,7 @@ public struct TypeNodeView: View {
         self.methods = methods
         self.enumCases = enumCases
         self.isSelected = isSelected
+        self.borderOverride = borderOverride
     }
 
     public var body: some View {
@@ -85,7 +90,9 @@ public struct TypeNodeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
             RoundedRectangle(cornerRadius: 5)
-                .stroke(isSelected ? Color.accentColor : palette.border(for: kind), lineWidth: isSelected ? 2 : 1)
+                .stroke(
+                    borderOverride ?? (isSelected ? Color.accentColor : palette.border(for: kind)),
+                    lineWidth: borderOverride != nil ? 3 : (isSelected ? 2 : 1))
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }
@@ -195,7 +202,7 @@ public struct TypeNodeView: View {
 // MARK: - UMLTypeBoxView Convenience Initializers
 
 extension TypeNodeView {
-    public init(node: GeneratedDiagramNode, isSelected: Bool) {
+    public init(node: GeneratedDiagramNode, isSelected: Bool, borderOverride: Color? = nil) {
         self.init(
             name: node.name,
             kind: node.kind,
@@ -216,7 +223,8 @@ extension TypeNodeView {
                 .map { enumCase in
                     EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
                 },
-            isSelected: isSelected
+            isSelected: isSelected,
+            borderOverride: borderOverride
         )
     }
 }

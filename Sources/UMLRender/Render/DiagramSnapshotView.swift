@@ -18,6 +18,10 @@ public struct DiagramSnapshotView: View {
     let contentSize: CGSize
     let padding: CGFloat
     let palette: DiagramPalette
+    /// Optional per-edge colour override (delta mode); `nil` leaves edges themed as normal.
+    let edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)?
+    /// Optional per-node fill override (delta mode); `nil` leaves nodes themed as normal.
+    let nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)?
 
     public init(
         nodes: [GeneratedDiagramNode],
@@ -27,7 +31,9 @@ public struct DiagramSnapshotView: View {
         groupingBoxes: [DiagramLayoutModel.GroupingBox],
         contentSize: CGSize,
         padding: CGFloat,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
+        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
     ) {
         self.nodes = nodes
         self.edges = edges
@@ -37,6 +43,8 @@ public struct DiagramSnapshotView: View {
         self.contentSize = contentSize
         self.padding = padding
         self.palette = palette
+        self.edgeColor = edgeColor
+        self.nodeColor = nodeColor
     }
 
     private func size(for id: String) -> CGSize {
@@ -65,7 +73,8 @@ public struct DiagramSnapshotView: View {
                    let targetRect = rect(for: edge.targetID) {
                     RelationshipEdgeView(
                         kind: edge.kind, sourceRect: sourceRect, targetRect: targetRect,
-                        sourceLabel: edge.sourceLabel, targetLabel: edge.targetLabel
+                        sourceLabel: edge.sourceLabel, targetLabel: edge.targetLabel,
+                        strokeColor: edgeColor?(edge)
                     )
                 }
             }
@@ -74,7 +83,7 @@ public struct DiagramSnapshotView: View {
             ForEach(nodes.removingDuplicates(by: \.id)) { node in
                 if let pos = positions[node.id] {
                     let size = size(for: node.id)
-                    TypeNodeView(node: node, isSelected: false)
+                    TypeNodeView(node: node, isSelected: false, borderOverride: nodeColor?(node))
                         .frame(width: size.width, height: size.height)
                         .position(pos)
                 }

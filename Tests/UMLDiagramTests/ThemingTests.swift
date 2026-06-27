@@ -23,7 +23,7 @@ struct ThemingTests {
     // MARK: - Class DOT
 
     @Test func classDOTIsStructuralWithoutTheme() {
-        let dot = DOTGenerator(options: ClassDiagramOptions(theme: nil)).generate(from: classArtifact)
+        let dot = ClassDiagramDOTRenderer(options: ClassDiagramOptions(theme: nil)).generate(from: classArtifact)
         #expect(!dot.contains("bgcolor"))
         #expect(!dot.contains("BGCOLOR"))
         #expect(!dot.contains("<FONT COLOR="))
@@ -33,7 +33,7 @@ struct ThemingTests {
     }
 
     @Test func classDOTAppliesThemeInline() {
-        let dot = DOTGenerator(options: ClassDiagramOptions(theme: .dark)).generate(from: classArtifact)
+        let dot = ClassDiagramDOTRenderer(options: ClassDiagramOptions(theme: .dark)).generate(from: classArtifact)
         #expect(dot.contains("bgcolor=\"#1e1e1e\""))
         #expect(dot.contains("BGCOLOR=\"#2d2d2d\""))
         #expect(dot.contains("<FONT COLOR=\"#cccccc\">"))

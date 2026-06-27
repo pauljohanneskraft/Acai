@@ -38,12 +38,12 @@ extension ProjectBrowserViewModel {
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
 
         if let artifact = artifact(for: codebaseID) {
-            return DOTGenerator(options: exportOptions(for: artifact))
+            return ClassDiagramDOTRenderer(options: exportOptions(for: artifact))
                 .generate(from: hidingGeneratedTypes(artifact))
         }
 
         if let artifact = try? AnalysisService.standard.analyzeProject(at: url, allowedLanguages: []) {
-            return DOTGenerator(options: exportOptions(for: artifact))
+            return ClassDiagramDOTRenderer(options: exportOptions(for: artifact))
                 .generate(from: hidingGeneratedTypes(artifact))
         }
 

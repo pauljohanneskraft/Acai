@@ -8,11 +8,20 @@ public struct CallGraphSnapshotView: View {
     let layout: CallGraphLayoutModel
     let padding: CGFloat
     let palette: DiagramPalette
+    /// Optional delta tints; `nil` leaves nodes/edges themed as normal.
+    let nodeColor: (@Sendable (String) -> Color?)?
+    let edgeColor: (@Sendable (String, String) -> Color?)?
 
-    public init(layout: CallGraphLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light) {
+    public init(
+        layout: CallGraphLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light,
+        nodeColor: (@Sendable (String) -> Color?)? = nil,
+        edgeColor: (@Sendable (String, String) -> Color?)? = nil
+    ) {
         self.layout = layout
         self.padding = padding
         self.palette = palette
+        self.nodeColor = nodeColor
+        self.edgeColor = edgeColor
     }
 
     public var body: some View {
@@ -23,7 +32,8 @@ public struct CallGraphSnapshotView: View {
                         kind: .dependency,
                         sourceRect: source,
                         targetRect: target,
-                        lineWidthScale: min(1 + CGFloat(edge.weight - 1) * 0.35, 3)
+                        lineWidthScale: min(1 + CGFloat(edge.weight - 1) * 0.35, 3),
+                        strokeColor: edgeColor?(edge.from, edge.to)
                     )
                 }
             }
@@ -51,8 +61,9 @@ public struct CallGraphSnapshotView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        palette.neutralBorder,
-                        style: StrokeStyle(lineWidth: 1, dash: method.inScope ? [] : [4, 3])
+                        nodeColor?(node.id) ?? palette.neutralBorder,
+                        style: StrokeStyle(
+                            lineWidth: nodeColor?(node.id) == nil ? 1 : 3, dash: method.inScope ? [] : [4, 3])
                     )
             )
             .position(x: node.rect.midX, y: node.rect.midY)

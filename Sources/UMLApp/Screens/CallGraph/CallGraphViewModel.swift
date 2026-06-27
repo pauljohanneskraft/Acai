@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import UMLCore
 import UMLDiagram
+import UMLDiff
 import UMLRender
 
 /// Backs the movement-only call-graph view. The `CallGraph` is derived from the artifact for the
@@ -18,11 +19,43 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
+    /// The call-graph diff when comparing against another revision; drives node/edge tinting.
+    private let diff: CallGraphDiff?
+
     // MARK: - Init
 
-    init(artifact: CodeArtifact, scope: CallGraphScope, restoredPositions: [String: CGPoint] = [:]) {
-        self.graph = artifact.callGraph(scope: scope)
+    init(
+        artifact: CodeArtifact, scope: CallGraphScope,
+        restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil
+    ) {
+        let new = artifact.callGraph(scope: scope)
+        if let comparisonArtifact {
+            let diff = CallGraphDiff(old: comparisonArtifact.callGraph(scope: scope), new: new)
+            self.diff = diff
+            self.graph = diff.union
+        } else {
+            self.diff = nil
+            self.graph = new
+        }
         self.positionOverrides = restoredPositions
+    }
+
+    /// Whether the graph is rendering a delta against a comparison revision.
+    var isDeltaMode: Bool { diff != nil }
+
+    /// The delta fill for a method node, or `nil` when unchanged / not in delta mode.
+    func nodeDeltaColor(id: String) -> Color? {
+        guard let diff, let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: id).rawValue)
+        else { return nil }
+        return Color(hex: hex)
+    }
+
+    /// The delta stroke for a call edge, or `nil` when unchanged / not in delta mode.
+    func edgeDeltaColor(from: String, to: String) -> Color? {
+        guard let diff,
+              let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofEdgeFrom: from, to: to).rawValue)
+        else { return nil }
+        return Color(hex: hex)
     }
 
     // MARK: - Layout

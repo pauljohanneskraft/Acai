@@ -1,0 +1,16 @@
+digraph {
+  rankdir=LR;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "charge_card" [label="charge_card" fillcolor="#f5f5f5" style="rounded,filled,dashed"];
+  "place_order" [label="place_order" fillcolor="#e3f2fd"];
+  "save_order" [label="save_order" fillcolor="#f5f5f5" style="rounded,filled,dashed" color="#2e7d32" penwidth=3];
+  "submit_order" [label="submit_order" fillcolor="#e3f2fd"];
+  "validate_order" [label="validate_order" fillcolor="#f5f5f5" style="rounded,filled,dashed"];
+  "place_order" -> "charge_card";
+  "place_order" -> "save_order" [color="#2e7d32"];
+  "submit_order" -> "place_order";
+  "submit_order" -> "validate_order";
+}

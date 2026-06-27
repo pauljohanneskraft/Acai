@@ -14,6 +14,10 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     /// instead of a separate optional property per type.
     var content: Content
     var codebaseID: UUID
+    /// When set, the diagram renders in **delta mode**: the codebase's current working-tree analysis
+    /// (the "new" side) is compared against its source at this git revision (`HEAD`, a branch, a SHA,
+    /// `HEAD~1`, …) and added/removed/changed elements are colour-coded. `nil` renders normally.
+    var comparisonGitRef: String?
     var nodePositions: [String: NodePosition] = [:]
     /// User-overridden node sizes (from resize handles).
     var nodeSizes: [String: NodeSize] = [:]
@@ -37,6 +41,8 @@ extension GeneratedDiagram {
         /// The call graph's scope (which methods are treated as callers). Defaults to the whole
         /// codebase; carried so a future scope picker can persist a type/module focus.
         case callGraph(CallGraphScope)
+        /// An architecture-conformance check; carries the path to its YAML rules file.
+        case architectureCheck(ArchitectureCheckConfiguration)
 
         /// Default content for a freshly created diagram of the given type: each kind gets its
         /// own default configuration (none is privileged over the others).
@@ -54,6 +60,8 @@ extension GeneratedDiagram {
                 self = .packageDiagram
             case .callGraph:
                 self = .callGraph(.wholeCodebase)
+            case .architectureCheck:
+                self = .architectureCheck(.init())
             }
         }
 
@@ -71,6 +79,8 @@ extension GeneratedDiagram {
                 .packageDiagram
             case .callGraph:
                 .callGraph
+            case .architectureCheck:
+                .architectureCheck
             }
         }
     }
@@ -143,6 +153,16 @@ extension GeneratedDiagram {
         }
         set {
             if let newValue, case .callGraph = content { content = .callGraph(newValue) }
+        }
+    }
+
+    /// The architecture-check configuration, when this is an architecture check.
+    var architectureCheckConfiguration: ArchitectureCheckConfiguration? {
+        get {
+            if case .architectureCheck(let config) = content { config } else { nil }
+        }
+        set {
+            if let newValue, case .architectureCheck = content { content = .architectureCheck(newValue) }
         }
     }
 }

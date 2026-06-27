@@ -2,7 +2,7 @@ import UMLCore
 
 /// Renders a `CodeArtifact` as a Mermaid `classDiagram`.
 ///
-/// Mirrors `DOTGenerator`: it builds the same `ClassDiagram` model and honours the
+/// Mirrors `ClassDiagramDOTRenderer`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
 public struct ClassDiagramMermaidRenderer: Sendable {
@@ -25,16 +25,33 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         let types = enriched.types + (options.showExternalTypes ? enriched.externalTypes : [])
+        // A per-node delta override fills the node via a trailing `style` directive; gated on the
+        // closure so non-delta output is byte-for-byte unchanged.
+        var nodeStyles: [String] = []
         for type in types {
             let safe = allocator.id(for: type.id)
             idMap[type.id] = safe
             lines.append(contentsOf: renderClass(type, safeID: safe))
+            if let color = options.nodeColorOverride?(type) {
+                nodeStyles.append("    style \(safe) stroke:\(color),stroke-width:3px")
+            }
         }
+        lines.append(contentsOf: nodeStyles)
 
+        // Mermaid colours a link by its declaration index via a trailing `linkStyle` directive.
+        // We track the index of each emitted link and, only when an override supplies a colour,
+        // append the directives — so without an override the output is byte-for-byte unchanged.
+        var linkIndex = 0
+        var linkStyles: [String] = []
         for rel in enriched.relationships where options.includedRelationshipKinds.contains(rel.kind) {
             guard let line = renderRelationship(rel, idMap: idMap) else { continue }
             lines.append(line)
+            if let color = options.edgeColorOverride?(rel) {
+                linkStyles.append("    linkStyle \(linkIndex) stroke:\(color),stroke-width:2px")
+            }
+            linkIndex += 1
         }
+        lines.append(contentsOf: linkStyles)
 
         return lines.joined(separator: "\n") + "\n"
     }
