@@ -87,6 +87,7 @@ extension UMLCommand {
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
             }
+            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         private static func validateSide(name: String, ref: String?, source: String?) throws {
@@ -145,11 +146,13 @@ extension UMLCommand {
         private func classDelta(old: CodeArtifact, new: CodeArtifact, format: FormatOption) -> String {
             let differ = ArtifactDiffer()
             let diff = differ.diff(old: old, new: new)
+            let edgeStatus = diff.relationshipStatusLookup()
+            let typeStatus = diff.typeStatusLookup()
             let options = ClassDiagramOptions(
                 showExternalTypes: true,
                 language: new.standardLanguageConfiguration,
-                edgeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: diff.status(of: $0).rawValue) },
-                nodeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: diff.status(ofType: $0.id).rawValue) }
+                edgeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: edgeStatus($0).rawValue) },
+                nodeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: typeStatus($0.id).rawValue) }
             )
             let union = differ.unionArtifact(old: old, new: new)
             switch format {

@@ -33,6 +33,11 @@ extension ArtifactDiff {
             sections.append(section("Module metric changes", metricLines))
         }
 
+        let typeMetricLines = typeMetricDeltas.compactMap(Self.line(for:))
+        if !typeMetricLines.isEmpty {
+            sections.append(section("Type metric changes", typeMetricLines))
+        }
+
         return sections.joined(separator: "\n\n") + "\n"
     }
 
@@ -60,6 +65,15 @@ extension ArtifactDiff {
         if let a = delta.abstractness { parts.append("abstractness \(fmt(a.before)) → \(fmt(a.after))") }
         guard !parts.isEmpty else { return nil }
         return "\(delta.module): \(parts.joined(separator: ", "))"
+    }
+
+    private static func line(for delta: TypeMetricDelta) -> String? {
+        var parts: [String] = []
+        if let f = delta.fanIn { parts.append("fan-in \(f.before) → \(f.after)") }
+        if let f = delta.fanOut { parts.append("fan-out \(f.before) → \(f.after)") }
+        if let d = delta.depthOfInheritance { parts.append("DIT \(d.before) → \(d.after)") }
+        guard !parts.isEmpty else { return nil }
+        return "\(delta.id): \(parts.joined(separator: ", "))"
     }
 
     /// Phrases a relationship as a sentence. `removed` flips the tense so a dropped edge reads

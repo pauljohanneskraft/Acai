@@ -13,6 +13,10 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     private let comparisonArtifact: CodeArtifact?
     /// The artifact-level diff when in delta mode; drives per-edge tinting.
     private var diff: ArtifactDiff?
+    /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
+    /// every SwiftUI render pass (vs. `ArtifactDiff.status(of:)`'s per-call linear scan).
+    private var edgeStatus: (@Sendable (Relationship) -> DeltaStatus)?
+    private var typeStatus: (@Sendable (String) -> DeltaStatus)?
 
     @Published var nodes: [GeneratedDiagramNode] = []
     @Published var edges: [GeneratedDiagramEdge] = []
@@ -83,10 +87,15 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         let renderArtifact: CodeArtifact
         if let comparisonArtifact {
             let differ = ArtifactDiffer()
-            diff = differ.diff(old: comparisonArtifact, new: artifact)
+            let computed = differ.diff(old: comparisonArtifact, new: artifact)
+            diff = computed
+            edgeStatus = computed.relationshipStatusLookup()
+            typeStatus = computed.typeStatusLookup()
             renderArtifact = differ.unionArtifact(old: comparisonArtifact, new: artifact)
         } else {
             diff = nil
+            edgeStatus = nil
+            typeStatus = nil
             renderArtifact = artifact
         }
         model = DiagramLayoutModel(
@@ -205,9 +214,9 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// The delta tint for an edge (added green / removed red / changed amber), or `nil` when the
     /// edge is unchanged or the diagram isn't in delta mode.
     func deltaColor(for edge: GeneratedDiagramEdge) -> Color? {
-        guard let diff else { return nil }
+        guard let edgeStatus else { return nil }
         let relationship = Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)
-        guard let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(of: relationship).rawValue)
+        guard let hex = DeltaEdgeColors.standard.hex(forStatus: edgeStatus(relationship).rawValue)
         else { return nil }
         return Color(hex: hex)
     }
@@ -215,7 +224,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when
     /// the type is unchanged or the diagram isn't in delta mode.
     func deltaColor(for node: GeneratedDiagramNode) -> Color? {
-        guard let diff, let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofType: node.id).rawValue)
+        guard let typeStatus, let hex = DeltaEdgeColors.standard.hex(forStatus: typeStatus(node.id).rawValue)
         else { return nil }
         return Color(hex: hex)
     }

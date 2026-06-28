@@ -178,8 +178,9 @@ extension UMLCommand {
             print("Wrote image to \(output)")
         }
 
-        /// Renders the plain (non-delta) class diagram to PNG from the flags/focus options.
-        private func renderClassDiagram(artifact: CodeArtifact) async throws -> Data {
+        /// The class-diagram configuration derived from the grouping/access/member/focus flags,
+        /// shared by the plain and delta render paths so they honour the same options.
+        private func classDiagramConfiguration() -> ClassDiagramConfiguration {
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = grouping
             configuration.minimumAccessLevel = minAccess
@@ -194,6 +195,12 @@ extension UMLCommand {
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
             )
+            return configuration
+        }
+
+        /// Renders the plain (non-delta) class diagram to PNG from the flags/focus options.
+        private func renderClassDiagram(artifact: CodeArtifact) async throws -> Data {
+            let configuration = classDiagramConfiguration()
             let language = artifact.standardLanguageConfiguration
             return try await MainActor.run {
                 try DiagramImageRenderer.renderPNG(
@@ -212,12 +219,13 @@ extension UMLCommand {
             let differ = ArtifactDiffer()
             let diff = differ.diff(old: old, new: new)
             let union = differ.unionArtifact(old: old, new: new)
+            let edgeStatus = diff.relationshipStatusLookup()
+            let typeStatus = diff.typeStatusLookup()
             let edgeColor: @Sendable (GeneratedDiagramEdge) -> Color? = { edge in
-                diff.status(of: Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
+                edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
             }
-            let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { diff.status(ofType: $0.id).deltaColor }
-            var configuration = ClassDiagramConfiguration()
-            configuration.grouping = grouping
+            let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
+            let configuration = classDiagramConfiguration()
             let language = union.standardLanguageConfiguration
             let renderScale = CGFloat(scale)
             let renderPalette = palette

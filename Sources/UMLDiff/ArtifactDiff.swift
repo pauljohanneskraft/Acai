@@ -69,6 +69,37 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
         if changedTypes.contains(where: { $0.id == id }) { return .changed }
         return .unchanged
     }
+
+    /// An O(1) relationship-status lookup that pre-hashes the diff's edge keys once. For hot paths
+    /// that classify *every* edge of the union diagram (delta rendering, redrawn each frame),
+    /// building this once is O(N + M) instead of `status(of:)`'s O(N · M); `status(of:)` stays for
+    /// one-off queries.
+    public func relationshipStatusLookup() -> @Sendable (Relationship) -> DeltaStatus {
+        let added = Set(addedRelationships.map(\.diffKey))
+        let removed = Set(removedRelationships.map(\.diffKey))
+        let changed = Set(changedRelationships.map(\.after.diffKey))
+        return { relationship in
+            let key = relationship.diffKey
+            if added.contains(key) { return .added }
+            if removed.contains(key) { return .removed }
+            if changed.contains(key) { return .changed }
+            return .unchanged
+        }
+    }
+
+    /// An O(1) type-status lookup that pre-hashes the diff's type ids once — the node counterpart of
+    /// `relationshipStatusLookup()` for hot paths that classify every node of the union diagram.
+    public func typeStatusLookup() -> @Sendable (String) -> DeltaStatus {
+        let added = Set(addedTypes)
+        let removed = Set(removedTypes)
+        let changed = Set(changedTypes.map(\.id))
+        return { id in
+            if added.contains(id) { return .added }
+            if removed.contains(id) { return .removed }
+            if changed.contains(id) { return .changed }
+            return .unchanged
+        }
+    }
 }
 
 /// A before/after pair for a single scalar that changed.
