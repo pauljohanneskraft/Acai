@@ -57,6 +57,46 @@ struct CodeMetricsTests {
         #expect(app?.instability == 1.0)
     }
 
+    @Test func bodyReferenceCouplingCountsConstruction() {
+        // `Factory` (App) only *constructs* `Widget` (Core) in a method body — no signature edge.
+        let widget = type("Widget", kind: .struct, module: "Core", members: [Member(name: "make", kind: .method)])
+        let factory = type("Factory", kind: .class, module: "App", members: [
+            Member(name: "build", kind: .method, referencedTypeNames: ["Widget"])
+        ])
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [widget, factory], relationships: []
+        ).enriched().computeMetrics()
+
+        let core = metrics.modules.first { $0.name == "Core" }
+        let app = metrics.modules.first { $0.name == "App" }
+        #expect((core?.afferentCoupling ?? 0) >= 1)   // Widget is now depended upon …
+        #expect(core?.instability == 0.0)             // … so Core is no longer 100% unstable.
+        #expect((app?.efferentCoupling ?? 0) >= 1)
+        // The construction also shows up in the per-type fan metrics.
+        #expect((metrics.types.first { $0.name == "Factory" }?.fanOut ?? 0) >= 1)
+        #expect((metrics.types.first { $0.name == "Widget" }?.fanIn ?? 0) >= 1)
+    }
+
+    @Test func bodyReferenceUsesMemberDeclaringModule() {
+        // `Registry` is declared in Core, but the member that constructs `Plugin` (Leaf) lives in the
+        // `Wiring` module (an extension elsewhere). Coupling must be attributed to Wiring, not Core.
+        let plugin = type("Plugin", kind: .struct, module: "Leaf")
+        let registry = TypeDeclaration(
+            id: "Registry", name: "Registry", qualifiedName: "Registry", kind: .class,
+            members: [Member(
+                name: "all", kind: .property,
+                location: SourceLocation(filePath: "Sources/Wiring/Registry+All.swift", line: 1, column: 1),
+                referencedTypeNames: ["Plugin"])],
+            location: SourceLocation(filePath: "Sources/Core/Registry.swift", line: 1, column: 1))
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [plugin, registry], relationships: []
+        ).enriched().computeMetrics()
+
+        #expect((metrics.modules.first { $0.name == "Leaf" }?.afferentCoupling ?? 0) >= 1)
+        // Core must NOT gain efferent coupling from a member declared in Wiring.
+        #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
+    }
+
     @Test func ooMetricsForInheritanceAndDependencies() {
         let metrics = sampleArtifact().computeMetrics()
         let drawable = metrics.types.first { $0.name == "Drawable" }

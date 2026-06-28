@@ -138,7 +138,8 @@ extension JSExtractor {
             annotations: annotations,
             location: nodeLoc,
             callSites: callSites,
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            referencedTypeNames: referencedTypeNames(in: body)
         )
     }
 
@@ -227,7 +228,8 @@ extension JSExtractor {
             type: propType,
             annotations: annotations,
             location: nodeLoc,
-            initialValue: node.child(byFieldName: "value").map { classifyValue($0) }
+            initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
+            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
         )
     }
 

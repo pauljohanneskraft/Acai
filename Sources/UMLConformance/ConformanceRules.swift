@@ -69,7 +69,7 @@ public struct DependencyRule: Codable, Equatable, Sendable {
 
 /// Flags dependency cycles as violations. MVP evaluates module-level cycles.
 public struct CycleRule: Codable, Equatable, Sendable {
-    public enum Scope: String, Codable, Sendable {
+    public enum Scope: String, Codable, Sendable, CaseIterable {
         case modules
         case types
     }
@@ -83,7 +83,7 @@ public struct CycleRule: Codable, Equatable, Sendable {
 
 /// A numeric guardrail: a metric on selector-matched modules/types must stay within `[min, max]`.
 public struct MetricBudget: Codable, Equatable, Sendable {
-    public enum Metric: String, Codable, Sendable {
+    public enum Metric: String, Codable, Sendable, CaseIterable {
         // Per-module coupling metrics.
         case instability
         case abstractness

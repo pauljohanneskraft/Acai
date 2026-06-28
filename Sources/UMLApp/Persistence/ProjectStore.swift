@@ -1,5 +1,7 @@
 import Foundation
+import UMLConformance
 import UMLCore
+import Yams
 
 /// Per-file persistence layout:
 /// ```
@@ -42,6 +44,10 @@ final class ProjectStore: ObservableObject {
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
+    /// Holds YAML rules files for UI-authored architecture checks (one per codebase). A check whose
+    /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
+    /// path is an external file the user referenced.
+    private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
@@ -68,6 +74,7 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: projectsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         load()
     }
 
@@ -222,5 +229,42 @@ final class ProjectStore: ObservableObject {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - Managed architecture-check rules
+
+    /// The location of the app-managed YAML rules file for a codebase (whether or not it exists yet).
+    func managedRulesURL(forCodebase codebaseID: UUID) -> URL {
+        rulesDir.appendingPathComponent("codebase_\(codebaseID.uuidString).yaml")
+    }
+
+    /// Whether `path` points at a file the app manages (and so can be edited in the form), as opposed
+    /// to an external file the user referenced. Compared on standardized paths so `..`/symlinks in the
+    /// stored path don't fool the prefix check.
+    func isManaged(path: String) -> Bool {
+        guard !path.isEmpty else { return false }
+        let resolved = URL(fileURLWithPath: path).standardizedFileURL.path
+        let managed = rulesDir.standardizedFileURL.path
+        return resolved == managed || resolved.hasPrefix(managed + "/")
+    }
+
+    /// Serializes UI-authored rules to the codebase's managed YAML file and returns its URL.
+    @discardableResult
+    func saveManagedRules(_ rules: ConformanceRules, forCodebase codebaseID: UUID) throws -> URL {
+        let url = managedRulesURL(forCodebase: codebaseID)
+        let yaml = try YAMLEncoder().encode(rules)
+        try yaml.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    /// Decodes the codebase's managed rules file, or `nil` if it doesn't exist yet / can't be read.
+    func loadManagedRules(forCodebase codebaseID: UUID) -> ConformanceRules? {
+        let url = managedRulesURL(forCodebase: codebaseID)
+        guard let yaml = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return try? YAMLDecoder().decode(ConformanceRules.self, from: yaml)
+    }
+
+    func deleteManagedRules(forCodebase codebaseID: UUID) {
+        try? FileManager.default.removeItem(at: managedRulesURL(forCodebase: codebaseID))
     }
 }

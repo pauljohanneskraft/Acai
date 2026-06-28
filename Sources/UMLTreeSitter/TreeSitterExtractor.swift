@@ -212,6 +212,26 @@ extension TreeSitterExtracting {
         return names
     }
 
+    /// Type-like identifier names referenced anywhere inside a member's body/initializer subtree —
+    /// the construction/body dependencies the coupling metrics consume (e.g. `Foo()` constructions,
+    /// `Foo.bar` static access, type annotations). Walks **iteratively** (an explicit stack, not
+    /// recursion) so a deeply nested body can't overflow the stack. Over-captures every identifier
+    /// token by design; the engine keeps only names that resolve to a known type, so noise is dropped.
+    public func referencedTypeNames(in body: Node?) -> [String] {
+        guard let body else { return [] }
+        var names: Set<String> = []
+        var stack: [Node] = [body]
+        while let node = stack.popLast() {
+            if node.nodeType?.hasSuffix("identifier") == true {
+                names.insert(text(node))
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map { stack.append($0) }
+            }
+        }
+        return Array(names)
+    }
+
     /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes (the parser
     /// could not make sense of the input) and `missing` nodes (a required token the source
     /// omitted, inserted during recovery). Walks *all* children, not just named ones, since

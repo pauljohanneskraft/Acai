@@ -28,6 +28,12 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// For stored properties: the declaration initializer's classified value,
     /// when an initializer is present and the parser captures it.
     public var initialValue: VariableAssignment.Value?
+    /// Bare type names referenced inside this member's body or initializer — constructions
+    /// (`Foo()`), static/enum access (`Foo.bar`), casts/metatypes. Best-effort and language-dependent;
+    /// consumed by the coupling metrics (``CodeArtifact/computeMetrics()``) to count construction/body
+    /// dependencies that aren't visible in signatures. Not added to the relationship graph, so diagrams
+    /// are unaffected.
+    public var referencedTypeNames: [String] = []
 
     public init(
         name: String,
@@ -43,7 +49,8 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         location: SourceLocation? = nil,
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = [],
-        initialValue: VariableAssignment.Value? = nil
+        initialValue: VariableAssignment.Value? = nil,
+        referencedTypeNames: [String] = []
     ) {
         self.name = name
         self.kind = kind
@@ -59,6 +66,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.callSites = callSites
         self.assignments = assignments
         self.initialValue = initialValue
+        self.referencedTypeNames = referencedTypeNames
     }
 
     /// Whether this member belongs in the "attributes" compartment of a class diagram.

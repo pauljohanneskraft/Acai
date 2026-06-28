@@ -127,6 +127,7 @@ extension DartExtractor {
         )
         for pending in pendingBodies where pending.index < members.count {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
+            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
         }
     }
 

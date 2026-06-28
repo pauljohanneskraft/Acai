@@ -14,6 +14,14 @@ struct CodebaseDetailView: View {
     @State private var stateConfigContext: ConfigContext?
     /// Set when the user clicks "Call Graph"; drives the scope-selection popup.
     @State private var callGraphConfigContext: ConfigContext?
+    /// The detail pane's current content width, used to lay out the diagram/statistics card grids so
+    /// they fill the full width and wrap to more rows only when space runs out.
+    @State private var contentWidth: CGFloat = 0
+    /// The ranked drill-down presented when a statistics card is tapped.
+    @State private var statisticDetail: StatisticDetail?
+    /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
+    @State private var statCardHeight: CGFloat = 0
+    @State private var diagramCardHeight: CGFloat = 0
 
     /// Identifies the codebase a pending diagram configuration belongs to.
     private struct ConfigContext: Identifiable {
@@ -22,11 +30,11 @@ struct CodebaseDetailView: View {
         var id: UUID { codebaseID }
     }
 
-    private var codebase: Codebase? {
+    var codebase: Codebase? {
         model.codebase(for: codebaseID)
     }
 
-    private var artifact: CodeArtifact? {
+    var artifact: CodeArtifact? {
         model.artifact(for: codebaseID)
     }
 
@@ -44,6 +52,8 @@ struct CodebaseDetailView: View {
                     if let artifact {
                         diagramsSection(codebase: codebase, artifact: artifact)
                         Divider()
+                        CodebaseAnalysesSection(codebase: codebase, artifact: artifact)
+                        Divider()
                         statisticsSection(artifact: artifact)
                         Divider()
                         CodebaseTypesSection(codebase: codebase, artifact: artifact)
@@ -52,11 +62,16 @@ struct CodebaseDetailView: View {
                             CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
                             Divider()
                         }
+                        if !artifact.globalVariables.isEmpty {
+                            CodebaseGlobalsSection(codebase: codebase, artifact: artifact)
+                            Divider()
+                        }
                         CodebaseRelationshipsSection(artifact: artifact)
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
                 }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
             .sheet(item: $sequenceConfigContext) { context in
                 sequenceConfigSheet(for: context)
@@ -66,6 +81,9 @@ struct CodebaseDetailView: View {
             }
             .sheet(item: $callGraphConfigContext) { context in
                 callGraphConfigSheet(for: context)
+            }
+            .sheet(item: $statisticDetail) { detail in
+                StatisticDetailSheet(detail: detail)
             }
         } else {
             Text("Codebase not found")
@@ -156,76 +174,123 @@ struct CodebaseDetailView: View {
             Label("Export Mermaid", systemImage: "square.and.arrow.up")
         }
     }
+}
+
+// Statistics, diagram buttons, and their layout helpers — kept in an extension so the main type body
+// stays within SwiftLint's `type_body_length`.
+extension CodebaseDetailView {
 
     // MARK: - Statistics
 
     private func statisticsSection(artifact: CodeArtifact) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let metrics = artifact.computeMetrics()
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Statistics")
                 .font(.headline)
                 .padding(.horizontal)
 
-            HStack(spacing: 12) {
-                statisticCard(
-                    label: "\(artifact.types.count) Types",
-                    icon: "rectangle.3.group",
-                    color: .blue
-                )
-                statisticCard(
-                    label: "\(artifact.relationships.count) Relationships",
-                    icon: "arrow.triangle.branch",
-                    color: .purple
-                )
-                statisticCard(
-                    label: "\(artifact.freestandingFunctions.count) Functions",
-                    icon: "function",
-                    color: .green
-                )
-                statisticCard(
-                    label: "Coupling: \(couplingFactor(artifact: artifact)) %",
-                    icon: "link",
-                    color: .orange
-                )
+            LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
+                moduleMetricCard(
+                    MetricVisual(title: "Instability", icon: "tornado", color: .orange, blurb: Self.instabilityBlurb),
+                    descriptor: "Most unstable", modules: metrics.modules)
+                typeMetricCard(
+                    MetricVisual(title: "Inheritance Depth", icon: "arrow.down.to.line", color: .blue,
+                                 blurb: Self.inheritanceDepthBlurb),
+                    by: \.depthOfInheritance, descriptor: "Deepest", types: metrics.types)
+                typeMetricCard(
+                    MetricVisual(title: "Fan-out", icon: "arrow.up.right", color: .purple, blurb: Self.fanOutBlurb),
+                    by: \.fanOut, descriptor: "Most coupled", types: metrics.types)
+                typeMetricCard(
+                    MetricVisual(title: "Fan-in", icon: "arrow.down.left", color: .green, blurb: Self.fanInBlurb),
+                    by: \.fanIn, descriptor: "Hotspot", types: metrics.types)
             }
             .padding(.horizontal)
+            .onPreferenceChange(CardHeightPreferenceKey.self) { height in
+                if abs(statCardHeight - height) > 0.5 { statCardHeight = height }
+            }
         }
         .padding(.vertical, 12)
     }
 
-    private func statisticCard(label: String, icon: String, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Spacer()
-
-            Image(systemName: icon)
-                .font(.title2.bold())
-                .foregroundStyle(color)
-
-            Text(label)
-                .font(.title3.bold())
-                .foregroundStyle(.primary)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(color.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+    /// Title, icon, tint, and explanation for a statistics card, bundled so the card builders stay
+    /// within the parameter limit.
+    private struct MetricVisual {
+        let title: String
+        let icon: String
+        let color: Color
+        let blurb: String
     }
 
-    /// Coupling factor = actual relationships / (types * (types - 1))
-    /// A value between 0 and 1; higher means more interconnected.
-    private func couplingFactor(artifact: CodeArtifact) -> String {
-        let n = artifact.types.count
-        guard n > 1 else { return "N/A" }
-        let maxPossible = Double(n * (n - 1))
-        let typeIds = artifact.types.map(\.id)
-        let uniquePairs = Set(
-            artifact.relationships
-                .filter { typeIds.contains($0.source) && typeIds.contains($0.target) }
-                .map { "\($0.source)->\($0.target)" }
-        )
-        let factor = Double(uniquePairs.count) / maxPossible
-        return String(format: "%.2f", factor * 100)
+    static let instabilityBlurb =
+        "I = Ce / (Ca + Ce): how exposed a module is to change from its dependencies. "
+        + "0% = stable (depended upon, depends on little); 100% = unstable (depends outward, nothing "
+        + "depends on it). Neither is inherently bad — foundational modules should be stable, leaf/app "
+        + "modules unstable."
+    static let inheritanceDepthBlurb =
+        "Longest inheritance/conformance chain for a type. 0–2 is easy to follow; deep chains (>5) are "
+        + "a complexity smell."
+    static let fanOutBlurb =
+        "How many other types this type depends on. High fan-out means many responsibilities — harder "
+        + "to change and test, and a candidate for splitting."
+    static let fanInBlurb =
+        "How many types depend on this type. High fan-in marks a core/hub type; expected for shared "
+        + "models, but keep them stable and well-tested since changes ripple widely."
+
+    /// A card for a per-type metric: max/avg with every type achieving the max named in the caption.
+    /// Tapping opens the full ranked list (`typeDetail`).
+    private func typeMetricCard(
+        _ visual: MetricVisual,
+        by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>,
+        descriptor: String, types: [CodeMetrics.TypeMetric]
+    ) -> MetricStatCard {
+        let summary = MetricSummary(types) { Double($0[keyPath: keyPath]) }
+        let detail = typeDetail(visual.title, visual.blurb, types, by: keyPath)
+        return MetricStatCard(
+            title: visual.title,
+            icon: visual.icon,
+            color: visual.color,
+            primary: "max \(Int(summary.maximum))",
+            secondary: String(format: "avg %.1f", summary.average),
+            exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
+            uniformHeight: statCardHeight,
+            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
+    }
+
+    /// A card for the per-module instability metric, rendered as a percentage with every most-unstable
+    /// module named. Tapping opens the ranked module list (`moduleDetail`).
+    private func moduleMetricCard(
+        _ visual: MetricVisual,
+        descriptor: String, modules: [CodeMetrics.ModuleCoupling]
+    ) -> MetricStatCard {
+        let summary = MetricSummary(modules) { $0.instability }
+        let detail = moduleDetail(visual.title, visual.blurb, modules)
+        return MetricStatCard(
+            title: visual.title,
+            icon: visual.icon,
+            color: visual.color,
+            primary: String(format: "max %.0f%%", summary.maximum * 100),
+            secondary: String(format: "avg %.0f%%", summary.average * 100),
+            exemplar: caption(descriptor, summary.exemplars.map(\.name)),
+            uniformHeight: statCardHeight,
+            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
+    }
+
+    /// "`descriptor.lowercased()`: name, name, …" — or `nil` when there are no exemplars.
+    private func caption(_ descriptor: String, _ names: [String]) -> String? {
+        names.isEmpty ? nil : "\(descriptor.lowercased()): \(names.joined(separator: ", "))"
+    }
+
+    // MARK: - Card grid layout
+
+    /// Flexible columns sized so `count` cards fill the full content width, wrapping to more rows only
+    /// when the pane is too narrow to fit them all at `target` width. Capping the column count at the
+    /// card count (rather than `.adaptive`) keeps the row full-width instead of leaving empty trailing
+    /// columns when there are fewer cards than would fit.
+    private func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
+        let usableWidth = contentWidth - 32  // outer .padding(.horizontal) on each side
+        let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
+        let columns = max(1, min(count, fitting))
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: columns)
     }
 
     // MARK: - Diagrams
@@ -237,13 +302,16 @@ struct CodebaseDetailView: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
 
-            HStack(spacing: 12) {
+            LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
                 ForEach(DiagramType.allCases) { type in
                     diagramButton(codebase: codebase, type: type)
                 }
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .onPreferenceChange(CardHeightPreferenceKey.self) { height in
+                if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
+            }
         }
     }
 
@@ -279,8 +347,13 @@ struct CodebaseDetailView: View {
                     .font(.title3.bold())
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .background(GeometryReader { proxy in
+                Color.clear.preference(key: CardHeightPreferenceKey.self, value: proxy.size.height)
+            })
+            .frame(minHeight: diagramCardHeight > 0 ? diagramCardHeight : nil, alignment: .topLeading)
             .background(Color.accentColor.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }

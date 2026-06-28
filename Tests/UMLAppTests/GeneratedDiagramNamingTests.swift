@@ -28,7 +28,6 @@ struct GeneratedDiagramNamingTests {
         let cases: [(GeneratedDiagram.Content, DiagramType)] = [
             (.classDiagram(.init()), .classDiagram),
             (.stateDiagram(nil), .stateDiagram),
-            (.useCaseDiagram, .useCaseDiagram),
             (.packageDiagram, .packageDiagram)
         ]
         for (content, type) in cases {

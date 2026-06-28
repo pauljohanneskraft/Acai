@@ -60,6 +60,7 @@ extension CFamilyExtractor {
         for pending in pendingBodies where pending.index < members.count {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
             members[pending.index].assignments = extractAssignments(from: pending.body)
+            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
         }
     }
 
@@ -192,7 +193,8 @@ extension CFamilyExtractor {
             name: Self.lastComponent(of: info.name), kind: .property, accessLevel: access,
             modifiers: modifiers(from: node),
             type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
-            location: loc(node), initialValue: initialValue)
+            location: loc(node), initialValue: initialValue,
+            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "default_value")))
     }
 
     // MARK: - Helpers

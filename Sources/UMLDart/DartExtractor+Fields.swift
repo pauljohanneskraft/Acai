@@ -77,7 +77,7 @@ extension DartExtractor {
             return makeFieldMember(
                 name: name, type: info.type,
                 attributes: attrs, location: loc(child),
-                initialValue: fieldInitializerValue(of: child)
+                initialValue: fieldInitializerValue(of: child), node: child
             )
         }
     }
@@ -97,7 +97,7 @@ extension DartExtractor {
             return makeFieldMember(
                 name: name, type: info.type,
                 attributes: attrs, location: loc(child),
-                initialValue: fieldInitializerValue(of: child)
+                initialValue: fieldInitializerValue(of: child), node: child
             )
         }
     }
@@ -123,13 +123,15 @@ extension DartExtractor {
     func makeFieldMember(
         name: String, type: TypeReference?,
         attributes: FieldAttributes, location: SourceLocation,
-        initialValue: VariableAssignment.Value? = nil
+        initialValue: VariableAssignment.Value? = nil,
+        node: Node? = nil
     ) -> Member {
         Member(
             name: name, kind: .property,
             accessLevel: accessLevel(for: name),
             modifiers: attributes.modifiers, type: type, location: location,
-            initialValue: initialValue
+            initialValue: initialValue,
+            referencedTypeNames: referencedTypeNames(in: node)
         )
     }
 

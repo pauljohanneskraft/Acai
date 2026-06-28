@@ -273,7 +273,8 @@ extension JavaExtractor {
             type: returnType, parameters: parameters, genericParameters: genericParams,
             annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites,
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            referencedTypeNames: referencedTypeNames(in: body)
         )
     }
 
@@ -302,7 +303,8 @@ extension JavaExtractor {
             parameters: parameters, genericParameters: genericParams,
             annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites,
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            referencedTypeNames: referencedTypeNames(in: body)
         )
     }
 
@@ -362,7 +364,8 @@ extension JavaExtractor {
             name: name, kind: .property,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: actualType, annotations: modifierInfo.annotations, location: loc,
-            initialValue: node.child(byFieldName: "value").map { classifyValue($0) }
+            initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
+            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
         )
     }
 

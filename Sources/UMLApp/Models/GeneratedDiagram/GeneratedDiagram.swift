@@ -36,13 +36,10 @@ extension GeneratedDiagram {
         /// `nil` = not configured yet (the diagram exists but its state-variable spec
         /// has not been chosen). A configured diagram carries its `StateDiagramConfiguration`.
         case stateDiagram(StateDiagramConfiguration?)
-        case useCaseDiagram
         case packageDiagram
         /// The call graph's scope (which methods are treated as callers). Defaults to the whole
         /// codebase; carried so a future scope picker can persist a type/module focus.
         case callGraph(CallGraphScope)
-        /// An architecture-conformance check; carries the path to its YAML rules file.
-        case architectureCheck(ArchitectureCheckConfiguration)
 
         /// Default content for a freshly created diagram of the given type: each kind gets its
         /// own default configuration (none is privileged over the others).
@@ -54,14 +51,10 @@ extension GeneratedDiagram {
                 self = .sequenceDiagram(.init(entryTypeName: "", entryMethodName: ""))
             case .stateDiagram:
                 self = .stateDiagram(nil)
-            case .useCaseDiagram:
-                self = .useCaseDiagram
             case .packageDiagram:
                 self = .packageDiagram
             case .callGraph:
                 self = .callGraph(.wholeCodebase)
-            case .architectureCheck:
-                self = .architectureCheck(.init())
             }
         }
 
@@ -73,14 +66,10 @@ extension GeneratedDiagram {
                 .sequenceDiagram
             case .stateDiagram:
                 .stateDiagram
-            case .useCaseDiagram:
-                .useCaseDiagram
             case .packageDiagram:
                 .packageDiagram
             case .callGraph:
                 .callGraph
-            case .architectureCheck:
-                .architectureCheck
             }
         }
     }
@@ -153,16 +142,6 @@ extension GeneratedDiagram {
         }
         set {
             if let newValue, case .callGraph = content { content = .callGraph(newValue) }
-        }
-    }
-
-    /// The architecture-check configuration, when this is an architecture check.
-    var architectureCheckConfiguration: ArchitectureCheckConfiguration? {
-        get {
-            if case .architectureCheck(let config) = content { config } else { nil }
-        }
-        set {
-            if let newValue, case .architectureCheck = content { content = .architectureCheck(newValue) }
         }
     }
 }

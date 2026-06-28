@@ -235,10 +235,6 @@ struct ProjectBrowserView: View {
                 CallGraphView(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
                     .environmentObject(model)
-            case .architectureCheck:
-                ArchitectureCheckView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
             default:
                 deltaHosted(diagram: diagram) {
                     ClassDiagramView(

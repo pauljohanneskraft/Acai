@@ -90,7 +90,45 @@ final class ProjectBrowserViewModel: ObservableObject {
             }
         }
         store.deleteArtifactFile(for: codebaseID)
+        store.deleteManagedRules(forCodebase: codebaseID)
         persistChanges()
+    }
+
+    // MARK: - Architecture check (per codebase)
+
+    /// Points a codebase's architecture check at an external YAML rules file (the path the user chose).
+    func setArchitectureCheckRulesPath(codebaseID: UUID, path: String) {
+        mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: path) }
+    }
+
+    /// Persists UI-authored rules to the codebase's managed YAML file and points its check at that file.
+    /// Surfaces a write failure through the store's error channel rather than throwing to the caller.
+    func saveAuthoredRules(codebaseID: UUID, rules: ConformanceRules) {
+        do {
+            let url = try store.saveManagedRules(rules, forCodebase: codebaseID)
+            mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: url.path) }
+        } catch {
+            store.report("Failed to save architecture rules: \(error.localizedDescription)")
+        }
+    }
+
+    /// The rules to seed the form editor with: the codebase's managed rules if its check is
+    /// app-managed, otherwise an empty rule set (external files are referenced, not form-edited).
+    func loadEditableRules(codebaseID: UUID) -> ConformanceRules {
+        guard let path = codebase(for: codebaseID)?.architectureCheck?.rulesPath, store.isManaged(path: path)
+        else { return ConformanceRules() }
+        return store.loadManagedRules(forCodebase: codebaseID) ?? ConformanceRules()
+    }
+
+    /// Applies `transform` to a stored codebase in place and persists its owning project.
+    private func mutateCodebase(_ codebaseID: UUID, _ transform: (inout Codebase) -> Void) {
+        for i in store.projects.indices {
+            if let j = store.projects[i].codebases.firstIndex(where: { $0.id == codebaseID }) {
+                transform(&store.projects[i].codebases[j])
+                persistProject(store.projects[i].id)
+                return
+            }
+        }
     }
 
     func reindex(codebaseID: UUID) async {
@@ -199,11 +237,6 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// kept — a render-option change never alters the type set.
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
         mutateDiagram(diagramID, clearPositions: false) { $0.classConfiguration = configuration }
-    }
-
-    /// Updates the rules-file configuration of an architecture check (no-op for other types).
-    func updateArchitectureCheckConfiguration(diagramID: UUID, configuration: ArchitectureCheckConfiguration) {
-        mutateDiagram(diagramID, clearPositions: false) { $0.architectureCheckConfiguration = configuration }
     }
 
     // MARK: - Delta comparison (git revision)
