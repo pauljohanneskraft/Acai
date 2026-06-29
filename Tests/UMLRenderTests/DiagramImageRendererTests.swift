@@ -12,11 +12,14 @@ struct DiagramImageRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
-                    members: [Member(name: "name", kind: .property, type: TypeReference(name: "String"))],
+                    accessLevel: .public,
+                    members: [Member(name: "name", kind: .property,
+                        accessLevel: .internal, type: TypeReference(name: "String"))],
                     location: SourceLocation(filePath: "Sources/A/Animal.swift", line: 1, column: 1)
                 ),
                 TypeDeclaration(
                     id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class,
+                    accessLevel: .public,
                     location: SourceLocation(filePath: "Sources/A/Dog.swift", line: 1, column: 1)
                 )
             ],

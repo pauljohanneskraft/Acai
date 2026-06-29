@@ -216,16 +216,14 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     func deltaColor(for edge: GeneratedDiagramEdge) -> Color? {
         guard let edgeStatus else { return nil }
         let relationship = Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)
-        guard let hex = DeltaEdgeColors.standard.hex(forStatus: edgeStatus(relationship).rawValue)
-        else { return nil }
+        guard let hex = edgeStatus(relationship).deltaHex else { return nil }
         return Color(hex: hex)
     }
 
     /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when
     /// the type is unchanged or the diagram isn't in delta mode.
     func deltaColor(for node: GeneratedDiagramNode) -> Color? {
-        guard let typeStatus, let hex = DeltaEdgeColors.standard.hex(forStatus: typeStatus(node.id).rawValue)
-        else { return nil }
+        guard let typeStatus, let hex = typeStatus(node.id).deltaHex else { return nil }
         return Color(hex: hex)
     }
 

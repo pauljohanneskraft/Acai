@@ -3,7 +3,10 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var name: String
     public var qualifiedName: String
     public var kind: TypeKind
-    public var accessLevel: AccessLevel?
+    /// The declaration's visibility. Always set: each language parser resolves the language's
+    /// default when the source has no explicit modifier (Swift `internal`, Java `package-private`,
+    /// Kotlin/Dart/Python/C-family `public`, …), so the engine never has to guess downstream.
+    public var accessLevel: AccessLevel
     public var modifiers: [Modifier]
     public var genericParameters: [GenericParameter]
     /// Protocol `associatedtype` requirements (distinct from generic parameters).
@@ -22,7 +25,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         name: String,
         qualifiedName: String,
         kind: TypeKind,
-        accessLevel: AccessLevel? = nil,
+        accessLevel: AccessLevel,
         modifiers: [Modifier] = [],
         genericParameters: [GenericParameter] = [],
         associatedTypes: [GenericParameter] = [],

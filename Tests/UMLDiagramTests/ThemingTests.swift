@@ -13,8 +13,9 @@ struct ThemingTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
                 TypeDeclaration(
-                    id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
-                    members: [Member(name: "name", kind: .property, type: TypeReference(name: "String"))]
+                    id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class, accessLevel: .public,
+                    members: [Member(name: "name", kind: .property, accessLevel: .internal,
+                                     type: TypeReference(name: "String"))]
                 )
             ]
         )

@@ -16,14 +16,17 @@ struct PackageDiagramViewModelTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     location: .init(filePath: "Sources/ModuleA/A.swift", line: 1, column: 1)
                 ),
                 TypeDeclaration(
                     id: "A2", name: "A2", qualifiedName: "A2", kind: .class,
+                    accessLevel: .public,
                     location: .init(filePath: "Sources/ModuleA/A2.swift", line: 1, column: 1)
                 ),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .protocol,
+                    accessLevel: .public,
                     location: .init(filePath: "Sources/ModuleB/B.swift", line: 1, column: 1)
                 )
             ],

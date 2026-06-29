@@ -14,7 +14,7 @@ public struct GraphView: Sendable {
         public var qualifiedName: String
         public var module: String
         public var kind: TypeKind
-        public var access: AccessLevel?
+        public var access: AccessLevel
         public var stereotype: String?
         /// Normalized annotation markers (`@Entity` → `entity`).
         public var annotations: [String]

@@ -13,11 +13,13 @@ struct StateDiagramViewModelTests {
     private func artifact() -> CodeArtifact {
         let stateProperty = Member(
             name: "state", kind: .property,
+            accessLevel: .internal,
             type: TypeReference(name: "State"),
             initialValue: .init(kind: .enumCase, text: "idle")
         )
         let load = Member(
             name: "load", kind: .method,
+            accessLevel: .internal,
             assignments: [
                 .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loading")),
                 .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loaded"))
@@ -27,6 +29,7 @@ struct StateDiagramViewModelTests {
             metadata: .init(sourceLanguage: .swift),
             types: [TypeDeclaration(
                 id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class,
+                accessLevel: .public,
                 members: [stateProperty, load]
             )]
         )

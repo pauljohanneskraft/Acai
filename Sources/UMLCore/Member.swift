@@ -1,7 +1,9 @@
 public struct Member: Codable, Equatable, Hashable, Sendable {
     public var name: String
     public var kind: MemberKind
-    public var accessLevel: AccessLevel?
+    /// The member's visibility. Always set: each language parser resolves the language's default
+    /// when the source has no explicit modifier, so the engine never has to guess downstream.
+    public var accessLevel: AccessLevel
     /// The access level of the setter, when narrower than the getter
     /// (e.g. `private(set)`). `nil` when the setter matches `accessLevel`.
     public var setAccessLevel: AccessLevel?
@@ -38,7 +40,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     public init(
         name: String,
         kind: MemberKind,
-        accessLevel: AccessLevel? = nil,
+        accessLevel: AccessLevel,
         setAccessLevel: AccessLevel? = nil,
         modifiers: [Modifier] = [],
         type: TypeReference? = nil,
@@ -75,11 +77,10 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// Whether this member belongs in the "operations" compartment of a class diagram.
     public var isMethod: Bool { kind == .method || kind == .initializer || kind == .deinitializer }
 
-    /// Whether this member is at least as visible as `minimum`. A `nil` access level counts as
-    /// `.internal` (the common default); a `nil` `minimum` keeps everything.
+    /// Whether this member is at least as visible as `minimum`. A `nil` `minimum` keeps everything.
     public func isVisible(atLeast minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
-        return (accessLevel ?? .internal).visibilityRank >= minimum.visibilityRank
+        return accessLevel.visibilityRank >= minimum.visibilityRank
     }
 }
 

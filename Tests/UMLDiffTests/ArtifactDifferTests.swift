@@ -7,7 +7,7 @@ struct ArtifactDifferTests {
 
     private func type(
         _ name: String, kind: TypeKind = .class, module: String = "App",
-        access: AccessLevel? = nil, members: [Member] = []
+        access: AccessLevel = .internal, members: [Member] = []
     ) -> TypeDeclaration {
         TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: kind,
@@ -65,9 +65,9 @@ struct ArtifactDifferTests {
 
     @Test func detectsChangedTypeKindAccessAndMembers() throws {
         let old = artifact([type("Widget", kind: .struct, access: .internal,
-                                  members: [Member(name: "old", kind: .method)])])
+                                  members: [Member(name: "old", kind: .method, accessLevel: .internal)])])
         let new = artifact([type("Widget", kind: .class, access: .public,
-                                  members: [Member(name: "new", kind: .method)])])
+                                  members: [Member(name: "new", kind: .method, accessLevel: .internal)])])
         let diff = ArtifactDiffer().diff(old: old, new: new)
         let change = try #require(diff.changedTypes.first)
         #expect(change.id == "Widget")
@@ -76,6 +76,28 @@ struct ArtifactDifferTests {
         #expect(change.accessChange?.after == .public)
         #expect(change.addedMembers.contains { $0.contains("new") })
         #expect(change.removedMembers.contains { $0.contains("old") })
+    }
+
+    @Test func distinguishesOverloadsByArgumentLabel() throws {
+        // `move(to:)` and `move(from:)` share parameter type `Point`; only the label differs, so the
+        // signature must keep the label or the removal of one overload is lost in the member set.
+        func move(_ label: String) -> Member {
+            Member(name: "move", kind: .method, accessLevel: .internal,
+                   parameters: [Parameter(externalName: label, internalName: "p", type: TypeReference(name: "Point"))])
+        }
+        let old = artifact([type("Mover", members: [move("to"), move("from")])])
+        let new = artifact([type("Mover", members: [move("to")])])
+        let change = try #require(ArtifactDiffer().diff(old: old, new: new).changedTypes.first)
+        #expect(change.addedMembers.isEmpty)
+        #expect(change.removedMembers.contains { $0.contains("from") })
+    }
+
+    @Test func detectsMemberVisibilityChange() throws {
+        let old = artifact([type("Widget", members: [Member(name: "secret", kind: .method, accessLevel: .public)])])
+        let new = artifact([type("Widget", members: [Member(name: "secret", kind: .method, accessLevel: .private)])])
+        let change = try #require(ArtifactDiffer().diff(old: old, new: new).changedTypes.first)
+        #expect(change.removedMembers.contains { $0.contains("public") })
+        #expect(change.addedMembers.contains { $0.contains("private") })
     }
 
     @Test func reportsMetricDeltas() {

@@ -7,7 +7,7 @@ struct ConformanceEvaluatorTests {
 
     private func type(
         _ name: String, kind: TypeKind = .class, module: String = "App",
-        access: AccessLevel? = nil, annotations: [String] = [], members: [Member] = []
+        access: AccessLevel = .internal, annotations: [String] = [], members: [Member] = []
     ) -> TypeDeclaration {
         TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: kind, accessLevel: access,

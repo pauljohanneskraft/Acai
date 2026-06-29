@@ -92,7 +92,7 @@ extension GeneratedDiagram {
         .init(
             name: member.name,
             type: member.type?.name ?? "",
-            accessLevel: member.accessLevel ?? .internal,
+            accessLevel: member.accessLevel,
             isStatic: member.modifiers.contains(.static),
             isAbstract: member.modifiers.contains(.abstract)
         )

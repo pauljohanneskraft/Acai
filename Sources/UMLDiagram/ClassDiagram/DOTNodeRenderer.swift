@@ -132,8 +132,8 @@ struct DOTNodeRenderer {
     private func renderMember(_ member: Member) -> String {
         let font = options.theme?.fontColor
         var result = fontOpen(font)
-        if options.showAccessLevelSymbols, let access = member.accessLevel {
-            result += access.umlSymbol.dotHTMLEscaped + " "
+        if options.showAccessLevelSymbols {
+            result += member.accessLevel.umlSymbol.dotHTMLEscaped + " "
         }
 
         let isStatic = member.modifiers.contains(.static) || member.modifiers.contains(.class)

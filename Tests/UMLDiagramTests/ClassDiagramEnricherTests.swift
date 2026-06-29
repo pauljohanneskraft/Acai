@@ -9,11 +9,14 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class),
+                TypeDeclaration(id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class,
+                    accessLevel: .public),
                 TypeDeclaration(
                     id: "Car", name: "Car", qualifiedName: "Car", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "engine", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(name: "Engine"))
                     ]
                 )
@@ -29,11 +32,13 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Wheel", name: "Wheel", qualifiedName: "Wheel", kind: .class),
+                TypeDeclaration(id: "Wheel", name: "Wheel", qualifiedName: "Wheel", kind: .class, accessLevel: .public),
                 TypeDeclaration(
                     id: "Car", name: "Car", qualifiedName: "Car", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "wheels", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(name: "Wheel", isArray: true))
                     ]
                 )
@@ -49,11 +54,14 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Logger", name: "Logger", qualifiedName: "Logger", kind: .class),
+                TypeDeclaration(id: "Logger", name: "Logger", qualifiedName: "Logger", kind: .class,
+                    accessLevel: .public),
                 TypeDeclaration(
                     id: "Service", name: "Service", qualifiedName: "Service", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "doWork", kind: .method,
+                               accessLevel: .internal,
                                parameters: [
                                 Parameter(internalName: "logger", type: TypeReference(name: "Logger"))
                                ])
@@ -71,7 +79,7 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class)
+                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .inheritance, source: "Dog", target: "ExternalBase")
@@ -90,8 +98,10 @@ struct ClassDiagramEnricherTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
                 TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class,
+                                accessLevel: .public,
                                 members: [
                                     Member(name: "collar", kind: .property,
+                                           accessLevel: .internal,
                                            type: TypeReference(name: "ExternalCollar"))
                                 ])
             ],
@@ -113,11 +123,14 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class),
+                TypeDeclaration(id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
+                    accessLevel: .public),
                 TypeDeclaration(
                     id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "parent", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(name: "Animal"))
                     ]
                 )
@@ -139,8 +152,10 @@ struct ClassDiagramEnricherTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["models/A.swift", "views/B.swift"]),
             types: [
                 TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class,
+                                accessLevel: .public,
                                 location: SourceLocation(filePath: "models/A.swift", line: 1, column: 1)),
                 TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class,
+                                accessLevel: .public,
                                 location: SourceLocation(filePath: "views/B.swift", line: 1, column: 1))
             ]
         )
@@ -156,9 +171,10 @@ struct ClassDiagramEnricherTests {
             types: [
                 TypeDeclaration(
                     id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .class,
+                    accessLevel: .public,
                     nestedTypes: [
                         TypeDeclaration(id: "Inner", name: "Inner", qualifiedName: "Outer.Inner",
-                                        kind: .class)
+                                        kind: .class, accessLevel: .public)
                     ]
                 )
             ]
@@ -174,9 +190,9 @@ struct ClassDiagramEnricherTests {
             metadata: .init(sourceLanguage: .kotlin, filePaths: ["Server.kt"]),
             types: [
                 TypeDeclaration(id: "com.example.Base", name: "Base",
-                                qualifiedName: "com.example.Base", kind: .class),
+                                qualifiedName: "com.example.Base", kind: .class, accessLevel: .public),
                 TypeDeclaration(id: "com.example.Child", name: "Child",
-                                qualifiedName: "com.example.Child", kind: .class)
+                                qualifiedName: "com.example.Child", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .inheritance, source: "Child", target: "Base")
@@ -194,12 +210,16 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Drawable", name: "Drawable", qualifiedName: "Drawable", kind: .protocol),
-                TypeDeclaration(id: "Printable", name: "Printable", qualifiedName: "Printable", kind: .protocol),
+                TypeDeclaration(id: "Drawable", name: "Drawable", qualifiedName: "Drawable", kind: .protocol,
+                    accessLevel: .public),
+                TypeDeclaration(id: "Printable", name: "Printable", qualifiedName: "Printable", kind: .protocol,
+                                accessLevel: .public),
                 TypeDeclaration(
                     id: "Box", name: "Box", qualifiedName: "Box", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "value", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(
                                    name: "Drawable & Printable",
                                    genericArguments: [
@@ -223,11 +243,14 @@ struct ClassDiagramEnricherTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class),
+                TypeDeclaration(id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class,
+                    accessLevel: .public),
                 TypeDeclaration(
                     id: "Car", name: "Car", qualifiedName: "Car", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "engine", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(name: "Engine"))
                     ]
                 )
@@ -248,6 +271,7 @@ struct ClassDiagramEnricherTests {
                 TypeDeclaration(
                     id: "com.example.Animal", name: "Animal",
                     qualifiedName: "com.example.Animal", kind: .class,
+                    accessLevel: .public,
                     namespace: "com.example"
                 )
             ]
@@ -258,6 +282,7 @@ struct ClassDiagramEnricherTests {
                 TypeDeclaration(
                     id: "com.example.Dog", name: "Dog",
                     qualifiedName: "com.example.Dog", kind: .class,
+                    accessLevel: .public,
                     inheritedTypes: [TypeReference(name: "Animal")],
                     namespace: "com.example"
                 )
@@ -290,6 +315,7 @@ struct ClassDiagramEnricherTests {
                 TypeDeclaration(
                     id: "com.example.Engine", name: "Engine",
                     qualifiedName: "com.example.Engine", kind: .class,
+                    accessLevel: .public,
                     namespace: "com.example"
                 )
             ]
@@ -300,8 +326,10 @@ struct ClassDiagramEnricherTests {
                 TypeDeclaration(
                     id: "com.example.Car", name: "Car",
                     qualifiedName: "com.example.Car", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "engine", kind: .property,
+                               accessLevel: .internal,
                                type: TypeReference(name: "Engine"))
                     ],
                     namespace: "com.example"

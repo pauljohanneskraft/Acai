@@ -16,8 +16,9 @@ struct CallGraphViewModelTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: "B", methodName: "work")
                         ])
                     ],
@@ -25,7 +26,8 @@ struct CallGraphViewModelTests {
                 ),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class,
-                    members: [Member(name: "work", kind: .method)],
+                    accessLevel: .public,
+                    members: [Member(name: "work", kind: .method, accessLevel: .internal)],
                     location: SourceLocation(filePath: "Core/B.swift", line: 1, column: 1)
                 )
             ]

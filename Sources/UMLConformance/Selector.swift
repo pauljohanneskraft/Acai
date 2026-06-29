@@ -38,8 +38,7 @@ public struct Selector: Codable, Equatable, Sendable {
         }
         if let stereotype, node.stereotype != stereotype { return false }
         if let annotation, !node.annotations.contains(annotation.normalizedAnnotation) { return false }
-        if let minimumAccess,
-           (node.access ?? .internal).visibilityRank < minimumAccess.visibilityRank { return false }
+        if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
         return true
     }
 

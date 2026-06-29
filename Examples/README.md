@@ -107,8 +107,10 @@ uml image   --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
 # Delta diagrams — `uml diff` between two revisions, colour-coding added/removed/changed elements.
 # <Lang> is the dir name; <lang> the lower-case stem. Each delta has a `.delta.dot`, a `.delta.mmd`
 # and a `.delta.png`. One block per diagram type — add the matching diagram-type flag; the class
-# form needs none. (Mermaid's sequence/state syntax can't colour edges, so those two `.delta.mmd`
-# are the union uncolored; the `.delta.dot` and `.delta.png` carry the colour for every type.)
+# form needs none. (Mermaid's sequence/state syntax can't colour edges, and its classDiagram has
+# no per-link colouring — `linkStyle` is flowchart-only — so those `.delta.mmd` leave edges
+# uncolored, the class form still tinting nodes via `style`; the `.delta.dot` and `.delta.png`
+# carry the full colour for every type.)
 uml diff --source-old Examples/ClassDiagramDiff/<Lang>/Before \
     --source-new Examples/ClassDiagramDiff/<Lang>/After --language <lang> --diagram dot \
     --output Examples/ClassDiagramDiff/Exports/<lang>.delta.dot   # repeat with --diagram mermaid

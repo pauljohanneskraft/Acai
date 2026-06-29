@@ -19,14 +19,17 @@ struct SequenceFreeformConversionTests {
             types: [
                 TypeDeclaration(
                     id: "Caller", name: "Caller", qualifiedName: "Caller", kind: .class,
+                    accessLevel: .public,
                     members: [Member(
                         name: "run", kind: .method,
+                        accessLevel: .internal,
                         callSites: [CallSite(receiverType: "Callee", methodName: "work")]
                     )]
                 ),
                 TypeDeclaration(
                     id: "Callee", name: "Callee", qualifiedName: "Callee", kind: .class,
-                    members: [Member(name: "work", kind: .method)]
+                    accessLevel: .public,
+                    members: [Member(name: "work", kind: .method, accessLevel: .internal)]
                 )
             ]
         )

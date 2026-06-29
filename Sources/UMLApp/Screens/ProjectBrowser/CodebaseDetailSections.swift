@@ -144,15 +144,13 @@ struct CodebaseTypesSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            if let access = type.accessLevel {
-                Text(access.rawValue)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.secondary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            }
+            Text(type.accessLevel.rawValue)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(Color.secondary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 3))
         }
         #if os(macOS)
         .onTapGesture {
@@ -245,15 +243,13 @@ struct CodebaseFunctionsSection: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer()
-            if let access = function.accessLevel {
-                Text(access.rawValue)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.secondary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            }
+            Text(function.accessLevel.rawValue)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(Color.secondary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 3))
         }
         #if os(macOS)
         .onTapGesture {
@@ -321,9 +317,7 @@ struct CodebaseGlobalsSection: View {
             if isConstant(global) {
                 tagBadge("const")
             }
-            if let access = global.accessLevel {
-                tagBadge(access.rawValue)
-            }
+            tagBadge(global.accessLevel.rawValue)
         }
         #if os(macOS)
         .onTapGesture { reveal(global) }

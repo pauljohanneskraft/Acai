@@ -6,7 +6,7 @@ import Testing
 struct FocusTests {
 
     private func type(_ name: String, kind: TypeKind = .struct) -> TypeDeclaration {
-        TypeDeclaration(id: name, name: name, qualifiedName: name, kind: kind)
+        TypeDeclaration(id: name, name: name, qualifiedName: name, kind: kind, accessLevel: .internal)
     }
 
     private func rel(

@@ -33,7 +33,7 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
             types: ["Player", "Track"].map {
-                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class, accessLevel: .public)
             },
             relationships: [
                 Relationship(kind: .composition, source: "Player", target: "Track",
@@ -47,7 +47,8 @@ struct ClassDiagramDOTRendererTests {
     }
 
     @Test func annotationStereotypeInHeader() {
-        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class)
+        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class,
+            accessLevel: .public)
         entity.annotations = ["@Entity"]
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: ["U.java"]), types: [entity])
         #expect(ClassDiagramDOTRenderer().generate(from: artifact).contains("&lt;&lt;entity&gt;&gt;"))
@@ -57,8 +58,9 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class),
-                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class)
+                TypeDeclaration(id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
+                    accessLevel: .public),
+                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .inheritance, source: "Dog", target: "Animal")
@@ -74,8 +76,8 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class),
-                TypeDeclaration(id: "Bar", name: "Bar", qualifiedName: "Bar", kind: .protocol)
+                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public),
+                TypeDeclaration(id: "Bar", name: "Bar", qualifiedName: "Bar", kind: .protocol, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .conformance, source: "Foo", target: "Bar")
@@ -89,7 +91,8 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .kotlin, filePaths: ["Repo.kt"]),
             types: [
-                TypeDeclaration(id: "Repo", name: "Repo", qualifiedName: "Repo", kind: .interface)
+                TypeDeclaration(
+                    id: "Repo", name: "Repo", qualifiedName: "Repo", kind: .interface, accessLevel: .public)
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
@@ -102,6 +105,7 @@ struct ClassDiagramDOTRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Direction", name: "Direction", qualifiedName: "Direction", kind: .enum,
+                    accessLevel: .public,
                     enumCases: [
                         EnumCase(name: "north"),
                         EnumCase(name: "south")
@@ -121,6 +125,7 @@ struct ClassDiagramDOTRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "pub", kind: .property, accessLevel: .public,
                                type: TypeReference(name: "Int")),
@@ -139,7 +144,7 @@ struct ClassDiagramDOTRendererTests {
         let options = ClassDiagramOptions(layoutDirection: .leftToRight)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
-            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)]
         )
         let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         #expect(dot.contains("rankdir=LR"))
@@ -149,7 +154,7 @@ struct ClassDiagramDOTRendererTests {
         let options = ClassDiagramOptions(theme: .dark)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
-            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)]
         )
         let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         #expect(dot.contains("#1e1e1e"))
@@ -162,7 +167,8 @@ struct ClassDiagramDOTRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class,
-                    members: [Member(name: "bar", kind: .property)]
+                    accessLevel: .public,
+                    members: [Member(name: "bar", kind: .property, accessLevel: .internal)]
                 )
             ]
         )
@@ -175,9 +181,9 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class),
-                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .protocol),
-                TypeDeclaration(id: "C", name: "C", qualifiedName: "C", kind: .class)
+                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public),
+                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .protocol, accessLevel: .public),
+                TypeDeclaration(id: "C", name: "C", qualifiedName: "C", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .inheritance, source: "A", target: "C"),
@@ -194,9 +200,9 @@ struct ClassDiagramDOTRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift"]),
             types: [
-                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class,
+                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public,
                                 location: SourceLocation(filePath: "A.swift", line: 1, column: 1)),
-                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class,
+                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class, accessLevel: .public,
                                 location: SourceLocation(filePath: "B.swift", line: 1, column: 1))
             ]
         )
@@ -212,6 +218,7 @@ struct ClassDiagramDOTRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Box", name: "Box", qualifiedName: "Box", kind: .class,
+                    accessLevel: .public,
                     genericParameters: [GenericParameter(name: "T")]
                 )
             ]

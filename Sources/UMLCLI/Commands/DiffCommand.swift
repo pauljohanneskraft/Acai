@@ -151,8 +151,8 @@ extension UMLCommand {
             let options = ClassDiagramOptions(
                 showExternalTypes: true,
                 language: new.standardLanguageConfiguration,
-                edgeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: edgeStatus($0).rawValue) },
-                nodeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: typeStatus($0.id).rawValue) }
+                edgeColorOverride: { edgeStatus($0).deltaHex },
+                nodeColorOverride: { typeStatus($0.id).deltaHex }
             )
             let union = differ.unionArtifact(old: old, new: new)
             switch format {
@@ -173,7 +173,7 @@ extension UMLCommand {
             switch format {
             case .dot:
                 return SequenceDiagramDOTRenderer(
-                    messageColor: { DeltaEdgeColors.standard.hex(forStatus: diff.status(of: $0).rawValue) }
+                    messageColor: { diff.status(of: $0).deltaHex }
                 ).render(diff.union)
             case .mermaid:
                 // Mermaid sequence syntax has no per-message colour; render the union uncolored.
@@ -191,7 +191,7 @@ extension UMLCommand {
             switch format {
             case .dot:
                 return StateDiagramDOTRenderer(
-                    transitionColor: { DeltaEdgeColors.standard.hex(forStatus: diff.status(of: $0).rawValue) }
+                    transitionColor: { diff.status(of: $0).deltaHex }
                 ).render(diff.union)
             case .mermaid:
                 // Mermaid state syntax has no per-transition colour; render the union uncolored.
@@ -203,11 +203,9 @@ extension UMLCommand {
             let oldDiagram = old.enriched(configuration: old.standardLanguageConfiguration).packageDependencyDiagram()
             let newDiagram = new.enriched(configuration: new.standardLanguageConfiguration).packageDependencyDiagram()
             let diff = PackageDiagramDiff(old: oldDiagram, new: newDiagram)
-            let nodeColor: @Sendable (String) -> String? = {
-                DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: $0).rawValue)
-            }
+            let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
             let edgeColor: @Sendable (String, String) -> String? = {
-                DeltaEdgeColors.standard.hex(forStatus: diff.status(ofEdgeFrom: $0, to: $1).rawValue)
+                diff.status(ofEdgeFrom: $0, to: $1).deltaHex
             }
             switch format {
             case .dot:
@@ -222,11 +220,9 @@ extension UMLCommand {
         ) throws -> String {
             let scope = try parseCallGraphScope()
             let diff = CallGraphDiff(old: old.callGraph(scope: scope), new: new.callGraph(scope: scope))
-            let nodeColor: @Sendable (String) -> String? = {
-                DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: $0).rawValue)
-            }
+            let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
             let edgeColor: @Sendable (String, String) -> String? = {
-                DeltaEdgeColors.standard.hex(forStatus: diff.status(ofEdgeFrom: $0, to: $1).rawValue)
+                diff.status(ofEdgeFrom: $0, to: $1).deltaHex
             }
             switch format {
             case .dot:

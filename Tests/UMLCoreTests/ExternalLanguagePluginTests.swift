@@ -44,11 +44,13 @@ private func ref(_ name: String) -> TypeReference { TypeReference(name: name) }
 struct ExternalLanguagePluginTests {
 
     private func widget(properties: [Member]) -> TypeDeclaration {
-        TypeDeclaration(id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class, members: properties)
+        TypeDeclaration(
+            id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class,
+            accessLevel: .public, members: properties)
     }
 
     private func property(_ name: String, type: String) -> Member {
-        Member(name: name, kind: .property, type: ref(type))
+        Member(name: name, kind: .property, accessLevel: .public, type: ref(type))
     }
 
     @Test("enrichment classifies type names using the external language's configuration")
@@ -59,7 +61,8 @@ struct ExternalLanguagePluginTests {
             property("items", type: "FakeList"),      // external collection — no edge
             property("engine", type: "Engine")        // real type — composition edge
         ])
-        let engine = TypeDeclaration(id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class)
+        let engine = TypeDeclaration(
+            id: "Engine", name: "Engine", qualifiedName: "Engine", kind: .class, accessLevel: .public)
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .fake), types: [widget, engine]
         )
@@ -75,10 +78,12 @@ struct ExternalLanguagePluginTests {
     @Test("generated-code filtering uses the external language's filter")
     func generatedFilteringHonoursExternalFilter() throws {
         let parser = FakeLangParser()
-        let real = TypeDeclaration(id: "Real", name: "Real", qualifiedName: "Real", kind: .class)
-        let byName = TypeDeclaration(id: "$$Gen", name: "$$Gen", qualifiedName: "$$Gen", kind: .class)
+        let real = TypeDeclaration(
+            id: "Real", name: "Real", qualifiedName: "Real", kind: .class, accessLevel: .public)
+        let byName = TypeDeclaration(
+            id: "$$Gen", name: "$$Gen", qualifiedName: "$$Gen", kind: .class, accessLevel: .public)
         let byFile = TypeDeclaration(
-            id: "Model", name: "Model", qualifiedName: "Model", kind: .class,
+            id: "Model", name: "Model", qualifiedName: "Model", kind: .class, accessLevel: .public,
             location: SourceLocation(filePath: "lib/model.gen.fk", line: 1, column: 1)
         )
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .fake), types: [real, byName, byFile])

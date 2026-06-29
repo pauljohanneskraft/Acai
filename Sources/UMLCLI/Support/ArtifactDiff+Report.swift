@@ -11,98 +11,128 @@ extension ArtifactDiff {
         var sections: [String] = []
 
         if !addedTypes.isEmpty {
-            sections.append(section("Added types", addedTypes.map { "+ \($0)" }))
+            sections.append(ReportSection(title: "Added types", lines: addedTypes.map { "+ \($0)" }).text)
         }
         if !removedTypes.isEmpty {
-            sections.append(section("Removed types", removedTypes.map { "- \($0)" }))
+            sections.append(ReportSection(title: "Removed types", lines: removedTypes.map { "- \($0)" }).text)
         }
         if !changedTypes.isEmpty {
-            sections.append(section("Changed types", changedTypes.map(Self.line(for:))))
+            sections.append(ReportSection(title: "Changed types", lines: changedTypes.map(\.reportLine)).text)
         }
 
         var edgeLines: [String] = []
-        edgeLines += addedRelationships.map { "+ " + Self.phrase($0) }
-        edgeLines += removedRelationships.map { "- " + Self.phrase($0, removed: true) }
-        edgeLines += changedRelationships.map { "~ " + Self.phrase($0.after) + " (multiplicity/label changed)" }
+        edgeLines += addedRelationships.map { "+ " + $0.reportPhrase() }
+        edgeLines += removedRelationships.map { "- " + $0.reportPhrase(removed: true) }
+        edgeLines += changedRelationships.map { "~ " + $0.after.reportPhrase() + " (multiplicity/label changed)" }
         if !edgeLines.isEmpty {
-            sections.append(section("Relationship changes", edgeLines))
+            sections.append(ReportSection(title: "Relationship changes", lines: edgeLines).text)
         }
 
-        let metricLines = moduleMetricDeltas.compactMap(Self.line(for:))
+        let metricLines = moduleMetricDeltas.compactMap(\.reportLine)
         if !metricLines.isEmpty {
-            sections.append(section("Module metric changes", metricLines))
+            sections.append(ReportSection(title: "Module metric changes", lines: metricLines).text)
         }
 
-        let typeMetricLines = typeMetricDeltas.compactMap(Self.line(for:))
+        let typeMetricLines = typeMetricDeltas.compactMap(\.reportLine)
         if !typeMetricLines.isEmpty {
-            sections.append(section("Type metric changes", typeMetricLines))
+            sections.append(ReportSection(title: "Type metric changes", lines: typeMetricLines).text)
         }
 
         return sections.joined(separator: "\n\n") + "\n"
     }
+}
 
-    private func section(_ title: String, _ lines: [String]) -> String {
+/// One titled, indented block of a `humanReport()`. A value (title + lines) that renders itself,
+/// rather than a free formatting function.
+private struct ReportSection {
+    let title: String
+    let lines: [String]
+
+    var text: String {
         ([title + ":"] + lines.map { "  " + $0 }).joined(separator: "\n")
     }
+}
 
-    private static func line(for change: TypeChange) -> String {
+private extension TypeChange {
+    /// One `~ Id: …` line summarising a type's kind/access/member changes.
+    var reportLine: String {
         var parts: [String] = []
-        if let kind = change.kindChange {
+        if let kind = kindChange {
             parts.append("\(kind.before.rawValue) → \(kind.after.rawValue)")
         }
-        if let access = change.accessChange {
-            parts.append("access \(access.before?.rawValue ?? "default") → \(access.after?.rawValue ?? "default")")
+        if let access = accessChange {
+            parts.append("access \(access.before.rawValue) → \(access.after.rawValue)")
         }
-        if !change.addedMembers.isEmpty { parts.append("+\(change.addedMembers.count) member(s)") }
-        if !change.removedMembers.isEmpty { parts.append("-\(change.removedMembers.count) member(s)") }
-        return "~ \(change.id): \(parts.joined(separator: ", "))"
+        if !addedMembers.isEmpty { parts.append("+\(addedMembers.count) member(s)") }
+        if !removedMembers.isEmpty { parts.append("-\(removedMembers.count) member(s)") }
+        return "~ \(id): \(parts.joined(separator: ", "))"
     }
+}
 
-    private static func line(for delta: ModuleMetricDelta) -> String? {
+private extension ModuleMetricDelta {
+    /// A `module: …` line of changed package metrics, or `nil` when nothing moved.
+    var reportLine: String? {
         var parts: [String] = []
-        if let d = delta.distanceFromMainSequence { parts.append("distance \(fmt(d.before)) → \(fmt(d.after))") }
-        if let i = delta.instability { parts.append("instability \(fmt(i.before)) → \(fmt(i.after))") }
-        if let a = delta.abstractness { parts.append("abstractness \(fmt(a.before)) → \(fmt(a.after))") }
+        if let d = distanceFromMainSequence { parts.append("distance \(d.twoDecimalArrow)") }
+        if let i = instability { parts.append("instability \(i.twoDecimalArrow)") }
+        if let a = abstractness { parts.append("abstractness \(a.twoDecimalArrow)") }
         guard !parts.isEmpty else { return nil }
-        return "\(delta.module): \(parts.joined(separator: ", "))"
+        return "\(module): \(parts.joined(separator: ", "))"
     }
+}
 
-    private static func line(for delta: TypeMetricDelta) -> String? {
+private extension TypeMetricDelta {
+    /// An `id: …` line of changed type metrics, or `nil` when nothing moved.
+    var reportLine: String? {
         var parts: [String] = []
-        if let f = delta.fanIn { parts.append("fan-in \(f.before) → \(f.after)") }
-        if let f = delta.fanOut { parts.append("fan-out \(f.before) → \(f.after)") }
-        if let d = delta.depthOfInheritance { parts.append("DIT \(d.before) → \(d.after)") }
+        if let f = fanIn { parts.append("fan-in \(f.before) → \(f.after)") }
+        if let f = fanOut { parts.append("fan-out \(f.before) → \(f.after)") }
+        if let d = depthOfInheritance { parts.append("DIT \(d.before) → \(d.after)") }
         guard !parts.isEmpty else { return nil }
-        return "\(delta.id): \(parts.joined(separator: ", "))"
+        return "\(id): \(parts.joined(separator: ", "))"
     }
+}
 
-    /// Phrases a relationship as a sentence. `removed` flips the tense so a dropped edge reads
+private extension Relationship {
+    /// Phrases this relationship as a sentence. `removed` flips the tense so a dropped edge reads
     /// naturally ("`X`→`Y` inheritance removed").
-    private static func phrase(_ rel: Relationship, removed: Bool = false) -> String {
-        let source = short(rel.source)
-        let target = short(rel.target)
+    func reportPhrase(removed: Bool = false) -> String {
+        let source = self.source.lastDottedComponent
+        let target = self.target.lastDottedComponent
         if removed {
-            switch rel.kind {
+            switch kind {
             case .inheritance:
                 return "\(source)→\(target) inheritance removed"
             case .conformance:
                 return "\(source) no longer conforms to \(target)"
             default:
-                return "\(source) no longer depends on \(target) (\(rel.kind.rawValue))"
+                return "\(source) no longer depends on \(target) (\(kind.rawValue))"
             }
         }
-        switch rel.kind {
+        switch kind {
         case .inheritance:
             return "\(source) now inherits from \(target)"
         case .conformance:
             return "\(source) now conforms to \(target)"
         case .composition, .aggregation:
-            return "\(source) now owns \(target) (\(rel.kind.rawValue))"
+            return "\(source) now owns \(target) (\(kind.rawValue))"
         default:
-            return "\(source) now depends on \(target) (\(rel.kind.rawValue))"
+            return "\(source) now depends on \(target) (\(kind.rawValue))"
         }
     }
+}
 
-    private static func short(_ id: String) -> String { id.components(separatedBy: ".").last ?? id }
-    private static func fmt(_ value: Double) -> String { String(format: "%.2f", value) }
+private extension String {
+    /// The last `.`-separated component (a qualified id's simple name), or the whole string.
+    var lastDottedComponent: String { components(separatedBy: ".").last ?? self }
+}
+
+private extension Double {
+    /// This value formatted to two decimal places.
+    var twoDecimals: String { String(format: "%.2f", self) }
+}
+
+private extension Change where T == Double {
+    /// `before → after`, each to two decimals — the shared spelling for package-metric movement.
+    var twoDecimalArrow: String { "\(before.twoDecimals) → \(after.twoDecimals)" }
 }

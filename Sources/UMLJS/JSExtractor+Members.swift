@@ -129,7 +129,7 @@ extension JSExtractor {
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
             kind: sig.kind,
-            accessLevel: sig.accessLevel,
+            accessLevel: sig.accessLevel ?? .internal,
             modifiers: sig.modifiers,
             type: returnType,
             parameters: params,
@@ -223,7 +223,7 @@ extension JSExtractor {
         return Member(
             name: name.isEmpty ? "_unknown" : name,
             kind: .property,
-            accessLevel: accessLevel,
+            accessLevel: accessLevel ?? .internal,
             modifiers: modifiers,
             type: propType,
             annotations: annotations,
@@ -253,7 +253,7 @@ extension JSExtractor {
             typeDecl.members.append(Member(
                 name: paramName,
                 kind: .property,
-                accessLevel: accessMod,
+                accessLevel: accessMod ?? .internal,
                 modifiers: modifiers,
                 type: paramType
             ))
@@ -283,7 +283,7 @@ extension JSExtractor {
 
         var typeDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .interface,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             genericParameters: generics,
             inheritedTypes: inherited,
             location: nodeLoc
@@ -308,11 +308,13 @@ extension JSExtractor {
             case "call_signature":
                 let params = extractParameters(child.child(byFieldName: "parameters") ?? child)
                 let ret = extractReturnTypeAnnotation(child)
-                typeDecl.members.append(Member(name: "call", kind: .method, type: ret, parameters: params))
+                typeDecl.members.append(
+                    Member(name: "call", kind: .method, accessLevel: .internal, type: ret, parameters: params))
             case "construct_signature":
                 let params = extractParameters(child.child(byFieldName: "parameters") ?? child)
                 let ret = extractReturnTypeAnnotation(child)
-                typeDecl.members.append(Member(name: "new", kind: .initializer, type: ret, parameters: params))
+                typeDecl.members.append(
+                    Member(name: "new", kind: .initializer, accessLevel: .internal, type: ret, parameters: params))
             case "index_signature":
                 break // Not modeled
             default:
@@ -345,7 +347,7 @@ extension JSExtractor {
 
         return Member(
             name: name, kind: .property,
-            accessLevel: accessLevel,
+            accessLevel: accessLevel ?? .internal,
             modifiers: modifiers,
             type: propType,
             location: nodeLoc
@@ -371,7 +373,7 @@ extension JSExtractor {
 
         return Member(
             name: name, kind: .method,
-            accessLevel: accessLevel,
+            accessLevel: accessLevel ?? .internal,
             type: returnType,
             parameters: params,
             genericParameters: generics,
@@ -394,7 +396,7 @@ extension JSExtractor {
 
         return TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .typeAlias,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             genericParameters: generics,
             inheritedTypes: targetText.isEmpty ? [] : [TypeReference(name: targetText)],
             location: nodeLoc
@@ -410,7 +412,7 @@ extension JSExtractor {
 
         var typeDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .enum,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             location: nodeLoc
         )
 
@@ -467,7 +469,7 @@ extension JSExtractor {
         freestandingFunctions.append(contentsOf: nestedFunctions)
         let nsDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .module,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             nestedTypes: nestedTypes
         )
         return [nsDecl]
@@ -485,7 +487,7 @@ extension JSExtractor {
         let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
         return Member(
             name: name, kind: .method,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             modifiers: modifiers, type: returnType,
             parameters: params, genericParameters: generics, location: nodeLoc
         )

@@ -353,7 +353,7 @@ extension KotlinExtractor {
         let parameter: Parameter
         let isProperty: Bool
         let isReadOnly: Bool
-        let accessLevel: AccessLevel?
+        let accessLevel: AccessLevel
         let modifiers: [Modifier]
         let annotations: [String]
     }

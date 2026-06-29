@@ -129,7 +129,7 @@ extension KotlinExtractor {
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName,
-            kind: .object, modifiers: [.static],
+            kind: .object, accessLevel: .public, modifiers: [.static],
             inheritedTypes: supertypes.map(\.typeRef),
             namespace: currentNamespace, location: loc(node)
         )

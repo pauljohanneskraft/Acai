@@ -203,8 +203,9 @@ struct ExtendedJavaScriptParserTests {
         """
         let artifact = parser.parse(source: source, fileName: "visibility.js")
         #expect(artifact.types.count == 2)
+        // A non-exported class is module-local: the parser resolves it to `.internal` (never nil).
         let publicClass = artifact.types.first { $0.accessLevel == .public }
-        let internalClass = artifact.types.first { $0.accessLevel == nil }
+        let internalClass = artifact.types.first { $0.accessLevel == .internal }
         #expect(publicClass != nil)
         #expect(internalClass != nil)
     }

@@ -162,11 +162,19 @@ public struct ArtifactDiffer: Sendable {
 }
 
 extension Member {
-    /// A stable, human-readable signature for set-difference diffing. Includes kind, name and
-    /// parameter types so an overload or a signature change reads as add+remove, not a silent edit.
+    /// A stable, human-readable signature for set-difference diffing. Includes access level,
+    /// `static`/`class`, kind, name, parameter labels + types and return type, so an overload, a
+    /// visibility change, or a signature change reads as add+remove rather than a silent edit.
+    /// Without the labels, `move(to:)` and `move(from:)` collide; without access, a `public`→
+    /// `private` change is invisible.
     var diffSignature: String {
-        let params = parameters.map { $0.type?.name ?? "_" }.joined(separator: ", ")
+        let params = parameters.map { param in
+            let label = param.externalName ?? param.internalName
+            return "\(label): \(param.type?.name ?? "_")"
+        }.joined(separator: ", ")
         let returnType = type.map { ": \($0.name)" } ?? ""
-        return "\(kind.rawValue) \(name)(\(params))\(returnType)"
+        let access = "\(accessLevel.rawValue) "
+        let staticPrefix = modifiers.contains(.static) || modifiers.contains(.class) ? "static " : ""
+        return "\(access)\(staticPrefix)\(kind.rawValue) \(name)(\(params))\(returnType)"
     }
 }

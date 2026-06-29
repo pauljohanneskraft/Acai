@@ -9,12 +9,12 @@ struct StateDiagramBuilderTests {
 
     private func loaderArtifact() -> CodeArtifact {
         let stateProperty = Member(
-            name: "state", kind: .property,
+            name: "state", kind: .property, accessLevel: .internal,
             type: TypeReference(name: "State"),
             initialValue: .init(kind: .enumCase, text: "idle")
         )
         let load = Member(
-            name: "load", kind: .method,
+            name: "load", kind: .method, accessLevel: .internal,
             assignments: [
                 .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loading")),
                 .init(targetName: "state", op: .assign,
@@ -22,7 +22,7 @@ struct StateDiagramBuilderTests {
             ]
         )
         let fail = Member(
-            name: "fail", kind: .method,
+            name: "fail", kind: .method, accessLevel: .internal,
             assignments: [
                 .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "failed"))
             ]
@@ -30,7 +30,7 @@ struct StateDiagramBuilderTests {
         return CodeArtifact(
             metadata: .init(sourceLanguage: .swift),
             types: [TypeDeclaration(
-                id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class,
+                id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class, accessLevel: .public,
                 members: [stateProperty, load, fail]
             )]
         )
@@ -81,7 +81,7 @@ struct StateDiagramBuilderTests {
     @Test func compoundAssignmentIsUnbounded() {
         var artifact = loaderArtifact()
         artifact.types[0].members.append(Member(
-            name: "bump", kind: .method,
+            name: "bump", kind: .method, accessLevel: .internal,
             assignments: [.init(targetName: "state", op: .compound,
                                 value: .init(kind: .expression, text: "state += 1"))]
         ))
@@ -97,7 +97,7 @@ struct StateDiagramBuilderTests {
     @Test func expressionValueIsUnbounded() {
         var artifact = loaderArtifact()
         artifact.types[0].members.append(Member(
-            name: "refresh", kind: .method,
+            name: "refresh", kind: .method, accessLevel: .internal,
             assignments: [.init(targetName: "state", op: .assign,
                                 value: .init(kind: .expression, text: "fetchState()"))]
         ))
@@ -140,8 +140,8 @@ struct StateDiagramBuilderTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift),
             types: [TypeDeclaration(
-                id: "Bare", name: "Bare", qualifiedName: "Bare", kind: .class,
-                members: [Member(name: "state", kind: .property)]
+                id: "Bare", name: "Bare", qualifiedName: "Bare", kind: .class, accessLevel: .public,
+                members: [Member(name: "state", kind: .property, accessLevel: .internal)]
             )]
         )
         #expect(throws: StateDiagramAnalysisError.noAssignments(variableName: "state")) {
@@ -163,22 +163,22 @@ struct StateDiagramBuilderTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift),
             types: [TypeDeclaration(
-                id: "Shadower", name: "Shadower", qualifiedName: "Shadower", kind: .class,
+                id: "Shadower", name: "Shadower", qualifiedName: "Shadower", kind: .class, accessLevel: .public,
                 members: [
-                    Member(name: "mode", kind: .property),
-                    Member(name: "set", kind: .method, assignments: [
+                    Member(name: "mode", kind: .property, accessLevel: .internal),
+                    Member(name: "set", kind: .method, accessLevel: .internal, assignments: [
                         .init(targetName: "mode", op: .assign,
                               value: .init(kind: .enumCase, text: "shadowed"))
                     ])
                 ]
             )],
             freestandingFunctions: [Member(
-                name: "escalate", kind: .method,
+                name: "escalate", kind: .method, accessLevel: .internal,
                 assignments: [.init(targetName: "mode", op: .assign,
                                     value: .init(kind: .enumCase, text: "debug"))]
             )],
             globalVariables: [Member(
-                name: "mode", kind: .property,
+                name: "mode", kind: .property, accessLevel: .internal,
                 initialValue: .init(kind: .enumCase, text: "normal")
             )]
         )

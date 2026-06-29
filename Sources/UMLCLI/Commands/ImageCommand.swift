@@ -375,16 +375,19 @@ extension UMLCommand.Image {
     }
 
     /// Renders the state-diagram delta of two revisions to PNG: the union machine with each
-    /// transition tinted by its diff status (keyed on its `from`/`to` states).
+    /// transition tinted by its diff status. Transitions are coloured by their layout id, which
+    /// equals the transition's index in the union — so parallel transitions between the same state
+    /// pair on different events (which share `from`/`to` but differ in diff status) stay distinct.
     func renderStateDelta(old: CodeArtifact, new: CodeArtifact, variable: String) async throws -> Data {
         let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
         let diff = StateDiagramDiff(
             old: try old.resolvingExtensions().stateDiagram(configuration: configuration),
             new: try new.resolvingExtensions().stateDiagram(configuration: configuration))
-        let colorByKey = Dictionary(diff.union.transitions.compactMap { transition -> (String, Color)? in
-            diff.status(of: transition).deltaColor.map { ("\(transition.from)\u{1}\(transition.to)", $0) }
-        }, uniquingKeysWith: { first, _ in first })
-        let edgeColor: @Sendable (StateLayoutModel.EdgeLayout) -> Color? = { colorByKey["\($0.from)\u{1}\($0.to)"] }
+        let transitions = diff.union.transitions
+        let colorByID = Dictionary(uniqueKeysWithValues: transitions.enumerated().compactMap { index, transition in
+            diff.status(of: transition).deltaColor.map { (index, $0) }
+        })
+        let edgeColor: @Sendable (StateLayoutModel.EdgeLayout) -> Color? = { colorByID[$0.id] }
         let renderScale = CGFloat(scale)
         let renderPalette = palette
         return try await MainActor.run {
@@ -398,7 +401,7 @@ extension DeltaStatus {
     /// The delta tint for image rendering (added green / removed red / changed amber), or `nil`
     /// for `.unchanged` so the element keeps its themed colour.
     var deltaColor: Color? {
-        DeltaEdgeColors.standard.hex(forStatus: rawValue).map(Color.init(hex:))
+        deltaHex.map(Color.init(hex:))
     }
 }
 

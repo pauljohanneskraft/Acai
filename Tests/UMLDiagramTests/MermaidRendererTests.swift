@@ -13,6 +13,7 @@ struct MermaidRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
+                    accessLevel: .public,
                     members: [
                         Member(name: "name", kind: .property, accessLevel: .public,
                                type: TypeReference(name: "String")),
@@ -24,9 +25,9 @@ struct MermaidRendererTests {
                                type: TypeReference(name: "String"))
                     ]
                 ),
-                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class),
-                TypeDeclaration(id: "Pet", name: "Pet", qualifiedName: "Pet", kind: .protocol),
-                TypeDeclaration(id: "Cat", name: "Cat", qualifiedName: "Cat", kind: .class)
+                TypeDeclaration(id: "Dog", name: "Dog", qualifiedName: "Dog", kind: .class, accessLevel: .public),
+                TypeDeclaration(id: "Pet", name: "Pet", qualifiedName: "Pet", kind: .protocol, accessLevel: .public),
+                TypeDeclaration(id: "Cat", name: "Cat", qualifiedName: "Cat", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .inheritance, source: "Dog", target: "Animal"),
@@ -61,7 +62,7 @@ struct MermaidRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
             types: ["A", "B", "C", "D", "E"].map {
-                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class, accessLevel: .public)
             },
             relationships: [
                 Relationship(kind: .composition, source: "A", target: "B"),
@@ -83,7 +84,7 @@ struct MermaidRendererTests {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
             types: ["Library", "Book"].map {
-                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class)
+                TypeDeclaration(id: $0, name: $0, qualifiedName: $0, kind: .class, accessLevel: .public)
             },
             relationships: [
                 Relationship(kind: .aggregation, source: "Library", target: "Book",
@@ -105,7 +106,8 @@ struct MermaidRendererTests {
     }
 
     @Test func classDiagramEmitsAnnotationStereotype() {
-        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class)
+        var entity = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class,
+            accessLevel: .public)
         entity.annotations = ["@Entity"]
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: ["U.java"]), types: [entity])
 
@@ -121,6 +123,7 @@ struct MermaidRendererTests {
             types: [
                 TypeDeclaration(
                     id: "Genre", name: "Genre", qualifiedName: "Genre", kind: .enum,
+                    accessLevel: .public,
                     members: [
                         Member(name: "shared", kind: .property, accessLevel: .public,
                                modifiers: [.static], type: TypeReference(name: "Int")),
@@ -143,6 +146,7 @@ struct MermaidRendererTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
             types: [
                 TypeDeclaration(id: "Box", name: "Box", qualifiedName: "Box", kind: .struct,
+                                accessLevel: .public,
                                 genericParameters: [GenericParameter(name: "T")])
             ]
         )
@@ -154,7 +158,7 @@ struct MermaidRendererTests {
     @Test func classDiagramRendersExternalTypesWhenEnabled() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
-            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)],
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)],
             relationships: [Relationship(kind: .dependency, source: "A", target: "ExternalThing")]
         )
         var options = ClassDiagramOptions()
@@ -167,8 +171,8 @@ struct MermaidRendererTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
             types: [
-                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class),
-                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class)
+                TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public),
+                TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .class, accessLevel: .public)
             ],
             relationships: [Relationship(kind: .association, source: "A", target: "B", label: "uses")]
         )
@@ -179,7 +183,8 @@ struct MermaidRendererTests {
     @Test func classDiagramPlainClassHasNoBody() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),
-            types: [TypeDeclaration(id: "Empty", name: "Empty", qualifiedName: "Empty", kind: .class)]
+            types: [TypeDeclaration(id: "Empty", name: "Empty", qualifiedName: "Empty", kind: .class,
+                accessLevel: .public)]
         )
         let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
         #expect(mermaid.contains("class Empty[\"Empty\"]"))

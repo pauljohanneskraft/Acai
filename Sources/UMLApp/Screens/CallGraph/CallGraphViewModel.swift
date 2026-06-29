@@ -45,16 +45,13 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
 
     /// The delta fill for a method node, or `nil` when unchanged / not in delta mode.
     func nodeDeltaColor(id: String) -> Color? {
-        guard let diff, let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: id).rawValue)
-        else { return nil }
+        guard let diff, let hex = diff.status(ofNode: id).deltaHex else { return nil }
         return Color(hex: hex)
     }
 
     /// The delta stroke for a call edge, or `nil` when unchanged / not in delta mode.
     func edgeDeltaColor(from: String, to: String) -> Color? {
-        guard let diff,
-              let hex = DeltaEdgeColors.standard.hex(forStatus: diff.status(ofEdgeFrom: from, to: to).rawValue)
-        else { return nil }
+        guard let diff, let hex = diff.status(ofEdgeFrom: from, to: to).deltaHex else { return nil }
         return Color(hex: hex)
     }
 

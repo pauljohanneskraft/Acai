@@ -12,8 +12,9 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: "B", methodName: "work")
                         ])
                     ],
@@ -21,7 +22,8 @@ struct CallGraphTests {
                 ),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class,
-                    members: [Member(name: "work", kind: .method)],
+                    accessLevel: .public,
+                    members: [Member(name: "work", kind: .method, accessLevel: .internal)],
                     location: SourceLocation(filePath: "Core/B.swift", line: 1, column: 1)
                 )
             ]
@@ -43,8 +45,9 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: "B", methodName: "work"),
                             CallSite(receiverType: "Unknown", methodName: "gone")
                         ])
@@ -52,7 +55,8 @@ struct CallGraphTests {
                 ),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class,
-                    members: [Member(name: "work", kind: .method)]
+                    accessLevel: .public,
+                    members: [Member(name: "work", kind: .method, accessLevel: .internal)]
                 )
             ]
         )
@@ -69,11 +73,12 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: nil, methodName: "helper")
                         ]),
-                        Member(name: "helper", kind: .method)
+                        Member(name: "helper", kind: .method, accessLevel: .internal)
                     ]
                 )
             ]
@@ -88,8 +93,9 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: "B", methodName: "work"),
                             CallSite(receiverType: "B", methodName: "work")
                         ])
@@ -97,7 +103,8 @@ struct CallGraphTests {
                 ),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class,
-                    members: [Member(name: "work", kind: .method)]
+                    accessLevel: .public,
+                    members: [Member(name: "work", kind: .method, accessLevel: .internal)]
                 )
             ]
         )
@@ -131,18 +138,19 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: nil, methodName: "log")
                         ])
                     ]
                 )
             ],
             freestandingFunctions: [
-                Member(name: "log", kind: .method, callSites: [
+                Member(name: "log", kind: .method, accessLevel: .internal, callSites: [
                     CallSite(receiverType: nil, methodName: "format")
                 ]),
-                Member(name: "format", kind: .method)
+                Member(name: "format", kind: .method, accessLevel: .internal)
             ]
         )
         let graph = artifact.callGraph()
@@ -161,15 +169,16 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: nil, methodName: "helper")
                         ]),
-                        Member(name: "helper", kind: .method)
+                        Member(name: "helper", kind: .method, accessLevel: .internal)
                     ]
                 )
             ],
-            freestandingFunctions: [Member(name: "helper", kind: .method)]
+            freestandingFunctions: [Member(name: "helper", kind: .method, accessLevel: .internal)]
         )
         let graph = artifact.callGraph()
         #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
@@ -181,11 +190,12 @@ struct CallGraphTests {
             types: [
                 TypeDeclaration(
                     id: "A", name: "A", qualifiedName: "A", kind: .class,
-                    members: [Member(name: "run", kind: .method)]
+                    accessLevel: .public,
+                    members: [Member(name: "run", kind: .method, accessLevel: .internal)]
                 )
             ],
             freestandingFunctions: [
-                Member(name: "log", kind: .method, callSites: [
+                Member(name: "log", kind: .method, accessLevel: .internal, callSites: [
                     CallSite(receiverType: "A", methodName: "run")
                 ])
             ]
@@ -199,7 +209,7 @@ struct CallGraphTests {
     @Test func emptyWhenNoCallSites() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
-            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)]
         )
         let graph = artifact.callGraph()
         #expect(graph.nodes.isEmpty)

@@ -198,7 +198,7 @@ extension DartExtractor {
 
         return TypeDeclaration(
             id: qualifiedName(displayName), name: displayName, qualifiedName: qualifiedName(displayName),
-            kind: .extension,
+            kind: .extension, accessLevel: accessLevel(for: displayName),
             members: members, nestedTypes: nestedTypes,
             annotations: extractAnnotations(from: node),
             extensionOf: extendedType,

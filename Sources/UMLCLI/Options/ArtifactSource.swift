@@ -62,19 +62,31 @@ struct ArtifactSource: ParsableArguments {
     }
 
     /// Loads a stored artifact: a `.json` file path, or the name of a stored analysis. A file
-    /// produced by `analyze`/`store` is already enriched.
+    /// produced by `analyze`/`store` is already enriched. A `DecodingError` means the stored file
+    /// predates a schema change (e.g. the now-required `accessLevel`); it is reported as "regenerate
+    /// it", the CLI equivalent of treating the codebase as not indexed, rather than a raw decode dump.
     static func loadStored(_ value: String) throws -> CodeArtifact {
         let directURL = URL(fileURLWithPath: value)
+        let url: URL
         if FileManager.default.fileExists(atPath: directURL.path) {
-            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: directURL))
+            url = directURL
+        } else {
+            let storedURL = UMLConstants.analysisDirectory.appendingPathComponent("\(value).json")
+            guard FileManager.default.fileExists(atPath: storedURL.path) else {
+                throw ValidationError(
+                    "Could not find analysis '\(value)'. "
+                    + "Provide a path to a .json file or the name of a stored analysis."
+                )
+            }
+            url = storedURL
         }
-        let storedURL = UMLConstants.analysisDirectory.appendingPathComponent("\(value).json")
-        if FileManager.default.fileExists(atPath: storedURL.path) {
-            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: storedURL))
+        do {
+            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))
+        } catch is DecodingError {
+            throw ValidationError(
+                "Stored analysis '\(value)' was produced by an older UML version and can no longer be read. "
+                + "Re-run `uml analyze` / `uml store` to regenerate it."
+            )
         }
-        throw ValidationError(
-            "Could not find analysis '\(value)'. "
-            + "Provide a path to a .json file or the name of a stored analysis."
-        )
     }
 }

@@ -9,6 +9,7 @@ struct ClassDiagramDeltaTests {
 
     private func type(_ name: String) -> TypeDeclaration {
         TypeDeclaration(id: name, name: name, qualifiedName: name, kind: .class,
+                        accessLevel: .public,
                         location: SourceLocation(filePath: "Sources/App/\(name).swift", line: 1, column: 1))
     }
 

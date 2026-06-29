@@ -16,15 +16,17 @@ struct SequenceDiagramViewModelTests {
             types: [
                 TypeDeclaration(
                     id: "Service", name: "Service", qualifiedName: "Service", kind: .class,
+                    accessLevel: .public,
                     members: [
-                        Member(name: "run", kind: .method, callSites: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
                             CallSite(receiverType: "Repository", methodName: "save")
                         ])
                     ]
                 ),
                 TypeDeclaration(
                     id: "Repository", name: "Repository", qualifiedName: "Repository", kind: .class,
-                    members: [Member(name: "save", kind: .method)]
+                    accessLevel: .public,
+                    members: [Member(name: "save", kind: .method, accessLevel: .internal)]
                 )
             ]
         )

@@ -4,16 +4,16 @@ import UMLCore
 /// from a tree-sitter `modifiers` (or equivalent) AST node.
 ///
 /// Every language extractor produces this same structure, so it lives
-/// in the shared `UMLTreeSitter` module. The `accessLevel` is optional
-/// because some languages (e.g. Java) treat the absence of an explicit
-/// modifier as a distinct visibility level (package-private / `nil`).
+/// in the shared `UMLTreeSitter` module. `accessLevel` is non-optional: each language extractor
+/// resolves its own default when the source has no explicit modifier (Java → `packagePrivate`,
+/// Kotlin → `public`), so the engine never sees a type or member without a visibility.
 public struct ModifierInfo: Equatable, Sendable {
-    public var accessLevel: AccessLevel?
+    public var accessLevel: AccessLevel
     public var modifiers: [Modifier]
     public var annotations: [String]
 
     public init(
-        accessLevel: AccessLevel? = nil,
+        accessLevel: AccessLevel,
         modifiers: [Modifier] = [],
         annotations: [String] = []
     ) {

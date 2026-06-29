@@ -137,8 +137,25 @@ final class ProjectStore: ObservableObject {
         do {
             let data = try Data(contentsOf: url)
             artifacts[codebaseID] = try JSONDecoder().decode(CodeArtifact.self, from: data)
+        } catch is DecodingError {
+            // The stored analysis predates a schema change (e.g. the now-required `accessLevel`).
+            // Treat the codebase as never indexed so the UI offers Reindex, rather than surfacing a
+            // decode error the user can't act on.
+            markCodebaseNotIndexed(codebaseID)
         } catch {
             report("Failed to load a stored analysis: \(error.localizedDescription)")
+        }
+    }
+
+    /// Marks a codebase as un-indexed and persists it, so a stored analysis that can no longer be
+    /// decoded drops back to the "not indexed" state (dashed status + Reindex action).
+    private func markCodebaseNotIndexed(_ codebaseID: UUID) {
+        for projectIndex in projects.indices {
+            guard let codebaseIndex = projects[projectIndex].codebases
+                .firstIndex(where: { $0.id == codebaseID }) else { continue }
+            projects[projectIndex].codebases[codebaseIndex].hasArtifact = false
+            saveProject(projects[projectIndex])
+            return
         }
     }
 

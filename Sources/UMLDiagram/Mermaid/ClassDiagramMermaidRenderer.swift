@@ -38,20 +38,14 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         }
         lines.append(contentsOf: nodeStyles)
 
-        // Mermaid colours a link by its declaration index via a trailing `linkStyle` directive.
-        // We track the index of each emitted link and, only when an override supplies a colour,
-        // append the directives — so without an override the output is byte-for-byte unchanged.
-        var linkIndex = 0
-        var linkStyles: [String] = []
+        // Mermaid's `classDiagram` has no per-link colouring — `linkStyle` is a flowchart-only
+        // directive and is rejected inside a `classDiagram` block — so a delta `edgeColorOverride`
+        // cannot be honoured here and relationships render uncolored. Node tinting via the `style`
+        // directive above is supported and retained.
         for rel in enriched.relationships where options.includedRelationshipKinds.contains(rel.kind) {
             guard let line = renderRelationship(rel, idMap: idMap) else { continue }
             lines.append(line)
-            if let color = options.edgeColorOverride?(rel) {
-                linkStyles.append("    linkStyle \(linkIndex) stroke:\(color),stroke-width:2px")
-            }
-            linkIndex += 1
         }
-        lines.append(contentsOf: linkStyles)
 
         return lines.joined(separator: "\n") + "\n"
     }
@@ -84,8 +78,8 @@ public struct ClassDiagramMermaidRenderer: Sendable {
 
     private func memberLine(_ member: Member) -> String {
         var line = ""
-        if options.showAccessLevelSymbols, let access = member.accessLevel {
-            line += access.umlSymbol
+        if options.showAccessLevelSymbols {
+            line += member.accessLevel.umlSymbol
         }
         line += member.name
 

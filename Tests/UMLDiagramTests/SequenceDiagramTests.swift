@@ -9,11 +9,13 @@ struct SequenceDiagramTests {
 
     /// A method member whose body makes the given calls.
     private func method(_ name: String, calls: [CallSite] = []) -> Member {
-        Member(name: name, kind: .method, callSites: calls)
+        Member(name: name, kind: .method, accessLevel: .internal, callSites: calls)
     }
 
-    private func type(_ name: String, kind: TypeKind = .class, members: [Member]) -> TypeDeclaration {
-        TypeDeclaration(id: name, name: name, qualifiedName: name, kind: kind, members: members)
+    private func type(_ name: String, kind: TypeKind = .class, accessLevel: AccessLevel = .internal,
+                      members: [Member]) -> TypeDeclaration {
+        TypeDeclaration(id: name, name: name, qualifiedName: name, kind: kind, accessLevel: accessLevel,
+                        members: members)
     }
 
     private func artifact(types: [TypeDeclaration], relationships: [Relationship] = []) -> CodeArtifact {
@@ -58,11 +60,12 @@ struct SequenceDiagramTests {
         // orphaned (which previously left namespaced sequence diagrams empty in DOT/Mermaid).
         let checkout = TypeDeclaration(
             id: "shop.Checkout", name: "Checkout", qualifiedName: "shop.Checkout", kind: .class,
+            accessLevel: .public,
             members: [method("placeOrder", calls: [CallSite(receiverType: "PaymentService", methodName: "charge")])]
         )
         let service = TypeDeclaration(
             id: "shop.PaymentService", name: "PaymentService", qualifiedName: "shop.PaymentService",
-            kind: .class, members: [method("charge")]
+            kind: .class, accessLevel: .public, members: [method("charge")]
         )
         let diagram = artifact(types: [checkout, service]).sequenceDiagram(entryPoint: ("Checkout", "placeOrder"))
 
@@ -225,7 +228,7 @@ struct SequenceDiagramTests {
         // is dropped rather than drawn as a dead-end self-message. (Behavior change: such calls
         // previously rendered as a `Caller → Caller` self-message; this matches the call graph.)
         let art = artifact(
-            types: [type("Worker", kind: .class, members: [
+            types: [type("Worker", kind: .class, accessLevel: .public, members: [
                 method("run", calls: [CallSite(receiverType: nil, methodName: "inheritedSetup")])
             ])],
             freeFunctions: []
@@ -295,7 +298,7 @@ struct SequenceDiagramTests {
             type("Service", members: [
                 method("run", calls: [CallSite(receiverType: "RepositoryProtocol", methodName: "save")])
             ]),
-            type("RepositoryProtocol", kind: .protocol, members: [method("save")]),
+            type("RepositoryProtocol", kind: .protocol, accessLevel: .public, members: [method("save")]),
             type("SQLRepository", members: [
                 method("save", calls: [CallSite(receiverType: "Database", methodName: "commit")])
             ]),

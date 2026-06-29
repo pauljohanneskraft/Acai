@@ -124,7 +124,7 @@ public struct Change<T: Codable & Equatable & Sendable>: Codable, Equatable, Sen
 public struct TypeChange: Codable, Equatable, Sendable {
     public var id: String
     public var kindChange: Change<TypeKind>?
-    public var accessChange: Change<AccessLevel?>?
+    public var accessChange: Change<AccessLevel>?
     /// Member signatures present only in the new revision.
     public var addedMembers: [String]
     /// Member signatures present only in the old revision.
@@ -133,7 +133,7 @@ public struct TypeChange: Codable, Equatable, Sendable {
     public init(
         id: String,
         kindChange: Change<TypeKind>? = nil,
-        accessChange: Change<AccessLevel?>? = nil,
+        accessChange: Change<AccessLevel>? = nil,
         addedMembers: [String] = [],
         removedMembers: [String] = []
     ) {

@@ -238,8 +238,10 @@ public struct ClassDiagram: Sendable {
 
         return externalIds.sorted().map { id in
             let name = id.components(separatedBy: ".").last ?? id
+            // External, undeclared types (third-party / not in this codebase) have no known
+            // visibility; model them as public, the conventional assumption for a referenced API.
             return TypeDeclaration(
-                id: id, name: name, qualifiedName: id, kind: .class
+                id: id, name: name, qualifiedName: id, kind: .class, accessLevel: .public
             )
         }
     }

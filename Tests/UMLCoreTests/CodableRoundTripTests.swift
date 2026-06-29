@@ -114,7 +114,7 @@ struct CodableRoundTripTests {
             enumCases: [],
             nestedTypes: [
                 TypeDeclaration(id: "Inner", name: "Inner", qualifiedName: "MyModule.MyClass.Inner",
-                                kind: .struct)
+                                kind: .struct, accessLevel: .public)
             ],
             annotations: ["@Observable"],
             namespace: "MyModule",
@@ -148,14 +148,14 @@ struct CodableRoundTripTests {
         let original = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift"], toolVersion: "1.0"),
             types: [
-                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class),
-                TypeDeclaration(id: "Bar", name: "Bar", qualifiedName: "Bar", kind: .protocol)
+                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public),
+                TypeDeclaration(id: "Bar", name: "Bar", qualifiedName: "Bar", kind: .protocol, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .conformance, source: "Foo", target: "Bar")
             ],
             freestandingFunctions: [
-                Member(name: "helper", kind: .method)
+                Member(name: "helper", kind: .method, accessLevel: .internal)
             ]
         )
         let decoded = try roundTrip(original)
@@ -177,11 +177,11 @@ struct CodableRoundTripTests {
     @Test func merging() {
         let a = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
-            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class)]
+            types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)]
         )
         let b = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["B.swift"]),
-            types: [TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .struct)]
+            types: [TypeDeclaration(id: "B", name: "B", qualifiedName: "B", kind: .struct, accessLevel: .public)]
         )
         let merged = a.merging(with: b)
         #expect(merged.types.count == 2)
@@ -192,11 +192,11 @@ struct CodableRoundTripTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class),
+                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public),
                 TypeDeclaration(id: "extension.Foo", name: "Foo", qualifiedName: "Foo",
-                                kind: .extension,
+                                kind: .extension, accessLevel: .public,
                                 inheritedTypes: [TypeReference(name: "Codable")],
-                                members: [Member(name: "encode", kind: .method)],
+                                members: [Member(name: "encode", kind: .method, accessLevel: .internal)],
                                 extensionOf: "Foo")
             ]
         )
@@ -214,12 +214,13 @@ struct CodableRoundTripTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class),
+                TypeDeclaration(id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public),
                 TypeDeclaration(
                     id: "extension.SIMD3", name: "SIMD3", qualifiedName: "SIMD3",
                     kind: .extension,
+                    accessLevel: .public,
                     inheritedTypes: [TypeReference(name: "CustomProtocol")],
-                    members: [Member(name: "magnitude", kind: .property)],
+                    members: [Member(name: "magnitude", kind: .property, accessLevel: .internal)],
                     extensionOf: "SIMD3")
             ]
         )

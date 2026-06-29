@@ -11,7 +11,8 @@ struct ConformancePhase4Tests {
         annotations: [String] = []
     ) -> TypeDeclaration {
         TypeDeclaration(
-            id: name, name: name, qualifiedName: name, kind: kind, annotations: annotations,
+            id: name, name: name, qualifiedName: name, kind: kind, accessLevel: .internal,
+            annotations: annotations,
             location: SourceLocation(filePath: "Sources/\(module)/\(name).swift", line: 1, column: 1))
     }
 

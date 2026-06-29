@@ -2,19 +2,19 @@ classDiagram
     class Account["Account"]
     class AdminUser["AdminUser"]
     class LegacyAudit["LegacyAudit"] {
-        review() void
+        ~review() void
     }
     class OrderService["OrderService"] {
-        gateway PaymentGateway
-        place() void
+        ~gateway PaymentGateway
+        ~place() void
     }
     class PaymentGateway["PaymentGateway"]
     class Receipt["Receipt"] {
-        total String
+        ~total String
     }
     class User["User"] {
-        name String
-        email String
+        ~name String
+        ~email String
     }
     style LegacyAudit stroke:#c62828,stroke-width:3px
     style OrderService stroke:#f9a825,stroke-width:3px
@@ -23,5 +23,3 @@ classDiagram
     User <|-- AdminUser
     OrderService *-- "1" PaymentGateway : gateway
     Account <|-- User
-    linkStyle 1 stroke:#2e7d32,stroke-width:2px
-    linkStyle 2 stroke:#c62828,stroke-width:2px

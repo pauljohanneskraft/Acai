@@ -240,6 +240,7 @@ extension DartExtractor {
             return extractConstructorSignature(child, parentName: "").map { member in
                 Member(
                     name: member.name, kind: member.kind,
+                    accessLevel: accessLevel(for: member.name),
                     modifiers: isStatic ? member.modifiers + [.static] : member.modifiers,
                     type: member.type, parameters: member.parameters, location: loc(node)
                 )
@@ -378,6 +379,7 @@ extension DartExtractor {
 
         return Member(
             name: name, kind: .initializer,
+            accessLevel: accessLevel(for: name),
             modifiers: modifiers,
             parameters: parameters,
             location: loc(node)
@@ -401,10 +403,8 @@ extension DartExtractor {
         }
 
         return Member(
-            name: name, kind: .initializer,
-            modifiers: [.factory],
-            parameters: parameters,
-            location: loc(node)
+            name: name, kind: .initializer, accessLevel: accessLevel(for: name),
+            modifiers: [.factory], parameters: parameters, location: loc(node)
         )
     }
 
@@ -490,9 +490,8 @@ extension DartExtractor {
         }
 
         return Member(
-            name: operatorName, kind: .method,
-            type: returnType, parameters: parameters,
-            location: loc(node)
+            name: operatorName, kind: .method, accessLevel: accessLevel(for: operatorName),
+            type: returnType, parameters: parameters, location: loc(node)
         )
     }
 }

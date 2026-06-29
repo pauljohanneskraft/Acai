@@ -17,14 +17,17 @@ struct StateFreeformConversionTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [TypeDeclaration(
                 id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class,
+                accessLevel: .public,
                 members: [
                     Member(
                         name: "state", kind: .property,
+                        accessLevel: .internal,
                         type: TypeReference(name: "State"),
                         initialValue: .init(kind: .enumCase, text: "idle")
                     ),
                     Member(
                         name: "load", kind: .method,
+                        accessLevel: .internal,
                         assignments: [
                             .init(targetName: "state", op: .assign,
                                   value: .init(kind: .enumCase, text: "loading")),
