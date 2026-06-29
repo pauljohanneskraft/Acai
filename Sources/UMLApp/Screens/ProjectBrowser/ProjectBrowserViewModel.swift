@@ -90,7 +90,45 @@ final class ProjectBrowserViewModel: ObservableObject {
             }
         }
         store.deleteArtifactFile(for: codebaseID)
+        store.deleteManagedRules(forCodebase: codebaseID)
         persistChanges()
+    }
+
+    // MARK: - Architecture check (per codebase)
+
+    /// Points a codebase's architecture check at an external YAML rules file (the path the user chose).
+    func setArchitectureCheckRulesPath(codebaseID: UUID, path: String) {
+        mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: path) }
+    }
+
+    /// Persists UI-authored rules to the codebase's managed YAML file and points its check at that file.
+    /// Surfaces a write failure through the store's error channel rather than throwing to the caller.
+    func saveAuthoredRules(codebaseID: UUID, rules: ConformanceRules) {
+        do {
+            let url = try store.saveManagedRules(rules, forCodebase: codebaseID)
+            mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: url.path) }
+        } catch {
+            store.report("Failed to save architecture rules: \(error.localizedDescription)")
+        }
+    }
+
+    /// The rules to seed the form editor with: the codebase's managed rules if its check is
+    /// app-managed, otherwise an empty rule set (external files are referenced, not form-edited).
+    func loadEditableRules(codebaseID: UUID) -> ConformanceRules {
+        guard let path = codebase(for: codebaseID)?.architectureCheck?.rulesPath, store.isManaged(path: path)
+        else { return ConformanceRules() }
+        return store.loadManagedRules(forCodebase: codebaseID) ?? ConformanceRules()
+    }
+
+    /// Applies `transform` to a stored codebase in place and persists its owning project.
+    private func mutateCodebase(_ codebaseID: UUID, _ transform: (inout Codebase) -> Void) {
+        for i in store.projects.indices {
+            if let j = store.projects[i].codebases.firstIndex(where: { $0.id == codebaseID }) {
+                transform(&store.projects[i].codebases[j])
+                persistProject(store.projects[i].id)
+                return
+            }
+        }
     }
 
     func reindex(codebaseID: UUID) async {
@@ -98,24 +136,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         let url = URL(fileURLWithPath: codebase.directoryPath).standardizedFileURL
 
         do {
-            let artifact = try await Task.detached(priority: .userInitiated) {
-                try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
+            let newArtifact = try await Task.detached(priority: .userInitiated) {
+                try CodebaseAnalyzer().enrichedArtifact(at: url)
             }.value
-            let enriched = ClassDiagram(
-                artifact: artifact,
-                options: EnrichmentOptions(
-                    inferCompositionFromProperties: true,
-                    inferDependencyFromMethods: true,
-                    showExternalTypes: true,
-                    language: artifact.standardLanguageConfiguration
-                )
-            )
-            let newArtifact = CodeArtifact(
-                metadata: artifact.metadata,
-                types: enriched.types,
-                relationships: enriched.relationships,
-                freestandingFunctions: artifact.freestandingFunctions
-            )
             // Re-resolve indices after the suspension — the user may have deleted or reordered
             // projects/codebases during the (potentially long) analysis, which would make any
             // indices captured before the `await` point at the wrong codebase or out of bounds.
@@ -124,8 +147,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             else { return }
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
-            store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
-            store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = artifact.metadata.parseDiagnostics.count
+            store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
+            store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {
@@ -214,6 +237,57 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// kept — a render-option change never alters the type set.
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
         mutateDiagram(diagramID, clearPositions: false) { $0.classConfiguration = configuration }
+    }
+
+    // MARK: - Delta comparison (git revision)
+
+    /// Identity of a cached comparison snapshot: which directory at which git ref.
+    private struct ComparisonKey: Hashable {
+        let directory: String
+        let ref: String
+    }
+
+    /// Cached "old"-side artifacts for delta mode, keyed by codebase directory + git ref. Populated
+    /// asynchronously by `ensureComparisonLoaded`; read through `comparisonArtifact(for:)`.
+    @Published private var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+    /// Most recent comparison load error, surfaced near the picker.
+    @Published private(set) var comparisonError: String?
+
+    /// Sets (or clears, with `nil`) the git revision a diagram is compared against in delta mode,
+    /// dropping saved positions since the rendered element set changes between normal and union.
+    func updateComparisonGitRef(diagramID: UUID, ref: String?) {
+        comparisonError = nil
+        mutateDiagram(diagramID, clearPositions: true) {
+            $0.comparisonGitRef = (ref?.isEmpty == true) ? nil : ref
+        }
+    }
+
+    /// The cached "old" artifact for a diagram's current comparison ref, if already loaded.
+    func comparisonArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
+        guard let ref = diagram.comparisonGitRef,
+              let directory = codebase(for: diagram.codebaseID)?.directoryPath
+        else { return nil }
+        return comparisonArtifacts[ComparisonKey(directory: directory, ref: ref)]
+    }
+
+    /// Loads the "old" artifact for a diagram's comparison ref via a read-only `git archive`
+    /// snapshot, caching it. A no-op when delta mode is off or the snapshot is already cached.
+    func ensureComparisonLoaded(for diagram: GeneratedDiagram) async {
+        guard let ref = diagram.comparisonGitRef,
+              let directory = codebase(for: diagram.codebaseID)?.directoryPath
+        else { return }
+        let key = ComparisonKey(directory: directory, ref: ref)
+        guard comparisonArtifacts[key] == nil else { return }
+        let url = URL(fileURLWithPath: directory).standardizedFileURL
+        do {
+            let artifact = try await Task.detached(priority: .userInitiated) {
+                try GitRevisionSnapshot(directory: url, reference: ref).artifact()
+            }.value
+            comparisonArtifacts[key] = artifact
+            comparisonError = nil
+        } catch {
+            comparisonError = error.localizedDescription
+        }
     }
 
     func renameGeneratedDiagram(_ diagramID: UUID, name: String) {

@@ -178,7 +178,8 @@ extension KotlinExtractor {
             type: returnType, parameters: params,
             genericParameters: generics, annotations: modifierInfo.annotations,
             location: loc(node), callSites: callSites,
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            referencedTypeNames: referencedTypeNames(in: body)
         )
     }
 
@@ -270,8 +271,24 @@ extension KotlinExtractor {
             type: typeRef,
             isComputed: isComputed,
             annotations: modifierInfo.annotations, location: loc(node),
-            initialValue: propertyInitializerValue(of: node)
+            initialValue: propertyInitializerValue(of: node),
+            referencedTypeNames: referencedTypeNames(in: propertyInitializerNode(of: node))
         )
+    }
+
+    /// The property's initializer expression node (the node after the anonymous `=`), if present.
+    /// Used for construction/body dependencies; accessor (`get()/set()`) bodies are deliberately not
+    /// walked.
+    private func propertyInitializerNode(of node: Node) -> Node? {
+        var foundEq = false
+        for child in node.children() {
+            if !child.isNamed && text(child) == "=" {
+                foundEq = true
+                continue
+            }
+            if foundEq { return child }
+        }
+        return nil
     }
 
     /// Classifies the property's initializer expression (the node after the
@@ -336,7 +353,7 @@ extension KotlinExtractor {
         let parameter: Parameter
         let isProperty: Bool
         let isReadOnly: Bool
-        let accessLevel: AccessLevel?
+        let accessLevel: AccessLevel
         let modifiers: [Modifier]
         let annotations: [String]
     }

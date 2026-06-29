@@ -4,6 +4,8 @@
 // (`UMLCLI`, `UMLApp`) through a single `import UMLLibrary`.
 @_exported import UMLCore
 @_exported import UMLDiagram
+@_exported import UMLDiff
+@_exported import UMLConformance
 @_exported import UMLSwift
 @_exported import UMLJS
 @_exported import UMLJVM

@@ -1,0 +1,16 @@
+digraph {
+  rankdir=LR;
+  fontname="Helvetica";
+  fontsize=12;
+  node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=12];
+  edge [fontname="Helvetica" fontsize=10];
+  "OrderController.submit" [label="OrderController.submit" fillcolor="#e3f2fd"];
+  "OrderRepository.save" [label="OrderRepository.save" fillcolor="#e3f2fd" color="#2e7d32" penwidth=3];
+  "OrderService.place" [label="OrderService.place" fillcolor="#e3f2fd"];
+  "PaymentService.charge" [label="PaymentService.charge" fillcolor="#e3f2fd"];
+  "Validator.validate" [label="Validator.validate" fillcolor="#e3f2fd"];
+  "OrderController.submit" -> "OrderService.place";
+  "OrderController.submit" -> "Validator.validate";
+  "OrderService.place" -> "OrderRepository.save" [color="#2e7d32"];
+  "OrderService.place" -> "PaymentService.charge";
+}

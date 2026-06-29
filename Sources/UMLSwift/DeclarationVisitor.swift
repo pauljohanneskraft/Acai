@@ -158,9 +158,12 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         // Only the top-of-body function becomes a member; nested ones are skipped.
         guard functionBodyDepth == 0 else { return }
-        let member = TypeExtractor.extractFunction(
+        var member = TypeExtractor.extractFunction(
             from: node, fileName: fileName, callSites: pendingCallSites,
             assignments: pendingAssignments)
+        if let body = node.body {
+            member.referencedTypeNames = collectReferencedTypes(in: body)
+        }
         pendingCallSites = []
         pendingAssignments = []
         callSitePropertyMap = [:]
@@ -174,7 +177,25 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
         // Skip local variables inside function bodies.
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let members = TypeExtractor.extractVariable(from: node, fileName: fileName)
+        var members = TypeExtractor.extractVariable(from: node, fileName: fileName)
+        // Capture type references in the property's *initializer* only (e.g. `= Foo()`), which the
+        // signature misses — surfaces construction dependencies for the coupling metrics. Deliberately
+        // skips accessor bodies (computed getters): walking a deeply nested `var body: some View { … }`
+        // would recurse far enough to overflow the stack.
+        var referencedSet = Set<String>()
+        for binding in node.bindings {
+            if let value = binding.initializer?.value {
+                referencedSet.formUnion(collectReferencedTypes(in: value))
+            }
+        }
+        let referenced = Array(referencedSet)
+        if !referenced.isEmpty {
+            members = members.map { member in
+                var copy = member
+                copy.referencedTypeNames = referenced
+                return copy
+            }
+        }
         if typeStack.isEmpty {
             // Top-level (module-scope) `let`/`var`.
             globalVariables.append(contentsOf: members)
@@ -199,9 +220,12 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visitPost(_ node: InitializerDeclSyntax) {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
-        let member = TypeExtractor.extractInitializer(
+        var member = TypeExtractor.extractInitializer(
             from: node, fileName: fileName, callSites: pendingCallSites,
             assignments: pendingAssignments)
+        if let body = node.body {
+            member.referencedTypeNames = collectReferencedTypes(in: body)
+        }
         pendingCallSites = []
         pendingAssignments = []
         callSitePropertyMap = [:]
@@ -314,11 +338,25 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .visitChildren
     }
 
+}
+
+// Call-site / type-reference resolution and stack management — in an extension so the visitor's main
+// body stays within SwiftLint's `type_body_length`.
+extension DeclarationVisitor {
+
     /// A statically-resolved call-site receiver. `receiverType == nil` denotes a call on the
     /// enclosing instance (`self.method()`), which the sequence-diagram generator renders as a
     /// self-message keyed on the caller's type.
     private struct ResolvedReceiver {
         let receiverType: String?
+    }
+
+    /// The capitalised type-like names referenced inside a syntax subtree (constructions, static
+    /// access, casts, annotations) — the construction/body dependencies fed to the coupling metrics.
+    private func collectReferencedTypes(in node: some SyntaxProtocol) -> [String] {
+        let collector = TypeReferenceCollector()
+        collector.walk(node)
+        return Array(collector.names)
     }
 
     /// Resolves the declared type for a receiver expression.

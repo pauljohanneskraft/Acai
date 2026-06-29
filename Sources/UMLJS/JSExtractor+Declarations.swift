@@ -191,7 +191,7 @@ extension JSExtractor {
 
         var typeDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .class,
-            accessLevel: isExported ? .public : nil,
+            accessLevel: isExported ? .public : .internal,
             modifiers: modifiers,
             genericParameters: generics,
             inheritedTypes: inherited,

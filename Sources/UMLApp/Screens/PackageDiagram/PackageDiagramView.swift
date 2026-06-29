@@ -25,13 +25,17 @@ struct PackageDiagramView: View {
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = true
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
+        comparisonArtifact: CodeArtifact? = nil
+    ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
         self._viewModel = StateObject(wrappedValue: PackageDiagramViewModel(
             artifact: artifact,
-            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint)
+            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint),
+            comparisonArtifact: comparisonArtifact
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -83,10 +87,19 @@ struct PackageDiagramView: View {
                         kind: .dependency,
                         sourceRect: sourceRect,
                         targetRect: targetRect,
-                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight)
+                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
+                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to)
                     )
                 }
             }
+        }
+    }
+
+    /// A coloured delta outline overlaid on a node, or nothing when the node is unchanged.
+    @ViewBuilder
+    private func deltaBorder(_ color: Color?) -> some View {
+        if let color {
+            RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
         }
     }
 
@@ -100,6 +113,7 @@ struct PackageDiagramView: View {
             fillColor: Color(hex: node.node.zoneColorHex)
         )
         .frame(width: node.rect.width, height: node.rect.height)
+        .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
         .position(x: node.rect.midX, y: node.rect.midY)
         .diagramNodeInteraction(
             id: node.id,

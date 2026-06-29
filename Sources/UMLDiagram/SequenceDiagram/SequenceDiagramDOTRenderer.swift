@@ -9,12 +9,20 @@
 public struct SequenceDiagramDOTRenderer: DOTRenderer {
     public let renderOptions: DiagramRenderOptions
 
+    /// Optional per-message colour override (a hex like `#2e7d32`). When it returns a non-`nil`
+    /// colour for a message, that colour wins over `theme.edgeColor`; `nil` (or a `nil` closure)
+    /// leaves colouring unchanged. Used to tint a delta diagram's added/removed/changed messages.
+    /// Default `nil` keeps existing output byte-for-byte identical.
+    public let messageColor: (@Sendable (SequenceDiagram.Message) -> String?)?
+
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
-        fontSize: Int = 12
+        fontSize: Int = 12,
+        messageColor: (@Sendable (SequenceDiagram.Message) -> String?)? = nil
     ) {
         self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
+        self.messageColor = messageColor
     }
 
     /// Cosmetic node fill/border/font attributes when themed, else empty (structural outline).
@@ -113,7 +121,14 @@ public struct SequenceDiagramDOTRenderer: DOTRenderer {
             let from = stepNodeID(msg.from, step: step)
             let to = stepNodeID(msg.to, step: step)
             var parts: [String] = []
-            if let theme { parts.append("color=\"\(theme.edgeColor)\" fontcolor=\"\(theme.fontColor)\"") }
+            // A per-message override wins over the theme edge colour; the themed font colour is
+            // kept either way. When neither is present, no colour attribute is emitted (unchanged).
+            let color = messageColor?(msg) ?? theme?.edgeColor
+            if let color {
+                var attr = "color=\"\(color)\""
+                if let theme { attr += " fontcolor=\"\(theme.fontColor)\"" }
+                parts.append(attr)
+            }
             if let lbl = messageLabel(for: msg) { parts.append("label=\"\(lbl.dotEscaped)\"") }
             parts.append(arrowAttributes(for: msg.kind))
             out += "  \(from) -> \(to) [\(parts.joined(separator: " "))];\n"

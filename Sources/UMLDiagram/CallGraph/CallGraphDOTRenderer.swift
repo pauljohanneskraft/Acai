@@ -11,12 +11,22 @@ public struct CallGraphDOTRenderer: DOTRenderer {
     /// Lighter fill for resolved callees pulled in from outside the scope.
     private let leafFill = "#f5f5f5"
 
+    /// Optional per-node fill override (a hex, keyed on node id). When non-`nil` it replaces the
+    /// in-scope/leaf fill — used to colour a delta diagram's added/removed methods.
+    public let nodeColor: (@Sendable (String) -> String?)?
+    /// Optional per-edge colour override (a hex, keyed on `(from, to)`). Wins over `theme.edgeColor`.
+    public let edgeColor: (@Sendable (String, String) -> String?)?
+
     public init(
         theme: DiagramTheme? = nil,
         fontName: String = "Helvetica",
-        fontSize: Int = 12
+        fontSize: Int = 12,
+        nodeColor: (@Sendable (String) -> String?)? = nil,
+        edgeColor: (@Sendable (String, String) -> String?)? = nil
     ) {
         self.renderOptions = DiagramRenderOptions(theme: theme, fontName: fontName, fontSize: fontSize)
+        self.nodeColor = nodeColor
+        self.edgeColor = edgeColor
     }
 
     public func render(_ graph: CallGraph) -> String {
@@ -33,12 +43,14 @@ public struct CallGraphDOTRenderer: DOTRenderer {
             if !node.inScope {
                 parts.append("style=\"rounded,filled,dashed\"")
             }
+            // A delta override colours the node's *border* (keeping the in-scope/leaf fill).
+            if let border = nodeColor?(node.id) { parts.append("color=\"\(border)\" penwidth=3") }
             out += "  \(node.id.dotNodeID) [\(parts.joined(separator: " "))];\n"
         }
 
         for edge in graph.edges {
             var parts: [String] = []
-            if let theme { parts.append("color=\"\(theme.edgeColor)\"") }
+            if let color = edgeColor?(edge.from, edge.to) ?? theme?.edgeColor { parts.append("color=\"\(color)\"") }
             if edge.weight > 1 { parts.append("label=\"\(edge.weight)\"") }
             let attrs = parts.isEmpty ? "" : " [\(parts.joined(separator: " "))]"
             out += "  \(edge.from.dotNodeID) -> \(edge.to.dotNodeID)\(attrs);\n"

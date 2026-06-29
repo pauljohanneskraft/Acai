@@ -50,6 +50,18 @@ public struct ClassDiagramOptions: Sendable {
     /// no empty default to silently mis-classify into.
     public var language: LanguageConfiguration
 
+    /// An optional per-edge colour override (a hex like `#2e7d32`). When it returns a non-`nil`
+    /// colour for a relationship, that colour wins over `theme.edgeColor`; when it returns `nil`,
+    /// or is itself `nil`, edge colouring is unchanged. Used to tint a delta diagram's added/
+    /// removed/changed edges. Default `nil` keeps every existing diagram byte-for-byte identical.
+    public var edgeColorOverride: (@Sendable (Relationship) -> String?)?
+
+    /// An optional per-node fill override (a hex), the node counterpart of `edgeColorOverride`.
+    /// When it returns a colour for a type, that fill wins over the theme; `nil` (or a `nil`
+    /// closure) leaves the node unchanged. Used to tint a delta diagram's added/removed/changed
+    /// type nodes.
+    public var nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)?
+
     public init(
         layoutDirection: LayoutDirection = .topToBottom,
         showMembers: Bool = true,
@@ -68,7 +80,9 @@ public struct ClassDiagramOptions: Sendable {
         showMultiplicities: Bool = true,
         showAnnotationStereotypes: Bool = true,
         focus: FocusConfiguration? = nil,
-        language: LanguageConfiguration
+        language: LanguageConfiguration,
+        edgeColorOverride: (@Sendable (Relationship) -> String?)? = nil,
+        nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)? = nil
     ) {
         self.layoutDirection = layoutDirection
         self.showMembers = showMembers
@@ -88,6 +102,8 @@ public struct ClassDiagramOptions: Sendable {
         self.showAnnotationStereotypes = showAnnotationStereotypes
         self.focus = focus
         self.language = language
+        self.edgeColorOverride = edgeColorOverride
+        self.nodeColorOverride = nodeColorOverride
     }
 
     public enum LayoutDirection: String, Sendable {

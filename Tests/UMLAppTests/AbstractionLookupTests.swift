@@ -12,9 +12,9 @@ struct AbstractionLookupTests {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
-                TypeDeclaration(id: "P", name: "P", qualifiedName: "P", kind: .protocol),
-                TypeDeclaration(id: "Impl", name: "Impl", qualifiedName: "Impl", kind: .struct),
-                TypeDeclaration(id: "Other", name: "Other", qualifiedName: "Other", kind: .class)
+                TypeDeclaration(id: "P", name: "P", qualifiedName: "P", kind: .protocol, accessLevel: .public),
+                TypeDeclaration(id: "Impl", name: "Impl", qualifiedName: "Impl", kind: .struct, accessLevel: .public),
+                TypeDeclaration(id: "Other", name: "Other", qualifiedName: "Other", kind: .class, accessLevel: .public)
             ],
             relationships: [
                 Relationship(kind: .conformance, source: "Impl", target: "P")

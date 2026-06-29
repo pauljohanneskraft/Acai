@@ -48,6 +48,7 @@ This separation is load-bearing — keep it:
 - 4-space indentation, 120-column lines (`.swiftlint.yml`).
 - Type nesting capped at 2 levels; cyclomatic complexity warns at 10.
 - Parsers are stateless `struct`s conforming to `CodeParser`.
+- **NEVER use a type as a static-function namespace — not on a caseless `enum`, and not on a `struct`/`class` either.** A `static func` with no instance to act on is a global function in disguise, which is a code smell in this OO codebase. This is non-negotiable. Put the behavior **on a value** instead: model it as a real type you instantiate and call instance methods on (e.g. `Glob("a*").matches(x)`, `StronglyConnectedComponents(adjacency: g).cycles`, `DeltaEdgeColors.standard.hex(for: status)`), or as a computed property / method in an `extension` on the type the behavior belongs to (e.g. `relationship.diffKey`, `member.diffSignature`). A `static let`/`static var` that vends a configured **instance** of the type (like `ModuleResolver.standard`) is fine — that's a value, not a namespace. Free functions are likewise disallowed.
 
 ## Adding a language
 

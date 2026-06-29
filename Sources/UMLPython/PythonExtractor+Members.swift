@@ -77,7 +77,8 @@ extension PythonExtractor {
                     accessLevel: accessLevel(forName: name),
                     type: type,
                     location: loc(assign),
-                    initialValue: initial
+                    initialValue: initial,
+                    referencedTypeNames: referencedTypeNames(in: assign.child(byFieldName: "right"))
                 ))
             }
         }
@@ -172,7 +173,8 @@ extension PythonExtractor {
             annotations: decorators,
             location: loc(node),
             callSites: extractCallSites(from: body, scope: scope),
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            referencedTypeNames: referencedTypeNames(in: body)
         )
     }
 }

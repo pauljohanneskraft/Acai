@@ -21,7 +21,10 @@ struct ClassDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
+        comparisonArtifact: CodeArtifact? = nil
+    ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
@@ -31,7 +34,8 @@ struct ClassDiagramView: View {
             artifact: artifact,
             configuration: diagram.classConfiguration ?? .init(),
             restoredPositions: diagram.nodePositions.mapValues { $0.cgPoint },
-            restoredSizes: restoredSizes
+            restoredSizes: restoredSizes,
+            comparisonArtifact: comparisonArtifact
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -128,7 +132,8 @@ struct ClassDiagramView: View {
                     sourceRect: sourceRect,
                     targetRect: targetRect,
                     sourceLabel: edge.sourceLabel,
-                    targetLabel: edge.targetLabel
+                    targetLabel: edge.targetLabel,
+                    strokeColor: viewModel.deltaColor(for: edge)
                 )
             }
         }
@@ -147,13 +152,14 @@ struct ClassDiagramView: View {
                 let hasUserSize = viewModel.userNodeSizes[node.id] != nil
                 let size = viewModel.effectiveSize(for: node.id)
                 let selected = viewModel.selectedNodeIDs.contains(node.id)
+                let deltaBorder = viewModel.deltaColor(for: node)
                 Group {
                     if hasUserSize {
-                        TypeNodeView(node: node, isSelected: selected)
+                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder)
                             .frame(width: size.width, height: size.height)
                             .contentShape(Rectangle().inset(by: 6))
                     } else {
-                        TypeNodeView(node: node, isSelected: selected)
+                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder)
                             .measuredNode(id: node.id)
                     }
                 }

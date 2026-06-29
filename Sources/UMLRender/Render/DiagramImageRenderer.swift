@@ -46,7 +46,9 @@ public enum DiagramImageRenderer {
         language: LanguageConfiguration,
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
+        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
     ) throws -> Data {
         let model = DiagramLayoutModel(
             artifact: artifact, configuration: configuration, language: language
@@ -62,7 +64,9 @@ public enum DiagramImageRenderer {
             groupingBoxes: boxes,
             scale: scale,
             padding: padding,
-            palette: palette
+            palette: palette,
+            edgeColor: edgeColor,
+            nodeColor: nodeColor
         )
     }
 
@@ -76,10 +80,12 @@ public enum DiagramImageRenderer {
         positionOverrides: [String: CGFloat] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)? = nil
     ) throws -> Data {
         let layout = SequenceLayoutModel(diagram: sequenceDiagram, positionOverrides: positionOverrides)
-        let view = SequenceDiagramSnapshotView(layout: layout, padding: padding, palette: palette)
+        let view = SequenceDiagramSnapshotView(
+            layout: layout, padding: padding, palette: palette, messageColor: messageColor)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
         let maxScale = maxPixelDimension / max(pointSize, 1)
@@ -104,10 +110,12 @@ public enum DiagramImageRenderer {
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)? = nil
     ) throws -> Data {
         let layout = StateLayoutModel(diagram: stateDiagram, positionOverrides: positionOverrides)
-        let view = StateDiagramSnapshotView(layout: layout, padding: padding, palette: palette)
+        let view = StateDiagramSnapshotView(
+            layout: layout, padding: padding, palette: palette, edgeColor: edgeColor)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
         let maxScale = maxPixelDimension / max(pointSize, 1)
@@ -131,11 +139,14 @@ public enum DiagramImageRenderer {
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        nodeColor: (@Sendable (String) -> Color?)? = nil,
+        edgeColor: (@Sendable (String, String) -> Color?)? = nil
     ) throws -> Data {
         let layout = PackageLayoutModel(diagram: packageDiagram, positionOverrides: positionOverrides)
         return try renderSnapshot(
-            PackageDiagramSnapshotView(layout: layout, padding: padding, palette: palette),
+            PackageDiagramSnapshotView(
+                layout: layout, padding: padding, palette: palette, nodeColor: nodeColor, edgeColor: edgeColor),
             contentSize: layout.contentSize, scale: scale, padding: padding
         )
     }
@@ -149,11 +160,14 @@ public enum DiagramImageRenderer {
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        nodeColor: (@Sendable (String) -> Color?)? = nil,
+        edgeColor: (@Sendable (String, String) -> Color?)? = nil
     ) throws -> Data {
         let layout = CallGraphLayoutModel(graph: callGraph, positionOverrides: positionOverrides)
         return try renderSnapshot(
-            CallGraphSnapshotView(layout: layout, padding: padding, palette: palette),
+            CallGraphSnapshotView(
+                layout: layout, padding: padding, palette: palette, nodeColor: nodeColor, edgeColor: edgeColor),
             contentSize: layout.contentSize, scale: scale, padding: padding
         )
     }
@@ -190,7 +204,9 @@ public enum DiagramImageRenderer {
         groupingBoxes: [DiagramLayoutModel.GroupingBox],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
+        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
     ) throws -> Data {
         let bounds = contentBounds(positions: positions, sizes: sizes, boxes: groupingBoxes)
 
@@ -213,7 +229,9 @@ public enum DiagramImageRenderer {
             groupingBoxes: normalizedBoxes,
             contentSize: CGSize(width: bounds.width, height: bounds.height),
             padding: padding,
-            palette: palette
+            palette: palette,
+            edgeColor: edgeColor,
+            nodeColor: nodeColor
         )
 
         // Clamp the scale so neither output dimension exceeds `maxPixelDimension`; large

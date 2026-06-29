@@ -6,8 +6,8 @@
 // `Name<Args>?[]` rule and drifting apart.
 
 extension Member {
-    /// The UML access symbol for this member (`~` when no access level is recorded).
-    public var umlAccessSymbol: String { accessLevel?.umlSymbol ?? "~" }
+    /// The UML access symbol for this member.
+    public var umlAccessSymbol: String { accessLevel.umlSymbol }
 
     /// The UML "attribute" compartment line: `<sym> name: Type`.
     public func umlPropertyLine(collectionTypeNames: Set<String> = []) -> String {

@@ -58,7 +58,7 @@ struct ClassDiagramExportTests {
         )
         // Mirrors DiagramCommand.renderClassDOT with default options.
         let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
-        let generated = DOTGenerator(options: options).generate(from: artifact)
+        let generated = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("ClassDiagram", "Exports", "\(stem).dot")
         )

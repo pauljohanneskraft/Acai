@@ -1,12 +1,22 @@
 import Foundation
 import SwiftUI
 import UMLCore
+import UMLDiagram
+import UMLDiff
 import UMLRender
 
 @MainActor
 final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
+    /// The "old" revision for delta mode, or `nil` for a normal diagram.
+    private let comparisonArtifact: CodeArtifact?
+    /// The artifact-level diff when in delta mode; drives per-edge tinting.
+    private var diff: ArtifactDiff?
+    /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
+    /// every SwiftUI render pass (vs. `ArtifactDiff.status(of:)`'s per-call linear scan).
+    private var edgeStatus: (@Sendable (Relationship) -> DeltaStatus)?
+    private var typeStatus: (@Sendable (String) -> DeltaStatus)?
 
     @Published var nodes: [GeneratedDiagramNode] = []
     @Published var edges: [GeneratedDiagramEdge] = []
@@ -51,10 +61,12 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration = .init(),
         restoredPositions: [String: CGPoint]? = nil,
-        restoredSizes: [String: CGSize]? = nil
+        restoredSizes: [String: CGSize]? = nil,
+        comparisonArtifact: CodeArtifact? = nil
     ) {
         self.codebase = codebase
         self.artifact = artifact
+        self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions
         self.model = DiagramLayoutModel(
@@ -70,9 +82,25 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     // MARK: - Build Diagram
 
     private func buildDiagram() {
+        // In delta mode, render the union of both revisions so removed types/edges still appear and
+        // can be tinted; otherwise render the working-tree artifact directly.
+        let renderArtifact: CodeArtifact
+        if let comparisonArtifact {
+            let differ = ArtifactDiffer()
+            let computed = differ.diff(old: comparisonArtifact, new: artifact)
+            diff = computed
+            edgeStatus = computed.relationshipStatusLookup()
+            typeStatus = computed.typeStatusLookup()
+            renderArtifact = differ.unionArtifact(old: comparisonArtifact, new: artifact)
+        } else {
+            diff = nil
+            edgeStatus = nil
+            typeStatus = nil
+            renderArtifact = artifact
+        }
         model = DiagramLayoutModel(
-            artifact: artifact, configuration: configuration,
-            language: artifact.standardLanguageConfiguration
+            artifact: renderArtifact, configuration: configuration,
+            language: renderArtifact.standardLanguageConfiguration
         )
         nodes = model.nodes
         edges = model.edges
@@ -180,6 +208,25 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
     }
 
+    /// Whether the diagram is rendering a delta against a comparison revision.
+    var isDeltaMode: Bool { diff != nil }
+
+    /// The delta tint for an edge (added green / removed red / changed amber), or `nil` when the
+    /// edge is unchanged or the diagram isn't in delta mode.
+    func deltaColor(for edge: GeneratedDiagramEdge) -> Color? {
+        guard let edgeStatus else { return nil }
+        let relationship = Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)
+        guard let hex = edgeStatus(relationship).deltaHex else { return nil }
+        return Color(hex: hex)
+    }
+
+    /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when
+    /// the type is unchanged or the diagram isn't in delta mode.
+    func deltaColor(for node: GeneratedDiagramNode) -> Color? {
+        guard let typeStatus, let hex = typeStatus(node.id).deltaHex else { return nil }
+        return Color(hex: hex)
+    }
+
     func nodeRect(for id: String) -> CGRect? {
         guard let pos = nodePositions[id] else { return nil }
         let size = effectiveSize(for: id)
@@ -197,13 +244,27 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// to PNG data, via the shared `DiagramImageRenderer`.
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
         let sizes = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, effectiveSize(for: $0.id)) })
+        // In delta mode the exported PNG carries the same tints as the on-screen canvas. Precompute
+        // the colours into Sendable maps so the render closures don't capture the main-actor model.
+        var edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)?
+        var nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)?
+        if isDeltaMode {
+            let edgeColors = Dictionary(edges.compactMap { e in deltaColor(for: e).map { (e.id, $0) } },
+                                        uniquingKeysWith: { first, _ in first })
+            let nodeColors = Dictionary(nodes.compactMap { n in deltaColor(for: n).map { (n.id, $0) } },
+                                        uniquingKeysWith: { first, _ in first })
+            edgeColor = { edgeColors[$0.id] }
+            nodeColor = { nodeColors[$0.id] }
+        }
         return try DiagramImageRenderer.renderPNG(
             nodes: nodes,
             edges: edges,
             positions: nodePositions,
             sizes: sizes,
             groupingBoxes: groupingBoxes,
-            scale: scale
+            scale: scale,
+            edgeColor: edgeColor,
+            nodeColor: nodeColor
         )
     }
 }

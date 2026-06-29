@@ -39,8 +39,11 @@ optionalTargets.append(
         dependencies: [
             "UMLCore",
             "UMLDiagram",
+            "UMLDiff",
+            "UMLConformance",
             "UMLLibrary",
             "UMLRender",
+            .product(name: "Yams", package: "Yams"),
         ],
         exclude: ["Resources/Info.plist"],
         resources: [
@@ -82,6 +85,8 @@ let package = Package(
         .library(name: "UMLPython", targets: ["UMLPython"]),
         .library(name: "UMLCFamily", targets: ["UMLCFamily"]),
         .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
+        .library(name: "UMLDiff", targets: ["UMLDiff"]),
+        .library(name: "UMLConformance", targets: ["UMLConformance"]),
         .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
     ] + optionalProducts,
     dependencies: [
@@ -192,6 +197,20 @@ let package = Package(
             dependencies: ["UMLCore"]
         ),
 
+        // MARK: Semantic architecture diffing — agnostic graph/metric comparison of two artifacts,
+        // plus per-diagram-model (sequence/state/package/call-graph) deltas (depends on UMLDiagram
+        // for those models; still names no language).
+        .target(
+            name: "UMLDiff",
+            dependencies: ["UMLCore", "UMLDiagram"]
+        ),
+
+        // MARK: Architecture conformance / fitness functions — agnostic rule evaluation.
+        .target(
+            name: "UMLConformance",
+            dependencies: ["UMLCore"]
+        ),
+
         // MARK: Composition root — the only target that names the built-in languages. Wires the
         // parsers + their detectors into `AnalysisService.standard` and re-exports the agnostic API.
         .target(
@@ -199,6 +218,8 @@ let package = Package(
             dependencies: [
                 "UMLCore",
                 "UMLDiagram",
+                "UMLDiff",
+                "UMLConformance",
                 "UMLSwift",
                 "UMLJS",
                 "UMLJVM",
@@ -214,6 +235,8 @@ let package = Package(
             dependencies: [
                 "UMLCore",
                 "UMLDiagram",
+                "UMLDiff",
+                "UMLConformance",
                 "UMLLibrary",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Yams", package: "Yams"),
@@ -229,11 +252,13 @@ let package = Package(
         .testTarget(name: "UMLPythonTests", dependencies: ["UMLPython", "UMLCore"]),
         .testTarget(name: "UMLCFamilyTests", dependencies: ["UMLCFamily", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
+        .testTarget(name: "UMLDiffTests", dependencies: ["UMLDiff", "UMLCore", "UMLDiagram"]),
+        .testTarget(name: "UMLConformanceTests", dependencies: ["UMLConformance", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
         .testTarget(name: "UMLCLITests", dependencies: ["UMLCLI", "UMLCore"]),
 
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no UMLRender dependency); the PNG checks live in UMLRenderTests.
-        .testTarget(name: "UMLExamplesTests", dependencies: ["UMLLibrary", "UMLDiagram", "UMLCore"])
+        .testTarget(name: "UMLExamplesTests", dependencies: ["UMLLibrary", "UMLDiagram", "UMLDiff", "UMLCore"])
     ] + optionalTargets
 )

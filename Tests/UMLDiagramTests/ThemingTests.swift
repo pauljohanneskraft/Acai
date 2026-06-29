@@ -13,8 +13,9 @@ struct ThemingTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
                 TypeDeclaration(
-                    id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class,
-                    members: [Member(name: "name", kind: .property, type: TypeReference(name: "String"))]
+                    id: "Animal", name: "Animal", qualifiedName: "Animal", kind: .class, accessLevel: .public,
+                    members: [Member(name: "name", kind: .property, accessLevel: .internal,
+                                     type: TypeReference(name: "String"))]
                 )
             ]
         )
@@ -23,7 +24,7 @@ struct ThemingTests {
     // MARK: - Class DOT
 
     @Test func classDOTIsStructuralWithoutTheme() {
-        let dot = DOTGenerator(options: ClassDiagramOptions(theme: nil)).generate(from: classArtifact)
+        let dot = ClassDiagramDOTRenderer(options: ClassDiagramOptions(theme: nil)).generate(from: classArtifact)
         #expect(!dot.contains("bgcolor"))
         #expect(!dot.contains("BGCOLOR"))
         #expect(!dot.contains("<FONT COLOR="))
@@ -33,7 +34,7 @@ struct ThemingTests {
     }
 
     @Test func classDOTAppliesThemeInline() {
-        let dot = DOTGenerator(options: ClassDiagramOptions(theme: .dark)).generate(from: classArtifact)
+        let dot = ClassDiagramDOTRenderer(options: ClassDiagramOptions(theme: .dark)).generate(from: classArtifact)
         #expect(dot.contains("bgcolor=\"#1e1e1e\""))
         #expect(dot.contains("BGCOLOR=\"#2d2d2d\""))
         #expect(dot.contains("<FONT COLOR=\"#cccccc\">"))

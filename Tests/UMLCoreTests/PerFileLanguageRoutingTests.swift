@@ -24,8 +24,9 @@ private struct DualDialectParser: CodeParser {
         let isB = source.hasPrefix("B")
         let name = isB ? "WidgetB" : "WidgetA"
         let widget = TypeDeclaration(
-            id: name, name: name, qualifiedName: name, kind: .class,
-            members: [Member(name: "value", kind: .property, type: TypeReference(name: "Special"))]
+            id: name, name: name, qualifiedName: name, kind: .class, accessLevel: .public,
+            members: [Member(name: "value", kind: .property, accessLevel: .internal,
+                             type: TypeReference(name: "Special"))]
         )
         return CodeArtifact(
             metadata: .init(sourceLanguage: isB ? .dialectB : .dialectA, filePaths: [fileName]),

@@ -1,0 +1,14 @@
+flowchart LR
+    charge_card["charge_card"]
+    place_order["place_order"]
+    save_order["save_order"]
+    submit_order["submit_order"]
+    validate_order["validate_order"]
+    place_order --> charge_card
+    place_order --> save_order
+    submit_order --> place_order
+    submit_order --> validate_order
+    style charge_card fill:#f5f5f5,stroke-dasharray: 3 3
+    style save_order fill:#f5f5f5,stroke-dasharray: 3 3,stroke:#2e7d32,stroke-width:3px
+    style validate_order fill:#f5f5f5,stroke-dasharray: 3 3
+    linkStyle 1 stroke:#2e7d32,stroke-width:2px

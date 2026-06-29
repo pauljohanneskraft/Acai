@@ -135,9 +135,16 @@ public struct DiamondShape: Shape {
 /// node views on top so selection/drag behaviour stays caller-specific.
 public struct StateEnsembleView: View {
     let layout: StateLayoutModel
+    /// Optional per-transition delta tint, keyed on the edge. `nil` leaves the theme colour, so the
+    /// app canvas / freeform editor are unaffected.
+    let edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)?
 
-    public init(layout: StateLayoutModel) {
+    public init(
+        layout: StateLayoutModel,
+        edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)? = nil
+    ) {
         self.layout = layout
+        self.edgeColor = edgeColor
     }
 
     public var body: some View {
@@ -149,7 +156,8 @@ public struct StateEnsembleView: View {
                         kind: .association,
                         sourceRect: sourceRect,
                         targetRect: targetRect,
-                        label: edge.label
+                        label: edge.label,
+                        strokeColor: edgeColor?(edge)
                     )
                 }
             }
@@ -167,22 +175,25 @@ public struct StateDiagramSnapshotView: View {
     let padding: CGFloat
     let selectedStateID: String?
     let palette: DiagramPalette
+    let edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)?
 
     public init(
         layout: StateLayoutModel,
         padding: CGFloat = 40,
         selectedStateID: String? = nil,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)? = nil
     ) {
         self.layout = layout
         self.padding = padding
         self.selectedStateID = selectedStateID
         self.palette = palette
+        self.edgeColor = edgeColor
     }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
-            StateEnsembleView(layout: layout)
+            StateEnsembleView(layout: layout, edgeColor: edgeColor)
 
             ForEach(layout.nodes) { node in
                 StateNodeView(state: node.state, isSelected: node.id == selectedStateID)

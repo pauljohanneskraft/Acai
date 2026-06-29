@@ -22,7 +22,8 @@ struct MermaidExportTests {
         ]
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Widget.swift"]),
-            types: [TypeDeclaration(id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class)]
+            types: [TypeDeclaration(id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class,
+                accessLevel: .public)]
         )
         store.saveArtifact(artifact, for: codebaseID)
         return (ProjectBrowserViewModel(store: store), codebaseID)

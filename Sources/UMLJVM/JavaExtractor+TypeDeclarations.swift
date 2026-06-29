@@ -100,14 +100,17 @@ extension JavaExtractor {
             }
         }
 
-        return ModifierInfo(accessLevel: accessLevel, modifiers: modifiers, annotations: annotations)
+        // Java's default (no explicit modifier) is package-private — resolved here so the engine
+        // never sees a nil visibility.
+        return ModifierInfo(
+            accessLevel: accessLevel ?? .packagePrivate, modifiers: modifiers, annotations: annotations)
     }
 
     func extractModifiersFromParent(_ node: Node) -> ModifierInfo {
         if let modifiersNode = node.firstChild(withType: "modifiers") {
             return extractModifiers(modifiersNode)
         }
-        return ModifierInfo(accessLevel: nil, modifiers: [], annotations: [])
+        return ModifierInfo(accessLevel: .packagePrivate, modifiers: [], annotations: [])
     }
 
     // MARK: - Class Declaration

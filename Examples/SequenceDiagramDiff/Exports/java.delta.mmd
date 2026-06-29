@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Checkout as Checkout
+    participant PaymentService as PaymentService
+    participant AuditService as AuditService
+    Checkout->>PaymentService: charge
+    PaymentService-->>Checkout: 
+    Checkout->>AuditService: log
+    AuditService-->>Checkout: 
+    Checkout->>PaymentService: verify

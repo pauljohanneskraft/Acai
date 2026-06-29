@@ -2,7 +2,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case classDiagram = "class"
     case sequenceDiagram = "sequence"
     case stateDiagram = "state"
-    case useCaseDiagram = "useCase"
     case packageDiagram = "package"
     case callGraph = "callGraph"
 
@@ -16,8 +15,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "Sequence Diagram"
         case .stateDiagram:
             "State Diagram"
-        case .useCaseDiagram:
-            "Use Case Diagram"
         case .packageDiagram:
             "Package Diagram"
         case .callGraph:
@@ -33,8 +30,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "arrow.right.arrow.left"
         case .stateDiagram:
             "circle.hexagonpath"
-        case .useCaseDiagram:
-            "person.3"
         case .packageDiagram:
             "shippingbox"
         case .callGraph:

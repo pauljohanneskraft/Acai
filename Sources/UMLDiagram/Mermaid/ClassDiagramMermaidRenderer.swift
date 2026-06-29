@@ -2,7 +2,7 @@ import UMLCore
 
 /// Renders a `CodeArtifact` as a Mermaid `classDiagram`.
 ///
-/// Mirrors `DOTGenerator`: it builds the same `ClassDiagram` model and honours the
+/// Mirrors `ClassDiagramDOTRenderer`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
 public struct ClassDiagramMermaidRenderer: Sendable {
@@ -25,12 +25,23 @@ public struct ClassDiagramMermaidRenderer: Sendable {
         var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         let types = enriched.types + (options.showExternalTypes ? enriched.externalTypes : [])
+        // A per-node delta override fills the node via a trailing `style` directive; gated on the
+        // closure so non-delta output is byte-for-byte unchanged.
+        var nodeStyles: [String] = []
         for type in types {
             let safe = allocator.id(for: type.id)
             idMap[type.id] = safe
             lines.append(contentsOf: renderClass(type, safeID: safe))
+            if let color = options.nodeColorOverride?(type) {
+                nodeStyles.append("    style \(safe) stroke:\(color),stroke-width:3px")
+            }
         }
+        lines.append(contentsOf: nodeStyles)
 
+        // Mermaid's `classDiagram` has no per-link colouring — `linkStyle` is a flowchart-only
+        // directive and is rejected inside a `classDiagram` block — so a delta `edgeColorOverride`
+        // cannot be honoured here and relationships render uncolored. Node tinting via the `style`
+        // directive above is supported and retained.
         for rel in enriched.relationships where options.includedRelationshipKinds.contains(rel.kind) {
             guard let line = renderRelationship(rel, idMap: idMap) else { continue }
             lines.append(line)
@@ -67,8 +78,8 @@ public struct ClassDiagramMermaidRenderer: Sendable {
 
     private func memberLine(_ member: Member) -> String {
         var line = ""
-        if options.showAccessLevelSymbols, let access = member.accessLevel {
-            line += access.umlSymbol
+        if options.showAccessLevelSymbols {
+            line += member.accessLevel.umlSymbol
         }
         line += member.name
 

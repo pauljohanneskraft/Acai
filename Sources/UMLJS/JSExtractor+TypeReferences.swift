@@ -309,17 +309,20 @@ extension JSExtractor {
         guard let rightNode = assignment.node.child(byFieldName: "right"),
               let rightType = rightNode.nodeType,
               Self.functionNodeTypes.contains(rightType) else {
-            return Member(name: assignment.memberName, kind: .property)
+            return Member(name: assignment.memberName, kind: .property, accessLevel: .internal)
         }
         var modifiers: [Modifier] = []
         if rightNode.hasDirectChildText("async", in: context) { modifiers.append(.async) }
         let params = rightNode.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
-        return Member(name: assignment.memberName, kind: .method, modifiers: modifiers, parameters: params)
+        return Member(
+            name: assignment.memberName, kind: .method, accessLevel: .internal,
+            modifiers: modifiers, parameters: params)
     }
 
     private mutating func ensureTypeExists(name: String) {
         if !types.contains(where: { $0.name == name }) {
-            types.append(TypeDeclaration(id: name, name: name, qualifiedName: name, kind: .class))
+            types.append(
+                TypeDeclaration(id: name, name: name, qualifiedName: name, kind: .class, accessLevel: .internal))
         }
     }
 }

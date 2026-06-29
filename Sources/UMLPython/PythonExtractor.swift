@@ -45,7 +45,7 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     /// Python has no access keywords; visibility is conveyed by leading underscores.
     /// Dunders (`__init__`) are public; `__x` (not a dunder) → private (name-mangled); `_x` →
     /// protected; plain names → public.
-    func accessLevel(forName name: String) -> AccessLevel? {
+    func accessLevel(forName name: String) -> AccessLevel {
         if name.hasPrefix("__") && name.hasSuffix("__") { return .public }
         if name.hasPrefix("__") { return .private }
         if name.hasPrefix("_") { return .protected }

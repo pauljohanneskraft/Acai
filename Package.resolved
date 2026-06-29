@@ -1,13 +1,13 @@
 {
-  "originHash" : "ee86b409d67ccc196ece739b294c82a8a8798855e2bb30ebc504bd2401ebb16b",
+  "originHash" : "1c898c9b6330d5a326fa6c7b416f5f274e647a0f05913a548cd25bcf14144c8a",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
-        "version" : "1.7.0"
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
       }
     },
     {
@@ -56,12 +56,30 @@
       }
     },
     {
+      "identity" : "tree-sitter-c",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tree-sitter/tree-sitter-c",
+      "state" : {
+        "revision" : "b780e47fc780ddc8da13afa35a3f4ed5c157823d",
+        "version" : "0.24.2"
+      }
+    },
+    {
+      "identity" : "tree-sitter-cpp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tree-sitter/tree-sitter-cpp",
+      "state" : {
+        "revision" : "f41e1a044c8a84ea9fa8577fdd2eab92ec96de02",
+        "version" : "0.23.4"
+      }
+    },
+    {
       "identity" : "tree-sitter-dart",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/UserNobody14/tree-sitter-dart",
       "state" : {
         "branch" : "master",
-        "revision" : "81638dbbdb76a0e88ea8c31b95ec76b9625ddb84"
+        "revision" : "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"
       }
     },
     {

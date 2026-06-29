@@ -1,0 +1,3 @@
+class StatementGenerator {
+  Account? account;
+}

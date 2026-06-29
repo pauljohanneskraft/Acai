@@ -13,22 +13,25 @@ public struct SequenceDiagramSnapshotView: View {
     let padding: CGFloat
     let selectedParticipantID: String?
     let palette: DiagramPalette
+    let messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)?
 
     public init(
         layout: SequenceLayoutModel,
         padding: CGFloat = 40,
         selectedParticipantID: String? = nil,
-        palette: DiagramPalette = .light
+        palette: DiagramPalette = .light,
+        messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)? = nil
     ) {
         self.layout = layout
         self.padding = padding
         self.selectedParticipantID = selectedParticipantID
         self.palette = palette
+        self.messageColor = messageColor
     }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
-            SequenceEnsembleView(layout: layout)
+            SequenceEnsembleView(layout: layout, messageColor: messageColor)
 
             // Participant headers on top.
             ForEach(layout.participants) { participant in
@@ -55,9 +58,16 @@ public struct SequenceDiagramSnapshotView: View {
 /// draw their own (interactive or plain) headers on top.
 public struct SequenceEnsembleView: View {
     let layout: SequenceLayoutModel
+    /// Optional per-message delta tint, keyed on the message's layout id. `nil` leaves all
+    /// messages the theme colour (so the app canvas / freeform editor are unaffected).
+    let messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)?
 
-    public init(layout: SequenceLayoutModel) {
+    public init(
+        layout: SequenceLayoutModel,
+        messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)? = nil
+    ) {
         self.layout = layout
+        self.messageColor = messageColor
     }
 
     public var body: some View {
@@ -69,7 +79,7 @@ public struct SequenceEnsembleView: View {
                 SequenceActivationBarView(bar: bar)
             }
             ForEach(layout.messages) { message in
-                SequenceMessageView(message: message)
+                SequenceMessageView(message: message, deltaColor: messageColor?(message))
             }
             // Fragment frames on top: their borders and labels must stay visible over arrows.
             ForEach(layout.fragments) { fragment in
@@ -272,14 +282,17 @@ public struct ParticipantHeaderView: View {
 /// A single message arrow (or self-loop) at its laid-out vertical position.
 public struct SequenceMessageView: View {
     let message: SequenceLayoutModel.MessageLayout
+    /// Per-message delta tint (added/removed). `nil` uses the theme's edge colour.
+    let deltaColor: Color?
 
-    public init(message: SequenceLayoutModel.MessageLayout) {
+    public init(message: SequenceLayoutModel.MessageLayout, deltaColor: Color? = nil) {
         self.message = message
+        self.deltaColor = deltaColor
     }
 
     @Environment(\.diagramPalette) private var palette
 
-    private var color: Color { palette.edgeLine }
+    private var color: Color { deltaColor ?? palette.edgeLine }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {

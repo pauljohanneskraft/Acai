@@ -9,9 +9,10 @@ struct PerTypeVisibilityTests {
     private func typeWithEverything(id: String) -> TypeDeclaration {
         TypeDeclaration(
             id: id, name: id, qualifiedName: id, kind: .enum,
+            accessLevel: .public,
             members: [
-                Member(name: "value", kind: .property, type: TypeReference(name: "Int")),
-                Member(name: "run", kind: .method)
+                Member(name: "value", kind: .property, accessLevel: .internal, type: TypeReference(name: "Int")),
+                Member(name: "run", kind: .method, accessLevel: .internal)
             ],
             enumCases: [EnumCase(name: "one")]
         )

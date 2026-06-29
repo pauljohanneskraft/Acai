@@ -34,7 +34,7 @@ Pass an empty `allowedLanguages` array to let UML analyze every language it reco
 // `language` carries the source language's quirks (type classification, stereotypes);
 // resolve it from the standard registry for the artifact's language.
 let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
-let dot = DOTGenerator(options: options).generate(from: artifact)
+let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 try dot.write(to: URL(filePath: "project.dot"), atomically: true, encoding: .utf8)
 // Render anywhere Graphviz runs:  dot -Tpng project.dot -o project.png
 ```

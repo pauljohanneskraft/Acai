@@ -9,11 +9,20 @@ public struct PackageDiagramSnapshotView: View {
     let layout: PackageLayoutModel
     let padding: CGFloat
     let palette: DiagramPalette
+    /// Optional delta tints; `nil` leaves nodes/edges themed as normal.
+    let nodeColor: (@Sendable (String) -> Color?)?
+    let edgeColor: (@Sendable (String, String) -> Color?)?
 
-    public init(layout: PackageLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light) {
+    public init(
+        layout: PackageLayoutModel, padding: CGFloat = 40, palette: DiagramPalette = .light,
+        nodeColor: (@Sendable (String) -> Color?)? = nil,
+        edgeColor: (@Sendable (String, String) -> Color?)? = nil
+    ) {
         self.layout = layout
         self.padding = padding
         self.palette = palette
+        self.nodeColor = nodeColor
+        self.edgeColor = edgeColor
     }
 
     public var body: some View {
@@ -24,7 +33,8 @@ public struct PackageDiagramSnapshotView: View {
                         kind: .dependency,
                         sourceRect: source,
                         targetRect: target,
-                        lineWidthScale: min(1 + CGFloat(edge.weight - 1) * 0.35, 3)
+                        lineWidthScale: min(1 + CGFloat(edge.weight - 1) * 0.35, 3),
+                        strokeColor: edgeColor?(edge.from, edge.to)
                     )
                 }
             }
@@ -51,7 +61,8 @@ public struct PackageDiagramSnapshotView: View {
         .frame(width: node.rect.width, height: node.rect.height)
         .background(Color(hex: module.zoneColorHex))
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(white: 0.5), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6)
+            .stroke(nodeColor?(node.id) ?? Color(white: 0.5), lineWidth: nodeColor?(node.id) == nil ? 1 : 3))
         .position(x: node.rect.midX, y: node.rect.midY)
     }
 

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant func_place_order as «control»<br/>place_order
+    participant func_charge as «control»<br/>charge
+    participant func_log_event as «control»<br/>log_event
+    participant func_verify as «control»<br/>verify
+    func_place_order->>func_charge: charge
+    func_charge-->>func_place_order: 
+    func_place_order->>func_log_event: log_event
+    func_log_event-->>func_place_order: 
+    func_place_order->>func_verify: verify
+    func_verify-->>func_place_order: 

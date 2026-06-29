@@ -226,17 +226,21 @@ struct ProjectBrowserView: View {
                     .id(diagramID)
                     .environmentObject(model)
             case .packageDiagram:
-                PackageDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) {
+                    PackageDiagramView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             case .callGraph:
                 CallGraphView(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
                     .environmentObject(model)
             default:
-                ClassDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) {
+                    ClassDiagramView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             }
         } else {
             VStack(spacing: 12) {
@@ -247,6 +251,24 @@ struct ProjectBrowserView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// Wraps a drawable diagram with the delta-comparison bar, loading the git-revision snapshot on
+    /// demand and rebuilding the diagram once it (or a changed ref) is available.
+    @ViewBuilder
+    private func deltaHosted(
+        diagram: GeneratedDiagram, @ViewBuilder content: () -> some View
+    ) -> some View {
+        let loaded = model.comparisonArtifact(for: diagram) != nil
+        VStack(spacing: 0) {
+            DeltaComparisonBar(diagram: diagram)
+            content()
+                .id("\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(loaded)")
+        }
+        .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")") {
+            await model.ensureComparisonLoaded(for: diagram)
+        }
+        .environmentObject(model)
     }
 
     @ViewBuilder

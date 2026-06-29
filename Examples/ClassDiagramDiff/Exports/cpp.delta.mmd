@@ -1,0 +1,25 @@
+classDiagram
+    class Account["Account"]
+    class AdminUser["AdminUser"]
+    class LegacyAudit["LegacyAudit"] {
+        +review() void
+    }
+    class OrderService["OrderService"] {
+        +gateway PaymentGateway
+        +place() void
+    }
+    class PaymentGateway["PaymentGateway"]
+    class Receipt["Receipt"] {
+        +total int
+    }
+    class User["User"] {
+        -name std::string
+        -email std::string
+    }
+    style LegacyAudit stroke:#c62828,stroke-width:3px
+    style OrderService stroke:#f9a825,stroke-width:3px
+    style Receipt stroke:#2e7d32,stroke-width:3px
+    style User stroke:#f9a825,stroke-width:3px
+    User <|-- AdminUser
+    OrderService *-- "1" PaymentGateway : gateway
+    Account <|-- User

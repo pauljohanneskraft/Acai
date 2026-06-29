@@ -82,11 +82,11 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
 
     /// Returns true if the given access level is at or above the minimum. Used both for
     /// member visibility and for hiding whole types below the minimum access level. Uses the single
-    /// `AccessLevel.visibilityRank` ordering shared with the DOT/Mermaid renderers (a `nil` level
-    /// counts as `.internal`).
-    public static func passesAccessFilter(_ memberAccess: AccessLevel?, minimum: AccessLevel?) -> Bool {
+    /// `AccessLevel.visibilityRank` ordering shared with the DOT/Mermaid renderers. A `nil` `minimum`
+    /// keeps everything.
+    public static func passesAccessFilter(_ access: AccessLevel, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
-        return (memberAccess ?? .internal).visibilityRank >= minimum.visibilityRank
+        return access.visibilityRank >= minimum.visibilityRank
     }
 }
 

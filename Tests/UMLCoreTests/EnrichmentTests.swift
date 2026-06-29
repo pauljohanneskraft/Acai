@@ -10,6 +10,7 @@ struct EnrichmentTests {
     private func type(
         _ name: String,
         kind: TypeKind = .struct,
+        accessLevel: AccessLevel = .internal,
         members: [Member] = [],
         inherited: [String] = [],
         nested: [TypeDeclaration] = [],
@@ -19,6 +20,7 @@ struct EnrichmentTests {
         TypeDeclaration(
             id: name, name: name, qualifiedName: name,
             kind: extensionOf == nil ? kind : .extension,
+            accessLevel: accessLevel,
             inheritedTypes: inherited.map { TypeReference(name: $0) },
             members: members, nestedTypes: nested,
             extensionOf: extensionOf,
@@ -33,10 +35,11 @@ struct EnrichmentTests {
     // MARK: GAP-8 — inferred multiplicity labels
 
     @Test func optionalScalarPropertyYieldsZeroOrOneMultiplicity() {
-        let car = type("Car", kind: .class, members: [
-            Member(name: "engine", kind: .property, type: TypeReference(name: "Engine", isOptional: true))
+        let car = type("Car", kind: .class, accessLevel: .public, members: [
+            Member(name: "engine", kind: .property,
+                accessLevel: .internal, type: TypeReference(name: "Engine", isOptional: true))
         ])
-        let engine = type("Engine", kind: .class)
+        let engine = type("Engine", kind: .class, accessLevel: .public)
         let resolved = artifact([car, engine]).enriched()
 
         let edge = resolved.relationships.first { $0.source == "Car" && $0.target == "Engine" }
@@ -44,11 +47,13 @@ struct EnrichmentTests {
     }
 
     @Test func scalarAndCollectionPropertiesKeepOneAndStarMultiplicities() {
-        let car = type("Car", kind: .class, members: [
-            Member(name: "engine", kind: .property, type: TypeReference(name: "Engine")),
-            Member(name: "wheels", kind: .property, type: TypeReference(name: "Wheel", isArray: true))
+        let car = type("Car", kind: .class, accessLevel: .public, members: [
+            Member(name: "engine", kind: .property, accessLevel: .internal, type: TypeReference(name: "Engine")),
+            Member(name: "wheels", kind: .property,
+                accessLevel: .internal, type: TypeReference(name: "Wheel", isArray: true))
         ])
-        let resolved = artifact([car, type("Engine", kind: .class), type("Wheel", kind: .class)]).enriched()
+        let resolved = artifact([car, type("Engine", kind: .class,
+            accessLevel: .public), type("Wheel", kind: .class, accessLevel: .public)]).enriched()
 
         #expect(resolved.relationships.first { $0.target == "Engine" }?.targetLabel == "1")
         #expect(resolved.relationships.first { $0.target == "Wheel" }?.targetLabel == "*")
@@ -57,7 +62,7 @@ struct EnrichmentTests {
     // MARK: Stereotypes (kind + annotations)
 
     @Test func annotationStereotypeWinsOverKind() {
-        var user = type("User", kind: .class)
+        var user = type("User", kind: .class, accessLevel: .public)
         user.annotations = ["@Entity"]
         // The annotation → stereotype map is injected (it lives in a language's configuration now).
         #expect(user.stereotype(annotationStereotypes: ["entity": "entity"]) == "entity")
@@ -66,14 +71,14 @@ struct EnrichmentTests {
     }
 
     @Test func kindStereotypeUsedWhenNoKnownAnnotation() {
-        var widget = type("Widget", kind: .protocol)
+        var widget = type("Widget", kind: .protocol, accessLevel: .public)
         widget.annotations = ["@SomethingUnknown"]
         #expect(widget.stereotype() == "interface")
     }
 
     @Test func annotationStereotypeToleratesWhitespaceNewlinesAndQualifiers() {
         // Leading whitespace/newlines, package qualifiers and argument lists must still match.
-        var user = type("User", kind: .class)
+        var user = type("User", kind: .class, accessLevel: .public)
         user.annotations = ["\n  @jakarta.persistence.Table(name = \"users\")"]
         #expect(user.stereotype(annotationStereotypes: ["table": "entity"]) == "entity")
     }
@@ -81,12 +86,12 @@ struct EnrichmentTests {
     // MARK: BUG-1 / BUG-2 / BUG-6 — extension relationships
 
     @Test func extensionResolutionMergesMembersWithoutDanglingOrDuplicateEdges() {
-        let base = type("Foo", kind: .struct)
-        let ext = type("Foo", members: [Member(name: "extra", kind: .method)],
+        let base = type("Foo", kind: .struct, accessLevel: .public)
+        let ext = type("Foo", members: [Member(name: "extra", kind: .method, accessLevel: .internal)],
                        extensionOf: "Foo")
         var extWithConformance = ext
         extWithConformance.inheritedTypes = [TypeReference(name: "Bar")]
-        let proto = type("Bar", kind: .protocol)
+        let proto = type("Bar", kind: .protocol, accessLevel: .public)
 
         let resolved = artifact([base, extWithConformance, proto]).enriched()
 
@@ -116,15 +121,16 @@ struct EnrichmentTests {
     // MARK: BUG-7 — extension of a nested type resolves and merges
 
     @Test func extensionOfNestedTypeMerges() {
-        let inner = type("Inner", kind: .struct)
+        let inner = type("Inner", kind: .struct, accessLevel: .public)
         var innerNested = inner
         innerNested.id = "Outer.Inner"
         innerNested.qualifiedName = "Outer.Inner"
         let outer = TypeDeclaration(
             id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .struct,
+            accessLevel: .public,
             nestedTypes: [innerNested],
             location: SourceLocation(filePath: "M/Sources/M/O.swift", line: 1, column: 1))
-        var ext = type("Outer.Inner", members: [Member(name: "added", kind: .method)],
+        var ext = type("Outer.Inner", members: [Member(name: "added", kind: .method, accessLevel: .internal)],
                        extensionOf: "Outer.Inner")
         ext.id = "extension.Outer.Inner"
 
@@ -137,9 +143,9 @@ struct EnrichmentTests {
     // MARK: BUG-3 — class conformance reclassified, true superclass kept
 
     @Test func inheritanceToProtocolBecomesConformance() {
-        let proto = type("Drawable", kind: .protocol)
-        let base = type("Base", kind: .class)
-        let child = type("Child", kind: .class)
+        let proto = type("Drawable", kind: .protocol, accessLevel: .public)
+        let base = type("Base", kind: .class, accessLevel: .public)
+        let child = type("Child", kind: .class, accessLevel: .public)
         let rels = [
             Relationship(kind: .inheritance, source: "Child", target: "Base"),
             Relationship(kind: .inheritance, source: "Child", target: "Drawable")
@@ -156,9 +162,11 @@ struct EnrichmentTests {
     @Test func relationshipNamesResolveToNestedTypeIds() {
         let nested = TypeDeclaration(
             id: "Wrapper.Payload", name: "Payload", qualifiedName: "Wrapper.Payload", kind: .struct,
+            accessLevel: .public,
             location: SourceLocation(filePath: "M/Sources/M/W.swift", line: 1, column: 1))
         let wrapper = TypeDeclaration(
             id: "Wrapper", name: "Wrapper", qualifiedName: "Wrapper", kind: .struct,
+            accessLevel: .public,
             nestedTypes: [nested],
             location: SourceLocation(filePath: "M/Sources/M/W.swift", line: 1, column: 1))
         let user = type("User", inherited: [])
@@ -174,14 +182,15 @@ struct EnrichmentTests {
     // MARK: GAP-8 — inferred structural edges
 
     @Test func propertyAndMethodTypesProduceStructuralEdges() {
-        let engine = type("Engine", kind: .struct)
-        let car = type("Car", kind: .struct, members: [
-            Member(name: "engine", kind: .property, type: TypeReference(name: "Engine")),
+        let engine = type("Engine", kind: .struct, accessLevel: .public)
+        let car = type("Car", kind: .struct, accessLevel: .public, members: [
+            Member(name: "engine", kind: .property, accessLevel: .internal, type: TypeReference(name: "Engine")),
             Member(name: "wheels", kind: .property,
+                   accessLevel: .internal,
                    type: TypeReference(name: "Array", genericArguments: [TypeReference(name: "Wheel")], isArray: true)),
-            Member(name: "start", kind: .method, type: TypeReference(name: "Engine"))
+            Member(name: "start", kind: .method, accessLevel: .internal, type: TypeReference(name: "Engine"))
         ])
-        let wheel = type("Wheel", kind: .struct)
+        let wheel = type("Wheel", kind: .struct, accessLevel: .public)
         let resolved = artifact([engine, car, wheel]).enriched()
         let kinds = Dictionary(grouping: resolved.relationships.filter { $0.source == "Car" },
                                by: { $0.target }).mapValues { $0.map(\.kind) }
@@ -192,7 +201,7 @@ struct EnrichmentTests {
     // MARK: GAP-9 — typealias underlying-type dependency
 
     @Test func typeAliasProducesDependencyEdge() {
-        let target = type("Money", kind: .struct)
+        let target = type("Money", kind: .struct, accessLevel: .public)
         let alias = type("Currency", kind: .typeAlias, inherited: ["Money"])
         let resolved = artifact([target, alias]).enriched()
         #expect(resolved.relationships.contains {

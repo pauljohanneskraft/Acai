@@ -27,9 +27,9 @@ classDiagram
     }
     class medialibrary_Playable["Playable"] {
         <<interface>>
-        title() String
-        duration() double
-        play() void
+        ~title() String
+        ~duration() double
+        ~play() void
     }
     class medialibrary_Player["Player"] {
         -library Library

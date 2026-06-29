@@ -91,7 +91,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = KotlinCodeParser().parse(source: source, fileName: "Source.kt")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
     }
 
@@ -108,7 +108,7 @@ struct UMLLibraryTests {
         """
         let artifact = SwiftCodeParser().parse(source: source, fileName: "Source.swift")
         print(artifact)
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
     }
 
@@ -126,7 +126,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "User.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(diagram.contains("User"))
         #expect(diagram.contains("name"))
@@ -149,7 +149,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "Animal.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(diagram.contains("Animal"))
         #expect(diagram.contains("Dog"))
@@ -179,7 +179,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "Bird.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(diagram.contains("Bird"))
         #expect(diagram.contains("Flyable"))
@@ -199,7 +199,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "Status.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(diagram.contains("Status"))
         #expect(artifact.types[0].enumCases.count == 4)
@@ -223,7 +223,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "Generics.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(diagram.contains("Box"))
         #expect(diagram.contains("Pair"))
@@ -242,7 +242,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "StringExt.dart")
-        let diagram = DOTGenerator(for: artifact).generate(from: artifact)
+        let diagram = ClassDiagramDOTRenderer(for: artifact).generate(from: artifact)
         print(diagram)
         #expect(artifact.types.count >= 1)
         let ext = artifact.types.first { $0.kind == .extension }

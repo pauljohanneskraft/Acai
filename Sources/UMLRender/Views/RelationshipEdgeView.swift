@@ -17,6 +17,10 @@ public struct RelationshipEdgeView: View, Equatable {
     /// Multiplies the kind's default line width — used by the package diagram to encode a
     /// dependency's weight as thickness. Defaults to `1` (unchanged for class/state edges).
     let lineWidthScale: CGFloat
+    /// Optional colour override for the line and arrow/diamond strokes. When set (e.g. a delta
+    /// diagram tinting an added/removed edge) it wins over `palette.edgeLine`; `nil` leaves the
+    /// edge themed exactly as before.
+    let strokeColor: Color?
 
     public init(
         kind: Relationship.Kind,
@@ -25,7 +29,8 @@ public struct RelationshipEdgeView: View, Equatable {
         label: String? = nil,
         sourceLabel: String? = nil,
         targetLabel: String? = nil,
-        lineWidthScale: CGFloat = 1
+        lineWidthScale: CGFloat = 1,
+        strokeColor: Color? = nil
     ) {
         self.kind = kind
         self.sourceRect = sourceRect
@@ -34,12 +39,14 @@ public struct RelationshipEdgeView: View, Equatable {
         self.sourceLabel = sourceLabel
         self.targetLabel = targetLabel
         self.lineWidthScale = lineWidthScale
+        self.strokeColor = strokeColor
     }
 
     nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect
             && lhs.kind == rhs.kind && lhs.label == rhs.label && lhs.lineWidthScale == rhs.lineWidthScale
             && lhs.sourceLabel == rhs.sourceLabel && lhs.targetLabel == rhs.targetLabel
+            && lhs.strokeColor == rhs.strokeColor
     }
 
     @Environment(\.diagramPalette) private var palette
@@ -84,17 +91,20 @@ public struct RelationshipEdgeView: View, Equatable {
                     dashPhase: baseStyle.dashPhase
                 )
 
-                linePath.stroke(palette.edgeLine, style: style)
+                // A delta override tints the strokes; otherwise the themed edge colour is used.
+                let lineColor = strokeColor ?? palette.edgeLine
+
+                linePath.stroke(lineColor, style: style)
 
                 // Arrow head at target
                 switch kind {
                 case .inheritance, .conformance, .extension:
                     // Empty triangle: stroke only (unfilled)
                     arrowPath.fill(palette.edgeDecorationFill)
-                    arrowPath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
+                    arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
                 case .association, .dependency, .nesting:
                     // Open arrow: stroke only
-                    arrowPath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
+                    arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
                 default:
                     EmptyView()
                 }
@@ -103,10 +113,10 @@ public struct RelationshipEdgeView: View, Equatable {
                 if kind.hasSourceDecoration {
                     sourcePath.fill(
                         kind.isSourceDecorationFilled
-                            ? palette.edgeLine
+                            ? lineColor
                             : palette.edgeDecorationFill
                     )
-                    sourcePath.stroke(palette.edgeLine, lineWidth: style.lineWidth)
+                    sourcePath.stroke(lineColor, lineWidth: style.lineWidth)
                 }
             }
 
