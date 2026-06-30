@@ -1,9 +1,14 @@
 import SwiftSyntax
 import UMLCore
 
-extension TypeExtractor {
+/// Extracts a type's members (functions, properties, initializers, deinitializers, subscripts, and
+/// enum cases) from their SwiftSyntax declarations. Composes the shared signature/type-reference/
+/// location helpers rather than re-deriving them.
+struct MemberExtractor {
 
-    // MARK: - Declaration Extraction
+    private let signatures = DeclarationSignatureExtractor()
+    private let typeReferences = TypeReferenceExtractor()
+    private let sourceLocations = SourceLocationResolver()
 
     func extractFunction(
         from node: FunctionDeclSyntax,
@@ -11,13 +16,13 @@ extension TypeExtractor {
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = []
     ) -> Member {
-        let modifiers = extractModifiers(from: node.modifiers)
-        let accessLevel = extractAccessLevel(from: node.modifiers)
-        let annotations = extractAttributes(from: node.attributes)
-        let genericParams = extractGenericParameters(
+        let modifiers = signatures.extractModifiers(from: node.modifiers)
+        let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
+        let annotations = signatures.extractAttributes(from: node.attributes)
+        let genericParams = signatures.extractGenericParameters(
             from: node.genericParameterClause, whereClause: node.genericWhereClause)
-        let parameters = extractParameters(from: node.signature.parameterClause)
-        let returnType = extractReturnType(from: node.signature.returnClause)
+        let parameters = signatures.extractParameters(from: node.signature.parameterClause)
+        let returnType = signatures.extractReturnType(from: node.signature.returnClause)
 
         var effectModifiers: [Modifier] = modifiers
         if node.signature.effectSpecifiers?.asyncSpecifier != nil {
@@ -36,39 +41,21 @@ extension TypeExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocation(of: node, fileName: fileName),
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
             assignments: assignments
         )
     }
 
     func extractVariable(from node: VariableDeclSyntax, fileName: String) -> [Member] {
-        let accessLevel = extractAccessLevel(from: node.modifiers)
-        let setAccess = extractSetAccessLevel(from: node.modifiers)
-        let modifiers = extractModifiers(from: node.modifiers)
-        let annotations = extractAttributes(from: node.attributes)
-        let location = sourceLocation(of: node, fileName: fileName)
+        let attributes = PropertyAttributes(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            setAccessLevel: signatures.extractSetAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            annotations: signatures.extractAttributes(from: node.attributes),
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+        )
         let bindings = Array(node.bindings)
-
-        func makeMember(
-            name: String,
-            type: TypeReference?,
-            isComputed: Bool,
-            initialValue: VariableAssignment.Value? = nil
-        ) -> Member {
-            Member(
-                name: name,
-                kind: .property,
-                accessLevel: accessLevel,
-                setAccessLevel: setAccess,
-                modifiers: modifiers,
-                type: type,
-                isComputed: isComputed,
-                annotations: annotations,
-                location: location,
-                initialValue: initialValue
-            )
-        }
 
         var members: [Member] = []
         for (index, binding) in bindings.enumerated() {
@@ -78,27 +65,68 @@ extension TypeExtractor {
                 ?? bindings[index...].lazy.compactMap { $0.typeAnnotation?.type }.first
 
             if let pattern = binding.pattern.as(IdentifierPatternSyntax.self) {
-                members.append(makeMember(
+                members.append(makeProperty(
                     name: pattern.identifier.text,
-                    type: annotationType.map { extractTypeReference(from: $0) },
+                    type: annotationType.map { typeReferences.extractTypeReference(from: $0) },
                     isComputed: isComputedBinding(binding),
-                    initialValue: binding.initializer.map { SwiftValueClassifier().classify($0.value) }
+                    initialValue: binding.initializer.map { SwiftValueClassifier().classify($0.value) },
+                    attributes: attributes
                 ))
             } else if let tuple = binding.pattern.as(TuplePatternSyntax.self) {
-                // Decompose `let (a, b) = …` into one member per element.
-                let tupleType = annotationType?.as(TupleTypeSyntax.self)
-                let elementTypes = tupleType.map { Array($0.elements) }
-                for (elementIndex, element) in tuple.elements.enumerated() {
-                    guard let elementId = element.pattern.as(IdentifierPatternSyntax.self) else { continue }
-                    let elementType = elementTypes.flatMap {
-                        elementIndex < $0.count ? extractTypeReference(from: $0[elementIndex].type) : nil
-                    }
-                    members.append(makeMember(
-                        name: elementId.identifier.text, type: elementType, isComputed: false))
-                }
+                members.append(contentsOf: tupleMembers(
+                    of: tuple, annotationType: annotationType, attributes: attributes))
             }
         }
         return members
+    }
+
+    /// The binding-independent attributes shared by every property member of one `var`/`let` decl.
+    private struct PropertyAttributes {
+        let accessLevel: AccessLevel
+        let setAccessLevel: AccessLevel?
+        let modifiers: [Modifier]
+        let annotations: [String]
+        let location: UMLCore.SourceLocation
+    }
+
+    private func makeProperty(
+        name: String,
+        type: TypeReference?,
+        isComputed: Bool,
+        initialValue: VariableAssignment.Value? = nil,
+        attributes: PropertyAttributes
+    ) -> Member {
+        Member(
+            name: name,
+            kind: .property,
+            accessLevel: attributes.accessLevel,
+            setAccessLevel: attributes.setAccessLevel,
+            modifiers: attributes.modifiers,
+            type: type,
+            isComputed: isComputed,
+            annotations: attributes.annotations,
+            location: attributes.location,
+            initialValue: initialValue
+        )
+    }
+
+    /// Decomposes `let (a, b) = …` into one member per element, pairing each with its tuple-type slot.
+    private func tupleMembers(
+        of tuple: TuplePatternSyntax,
+        annotationType: TypeSyntax?,
+        attributes: PropertyAttributes
+    ) -> [Member] {
+        let elementTypes = annotationType?.as(TupleTypeSyntax.self).map { Array($0.elements) }
+        return tuple.elements.enumerated().compactMap { elementIndex, element in
+            guard let elementId = element.pattern.as(IdentifierPatternSyntax.self) else { return nil }
+            let elementType = elementTypes.flatMap {
+                elementIndex < $0.count
+                    ? typeReferences.extractTypeReference(from: $0[elementIndex].type) : nil
+            }
+            return makeProperty(
+                name: elementId.identifier.text, type: elementType, isComputed: false,
+                attributes: attributes)
+        }
     }
 
     /// Whether a binding declares a computed property (has an explicit getter),
@@ -119,12 +147,12 @@ extension TypeExtractor {
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = []
     ) -> Member {
-        let accessLevel = extractAccessLevel(from: node.modifiers)
-        var modifiers = extractModifiers(from: node.modifiers)
-        let annotations = extractAttributes(from: node.attributes)
-        let genericParams = extractGenericParameters(
+        let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
+        var modifiers = signatures.extractModifiers(from: node.modifiers)
+        let annotations = signatures.extractAttributes(from: node.attributes)
+        let genericParams = signatures.extractGenericParameters(
             from: node.genericParameterClause, whereClause: node.genericWhereClause)
-        let parameters = extractParameters(from: node.signature.parameterClause)
+        let parameters = signatures.extractParameters(from: node.signature.parameterClause)
 
         if node.signature.effectSpecifiers?.asyncSpecifier != nil {
             modifiers.append(.async)
@@ -141,37 +169,37 @@ extension TypeExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocation(of: node, fileName: fileName),
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
             assignments: assignments
         )
     }
 
     func extractDeinitializer(from node: DeinitializerDeclSyntax, fileName: String) -> Member {
-        let accessLevel = extractAccessLevel(from: node.modifiers)
-        let modifiers = extractModifiers(from: node.modifiers)
+        let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
+        let modifiers = signatures.extractModifiers(from: node.modifiers)
 
         return Member(
             name: "deinit",
             kind: .deinitializer,
             accessLevel: accessLevel,
             modifiers: modifiers,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
     func extractSubscript(from node: SubscriptDeclSyntax, fileName: String) -> Member {
-        let accessLevel = extractAccessLevel(from: node.modifiers)
-        let modifiers = extractModifiers(from: node.modifiers)
-        let annotations = extractAttributes(from: node.attributes)
-        let genericParams = extractGenericParameters(
+        let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
+        let modifiers = signatures.extractModifiers(from: node.modifiers)
+        let annotations = signatures.extractAttributes(from: node.attributes)
+        let genericParams = signatures.extractGenericParameters(
             from: node.genericParameterClause, whereClause: node.genericWhereClause)
 
         let parameters = node.parameterClause.parameters.map { param in
-            extractParameter(from: param)
+            signatures.extractParameter(from: param)
         }
 
-        let returnType = extractTypeReference(from: node.returnClause.type)
+        let returnType = typeReferences.extractTypeReference(from: node.returnClause.type)
 
         return Member(
             name: "subscript",
@@ -182,7 +210,7 @@ extension TypeExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -192,7 +220,7 @@ extension TypeExtractor {
                 clause.parameters.map { param in
                     let externalName = param.firstName?.text
                     let internalName = param.secondName?.text ?? param.firstName?.text ?? "_"
-                    let typeRef = extractTypeReference(from: param.type)
+                    let typeRef = typeReferences.extractTypeReference(from: param.type)
                     let defaultValue = param.defaultValue?.value.trimmedDescription
                     return Parameter(
                         externalName: externalName,
@@ -209,7 +237,7 @@ extension TypeExtractor {
                 name: element.name.text,
                 rawValue: rawValue,
                 associatedValues: associatedValues,
-                location: sourceLocation(of: node, fileName: fileName)
+                location: sourceLocations.sourceLocation(of: node, fileName: fileName)
             )
         }
     }

@@ -29,7 +29,22 @@ budgets:
 # concrete; forcing abstraction in for the metric's sake would be over-engineering. Track distance
 # informationally via `uml metrics`, but it is not an actionable budget for this codebase.
 #
-# Known accepted budget exceptions (essential complexity, not regressions): the per-language
-# tree-sitter extractors (Dart/JS/Java/Kotlin/Python/C-family) carry high fan-out/method counts
-# because each targets a distinct grammar — the genuinely shared logic already lives in
-# `TreeSitterExtracting`, and the grammars don't share a member-extraction mold.
+# Known accepted budget exceptions (essential complexity, not regressions):
+#
+# 1. The per-language tree-sitter extractors (Dart/JS/Java/Kotlin/Python/C-family) carry high
+#    fan-out/method counts because each targets a distinct grammar — the genuinely shared logic
+#    already lives in `TreeSitterExtracting`, and the grammars don't share a member-extraction mold.
+#
+# 2. `DeclarationVisitor` (UMLSwift) is a `SwiftSyntax.SyntaxVisitor`: it must declare one
+#    `visit`/`visitPost` override per syntax node kind it handles (~17 declaration/expression types),
+#    and each override references that concrete node type — so fan-out and method count have a floor
+#    set by the grammar surface, not by responsibility bloat. The separable logic *has* been carved
+#    out into values it composes (`TypeDeclarationExtractor`, `MemberExtractor`,
+#    `DeclarationSignatureExtractor`, `TypeReferenceExtractor`, `SourceLocationResolver`, and
+#    `CallSiteCollector` for the body-level call-site/assignment/reference analysis); what remains is
+#    the irreducible visitor dispatch surface.
+#
+# 3. `CodeArtifact` (UMLCore) has high fan-IN by design — it is the foundational data model every
+#    layer reads. The remedy for a hub is stability + tests + a documented contract (see #88/#94),
+#    not artificial fan-in reduction, which would only scatter the model. Keep it stable and small in
+#    behaviour, not split.

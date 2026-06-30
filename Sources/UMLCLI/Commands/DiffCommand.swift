@@ -127,132 +127,27 @@ extension UMLCommand {
             }
         }
 
-        /// Dispatches to the requested diagram type's delta renderer. Each builds the type's diagram
+        /// Dispatches to the requested diagram type's delta exporter. Each builds the type's diagram
         /// model from both revisions, diffs the two models, and renders the union with added=green/
         /// removed=red/changed=amber via the gated per-element colour overrides.
         private func deltaDiagram(old: CodeArtifact, new: CodeArtifact, format: FormatOption) throws -> String {
+            let diagramFormat = format.diagramFormat
             if let sequenceFrom {
-                return try sequenceDelta(old: old, new: new, entry: sequenceFrom, format: format)
+                return try SequenceDeltaExporter(
+                    request: SequenceDiagramRequest(entryPoint: sequenceFrom, maxDepth: maxDepth)
+                ).render(old: old, new: new, format: diagramFormat)
             } else if let stateFrom {
-                return try stateDelta(old: old, new: new, variable: stateFrom, format: format)
+                return try StateDeltaExporter(
+                    request: StateDiagramRequest(variable: stateFrom, maxStates: maxStates)
+                ).render(old: old, new: new, format: diagramFormat)
             } else if package {
-                return packageDelta(old: old, new: new, format: format)
+                return PackageDeltaExporter().render(old: old, new: new, format: diagramFormat)
             } else if callGraph {
-                return try callGraphDelta(old: old, new: new, format: format)
+                return try CallGraphDeltaExporter(
+                    request: CallGraphRequest(scope: CallGraphScopeOption(raw: callGraphScope))
+                ).render(old: old, new: new, format: diagramFormat)
             }
-            return classDelta(old: old, new: new, format: format)
-        }
-
-        private func classDelta(old: CodeArtifact, new: CodeArtifact, format: FormatOption) -> String {
-            let differ = ArtifactDiffer()
-            let diff = differ.diff(old: old, new: new)
-            let edgeStatus = diff.relationshipStatusLookup()
-            let typeStatus = diff.typeStatusLookup()
-            let options = ClassDiagramOptions(
-                showExternalTypes: true,
-                language: new.standardLanguageConfiguration,
-                edgeColorOverride: { edgeStatus($0).deltaHex },
-                nodeColorOverride: { typeStatus($0.id).deltaHex }
-            )
-            let union = differ.unionArtifact(old: old, new: new)
-            switch format {
-            case .dot:
-                return ClassDiagramDOTRenderer(options: options).generate(from: union)
-            case .mermaid:
-                return ClassDiagramMermaidRenderer(options: options).generate(from: union)
-            }
-        }
-
-        private func sequenceDelta(
-            old: CodeArtifact, new: CodeArtifact, entry: String, format: FormatOption
-        ) throws -> String {
-            let entryPoint = try parseSequenceEntryPoint(entry)
-            let oldDiagram = SequenceDiagramBuilder(entryPoint: entryPoint, maxDepth: maxDepth).build(from: old)
-            let newDiagram = SequenceDiagramBuilder(entryPoint: entryPoint, maxDepth: maxDepth).build(from: new)
-            let diff = SequenceDiagramDiff(old: oldDiagram, new: newDiagram)
-            switch format {
-            case .dot:
-                return SequenceDiagramDOTRenderer(
-                    messageColor: { diff.status(of: $0).deltaHex }
-                ).render(diff.union)
-            case .mermaid:
-                // Mermaid sequence syntax has no per-message colour; render the union uncolored.
-                return SequenceDiagramMermaidRenderer().render(diff.union)
-            }
-        }
-
-        private func stateDelta(
-            old: CodeArtifact, new: CodeArtifact, variable: String, format: FormatOption
-        ) throws -> String {
-            let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
-            let oldDiagram = try StateDiagramBuilder(configuration: configuration)
-                .build(from: old.resolvingExtensions())
-            let newDiagram = try StateDiagramBuilder(configuration: configuration)
-                .build(from: new.resolvingExtensions())
-            let diff = StateDiagramDiff(old: oldDiagram, new: newDiagram)
-            switch format {
-            case .dot:
-                return StateDiagramDOTRenderer(
-                    transitionColor: { diff.status(of: $0).deltaHex }
-                ).render(diff.union)
-            case .mermaid:
-                // Mermaid state syntax has no per-transition colour; render the union uncolored.
-                return StateDiagramMermaidRenderer().render(diff.union)
-            }
-        }
-
-        private func packageDelta(old: CodeArtifact, new: CodeArtifact, format: FormatOption) -> String {
-            let oldDiagram = PackageDiagramBuilder().build(
-                from: old.enriched(configuration: old.standardLanguageConfiguration))
-            let newDiagram = PackageDiagramBuilder().build(
-                from: new.enriched(configuration: new.standardLanguageConfiguration))
-            let diff = PackageDiagramDiff(old: oldDiagram, new: newDiagram)
-            let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
-            let edgeColor: @Sendable (String, String) -> String? = {
-                diff.status(ofEdgeFrom: $0, to: $1).deltaHex
-            }
-            switch format {
-            case .dot:
-                return PackageDiagramDOTRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
-            case .mermaid:
-                return PackageDiagramMermaidRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
-            }
-        }
-
-        private func callGraphDelta(
-            old: CodeArtifact, new: CodeArtifact, format: FormatOption
-        ) throws -> String {
-            let scope = try parseCallGraphScope()
-            let diff = CallGraphDiff(
-                old: CallGraphBuilder(scope: scope).build(from: old),
-                new: CallGraphBuilder(scope: scope).build(from: new))
-            let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
-            let edgeColor: @Sendable (String, String) -> String? = {
-                diff.status(ofEdgeFrom: $0, to: $1).deltaHex
-            }
-            switch format {
-            case .dot:
-                return CallGraphDOTRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
-            case .mermaid:
-                return CallGraphMermaidRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
-            }
-        }
-
-        /// Parses `--call-graph-scope` (`"type:Name"` / `"module:Name"`) into a `CallGraphScope`.
-        private func parseCallGraphScope() throws -> CallGraphScope {
-            guard let raw = callGraphScope else { return .wholeCodebase }
-            let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
-            guard parts.count == 2, !parts[1].isEmpty else {
-                throw ValidationError("--call-graph-scope must be \"type:Name\" or \"module:Name\".")
-            }
-            switch parts[0] {
-            case "type":
-                return .type(parts[1])
-            case "module":
-                return .module(parts[1])
-            default:
-                throw ValidationError("--call-graph-scope must start with \"type:\" or \"module:\".")
-            }
+            return ClassDeltaExporter().render(old: old, new: new, format: diagramFormat)
         }
     }
 }

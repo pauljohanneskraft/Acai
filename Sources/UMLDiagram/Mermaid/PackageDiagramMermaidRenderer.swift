@@ -4,8 +4,8 @@ import Foundation
 ///
 /// Each module is a node labelled with its coupling metrics and shaded by its
 /// distance from the main sequence; edges carry the cross-module reference weight.
-public struct PackageDiagramMermaidRenderer: Sendable {
-    private let theme: DiagramTheme?
+public struct PackageDiagramMermaidRenderer: MermaidRenderer {
+    public let theme: DiagramTheme?
     private let nodeColor: (@Sendable (String) -> String?)?
     private let edgeColor: (@Sendable (String, String) -> String?)?
 
@@ -26,7 +26,7 @@ public struct PackageDiagramMermaidRenderer: Sendable {
             lines.append("title: \(title)")
             lines.append("---")
         }
-        if let theme { lines.append(theme.mermaidInit()) }
+        lines.append(contentsOf: themePreamble)
         lines.append("flowchart LR")
 
         var allocator = MermaidIDAllocator()

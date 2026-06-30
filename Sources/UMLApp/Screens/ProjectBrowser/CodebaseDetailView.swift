@@ -107,7 +107,7 @@ struct CodebaseDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     TextField("Codebase Name", text: Binding(
                         get: { codebase.name },
-                        set: { model.updateCodebase(id: codebase.id, name: $0) }
+                        set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
                     ))
                     .font(.title2.bold())
                     .textFieldStyle(.plain)
@@ -127,7 +127,7 @@ struct CodebaseDetailView: View {
                 Button {
                     isIndexing = true
                     Task {
-                        await model.reindex(codebaseID: codebase.id)
+                        await model.editing.reindex(codebaseID: codebase.id)
                         isIndexing = false
                     }
                 } label: {
@@ -339,7 +339,7 @@ extension CodebaseDetailView {
                 callGraphConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
                 return
             }
-            if let id = model.addGeneratedDiagram(
+            if let id = model.diagrams.add(
                 to: projectID,
                 codebaseID: codebase.id,
                 content: GeneratedDiagram.Content(type: type)
@@ -380,7 +380,7 @@ extension CodebaseDetailView {
             Button {
                 isIndexing = true
                 Task {
-                    await model.reindex(codebaseID: codebase.id)
+                    await model.editing.reindex(codebaseID: codebase.id)
                     isIndexing = false
                 }
             } label: {
@@ -405,7 +405,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { stateConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .stateDiagram(config)
@@ -426,7 +426,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { callGraphConfigContext = nil },
                 onCreate: { scope in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .callGraph(scope)
@@ -447,7 +447,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { sequenceConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .sequenceDiagram(config)

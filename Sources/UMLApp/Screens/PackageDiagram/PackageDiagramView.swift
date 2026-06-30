@@ -175,7 +175,7 @@ struct PackageDiagramView: View {
     // MARK: - Persistence & layout
 
     private func savePositions() {
-        model.updateGeneratedDiagramPositions(
+        model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,
             scale: canvasScale,

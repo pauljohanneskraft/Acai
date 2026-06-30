@@ -22,13 +22,19 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension FreeformDiagram {
+    /// One placed item on a freeform canvas: an identity, a display name, the `Content` that selects
+    /// how it is drawn, and a manual position (plus optional size for container kinds).
     struct Node: Identifiable, Codable, Hashable, Sendable {
         /// String id (generated from a UUID, so still collision-free). Shared `String` node
         /// identity lets the class/sequence/freeform views use one `CanvasInteraction` protocol.
         var id: String = UUID().uuidString
+        /// The node's display label.
         var name: String
+        /// What the node represents and how it is rendered (type box, actor, package, …).
         var content: Content
+        /// Manual x position of the node's top-left corner, in canvas points.
         var positionX: Double = 0
+        /// Manual y position of the node's top-left corner, in canvas points.
         var positionY: Double = 0
         /// User-defined width (used by resizable container nodes: package, boundary, subsystem).
         var width: Double?
@@ -50,11 +56,19 @@ extension FreeformDiagram {
 }
 
 extension FreeformDiagram {
+    /// A connection between two `Node`s on a freeform canvas. By default a relationship line of
+    /// `kind`; carries optional `messageOrder`/`messageKind` (sequence message) or `transition`
+    /// (state machine) when it represents one of those instead.
     struct Edge: Identifiable, Codable, Hashable, Sendable {
+        /// Stable edge identity (UUID-derived string).
         var id: String = UUID().uuidString
+        /// `id` of the `Node` the edge starts at.
         var sourceNodeID: String
+        /// `id` of the `Node` the edge ends at.
         var targetNodeID: String
+        /// The relationship kind drawn for an ordinary edge (ignored for sequence messages).
         var kind: Relationship.Kind
+        /// Optional text label shown on the edge.
         var label: String?
         /// Top-to-bottom order when this edge is a sequence-diagram message. `nil` for ordinary
         /// relationship edges, which renders the edge as a relationship line instead of a

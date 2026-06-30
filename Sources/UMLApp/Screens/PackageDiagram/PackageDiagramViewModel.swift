@@ -80,7 +80,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
-        try DiagramImageRenderer().renderPNG(
+        try PackageImageRenderer().renderPNG(
             packageDiagram: diagram,
             positionOverrides: positionOverrides,
             scale: scale

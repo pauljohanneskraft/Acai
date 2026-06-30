@@ -1,14 +1,13 @@
 /// Renders a `SequenceDiagram` to a Mermaid `sequenceDiagram`.
-public struct SequenceDiagramMermaidRenderer: Sendable {
-    private let theme: DiagramTheme?
+public struct SequenceDiagramMermaidRenderer: MermaidRenderer {
+    public let theme: DiagramTheme?
 
     public init(theme: DiagramTheme? = nil) {
         self.theme = theme
     }
 
     public func render(_ diagram: SequenceDiagram) -> String {
-        var lines: [String] = []
-        if let theme { lines.append(theme.mermaidInit()) }
+        var lines: [String] = themePreamble
         lines.append("sequenceDiagram")
 
         var allocator = MermaidIDAllocator()

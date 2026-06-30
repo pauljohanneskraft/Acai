@@ -56,7 +56,7 @@ struct SequenceDiagramView: View {
                 onCancel: { showConfigSheet = false },
                 onCreate: { config in
                     viewModel.applyConfiguration(config)
-                    model.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
+                    model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
                     showConfigSheet = false
                     centerDiagram()
                 }
@@ -170,7 +170,7 @@ struct SequenceDiagramView: View {
     // MARK: - Persistence & layout
 
     private func savePositions() {
-        model.updateGeneratedDiagramPositions(
+        model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,
             scale: canvasScale,

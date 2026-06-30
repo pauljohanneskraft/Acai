@@ -141,7 +141,7 @@ public struct SugiyamaLayoutEngine: Sendable {
         }
         let nested = Dictionary(grouping: nodes.filter { components($0).count > depth }) { components($0)[depth] }
         for key in nested.keys.sorted() {
-            let sub = nested[key]!
+            guard let sub = nested[key] else { continue }
             addBlock(layoutByGroup(nodes: sub, edges: intraEdges(sub), depth: depth + 1, padding: padding).positions)
         }
 

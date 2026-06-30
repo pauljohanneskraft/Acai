@@ -32,9 +32,10 @@ struct CFamilyTreeSitterParse {
     let grammar: Language
 
     func parse(source: String, fileName: String) -> CodeArtifact {
-        let parser = Parser()
-        // swiftlint:disable:next force_try
-        try! parser.setLanguage(grammar)
+        let loader = TreeSitterGrammar(language: grammar, sourceLanguage: dialect.sourceLanguage)
+        guard let parser = loader.makeParser() else {
+            return loader.loadFailureArtifact(fileName: fileName)
+        }
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: dialect.sourceLanguage, filePaths: [fileName]))
         }

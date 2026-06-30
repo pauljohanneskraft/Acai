@@ -1,8 +1,12 @@
 import SwiftSyntax
-import SwiftParser
 import UMLCore
 
-struct TypeExtractor {
+/// Extracts the language-level annotations shared by every Swift declaration — access level,
+/// modifiers, attributes, generic parameters, and function signatures (parameters / return type).
+/// Composes a `TypeReferenceExtractor` for the type-shaped pieces.
+struct DeclarationSignatureExtractor {
+
+    private let typeReferences = TypeReferenceExtractor()
 
     // MARK: - Access Level
 
@@ -83,7 +87,7 @@ struct TypeExtractor {
                 constraints.append(
                     GenericConstraint(
                         kind: .conformance,
-                        type: extractTypeReference(from: inheritedType)
+                        type: typeReferences.extractTypeReference(from: inheritedType)
                     )
                 )
             }
@@ -114,12 +118,14 @@ struct TypeExtractor {
             case .conformanceRequirement(let conf):
                 result.append((
                     conf.leftType.trimmedDescription,
-                    GenericConstraint(kind: .conformance, type: extractTypeReference(from: conf.rightType))
+                    GenericConstraint(
+                        kind: .conformance, type: typeReferences.extractTypeReference(from: conf.rightType))
                 ))
             case .sameTypeRequirement(let same):
                 result.append((
                     same.leftType.trimmedDescription,
-                    GenericConstraint(kind: .sameType, type: extractTypeReference(from: same.rightType))
+                    GenericConstraint(
+                        kind: .sameType, type: typeReferences.extractTypeReference(from: same.rightType))
                 ))
             default:
                 continue
@@ -135,155 +141,14 @@ struct TypeExtractor {
         if let inheritance = node.inheritanceClause {
             for inherited in inheritance.inheritedTypes {
                 constraints.append(
-                    GenericConstraint(kind: .conformance, type: extractTypeReference(from: inherited.type)))
+                    GenericConstraint(
+                        kind: .conformance, type: typeReferences.extractTypeReference(from: inherited.type)))
             }
         }
         if let whereClause = node.genericWhereClause {
             constraints.append(contentsOf: extractWhereConstraints(whereClause).map(\.constraint))
         }
         return GenericParameter(name: node.name.text, constraints: constraints)
-    }
-
-    // MARK: - Inherited Types
-
-    func extractInheritedTypes(from clause: InheritanceClauseSyntax?) -> [TypeReference] {
-        guard let clause else { return [] }
-        return clause.inheritedTypes.flatMap { inheritedType -> [TypeReference] in
-            flattenCompositionType(inheritedType.type)
-        }
-    }
-
-    /// Expands a `CompositionTypeSyntax` (e.g. `A & B & C`) into individual
-    /// type references. Non-composition types are returned as a single-element array.
-    func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
-        if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
-            return composition.elements.map { extractTypeReference(from: $0.type) }
-        }
-        return [extractTypeReference(from: typeSyntax)]
-    }
-
-    // MARK: - Type Reference
-
-    func extractTypeReference(from typeSyntax: TypeSyntax) -> TypeReference {
-        if let result = extractWrapperType(from: typeSyntax) {
-            return result
-        }
-
-        if let result = extractCollectionOrCompoundType(from: typeSyntax) {
-            return result
-        }
-
-        if let identifierType = typeSyntax.as(IdentifierTypeSyntax.self) {
-            let name = identifierType.name.text
-            let genericArgs = identifierType.genericArgumentClause.map { clause in
-                clause.arguments.map { extractTypeReference(from: $0.argument) }
-            } ?? []
-            // Normalize sugar-equivalent spellings so `Optional<T>`/`Array<T>` match
-            // `T?`/`[T]`.
-            if name == "Optional", let inner = genericArgs.first {
-                var ref = inner
-                ref.isOptional = true
-                return ref
-            }
-            return TypeReference(
-                name: name,
-                genericArguments: genericArgs,
-                isArray: name == "Array" && !genericArgs.isEmpty
-            )
-        }
-
-        if let memberType = typeSyntax.as(MemberTypeSyntax.self) {
-            let baseName = extractTypeReference(from: memberType.baseType).name
-            let memberName = memberType.name.text
-            let genericArgs = memberType.genericArgumentClause.map { clause in
-                clause.arguments.map { extractTypeReference(from: $0.argument) }
-            } ?? []
-            return TypeReference(
-                name: "\(baseName).\(memberName)",
-                genericArguments: genericArgs
-            )
-        }
-
-        if let functionType = typeSyntax.as(FunctionTypeSyntax.self) {
-            let paramTypes = functionType.parameters.map { extractTypeReference(from: $0.type) }
-            let returnType = extractTypeReference(from: functionType.returnClause.type)
-            let paramString = paramTypes.map(\.name).joined(separator: ", ")
-            let name = "(\(paramString)) -> \(returnType.name)"
-            return TypeReference(name: name)
-        }
-
-        if typeSyntax.as(MissingTypeSyntax.self) != nil {
-            return TypeReference(name: "Void")
-        }
-
-        // Fallback: use the source text representation
-        return TypeReference(name: typeSyntax.trimmedDescription)
-    }
-
-    // MARK: - Type Reference Helpers
-
-    private func extractWrapperType(from typeSyntax: TypeSyntax) -> TypeReference? {
-        if let optionalType = typeSyntax.as(OptionalTypeSyntax.self) {
-            var ref = extractTypeReference(from: optionalType.wrappedType)
-            ref.isOptional = true
-            return ref
-        }
-
-        if let implicitlyUnwrapped = typeSyntax.as(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
-            var ref = extractTypeReference(from: implicitlyUnwrapped.wrappedType)
-            ref.isOptional = true
-            return ref
-        }
-
-        if let attributedType = typeSyntax.as(AttributedTypeSyntax.self) {
-            return extractTypeReference(from: attributedType.baseType)
-        }
-
-        if let someOrAnyType = typeSyntax.as(SomeOrAnyTypeSyntax.self) {
-            let inner = extractTypeReference(from: someOrAnyType.constraint)
-            let keyword = someOrAnyType.someOrAnySpecifier.text
-            return TypeReference(name: "\(keyword) \(inner.name)")
-        }
-
-        if let classRestriction = typeSyntax.as(ClassRestrictionTypeSyntax.self) {
-            return TypeReference(name: classRestriction.classKeyword.text)
-        }
-
-        return nil
-    }
-
-    private func extractCollectionOrCompoundType(from typeSyntax: TypeSyntax) -> TypeReference? {
-        if let arrayType = typeSyntax.as(ArrayTypeSyntax.self) {
-            let elementRef = extractTypeReference(from: arrayType.element)
-            return TypeReference(
-                name: "Array",
-                genericArguments: [elementRef],
-                isArray: true
-            )
-        }
-
-        if let dictType = typeSyntax.as(DictionaryTypeSyntax.self) {
-            let keyRef = extractTypeReference(from: dictType.key)
-            let valueRef = extractTypeReference(from: dictType.value)
-            return TypeReference(
-                name: "Dictionary",
-                genericArguments: [keyRef, valueRef]
-            )
-        }
-
-        if let tupleType = typeSyntax.as(TupleTypeSyntax.self) {
-            let elements = tupleType.elements.map { extractTypeReference(from: $0.type) }
-            let name = "(" + elements.map(\.name).joined(separator: ", ") + ")"
-            return TypeReference(name: name, genericArguments: elements)
-        }
-
-        if let compositionType = typeSyntax.as(CompositionTypeSyntax.self) {
-            let elements = compositionType.elements.map { extractTypeReference(from: $0.type) }
-            let name = elements.map(\.name).joined(separator: " & ")
-            return TypeReference(name: name, genericArguments: elements)
-        }
-
-        return nil
     }
 
     // MARK: - Attributes
@@ -298,7 +163,7 @@ struct TypeExtractor {
         }
     }
 
-    // MARK: - Function Signature Extraction
+    // MARK: - Function Signature
 
     func extractParameters(from parameterClause: FunctionParameterClauseSyntax) -> [Parameter] {
         parameterClause.parameters.map { param in
@@ -317,7 +182,7 @@ struct TypeExtractor {
 
         let internalName = param.secondName?.text ?? param.firstName.text
 
-        let typeRef: TypeReference? = extractTypeReference(from: param.type)
+        let typeRef: TypeReference? = typeReferences.extractTypeReference(from: param.type)
 
         let defaultValue = param.defaultValue?.value.trimmedDescription
 
@@ -347,9 +212,8 @@ struct TypeExtractor {
 
     func extractReturnType(from returnClause: ReturnClauseSyntax?) -> TypeReference? {
         guard let returnClause else { return nil }
-        let ref = extractTypeReference(from: returnClause.type)
+        let ref = typeReferences.extractTypeReference(from: returnClause.type)
         if ref.name == "Void" { return nil }
         return ref
     }
-
 }

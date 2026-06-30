@@ -42,12 +42,14 @@ extension ProjectBrowserViewModel {
                 .generate(from: hidingGeneratedTypes(artifact))
         }
 
-        if let artifact = try? AnalysisService.standard.analyzeProject(at: url, allowedLanguages: []) {
+        do {
+            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
             return ClassDiagramDOTRenderer(options: exportOptions(for: artifact))
                 .generate(from: hidingGeneratedTypes(artifact))
+        } catch {
+            store.report("Could not analyze project for DOT export: \(error.localizedDescription)")
+            return "digraph UML { label=\"No analysis available\" }"
         }
-
-        return "digraph UML { label=\"No analysis available\" }"
     }
 
     /// Export options carrying the current theme and the artifact's resolved language quirks.
@@ -92,12 +94,14 @@ extension ProjectBrowserViewModel {
                 .generate(from: hidingGeneratedTypes(artifact))
         }
 
-        if let artifact = try? AnalysisService.standard.analyzeProject(at: url, allowedLanguages: []) {
+        do {
+            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
             return ClassDiagramMermaidRenderer(options: exportOptions(for: artifact))
                 .generate(from: hidingGeneratedTypes(artifact))
+        } catch {
+            store.report("Could not analyze project for Mermaid export: \(error.localizedDescription)")
+            return "classDiagram\n"
         }
-
-        return "classDiagram\n"
     }
 
     func exportMermaid(for codebaseID: UUID) {

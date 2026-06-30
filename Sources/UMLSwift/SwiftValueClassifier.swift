@@ -3,7 +3,7 @@ import UMLCore
 
 /// Classifies Swift expressions into ``VariableAssignment`` values and targets
 /// for static state analysis. Shared by `DeclarationVisitor` (assignments inside
-/// bodies) and `TypeExtractor` (stored-property initializers).
+/// bodies) and `MemberExtractor` (stored-property initializers).
 struct SwiftValueClassifier {
 
     /// Compound-assignment operators: their result depends on the previous

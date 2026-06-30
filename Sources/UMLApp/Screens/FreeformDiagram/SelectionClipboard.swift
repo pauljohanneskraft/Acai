@@ -78,7 +78,7 @@ final class SelectionClipboard {
         var newSelection = Set<String>()
 
         for var node in payload.nodes {
-            let newID = idMapping[node.id]!
+            guard let newID = idMapping[node.id] else { continue }
             node.id = newID
             node.positionX += offset
             node.positionY += offset

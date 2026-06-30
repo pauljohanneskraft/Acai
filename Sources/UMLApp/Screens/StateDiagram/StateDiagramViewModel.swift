@@ -95,7 +95,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
         guard let diagram else { throw DiagramImageRenderError.renderingFailed }
-        return try DiagramImageRenderer().renderPNG(
+        return try StateImageRenderer().renderPNG(
             stateDiagram: diagram,
             positionOverrides: positionOverrides,
             scale: scale

@@ -1,9 +1,14 @@
 import SwiftSyntax
 import UMLCore
 
-extension TypeExtractor {
+/// Builds a `TypeDeclaration` from each kind of Swift type declaration (class, struct, enum,
+/// protocol, extension, type alias, actor). Composes the shared signature/type-reference/location
+/// helpers; the per-kind methods differ only in their `TypeKind` and a few node-specific fields.
+struct TypeDeclarationExtractor {
 
-    // MARK: - Type Declaration Extraction
+    private let signatures = DeclarationSignatureExtractor()
+    private let typeReferences = TypeReferenceExtractor()
+    private let sourceLocations = SourceLocationResolver()
 
     func extractClass(from node: ClassDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
@@ -13,14 +18,14 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .class,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            genericParameters: signatures.extractGenericParameters(
                 from: node.genericParameterClause, whereClause: node.genericWhereClause),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -32,14 +37,14 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .struct,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            genericParameters: signatures.extractGenericParameters(
                 from: node.genericParameterClause, whereClause: node.genericWhereClause),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -51,14 +56,14 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .enum,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            genericParameters: signatures.extractGenericParameters(
                 from: node.genericParameterClause, whereClause: node.genericWhereClause),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -72,15 +77,15 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .protocol,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
             genericParameters: node.primaryAssociatedTypeClause?.primaryAssociatedTypes.map {
                 GenericParameter(name: $0.name.text)
             } ?? [],
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -95,13 +100,13 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .extension,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             extensionOf: extendedName,
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -115,14 +120,14 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .typeAlias,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            genericParameters: signatures.extractGenericParameters(
                 from: node.genericParameterClause, whereClause: node.genericWhereClause),
-            inheritedTypes: [extractTypeReference(from: node.initializer.value)],
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: [typeReferences.extractTypeReference(from: node.initializer.value)],
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 
@@ -134,28 +139,14 @@ extension TypeExtractor {
             name: name,
             qualifiedName: qualifiedName,
             kind: .actor,
-            accessLevel: extractAccessLevel(from: node.modifiers),
-            modifiers: extractModifiers(from: node.modifiers),
-            genericParameters: extractGenericParameters(
+            accessLevel: signatures.extractAccessLevel(from: node.modifiers),
+            modifiers: signatures.extractModifiers(from: node.modifiers),
+            genericParameters: signatures.extractGenericParameters(
                 from: node.genericParameterClause, whereClause: node.genericWhereClause),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            annotations: extractAttributes(from: node.attributes),
+            inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
+            annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocation(of: node, fileName: fileName)
-        )
-    }
-
-    // MARK: - Source Location
-
-    func sourceLocation(of node: some SyntaxProtocol, fileName: String) -> UMLCore.SourceLocation {
-        let position = node.positionAfterSkippingLeadingTrivia
-        let sourceFile = node.root.as(SourceFileSyntax.self)!
-        let converter = SourceLocationConverter(fileName: fileName, tree: sourceFile)
-        let location = converter.location(for: position)
-        return UMLCore.SourceLocation(
-            filePath: fileName,
-            line: location.line,
-            column: location.column
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
     }
 }

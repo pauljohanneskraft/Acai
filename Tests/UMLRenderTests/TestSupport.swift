@@ -19,7 +19,7 @@ extension DiagramLayoutModel {
     }
 }
 
-extension DiagramImageRenderer {
+extension ClassImageRenderer {
     func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,

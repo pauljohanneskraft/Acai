@@ -11,9 +11,9 @@ struct RelationshipExtractor {
         // `@retroactive`, `@MainActor`) and optional/array sugar are stripped,
         // keeping edge endpoints consistent with `TypeDeclaration.inheritedTypes`.
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
-            return composition.elements.map { TypeExtractor().extractTypeReference(from: $0.type).name }
+            return composition.elements.map { TypeReferenceExtractor().extractTypeReference(from: $0.type).name }
         }
-        return [TypeExtractor().extractTypeReference(from: typeSyntax).name]
+        return [TypeReferenceExtractor().extractTypeReference(from: typeSyntax).name]
     }
 
     // MARK: - Extraction
