@@ -43,9 +43,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractClass(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractClass(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -56,9 +56,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractStruct(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractStruct(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -69,9 +69,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractEnum(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractEnum(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -82,9 +82,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractProtocol(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractProtocol(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -101,9 +101,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractExtension(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractExtension(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -114,7 +114,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: TypeAliasDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractTypeAlias(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractTypeAlias(from: node, fileName: fileName, namespace: currentNamespace)
         if typeStack.isEmpty {
             types.append(typeDecl)
         } else {
@@ -125,9 +125,9 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = TypeExtractor.extractActor(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = TypeExtractor().extractActor(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl)
-        relationships.append(contentsOf: RelationshipExtractor.extract(from: node, typeId: typeDecl.id))
+        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -158,7 +158,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         // Only the top-of-body function becomes a member; nested ones are skipped.
         guard functionBodyDepth == 0 else { return }
-        var member = TypeExtractor.extractFunction(
+        var member = TypeExtractor().extractFunction(
             from: node, fileName: fileName, callSites: pendingCallSites,
             assignments: pendingAssignments)
         if let body = node.body {
@@ -177,7 +177,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
         // Skip local variables inside function bodies.
         guard functionBodyDepth == 0 else { return .skipChildren }
-        var members = TypeExtractor.extractVariable(from: node, fileName: fileName)
+        var members = TypeExtractor().extractVariable(from: node, fileName: fileName)
         // Capture type references in the property's *initializer* only (e.g. `= Foo()`), which the
         // signature misses — surfaces construction dependencies for the coupling metrics. Deliberately
         // skips accessor bodies (computed getters): walking a deeply nested `var body: some View { … }`
@@ -220,7 +220,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visitPost(_ node: InitializerDeclSyntax) {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
-        var member = TypeExtractor.extractInitializer(
+        var member = TypeExtractor().extractInitializer(
             from: node, fileName: fileName, callSites: pendingCallSites,
             assignments: pendingAssignments)
         if let body = node.body {
@@ -234,21 +234,21 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: DeinitializerDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let member = TypeExtractor.extractDeinitializer(from: node, fileName: fileName)
+        let member = TypeExtractor().extractDeinitializer(from: node, fileName: fileName)
         typeStack[typeStack.count - 1].members.append(member)
         return .skipChildren
     }
 
     override func visit(_ node: SubscriptDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let member = TypeExtractor.extractSubscript(from: node, fileName: fileName)
+        let member = TypeExtractor().extractSubscript(from: node, fileName: fileName)
         typeStack[typeStack.count - 1].members.append(member)
         return .skipChildren
     }
 
     override func visit(_ node: EnumCaseDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let cases = TypeExtractor.extractEnumCases(from: node, fileName: fileName)
+        let cases = TypeExtractor().extractEnumCases(from: node, fileName: fileName)
         typeStack[typeStack.count - 1].enumCases.append(contentsOf: cases)
         return .skipChildren
     }
@@ -256,7 +256,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: AssociatedTypeDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
         typeStack[typeStack.count - 1].associatedTypes.append(
-            TypeExtractor.extractAssociatedType(from: node))
+            TypeExtractor().extractAssociatedType(from: node))
         return .skipChildren
     }
 
@@ -282,7 +282,7 @@ final class DeclarationVisitor: SyntaxVisitor {
                 pendingCallSites.append(CallSite(
                     receiverType: resolved.receiverType,
                     methodName: methodName,
-                    location: TypeExtractor.sourceLocation(of: node, fileName: fileName)
+                    location: TypeExtractor().sourceLocation(of: node, fileName: fileName)
                 ))
             }
         }
@@ -300,14 +300,14 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth > 0 else { return .visitChildren }
         let elements = Array(node.elements)
         guard elements.count >= 3,
-              let target = SwiftValueClassifier.target(of: elements[0])
+              let target = SwiftValueClassifier().target(of: elements[0])
         else { return .visitChildren }
 
         let op: VariableAssignment.Operator
         if elements[1].is(AssignmentExprSyntax.self) {
             op = .assign
         } else if let binaryOperator = elements[1].as(BinaryOperatorExprSyntax.self),
-                  SwiftValueClassifier.compoundAssignmentOperators.contains(binaryOperator.operator.text) {
+                  SwiftValueClassifier().compoundAssignmentOperators.contains(binaryOperator.operator.text) {
             op = .compound
         } else {
             return .visitChildren
@@ -323,7 +323,7 @@ final class DeclarationVisitor: SyntaxVisitor {
             let joined = node.trimmedDescription.replacingOccurrences(of: "\n", with: " ")
             value = .init(kind: .expression, text: String(joined.prefix(80)))
         } else if elements.count == 3 {
-            value = SwiftValueClassifier.classify(elements[2])
+            value = SwiftValueClassifier().classify(elements[2])
         } else {
             let joined = elements[2...].map(\.trimmedDescription).joined(separator: " ")
             value = .init(kind: .expression, text: String(joined.prefix(80)))
@@ -333,7 +333,7 @@ final class DeclarationVisitor: SyntaxVisitor {
             targetReceiver: target.receiver,
             op: op,
             value: value,
-            location: TypeExtractor.sourceLocation(of: node, fileName: fileName)
+            location: TypeExtractor().sourceLocation(of: node, fileName: fileName)
         ))
         return .visitChildren
     }

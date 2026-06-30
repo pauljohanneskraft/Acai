@@ -5,7 +5,7 @@ extension TypeExtractor {
 
     // MARK: - Type Declaration Extraction
 
-    static func extractClass(from node: ClassDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractClass(from node: ClassDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -24,7 +24,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractStruct(from node: StructDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractStruct(from node: StructDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -43,7 +43,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractEnum(from node: EnumDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractEnum(from node: EnumDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -62,7 +62,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractProtocol(
+    func extractProtocol(
         from node: ProtocolDeclSyntax, fileName: String, namespace: String?
     ) -> TypeDeclaration {
         let name = node.name.text
@@ -84,7 +84,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractExtension(
+    func extractExtension(
         from node: ExtensionDeclSyntax, fileName: String, namespace: String?
     ) -> TypeDeclaration {
         let extendedName = node.extendedType.trimmedDescription
@@ -105,7 +105,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractTypeAlias(
+    func extractTypeAlias(
         from node: TypeAliasDeclSyntax, fileName: String, namespace: String?
     ) -> TypeDeclaration {
         let name = node.name.text
@@ -126,7 +126,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractActor(from node: ActorDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractActor(from node: ActorDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -147,7 +147,7 @@ extension TypeExtractor {
 
     // MARK: - Source Location
 
-    static func sourceLocation(of node: some SyntaxProtocol, fileName: String) -> UMLCore.SourceLocation {
+    func sourceLocation(of node: some SyntaxProtocol, fileName: String) -> UMLCore.SourceLocation {
         let position = node.positionAfterSkippingLeadingTrivia
         let sourceFile = node.root.as(SourceFileSyntax.self)!
         let converter = SourceLocationConverter(fileName: fileName, tree: sourceFile)

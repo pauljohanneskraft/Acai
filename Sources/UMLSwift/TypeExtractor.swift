@@ -2,14 +2,14 @@ import SwiftSyntax
 import SwiftParser
 import UMLCore
 
-enum TypeExtractor {
+struct TypeExtractor {
 
     // MARK: - Access Level
 
     /// Access level of a Swift declaration. When no explicit modifier is present,
     /// returns Swift's implicit default of `internal` (this is language-specific —
     /// e.g. Kotlin defaults to `public` — which is why the default lives in `UMLSwift`).
-    static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel {
+    func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel {
         // Skip setter-scoped modifiers (`private(set)` etc.) — those describe the
         // setter, not the declaration's (getter) access. See `extractSetAccessLevel`.
         for modifier in modifiers where modifier.detail == nil {
@@ -22,7 +22,7 @@ enum TypeExtractor {
 
     /// The access level of the setter when narrowed via `private(set)` / `internal(set)`
     /// / `fileprivate(set)` / `public(set)`. `nil` when no `(set)` modifier is present.
-    static func extractSetAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
+    func extractSetAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
         for modifier in modifiers where modifier.detail?.detail.text == "set" {
             if let level = accessLevel(for: modifier.name.tokenKind) {
                 return level
@@ -31,7 +31,7 @@ enum TypeExtractor {
         return nil
     }
 
-    private static func accessLevel(for tokenKind: TokenKind) -> AccessLevel? {
+    private func accessLevel(for tokenKind: TokenKind) -> AccessLevel? {
         switch tokenKind {
         case .keyword(.public):
             return .public
@@ -52,7 +52,7 @@ enum TypeExtractor {
 
     // MARK: - Modifiers
 
-    private static let keywordToModifier: [Keyword: Modifier] = [
+    private let keywordToModifier: [Keyword: Modifier] = [
         .static: .static, .class: .class, .final: .final,
         .override: .override, .mutating: .mutating,
         .nonmutating: .nonmutating, .lazy: .lazy,
@@ -62,7 +62,7 @@ enum TypeExtractor {
         .consuming: .consuming, .borrowing: .borrowing
     ]
 
-    static func extractModifiers(from modifiers: DeclModifierListSyntax) -> [Modifier] {
+    func extractModifiers(from modifiers: DeclModifierListSyntax) -> [Modifier] {
         modifiers.compactMap { modifier in
             guard case .keyword(let keyword) = modifier.name.tokenKind else {
                 return nil
@@ -73,7 +73,7 @@ enum TypeExtractor {
 
     // MARK: - Generic Parameters
 
-    static func extractGenericParameters(
+    func extractGenericParameters(
         from clause: GenericParameterClauseSyntax?,
         whereClause: GenericWhereClauseSyntax? = nil
     ) -> [GenericParameter] {
@@ -105,7 +105,7 @@ enum TypeExtractor {
     }
 
     /// Flattens a `where` clause into `(constrainedName, constraint)` pairs.
-    static func extractWhereConstraints(
+    func extractWhereConstraints(
         _ whereClause: GenericWhereClauseSyntax
     ) -> [(name: String, constraint: GenericConstraint)] {
         var result: [(name: String, constraint: GenericConstraint)] = []
@@ -130,7 +130,7 @@ enum TypeExtractor {
 
     /// Extracts a protocol `associatedtype` requirement as a `GenericParameter`
     /// (its inheritance + `where` clause become constraints).
-    static func extractAssociatedType(from node: AssociatedTypeDeclSyntax) -> GenericParameter {
+    func extractAssociatedType(from node: AssociatedTypeDeclSyntax) -> GenericParameter {
         var constraints: [GenericConstraint] = []
         if let inheritance = node.inheritanceClause {
             for inherited in inheritance.inheritedTypes {
@@ -146,7 +146,7 @@ enum TypeExtractor {
 
     // MARK: - Inherited Types
 
-    static func extractInheritedTypes(from clause: InheritanceClauseSyntax?) -> [TypeReference] {
+    func extractInheritedTypes(from clause: InheritanceClauseSyntax?) -> [TypeReference] {
         guard let clause else { return [] }
         return clause.inheritedTypes.flatMap { inheritedType -> [TypeReference] in
             flattenCompositionType(inheritedType.type)
@@ -155,7 +155,7 @@ enum TypeExtractor {
 
     /// Expands a `CompositionTypeSyntax` (e.g. `A & B & C`) into individual
     /// type references. Non-composition types are returned as a single-element array.
-    static func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
+    func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
             return composition.elements.map { extractTypeReference(from: $0.type) }
         }
@@ -164,7 +164,7 @@ enum TypeExtractor {
 
     // MARK: - Type Reference
 
-    static func extractTypeReference(from typeSyntax: TypeSyntax) -> TypeReference {
+    func extractTypeReference(from typeSyntax: TypeSyntax) -> TypeReference {
         if let result = extractWrapperType(from: typeSyntax) {
             return result
         }
@@ -222,7 +222,7 @@ enum TypeExtractor {
 
     // MARK: - Type Reference Helpers
 
-    private static func extractWrapperType(from typeSyntax: TypeSyntax) -> TypeReference? {
+    private func extractWrapperType(from typeSyntax: TypeSyntax) -> TypeReference? {
         if let optionalType = typeSyntax.as(OptionalTypeSyntax.self) {
             var ref = extractTypeReference(from: optionalType.wrappedType)
             ref.isOptional = true
@@ -252,7 +252,7 @@ enum TypeExtractor {
         return nil
     }
 
-    private static func extractCollectionOrCompoundType(from typeSyntax: TypeSyntax) -> TypeReference? {
+    private func extractCollectionOrCompoundType(from typeSyntax: TypeSyntax) -> TypeReference? {
         if let arrayType = typeSyntax.as(ArrayTypeSyntax.self) {
             let elementRef = extractTypeReference(from: arrayType.element)
             return TypeReference(
@@ -288,7 +288,7 @@ enum TypeExtractor {
 
     // MARK: - Attributes
 
-    static func extractAttributes(from attributes: AttributeListSyntax) -> [String] {
+    func extractAttributes(from attributes: AttributeListSyntax) -> [String] {
         attributes.compactMap { element in
             if let attr = element.as(AttributeSyntax.self) {
                 // Full text incl. arguments, e.g. `@available(iOS 15, *)`.
@@ -300,13 +300,13 @@ enum TypeExtractor {
 
     // MARK: - Function Signature Extraction
 
-    static func extractParameters(from parameterClause: FunctionParameterClauseSyntax) -> [Parameter] {
+    func extractParameters(from parameterClause: FunctionParameterClauseSyntax) -> [Parameter] {
         parameterClause.parameters.map { param in
             extractParameter(from: param)
         }
     }
 
-    static func extractParameter(from param: FunctionParameterSyntax) -> Parameter {
+    func extractParameter(from param: FunctionParameterSyntax) -> Parameter {
         let externalName: String? = {
             if let firstName = param.firstName.tokenKind == .wildcard ? nil : param.firstName.text,
                firstName != param.secondName?.text {
@@ -345,7 +345,7 @@ enum TypeExtractor {
         )
     }
 
-    static func extractReturnType(from returnClause: ReturnClauseSyntax?) -> TypeReference? {
+    func extractReturnType(from returnClause: ReturnClauseSyntax?) -> TypeReference? {
         guard let returnClause else { return nil }
         let ref = extractTypeReference(from: returnClause.type)
         if ref.name == "Void" { return nil }

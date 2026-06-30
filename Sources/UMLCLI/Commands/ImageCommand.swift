@@ -128,7 +128,7 @@ extension UMLCommand {
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
             }
-            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
+            try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         /// The "old" side for a delta image, when `--source-old` / `--from-old` is given.
@@ -163,7 +163,7 @@ extension UMLCommand {
                     .packageDependencyDiagram()
                 let renderScale = CGFloat(scale)
                 data = try await MainActor.run {
-                    try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
+                    try DiagramImageRenderer().renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
                 }
             } else if callGraph, let oldArtifact {
                 data = try await renderCallGraphDelta(old: oldArtifact, new: artifact)
@@ -188,13 +188,13 @@ extension UMLCommand {
                 configuration.showProperties = false
                 configuration.showMethods = false
             }
-            configuration.focus = FocusOptionBuilder.make(
+            configuration.focus = FocusOptionBuilder(
                 rootTypeName: focus,
                 depth: focusDepth,
                 direction: focusDirection,
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
-            )
+            ).configuration
             // A focused view is a local neighbourhood around one type; module/directory boxing splits
             // it into mismatched clusters that waste canvas. Lay it out as a single graph so the root
             // is prominent and the space is filled.
@@ -209,7 +209,7 @@ extension UMLCommand {
             let configuration = classDiagramConfiguration()
             let language = artifact.standardLanguageConfiguration
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
+                try DiagramImageRenderer().renderPNG(
                     artifact: artifact,
                     configuration: configuration,
                     language: language,
@@ -236,7 +236,7 @@ extension UMLCommand {
             let renderScale = CGFloat(scale)
             let renderPalette = palette
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
+                try DiagramImageRenderer().renderPNG(
                     artifact: union, configuration: configuration, language: language,
                     scale: renderScale, palette: renderPalette, edgeColor: edgeColor, nodeColor: nodeColor)
             }
@@ -253,7 +253,7 @@ extension UMLCommand {
             let renderScale = CGFloat(scale)
             let renderPalette = palette
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
+                try DiagramImageRenderer().renderPNG(
                     packageDiagram: diff.union, scale: renderScale, palette: renderPalette,
                     nodeColor: nodeColor, edgeColor: edgeColor)
             }
@@ -269,7 +269,7 @@ extension UMLCommand {
             let renderScale = CGFloat(scale)
             let renderPalette = palette
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
+                try DiagramImageRenderer().renderPNG(
                     callGraph: diff.union, scale: renderScale, palette: renderPalette,
                     nodeColor: nodeColor, edgeColor: edgeColor)
             }
@@ -301,7 +301,7 @@ extension UMLCommand {
                 )
             }
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale), palette: palette)
+                try DiagramImageRenderer().renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale), palette: palette)
             }
         }
 
@@ -317,7 +317,7 @@ extension UMLCommand {
             }
             let renderScale = CGFloat(scale)
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(callGraph: graph, scale: renderScale, palette: palette)
+                try DiagramImageRenderer().renderPNG(callGraph: graph, scale: renderScale, palette: palette)
             }
         }
 
@@ -340,7 +340,7 @@ extension UMLCommand {
 
         /// Runs the value-flow state analysis for `variable` and renders the diagram to PNG.
         private func renderState(artifact: CodeArtifact, variable: String) async throws -> Data {
-            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+            let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
                 diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
@@ -349,7 +349,7 @@ extension UMLCommand {
             }
             let renderScale = CGFloat(scale)
             return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: renderScale, palette: palette)
+                try DiagramImageRenderer().renderPNG(stateDiagram: diagram, scale: renderScale, palette: palette)
             }
         }
 
@@ -375,7 +375,7 @@ extension UMLCommand.Image {
         let renderScale = CGFloat(scale)
         let renderPalette = palette
         return try await MainActor.run {
-            try DiagramImageRenderer.renderPNG(
+            try DiagramImageRenderer().renderPNG(
                 sequenceDiagram: diff.union, scale: renderScale, palette: renderPalette, messageColor: messageColor)
         }
     }
@@ -385,7 +385,7 @@ extension UMLCommand.Image {
     /// equals the transition's index in the union — so parallel transitions between the same state
     /// pair on different events (which share `from`/`to` but differ in diff status) stay distinct.
     func renderStateDelta(old: CodeArtifact, new: CodeArtifact, variable: String) async throws -> Data {
-        let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+        let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
         let diff = StateDiagramDiff(
             old: try old.resolvingExtensions().stateDiagram(configuration: configuration),
             new: try new.resolvingExtensions().stateDiagram(configuration: configuration))
@@ -397,7 +397,7 @@ extension UMLCommand.Image {
         let renderScale = CGFloat(scale)
         let renderPalette = palette
         return try await MainActor.run {
-            try DiagramImageRenderer.renderPNG(
+            try DiagramImageRenderer().renderPNG(
                 stateDiagram: diff.union, scale: renderScale, palette: renderPalette, edgeColor: edgeColor)
         }
     }

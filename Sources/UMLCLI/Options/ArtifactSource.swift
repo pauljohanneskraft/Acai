@@ -71,7 +71,7 @@ struct ArtifactSource: ParsableArguments {
         if FileManager.default.fileExists(atPath: directURL.path) {
             url = directURL
         } else {
-            let storedURL = UMLConstants.analysisDirectory.appendingPathComponent("\(value).json")
+            let storedURL = UMLConstants.standard.analysisDirectory.appendingPathComponent("\(value).json")
             guard FileManager.default.fileExists(atPath: storedURL.path) else {
                 throw ValidationError(
                     "Could not find analysis '\(value)'. "

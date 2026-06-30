@@ -107,7 +107,7 @@ public struct AnalysisService: Sendable {
     private func collectFiles(for codeParser: any CodeParser, in spec: SourceSpec) -> [URL] {
         let exts = Set(codeParser.fileExtensions)
         let excludedDirectories = registry.excludedDirectories
-            .union(UMLConstants.defaultExcludedSourceDirectories)
+            .union(UMLConstants.standard.defaultExcludedSourceDirectories)
         return spec.sourceDirs
             .flatMap {
                 FileManager.default.fileURLs(
@@ -174,7 +174,7 @@ public struct AnalysisService: Sendable {
 
         guard var combined = result else { return nil }
         if combined.metadata.toolVersion == nil {
-            combined.metadata.toolVersion = UMLConstants.toolVersion
+            combined.metadata.toolVersion = UMLConstants.standard.toolVersion
         }
         return combined
     }

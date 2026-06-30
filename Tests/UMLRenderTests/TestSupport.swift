@@ -20,7 +20,7 @@ extension DiagramLayoutModel {
 }
 
 extension DiagramImageRenderer {
-    static func renderPNG(
+    func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
         scale: CGFloat = 2,

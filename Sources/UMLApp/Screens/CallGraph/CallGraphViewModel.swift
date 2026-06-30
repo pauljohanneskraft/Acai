@@ -78,7 +78,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
-        try DiagramImageRenderer.renderPNG(
+        try DiagramImageRenderer().renderPNG(
             callGraph: graph,
             positionOverrides: positionOverrides,
             scale: scale

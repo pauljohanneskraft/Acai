@@ -202,10 +202,10 @@ public struct SugiyamaLayoutEngine: Sendable {
         adjacency: [String: Set<String>]
     ) -> [String: CGPoint] {
         // Phase 1: Layer assignment.
-        let layerMap = LayerAssignment.assign(
+        let layerMap = LayerAssigner(
             nodeIDs: nodeIDs,
             edges: edges.map { (source: $0.sourceID, target: $0.targetID, kind: $0.kind) }
-        )
+        ).assignment()
 
         // Group nodes by layer. `layerMap` is a dictionary, so iterate it in a stable order
         // and sort each bucket by id: this seeds crossing minimization deterministically, so
@@ -222,16 +222,15 @@ public struct SugiyamaLayoutEngine: Sendable {
             let filtered = neighbors.filter { Set(nodeIDs).contains($0) }
             return filtered.isEmpty ? nil : filtered
         }
-        layers = CrossingMinimization.minimize(layers: layers, adjacency: componentAdj)
+        layers = CrossingMinimizer(adjacency: componentAdj).minimize(layers)
 
         // Phase 3: Coordinate assignment.
-        return CoordinateAssignment.assign(
-            layers: layers,
+        return CoordinateAssigner(
             nodeSizes: nodeSizes,
             horizontalSpacing: horizontalSpacing,
             verticalSpacing: verticalSpacing,
             adjacency: componentAdj
-        )
+        ).assign(layers: layers)
     }
 
     // MARK: - Arrange Components in Grid

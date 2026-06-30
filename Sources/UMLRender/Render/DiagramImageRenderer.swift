@@ -26,7 +26,9 @@ public enum DiagramImageRenderError: Error {
 /// Note: headless rendering requires a macOS GUI/window-server session; it is not a
 /// headless-CI path.
 @MainActor
-public enum DiagramImageRenderer {
+public struct DiagramImageRenderer {
+
+    public init() {}
 
     /// Uniform space left around the diagram content, in points.
     public static let defaultPadding: CGFloat = 40
@@ -40,7 +42,7 @@ public enum DiagramImageRenderer {
 
     /// Builds and lays out the diagram for `artifact` (using estimated node sizes, since no
     /// SwiftUI measurement happens headlessly) and renders it to PNG data.
-    public static func renderPNG(
+    public func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
         language: LanguageConfiguration,
@@ -75,7 +77,7 @@ public enum DiagramImageRenderer {
     /// Lays out and renders a `SequenceDiagram` to PNG data, using the same shared views the
     /// app canvas draws. `positionOverrides` (participant-id → horizontal centre) let callers
     /// reproduce a hand-spread layout; pass `[:]` for the default arrangement.
-    public static func renderPNG(
+    public func renderPNG(
         sequenceDiagram: SequenceDiagram,
         positionOverrides: [String: CGFloat] = [:],
         scale: CGFloat = 2,
@@ -88,7 +90,7 @@ public enum DiagramImageRenderer {
             layout: layout, padding: padding, palette: palette, messageColor: messageColor)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let maxScale = Self.maxPixelDimension / max(pointSize, 1)
         let requestedScale = max(scale, 0.1)
         let effectiveScale = min(requestedScale, maxScale)
 
@@ -105,7 +107,7 @@ public enum DiagramImageRenderer {
     /// Lays out and renders a `StateDiagram` to PNG data, using the same shared views the
     /// app canvas draws. `positionOverrides` (state-id → centre) let callers reproduce a
     /// hand-arranged layout; pass `[:]` for the default arrangement.
-    public static func renderPNG(
+    public func renderPNG(
         stateDiagram: StateDiagram,
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
@@ -118,7 +120,7 @@ public enum DiagramImageRenderer {
             layout: layout, padding: padding, palette: palette, edgeColor: edgeColor)
 
         let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let maxScale = Self.maxPixelDimension / max(pointSize, 1)
         let requestedScale = max(scale, 0.1)
         let effectiveScale = min(requestedScale, maxScale)
 
@@ -134,7 +136,7 @@ public enum DiagramImageRenderer {
 
     /// Lays out and renders a `PackageDependencyDiagram` to PNG data, using the shared
     /// `PackageLayoutModel` + `PackageDiagramSnapshotView`.
-    public static func renderPNG(
+    public func renderPNG(
         packageDiagram: PackageDependencyDiagram,
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
@@ -155,7 +157,7 @@ public enum DiagramImageRenderer {
 
     /// Lays out and renders a `CallGraph` to PNG data, using the shared `CallGraphLayoutModel` +
     /// `CallGraphSnapshotView`.
-    public static func renderPNG(
+    public func renderPNG(
         callGraph: CallGraph,
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
@@ -173,15 +175,15 @@ public enum DiagramImageRenderer {
     }
 
     /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, clamping the scale
-    /// so neither output dimension exceeds `maxPixelDimension`.
-    private static func renderSnapshot(
+    /// so neither output dimension exceeds `Self.maxPixelDimension`.
+    private func renderSnapshot(
         _ view: some View,
         contentSize: CGSize,
         scale: CGFloat,
         padding: CGFloat
     ) throws -> Data {
         let pointSize = max(contentSize.width, contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let maxScale = Self.maxPixelDimension / max(pointSize, 1)
         let effectiveScale = min(max(scale, 0.1), maxScale)
 
         let renderer = ImageRenderer(content: view)
@@ -196,7 +198,7 @@ public enum DiagramImageRenderer {
 
     /// Renders an already-laid-out diagram to PNG data. Positions/sizes are in any coordinate
     /// space; they are normalized internally so the content's top-left maps to the origin.
-    public static func renderPNG(
+    public func renderPNG(
         nodes: [GeneratedDiagramNode],
         edges: [GeneratedDiagramEdge],
         positions: [String: CGPoint],
@@ -234,10 +236,10 @@ public enum DiagramImageRenderer {
             nodeColor: nodeColor
         )
 
-        // Clamp the scale so neither output dimension exceeds `maxPixelDimension`; large
+        // Clamp the scale so neither output dimension exceeds `Self.maxPixelDimension`; large
         // codebases otherwise produce bitmaps CoreGraphics cannot encode.
         let pointSize = max(bounds.width, bounds.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let maxScale = Self.maxPixelDimension / max(pointSize, 1)
         // Floor the *requested* scale to a small positive value (guards against a zero/negative
         // `--scale`), then take the ceiling last so the result can never exceed `maxScale` — even
         // when `maxScale` itself drops below the floor for very large diagrams.
@@ -259,7 +261,7 @@ public enum DiagramImageRenderer {
     /// drawn boxes (the live app gets this from SwiftUI measurement, which never fires
     /// headlessly); elsewhere — or if a measurement comes back degenerate — we fall back to
     /// the size estimate.
-    private static func nodeSizes(for nodes: [GeneratedDiagramNode]) -> [String: CGSize] {
+    private func nodeSizes(for nodes: [GeneratedDiagramNode]) -> [String: CGSize] {
         var result: [String: CGSize] = [:]
         for node in nodes {
             result[node.id] = measuredSize(for: node) ?? DiagramLayoutModel.estimateSize(for: node)
@@ -267,7 +269,7 @@ public enum DiagramImageRenderer {
         return result
     }
 
-    private static func measuredSize(for node: GeneratedDiagramNode) -> CGSize? {
+    private func measuredSize(for node: GeneratedDiagramNode) -> CGSize? {
         #if canImport(AppKit)
         let host = NSHostingView(rootView: TypeNodeView(node: node, isSelected: false))
         let size = host.fittingSize
@@ -282,7 +284,7 @@ public enum DiagramImageRenderer {
 
     /// The bounding rect of all node rects and grouping boxes. Falls back to a small empty
     /// canvas when there is nothing to draw.
-    private static func contentBounds(
+    private func contentBounds(
         positions: [String: CGPoint],
         sizes: [String: CGSize],
         boxes: [DiagramLayoutModel.GroupingBox]
@@ -299,7 +301,7 @@ public enum DiagramImageRenderer {
         return rects.dropFirst().reduce(first) { $0.union($1) }
     }
 
-    private static func encodePNG(_ cgImage: CGImage) throws -> Data {
+    private func encodePNG(_ cgImage: CGImage) throws -> Data {
         #if canImport(AppKit)
         let rep = NSBitmapImageRep(cgImage: cgImage)
         guard let data = rep.representation(using: .png, properties: [:]) else {

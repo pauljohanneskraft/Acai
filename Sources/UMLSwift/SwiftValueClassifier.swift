@@ -4,11 +4,11 @@ import UMLCore
 /// Classifies Swift expressions into ``VariableAssignment`` values and targets
 /// for static state analysis. Shared by `DeclarationVisitor` (assignments inside
 /// bodies) and `TypeExtractor` (stored-property initializers).
-enum SwiftValueClassifier {
+struct SwiftValueClassifier {
 
     /// Compound-assignment operators: their result depends on the previous
     /// value, making the assigned state non-enumerable.
-    static let compoundAssignmentOperators: Set<String> = [
+    let compoundAssignmentOperators: Set<String> = [
         "+=", "-=", "*=", "/=", "%=",
         "&=", "|=", "^=", "<<=", ">>=",
         "&+=", "&-=", "&*=", "&<<=", "&>>="
@@ -19,7 +19,7 @@ enum SwiftValueClassifier {
     /// Enum cases written with payloads (`.loaded(data)`) parse as
     /// `FunctionCallExprSyntax` and are deliberately classified as
     /// `.expression` — their state space is not enumerable.
-    static func classify(_ expr: ExprSyntax) -> VariableAssignment.Value {
+    func classify(_ expr: ExprSyntax) -> VariableAssignment.Value {
         if let memberAccess = expr.as(MemberAccessExprSyntax.self) {
             let caseName = memberAccess.declName.baseName.text
             if memberAccess.base == nil {
@@ -54,7 +54,7 @@ enum SwiftValueClassifier {
     /// Parses an assignment's left-hand side into a target name plus optional
     /// type receiver. Returns `nil` for targets that are not a bare identifier,
     /// a `self.`-qualified property, or a `Type.`-qualified static.
-    static func target(of expr: ExprSyntax) -> (name: String, receiver: String?)? {
+    func target(of expr: ExprSyntax) -> (name: String, receiver: String?)? {
         if let declRef = expr.as(DeclReferenceExprSyntax.self) {
             return (declRef.baseName.text, nil)
         }
@@ -71,7 +71,7 @@ enum SwiftValueClassifier {
         return nil
     }
 
-    private static func snippet(_ expr: ExprSyntax) -> String {
+    private func snippet(_ expr: ExprSyntax) -> String {
         let raw = expr.trimmedDescription.replacingOccurrences(of: "\n", with: " ")
         guard raw.count > 80 else { return raw }
         return String(raw.prefix(77)) + "..."

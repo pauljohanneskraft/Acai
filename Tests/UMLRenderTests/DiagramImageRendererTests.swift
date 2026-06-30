@@ -36,7 +36,7 @@ struct DiagramImageRendererTests {
     @Test @MainActor func rendersNonBlankPNG() throws {
         let data: Data
         do {
-            data = try DiagramImageRenderer.renderPNG(artifact: sampleArtifact(), configuration: .init())
+            data = try DiagramImageRenderer().renderPNG(artifact: sampleArtifact(), configuration: .init())
         } catch DiagramImageRenderError.renderingFailed, DiagramImageRenderError.encodingFailed {
             return
         }

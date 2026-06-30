@@ -87,7 +87,7 @@ extension UMLCommand {
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
             }
-            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
+            try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         private static func validateSide(name: String, ref: String?, source: String?) throws {
@@ -184,7 +184,7 @@ extension UMLCommand {
         private func stateDelta(
             old: CodeArtifact, new: CodeArtifact, variable: String, format: FormatOption
         ) throws -> String {
-            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+            let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
             let oldDiagram = try old.resolvingExtensions().stateDiagram(configuration: configuration)
             let newDiagram = try new.resolvingExtensions().stateDiagram(configuration: configuration)
             let diff = StateDiagramDiff(old: oldDiagram, new: newDiagram)

@@ -112,7 +112,7 @@ extension UMLCommand {
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
             }
-            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
+            try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         mutating func run() throws {
@@ -148,13 +148,13 @@ extension UMLCommand {
             if let selectedTheme = theme { options.theme = selectedTheme.diagramTheme }
             classFlags.apply(to: &options)
 
-            if let focusConfig = FocusOptionBuilder.make(
+            if let focusConfig = FocusOptionBuilder(
                 rootTypeName: focus,
                 depth: focusDepth,
                 direction: focusDirection,
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
-            ) {
+            ).configuration {
                 options.focus = focusConfig
                 // A focused view is a local neighbourhood; grouping splits it into mismatched clusters
                 // that waste space, so lay it out as a single graph with the root prominent.
@@ -162,7 +162,7 @@ extension UMLCommand {
             }
 
             // Build the model once; both formats render from it.
-            let diagram = artifact.classDiagram(options: options)
+            let diagram = ClassDiagramBuilder(options: options).build(from: artifact)
             return DiagramExport(
                 dot: { ClassDiagramDOTRenderer(options: options).generate(from: diagram) },
                 mermaid: { ClassDiagramMermaidRenderer(options: options).generate(from: diagram) }
@@ -207,7 +207,7 @@ extension UMLCommand {
         private func stateExport(
             artifact: CodeArtifact, variable: String
         ) throws -> DiagramExport {
-            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
+            let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
                 diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)

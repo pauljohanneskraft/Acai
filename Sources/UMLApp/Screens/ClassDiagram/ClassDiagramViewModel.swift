@@ -256,7 +256,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
             edgeColor = { edgeColors[$0.id] }
             nodeColor = { nodeColors[$0.id] }
         }
-        return try DiagramImageRenderer.renderPNG(
+        return try DiagramImageRenderer().renderPNG(
             nodes: nodes,
             edges: edges,
             positions: nodePositions,

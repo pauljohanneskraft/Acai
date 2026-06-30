@@ -87,7 +87,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
-        try DiagramImageRenderer.renderPNG(
+        try DiagramImageRenderer().renderPNG(
             sequenceDiagram: diagram,
             positionOverrides: positionOverrides.mapValues(\.x),
             scale: scale

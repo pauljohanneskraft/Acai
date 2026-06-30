@@ -13,7 +13,7 @@ public struct ClassDiagramDOTRenderer: DOTRenderer {
 
     /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
-        generate(from: artifact.classDiagram(options: options))
+        generate(from: ClassDiagramBuilder(options: options).build(from: artifact))
     }
 
     /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).

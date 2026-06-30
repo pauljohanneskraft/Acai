@@ -5,7 +5,7 @@ extension TypeExtractor {
 
     // MARK: - Declaration Extraction
 
-    static func extractFunction(
+    func extractFunction(
         from node: FunctionDeclSyntax,
         fileName: String,
         callSites: [CallSite] = [],
@@ -42,7 +42,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractVariable(from node: VariableDeclSyntax, fileName: String) -> [Member] {
+    func extractVariable(from node: VariableDeclSyntax, fileName: String) -> [Member] {
         let accessLevel = extractAccessLevel(from: node.modifiers)
         let setAccess = extractSetAccessLevel(from: node.modifiers)
         let modifiers = extractModifiers(from: node.modifiers)
@@ -82,7 +82,7 @@ extension TypeExtractor {
                     name: pattern.identifier.text,
                     type: annotationType.map { extractTypeReference(from: $0) },
                     isComputed: isComputedBinding(binding),
-                    initialValue: binding.initializer.map { SwiftValueClassifier.classify($0.value) }
+                    initialValue: binding.initializer.map { SwiftValueClassifier().classify($0.value) }
                 ))
             } else if let tuple = binding.pattern.as(TuplePatternSyntax.self) {
                 // Decompose `let (a, b) = …` into one member per element.
@@ -103,7 +103,7 @@ extension TypeExtractor {
 
     /// Whether a binding declares a computed property (has an explicit getter),
     /// as opposed to a stored property (no accessor, or only `didSet`/`willSet`).
-    private static func isComputedBinding(_ binding: PatternBindingSyntax) -> Bool {
+    private func isComputedBinding(_ binding: PatternBindingSyntax) -> Bool {
         guard let accessor = binding.accessorBlock else { return false }
         switch accessor.accessors {
         case .getter:
@@ -113,7 +113,7 @@ extension TypeExtractor {
         }
     }
 
-    static func extractInitializer(
+    func extractInitializer(
         from node: InitializerDeclSyntax,
         fileName: String,
         callSites: [CallSite] = [],
@@ -147,7 +147,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractDeinitializer(from node: DeinitializerDeclSyntax, fileName: String) -> Member {
+    func extractDeinitializer(from node: DeinitializerDeclSyntax, fileName: String) -> Member {
         let accessLevel = extractAccessLevel(from: node.modifiers)
         let modifiers = extractModifiers(from: node.modifiers)
 
@@ -160,7 +160,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractSubscript(from node: SubscriptDeclSyntax, fileName: String) -> Member {
+    func extractSubscript(from node: SubscriptDeclSyntax, fileName: String) -> Member {
         let accessLevel = extractAccessLevel(from: node.modifiers)
         let modifiers = extractModifiers(from: node.modifiers)
         let annotations = extractAttributes(from: node.attributes)
@@ -186,7 +186,7 @@ extension TypeExtractor {
         )
     }
 
-    static func extractEnumCases(from node: EnumCaseDeclSyntax, fileName: String) -> [EnumCase] {
+    func extractEnumCases(from node: EnumCaseDeclSyntax, fileName: String) -> [EnumCase] {
         node.elements.map { element in
             let associatedValues: [Parameter] = element.parameterClause.map { clause in
                 clause.parameters.map { param in
