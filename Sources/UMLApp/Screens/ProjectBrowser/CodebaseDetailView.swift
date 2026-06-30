@@ -203,6 +203,10 @@ extension CodebaseDetailView {
                 typeMetricCard(
                     MetricVisual(title: "Fan-in", icon: "arrow.down.left", color: .green, blurb: Self.fanInBlurb),
                     by: \.fanIn, descriptor: "Hotspot", types: metrics.types)
+                typeMetricCard(
+                    MetricVisual(title: "Methods", icon: "function", color: .pink,
+                                 blurb: Self.weightedMethodsBlurb),
+                    by: \.weightedMethods, descriptor: "Largest", types: metrics.types)
             }
             .padding(.horizontal)
             .onPreferenceChange(CardHeightPreferenceKey.self) { height in
@@ -235,6 +239,9 @@ extension CodebaseDetailView {
     static let fanInBlurb =
         "How many types depend on this type. High fan-in marks a core/hub type; expected for shared "
         + "models, but keep them stable and well-tested since changes ripple widely."
+    static let weightedMethodsBlurb =
+        "Weighted methods per type (method count). Large types carry many responsibilities (low "
+        + "cohesion / SRP risk) and are prime candidates for splitting."
 
     /// A card for a per-type metric: max/avg with every type achieving the max named in the caption.
     /// Tapping opens the full ranked list (`typeDetail`).

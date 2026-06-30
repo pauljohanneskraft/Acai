@@ -195,6 +195,12 @@ extension UMLCommand {
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
             )
+            // A focused view is a local neighbourhood around one type; module/directory boxing splits
+            // it into mismatched clusters that waste canvas. Lay it out as a single graph so the root
+            // is prominent and the space is filled.
+            if configuration.focus != nil {
+                configuration.grouping = .none
+            }
             return configuration
         }
 

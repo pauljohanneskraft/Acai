@@ -70,47 +70,17 @@ public struct ConformanceEvaluator: Sendable {
     // MARK: - Cycles
 
     private func cycleViolations(_ graph: GraphView, rule: CycleRule) -> [Violation] {
-        switch rule.scope {
-        case .modules:
-            return moduleCycleViolations(graph)
-        case .types:
-            return typeCycleViolations(graph)
-        }
-    }
-
-    private func typeCycleViolations(_ graph: GraphView) -> [Violation] {
-        var adjacency: [String: Set<String>] = [:]
-        for edge in graph.relationships {
-            guard graph.node(id: edge.source) != nil, graph.node(id: edge.target) != nil,
-                  edge.source != edge.target else { continue }
-            adjacency[edge.source, default: []].insert(edge.target)
-        }
-        return StronglyConnectedComponents(adjacency: adjacency).cycles.map { component in
-            let members = component.sorted()
-            return Violation(
+        let finder = CycleFinder(graph: graph, moduleResolver: moduleResolver)
+        let scope: CycleFinder.Scope = rule.scope == .modules ? .modules : .types
+        let label = scope == .modules ? "Module" : "Type"
+        return finder.cycles(scope: scope).map { cycle in
+            Violation(
                 ruleKind: "cycle",
-                message: "Type dependency cycle: \(members.joined(separator: " → ")) → \(members[0]).",
-                subject: members.joined(separator: ","),
-                source: graph.node(id: members[0])?.location,
-                detail: ["scope": "types"]
-            )
-        }
-    }
-
-    private func moduleCycleViolations(_ graph: GraphView) -> [Violation] {
-        var adjacency: [String: Set<String>] = [:]
-        for edge in graph.relationships {
-            guard let source = graph.node(id: edge.source), let target = graph.node(id: edge.target),
-                  source.module != target.module else { continue }
-            adjacency[source.module, default: []].insert(target.module)
-        }
-        return StronglyConnectedComponents(adjacency: adjacency).cycles.map { component in
-            let members = component.sorted()
-            return Violation(
-                ruleKind: "cycle",
-                message: "Module dependency cycle: \(members.joined(separator: " → ")) → \(members[0]).",
-                subject: members.joined(separator: ","),
-                detail: ["scope": "modules"]
+                message: "\(label) dependency cycle: \(cycle.description).",
+                subject: cycle.members.joined(separator: ","),
+                // Type cycles can point at the first member's declaration; module cycles have no single site.
+                source: scope == .types ? graph.node(id: cycle.members[0])?.location : nil,
+                detail: ["scope": scope.rawValue]
             )
         }
     }
@@ -212,6 +182,10 @@ public struct ConformanceEvaluator: Sendable {
                 value = Double(metric.fanOut)
             case .depthOfInheritance:
                 value = Double(metric.depthOfInheritance)
+            case .weightedMethods:
+                value = Double(metric.weightedMethods)
+            case .numberOfChildren:
+                value = Double(metric.numberOfChildren)
             default:
                 return nil
             }

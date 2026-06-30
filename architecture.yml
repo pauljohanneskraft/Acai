@@ -1,0 +1,25 @@
+# Executable architecture contract for the UML repo (dogfooding).
+#   uml check --source . --rules architecture.yml      # or: Scripts/audit.sh
+#
+# Encodes the intended design as a fitness function. Current breaches are tracked technical debt
+# (responsibility bloat in the language extractors and CodeArtifact; modules in the "zone of pain");
+# tighten the thresholds as the debt is paid down so they ratchet against regression.
+
+budgets:
+  - metric: distance
+    max: 0.5
+    message: "Module far from the main sequence (rigid: stable + concrete, or unstable + abstract)."
+  - target: { kind: class }
+    metric: weightedMethods
+    max: 25
+    message: "God class: too many methods — split responsibilities (SRP)."
+  - metric: fanOut
+    max: 25
+    message: "Type depends on too many others — a responsibility-bloat / splitting candidate."
+  - metric: fanIn
+    max: 50
+    message: "Over-central hub type — keep stable and well-tested; consider narrowing its surface."
+
+# Module-level dependency cycles must not exist. (Type-level cycles: `uml cycles --scope types`.)
+cycles:
+  scope: modules

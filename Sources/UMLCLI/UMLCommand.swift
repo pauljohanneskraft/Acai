@@ -12,7 +12,7 @@ struct UMLCommand: AsyncParsableCommand {
 
     private static var subcommandList: [any ParsableCommand.Type] {
         var commands: [any ParsableCommand.Type] = [
-            Analyze.self, Store.self, List.self, Diagram.self, Metrics.self, Diff.self, Check.self
+            Analyze.self, Store.self, List.self, Diagram.self, Metrics.self, Cycles.self, Diff.self, Check.self
         ]
         // `image` renders via SwiftUI's ImageRenderer (UMLRender), which is linked into the CLI on
         // macOS only (see Package.swift). Gate on os(macOS) to mirror that dependency condition.

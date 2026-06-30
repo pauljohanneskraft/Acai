@@ -115,7 +115,8 @@ extension CodeArtifact {
                 edges.append(Relationship(
                     kind: isCollection ? .aggregation : .composition,
                     source: type.id, target: targetId,
-                    targetLabel: multiplicity, label: member.name))
+                    targetLabel: multiplicity, label: member.name,
+                    origin: member.location?.filePath))
             }
         }
         return edges
@@ -133,7 +134,9 @@ extension CodeArtifact {
                 for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                     let targetId = resolveId(refName)
                     guard targetId != type.id, seen.insert(targetId).inserted else { continue }
-                    edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
+                    edges.append(Relationship(
+                        kind: .dependency, source: type.id, target: targetId,
+                        origin: member.location?.filePath))
                 }
             }
         }
@@ -150,7 +153,9 @@ extension CodeArtifact {
             for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                 let targetId = resolveId(refName)
                 guard targetId != type.id else { continue }
-                edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
+                edges.append(Relationship(
+                    kind: .dependency, source: type.id, target: targetId,
+                    origin: type.location?.filePath))
             }
         }
         return edges
@@ -194,9 +199,14 @@ extension CodeArtifact {
 
         func index(_ types: [TypeDeclaration]) {
             for type in types {
+                // Only *exact* keys (id + qualified name) are mapped unconditionally. A bare simple
+                // name is mapped separately below and *only when globally unambiguous* — mapping it
+                // here would let an ambiguous nested name (e.g. several `Kind` enums) resolve to
+                // whichever type was indexed last, fabricating spurious cross-type/-module edges.
+                // A top-level type still resolves by its simple name because its `qualifiedName`
+                // equals that name (so it also wins over a colliding nested type — natural precedence).
                 map[type.id] = type.id
                 map[type.qualifiedName] = type.id
-                map[type.name] = type.id
                 let simple = type.name.components(separatedBy: ".").last ?? type.name
                 simpleNameCount[simple, default: 0] += 1
                 index(type.nestedTypes)

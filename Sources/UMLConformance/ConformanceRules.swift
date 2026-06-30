@@ -92,13 +92,15 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         case fanIn
         case fanOut
         case depthOfInheritance
+        case weightedMethods
+        case numberOfChildren
 
         /// Module-scoped metrics are matched against module names; type-scoped against type nodes.
         public var isModuleScoped: Bool {
             switch self {
             case .instability, .abstractness, .distance:
                 return true
-            case .fanIn, .fanOut, .depthOfInheritance:
+            case .fanIn, .fanOut, .depthOfInheritance, .weightedMethods, .numberOfChildren:
                 return false
             }
         }

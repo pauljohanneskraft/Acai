@@ -38,12 +38,14 @@ struct AnalyzeListStoreCommandTests {
         }
     }
 
-    @Test func analyzeRequiresSourceArgument() {
-        // The positional source directory is required; omitting it is a parse failure.
+    @Test func analyzeRequiresSourceArgument() throws {
+        // A source is required, but it may now come from a positional path or --source/--from, so the
+        // requirement is enforced at run time (the positional is an optional, deprecated alias).
+        var cmd = try CLITestSupport.parseAnalyze([])
         #expect {
-            _ = try UMLCommand.parseAsRoot(["analyze"])
+            try cmd.run()
         } throws: { error in
-            CLITestSupport.exitCode(for: error) == ExitCode.validationFailure
+            CLITestSupport.message(for: error).contains("Either --from or --source")
         }
     }
 

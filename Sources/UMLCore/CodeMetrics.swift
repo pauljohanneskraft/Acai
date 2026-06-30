@@ -46,6 +46,9 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
     public struct TypeMetric: Codable, Equatable, Sendable {
         public var id: String
         public var name: String
+        /// The build module the type is declared in (resolved from its file path) — lets per-type
+        /// metrics be grouped or disambiguated by module (type ids are not module-qualified).
+        public var module: String
         /// Depth of inheritance tree (longest in-codebase inheritance/conformance chain).
         public var depthOfInheritance: Int
         /// Number of children (direct in-codebase subtypes/conformers).
@@ -131,6 +134,29 @@ extension CodeArtifact {
             return best
         }
 
+        let (fanIn, fanOut) = fanMetrics(flat: flat, nameToId: nameToId)
+
+        let resolver = ModuleResolver.standard
+        return flat.map { type in
+            CodeMetrics.TypeMetric(
+                id: type.id,
+                name: type.qualifiedName,
+                module: resolver.productName(forFilePath: type.location?.filePath ?? ""),
+                depthOfInheritance: depth(of: type.id, visiting: [type.id]),
+                numberOfChildren: childCount[type.id, default: 0],
+                weightedMethods: type.members.filter { $0.kind == .method }.count,
+                fanIn: fanIn[type.id]?.count ?? 0,
+                fanOut: fanOut[type.id]?.count ?? 0
+            )
+        }
+    }
+
+    /// Per-type fan-in/fan-out sets: signature edges (dependency/composition/aggregation/association)
+    /// plus construction/body dependencies (a member referencing a known type couples its owning type
+    /// to that type — not visible in signatures, e.g. a factory that constructs the type).
+    private func fanMetrics(
+        flat: [TypeDeclaration], nameToId: [String: String]
+    ) -> (fanIn: [String: Set<String>], fanOut: [String: Set<String>]) {
         let depKinds: Set<Relationship.Kind> = [.dependency, .composition, .aggregation, .association]
         var fanOut: [String: Set<String>] = [:]
         var fanIn: [String: Set<String>] = [:]
@@ -138,8 +164,6 @@ extension CodeArtifact {
             fanOut[edge.source, default: []].insert(edge.target)
             fanIn[edge.target, default: []].insert(edge.source)
         }
-        // Construction/body dependencies: a member referencing a known type couples its owning type to
-        // that type (not visible in signatures, e.g. a factory that constructs the type).
         for type in flat {
             for member in type.members {
                 for name in member.referencedTypeNames {
@@ -149,18 +173,7 @@ extension CodeArtifact {
                 }
             }
         }
-
-        return flat.map { type in
-            CodeMetrics.TypeMetric(
-                id: type.id,
-                name: type.qualifiedName,
-                depthOfInheritance: depth(of: type.id, visiting: [type.id]),
-                numberOfChildren: childCount[type.id, default: 0],
-                weightedMethods: type.members.filter { $0.kind == .method }.count,
-                fanIn: fanIn[type.id]?.count ?? 0,
-                fanOut: fanOut[type.id]?.count ?? 0
-            )
-        }
+        return (fanIn, fanOut)
     }
 
     private func computeModuleCoupling(
@@ -174,11 +187,14 @@ extension CodeArtifact {
             idToModule[type.id] = module
             moduleTypes[module, default: []].append(type)
         }
+        // Attribute each edge's source to where it was *declared* (honouring `origin` provenance),
+        // so a cross-module extension counts toward the extension's module, not the extended type's.
+        let attribution = ModuleAttribution(resolver: resolver, idToModule: idToModule)
         var efferent: [String: Set<String>] = [:]
         var afferent: [String: Set<String>] = [:]
         for edge in relationships {
-            guard let sourceModule = idToModule[edge.source],
-                  let targetModule = idToModule[edge.target],
+            guard let sourceModule = attribution.sourceModule(of: edge),
+                  let targetModule = attribution.targetModule(of: edge),
                   sourceModule != targetModule
             else { continue }
             efferent[sourceModule, default: []].insert(edge.target)

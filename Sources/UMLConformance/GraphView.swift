@@ -19,6 +19,8 @@ public struct GraphView: Sendable {
         /// Normalized annotation markers (`@Entity` → `entity`).
         public var annotations: [String]
         public var location: SourceLocation?
+        /// Declared member count (properties + methods + cases) — used by member-count selectors.
+        public var memberCount: Int
     }
 
     public let nodes: [Node]
@@ -42,7 +44,8 @@ public struct GraphView: Sendable {
                 access: type.accessLevel,
                 stereotype: type.stereotype(annotationStereotypes: annotationStereotypes),
                 annotations: type.annotations.map(\.normalizedAnnotation),
-                location: type.location
+                location: type.location,
+                memberCount: type.members.count + type.enumCases.count
             )
         }
         self.nodes = nodes

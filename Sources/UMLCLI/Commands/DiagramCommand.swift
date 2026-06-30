@@ -156,6 +156,9 @@ extension UMLCommand {
                 includeInterconnections: !noFocusInterconnections
             ) {
                 options.focus = focusConfig
+                // A focused view is a local neighbourhood; grouping splits it into mismatched clusters
+                // that waste space, so lay it out as a single graph with the root prominent.
+                options.groupBy = .none
             }
 
             // Build the model once; both formats render from it.
