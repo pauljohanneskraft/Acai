@@ -6,11 +6,11 @@ import UMLRender
 /// thickness-weighted dependency arrows); every number — instability, abstractness, afferent/
 /// efferent coupling, type count, distance from the main sequence — is shown here instead.
 struct PackageDiagramInspector: View {
-    let diagram: PackageDependencyDiagram
+    let diagram: PackageDiagram
     let selectedNodeIDs: Set<String>
 
     /// Selected modules first (in selection-agnostic name order), then the rest.
-    private var orderedNodes: [PackageDependencyDiagram.Node] {
+    private var orderedNodes: [PackageDiagram.Node] {
         let sorted = diagram.nodes.sorted { $0.name < $1.name }
         let selected = sorted.filter { selectedNodeIDs.contains($0.id) }
         let rest = sorted.filter { !selectedNodeIDs.contains($0.id) }
@@ -32,7 +32,7 @@ struct PackageDiagramInspector: View {
         }
     }
 
-    private func moduleCard(_ node: PackageDependencyDiagram.Node, highlighted: Bool) -> some View {
+    private func moduleCard(_ node: PackageDiagram.Node, highlighted: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 3)

@@ -32,9 +32,9 @@ struct SequenceDiagramIntegrationTests {
     func knownEntryPointTracesCrossTypeCall() throws {
         // `ProjectBrowserViewModel.persistChanges` calls `store.save()` through the
         // explicitly-typed `store: ProjectStore` property.
-        let diagram = try Self.artifact().sequenceDiagram(
+        let diagram = try SequenceDiagramBuilder(
             entryPoint: ("ProjectBrowserViewModel", "persistChanges")
-        )
+        ).build(from: Self.artifact())
 
         #expect(diagram.participants.map(\.name).contains("ProjectStore"))
         #expect(diagram.messages.contains {
@@ -51,15 +51,15 @@ struct SequenceDiagramIntegrationTests {
         // `ProjectDiscovery.discoverSourceSpecs` dispatches through `any BuildSystemDetector`;
         // mapping it to the concrete `FallbackDetector` must redirect the lifeline and follow
         // the concrete implementation's body.
-        let unmapped = artifact.sequenceDiagram(
+        let unmapped = SequenceDiagramBuilder(
             entryPoint: ("ProjectDiscovery", "discoverSourceSpecs")
-        )
+        ).build(from: artifact)
         #expect(unmapped.participants.map(\.name).contains("any BuildSystemDetector"))
 
-        let mapped = artifact.sequenceDiagram(
+        let mapped = SequenceDiagramBuilder(
             entryPoint: ("ProjectDiscovery", "discoverSourceSpecs"),
             typeMapping: ["any BuildSystemDetector": "FallbackDetector"]
-        )
+        ).build(from: artifact)
         #expect(mapped.participants.map(\.name).contains("FallbackDetector"))
         #expect(!mapped.participants.map(\.name).contains("any BuildSystemDetector"))
         #expect(mapped.messages.contains {
@@ -96,7 +96,7 @@ struct SequenceDiagramIntegrationTests {
                           receiverType.members.contains(where: { $0.name == site.methodName })
                     else { continue }
 
-                    let diagram = artifact.sequenceDiagram(entryPoint: (type.name, member.name))
+                    let diagram = SequenceDiagramBuilder(entryPoint: (type.name, member.name)).build(from: artifact)
                     let found = diagram.messages.contains {
                         $0.from == type.name && $0.to == receiver && $0.label == site.methodName
                     }

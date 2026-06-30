@@ -6,8 +6,8 @@ import Testing
 @Suite("Package Layout Model")
 struct PackageLayoutModelTests {
 
-    private func diagram() -> PackageDependencyDiagram {
-        PackageDependencyDiagram(
+    private func diagram() -> PackageDiagram {
+        PackageDiagram(
             title: "Modules",
             nodes: [
                 .init(id: "Core", name: "Core", typeCount: 10,
@@ -74,7 +74,7 @@ struct PackageLayoutModelTests {
     }
 
     @Test func cyclicDependenciesDoNotHang() {
-        let cyclic = PackageDependencyDiagram(
+        let cyclic = PackageDiagram(
             nodes: [
                 .init(id: "A", name: "A", typeCount: 1,
                       afferentCoupling: 1, efferentCoupling: 1, instability: 0.5, abstractness: 0),

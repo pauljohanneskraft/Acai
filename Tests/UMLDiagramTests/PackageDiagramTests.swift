@@ -51,12 +51,12 @@ struct PackageDiagramTests {
     // MARK: - Extractor
 
     @Test func nodesAreBuildModules() {
-        let diagram = twoModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
         #expect(Set(diagram.nodes.map(\.name)) == ["ModuleA", "ModuleB"])
     }
 
     @Test func crossModuleEdgeAggregatesWeight() throws {
-        let diagram = twoModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
         let edge = try #require(diagram.edges.first { $0.from == "ModuleA" && $0.to == "ModuleB" })
         // Two distinct type crossings (A→B, A2→B) collapse onto one weighted edge.
         #expect(edge.weight == 2)
@@ -64,7 +64,7 @@ struct PackageDiagramTests {
     }
 
     @Test func couplingMetricsReflectStability() throws {
-        let diagram = twoModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
         let moduleA = try #require(diagram.nodes.first { $0.name == "ModuleA" })
         let moduleB = try #require(diagram.nodes.first { $0.name == "ModuleB" })
         // ModuleA only depends outward (unstable); ModuleB is only depended upon (stable & abstract).
@@ -74,7 +74,7 @@ struct PackageDiagramTests {
     }
 
     @Test func singleModuleHasNoEdges() {
-        let diagram = singleModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: singleModuleArtifact())
         #expect(diagram.nodes.count == 1)
         #expect(diagram.edges.isEmpty)
     }
@@ -82,7 +82,7 @@ struct PackageDiagramTests {
     // MARK: - DOT rendering
 
     @Test func dotRendersNodesAndWeightedEdge() {
-        let diagram = twoModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
         let dot = PackageDiagramDOTRenderer().render(diagram)
         #expect(dot.contains("digraph {"))
         #expect(dot.contains("\"ModuleA\""))
@@ -93,7 +93,7 @@ struct PackageDiagramTests {
     // MARK: - Mermaid rendering
 
     @Test func mermaidRendersFlowchartWithStyleAndWeight() {
-        let diagram = twoModuleArtifact().packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
         let mermaid = PackageDiagramMermaidRenderer().render(diagram)
         #expect(mermaid.contains("flowchart LR"))
         #expect(mermaid.contains("ModuleA[\"ModuleA<br/>"))
@@ -102,14 +102,14 @@ struct PackageDiagramTests {
     }
 
     @Test func mermaidIncludesTitleFrontMatter() {
-        let diagram = twoModuleArtifact().packageDependencyDiagram(title: "My Modules")
+        let diagram = PackageDiagramBuilder(title: "My Modules").build(from: twoModuleArtifact())
         let mermaid = PackageDiagramMermaidRenderer().render(diagram)
         #expect(mermaid.contains("title: My Modules"))
         #expect(mermaid.contains("flowchart LR"))
     }
 
     @Test func dotIncludesTitleAndThickness() {
-        let diagram = twoModuleArtifact().packageDependencyDiagram(title: "My Modules")
+        let diagram = PackageDiagramBuilder(title: "My Modules").build(from: twoModuleArtifact())
         let dot = PackageDiagramDOTRenderer().render(diagram)
         #expect(dot.contains("label=\"My Modules\""))
         #expect(dot.contains("labelloc=t"))
@@ -119,7 +119,7 @@ struct PackageDiagramTests {
     // MARK: - Zone-of-pain color
 
     @Test func zoneColorBucketsCoverFullRange() {
-        func node(_ instability: Double, _ abstractness: Double) -> PackageDependencyDiagram.Node {
+        func node(_ instability: Double, _ abstractness: Double) -> PackageDiagram.Node {
             .init(id: "x", name: "x", typeCount: 1, afferentCoupling: 0,
                   efferentCoupling: 0, instability: instability, abstractness: abstractness)
         }

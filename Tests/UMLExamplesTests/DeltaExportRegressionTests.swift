@@ -106,8 +106,8 @@ struct SequenceDiagramDeltaExportTests {
         let new = try ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagramDiff", testCase.dir, "After"), language: testCase.language)
         let diff = SequenceDiagramDiff(
-            old: old.sequenceDiagram(entryPoint: testCase.entry),
-            new: new.sequenceDiagram(entryPoint: testCase.entry))
+            old: SequenceDiagramBuilder(entryPoint: testCase.entry).build(from: old),
+            new: SequenceDiagramBuilder(entryPoint: testCase.entry).build(from: new))
         if mermaid { return SequenceDiagramMermaidRenderer().render(diff.union) }
         return SequenceDiagramDOTRenderer(
             messageColor: { DeltaEdgeColors.standard.hex(forStatus: diff.status(of: $0).rawValue) }
@@ -154,12 +154,10 @@ struct StateDiagramDeltaExportTests {
     /// the union with the per-transition colour override (DOT only).
     private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state", maxStates: 20)
-        let old = try ExampleExports.analyze(
-            ExampleExports.examples("StateDiagramDiff", dir, "Before"), language: language)
-            .resolvingExtensions().stateDiagram(configuration: configuration)
-        let new = try ExampleExports.analyze(
-            ExampleExports.examples("StateDiagramDiff", dir, "After"), language: language)
-            .resolvingExtensions().stateDiagram(configuration: configuration)
+        let old = try StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
+            ExampleExports.examples("StateDiagramDiff", dir, "Before"), language: language).resolvingExtensions())
+        let new = try StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
+            ExampleExports.examples("StateDiagramDiff", dir, "After"), language: language).resolvingExtensions())
         let diff = StateDiagramDiff(old: old, new: new)
         if mermaid { return StateDiagramMermaidRenderer().render(diff.union) }
         return StateDiagramDOTRenderer(
@@ -208,10 +206,10 @@ struct PackageDiagramDeltaExportTests {
             ExampleExports.examples("PackageDiagramDiff", dir, "Before"), language: language)
         let newArtifact = try ExampleExports.analyze(
             ExampleExports.examples("PackageDiagramDiff", dir, "After"), language: language)
-        let old = oldArtifact.enriched(configuration: oldArtifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
-        let new = newArtifact.enriched(configuration: newArtifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
+        let old = PackageDiagramBuilder().build(
+            from: oldArtifact.enriched(configuration: oldArtifact.standardLanguageConfiguration))
+        let new = PackageDiagramBuilder().build(
+            from: newArtifact.enriched(configuration: newArtifact.standardLanguageConfiguration))
         let diff = PackageDiagramDiff(old: old, new: new)
         let nodeColor: @Sendable (String) -> String? = {
             DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: $0).rawValue)
@@ -261,10 +259,10 @@ struct CallGraphDeltaExportTests {
     /// Mirrors `DiffCommand.callGraphDelta`: build the whole-codebase call graph from both
     /// revisions, diff, render the union with the per-node and per-edge colour overrides.
     private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
-        let old = try ExampleExports.analyze(
-            ExampleExports.examples("CallGraphDiff", dir, "Before"), language: language).callGraph()
-        let new = try ExampleExports.analyze(
-            ExampleExports.examples("CallGraphDiff", dir, "After"), language: language).callGraph()
+        let old = try CallGraphBuilder().build(from: ExampleExports.analyze(
+            ExampleExports.examples("CallGraphDiff", dir, "Before"), language: language))
+        let new = try CallGraphBuilder().build(from: ExampleExports.analyze(
+            ExampleExports.examples("CallGraphDiff", dir, "After"), language: language))
         let diff = CallGraphDiff(old: old, new: new)
         let nodeColor: @Sendable (String) -> String? = {
             DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: $0).rawValue)

@@ -185,11 +185,11 @@ extension UMLCommand {
                 typeMapping[parts[0]] = parts[1]
             }
 
-            let diagram = artifact.sequenceDiagram(
+            let diagram = SequenceDiagramBuilder(
                 entryPoint: (typeName, methodName),
                 maxDepth: maxDepth,
                 typeMapping: typeMapping
-            )
+            ).build(from: artifact)
             guard !diagram.participants.isEmpty else {
                 throw ValidationError(
                     "No calls could be traced from \(entryPoint). Sequence diagrams follow "
@@ -210,7 +210,8 @@ extension UMLCommand {
             let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
-                diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+                diagram = try StateDiagramBuilder(configuration: configuration)
+                    .build(from: artifact.resolvingExtensions())
             } catch let error as StateDiagramAnalysisError {
                 throw ValidationError(error.message)
             }
@@ -223,8 +224,8 @@ extension UMLCommand {
 
         /// Builds a package/module dependency diagram and wraps both renderers.
         private func packageExport(artifact: CodeArtifact) -> DiagramExport {
-            let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-                .packageDependencyDiagram()
+            let diagram = PackageDiagramBuilder().build(
+                from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
             let selectedTheme = theme?.diagramTheme
             return DiagramExport(
                 dot: { PackageDiagramDOTRenderer(theme: selectedTheme).render(diagram) },
@@ -235,7 +236,7 @@ extension UMLCommand {
         /// Builds a static call graph (optionally scoped) and wraps both renderers.
         private func callGraphExport(artifact: CodeArtifact) throws -> DiagramExport {
             let scope = try parseCallGraphScope()
-            let graph = artifact.callGraph(scope: scope, title: callGraphTitle(for: scope))
+            let graph = CallGraphBuilder(scope: scope, title: callGraphTitle(for: scope)).build(from: artifact)
             // Edges only exist for resolved calls; a node-only graph (callers whose call sites all
             // went unresolved) is not a useful diagram, so treat it as "nothing to draw".
             guard !graph.edges.isEmpty else {

@@ -20,7 +20,7 @@ Five diagram families live here, all derived from the same artifact:
   ``SequenceDiagramConfiguration``.
 - **State diagrams** — ``StateDiagram`` from value-flow analysis via ``StateDiagramConfiguration``
   (failures surface as ``StateDiagramAnalysisError``).
-- **Package diagrams** — ``PackageDependencyDiagram`` with module instability/abstractness metrics.
+- **Package diagrams** — ``PackageDiagram`` with module instability/abstractness metrics.
 - **Call graphs** — ``CallGraph`` over a chosen ``CallGraphScope``.
 
 For a pixel image instead of text, pair this with [UMLRender](/documentation/umlrender/) on Apple
@@ -53,7 +53,7 @@ let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 - ``StateDiagram``
 - ``StateDiagramConfiguration``
 - ``StateDiagramAnalysisError``
-- ``PackageDependencyDiagram``
+- ``PackageDiagram``
 - ``CallGraph``
 - ``CallGraphScope``
 

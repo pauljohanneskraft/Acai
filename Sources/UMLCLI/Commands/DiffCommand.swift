@@ -167,8 +167,8 @@ extension UMLCommand {
             old: CodeArtifact, new: CodeArtifact, entry: String, format: FormatOption
         ) throws -> String {
             let entryPoint = try parseSequenceEntryPoint(entry)
-            let oldDiagram = old.sequenceDiagram(entryPoint: entryPoint, maxDepth: maxDepth)
-            let newDiagram = new.sequenceDiagram(entryPoint: entryPoint, maxDepth: maxDepth)
+            let oldDiagram = SequenceDiagramBuilder(entryPoint: entryPoint, maxDepth: maxDepth).build(from: old)
+            let newDiagram = SequenceDiagramBuilder(entryPoint: entryPoint, maxDepth: maxDepth).build(from: new)
             let diff = SequenceDiagramDiff(old: oldDiagram, new: newDiagram)
             switch format {
             case .dot:
@@ -185,8 +185,10 @@ extension UMLCommand {
             old: CodeArtifact, new: CodeArtifact, variable: String, format: FormatOption
         ) throws -> String {
             let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
-            let oldDiagram = try old.resolvingExtensions().stateDiagram(configuration: configuration)
-            let newDiagram = try new.resolvingExtensions().stateDiagram(configuration: configuration)
+            let oldDiagram = try StateDiagramBuilder(configuration: configuration)
+                .build(from: old.resolvingExtensions())
+            let newDiagram = try StateDiagramBuilder(configuration: configuration)
+                .build(from: new.resolvingExtensions())
             let diff = StateDiagramDiff(old: oldDiagram, new: newDiagram)
             switch format {
             case .dot:
@@ -200,8 +202,10 @@ extension UMLCommand {
         }
 
         private func packageDelta(old: CodeArtifact, new: CodeArtifact, format: FormatOption) -> String {
-            let oldDiagram = old.enriched(configuration: old.standardLanguageConfiguration).packageDependencyDiagram()
-            let newDiagram = new.enriched(configuration: new.standardLanguageConfiguration).packageDependencyDiagram()
+            let oldDiagram = PackageDiagramBuilder().build(
+                from: old.enriched(configuration: old.standardLanguageConfiguration))
+            let newDiagram = PackageDiagramBuilder().build(
+                from: new.enriched(configuration: new.standardLanguageConfiguration))
             let diff = PackageDiagramDiff(old: oldDiagram, new: newDiagram)
             let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
             let edgeColor: @Sendable (String, String) -> String? = {
@@ -219,7 +223,9 @@ extension UMLCommand {
             old: CodeArtifact, new: CodeArtifact, format: FormatOption
         ) throws -> String {
             let scope = try parseCallGraphScope()
-            let diff = CallGraphDiff(old: old.callGraph(scope: scope), new: new.callGraph(scope: scope))
+            let diff = CallGraphDiff(
+                old: CallGraphBuilder(scope: scope).build(from: old),
+                new: CallGraphBuilder(scope: scope).build(from: new))
             let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
             let edgeColor: @Sendable (String, String) -> String? = {
                 diff.status(ofEdgeFrom: $0, to: $1).deltaHex

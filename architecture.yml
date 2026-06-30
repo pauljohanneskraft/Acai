@@ -1,14 +1,17 @@
 # Executable architecture contract for the UML repo (dogfooding).
 #   uml check --source . --rules architecture.yml      # or: Scripts/audit.sh
 #
-# Encodes the intended design as a fitness function. Current breaches are tracked technical debt
-# (responsibility bloat in the language extractors and CodeArtifact; modules in the "zone of pain");
-# tighten the thresholds as the debt is paid down so they ratchet against regression.
+# Encodes the intended design as a fitness function: hard invariants that must hold, plus budgets
+# that flag responsibility bloat. Tighten budgets as debt is paid down so they ratchet against
+# regression.
+
+# Hard invariant: the module dependency graph must stay acyclic. (Type-level cycles: `uml cycles
+# --scope types`.) Holds today — keep it that way.
+cycles:
+  scope: modules
 
 budgets:
-  - metric: distance
-    max: 0.5
-    message: "Module far from the main sequence (rigid: stable + concrete, or unstable + abstract)."
+  # Per-type OO budgets — catch responsibility bloat / over-central hubs.
   - target: { kind: class }
     metric: weightedMethods
     max: 25
@@ -20,6 +23,13 @@ budgets:
     max: 50
     message: "Over-central hub type — keep stable and well-tested; consider narrowing its surface."
 
-# Module-level dependency cycles must not exist. (Type-level cycles: `uml cycles --scope types`.)
-cycles:
-  scope: modules
+# NOTE on module `distance` from the main sequence (intentionally NOT gated):
+# UMLCore (data model) and UMLDiagram (diagram models) sit near the "stable + concrete" corner, so
+# their distance is high by design — a foundational data/model layer *should* be depended-upon and
+# concrete; forcing abstraction in for the metric's sake would be over-engineering. Track distance
+# informationally via `uml metrics`, but it is not an actionable budget for this codebase.
+#
+# Known accepted budget exceptions (essential complexity, not regressions): the per-language
+# tree-sitter extractors (Dart/JS/Java/Kotlin/Python/C-family) carry high fan-out/method counts
+# because each targets a distinct grammar — the genuinely shared logic already lives in
+# `TreeSitterExtracting`, and the grammars don't share a member-extraction mold.

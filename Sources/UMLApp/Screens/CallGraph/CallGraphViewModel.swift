@@ -28,9 +28,9 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         artifact: CodeArtifact, scope: CallGraphScope,
         restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil
     ) {
-        let new = artifact.callGraph(scope: scope)
+        let new = CallGraphBuilder(scope: scope).build(from: artifact)
         if let comparisonArtifact {
-            let diff = CallGraphDiff(old: comparisonArtifact.callGraph(scope: scope), new: new)
+            let diff = CallGraphDiff(old: CallGraphBuilder(scope: scope).build(from: comparisonArtifact), new: new)
             self.diff = diff
             self.graph = diff.union
         } else {

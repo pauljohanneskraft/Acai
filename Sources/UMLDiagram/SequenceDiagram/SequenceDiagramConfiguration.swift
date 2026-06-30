@@ -25,14 +25,10 @@ public struct SequenceDiagramConfiguration: Codable, Hashable, Sendable {
     }
 }
 
-extension CodeArtifact {
-    /// Generates a `SequenceDiagram` from a stored configuration; see
-    /// `sequenceDiagram(entryPoint:title:maxDepth:typeMapping:)`.
-    public func sequenceDiagram(
-        configuration: SequenceDiagramConfiguration,
-        title: String? = nil
-    ) -> SequenceDiagram {
-        sequenceDiagram(
+extension SequenceDiagramBuilder {
+    /// Builds from a stored configuration; convenience over the entry-point initializer.
+    public init(configuration: SequenceDiagramConfiguration, title: String? = nil) {
+        self.init(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
             title: title,
             maxDepth: configuration.maxDepth,

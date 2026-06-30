@@ -99,7 +99,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         recordUndo()
         let node = FreeformDiagram.Node(
             name: name,
-            content: kind.defaultContent(),
+            content: FreeformDiagram.Node.Content.makeDefault(for: kind),
             positionX: Double(position.x),
             positionY: Double(position.y)
         )
@@ -188,7 +188,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
                     existing.typeKind = newTK
                     nodes[idx].content = .type(existing)
                 default:
-                    nodes[idx].content = kind.defaultContent()
+                    nodes[idx].content = FreeformDiagram.Node.Content.makeDefault(for: kind)
                 }
             }
             save()

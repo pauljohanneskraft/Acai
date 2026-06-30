@@ -249,46 +249,6 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         }
     }
 
-    // swiftlint:disable cyclomatic_complexity
-    /// Creates a default ``NodeContent`` for this element kind.
-    func defaultContent() -> FreeformDiagram.Node.Content {
-        switch self {
-        case .type(let tk):
-                .type(.init(typeKind: tk))
-        case .actor:
-            .actor
-        case .useCase:
-            .useCase
-        case .boundary:
-            .boundary
-        case .component:
-            .component
-        case .package:
-            .package
-        case .deploymentNode:
-            .deploymentNode
-        case .database:
-            .database
-        case .artifact:
-            .artifact
-        case .subsystem:
-            .subsystem
-        case .entity:
-            .entity
-        case .note:
-            .note(text: "")
-        case .lifeline:
-            .lifeline(.object)
-        case .fragment:
-            .fragment(.init())
-        case .callGraphMethod:
-            .method
-        case .state(let sk):
-            .state(sk)
-        }
-    }
-    // swiftlint:enable cyclomatic_complexity
-
     // MARK: - Catalog Grouping
 
     /// The catalog section this element kind belongs to.
@@ -341,4 +301,49 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     static func cases(in group: CatalogGroup) -> [FreeformDiagramNodeKind] {
         allCases.filter { $0.catalogGroup == group }
     }
+}
+
+extension FreeformDiagram.Node.Content {
+    // swiftlint:disable cyclomatic_complexity
+    /// The default content for a newly-added element of `kind`. Lives on `Content` — rather than as
+    /// `FreeformDiagramNodeKind.defaultContent()` — so the kind enum does not depend on `Content`,
+    /// breaking the `Content ↔ FreeformDiagramNodeKind` reference cycle (`Content.kind` is the other
+    /// direction).
+    static func makeDefault(for kind: FreeformDiagramNodeKind) -> FreeformDiagram.Node.Content {
+        switch kind {
+        case .type(let tk):
+            .type(.init(typeKind: tk))
+        case .actor:
+            .actor
+        case .useCase:
+            .useCase
+        case .boundary:
+            .boundary
+        case .component:
+            .component
+        case .package:
+            .package
+        case .deploymentNode:
+            .deploymentNode
+        case .database:
+            .database
+        case .artifact:
+            .artifact
+        case .subsystem:
+            .subsystem
+        case .entity:
+            .entity
+        case .note:
+            .note(text: "")
+        case .lifeline:
+            .lifeline(.object)
+        case .fragment:
+            .fragment(.init())
+        case .callGraphMethod:
+            .method
+        case .state(let sk):
+            .state(sk)
+        }
+    }
+    // swiftlint:enable cyclomatic_complexity
 }

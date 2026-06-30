@@ -112,11 +112,11 @@ extension GeneratedDiagram {
         scale: CGFloat,
         offset: CGPoint
     ) -> FreeformDiagram {
-        let sequence = artifact.sequenceDiagram(
+        let sequence = SequenceDiagramBuilder(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
             maxDepth: configuration.maxDepth,
             typeMapping: configuration.typeMapping
-        )
+        ).build(from: artifact)
 
         // One lifeline node per participant, at the exact x its lifeline had in the generated
         // view (the caller passes the live layout positions; the stride is only a fallback).
@@ -177,7 +177,7 @@ extension GeneratedDiagram {
         offset: CGPoint
     ) -> FreeformDiagram {
         // Analysis failures convert to an empty (but still editable) diagram.
-        let state = (try? artifact.resolvingExtensions().stateDiagram(configuration: configuration))
+        let state = (try? StateDiagramBuilder(configuration: configuration).build(from: artifact.resolvingExtensions()))
             ?? StateDiagram()
 
         var nodeIDByStateID: [String: String] = [:]
@@ -232,8 +232,8 @@ extension GeneratedDiagram {
         scale: CGFloat,
         offset: CGPoint
     ) -> FreeformDiagram {
-        let package = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
+        let package = PackageDiagramBuilder().build(
+            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
 
         var nodeIDByModuleID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []
@@ -282,7 +282,7 @@ extension GeneratedDiagram {
         scale: CGFloat,
         offset: CGPoint
     ) -> FreeformDiagram {
-        let graph = artifact.callGraph(scope: scope)
+        let graph = CallGraphBuilder(scope: scope).build(from: artifact)
 
         var nodeIDByGraphID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []

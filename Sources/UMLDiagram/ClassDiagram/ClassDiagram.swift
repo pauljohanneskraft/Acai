@@ -39,7 +39,7 @@ public struct EnrichmentOptions: Sendable {
 
 /// The built class-diagram model — enriched types, resolved relationships, external placeholders
 /// and directory groups, ready to hand to a renderer. Named to match the `SequenceDiagram` /
-/// `StateDiagram` / `PackageDependencyDiagram` models so every diagram type follows the same
+/// `StateDiagram` / `PackageDiagram` models so every diagram type follows the same
 /// "build a model, render the model" shape.
 ///
 /// Constructing one from a `CodeArtifact` post-processes it:

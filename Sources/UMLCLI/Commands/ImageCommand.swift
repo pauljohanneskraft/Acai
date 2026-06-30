@@ -159,8 +159,8 @@ extension UMLCommand {
             } else if package, let oldArtifact {
                 data = try await renderPackageDelta(old: oldArtifact, new: artifact)
             } else if package {
-                let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-                    .packageDependencyDiagram()
+                let diagram = PackageDiagramBuilder().build(
+                    from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
                 let renderScale = CGFloat(scale)
                 data = try await MainActor.run {
                     try DiagramImageRenderer().renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
@@ -245,8 +245,10 @@ extension UMLCommand {
         /// Renders the package-diagram delta of two revisions to PNG: the union with each module
         /// node and dependency edge tinted by its diff status.
         private func renderPackageDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
-            let oldDiagram = old.enriched(configuration: old.standardLanguageConfiguration).packageDependencyDiagram()
-            let newDiagram = new.enriched(configuration: new.standardLanguageConfiguration).packageDependencyDiagram()
+            let oldDiagram = PackageDiagramBuilder().build(
+                from: old.enriched(configuration: old.standardLanguageConfiguration))
+            let newDiagram = PackageDiagramBuilder().build(
+                from: new.enriched(configuration: new.standardLanguageConfiguration))
             let diff = PackageDiagramDiff(old: oldDiagram, new: newDiagram)
             let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
             let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
@@ -263,7 +265,9 @@ extension UMLCommand {
         /// call edge tinted by its diff status.
         private func renderCallGraphDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
             let scope = try parseCallGraphScope()
-            let diff = CallGraphDiff(old: old.callGraph(scope: scope), new: new.callGraph(scope: scope))
+            let diff = CallGraphDiff(
+                old: CallGraphBuilder(scope: scope).build(from: old),
+                new: CallGraphBuilder(scope: scope).build(from: new))
             let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
             let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
             let renderScale = CGFloat(scale)
@@ -289,11 +293,11 @@ extension UMLCommand {
                 typeMapping[parts[0]] = parts[1]
             }
 
-            let diagram = artifact.sequenceDiagram(
+            let diagram = SequenceDiagramBuilder(
                 entryPoint: (typeName, methodName),
                 maxDepth: maxDepth,
                 typeMapping: typeMapping
-            )
+            ).build(from: artifact)
             guard !diagram.participants.isEmpty else {
                 throw ValidationError(
                     "No calls could be traced from \(entryPoint). Sequence diagrams follow "
@@ -308,7 +312,7 @@ extension UMLCommand {
         /// Builds a static call graph (optionally scoped) and renders it to PNG.
         private func renderCallGraph(artifact: CodeArtifact) async throws -> Data {
             let scope = try parseCallGraphScope()
-            let graph = artifact.callGraph(scope: scope)
+            let graph = CallGraphBuilder(scope: scope).build(from: artifact)
             guard !graph.edges.isEmpty else {
                 throw ValidationError(
                     "No resolvable calls found for the requested scope. Call graphs follow "
@@ -343,7 +347,8 @@ extension UMLCommand {
             let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
             let diagram: StateDiagram
             do {
-                diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+                diagram = try StateDiagramBuilder(configuration: configuration)
+                    .build(from: artifact.resolvingExtensions())
             } catch let error as StateDiagramAnalysisError {
                 throw ValidationError(error.message)
             }
@@ -365,8 +370,8 @@ extension UMLCommand.Image {
     ) async throws -> Data {
         let entry = try parseSequenceEntryPoint(entryPoint)
         let diff = SequenceDiagramDiff(
-            old: old.sequenceDiagram(entryPoint: entry, maxDepth: maxDepth),
-            new: new.sequenceDiagram(entryPoint: entry, maxDepth: maxDepth))
+            old: SequenceDiagramBuilder(entryPoint: entry, maxDepth: maxDepth).build(from: old),
+            new: SequenceDiagramBuilder(entryPoint: entry, maxDepth: maxDepth).build(from: new))
         let ordered = diff.union.messages.sorted { $0.order < $1.order }
         let colorByID = Dictionary(uniqueKeysWithValues: ordered.enumerated().compactMap { index, message in
             diff.status(of: message).deltaColor.map { (index, $0) }
@@ -387,8 +392,8 @@ extension UMLCommand.Image {
     func renderStateDelta(old: CodeArtifact, new: CodeArtifact, variable: String) async throws -> Data {
         let configuration = try StateDiagramConfiguration(stateFrom: variable, maxStates: maxStates)
         let diff = StateDiagramDiff(
-            old: try old.resolvingExtensions().stateDiagram(configuration: configuration),
-            new: try new.resolvingExtensions().stateDiagram(configuration: configuration))
+            old: try StateDiagramBuilder(configuration: configuration).build(from: old.resolvingExtensions()),
+            new: try StateDiagramBuilder(configuration: configuration).build(from: new.resolvingExtensions()))
         let transitions = diff.union.transitions
         let colorByID = Dictionary(uniqueKeysWithValues: transitions.enumerated().compactMap { index, transition in
             diff.status(of: transition).deltaColor.map { (index, $0) }

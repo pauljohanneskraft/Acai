@@ -43,7 +43,7 @@ struct StateDiagramBuilderTests {
     // MARK: - Happy Path
 
     @Test func statesComeFromInitialValueAndAssignments() throws {
-        let diagram = try loaderArtifact().stateDiagram(configuration: config())
+        let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
         let names = diagram.states.filter { $0.kind == .normal }.map(\.name)
         #expect(names == ["idle", "loading", "loaded", "failed"])
         #expect(diagram.states.contains { $0.kind == .initial })
@@ -51,7 +51,7 @@ struct StateDiagramBuilderTests {
     }
 
     @Test func transitionsFormSequentialChains() throws {
-        let diagram = try loaderArtifact().stateDiagram(configuration: config())
+        let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
         // Chain inside load(): loading → loaded labeled load().
         #expect(diagram.transitions.contains {
             $0.from == "state_loading" && $0.to == "state_loaded" && $0.event == "load()"
@@ -71,7 +71,7 @@ struct StateDiagramBuilderTests {
 
     @Test func qualifiedAndImplicitCasesCollapseIntoOneState() throws {
         // `.loaded` and `State.loaded` should produce a single state.
-        let diagram = try loaderArtifact().stateDiagram(configuration: config())
+        let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
         let loadedStates = diagram.states.filter { $0.name == "loaded" }
         #expect(loadedStates.count == 1)
     }
@@ -86,7 +86,7 @@ struct StateDiagramBuilderTests {
                                 value: .init(kind: .expression, text: "state += 1"))]
         ))
         #expect {
-            try artifact.stateDiagram(configuration: config())
+            try StateDiagramBuilder(configuration: config()).build(from: artifact)
         } throws: { error in
             guard case .unboundedAssignment(let memberName, _, _) = error as? StateDiagramAnalysisError
             else { return false }
@@ -102,7 +102,7 @@ struct StateDiagramBuilderTests {
                                 value: .init(kind: .expression, text: "fetchState()"))]
         ))
         #expect {
-            try artifact.stateDiagram(configuration: config())
+            try StateDiagramBuilder(configuration: config()).build(from: artifact)
         } throws: { error in
             guard case .unboundedAssignment = error as? StateDiagramAnalysisError else { return false }
             return true
@@ -111,7 +111,7 @@ struct StateDiagramBuilderTests {
 
     @Test func tooManyStatesFails() {
         #expect {
-            try loaderArtifact().stateDiagram(configuration: config(3))
+            try StateDiagramBuilder(configuration: config(3)).build(from: loaderArtifact())
         } throws: { error in
             error as? StateDiagramAnalysisError == .tooManyStates(count: 4, limit: 3)
         }
@@ -119,9 +119,9 @@ struct StateDiagramBuilderTests {
 
     @Test func unknownVariableFails() {
         #expect {
-            try loaderArtifact().stateDiagram(
+            try StateDiagramBuilder(
                 configuration: .init(typeName: "Loader", variableName: "missing")
-            )
+            ).build(from: loaderArtifact())
         } throws: { error in
             error as? StateDiagramAnalysisError
                 == .variableNotFound(typeName: "Loader", variableName: "missing")
@@ -132,7 +132,8 @@ struct StateDiagramBuilderTests {
         #expect(throws: StateDiagramAnalysisError.variableNotFound(
             typeName: "Nope", variableName: "state"
         )) {
-            try loaderArtifact().stateDiagram(configuration: .init(typeName: "Nope", variableName: "state"))
+            try StateDiagramBuilder(configuration: .init(typeName: "Nope", variableName: "state"))
+                .build(from: loaderArtifact())
         }
     }
 
@@ -145,14 +146,14 @@ struct StateDiagramBuilderTests {
             )]
         )
         #expect(throws: StateDiagramAnalysisError.noAssignments(variableName: "state")) {
-            try artifact.stateDiagram(configuration: .init(typeName: "Bare", variableName: "state"))
+            try StateDiagramBuilder(configuration: .init(typeName: "Bare", variableName: "state")).build(from: artifact)
         }
     }
 
     @Test func expressionInitialValueIsIgnoredNotFatal() throws {
         var artifact = loaderArtifact()
         artifact.types[0].members[0].initialValue = .init(kind: .expression, text: "makeState()")
-        let diagram = try artifact.stateDiagram(configuration: config())
+        let diagram = try StateDiagramBuilder(configuration: config()).build(from: artifact)
         let names = diagram.states.filter { $0.kind == .normal }.map(\.name)
         #expect(names == ["loading", "loaded", "failed"])
     }
@@ -182,7 +183,7 @@ struct StateDiagramBuilderTests {
                 initialValue: .init(kind: .enumCase, text: "normal")
             )]
         )
-        let diagram = try artifact.stateDiagram(configuration: .init(variableName: "mode"))
+        let diagram = try StateDiagramBuilder(configuration: .init(variableName: "mode")).build(from: artifact)
         let names = diagram.states.filter { $0.kind == .normal }.map(\.name)
         // The Shadower type declares its own `mode`, so its write is excluded.
         #expect(names == ["normal", "debug"])
@@ -192,7 +193,7 @@ struct StateDiagramBuilderTests {
     // MARK: - DOT Rendering
 
     @Test func dotRendererEmitsStatesAndTransitions() throws {
-        let diagram = try loaderArtifact().stateDiagram(configuration: config())
+        let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
         let dot = StateDiagramDOTRenderer().render(diagram)
         #expect(dot.contains("loading"))
         #expect(dot.contains("load()"))

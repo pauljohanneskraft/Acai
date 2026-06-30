@@ -41,11 +41,11 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         artifact: CodeArtifact,
         configuration: SequenceDiagramConfiguration
     ) -> SequenceDiagram {
-        artifact.sequenceDiagram(
+        SequenceDiagramBuilder(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
             maxDepth: configuration.maxDepth,
             typeMapping: configuration.typeMapping
-        )
+        ).build(from: artifact)
     }
 
     /// Re-runs the trace for a new configuration, dropping stale offsets and history.

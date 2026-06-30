@@ -155,10 +155,10 @@ struct SequenceConfigSheet: View {
     /// Run a first-pass trace; if any encountered participant is an abstraction with conformers,
     /// move to the resolution phase, otherwise create immediately.
     private func advance() {
-        let preview = artifact.sequenceDiagram(
+        let preview = SequenceDiagramBuilder(
             entryPoint: (entryTypeName, entryMethodName),
             maxDepth: maxDepth
-        )
+        ).build(from: artifact)
         var rows: [MappingRow] = []
         var seen: Set<String> = []
         for participant in preview.participants where !seen.contains(participant.name) {

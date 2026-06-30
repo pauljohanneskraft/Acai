@@ -22,7 +22,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = SwiftCodeParser().parse(source: source, fileName: "Worker.swift")
-        let diagram = artifact.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: artifact)
         // Cross-type property call.
         #expect(diagram.messages.contains {
             $0.from == "Worker" && $0.to == "Helper" && $0.label == "process"
@@ -59,7 +59,7 @@ struct UMLLibraryTests {
         }
         """
         let artifact = DartCodeParser().parse(source: source, fileName: "Worker.dart")
-        let diagram = artifact.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: artifact)
         #expect(diagram.messages.contains {
             $0.from == "Worker" && $0.to == "Helper" && $0.label == "process"
         })

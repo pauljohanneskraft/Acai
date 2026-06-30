@@ -134,10 +134,10 @@ public struct DiagramImageRenderer {
 
     // MARK: - Package diagram
 
-    /// Lays out and renders a `PackageDependencyDiagram` to PNG data, using the shared
+    /// Lays out and renders a `PackageDiagram` to PNG data, using the shared
     /// `PackageLayoutModel` + `PackageDiagramSnapshotView`.
     public func renderPNG(
-        packageDiagram: PackageDependencyDiagram,
+        packageDiagram: PackageDiagram,
         positionOverrides: [String: CGPoint] = [:],
         scale: CGFloat = 2,
         padding: CGFloat = defaultPadding,

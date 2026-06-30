@@ -131,7 +131,12 @@ extension TreeSitterExtracting {
 
         func register(_ types: [TypeDeclaration]) {
             for type in types {
-                nameToId[type.name] = type.id
+                // Only exact keys (id + qualified name) are mapped unconditionally. A bare simple
+                // name is mapped below and only when it is not already taken — mapping `type.name`
+                // here would let an ambiguous nested name (e.g. several `Kind` enums) resolve to
+                // whichever type was registered last, fabricating spurious edges. (Mirrors the same
+                // guard in `CodeArtifact.buildNameToId`; a top-level type still resolves by its simple
+                // name because its qualified name equals it.)
                 nameToId[type.qualifiedName] = type.id
                 if let simple = type.name
                     .components(separatedBy: ".").last,
