@@ -84,6 +84,7 @@ let package = Package(
         .library(name: "UMLDart", targets: ["UMLDart"]),
         .library(name: "UMLPython", targets: ["UMLPython"]),
         .library(name: "UMLCFamily", targets: ["UMLCFamily"]),
+        .library(name: "UMLCSharp", targets: ["UMLCSharp"]),
         .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
         .library(name: "UMLDiff", targets: ["UMLDiff"]),
         .library(name: "UMLConformance", targets: ["UMLConformance"]),
@@ -105,6 +106,7 @@ let package = Package(
         // (unlike Python) no vendored scanner target is needed.
         .package(url: "https://github.com/tree-sitter/tree-sitter-c", from: "0.24.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp", from: "0.23.0"),
+        .package(url: "https://github.com/tree-sitter/tree-sitter-c-sharp", from: "0.23.5"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
         .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
@@ -190,6 +192,14 @@ let package = Package(
                 .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
             ]
         ),
+        .target(
+            name: "UMLCSharp",
+            dependencies: [
+                "UMLCore",
+                "UMLTreeSitter",
+                .product(name: "TreeSitterCSharp", package: "tree-sitter-c-sharp"),
+            ]
+        ),
 
         // MARK: DOT/Graphviz diagram generator
         .target(
@@ -226,6 +236,7 @@ let package = Package(
                 "UMLDart",
                 "UMLPython",
                 "UMLCFamily",
+                "UMLCSharp",
             ]
         ),
 
@@ -251,6 +262,7 @@ let package = Package(
         .testTarget(name: "UMLDartTests", dependencies: ["UMLDart", "UMLCore"]),
         .testTarget(name: "UMLPythonTests", dependencies: ["UMLPython", "UMLCore"]),
         .testTarget(name: "UMLCFamilyTests", dependencies: ["UMLCFamily", "UMLCore"]),
+        .testTarget(name: "UMLCSharpTests", dependencies: ["UMLCSharp", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLDiffTests", dependencies: ["UMLDiff", "UMLCore", "UMLDiagram"]),
         .testTarget(name: "UMLConformanceTests", dependencies: ["UMLConformance", "UMLCore"]),

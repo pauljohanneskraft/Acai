@@ -12,3 +12,4 @@
 @_exported import UMLDart
 @_exported import UMLPython
 @_exported import UMLCFamily
+@_exported import UMLCSharp
