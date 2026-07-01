@@ -59,11 +59,11 @@ extension CodeArtifact {
         relationships: [Relationship],
         configuration: FocusConfiguration
     ) -> (types: [TypeDeclaration], relationships: [Relationship]) {
-        let nameToId = buildNameToId(types)
-        guard let rootId = nameToId[configuration.rootTypeName] else {
+        let identity = TypeIdentityResolver(types: types)
+        guard let rootId = identity.resolvedID(for: configuration.rootTypeName)?.value else {
             return (types: [], relationships: [])
         }
-        let resolveId: (String) -> String = { nameToId[$0] ?? $0 }
+        let resolveId: (String) -> String = { identity.canonicalName(for: $0) }
 
         let traversal = FocusTraversal(
             relationships: relationships,

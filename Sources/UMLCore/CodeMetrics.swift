@@ -68,11 +68,11 @@ extension CodeArtifact {
         let flat = Self.allTypes(types)
         // Resolves a body-referenced type name to its canonical id (only known types resolve), shared
         // by the coupling and per-type fan metrics so construction/body dependencies are counted.
-        let nameToId = Self.buildNameToId(types)
+        let identity = TypeIdentityResolver(types: types)
         return CodeMetrics(
             counts: computeCounts(flat: flat),
-            modules: computeModuleCoupling(flat: flat, nameToId: nameToId),
-            types: computeTypeMetrics(flat: flat, nameToId: nameToId)
+            modules: computeModuleCoupling(flat: flat, identity: identity),
+            types: computeTypeMetrics(flat: flat, identity: identity)
         )
     }
 
@@ -108,7 +108,7 @@ extension CodeArtifact {
     }
 
     private func computeTypeMetrics(
-        flat: [TypeDeclaration], nameToId: [String: String]
+        flat: [TypeDeclaration], identity: TypeIdentityResolver
     ) -> [CodeMetrics.TypeMetric] {
         let typeIds = Set(flat.map(\.id))
         let isaEdges = relationships.filter {
@@ -134,7 +134,7 @@ extension CodeArtifact {
             return best
         }
 
-        let (fanIn, fanOut) = fanMetrics(flat: flat, nameToId: nameToId)
+        let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
 
         let resolver = ModuleResolver.standard
         return flat.map { type in
@@ -155,7 +155,7 @@ extension CodeArtifact {
     /// plus construction/body dependencies (a member referencing a known type couples its owning type
     /// to that type — not visible in signatures, e.g. a factory that constructs the type).
     private func fanMetrics(
-        flat: [TypeDeclaration], nameToId: [String: String]
+        flat: [TypeDeclaration], identity: TypeIdentityResolver
     ) -> (fanIn: [String: Set<String>], fanOut: [String: Set<String>]) {
         let depKinds: Set<Relationship.Kind> = [.dependency, .composition, .aggregation, .association]
         var fanOut: [String: Set<String>] = [:]
@@ -167,7 +167,7 @@ extension CodeArtifact {
         for type in flat {
             for member in type.members {
                 for name in member.referencedTypeNames {
-                    guard let target = nameToId[name], target != type.id else { continue }
+                    guard let target = identity.resolvedID(for: name)?.value, target != type.id else { continue }
                     fanOut[type.id, default: []].insert(target)
                     fanIn[target, default: []].insert(type.id)
                 }
@@ -177,7 +177,7 @@ extension CodeArtifact {
     }
 
     private func computeModuleCoupling(
-        flat: [TypeDeclaration], nameToId: [String: String]
+        flat: [TypeDeclaration], identity: TypeIdentityResolver
     ) -> [CodeMetrics.ModuleCoupling] {
         let resolver = ModuleResolver.standard
         var idToModule: [String: String] = [:]
@@ -201,7 +201,7 @@ extension CodeArtifact {
             afferent[targetModule, default: []].insert(edge.source)
         }
         addBodyReferenceCoupling(
-            flat: flat, nameToId: nameToId, idToModule: idToModule, efferent: &efferent, afferent: &afferent)
+            flat: flat, identity: identity, idToModule: idToModule, efferent: &efferent, afferent: &afferent)
 
         return moduleCouplings(moduleTypes: moduleTypes, efferent: efferent, afferent: afferent)
     }
@@ -210,7 +210,7 @@ extension CodeArtifact {
     /// file (so an extension on a foreign type counts toward the extension's module, not the type's),
     /// the target is the referenced type's module. Mutates the shared efferent/afferent sets.
     private func addBodyReferenceCoupling(
-        flat: [TypeDeclaration], nameToId: [String: String], idToModule: [String: String],
+        flat: [TypeDeclaration], identity: TypeIdentityResolver, idToModule: [String: String],
         efferent: inout [String: Set<String>], afferent: inout [String: Set<String>]
     ) {
         let resolver = ModuleResolver.standard
@@ -219,7 +219,7 @@ extension CodeArtifact {
                 let sourceModule = resolver.productName(
                     forFilePath: member.location?.filePath ?? type.location?.filePath ?? "")
                 for name in member.referencedTypeNames {
-                    guard let target = nameToId[name], let targetModule = idToModule[target],
+                    guard let target = identity.resolvedID(for: name)?.value, let targetModule = idToModule[target],
                           sourceModule != targetModule
                     else { continue }
                     efferent[sourceModule, default: []].insert(target)

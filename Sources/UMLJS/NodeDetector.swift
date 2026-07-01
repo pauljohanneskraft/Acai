@@ -9,35 +9,28 @@ public struct NodeDetector: BuildSystemDetector {
     public init() {}
 
     public func isPresent(at root: URL) -> Bool {
-        FileManager.default.fileExists(atPath: root.appendingPathComponent("package.json").path)
+        IndicatorFiles(["package.json"]).present(at: root)
     }
 
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        func wants(_ lang: CodeArtifact.SourceLanguage) -> Bool {
-            requestedLanguages.isEmpty || requestedLanguages.contains(lang)
-        }
+        let request = LanguageRequest(requestedLanguages)
+        let searchDirs = tsConfigSourceDirs(in: root)
+            ?? SourceDirectoryProbe(preferring: "src").directories(in: root)
 
-        let searchDirs = tsConfigSourceDirs(in: root) ?? defaultSourceDirs(in: root)
-
-        let hasTS = searchDirs.contains(where: {
-            !FileManager.default.fileURLs(in: $0, withExtensions: ["ts", "tsx"]).isEmpty
-        })
-        let hasJS = searchDirs.contains(where: {
-            !FileManager.default.fileURLs(in: $0, withExtensions: ["js", "jsx", "mjs"]).isEmpty
-        })
+        let hasTS = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
+        let hasJS = SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: searchDirs)
 
         var specs: [SourceSpec] = []
 
-        if hasTS, wants(.typeScript) {
+        if hasTS, request.wants(.typeScript) {
             specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs))
         }
         // Add JavaScript only when JS files exist AND the project isn't purely TypeScript,
         // or the user explicitly requested JavaScript.
-        let userExplicitlyWantsJS = requestedLanguages.contains(.javaScript)
-        if hasJS, wants(.javaScript), !hasTS || userExplicitlyWantsJS {
+        if hasJS, request.wants(.javaScript), !hasTS || request.explicitlyWants(.javaScript) {
             specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs))
         }
 
@@ -79,10 +72,5 @@ public struct NodeDetector: BuildSystemDetector {
         }
 
         return dirs.isEmpty ? nil : dirs
-    }
-
-    private func defaultSourceDirs(in rootURL: URL) -> [URL] {
-        let srcDir = rootURL.appendingPathComponent("src")
-        return FileManager.default.fileExists(atPath: srcDir.path) ? [srcDir] : [rootURL]
     }
 }

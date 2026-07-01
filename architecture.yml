@@ -32,8 +32,17 @@ budgets:
 # Known accepted budget exceptions (essential complexity, not regressions):
 #
 # 1. The per-language tree-sitter extractors (Dart/JS/Java/Kotlin/Python/C-family) carry high
-#    fan-out/method counts because each targets a distinct grammar — the genuinely shared logic
-#    already lives in `TreeSitterExtracting`, and the grammars don't share a member-extraction mold.
+#    fan-out/method counts because each targets a distinct grammar. The genuinely shared logic is
+#    already factored into composable, config-driven seams in `UMLTreeSitter` — `TreeSitterExtracting`
+#    (traversal skeleton, artifact assembly, `recordSupertypeRelationships`, `normalizedAnnotation`,
+#    referenced-type / parse-diagnostic collection), `CallSiteResolving` + `CallSiteScope` +
+#    `MemberCallGrammar`, and `AssignmentResolving` + `LiteralNodeTypes`. What remains per language is
+#    essential grammar-specific complexity: the six grammars diverge in node vocabulary *and* assembly
+#    strategy (e.g. Java's `switch`-over-node-types type-reference builder vs Kotlin's name-part
+#    assembly; node-type-keyed vs text-keyed modifier maps; keyword vs positional-label vs
+#    naming-convention access levels). Forcing these through one shared member-extraction mold would be
+#    over-engineering — a template-method base that each grammar only partially fits — so it is
+#    deliberately not done (issue #91).
 #
 # 2. `DeclarationVisitor` (UMLSwift) is a `SwiftSyntax.SyntaxVisitor`: it must declare one
 #    `visit`/`visitPost` override per syntax node kind it handles (~17 declaration/expression types),

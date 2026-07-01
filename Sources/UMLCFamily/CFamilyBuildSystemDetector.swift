@@ -26,41 +26,34 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
     /// Preset for Meson projects.
     public static let meson = CFamilyBuildSystemDetector(indicatorFiles: ["meson.build"])
 
-    private static let cExtensions: Set<String> = ["c"]
-    private static let cppExtensions: Set<String> = [
-        "cpp", "cc", "cxx", "c++", "hpp", "hh", "hxx", "h++", "ipp", "tpp"
-    ]
-
     public func isPresent(at root: URL) -> Bool {
-        indicatorFiles.contains {
-            FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
-        }
+        IndicatorFiles(indicatorFiles).present(at: root)
     }
 
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        func wants(_ language: CodeArtifact.SourceLanguage) -> Bool {
-            requestedLanguages.isEmpty || requestedLanguages.contains(language)
-        }
-
+        let request = LanguageRequest(requestedLanguages)
         var specs: [SourceSpec] = []
         // `.c` files signal C; any C++-only extension signals C++. A project with only `.h` headers
         // is reported as C — `CCodeParser` still routes individual C++ headers to the C++ grammar.
-        if wants(.c), hasFiles(Self.cExtensions.union(["h"]), at: root) {
+        if request.wants(.c), cFiles.exist(in: root) {
             specs.append(SourceSpec(language: .c, sourceDirs: [root]))
         }
-        if wants(.cpp), hasFiles(Self.cppExtensions, at: root) {
+        if request.wants(.cpp), cppFiles.exist(in: root) {
             specs.append(SourceSpec(language: .cpp, sourceDirs: [root]))
         }
         return specs
     }
 
-    private func hasFiles(_ extensions: Set<String>, at root: URL) -> Bool {
-        !FileManager.default.fileURLs(
-            in: root, withExtensions: extensions,
-            excludingDirectories: CFamilyDialect.excludedDirectories
-        ).isEmpty
+    // C-family exclusion is a shared dialect setting, so these presences are declared once as locals.
+    private var cFiles: SourceFilePresence {
+        SourceFilePresence(extensions: ["c", "h"], excludingDirectories: CFamilyDialect.excludedDirectories)
+    }
+    private var cppFiles: SourceFilePresence {
+        SourceFilePresence(
+            extensions: ["cpp", "cc", "cxx", "c++", "hpp", "hh", "hxx", "h++", "ipp", "tpp"],
+            excludingDirectories: CFamilyDialect.excludedDirectories)
     }
 }

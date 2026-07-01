@@ -5,30 +5,25 @@ import UMLCore
 /// locates Python sources.
 ///
 /// Prefers a `src/` layout when present, otherwise searches from the project root.
+///
+/// The reusable detector components (`IndicatorFiles`, `SourceDirectoryProbe`, `SourceFilePresence`)
+/// are constructed where they're used rather than held as stored properties — they are cheap value
+/// types, and holding a `SourceFilePresence` as a stored property currently mis-compiles.
 public struct PythonDetector: BuildSystemDetector {
-    private static let manifests = ["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]
-
     public init() {}
 
     public func isPresent(at root: URL) -> Bool {
-        Self.manifests.contains {
-            FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
-        }
+        IndicatorFiles(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]).present(at: root)
     }
 
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        guard requestedLanguages.isEmpty || requestedLanguages.contains(.python) else { return [] }
+        guard LanguageRequest(requestedLanguages).wants(.python) else { return [] }
 
-        let srcDir = root.appendingPathComponent("src")
-        let sourceDirs: [URL] = FileManager.default.fileExists(atPath: srcDir.path) ? [srcDir] : [root]
-
-        let hasPython = sourceDirs.contains {
-            !FileManager.default.fileURLs(in: $0, withExtensions: ["py"]).isEmpty
-        }
-        guard hasPython else { return [] }
+        let sourceDirs = SourceDirectoryProbe(preferring: "src").directories(in: root)
+        guard SourceFilePresence(extensions: ["py"]).exist(inAnyOf: sourceDirs) else { return [] }
         return [SourceSpec(language: .python, sourceDirs: sourceDirs)]
     }
 }

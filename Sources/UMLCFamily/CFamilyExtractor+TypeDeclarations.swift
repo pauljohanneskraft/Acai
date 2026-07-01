@@ -16,11 +16,8 @@ extension CFamilyExtractor {
         let kind: TypeKind = isClass ? .class : .struct
         let defaultAccess: AccessLevel = isClass ? .private : .public
 
-        var inheritedTypes: [TypeReference] = []
-        for ref in baseClasses(of: node) {
-            inheritedTypes.append(ref)
-            relationships.append(Relationship(kind: .inheritance, source: typeId, target: ref.name))
-        }
+        let inheritedTypes = baseClasses(of: node)
+        recordSupertypeRelationships(from: typeId, to: inheritedTypes, kind: .inheritance)
 
         var members: [Member] = []
         var nestedTypes: [TypeDeclaration] = []
