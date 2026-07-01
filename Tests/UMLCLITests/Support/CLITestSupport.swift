@@ -33,11 +33,14 @@ enum CLITestSupport {
         return try #require(root as? UMLCommand.Metrics)
     }
 
-    /// Parses `image`-subcommand `arguments` into the concrete `Image` command.
+    #if os(macOS)
+    /// Parses `image`-subcommand `arguments` into the concrete `Image` command. macOS-only: the
+    /// `image` subcommand needs SwiftUI's `ImageRenderer`, so it is not compiled on Linux.
     static func parseImage(_ arguments: [String]) throws -> UMLCommand.Image {
         let root = try UMLCommand.parseAsRoot(["image"] + arguments)
         return try #require(root as? UMLCommand.Image)
     }
+    #endif
 
     /// The human-readable message ArgumentParser would print for `error`.
     static func message(for error: Error) -> String {

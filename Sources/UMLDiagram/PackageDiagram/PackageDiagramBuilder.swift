@@ -45,7 +45,10 @@ public struct PackageDiagramBuilder: Sendable {
                 let from = attribution.sourceModule(of: rel),
                 let to = attribution.targetModule(of: rel),
                 from != to,
-                seenCrossings.insert("\(rel.source)→\(rel.target)").inserted
+                // Scope the dedup to the attributed module pair too: the same type pair can be
+                // attributed to different module pairs (e.g. one edge from a cross-module extension
+                // file, another from the type's home module), and each is a distinct module crossing.
+                seenCrossings.insert("\(from)→\(to)::\(rel.source)→\(rel.target)").inserted
             else { continue }
             weights[Pair(from: from, to: to), default: 0] += 1
         }

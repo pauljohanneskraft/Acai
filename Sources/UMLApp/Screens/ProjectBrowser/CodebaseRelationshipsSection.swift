@@ -23,7 +23,12 @@ struct CodebaseRelationshipsSection: View {
             .padding(.top, 12)
 
             let sortedRelationships = artifact.relationships
-                .removingDuplicates { "\($0.source)-\($0.target)" }
+                // Key on kind and labels too — distinct relationships between the same pair
+                // (inheritance + dependency, or differently-labeled associations) must not collapse.
+                .removingDuplicates {
+                    "\($0.source)|\($0.target)|\($0.kind.rawValue)"
+                        + "|\($0.sourceLabel ?? "")|\($0.targetLabel ?? "")|\($0.label ?? "")"
+                }
                 .sorted {
                     ($0.source, $0.target) < ($1.source, $1.target)
                 }

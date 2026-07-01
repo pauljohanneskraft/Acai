@@ -1,9 +1,11 @@
+#if os(macOS)
 import Foundation
 import Testing
 @testable import UMLCLI
 
 /// End-to-end coverage of `uml image` (previously only component-tested in UMLRenderTests): parse →
-/// analyze → build the diagram → rasterize → write the PNG file.
+/// analyze → build the diagram → rasterize → write the PNG file. macOS-only: the `image` subcommand
+/// needs SwiftUI's `ImageRenderer` and is not compiled on Linux.
 @Suite("Image Command Run")
 struct ImageCommandRunTests {
 
@@ -42,3 +44,4 @@ struct ImageCommandRunTests {
         }
     }
 }
+#endif
