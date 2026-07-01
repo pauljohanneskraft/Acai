@@ -11,4 +11,5 @@
 @_exported import UMLJVM
 @_exported import UMLDart
 @_exported import UMLPython
+@_exported import UMLRuby
 @_exported import UMLCFamily

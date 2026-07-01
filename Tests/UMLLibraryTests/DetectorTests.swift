@@ -167,6 +167,34 @@ struct DetectorTests {
         }
     }
 
+    // MARK: - Ruby
+
+    @Test func rubyDetectsManifestAndGemspecAndVerifiesSources() throws {
+        let detector = RubyDetector()
+        try withTempDir { root in
+            #expect(!detector.isPresent(at: root))
+            try write("Gemfile", in: root, contents: "source \"https://rubygems.org\"")
+            #expect(detector.isPresent(at: root))
+            #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).isEmpty)
+
+            try write("lib/app.rb", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .ruby)
+                == ["lib"])
+            #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.swift]).isEmpty)
+        }
+    }
+
+    @Test func rubyDetectsByGemspec() throws {
+        let detector = RubyDetector()
+        try withTempDir { root in
+            try write("my_gem.gemspec", in: root, contents: "Gem::Specification.new do |spec| end")
+            try write("main.rb", in: root)
+            #expect(detector.isPresent(at: root))
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .ruby)
+                == [root.lastPathComponent])
+        }
+    }
+
     // MARK: - C-family (CMake / Make / Meson)
 
     @Test func cmakeDetectsCAndCpp() throws {

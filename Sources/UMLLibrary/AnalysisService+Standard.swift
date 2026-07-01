@@ -4,6 +4,7 @@ import UMLJS
 import UMLJVM
 import UMLDart
 import UMLPython
+import UMLRuby
 import UMLCFamily
 
 // The one place that names the built-in languages. Assembling the standard parser set and the
@@ -20,6 +21,7 @@ extension AnalysisService {
         JSCodeParser(isTypeScript: false),
         DartCodeParser(),
         PythonCodeParser(),
+        RubyCodeParser(),
         CCodeParser(),
         CppCodeParser()
     ]
@@ -35,6 +37,7 @@ extension AnalysisService {
             NodeDetector(),
             FlutterDetector(),
             PythonDetector(),
+            RubyDetector(),
             CFamilyBuildSystemDetector.cmake,
             CFamilyBuildSystemDetector.make,
             CFamilyBuildSystemDetector.meson
