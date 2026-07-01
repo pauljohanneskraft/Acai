@@ -33,7 +33,7 @@ extension UMLCommand {
             artifact.warnIfParseErrors()
             let json = try artifact.encodedJSON()
 
-            let storageDir = UMLConstants.analysisDirectory
+            let storageDir = UMLConstants.standard.analysisDirectory
             try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
 
             let filePath = storageDir.appendingPathComponent("\(name).json")

@@ -122,17 +122,17 @@ struct ArchitectureCheckEditorSheet: View {
             externalPath = path
         } else {
             source = .definedHere
-            rules = model.loadEditableRules(codebaseID: codebaseID)
+            rules = model.editing.loadEditableRules(codebaseID: codebaseID)
         }
     }
 
     private func save() {
         switch source {
         case .definedHere:
-            model.saveAuthoredRules(codebaseID: codebaseID, rules: rules)
+            model.editing.saveAuthoredRules(codebaseID: codebaseID, rules: rules)
         case .externalFile:
             guard !externalPath.isEmpty else { return }
-            model.setArchitectureCheckRulesPath(codebaseID: codebaseID, path: externalPath)
+            model.editing.setArchitectureCheckRulesPath(codebaseID: codebaseID, path: externalPath)
         }
         dismiss()
     }

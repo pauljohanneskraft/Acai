@@ -14,10 +14,10 @@ public struct PythonCodeParser: CodeParser {
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        let parser = Parser()
-        let lang = Language(language: tree_sitter_python())
-        // swiftlint:disable:next force_try
-        try! parser.setLanguage(lang)
+        let grammar = TreeSitterGrammar(language: Language(language: tree_sitter_python()), sourceLanguage: .python)
+        guard let parser = grammar.makeParser() else {
+            return grammar.loadFailureArtifact(fileName: fileName)
+        }
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: .python, filePaths: [fileName]))
         }

@@ -1,5 +1,13 @@
+/// One declared member of a type: a property, method, initializer, deinitializer, or subscript
+/// (see `kind`). Carries the signature the diagram layer renders (name/type/parameters/modifiers)
+/// plus optional body-derived analysis (`callSites`, `assignments`, `referencedTypeNames`) used by
+/// sequence/call-graph/state diagrams and the coupling metrics. Parsers populate as much as their
+/// language and analysis depth allow; downstream treats absent body data as "not analysed", never as
+/// "none present".
 public struct Member: Codable, Equatable, Hashable, Sendable {
+    /// The member's source name (without any type qualifier).
     public var name: String
+    /// What kind of member this is — selects the diagram compartment (see `isProperty`/`isMethod`).
     public var kind: MemberKind
     /// The member's visibility. Always set: each language parser resolves the language's default
     /// when the source has no explicit modifier, so the engine never has to guess downstream.
@@ -7,12 +15,21 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// The access level of the setter, when narrower than the getter
     /// (e.g. `private(set)`). `nil` when the setter matches `accessLevel`.
     public var setAccessLevel: AccessLevel?
+    /// Declaration modifiers (`static`, `final`, `override`, …) in source order.
     public var modifiers: [Modifier]
+    /// The member's type: a property's value type, or a method/initializer's return type. `nil` when
+    /// the source declares none — note structural edges are only inferred when this is non-nil.
     public var type: TypeReference?
+    /// The formal parameters, for methods/initializers/subscripts; empty for properties.
     public var parameters: [Parameter]
+    /// The member's own generic parameters (e.g. a generic method's `<T>`).
     public var genericParameters: [GenericParameter]
+    /// Whether this is a computed property (no stored backing) rather than a stored one.
     public var isComputed: Bool
+    /// Raw annotation/attribute markers on the declaration (e.g. `@Published`, `@Override`).
     public var annotations: [String]
+    /// Where the member is declared. Drives provenance-aware module attribution for edges this
+    /// member produces (so a cross-module extension's members are attributed to the extension's file).
     public var location: SourceLocation?
     /// Statically-observable calls made inside this member's body.
     ///

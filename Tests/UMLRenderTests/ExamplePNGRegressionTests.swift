@@ -172,7 +172,7 @@ struct ClassDiagramPNGTests {
             let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("ClassDiagram"), languages: [entry.language])
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = .none  // matches `uml image --grouping none`
-            return try DiagramImageRenderer.renderPNG(
+            return try ClassImageRenderer().renderPNG(
                 artifact: artifact, configuration: configuration,
                 language: artifact.standardLanguageConfiguration, scale: 2, palette: theme.palette
             )
@@ -202,8 +202,9 @@ struct SequenceDiagramPNGTests {
         let name = "\(entry.stem)\(theme.suffix).png"
         try ExamplePNGs.validate(ExamplePNGs.examples("SequenceDiagram", "Exports", name)) {
             let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("SequenceDiagram"), languages: [entry.language])
-            let diagram = artifact.sequenceDiagram(entryPoint: entry.entry, maxDepth: 5, typeMapping: [:])
-            return try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: 2, palette: theme.palette)
+            let diagram = SequenceDiagramBuilder(entryPoint: entry.entry, maxDepth: 5, typeMapping: [:])
+                .build(from: artifact)
+            return try SequenceImageRenderer().renderPNG(sequenceDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -225,8 +226,9 @@ struct StateDiagramPNGTests {
         try ExamplePNGs.validate(ExamplePNGs.examples("StateDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")) {
             let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("StateDiagram"), languages: [entry.language])
             let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
-            let diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
-            return try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: 2, palette: theme.palette)
+            let diagram = try StateDiagramBuilder(configuration: configuration)
+                .build(from: artifact.resolvingExtensions())
+            return try StateImageRenderer().renderPNG(stateDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -251,9 +253,9 @@ struct PackageDiagramPNGTests {
             let artifact = try ExamplePNGs.analyze(
                 ExamplePNGs.examples("PackageDiagram", entry.dir), languages: [entry.language]
             )
-            let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-                .packageDependencyDiagram()
-            return try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: 2, palette: theme.palette)
+            let diagram = PackageDiagramBuilder().build(
+                from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+            return try PackageImageRenderer().renderPNG(packageDiagram: diagram, scale: 2, palette: theme.palette)
         }
     }
 }
@@ -276,8 +278,8 @@ struct CallGraphPNGTests {
             let artifact = try ExamplePNGs.analyze(
                 ExamplePNGs.examples("CallGraph", entry.dir), languages: [entry.language]
             )
-            let graph = artifact.callGraph(scope: .wholeCodebase)
-            return try DiagramImageRenderer.renderPNG(callGraph: graph, scale: 2, palette: theme.palette)
+            let graph = CallGraphBuilder(scope: .wholeCodebase).build(from: artifact)
+            return try CallGraphImageRenderer().renderPNG(callGraph: graph, scale: 2, palette: theme.palette)
         }
     }
 }

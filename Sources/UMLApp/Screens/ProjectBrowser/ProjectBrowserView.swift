@@ -54,7 +54,7 @@ struct ProjectBrowserView: View {
         }
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
-                model.addProject(title: title, subtitle: subtitle)
+                model.editing.addProject(title: title, subtitle: subtitle)
             }
         }
         .modifier(StoreErrorAlert(store: model.store))
@@ -89,13 +89,13 @@ struct ProjectBrowserView: View {
                                 .tag(SidebarItem.codebase(codebase.id))
                                 .contextMenu {
                                     Button {
-                                        Task { await model.reindex(codebaseID: codebase.id) }
+                                        Task { await model.editing.reindex(codebaseID: codebase.id) }
                                     } label: {
                                         Label("Reindex", systemImage: "arrow.clockwise")
                                     }
                                     Divider()
                                     Button(role: .destructive) {
-                                        model.removeCodebase(codebase.id)
+                                        model.editing.removeCodebase(codebase.id)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
@@ -108,7 +108,7 @@ struct ProjectBrowserView: View {
                         ForEach(generatedDiagrams) { diagram in
                             if renamingDiagramID == diagram.id {
                                 TextField("Name", text: $renamingText, onCommit: {
-                                    model.renameGeneratedDiagram(diagram.id, name: renamingText)
+                                    model.diagrams.rename(diagram.id, name: renamingText)
                                     renamingDiagramID = nil
                                 })
                                 .textFieldStyle(.roundedBorder)
@@ -124,7 +124,7 @@ struct ProjectBrowserView: View {
                                             Label("Rename", systemImage: "pencil")
                                         }
                                         Button(role: .destructive) {
-                                            model.removeGeneratedDiagram(diagram.id)
+                                            model.diagrams.remove(diagram.id)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -138,7 +138,7 @@ struct ProjectBrowserView: View {
                         ForEach(freeformDiagrams) { diagram in
                             if renamingDiagramID == diagram.id {
                                 TextField("Name", text: $renamingText, onCommit: {
-                                    model.renameFreeformDiagram(diagram.id, name: renamingText)
+                                    model.freeforms.rename(diagram.id, name: renamingText)
                                     renamingDiagramID = nil
                                 })
                                 .textFieldStyle(.roundedBorder)
@@ -154,7 +154,7 @@ struct ProjectBrowserView: View {
                                             Label("Rename", systemImage: "pencil")
                                         }
                                         Button(role: .destructive) {
-                                            model.removeFreeformDiagram(diagram.id)
+                                            model.freeforms.remove(diagram.id)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -167,7 +167,7 @@ struct ProjectBrowserView: View {
                             .tag(SidebarItem.project(project.id))
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    model.removeProject(project.id)
+                                    model.editing.removeProject(project.id)
                                 } label: {
                                     Label("Delete Project", systemImage: "trash")
                                 }

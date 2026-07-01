@@ -4,7 +4,7 @@ import Foundation
 /// target, Gradle/Maven module, JS package — see `ModuleResolver`), with a weighted
 /// edge for every cross-module reference. Each node carries Robert Martin's
 /// package metrics so the diagram doubles as a coupling/stability overview.
-public struct PackageDependencyDiagram: Codable, Hashable, Sendable {
+public struct PackageDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Node
 

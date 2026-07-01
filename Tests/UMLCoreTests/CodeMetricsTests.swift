@@ -100,6 +100,59 @@ struct CodeMetricsTests {
         #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
     }
 
+    @Test func structuralEdgeUsesMemberDeclaringModule() {
+        // Mirrors the real `CodeArtifact+ClassDiagram` shape: `Base` (Core) gains a property typed
+        // `Widget` via an extension that lives in the *Diagram* module — the same module `Widget` is
+        // declared in. The inferred edge originates in Diagram, so it's an intra-Diagram dependency:
+        // Core must NOT gain a phantom efferent dependency on Diagram (the cross-module-extension bug).
+        let widget = type("Widget", kind: .struct, accessLevel: .public, module: "Diagram")
+        let base = TypeDeclaration(
+            id: "Base", name: "Base", qualifiedName: "Base", kind: .struct, accessLevel: .public,
+            members: [Member(
+                name: "widget", kind: .property, accessLevel: .internal,
+                type: TypeReference(name: "Widget"),
+                location: SourceLocation(filePath: "Sources/Diagram/Base+Widget.swift", line: 1, column: 1))],
+            location: SourceLocation(filePath: "Sources/Core/Base.swift", line: 1, column: 1))
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [widget, base], relationships: []
+        ).enriched()
+
+        // The inferred edge carries its declaring (extension) file as provenance.
+        let edge = artifact.relationships.first { $0.source == "Base" && $0.target == "Widget" }
+        #expect(edge?.origin == "Sources/Diagram/Base+Widget.swift")
+
+        // Without provenance this would read as Core → Diagram (efferent 1) and a phantom edge.
+        let metrics = artifact.computeMetrics()
+        #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
+    }
+
+    @Test func conformanceEdgeFromCrossModuleExtensionUsesExtensionModule() {
+        // `Proto` (Diagram) and `Base` (Core); an extension in *Diagram* conforms `Base` to `Proto`
+        // (the real UMLDiff↔UMLDiagram shape). The conformance originates in Diagram, so it must not
+        // make Core depend on Diagram (no phantom edge / module cycle).
+        let proto = type("Proto", kind: .protocol, accessLevel: .public, module: "Diagram")
+        let base = type("Base", kind: .struct, accessLevel: .public, module: "Core")
+        let ext = TypeDeclaration(
+            id: "Base", name: "Base", qualifiedName: "Base", kind: .extension, accessLevel: .public,
+            inheritedTypes: [TypeReference(name: "Proto")], extensionOf: "Base",
+            location: SourceLocation(filePath: "Sources/Diagram/Base+Proto.swift", line: 1, column: 1))
+        let resolved = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [proto, base, ext], relationships: []
+        ).resolvingExtensions()
+
+        let edge = resolved.relationships.first { $0.kind == .conformance && $0.source == "Base" }
+        #expect(edge?.origin == "Sources/Diagram/Base+Proto.swift")
+
+        let metrics = resolved.enriched().computeMetrics()
+        #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
+    }
+
+    @Test func typeMetricsCarryDeclaringModule() {
+        let metrics = sampleArtifact().computeMetrics()
+        #expect(metrics.types.first { $0.name == "Shape" }?.module == "Core")
+        #expect(metrics.types.first { $0.name == "View" }?.module == "App")
+    }
+
     @Test func ooMetricsForInheritanceAndDependencies() {
         let metrics = sampleArtifact().computeMetrics()
         let drawable = metrics.types.first { $0.name == "Drawable" }

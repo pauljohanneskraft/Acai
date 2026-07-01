@@ -141,7 +141,7 @@ public struct SugiyamaLayoutEngine: Sendable {
         }
         let nested = Dictionary(grouping: nodes.filter { components($0).count > depth }) { components($0)[depth] }
         for key in nested.keys.sorted() {
-            let sub = nested[key]!
+            guard let sub = nested[key] else { continue }
             addBlock(layoutByGroup(nodes: sub, edges: intraEdges(sub), depth: depth + 1, padding: padding).positions)
         }
 
@@ -202,10 +202,10 @@ public struct SugiyamaLayoutEngine: Sendable {
         adjacency: [String: Set<String>]
     ) -> [String: CGPoint] {
         // Phase 1: Layer assignment.
-        let layerMap = LayerAssignment.assign(
+        let layerMap = LayerAssigner(
             nodeIDs: nodeIDs,
             edges: edges.map { (source: $0.sourceID, target: $0.targetID, kind: $0.kind) }
-        )
+        ).assignment()
 
         // Group nodes by layer. `layerMap` is a dictionary, so iterate it in a stable order
         // and sort each bucket by id: this seeds crossing minimization deterministically, so
@@ -222,16 +222,15 @@ public struct SugiyamaLayoutEngine: Sendable {
             let filtered = neighbors.filter { Set(nodeIDs).contains($0) }
             return filtered.isEmpty ? nil : filtered
         }
-        layers = CrossingMinimization.minimize(layers: layers, adjacency: componentAdj)
+        layers = CrossingMinimizer(adjacency: componentAdj).minimize(layers)
 
         // Phase 3: Coordinate assignment.
-        return CoordinateAssignment.assign(
-            layers: layers,
+        return CoordinateAssigner(
             nodeSizes: nodeSizes,
             horizontalSpacing: horizontalSpacing,
             verticalSpacing: verticalSpacing,
             adjacency: componentAdj
-        )
+        ).assign(layers: layers)
     }
 
     // MARK: - Arrange Components in Grid
@@ -293,20 +292,29 @@ public struct SugiyamaLayoutEngine: Sendable {
     private func placeBlocksInGrid(
         _ groupBlocks: [(size: CGSize, positions: [String: CGPoint])]
     ) -> [String: CGPoint] {
-        var finalPositions: [String: CGPoint] = [:]
-        let maxCols = max(1, Int(ceil(sqrt(Double(groupBlocks.count)))))
+        guard !groupBlocks.isEmpty else { return [:] }
 
+        // Shelf-pack blocks into rows whose running width stays under a target derived from the
+        // total block area, instead of a fixed `ceil(sqrt(count))` column count. Counting columns
+        // ignores block *shapes*, so a wide block beside a tall one (or many uneven blocks) left
+        // large empty regions; packing to a target width fills the canvas toward a chosen aspect
+        // ratio. Order is preserved (so grouping stays meaningful) and rows never overlap.
+        let targetWidth = targetRowWidth(groupBlocks)
+
+        var finalPositions: [String: CGPoint] = [:]
         var currentX: CGFloat = 0
         var currentY: CGFloat = 0
         var rowHeight: CGFloat = 0
-        var colCount = 0
+        var rowCount = 0
 
         for block in groupBlocks {
-            if colCount >= maxCols {
+            // Wrap to a new row when the block would overflow the target width — but always keep at
+            // least one block per row so a single oversized block can't produce a zero-width row.
+            if rowCount > 0, currentX + block.size.width > targetWidth {
                 currentX = 0
                 currentY += rowHeight + groupSpacing
                 rowHeight = 0
-                colCount = 0
+                rowCount = 0
             }
 
             for (id, pos) in block.positions {
@@ -315,10 +323,22 @@ public struct SugiyamaLayoutEngine: Sendable {
 
             currentX += block.size.width + groupSpacing
             rowHeight = max(rowHeight, block.size.height)
-            colCount += 1
+            rowCount += 1
         }
 
         return finalPositions
+    }
+
+    /// The target row width for shelf packing: the larger of the widest single block (so nothing is
+    /// forced to overflow on its own) and `sqrt(totalArea * aspect)`, which yields a roughly
+    /// `aspect:1` (landscape) overall bounding box once the rows stack.
+    private func targetRowWidth(_ blocks: [(size: CGSize, positions: [String: CGPoint])]) -> CGFloat {
+        let aspect = 1.6
+        let totalArea = blocks.reduce(0.0) { area, block in
+            area + Double(block.size.width + groupSpacing) * Double(block.size.height + groupSpacing)
+        }
+        let widest = blocks.map(\.size.width).max() ?? 0
+        return max(widest, CGFloat((totalArea * aspect).squareRoot()))
     }
 
     // MARK: - Helpers

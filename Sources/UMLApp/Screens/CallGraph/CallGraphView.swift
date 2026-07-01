@@ -34,7 +34,7 @@ struct CallGraphView: View {
                 initial: scope,
                 onCancel: { isConfiguring = false },
                 onCreate: { newScope in
-                    model.updateCallGraphScope(diagramID: diagram.id, scope: newScope)
+                    model.diagrams.updateCallGraphScope(diagramID: diagram.id, scope: newScope)
                     isConfiguring = false
                 }
             )
@@ -217,7 +217,7 @@ private struct CallGraphCanvasView: View {
     // MARK: - Persistence & layout
 
     private func savePositions() {
-        model.updateGeneratedDiagramPositions(
+        model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,
             scale: canvasScale,

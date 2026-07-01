@@ -1,12 +1,12 @@
 import ArgumentParser
 import UMLDiagram
 
-/// Parses the `--state-from` value into a `StateDiagramConfiguration`.
-///
-/// `"TypeName.variableName"` selects a property (split on the *last* dot, so
-/// nested type names keep their dots); a single segment selects a global.
-enum StateVariableSpec {
-    static func configuration(from value: String, maxStates: Int) throws -> StateDiagramConfiguration {
+extension StateDiagramConfiguration {
+    /// Parses the `--state-from` value into a configuration. `"TypeName.variableName"` selects a
+    /// property (split on the *last* dot, so nested type names keep their dots); a single segment
+    /// selects a global. The behaviour lives on the configuration it produces rather than in a
+    /// separate namespace.
+    init(stateFrom value: String, maxStates: Int) throws {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else {
             throw ValidationError(
@@ -14,7 +14,8 @@ enum StateVariableSpec {
             )
         }
         guard let lastDot = trimmed.lastIndex(of: ".") else {
-            return StateDiagramConfiguration(typeName: nil, variableName: trimmed, maxStates: maxStates)
+            self.init(typeName: nil, variableName: trimmed, maxStates: maxStates)
+            return
         }
         let typeName = String(trimmed[..<lastDot])
         let variableName = String(trimmed[trimmed.index(after: lastDot)...])
@@ -23,6 +24,6 @@ enum StateVariableSpec {
                 "--state-from must be \"TypeName.variableName\" or \"variableName\" for a global."
             )
         }
-        return StateDiagramConfiguration(typeName: typeName, variableName: variableName, maxStates: maxStates)
+        self.init(typeName: typeName, variableName: variableName, maxStates: maxStates)
     }
 }

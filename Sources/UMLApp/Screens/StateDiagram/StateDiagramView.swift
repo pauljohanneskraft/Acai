@@ -59,7 +59,7 @@ struct StateDiagramView: View {
                 onCancel: { showConfigSheet = false },
                 onCreate: { config in
                     viewModel.applyConfiguration(config)
-                    model.updateStateConfiguration(diagramID: diagram.id, configuration: config)
+                    model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
                     showConfigSheet = false
                     centerDiagram()
                 }
@@ -188,7 +188,7 @@ struct StateDiagramView: View {
     // MARK: - Persistence & layout
 
     private func savePositions() {
-        model.updateGeneratedDiagramPositions(
+        model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,
             scale: canvasScale,

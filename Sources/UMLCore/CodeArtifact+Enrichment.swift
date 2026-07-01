@@ -29,31 +29,49 @@ extension CodeArtifact {
     /// language (not just the tree-sitter extractors that opt in) gets consistent qualified
     /// inherited-type names in inspector/detail views.
     public func resolvingRelationshipNames() -> CodeArtifact {
-        let map = Self.buildNameToId(types)
+        let resolver = TypeIdentityResolver(types: types)
         var copy = self
+        var diagnostics: [ParseDiagnostic] = []
+
         copy.relationships = relationships.map { rel in
             var resolved = rel
-            resolved.source = map[rel.source] ?? rel.source
-            resolved.target = map[rel.target] ?? rel.target
+            let source = resolver.resolve(rel.source)
+            let target = resolver.resolve(rel.target)
+            resolved.source = source.canonicalName
+            resolved.target = target.canonicalName
+            // Surface only the silent-drop case the issue calls out: a simple name shared by several
+            // declared types, left unresolved so it becomes a phantom external node. Genuinely
+            // external references (`.external`) are the normal case and are not flagged.
+            for (endpoint, kind) in [(source, "source"), (target, "target")] {
+                if case .ambiguous(let name) = endpoint {
+                    diagnostics.append(ParseDiagnostic(
+                        location: SourceLocation(filePath: rel.origin ?? "", line: 0, column: 0),
+                        kind: .unresolvedReference,
+                        message: "Ambiguous type reference '\(name)' (\(kind) of a \(rel.kind.rawValue) "
+                            + "relationship): several declared types share this simple name, so the edge "
+                            + "was left unresolved. Qualify the name to disambiguate."))
+                }
+            }
             return resolved
         }
-        copy.types = Self.resolvingInheritedTypeNames(types, using: map)
+        copy.types = Self.resolvingInheritedTypeNames(types, using: resolver)
+        copy.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return copy
     }
 
     /// Rewrites each type's `inheritedTypes[].name` to its canonical id where known, recursing
     /// into `nestedTypes`. Names with no mapping (external supertypes) are left untouched.
     private static func resolvingInheritedTypeNames(
-        _ types: [TypeDeclaration], using map: [String: String]
+        _ types: [TypeDeclaration], using resolver: TypeIdentityResolver
     ) -> [TypeDeclaration] {
         types.map { type in
             var copy = type
             copy.inheritedTypes = type.inheritedTypes.map { ref in
                 var resolved = ref
-                resolved.name = map[ref.name] ?? ref.name
+                resolved.name = resolver.canonicalName(for: ref.name)
                 return resolved
             }
-            copy.nestedTypes = resolvingInheritedTypeNames(type.nestedTypes, using: map)
+            copy.nestedTypes = resolvingInheritedTypeNames(type.nestedTypes, using: resolver)
             return copy
         }
     }
@@ -85,8 +103,8 @@ extension CodeArtifact {
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
     /// `configuration` classifies primitive/collection type names (injected, language-supplied).
     public func inferringStructuralEdges(configuration: LanguageConfiguration) -> CodeArtifact {
-        let map = Self.buildNameToId(types)
-        let resolveId: (String) -> String = { map[$0] ?? $0 }
+        let resolver = TypeIdentityResolver(types: types)
+        let resolveId: (String) -> String = { resolver.canonicalName(for: $0) }
 
         var edges: [Relationship] = []
         for type in Self.allTypes(types) {
@@ -115,7 +133,8 @@ extension CodeArtifact {
                 edges.append(Relationship(
                     kind: isCollection ? .aggregation : .composition,
                     source: type.id, target: targetId,
-                    targetLabel: multiplicity, label: member.name))
+                    targetLabel: multiplicity, label: member.name,
+                    origin: member.location?.filePath))
             }
         }
         return edges
@@ -133,7 +152,9 @@ extension CodeArtifact {
                 for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                     let targetId = resolveId(refName)
                     guard targetId != type.id, seen.insert(targetId).inserted else { continue }
-                    edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
+                    edges.append(Relationship(
+                        kind: .dependency, source: type.id, target: targetId,
+                        origin: member.location?.filePath))
                 }
             }
         }
@@ -150,7 +171,9 @@ extension CodeArtifact {
             for refName in extractReferencedTypeNames(from: ref, configuration: configuration) {
                 let targetId = resolveId(refName)
                 guard targetId != type.id else { continue }
-                edges.append(Relationship(kind: .dependency, source: type.id, target: targetId))
+                edges.append(Relationship(
+                    kind: .dependency, source: type.id, target: targetId,
+                    origin: type.location?.filePath))
             }
         }
         return edges
@@ -186,36 +209,6 @@ extension CodeArtifact {
             result.append(contentsOf: nested)
         }
         return result
-    }
-
-    static func buildNameToId(_ types: [TypeDeclaration]) -> [String: String] {
-        var map: [String: String] = [:]
-        var simpleNameCount: [String: Int] = [:]
-
-        func index(_ types: [TypeDeclaration]) {
-            for type in types {
-                map[type.id] = type.id
-                map[type.qualifiedName] = type.id
-                map[type.name] = type.id
-                let simple = type.name.components(separatedBy: ".").last ?? type.name
-                simpleNameCount[simple, default: 0] += 1
-                index(type.nestedTypes)
-            }
-        }
-        index(types)
-
-        func indexSimple(_ types: [TypeDeclaration]) {
-            for type in types {
-                let simple = type.name.components(separatedBy: ".").last ?? type.name
-                // Map simple names only when unambiguous, and never overwrite an exact match.
-                if simpleNameCount[simple] == 1, map[simple] == nil {
-                    map[simple] = type.id
-                }
-                indexSimple(type.nestedTypes)
-            }
-        }
-        indexSimple(types)
-        return map
     }
 
     /// Recursively finds an extension's target type (incl. nested types like

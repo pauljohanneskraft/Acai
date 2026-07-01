@@ -71,6 +71,28 @@ struct CheckCommandTests {
         #expect(rules.budgets.first?.metric == .distance)
     }
 
+    @Test func schemaMismatchSurfacesReadableCause() {
+        // `budgets` must be a list; a scalar is a type mismatch the decoder can locate.
+        #expect {
+            _ = try ConformanceRules.load(yaml: "budgets: 5\n")
+        } throws: { error in
+            let message = "\(error)"
+            // The cause is preserved (the offending key is named) without the raw `Context(...)` dump.
+            return message.contains("Invalid rules file:")
+                && message.contains("budgets")
+                && !message.contains("Context(")
+        }
+    }
+
+    @Test func malformedYAMLStillSurfacesAsValidationError() {
+        // A syntax error (unterminated flow sequence) goes through the non-decoding branch.
+        #expect {
+            _ = try ConformanceRules.load(yaml: "budgets: [unterminated\n")
+        } throws: { error in
+            "\(error)".contains("Invalid rules file:")
+        }
+    }
+
     @Test func failingCheckThrowsNonZeroExit() throws {
         try CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)

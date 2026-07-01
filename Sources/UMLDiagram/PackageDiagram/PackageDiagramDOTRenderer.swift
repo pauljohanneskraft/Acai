@@ -1,6 +1,6 @@
 import Foundation
 
-/// Renders a `PackageDependencyDiagram` to Graphviz DOT.
+/// Renders a `PackageDiagram` to Graphviz DOT.
 ///
 /// Each module is a rounded box labelled with its name and coupling metrics
 /// (`I` = instability, `A` = abstractness, plus the type count). The fill colour
@@ -28,7 +28,7 @@ public struct PackageDiagramDOTRenderer: DOTRenderer {
         self.edgeColor = edgeColor
     }
 
-    public func render(_ diagram: PackageDependencyDiagram) -> String {
+    public func render(_ diagram: PackageDiagram) -> String {
         var out = "digraph {\n"
         if let title = diagram.title {
             out += "  label=\"\(title.dotEscaped)\";\n"
@@ -60,7 +60,7 @@ public struct PackageDiagramDOTRenderer: DOTRenderer {
 
     // MARK: - Helpers
 
-    private func nodeLabel(_ node: PackageDependencyDiagram.Node) -> String {
+    private func nodeLabel(_ node: PackageDiagram.Node) -> String {
         let instability = String(format: "%.2f", node.instability)
         let abstractness = String(format: "%.2f", node.abstractness)
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"

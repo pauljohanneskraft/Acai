@@ -6,14 +6,14 @@ import UMLDiff
 import UMLLibrary
 import UMLRender
 
-/// Backs the movement-only package diagram view. The `PackageDependencyDiagram` is derived from
+/// Backs the movement-only package diagram view. The `PackageDiagram` is derived from
 /// the (enriched) artifact, so it always tracks the code — unlike sequence/state there is no
 /// configuration to choose and no analysis failure to surface. The user may drag module nodes;
 /// those positions are the only editable, undoable state. Conforms to `CanvasInteraction` so it
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
 final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    let diagram: PackageDependencyDiagram
+    let diagram: PackageDiagram
 
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
@@ -27,11 +27,11 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     // MARK: - Init
 
     init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil) {
-        let new = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
+        let new = PackageDiagramBuilder().build(
+            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
         if let comparisonArtifact {
-            let old = comparisonArtifact.enriched(configuration: comparisonArtifact.standardLanguageConfiguration)
-                .packageDependencyDiagram()
+            let old = PackageDiagramBuilder().build(
+                from: comparisonArtifact.enriched(configuration: comparisonArtifact.standardLanguageConfiguration))
             let diff = PackageDiagramDiff(old: old, new: new)
             self.diff = diff
             self.diagram = diff.union
@@ -65,7 +65,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     }
 
     /// The module backing a given node id, for the inspector.
-    func module(for id: String) -> PackageDependencyDiagram.Node? {
+    func module(for id: String) -> PackageDiagram.Node? {
         diagram.nodes.first { $0.id == id }
     }
 
@@ -80,7 +80,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
-        try DiagramImageRenderer.renderPNG(
+        try PackageImageRenderer().renderPNG(
             packageDiagram: diagram,
             positionOverrides: positionOverrides,
             scale: scale

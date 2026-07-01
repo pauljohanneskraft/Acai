@@ -20,7 +20,7 @@ struct ClassDiagramConfigEditor {
     func mutate(_ transform: (inout ClassDiagramConfiguration) -> Void) {
         var configuration = viewModel.configuration
         transform(&configuration)
-        model.updateClassDiagramConfiguration(diagramID: diagramID, configuration: configuration)
+        model.diagrams.updateClassDiagramConfiguration(diagramID: diagramID, configuration: configuration)
         viewModel.applyConfiguration(configuration, artifact: artifact)
     }
 

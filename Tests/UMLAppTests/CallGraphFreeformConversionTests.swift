@@ -64,7 +64,7 @@ struct CallGraphFreeformConversionTests {
 
     @Test("Method kind round-trips through the freeform node-kind catalog")
     func methodKindRoundTrips() {
-        let content = FreeformDiagramNodeKind.callGraphMethod.defaultContent()
+        let content = FreeformDiagram.Node.Content.makeDefault(for: .callGraphMethod)
         #expect(content.kind == .callGraphMethod)
         if case .method = content {} else { Issue.record("expected .method content") }
     }

@@ -165,4 +165,44 @@ struct SugiyamaLayoutEngineTests {
             }
         }
     }
+
+    // MARK: - Robustness (degenerate graphs)
+
+    @Test func orphanNodesAreAllPositioned() {
+        // No edges at all — every node is its own component; none may be dropped or collide.
+        let nodes = (0..<8).map { node("orphan\($0)", group: "G") }
+        let result = SugiyamaLayoutEngine().layoutByGroup(nodes: nodes, edges: [])
+        for node in nodes {
+            #expect(result.positions[node.id] != nil)
+        }
+        let points = nodes.compactMap { result.positions[$0.id] }
+        #expect(Set(points.map { "\($0.x),\($0.y)" }).count == points.count, "Orphan nodes share a position")
+    }
+
+    @Test func selfLoopDoesNotCrashOrDropNode() {
+        // An edge from a node to itself must not wedge the layering/coordinate passes.
+        let nodes = [node("A", group: "G"), node("B", group: "G")]
+        let edges: [SugiyamaLayoutEngine.EdgeInput] = [
+            .init(sourceID: "A", targetID: "A", kind: .dependency),
+            .init(sourceID: "A", targetID: "B", kind: .dependency)
+        ]
+        let result = SugiyamaLayoutEngine().layoutByGroup(nodes: nodes, edges: edges)
+        #expect(result.positions["A"] != nil)
+        #expect(result.positions["B"] != nil)
+    }
+
+    @Test func largeGraphPositionsEveryNode() {
+        // A wide graph (many groups × many nodes) must still place every node without overlap.
+        let (nodes, edges) = makeGraph(groups: (0..<10).map { "G\($0)" }, perGroup: 12)
+        let result = SugiyamaLayoutEngine().layoutByGroup(nodes: nodes, edges: edges)
+        #expect(result.positions.count == nodes.count)
+        for node in nodes {
+            #expect(result.positions[node.id] != nil)
+        }
+    }
+
+    @Test func emptyInputProducesEmptyLayout() {
+        let result = SugiyamaLayoutEngine().layoutByGroup(nodes: [], edges: [])
+        #expect(result.positions.isEmpty)
+    }
 }

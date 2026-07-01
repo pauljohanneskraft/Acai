@@ -273,11 +273,9 @@ extension JSExtractor {
         for child in node.children() {
             guard let childType = child.nodeType else { continue }
             if childType == "extends_type_clause" || childType == "extends_clause" {
-                for typeNode in child.namedChildren() {
-                    let ref = extractTypeReferenceFromExpression(typeNode)
-                    inherited.append(ref)
-                    relationships.append(Relationship(kind: .conformance, source: name, target: ref.name))
-                }
+                let refs = child.namedChildren().map { extractTypeReferenceFromExpression($0) }
+                inherited.append(contentsOf: refs)
+                recordSupertypeRelationships(from: name, to: refs, kind: .conformance)
             }
         }
 

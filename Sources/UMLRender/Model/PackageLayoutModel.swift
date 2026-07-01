@@ -3,7 +3,7 @@ import Foundation
 import UMLCore
 import UMLDiagram
 
-/// Computes node frames and edge routes for a `PackageDependencyDiagram`.
+/// Computes node frames and edge routes for a `PackageDiagram`.
 ///
 /// Modules and their dependencies form a plain directed graph, so layout delegates to the
 /// shared `SugiyamaLayoutEngine` — the same approach `StateLayoutModel` uses. Dependency
@@ -13,7 +13,7 @@ public struct PackageLayoutModel: Sendable {
 
     public struct NodeFrame: Identifiable, Sendable {
         public let id: String
-        public let node: PackageDependencyDiagram.Node
+        public let node: PackageDiagram.Node
         public let rect: CGRect
     }
 
@@ -33,7 +33,7 @@ public struct PackageLayoutModel: Sendable {
 
     /// Lays out `diagram`, with `positionOverrides` (node-id → centre) taking precedence over
     /// computed positions — used to restore user drags.
-    public init(diagram: PackageDependencyDiagram, positionOverrides: [String: CGPoint] = [:]) {
+    public init(diagram: PackageDiagram, positionOverrides: [String: CGPoint] = [:]) {
         // Feed each dependency as an inheritance edge to its target so depended-upon modules
         // (e.g. a core module) rise to the top layer and dependents flow downward.
         let layout = DirectedGraphLayout(
@@ -56,7 +56,7 @@ public struct PackageLayoutModel: Sendable {
 
     /// Estimated render size for a module's package box: wide enough for its name plus the
     /// folder chrome, with a fixed height (the body area is empty in a dependency view).
-    public static func estimatedSize(for node: PackageDependencyDiagram.Node) -> CGSize {
+    public static func estimatedSize(for node: PackageDiagram.Node) -> CGSize {
         let width = max(140, CGFloat(node.name.count) * 8 + 40)
         return CGSize(width: min(width, 320), height: 72)
     }

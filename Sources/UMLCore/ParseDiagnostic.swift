@@ -8,6 +8,10 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         case error
         /// A token the grammar required but the source omitted (inserted during recovery).
         case missing
+        /// A type reference that matched several declared types by simple name and so was left
+        /// unresolved (an ambiguous identity — see ``TypeIdentityResolver``) rather than bound to an
+        /// arbitrary one. Not a parse failure: the artifact is usable, but an edge may be missing.
+        case unresolvedReference
     }
 
     public var location: SourceLocation

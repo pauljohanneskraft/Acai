@@ -103,8 +103,13 @@ extension CodeArtifact {
                 continue
             }
             for inherited in ext.inheritedTypes {
+                // Provenance: the conformance is declared by the *extension*, so a cross-module
+                // extension (e.g. UMLDiff conforming a UMLDiagram type to a UMLDiff protocol) is
+                // attributed to the extension's module — not the extended type's — for coupling/cycles.
                 resolvedRelationships.append(
-                    Relationship(kind: .conformance, source: targetId, target: inherited.name)
+                    Relationship(
+                        kind: .conformance, source: targetId, target: inherited.name,
+                        origin: ext.location?.filePath)
                 )
             }
         }

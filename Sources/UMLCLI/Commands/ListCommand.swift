@@ -9,7 +9,7 @@ extension UMLCommand {
         )
 
         mutating func run() throws {
-            let storageDir = UMLConstants.analysisDirectory
+            let storageDir = UMLConstants.standard.analysisDirectory
             let fileManager = FileManager.default
 
             guard fileManager.fileExists(atPath: storageDir.path) else {

@@ -257,7 +257,7 @@ extension ClassDiagramView {
 
 extension ClassDiagramView {
     private func savePositions() {
-        model.updateGeneratedDiagramPositions(
+        model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.nodePositions,
             sizes: viewModel.userNodeSizes,

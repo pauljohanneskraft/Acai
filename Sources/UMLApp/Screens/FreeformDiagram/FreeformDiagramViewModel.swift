@@ -99,7 +99,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         recordUndo()
         let node = FreeformDiagram.Node(
             name: name,
-            content: kind.defaultContent(),
+            content: FreeformDiagram.Node.Content.makeDefault(for: kind),
             positionX: Double(position.x),
             positionY: Double(position.y)
         )
@@ -188,7 +188,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
                     existing.typeKind = newTK
                     nodes[idx].content = .type(existing)
                 default:
-                    nodes[idx].content = kind.defaultContent()
+                    nodes[idx].content = FreeformDiagram.Node.Content.makeDefault(for: kind)
                 }
             }
             save()
@@ -245,7 +245,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         diagram.nodes = nodes
         diagram.edges = edges
-        browserModel?.updateFreeformDiagram(diagramID: diagramID, diagram: diagram)
+        browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
     }
 
     func saveCanvasState(scale: CGFloat, offset: CGPoint) {
@@ -255,7 +255,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         diagram.canvasScale = Double(scale)
         diagram.canvasOffsetX = Double(offset.x)
         diagram.canvasOffsetY = Double(offset.y)
-        browserModel?.updateFreeformDiagram(diagramID: diagramID, diagram: diagram)
+        browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
     }
 
     // MARK: - Helpers

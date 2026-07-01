@@ -31,7 +31,7 @@ struct CallGraphTests {
     }
 
     @Test func resolvesEdgeAndFullCoverage() {
-        let graph = twoTypeArtifact().callGraph()
+        let graph = CallGraphBuilder().build(from: twoTypeArtifact())
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 1)
         #expect(graph.coverage.fraction == 1)
@@ -60,7 +60,7 @@ struct CallGraphTests {
                 )
             ]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 2)
         #expect(graph.edges.count == 1)
@@ -83,7 +83,7 @@ struct CallGraphTests {
                 )
             ]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
     }
 
@@ -108,12 +108,12 @@ struct CallGraphTests {
                 )
             ]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.work", weight: 2)])
     }
 
     @Test func typeScopeBoundsCallersButKeepsCalleeLeaf() {
-        let graph = twoTypeArtifact().callGraph(scope: .type("A"))
+        let graph = CallGraphBuilder(scope: .type("A")).build(from: twoTypeArtifact())
         // Only A is a caller; B.work is pulled in as an out-of-scope leaf.
         let aNode = graph.nodes.first { $0.id == "A.run" }
         let bNode = graph.nodes.first { $0.id == "B.work" }
@@ -126,7 +126,7 @@ struct CallGraphTests {
         var artifact = twoTypeArtifact()
         // Put B in a different module so a Core-scoped graph drops B as a caller.
         artifact.types[1].location = SourceLocation(filePath: "Other/B.swift", line: 1, column: 1)
-        let graph = artifact.callGraph(scope: .module("Core"))
+        let graph = CallGraphBuilder(scope: .module("Core")).build(from: artifact)
         #expect(graph.nodes.first { $0.id == "A.run" }?.inScope == true)
         // B is out of module: still a resolved-callee leaf, not in scope.
         #expect(graph.nodes.first { $0.id == "B.work" }?.inScope == false)
@@ -153,7 +153,7 @@ struct CallGraphTests {
                 Member(name: "format", kind: .method, accessLevel: .internal)
             ]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         // A.run -> log (free function, implicit receiver), and log -> format (free->free).
         #expect(graph.edges == [
             CallGraph.Edge(from: "A.run", to: "log", weight: 1),
@@ -180,7 +180,7 @@ struct CallGraphTests {
             ],
             freestandingFunctions: [Member(name: "helper", kind: .method, accessLevel: .internal)]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
     }
 
@@ -201,9 +201,9 @@ struct CallGraphTests {
             ]
         )
         // Whole codebase: the free function is a caller, so there's an edge.
-        #expect(!artifact.callGraph().edges.isEmpty)
+        #expect(!CallGraphBuilder().build(from: artifact).edges.isEmpty)
         // Type scope on A: free functions are not callers, and A.run has no calls → no edges.
-        #expect(artifact.callGraph(scope: .type("A")).edges.isEmpty)
+        #expect(CallGraphBuilder(scope: .type("A")).build(from: artifact).edges.isEmpty)
     }
 
     @Test func emptyWhenNoCallSites() {
@@ -211,7 +211,7 @@ struct CallGraphTests {
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
             types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)]
         )
-        let graph = artifact.callGraph()
+        let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.nodes.isEmpty)
         #expect(graph.edges.isEmpty)
         #expect(graph.coverage.fraction == 1)

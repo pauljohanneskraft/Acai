@@ -3,16 +3,15 @@
 /// `initial` and `final` states map to Mermaid's `[*]` start/end pseudo-state;
 /// other states are declared with a stable id and a display label. Composite
 /// sub-states are flattened (the value-flow analyser does not currently emit them).
-public struct StateDiagramMermaidRenderer: Sendable {
-    private let theme: DiagramTheme?
+public struct StateDiagramMermaidRenderer: MermaidRenderer {
+    public let theme: DiagramTheme?
 
     public init(theme: DiagramTheme? = nil) {
         self.theme = theme
     }
 
     public func render(_ diagram: StateDiagram) -> String {
-        var lines: [String] = []
-        if let theme { lines.append(theme.mermaidInit()) }
+        var lines: [String] = themePreamble
         lines.append("stateDiagram-v2")
 
         var allocator = MermaidIDAllocator()

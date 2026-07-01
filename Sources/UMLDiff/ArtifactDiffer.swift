@@ -107,12 +107,11 @@ public struct ArtifactDiffer: Sendable {
         let oldKeys = Set(oldByKey.keys)
         let newKeys = Set(newByKey.keys)
 
-        let added = newKeys.subtracting(oldKeys).map { newByKey[$0]! }
-        let removed = oldKeys.subtracting(newKeys).map { oldByKey[$0]! }
-        let changed = newKeys.intersection(oldKeys).compactMap { key -> RelationshipChange? in
-            let before = oldByKey[key]!
-            let after = newByKey[key]!
-            return before == after ? nil : RelationshipChange(before: before, after: after)
+        let added = newByKey.filter { !oldKeys.contains($0.key) }.map(\.value)
+        let removed = oldByKey.filter { !newKeys.contains($0.key) }.map(\.value)
+        let changed = newByKey.compactMap { key, after -> RelationshipChange? in
+            guard let before = oldByKey[key], before != after else { return nil }
+            return RelationshipChange(before: before, after: after)
         }
 
         return (

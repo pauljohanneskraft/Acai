@@ -24,7 +24,7 @@ public struct FallbackDetector: BuildSystemDetector {
         let langs: [CodeArtifact.SourceLanguage] = requestedLanguages.isEmpty
             ? parsers.map(\.language)
             : requestedLanguages
-        let excludedDirectories = parsers.reduce(into: UMLConstants.defaultExcludedSourceDirectories) {
+        let excludedDirectories = parsers.reduce(into: UMLConstants.standard.defaultExcludedSourceDirectories) {
             $0.formUnion($1.configuration.excludedDirectories)
         }
         return langs.compactMap { lang in

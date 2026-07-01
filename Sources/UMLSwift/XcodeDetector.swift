@@ -18,7 +18,7 @@ public struct XcodeDetector: BuildSystemDetector {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        guard requestedLanguages.isEmpty || requestedLanguages.contains(.swift) else { return [] }
+        guard LanguageRequest(requestedLanguages).wants(.swift) else { return [] }
         return [SourceSpec(language: .swift, sourceDirs: [root])]
     }
 }

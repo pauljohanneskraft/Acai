@@ -116,6 +116,30 @@ extension TreeSitterExtracting {
         )
     }
 
+    /// Normalises an annotation/decorator's source text to the canonical `@Name` form, adding a
+    /// leading `@` when the grammar's token omits it. (For grammars that instead include the `@`
+    /// and want it stripped, do that at the call site — this only ever adds one.)
+    public func normalizedAnnotation(_ text: String) -> String {
+        text.hasPrefix("@") ? text : "@\(text)"
+    }
+
+    // MARK: Supertype Relationships
+
+    /// Records an inheritance/conformance edge from `owner` (a type's id or qualified name) to each
+    /// of `supertypes`, in order. Deduplicates the per-language "loop the supertypes and append a
+    /// `Relationship`" step; the caller keeps ownership of its `inheritedTypes` list. The edges'
+    /// `target` is each supertype's simple name — `resolveRelationshipNames()` later maps it to a
+    /// qualified id.
+    public mutating func recordSupertypeRelationships(
+        from owner: String,
+        to supertypes: [TypeReference],
+        kind: Relationship.Kind
+    ) {
+        for supertype in supertypes {
+            relationships.append(Relationship(kind: kind, source: owner, target: supertype.name))
+        }
+    }
+
     // MARK: Relationship Resolution
 
     /// Resolves relationship source / target strings against
@@ -127,44 +151,24 @@ extension TreeSitterExtracting {
     /// step maps short names to qualified IDs so that relationships
     /// are immediately matchable without downstream resolution.
     public mutating func resolveRelationshipNames() {
-        var nameToId: [String: String] = [:]
-
-        func register(_ types: [TypeDeclaration]) {
-            for type in types {
-                nameToId[type.name] = type.id
-                nameToId[type.qualifiedName] = type.id
-                if let simple = type.name
-                    .components(separatedBy: ".").last,
-                   nameToId[simple] == nil {
-                    nameToId[simple] = type.id
-                }
-                register(type.nestedTypes)
-            }
-        }
-        register(types)
+        // Delegates to the single identity authority (`TypeIdentityResolver`) so per-file resolution
+        // here uses the same name→id mapping and ambiguity rule as the agnostic enrichment pass.
+        let resolver = TypeIdentityResolver(types: types)
 
         relationships = relationships.map { rel in
             var resolved = rel
-            if let id = nameToId[rel.source] {
-                resolved.source = id
-            }
-            if let id = nameToId[rel.target] {
-                resolved.target = id
-            }
+            resolved.source = resolver.canonicalName(for: rel.source)
+            resolved.target = resolver.canonicalName(for: rel.target)
             return resolved
         }
 
         // Also resolve inherited-type names so the codebase detail
         // view shows consistent naming (qualified IDs where possible).
-        func resolveInheritedTypes(
-            in types: inout [TypeDeclaration]
-        ) {
+        func resolveInheritedTypes(in types: inout [TypeDeclaration]) {
             for index in types.indices {
                 for refIndex in types[index].inheritedTypes.indices {
                     let name = types[index].inheritedTypes[refIndex].name
-                    if let id = nameToId[name] {
-                        types[index].inheritedTypes[refIndex].name = id
-                    }
+                    types[index].inheritedTypes[refIndex].name = resolver.canonicalName(for: name)
                 }
                 resolveInheritedTypes(in: &types[index].nestedTypes)
             }

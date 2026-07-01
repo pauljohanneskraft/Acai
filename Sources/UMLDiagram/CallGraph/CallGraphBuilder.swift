@@ -1,32 +1,37 @@
 import UMLCore
 
-extension CodeArtifact {
+/// Builds a static `CallGraph` from a `CodeArtifact`'s `Member.callSites`.
+///
+/// Unlike a sequence diagram, this is not a traversal from one entry point: every method (and,
+/// outside a `.type` scope, every free function) in `scope` is treated as a caller and each of its
+/// call sites becomes a direct edge to the method it targets, when that target can be resolved to a
+/// known declaration. Resolved callees outside the scope are kept as leaf nodes so outgoing calls
+/// stay visible; the scope only bounds which methods are *callers*.
+///
+/// A call site resolves when `receiverType.methodName` matches a member, or — for an implicit
+/// receiver — when `callerType.methodName` matches a member or `methodName` matches a free function.
+/// The share of in-scope call sites that resolve is reported as `CallGraph.coverage`.
+///
+/// A value you instantiate with the scope/title and ask to `build(from:)` — kept off `CodeArtifact`
+/// so the data model does not depend on the diagram layer.
+public struct CallGraphBuilder: Sendable {
+    public var scope: CallGraphScope
+    public var title: String?
 
-    /// Builds a static `CallGraph` from this artifact's `Member.callSites`.
-    ///
-    /// Unlike `sequenceDiagram`, this is not a traversal from one entry point: every method (and,
-    /// outside a `.type` scope, every free function) in `scope` is treated as a caller and each of
-    /// its call sites becomes a direct edge to the method it targets, when that target can be
-    /// resolved to a known declaration. Resolved callees outside the scope are kept as leaf nodes so
-    /// outgoing calls stay visible; the scope only bounds which methods are *callers*.
-    ///
-    /// A call site resolves when `receiverType.methodName` matches a member, or — for an implicit
-    /// receiver — when `callerType.methodName` matches a member or `methodName` matches a free
-    /// function. The share of in-scope call sites that resolve is reported as `CallGraph.coverage`.
-    ///
-    /// - Parameters:
-    ///   - scope: which methods/functions are treated as callers (a single type, a build module, or
-    ///     the whole codebase).
-    ///   - title: optional diagram title.
-    public func callGraph(scope: CallGraphScope = .wholeCodebase, title: String? = nil) -> CallGraph {
-        var builder = CallGraphBuilder(types: types, freeFunctions: freestandingFunctions)
-        builder.run(scope: scope)
-        return builder.makeGraph(title: title)
+    public init(scope: CallGraphScope = .wholeCodebase, title: String? = nil) {
+        self.scope = scope
+        self.title = title
+    }
+
+    public func build(from artifact: CodeArtifact) -> CallGraph {
+        var accumulator = CallGraphAccumulator(types: artifact.types, freeFunctions: artifact.freestandingFunctions)
+        accumulator.run(scope: scope)
+        return accumulator.makeGraph(title: title)
     }
 }
 
 /// Accumulates nodes, weighted edges and resolution coverage for a `CallGraph`.
-private struct CallGraphBuilder {
+private struct CallGraphAccumulator {
     private let typesByName: [String: TypeDeclaration]
     private let methodKeys: Set<String>
     private let freeFunctionNames: Set<String>

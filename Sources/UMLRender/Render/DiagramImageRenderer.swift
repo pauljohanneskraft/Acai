@@ -1,8 +1,6 @@
 import CoreGraphics
 import Foundation
 import SwiftUI
-import UMLCore
-import UMLDiagram
 
 #if canImport(AppKit)
 import AppKit
@@ -17,16 +15,18 @@ public enum DiagramImageRenderError: Error {
     case encodingFailed
 }
 
-/// Renders a generated class diagram to a PNG image using SwiftUI's `ImageRenderer` over the
-/// shared `DiagramSnapshotView` — the same views the app draws on screen. Two entry points:
-/// a headless one that lays the diagram out from a `CodeArtifact` (used by the CLI), and one
-/// that takes an already-laid-out diagram (used by the app to capture the live canvas, drags
-/// and all).
+/// The shared PNG-rasterisation engine: it takes an already-laid-out SwiftUI snapshot view and turns
+/// it into PNG data, clamping the scale so neither output dimension exceeds `maxPixelDimension`.
 ///
-/// Note: headless rendering requires a macOS GUI/window-server session; it is not a
-/// headless-CI path.
+/// The per-diagram-kind renderers (``ClassImageRenderer``, ``SequenceImageRenderer``,
+/// ``StateImageRenderer``, ``PackageImageRenderer``, ``CallGraphImageRenderer``) each build their
+/// own layout + snapshot view and hand it here, so this type stays free of any diagram-model
+/// knowledge. All use SwiftUI's `ImageRenderer`, which needs a macOS GUI/window-server session
+/// (not a headless-CI path).
 @MainActor
-public enum DiagramImageRenderer {
+public struct DiagramImageRenderer {
+
+    public init() {}
 
     /// Uniform space left around the diagram content, in points.
     public static let defaultPadding: CGFloat = 40
@@ -36,152 +36,18 @@ public enum DiagramImageRenderer {
     /// scale is reduced to keep large diagrams within bounds.
     public static let maxPixelDimension: CGFloat = 16384
 
-    // MARK: - Headless (CLI)
-
-    /// Builds and lays out the diagram for `artifact` (using estimated node sizes, since no
-    /// SwiftUI measurement happens headlessly) and renders it to PNG data.
-    public static func renderPNG(
-        artifact: CodeArtifact,
-        configuration: ClassDiagramConfiguration,
-        language: LanguageConfiguration,
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
-    ) throws -> Data {
-        let model = DiagramLayoutModel(
-            artifact: artifact, configuration: configuration, language: language
-        )
-        let sizes = nodeSizes(for: model.nodes)
-        let positions = model.performLayout(sizes: sizes)
-        let boxes = model.groupingBoxes(positions: positions, sizes: sizes)
-        return try renderPNG(
-            nodes: model.nodes,
-            edges: model.edges,
-            positions: positions,
-            sizes: sizes,
-            groupingBoxes: boxes,
-            scale: scale,
-            padding: padding,
-            palette: palette,
-            edgeColor: edgeColor,
-            nodeColor: nodeColor
-        )
-    }
-
-    // MARK: - Sequence diagram
-
-    /// Lays out and renders a `SequenceDiagram` to PNG data, using the same shared views the
-    /// app canvas draws. `positionOverrides` (participant-id → horizontal centre) let callers
-    /// reproduce a hand-spread layout; pass `[:]` for the default arrangement.
-    public static func renderPNG(
-        sequenceDiagram: SequenceDiagram,
-        positionOverrides: [String: CGFloat] = [:],
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        messageColor: (@Sendable (SequenceLayoutModel.MessageLayout) -> Color?)? = nil
-    ) throws -> Data {
-        let layout = SequenceLayoutModel(diagram: sequenceDiagram, positionOverrides: positionOverrides)
-        let view = SequenceDiagramSnapshotView(
-            layout: layout, padding: padding, palette: palette, messageColor: messageColor)
-
-        let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
-        let requestedScale = max(scale, 0.1)
-        let effectiveScale = min(requestedScale, maxScale)
-
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = effectiveScale
-        guard let cgImage = renderer.cgImage else {
-            throw DiagramImageRenderError.renderingFailed
-        }
-        return try encodePNG(cgImage)
-    }
-
-    // MARK: - State diagram
-
-    /// Lays out and renders a `StateDiagram` to PNG data, using the same shared views the
-    /// app canvas draws. `positionOverrides` (state-id → centre) let callers reproduce a
-    /// hand-arranged layout; pass `[:]` for the default arrangement.
-    public static func renderPNG(
-        stateDiagram: StateDiagram,
-        positionOverrides: [String: CGPoint] = [:],
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        edgeColor: (@Sendable (StateLayoutModel.EdgeLayout) -> Color?)? = nil
-    ) throws -> Data {
-        let layout = StateLayoutModel(diagram: stateDiagram, positionOverrides: positionOverrides)
-        let view = StateDiagramSnapshotView(
-            layout: layout, padding: padding, palette: palette, edgeColor: edgeColor)
-
-        let pointSize = max(layout.contentSize.width, layout.contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
-        let requestedScale = max(scale, 0.1)
-        let effectiveScale = min(requestedScale, maxScale)
-
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = effectiveScale
-        guard let cgImage = renderer.cgImage else {
-            throw DiagramImageRenderError.renderingFailed
-        }
-        return try encodePNG(cgImage)
-    }
-
-    // MARK: - Package diagram
-
-    /// Lays out and renders a `PackageDependencyDiagram` to PNG data, using the shared
-    /// `PackageLayoutModel` + `PackageDiagramSnapshotView`.
-    public static func renderPNG(
-        packageDiagram: PackageDependencyDiagram,
-        positionOverrides: [String: CGPoint] = [:],
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        nodeColor: (@Sendable (String) -> Color?)? = nil,
-        edgeColor: (@Sendable (String, String) -> Color?)? = nil
-    ) throws -> Data {
-        let layout = PackageLayoutModel(diagram: packageDiagram, positionOverrides: positionOverrides)
-        return try renderSnapshot(
-            PackageDiagramSnapshotView(
-                layout: layout, padding: padding, palette: palette, nodeColor: nodeColor, edgeColor: edgeColor),
-            contentSize: layout.contentSize, scale: scale, padding: padding
-        )
-    }
-
-    // MARK: - Call graph
-
-    /// Lays out and renders a `CallGraph` to PNG data, using the shared `CallGraphLayoutModel` +
-    /// `CallGraphSnapshotView`.
-    public static func renderPNG(
-        callGraph: CallGraph,
-        positionOverrides: [String: CGPoint] = [:],
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        nodeColor: (@Sendable (String) -> Color?)? = nil,
-        edgeColor: (@Sendable (String, String) -> Color?)? = nil
-    ) throws -> Data {
-        let layout = CallGraphLayoutModel(graph: callGraph, positionOverrides: positionOverrides)
-        return try renderSnapshot(
-            CallGraphSnapshotView(
-                layout: layout, padding: padding, palette: palette, nodeColor: nodeColor, edgeColor: edgeColor),
-            contentSize: layout.contentSize, scale: scale, padding: padding
-        )
-    }
-
-    /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, clamping the scale
-    /// so neither output dimension exceeds `maxPixelDimension`.
-    private static func renderSnapshot(
+    /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, clamping the scale so
+    /// neither output dimension exceeds ``maxPixelDimension``. The scale is floored to a small
+    /// positive value first (guarding a zero/negative `--scale`), then ceilinged so the result can
+    /// never exceed the max even when the max itself drops below the floor for very large diagrams.
+    public func render(
         _ view: some View,
         contentSize: CGSize,
         scale: CGFloat,
-        padding: CGFloat
+        padding: CGFloat = defaultPadding
     ) throws -> Data {
         let pointSize = max(contentSize.width, contentSize.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
+        let maxScale = Self.maxPixelDimension / max(pointSize, 1)
         let effectiveScale = min(max(scale, 0.1), maxScale)
 
         let renderer = ImageRenderer(content: view)
@@ -192,114 +58,7 @@ public enum DiagramImageRenderer {
         return try encodePNG(cgImage)
     }
 
-    // MARK: - From laid-out data (app WYSIWYG)
-
-    /// Renders an already-laid-out diagram to PNG data. Positions/sizes are in any coordinate
-    /// space; they are normalized internally so the content's top-left maps to the origin.
-    public static func renderPNG(
-        nodes: [GeneratedDiagramNode],
-        edges: [GeneratedDiagramEdge],
-        positions: [String: CGPoint],
-        sizes: [String: CGSize],
-        groupingBoxes: [DiagramLayoutModel.GroupingBox],
-        scale: CGFloat = 2,
-        padding: CGFloat = defaultPadding,
-        palette: DiagramPalette = .light,
-        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
-    ) throws -> Data {
-        let bounds = contentBounds(positions: positions, sizes: sizes, boxes: groupingBoxes)
-
-        // Normalize so the content's top-left sits at the origin.
-        let dx = -bounds.minX
-        let dy = -bounds.minY
-        let normalizedPositions = positions.mapValues { CGPoint(x: $0.x + dx, y: $0.y + dy) }
-        let normalizedBoxes = groupingBoxes.map { box in
-            DiagramLayoutModel.GroupingBox(
-                id: box.id, label: box.label,
-                rect: box.rect.offsetBy(dx: dx, dy: dy), depth: box.depth
-            )
-        }
-
-        let view = DiagramSnapshotView(
-            nodes: nodes,
-            edges: edges,
-            positions: normalizedPositions,
-            sizes: sizes,
-            groupingBoxes: normalizedBoxes,
-            contentSize: CGSize(width: bounds.width, height: bounds.height),
-            padding: padding,
-            palette: palette,
-            edgeColor: edgeColor,
-            nodeColor: nodeColor
-        )
-
-        // Clamp the scale so neither output dimension exceeds `maxPixelDimension`; large
-        // codebases otherwise produce bitmaps CoreGraphics cannot encode.
-        let pointSize = max(bounds.width, bounds.height) + padding * 2
-        let maxScale = maxPixelDimension / max(pointSize, 1)
-        // Floor the *requested* scale to a small positive value (guards against a zero/negative
-        // `--scale`), then take the ceiling last so the result can never exceed `maxScale` — even
-        // when `maxScale` itself drops below the floor for very large diagrams.
-        let requestedScale = max(scale, 0.1)
-        let effectiveScale = min(requestedScale, maxScale)
-
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = effectiveScale
-        guard let cgImage = renderer.cgImage else {
-            throw DiagramImageRenderError.renderingFailed
-        }
-        return try encodePNG(cgImage)
-    }
-
-    // MARK: - Node Sizing
-
-    /// Sizes used for headless layout and edge geometry. On AppKit we measure each node's
-    /// real rendered size with `NSHostingView.fittingSize` so edges connect exactly to the
-    /// drawn boxes (the live app gets this from SwiftUI measurement, which never fires
-    /// headlessly); elsewhere — or if a measurement comes back degenerate — we fall back to
-    /// the size estimate.
-    private static func nodeSizes(for nodes: [GeneratedDiagramNode]) -> [String: CGSize] {
-        var result: [String: CGSize] = [:]
-        for node in nodes {
-            result[node.id] = measuredSize(for: node) ?? DiagramLayoutModel.estimateSize(for: node)
-        }
-        return result
-    }
-
-    private static func measuredSize(for node: GeneratedDiagramNode) -> CGSize? {
-        #if canImport(AppKit)
-        let host = NSHostingView(rootView: TypeNodeView(node: node, isSelected: false))
-        let size = host.fittingSize
-        guard size.width > 1, size.height > 1 else { return nil }
-        return size
-        #else
-        return nil
-        #endif
-    }
-
-    // MARK: - Helpers
-
-    /// The bounding rect of all node rects and grouping boxes. Falls back to a small empty
-    /// canvas when there is nothing to draw.
-    private static func contentBounds(
-        positions: [String: CGPoint],
-        sizes: [String: CGSize],
-        boxes: [DiagramLayoutModel.GroupingBox]
-    ) -> CGRect {
-        var rects: [CGRect] = boxes.map(\.rect)
-        for (id, pos) in positions {
-            let size = sizes[id] ?? CGSize(width: 200, height: 100)
-            rects.append(CGRect(x: pos.x - size.width / 2, y: pos.y - size.height / 2,
-                                width: size.width, height: size.height))
-        }
-        guard let first = rects.first else {
-            return CGRect(x: 0, y: 0, width: 200, height: 120)
-        }
-        return rects.dropFirst().reduce(first) { $0.union($1) }
-    }
-
-    private static func encodePNG(_ cgImage: CGImage) throws -> Data {
+    private func encodePNG(_ cgImage: CGImage) throws -> Data {
         #if canImport(AppKit)
         let rep = NSBitmapImageRep(cgImage: cgImage)
         guard let data = rep.representation(using: .png, properties: [:]) else {

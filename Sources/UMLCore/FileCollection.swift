@@ -7,7 +7,7 @@ extension FileManager {
     public func fileURLs(
         in directory: URL,
         withExtensions extensions: Set<String>,
-        excludingDirectories excludedDirectories: Set<String> = UMLConstants.defaultExcludedSourceDirectories
+        excludingDirectories excludedDirectories: Set<String> = UMLConstants.standard.defaultExcludedSourceDirectories
     ) -> [URL] {
         var result: [URL] = []
         guard let enumerator = enumerator(

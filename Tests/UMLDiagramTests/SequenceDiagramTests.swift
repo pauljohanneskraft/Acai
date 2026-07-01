@@ -36,7 +36,7 @@ struct SequenceDiagramTests {
             type("AuthService", members: [method("authenticate")])
         ])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("LoginService", "login"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("LoginService", "login")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["LoginService", "AuthService"])
         // Synchronous call out, then a return back.
@@ -67,7 +67,8 @@ struct SequenceDiagramTests {
             id: "shop.PaymentService", name: "PaymentService", qualifiedName: "shop.PaymentService",
             kind: .class, accessLevel: .public, members: [method("charge")]
         )
-        let diagram = artifact(types: [checkout, service]).sequenceDiagram(entryPoint: ("Checkout", "placeOrder"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Checkout", "placeOrder"))
+            .build(from: artifact(types: [checkout, service]))
 
         let participantIDs = Set(diagram.participants.map(\.id))
         #expect(participantIDs == ["Checkout", "PaymentService"])
@@ -90,7 +91,7 @@ struct SequenceDiagramTests {
             type("Store", members: [method("persist")])
         ])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Controller", "handle"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Controller", "handle")).build(from: art)
 
         // validate (+return) before persist (+return).
         let outbound = diagram.messages.filter { $0.kind == .synchronous }.map(\.label)
@@ -110,7 +111,7 @@ struct SequenceDiagramTests {
             ])
         ])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["Worker"])
         let call = diagram.messages.first { $0.kind == .synchronous }
@@ -145,7 +146,7 @@ struct SequenceDiagramTests {
             freeFunctions: [method("main", calls: [CallSite(receiverType: "Service", methodName: "run")])]
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("", "main"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("", "main")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["main", "Service"])
         // The free-function lifeline is marked `.control` to set it apart from object lifelines.
@@ -166,7 +167,7 @@ struct SequenceDiagramTests {
             freeFunctions: [method("log")]
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["Worker", "log"])
         let call = diagram.messages.first { $0.kind == .synchronous }
@@ -184,7 +185,7 @@ struct SequenceDiagramTests {
             ]
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("", "main"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("", "main")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["main", "helper"])
         #expect(diagram.messages.contains { msg in
@@ -209,7 +210,7 @@ struct SequenceDiagramTests {
             freeFunctions: [method("Logger")]
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Caller", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Caller", "run")).build(from: art)
 
         let loggers = diagram.participants.filter { $0.name == "Logger" }
         #expect(loggers.count == 2)
@@ -234,7 +235,7 @@ struct SequenceDiagramTests {
             freeFunctions: []
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["Worker"])
         #expect(diagram.messages.isEmpty)
@@ -251,7 +252,7 @@ struct SequenceDiagramTests {
             freeFunctions: [method("step")]
         )
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Worker", "run"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["Worker"])
         let call = diagram.messages.first { $0.kind == .synchronous }
@@ -269,7 +270,7 @@ struct SequenceDiagramTests {
             type("D", members: [method("d")])
         ])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("A", "a"), maxDepth: 2)
+        let diagram = SequenceDiagramBuilder(entryPoint: ("A", "a"), maxDepth: 2).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["A", "B", "C"])
         #expect(!diagram.messages.contains { $0.label == "d" })
@@ -282,7 +283,7 @@ struct SequenceDiagramTests {
             type("B", members: [method("pong", calls: [CallSite(receiverType: "A", methodName: "ping")])])
         ])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("A", "ping"), maxDepth: 50)
+        let diagram = SequenceDiagramBuilder(entryPoint: ("A", "ping"), maxDepth: 50).build(from: art)
 
         // Terminates and revisits A as a participant without looping forever.
         #expect(diagram.participants.map(\.name) == ["A", "B"])
@@ -306,15 +307,15 @@ struct SequenceDiagramTests {
         ])
 
         // Without mapping: the protocol lifeline appears, but its body isn't followed.
-        let unmapped = art.sequenceDiagram(entryPoint: ("Service", "run"))
+        let unmapped = SequenceDiagramBuilder(entryPoint: ("Service", "run")).build(from: art)
         #expect(unmapped.participants.map(\.name) == ["Service", "RepositoryProtocol"])
         #expect(!unmapped.messages.contains { $0.label == "commit" })
 
         // With mapping: the lifeline becomes the concrete type and its body is traced.
-        let mapped = art.sequenceDiagram(
+        let mapped = SequenceDiagramBuilder(
             entryPoint: ("Service", "run"),
             typeMapping: ["RepositoryProtocol": "SQLRepository"]
-        )
+        ).build(from: art)
         #expect(mapped.participants.map(\.name) == ["Service", "SQLRepository", "Database"])
         #expect(mapped.messages.contains { $0.from == "Service" && $0.to == "SQLRepository" && $0.label == "save" })
         #expect(mapped.messages.contains { $0.label == "commit" })
@@ -326,7 +327,7 @@ struct SequenceDiagramTests {
     @Test func unknownEntryPointYieldsEmptyDiagram() {
         let art = artifact(types: [type("A", members: [method("a")])])
 
-        let diagram = art.sequenceDiagram(entryPoint: ("Nope", "missing"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("Nope", "missing")).build(from: art)
 
         #expect(diagram.participants.isEmpty)
         #expect(diagram.messages.isEmpty)
@@ -335,7 +336,7 @@ struct SequenceDiagramTests {
 
     @Test func defaultTitleDerivesFromEntryPoint() {
         let art = artifact(types: [type("A", members: [method("a")])])
-        let diagram = art.sequenceDiagram(entryPoint: ("A", "a"))
+        let diagram = SequenceDiagramBuilder(entryPoint: ("A", "a")).build(from: art)
         #expect(diagram.title == "A.a()")
     }
 }

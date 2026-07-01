@@ -95,8 +95,7 @@ extension JavaExtractor {
             } else if let modifier = Self.modifierMap[nodeType] {
                 modifiers.append(modifier)
             } else if nodeType == "marker_annotation" || nodeType == "annotation" {
-                let keyword = text(child)
-                annotations.append(keyword.hasPrefix("@") ? keyword : "@\(keyword)")
+                annotations.append(normalizedAnnotation(text(child)))
             }
         }
 
@@ -126,21 +125,15 @@ extension JavaExtractor {
         var inheritedTypes: [TypeReference] = []
 
         if let superclassNode = node.child(byFieldName: "superclass") {
-            for superType in extractSuperclassTypes(superclassNode) {
-                inheritedTypes.append(superType)
-                relationships.append(
-                    Relationship(kind: .inheritance, source: qualifiedTypeName, target: superType.name)
-                )
-            }
+            let superTypes = extractSuperclassTypes(superclassNode)
+            inheritedTypes.append(contentsOf: superTypes)
+            recordSupertypeRelationships(from: qualifiedTypeName, to: superTypes, kind: .inheritance)
         }
 
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            for ifaceType in extractTypeList(interfacesNode) {
-                inheritedTypes.append(ifaceType)
-                relationships.append(
-                    Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name)
-                )
-            }
+            let ifaceTypes = extractTypeList(interfacesNode)
+            inheritedTypes.append(contentsOf: ifaceTypes)
+            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -173,10 +166,9 @@ extension JavaExtractor {
 
         for child in node.children() {
             guard child.nodeType == "extends_interfaces" else { continue }
-            for extType in extractTypeList(child) {
-                inheritedTypes.append(extType)
-                relationships.append(Relationship(kind: .conformance, source: qualifiedTypeName, target: extType.name))
-            }
+            let extTypes = extractTypeList(child)
+            inheritedTypes.append(contentsOf: extTypes)
+            recordSupertypeRelationships(from: qualifiedTypeName, to: extTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -206,12 +198,9 @@ extension JavaExtractor {
 
         var inheritedTypes: [TypeReference] = []
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            for ifaceType in extractTypeList(interfacesNode) {
-                inheritedTypes.append(ifaceType)
-                relationships.append(
-                    Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name)
-                )
-            }
+            let ifaceTypes = extractTypeList(interfacesNode)
+            inheritedTypes.append(contentsOf: ifaceTypes)
+            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -241,12 +230,9 @@ extension JavaExtractor {
         let genericParams = extractTypeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            for ifaceType in extractTypeList(interfacesNode) {
-                inheritedTypes.append(ifaceType)
-                relationships.append(
-                    Relationship(kind: .conformance, source: qualifiedTypeName, target: ifaceType.name)
-                )
-            }
+            let ifaceTypes = extractTypeList(interfacesNode)
+            inheritedTypes.append(contentsOf: ifaceTypes)
+            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)

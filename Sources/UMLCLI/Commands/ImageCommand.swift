@@ -128,7 +128,7 @@ extension UMLCommand {
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
             }
-            try DiagramLimitBounds.validate(maxDepth: maxDepth, maxStates: maxStates)
+            try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
         /// The "old" side for a delta image, when `--source-old` / `--from-old` is given.
@@ -141,41 +141,41 @@ extension UMLCommand {
             let artifact = try artifactSource.resolve()
             let oldArtifact = try resolveOldArtifact()
 
-            let data: Data
-            if let oldArtifact, sequenceFrom == nil, stateFrom == nil, !package, !callGraph {
-                data = try await renderClassDelta(old: oldArtifact, new: artifact)
-            } else if let sequenceFrom {
-                if let oldArtifact {
-                    data = try await renderSequenceDelta(old: oldArtifact, new: artifact, entryPoint: sequenceFrom)
-                } else {
-                    data = try await renderSequence(artifact: artifact, entryPoint: sequenceFrom)
-                }
-            } else if let stateFrom {
-                if let oldArtifact {
-                    data = try await renderStateDelta(old: oldArtifact, new: artifact, variable: stateFrom)
-                } else {
-                    data = try await renderState(artifact: artifact, variable: stateFrom)
-                }
-            } else if package, let oldArtifact {
-                data = try await renderPackageDelta(old: oldArtifact, new: artifact)
-            } else if package {
-                let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-                    .packageDependencyDiagram()
-                let renderScale = CGFloat(scale)
-                data = try await MainActor.run {
-                    try DiagramImageRenderer.renderPNG(packageDiagram: diagram, scale: renderScale, palette: palette)
-                }
-            } else if callGraph, let oldArtifact {
-                data = try await renderCallGraphDelta(old: oldArtifact, new: artifact)
-            } else if callGraph {
-                data = try await renderCallGraph(artifact: artifact)
-            } else {
-                data = try await renderClassDiagram(artifact: artifact)
-            }
+            let data = try await renderData(artifact: artifact, old: oldArtifact)
 
             let outputURL = URL(fileURLWithPath: output)
             try data.write(to: outputURL, options: .atomic)
             print("Wrote image to \(output)")
+        }
+
+        /// Selects the per-kind image exporter for the requested flags and renders the PNG — a delta
+        /// when an OLD revision is given, otherwise the plain diagram.
+        private func renderData(artifact: CodeArtifact, old: CodeArtifact?) async throws -> Data {
+            if let sequenceFrom {
+                let exporter = SequenceImageExporter(
+                    scale: scale, palette: palette, entryPoint: sequenceFrom, maxDepth: maxDepth, map: map)
+                if let old { return try await exporter.renderDelta(old: old, new: artifact) }
+                return try await exporter.render(artifact: artifact)
+            } else if let stateFrom {
+                let exporter = StateImageExporter(
+                    scale: scale, palette: palette, variable: stateFrom, maxStates: maxStates)
+                if let old { return try await exporter.renderDelta(old: old, new: artifact) }
+                return try await exporter.render(artifact: artifact)
+            } else if package {
+                let exporter = PackageImageExporter(scale: scale, palette: palette)
+                if let old { return try await exporter.renderDelta(old: old, new: artifact) }
+                return try await exporter.render(artifact: artifact)
+            } else if callGraph {
+                let exporter = CallGraphImageExporter(
+                    scale: scale, palette: palette, scope: CallGraphScopeOption(raw: callGraphScope))
+                if let old { return try await exporter.renderDelta(old: old, new: artifact) }
+                return try await exporter.render(artifact: artifact)
+            } else {
+                let exporter = ClassImageExporter(
+                    scale: scale, palette: palette, configuration: classDiagramConfiguration())
+                if let old { return try await exporter.renderDelta(old: old, new: artifact) }
+                return try await exporter.render(artifact: artifact)
+            }
         }
 
         /// The class-diagram configuration derived from the grouping/access/member/focus flags,
@@ -188,220 +188,21 @@ extension UMLCommand {
                 configuration.showProperties = false
                 configuration.showMethods = false
             }
-            configuration.focus = FocusOptionBuilder.make(
+            configuration.focus = FocusOptionBuilder(
                 rootTypeName: focus,
                 depth: focusDepth,
                 direction: focusDirection,
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
-            )
+            ).configuration
+            // A focused view is a local neighbourhood around one type; module/directory boxing splits
+            // it into mismatched clusters that waste canvas. Lay it out as a single graph so the root
+            // is prominent and the space is filled.
+            if configuration.focus != nil {
+                configuration.grouping = .none
+            }
             return configuration
         }
-
-        /// Renders the plain (non-delta) class diagram to PNG from the flags/focus options.
-        private func renderClassDiagram(artifact: CodeArtifact) async throws -> Data {
-            let configuration = classDiagramConfiguration()
-            let language = artifact.standardLanguageConfiguration
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
-                    artifact: artifact,
-                    configuration: configuration,
-                    language: language,
-                    scale: CGFloat(scale),
-                    palette: palette
-                )
-            }
-        }
-
-        /// Renders the class-diagram delta of two revisions to PNG: the union diagram with each edge
-        /// tinted by its diff status (added green / removed red / changed amber).
-        private func renderClassDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
-            let differ = ArtifactDiffer()
-            let diff = differ.diff(old: old, new: new)
-            let union = differ.unionArtifact(old: old, new: new)
-            let edgeStatus = diff.relationshipStatusLookup()
-            let typeStatus = diff.typeStatusLookup()
-            let edgeColor: @Sendable (GeneratedDiagramEdge) -> Color? = { edge in
-                edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
-            }
-            let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
-            let configuration = classDiagramConfiguration()
-            let language = union.standardLanguageConfiguration
-            let renderScale = CGFloat(scale)
-            let renderPalette = palette
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
-                    artifact: union, configuration: configuration, language: language,
-                    scale: renderScale, palette: renderPalette, edgeColor: edgeColor, nodeColor: nodeColor)
-            }
-        }
-
-        /// Renders the package-diagram delta of two revisions to PNG: the union with each module
-        /// node and dependency edge tinted by its diff status.
-        private func renderPackageDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
-            let oldDiagram = old.enriched(configuration: old.standardLanguageConfiguration).packageDependencyDiagram()
-            let newDiagram = new.enriched(configuration: new.standardLanguageConfiguration).packageDependencyDiagram()
-            let diff = PackageDiagramDiff(old: oldDiagram, new: newDiagram)
-            let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
-            let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
-            let renderScale = CGFloat(scale)
-            let renderPalette = palette
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
-                    packageDiagram: diff.union, scale: renderScale, palette: renderPalette,
-                    nodeColor: nodeColor, edgeColor: edgeColor)
-            }
-        }
-
-        /// Renders the call-graph delta of two revisions to PNG: the union with each method node and
-        /// call edge tinted by its diff status.
-        private func renderCallGraphDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
-            let scope = try parseCallGraphScope()
-            let diff = CallGraphDiff(old: old.callGraph(scope: scope), new: new.callGraph(scope: scope))
-            let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
-            let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
-            let renderScale = CGFloat(scale)
-            let renderPalette = palette
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(
-                    callGraph: diff.union, scale: renderScale, palette: renderPalette,
-                    nodeColor: nodeColor, edgeColor: edgeColor)
-            }
-        }
-
-        /// Traces a sequence diagram from `entryPoint` ("Type.method", or a bare top-level function
-        /// name) and renders it to PNG.
-        private func renderSequence(artifact: CodeArtifact, entryPoint: String) async throws -> Data {
-            let (typeName, methodName) = try parseSequenceEntryPoint(entryPoint)
-
-            var typeMapping: [String: String] = [:]
-            for entry in map {
-                let parts = entry.split(separator: "=", maxSplits: 1).map(String.init)
-                guard parts.count == 2 else {
-                    throw ValidationError("--map must be in the form \"Protocol=Concrete\".")
-                }
-                typeMapping[parts[0]] = parts[1]
-            }
-
-            let diagram = artifact.sequenceDiagram(
-                entryPoint: (typeName, methodName),
-                maxDepth: maxDepth,
-                typeMapping: typeMapping
-            )
-            guard !diagram.participants.isEmpty else {
-                throw ValidationError(
-                    "No calls could be traced from \(entryPoint). Sequence diagrams follow "
-                    + "explicitly-typed property receivers; try another entry point or --map."
-                )
-            }
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale), palette: palette)
-            }
-        }
-
-        /// Builds a static call graph (optionally scoped) and renders it to PNG.
-        private func renderCallGraph(artifact: CodeArtifact) async throws -> Data {
-            let scope = try parseCallGraphScope()
-            let graph = artifact.callGraph(scope: scope)
-            guard !graph.edges.isEmpty else {
-                throw ValidationError(
-                    "No resolvable calls found for the requested scope. Call graphs follow "
-                    + "explicitly-typed call receivers; try a wider scope or another language."
-                )
-            }
-            let renderScale = CGFloat(scale)
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(callGraph: graph, scale: renderScale, palette: palette)
-            }
-        }
-
-        /// Parses `--call-graph-scope` (`"type:Name"` / `"module:Name"`) into a `CallGraphScope`.
-        private func parseCallGraphScope() throws -> CallGraphScope {
-            guard let raw = callGraphScope else { return .wholeCodebase }
-            let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
-            guard parts.count == 2, !parts[1].isEmpty else {
-                throw ValidationError("--call-graph-scope must be \"type:Name\" or \"module:Name\".")
-            }
-            switch parts[0] {
-            case "type":
-                return .type(parts[1])
-            case "module":
-                return .module(parts[1])
-            default:
-                throw ValidationError("--call-graph-scope must start with \"type:\" or \"module:\".")
-            }
-        }
-
-        /// Runs the value-flow state analysis for `variable` and renders the diagram to PNG.
-        private func renderState(artifact: CodeArtifact, variable: String) async throws -> Data {
-            let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
-            let diagram: StateDiagram
-            do {
-                diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
-            } catch let error as StateDiagramAnalysisError {
-                throw ValidationError(error.message)
-            }
-            let renderScale = CGFloat(scale)
-            return try await MainActor.run {
-                try DiagramImageRenderer.renderPNG(stateDiagram: diagram, scale: renderScale, palette: palette)
-            }
-        }
-
-    }
-}
-
-extension UMLCommand.Image {
-    /// Renders the sequence-diagram delta of two revisions to PNG: the union trace with each message
-    /// tinted by its diff status. Messages are coloured by their layout id, which equals the
-    /// message's position in the (order-sorted) union.
-    func renderSequenceDelta(
-        old: CodeArtifact, new: CodeArtifact, entryPoint: String
-    ) async throws -> Data {
-        let entry = try parseSequenceEntryPoint(entryPoint)
-        let diff = SequenceDiagramDiff(
-            old: old.sequenceDiagram(entryPoint: entry, maxDepth: maxDepth),
-            new: new.sequenceDiagram(entryPoint: entry, maxDepth: maxDepth))
-        let ordered = diff.union.messages.sorted { $0.order < $1.order }
-        let colorByID = Dictionary(uniqueKeysWithValues: ordered.enumerated().compactMap { index, message in
-            diff.status(of: message).deltaColor.map { (index, $0) }
-        })
-        let messageColor: @Sendable (SequenceLayoutModel.MessageLayout) -> Color? = { colorByID[$0.id] }
-        let renderScale = CGFloat(scale)
-        let renderPalette = palette
-        return try await MainActor.run {
-            try DiagramImageRenderer.renderPNG(
-                sequenceDiagram: diff.union, scale: renderScale, palette: renderPalette, messageColor: messageColor)
-        }
-    }
-
-    /// Renders the state-diagram delta of two revisions to PNG: the union machine with each
-    /// transition tinted by its diff status. Transitions are coloured by their layout id, which
-    /// equals the transition's index in the union — so parallel transitions between the same state
-    /// pair on different events (which share `from`/`to` but differ in diff status) stay distinct.
-    func renderStateDelta(old: CodeArtifact, new: CodeArtifact, variable: String) async throws -> Data {
-        let configuration = try StateVariableSpec.configuration(from: variable, maxStates: maxStates)
-        let diff = StateDiagramDiff(
-            old: try old.resolvingExtensions().stateDiagram(configuration: configuration),
-            new: try new.resolvingExtensions().stateDiagram(configuration: configuration))
-        let transitions = diff.union.transitions
-        let colorByID = Dictionary(uniqueKeysWithValues: transitions.enumerated().compactMap { index, transition in
-            diff.status(of: transition).deltaColor.map { (index, $0) }
-        })
-        let edgeColor: @Sendable (StateLayoutModel.EdgeLayout) -> Color? = { colorByID[$0.id] }
-        let renderScale = CGFloat(scale)
-        let renderPalette = palette
-        return try await MainActor.run {
-            try DiagramImageRenderer.renderPNG(
-                stateDiagram: diff.union, scale: renderScale, palette: renderPalette, edgeColor: edgeColor)
-        }
-    }
-}
-
-extension DeltaStatus {
-    /// The delta tint for image rendering (added green / removed red / changed amber), or `nil`
-    /// for `.unchanged` so the element keeps its themed colour.
-    var deltaColor: Color? {
-        deltaHex.map(Color.init(hex:))
     }
 }
 

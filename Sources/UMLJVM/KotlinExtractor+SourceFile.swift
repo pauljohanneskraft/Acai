@@ -120,9 +120,7 @@ extension KotlinExtractor {
             if childType == "visibility_modifier" {
                 access = Self.visibilityMap[modifierText]
             } else if childType == "annotation" {
-                annotations.append(
-                    modifierText.hasPrefix("@") ? modifierText : "@\(modifierText)"
-                )
+                annotations.append(normalizedAnnotation(modifierText))
             } else if let categoryMap = Self.modifierMapByNodeType[childType],
                       let modifier = categoryMap[modifierText] {
                 modifiers.append(modifier)

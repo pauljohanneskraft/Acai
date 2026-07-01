@@ -5,8 +5,10 @@ import UMLCore
 /// Mirrors `ClassDiagramDOTRenderer`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
-public struct ClassDiagramMermaidRenderer: Sendable {
+public struct ClassDiagramMermaidRenderer: MermaidRenderer {
     private let options: ClassDiagramOptions
+
+    public var theme: DiagramTheme? { options.theme }
 
     public init(options: ClassDiagramOptions) {
         self.options = options
@@ -14,13 +16,12 @@ public struct ClassDiagramMermaidRenderer: Sendable {
 
     /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
-        generate(from: artifact.classDiagram(options: options))
+        generate(from: ClassDiagramBuilder(options: options).build(from: artifact))
     }
 
     /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).
     public func generate(from enriched: ClassDiagram) -> String {
-        var lines: [String] = []
-        if let theme = options.theme { lines.append(theme.mermaidInit()) }
+        var lines: [String] = themePreamble
         lines.append("classDiagram")
         var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
@@ -60,8 +61,7 @@ public struct ClassDiagramMermaidRenderer: Sendable {
             body.append("        <<\(stereotype)>>")
         }
         if options.showMembers {
-            let properties = type.members.filter(\.isProperty).visible(atLeast: options.minimumAccessLevel)
-            let methods = type.members.filter(\.isMethod).visible(atLeast: options.minimumAccessLevel)
+            let (properties, methods) = type.partitionedMembers(visibleAtLeast: options.minimumAccessLevel)
             body += properties.map { "        " + memberLine($0) }
             body += methods.map { "        " + memberLine($0) }
             body += type.enumCases.map { "        \($0.name)" }

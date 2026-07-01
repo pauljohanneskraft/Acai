@@ -102,104 +102,10 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
     }
 }
 
-/// A before/after pair for a single scalar that changed.
-public struct Change<T: Codable & Equatable & Sendable>: Codable, Equatable, Sendable {
-    public var before: T
-    public var after: T
-
-    public init(before: T, after: T) {
-        self.before = before
-        self.after = after
-    }
-
-    /// A change only when both sides exist and actually differ; `nil` otherwise (equal, or absent
-    /// on one side). Lets a metric delta read `Change(from: old?.x, to: new?.x)`.
-    public init?(from before: T?, to after: T?) {
-        guard let before, let after, before != after else { return nil }
-        self.init(before: before, after: after)
-    }
-}
-
-/// A type that exists in both revisions but whose declaration changed.
-public struct TypeChange: Codable, Equatable, Sendable {
-    public var id: String
-    public var kindChange: Change<TypeKind>?
-    public var accessChange: Change<AccessLevel>?
-    /// Member signatures present only in the new revision.
-    public var addedMembers: [String]
-    /// Member signatures present only in the old revision.
-    public var removedMembers: [String]
-
-    public init(
-        id: String,
-        kindChange: Change<TypeKind>? = nil,
-        accessChange: Change<AccessLevel>? = nil,
-        addedMembers: [String] = [],
-        removedMembers: [String] = []
-    ) {
-        self.id = id
-        self.kindChange = kindChange
-        self.accessChange = accessChange
-        self.addedMembers = addedMembers
-        self.removedMembers = removedMembers
-    }
-}
-
-/// A relationship present in both revisions (same source/target/kind) with differing labels.
-public struct RelationshipChange: Codable, Equatable, Sendable {
-    public var before: Relationship
-    public var after: Relationship
-
-    public init(before: Relationship, after: Relationship) {
-        self.before = before
-        self.after = after
-    }
-}
-
 extension Relationship {
     /// This relationship's identity for diffing: source, target and kind. Labels are excluded so a
     /// label-only change reads as a `changed` edge rather than add+remove.
     var diffKey: String {
         "\(source)\u{1}\(target)\u{1}\(kind.rawValue)"
-    }
-}
-
-/// Per-module coupling-metric movement. Only the metrics that actually changed are populated.
-public struct ModuleMetricDelta: Codable, Equatable, Sendable {
-    public var module: String
-    public var instability: Change<Double>?
-    public var abstractness: Change<Double>?
-    public var distanceFromMainSequence: Change<Double>?
-
-    public init(
-        module: String,
-        instability: Change<Double>? = nil,
-        abstractness: Change<Double>? = nil,
-        distanceFromMainSequence: Change<Double>? = nil
-    ) {
-        self.module = module
-        self.instability = instability
-        self.abstractness = abstractness
-        self.distanceFromMainSequence = distanceFromMainSequence
-    }
-}
-
-/// Per-type OO-metric movement. Only the metrics that actually changed are populated.
-public struct TypeMetricDelta: Codable, Equatable, Sendable {
-    public var id: String
-    public var fanIn: Change<Int>?
-    public var fanOut: Change<Int>?
-    public var depthOfInheritance: Change<Int>?
-
-    public init(
-        id: String,
-        fanIn: Change<Int>? = nil,
-        fanOut: Change<Int>? = nil,
-        depthOfInheritance: Change<Int>? = nil
-    ) {
-        self.id = id
-        self.fanIn = fanIn
-        self.fanOut = fanOut
-        self.depthOfInheritance = depthOfInheritance
     }
 }

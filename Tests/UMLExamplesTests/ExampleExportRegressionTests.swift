@@ -108,7 +108,7 @@ struct SequenceDiagramExportTests {
             ExampleExports.examples("SequenceDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderSequenceDOT for the language's entry point with defaults.
-        let diagram = artifact.sequenceDiagram(entryPoint: entry, maxDepth: 5, typeMapping: [:])
+        let diagram = SequenceDiagramBuilder(entryPoint: entry, maxDepth: 5, typeMapping: [:]).build(from: artifact)
         #expect(!diagram.participants.isEmpty, "\(stem) sequence trace produced no participants")
         let generated = SequenceDiagramDOTRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -124,7 +124,7 @@ struct SequenceDiagramExportTests {
         let artifact = try ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagram"), language: language
         )
-        let diagram = artifact.sequenceDiagram(entryPoint: entry, maxDepth: 5, typeMapping: [:])
+        let diagram = SequenceDiagramBuilder(entryPoint: entry, maxDepth: 5, typeMapping: [:]).build(from: artifact)
         #expect(!diagram.participants.isEmpty, "\(stem) sequence trace produced no participants")
         let generated = SequenceDiagramMermaidRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -160,8 +160,8 @@ struct PackageDiagramExportTests {
             ExampleExports.examples("PackageDiagram", dir), language: language
         )
         // Mirrors DiagramCommand.renderPackage (enriched + default theme/font).
-        let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(
+            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
         #expect(diagram.nodes.count == 2, "\(stem) package diagram should have Core + Banking modules")
         let generated = PackageDiagramDOTRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -175,8 +175,8 @@ struct PackageDiagramExportTests {
         let artifact = try ExampleExports.analyze(
             ExampleExports.examples("PackageDiagram", dir), language: language
         )
-        let diagram = artifact.enriched(configuration: artifact.standardLanguageConfiguration)
-            .packageDependencyDiagram()
+        let diagram = PackageDiagramBuilder().build(
+            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
         let generated = PackageDiagramMermaidRenderer().render(diagram)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("PackageDiagram", "Exports", "\(stem).mmd")
@@ -209,7 +209,7 @@ struct CallGraphExportTests {
             ExampleExports.examples("CallGraph", dir), language: language
         )
         // Mirrors DiagramCommand.callGraphExport (whole-codebase scope, default title/theme).
-        let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
+        let graph = CallGraphBuilder(scope: .wholeCodebase, title: "Call graph").build(from: artifact)
         #expect(!graph.edges.isEmpty, "\(stem) call graph produced no edges")
         let generated = CallGraphDOTRenderer().render(graph)
         let expected = try ExampleExports.golden(
@@ -223,7 +223,7 @@ struct CallGraphExportTests {
         let artifact = try ExampleExports.analyze(
             ExampleExports.examples("CallGraph", dir), language: language
         )
-        let graph = artifact.callGraph(scope: .wholeCodebase, title: "Call graph")
+        let graph = CallGraphBuilder(scope: .wholeCodebase, title: "Call graph").build(from: artifact)
         let generated = CallGraphMermaidRenderer().render(graph)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("CallGraph", "Exports", "\(stem).mmd")
@@ -258,7 +258,7 @@ struct StateDiagramExportTests {
         )
         // Mirrors DiagramCommand.renderStateDOT (resolvingExtensions + default maxStates/theme).
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
-        let diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+        let diagram = try StateDiagramBuilder(configuration: configuration).build(from: artifact.resolvingExtensions())
         let generated = StateDiagramDOTRenderer().render(diagram)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("StateDiagram", "Exports", "\(stem).dot")
@@ -272,7 +272,7 @@ struct StateDiagramExportTests {
             ExampleExports.examples("StateDiagram"), language: language
         )
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
-        let diagram = try artifact.resolvingExtensions().stateDiagram(configuration: configuration)
+        let diagram = try StateDiagramBuilder(configuration: configuration).build(from: artifact.resolvingExtensions())
         let generated = StateDiagramMermaidRenderer().render(diagram)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("StateDiagram", "Exports", "\(stem).mmd")

@@ -103,7 +103,7 @@ struct ProjectDetailView: View {
                 Label("Add codebase", systemImage: "plus")
             }
             Button {
-                if let id = model.addFreeformDiagram(to: projectID, name: "New Freeform Diagram") {
+                if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
                     model.selection = .freeformDiagram(id)
                 }
             } label: {
@@ -186,7 +186,7 @@ struct ProjectDetailView: View {
     @ViewBuilder
     private func codebaseContextMenu(codebase: Codebase) -> some View {
         Button {
-            Task { await model.reindex(codebaseID: codebase.id) }
+            Task { await model.editing.reindex(codebaseID: codebase.id) }
         } label: {
             Label("Reindex", systemImage: "arrow.clockwise")
         }
@@ -198,7 +198,7 @@ struct ProjectDetailView: View {
         }
         Divider()
         Button(role: .destructive) {
-            model.removeCodebase(codebase.id)
+            model.editing.removeCodebase(codebase.id)
         } label: {
             Label("Delete", systemImage: "trash")
         }
@@ -233,7 +233,7 @@ struct ProjectDetailView: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button(role: .destructive) {
-                model.removeFreeformDiagram(diagram.id)
+                model.freeforms.remove(diagram.id)
             } label: {
                 Label("Delete", systemImage: "trash")
             }

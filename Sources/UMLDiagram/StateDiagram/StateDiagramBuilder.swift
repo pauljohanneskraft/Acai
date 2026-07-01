@@ -1,26 +1,30 @@
 import UMLCore
 
-extension CodeArtifact {
+/// Builds a value-flow `StateDiagram` for the variable selected in `configuration`, from a
+/// `CodeArtifact`.
+///
+/// States are the distinct enumerable values (enum cases, literals, nil) that the variable is
+/// assigned anywhere in the artifact, plus its declared initial value. Within one member body,
+/// consecutive assignments form a transition chain labeled with that member; each member's first
+/// assignment is also reachable from the initial pseudo-state.
+///
+/// A value you instantiate with the configuration and ask to `build(from:)` — kept off `CodeArtifact`
+/// so the data model does not depend on the diagram layer. Build from a `resolvingExtensions()`-ed
+/// artifact so members declared in extensions are visible.
+///
+/// Known limitations (documented behaviour, not bugs):
+/// - Branch-insensitive: assignments in different `if`/`switch` arms of the same body appear as one
+///   sequential chain.
+/// - No scope tracking: a local variable shadowing the property is counted.
+public struct StateDiagramBuilder: Sendable {
+    public var configuration: StateDiagramConfiguration
 
-    /// Builds a value-flow state diagram for the variable selected in `configuration`.
-    ///
-    /// States are the distinct enumerable values (enum cases, literals, nil) that
-    /// the variable is assigned anywhere in the artifact, plus its declared initial
-    /// value. Within one member body, consecutive assignments form a transition
-    /// chain labeled with that member; each member's first assignment is also
-    /// reachable from the initial pseudo-state (which doubles as the "entry"
-    /// anchor, avoiding a per-method choice-node fan-out).
-    ///
-    /// Call on a `resolvingExtensions()`-ed artifact so members declared in
-    /// extensions are visible.
-    ///
-    /// Known limitations (documented behaviour, not bugs):
-    /// - Branch-insensitive: assignments in different `if`/`switch` arms of the
-    ///   same body appear as one sequential chain.
-    /// - No scope tracking: a local variable shadowing the property is counted.
-    public func stateDiagram(configuration: StateDiagramConfiguration) throws -> StateDiagram {
-        let analysis = try StateAnalysis(artifact: self, configuration: configuration)
-        return try analysis.buildDiagram()
+    public init(configuration: StateDiagramConfiguration) {
+        self.configuration = configuration
+    }
+
+    public func build(from artifact: CodeArtifact) throws -> StateDiagram {
+        try StateAnalysis(artifact: artifact, configuration: configuration).buildDiagram()
     }
 }
 

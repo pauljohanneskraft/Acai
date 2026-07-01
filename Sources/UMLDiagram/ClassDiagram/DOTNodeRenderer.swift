@@ -68,8 +68,7 @@ struct DOTNodeRenderer {
             return html
         }
 
-        let properties = type.members.filter(\.isProperty).visible(atLeast: options.minimumAccessLevel)
-        let methods = type.members.filter(\.isMethod).visible(atLeast: options.minimumAccessLevel)
+        let (properties, methods) = type.partitionedMembers(visibleAtLeast: options.minimumAccessLevel)
 
         // Properties compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"

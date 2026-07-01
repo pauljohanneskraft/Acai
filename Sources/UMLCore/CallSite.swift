@@ -10,6 +10,11 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
     ///
     /// `nil` for free-function calls or when the receiver is a generic
     /// parameter / protocol existential and the concrete type is unknown.
+    ///
+    /// **Producer contract:** when non-`nil`, this must be a **simple** type name matching a declared
+    /// ``TypeDeclaration/name`` (not a qualified id). Sequence-diagram resolution looks the receiver up
+    /// by simple name, so a qualified value silently drops the call. Enforced by the parser-conformance
+    /// suite (issue #89, invariant 4).
     public var receiverType: String?
 
     /// The name of the method or function being called.

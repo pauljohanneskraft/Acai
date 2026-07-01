@@ -1,11 +1,11 @@
 import Foundation
 
-/// Renders a `PackageDependencyDiagram` to a Mermaid `flowchart`.
+/// Renders a `PackageDiagram` to a Mermaid `flowchart`.
 ///
 /// Each module is a node labelled with its coupling metrics and shaded by its
 /// distance from the main sequence; edges carry the cross-module reference weight.
-public struct PackageDiagramMermaidRenderer: Sendable {
-    private let theme: DiagramTheme?
+public struct PackageDiagramMermaidRenderer: MermaidRenderer {
+    public let theme: DiagramTheme?
     private let nodeColor: (@Sendable (String) -> String?)?
     private let edgeColor: (@Sendable (String, String) -> String?)?
 
@@ -19,14 +19,14 @@ public struct PackageDiagramMermaidRenderer: Sendable {
         self.edgeColor = edgeColor
     }
 
-    public func render(_ diagram: PackageDependencyDiagram) -> String {
+    public func render(_ diagram: PackageDiagram) -> String {
         var lines: [String] = []
         if let title = diagram.title {
             lines.append("---")
             lines.append("title: \(title)")
             lines.append("---")
         }
-        if let theme { lines.append(theme.mermaidInit()) }
+        lines.append(contentsOf: themePreamble)
         lines.append("flowchart LR")
 
         var allocator = MermaidIDAllocator()
@@ -61,7 +61,7 @@ public struct PackageDiagramMermaidRenderer: Sendable {
         return lines.joined(separator: "\n") + "\n"
     }
 
-    private func nodeLabel(_ node: PackageDependencyDiagram.Node) -> String {
+    private func nodeLabel(_ node: PackageDiagram.Node) -> String {
         let instability = String(format: "%.2f", node.instability)
         let abstractness = String(format: "%.2f", node.abstractness)
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"

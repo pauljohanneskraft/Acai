@@ -3,7 +3,7 @@ import ArgumentParser
 /// Parses a `--sequence-from` value into a sequence-diagram entry point.
 ///
 /// A dotted value is a method: `"TypeName.methodName"`. A bare value (no dot) is a top-level
-/// function, returned with an empty type name — which `CodeArtifact.sequenceDiagram(entryPoint:)`
+/// function, returned with an empty type name — which `SequenceDiagramBuilder`
 /// resolves against `freestandingFunctions`.
 func parseSequenceEntryPoint(_ value: String) throws -> (typeName: String, methodName: String) {
     let invalid = ValidationError(

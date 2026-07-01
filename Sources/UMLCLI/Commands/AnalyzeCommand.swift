@@ -8,14 +8,19 @@ extension UMLCommand {
             abstract: "Analyze source code and output the code model as JSON"
         )
 
-        @Argument(help: "Path to the source directory to analyze.")
-        var sourceDir: String
+        @Argument(help: "(Deprecated) source directory to analyze; prefer --source.")
+        var sourceDir: String?
+
+        @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
+        var from: String?
+
+        @Option(name: .long, help: "Path to a source directory to analyze on the fly.")
+        var source: String?
 
         @Option(name: .long, help: ArgumentHelp(
-            "Limit analysis to one or more languages" +
+            "Limit analysis to one or more languages when using --source/a path" +
             " (\(LanguageOption.allValuesList))." +
-            " Repeat the flag for multiple:" +
-            " --language kotlin --language java."
+            " Repeat the flag for multiple: --language kotlin --language java."
         ))
         var language: [LanguageOption] = []
 
@@ -23,17 +28,18 @@ extension UMLCommand {
         var output: String?
 
         mutating func run() throws {
-            let url = URL(fileURLWithPath: sourceDir).standardizedFileURL
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                throw ValidationError("Source directory does not exist: \(sourceDir)")
+            // Unifies on the shared `ArtifactSource` resolution; a bare positional path is a
+            // deprecated alias for `--source`. (Done here, not in `validate()`, so the auto-invoked
+            // group validate can't pre-empt the alias.)
+            let effectiveSource = source ?? sourceDir
+            if from == nil && effectiveSource == nil {
+                throw ValidationError("Either --from or --source (or a positional path) must be specified.")
             }
-
-            let allowedLanguages = language.map { $0.sourceLanguage }
-            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
-            artifact.warnIfParseErrors()
-            let json = try artifact.encodedJSON()
-
-            try json.writeOutput(to: output, label: "analysis")
+            if from != nil && effectiveSource != nil {
+                throw ValidationError("Specify either --from or --source, not both.")
+            }
+            let artifact = try ArtifactSource.resolve(from: from, source: effectiveSource, language: language)
+            try artifact.encodedJSON().writeOutput(to: output, label: "analysis")
         }
     }
 }

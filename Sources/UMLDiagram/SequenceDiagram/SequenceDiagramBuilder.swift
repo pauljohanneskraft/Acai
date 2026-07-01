@@ -1,62 +1,35 @@
 import UMLCore
 
-extension CodeArtifact {
+/// Builds a `SequenceDiagram` by tracing the call graph from `entryPoint` through `Member.callSites`.
+///
+/// Each call site becomes a `synchronous` message; each return to the caller becomes a `return`
+/// message. `typeMapping` resolves an abstract receiver (protocol/interface/base class) to the
+/// concrete type whose body should be followed, so dynamic dispatch can still be traced.
+///
+/// A value you instantiate with the entry point/options and ask to `build(from:)` — kept off
+/// `CodeArtifact` so the data model does not depend on the diagram layer.
+///
+/// - Note: requires parsers to populate `Member.callSites` (with `CallSite.receiverType` for
+///   cross-type calls); without it the diagram has the entry participant but no messages.
+public struct SequenceDiagramBuilder: Sendable {
+    public var entryPoint: (typeName: String, methodName: String)
+    public var title: String?
+    public var maxDepth: Int
+    public var typeMapping: [String: String]
 
-    /// Generates a `SequenceDiagram` by tracing the call graph starting from `entryPoint`.
-    ///
-    /// Given an entry method, the bridge follows `CallSite` records on each visited
-    /// `Member` to discover which types are called and in what order. Each call site
-    /// becomes a `synchronous` message; each return from a callee back to the caller
-    /// becomes a `return` message.
-    ///
-    /// - Parameters:
-    ///   - entryPoint: The starting method, identified by its owning type name and method name.
-    ///   - title: Optional diagram title; defaults to `"TypeName.methodName()"`.
-    ///   - maxDepth: Maximum call-graph traversal depth. Prevents infinite loops caused
-    ///     by recursion or mutual calls. Defaults to `5`.
-    ///   - typeMapping: An optional dictionary that maps abstract type names (protocols,
-    ///     interfaces, base classes) to the concrete type whose implementation should be
-    ///     followed when tracing the call graph.  This lets you resolve dynamic dispatch
-    ///     so the diagram can be drawn even when the declared receiver type has no
-    ///     directly accessible body.
-    ///
-    ///     Example: `["AuthServiceProtocol": "DefaultAuthService"]` — calls typed as
-    ///     `AuthServiceProtocol` will appear in the diagram as `DefaultAuthService` and
-    ///     the traversal will follow `DefaultAuthService`'s implementation.
-    ///
-    /// - Note: This bridge requires parsers to populate `Member.callSites`. Without that
-    ///   data the diagram will contain the entry participant but no messages. The
-    ///   `CallSite.receiverType` field must be set for cross-type calls to be surfaced.
-    ///
-    /// # Example
-    ///
-    /// Given source like:
-    /// ```swift
-    /// class LoginService {
-    ///     let auth: AuthService
-    ///     func login(username: String, password: String) async throws -> Bool {
-    ///         return try await auth.login(username: username, password: password)
-    ///     }
-    /// }
-    /// class AuthService {
-    ///     func login(username: String, password: String) async throws -> Bool { … }
-    /// }
-    /// ```
-    ///
-    /// Calling `artifact.sequenceDiagram(entryPoint: ("LoginService", "login"))` will
-    /// produce:
-    /// ```
-    /// :LoginService      :AuthService
-    ///      |                  |
-    ///      |──── login ──────>|
-    ///      |<─── return ──────|
-    /// ```
-    public func sequenceDiagram(
+    public init(
         entryPoint: (typeName: String, methodName: String),
         title: String? = nil,
         maxDepth: Int = 5,
         typeMapping: [String: String] = [:]
-    ) -> SequenceDiagram {
+    ) {
+        self.entryPoint = entryPoint
+        self.title = title
+        self.maxDepth = maxDepth
+        self.typeMapping = typeMapping
+    }
+
+    public func build(from artifact: CodeArtifact) -> SequenceDiagram {
         // An empty `typeName` selects a top-level (free) function entry point; otherwise the entry
         // is a method on the named type.
         let isFreeEntry = entryPoint.typeName.isEmpty
@@ -64,7 +37,7 @@ extension CodeArtifact {
             ? "\(entryPoint.methodName)()"
             : "\(entryPoint.typeName).\(entryPoint.methodName)()")
 
-        let lookups = SequenceTraversalLookups(types: types, freeFunctions: freestandingFunctions)
+        let lookups = SequenceTraversalLookups(types: artifact.types, freeFunctions: artifact.freestandingFunctions)
 
         let entryId: String
         let entryName: String
@@ -109,8 +82,6 @@ extension CodeArtifact {
             messages: traversal.messages
         )
     }
-
-    // MARK: Shared sequence helper
 
     private func participantKind(for decl: TypeDeclaration?) -> SequenceDiagram.Participant.Kind {
         switch decl?.kind {

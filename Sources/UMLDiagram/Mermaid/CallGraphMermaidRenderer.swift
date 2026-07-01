@@ -2,8 +2,8 @@
 ///
 /// Each method is a node labelled `Type.method`; edges carry the call multiplicity when a
 /// caller hits the same target more than once. Out-of-scope callee leaves are styled lighter.
-public struct CallGraphMermaidRenderer: Sendable {
-    private let theme: DiagramTheme?
+public struct CallGraphMermaidRenderer: MermaidRenderer {
+    public let theme: DiagramTheme?
     private let nodeColor: (@Sendable (String) -> String?)?
     private let edgeColor: (@Sendable (String, String) -> String?)?
 
@@ -24,7 +24,7 @@ public struct CallGraphMermaidRenderer: Sendable {
             lines.append("title: \(title)")
             lines.append("---")
         }
-        if let theme { lines.append(theme.mermaidInit()) }
+        lines.append(contentsOf: themePreamble)
         lines.append("flowchart LR")
 
         var allocator = MermaidIDAllocator()

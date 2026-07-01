@@ -15,19 +15,39 @@ public struct Selector: Codable, Equatable, Sendable {
     public var annotation: String?
     /// Minimum visibility the type must have (e.g. `public`).
     public var minimumAccess: AccessLevel?
+    /// Required declaration kind (e.g. `class`) — lets a rule target only classes vs protocols.
+    public var kind: TypeKind?
+    /// Minimum member count — selects "god" types (e.g. classes with many members).
+    public var minMembers: Int?
 
     public init(
         module: String? = nil,
         typeGlob: String? = nil,
         stereotype: String? = nil,
         annotation: String? = nil,
-        minimumAccess: AccessLevel? = nil
+        minimumAccess: AccessLevel? = nil,
+        kind: TypeKind? = nil,
+        minMembers: Int? = nil
     ) {
         self.module = module
         self.typeGlob = typeGlob
         self.stereotype = stereotype
         self.annotation = annotation
         self.minimumAccess = minimumAccess
+        self.kind = kind
+        self.minMembers = minMembers
+    }
+
+    /// Lenient decoding so a rules file may omit any facet it doesn't use.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        module = try container.decodeIfPresent(String.self, forKey: .module)
+        typeGlob = try container.decodeIfPresent(String.self, forKey: .typeGlob)
+        stereotype = try container.decodeIfPresent(String.self, forKey: .stereotype)
+        annotation = try container.decodeIfPresent(String.self, forKey: .annotation)
+        minimumAccess = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccess)
+        kind = try container.decodeIfPresent(TypeKind.self, forKey: .kind)
+        minMembers = try container.decodeIfPresent(Int.self, forKey: .minMembers)
     }
 
     /// Whether `node` satisfies every present facet.
@@ -39,6 +59,8 @@ public struct Selector: Codable, Equatable, Sendable {
         if let stereotype, node.stereotype != stereotype { return false }
         if let annotation, !node.annotations.contains(annotation.normalizedAnnotation) { return false }
         if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
+        if let kind, node.kind != kind { return false }
+        if let minMembers, node.memberCount < minMembers { return false }
         return true
     }
 

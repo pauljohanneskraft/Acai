@@ -107,7 +107,7 @@ struct CodebaseDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     TextField("Codebase Name", text: Binding(
                         get: { codebase.name },
-                        set: { model.updateCodebase(id: codebase.id, name: $0) }
+                        set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
                     ))
                     .font(.title2.bold())
                     .textFieldStyle(.plain)
@@ -127,7 +127,7 @@ struct CodebaseDetailView: View {
                 Button {
                     isIndexing = true
                     Task {
-                        await model.reindex(codebaseID: codebase.id)
+                        await model.editing.reindex(codebaseID: codebase.id)
                         isIndexing = false
                     }
                 } label: {
@@ -203,6 +203,10 @@ extension CodebaseDetailView {
                 typeMetricCard(
                     MetricVisual(title: "Fan-in", icon: "arrow.down.left", color: .green, blurb: Self.fanInBlurb),
                     by: \.fanIn, descriptor: "Hotspot", types: metrics.types)
+                typeMetricCard(
+                    MetricVisual(title: "Methods", icon: "function", color: .pink,
+                                 blurb: Self.weightedMethodsBlurb),
+                    by: \.weightedMethods, descriptor: "Largest", types: metrics.types)
             }
             .padding(.horizontal)
             .onPreferenceChange(CardHeightPreferenceKey.self) { height in
@@ -235,6 +239,9 @@ extension CodebaseDetailView {
     static let fanInBlurb =
         "How many types depend on this type. High fan-in marks a core/hub type; expected for shared "
         + "models, but keep them stable and well-tested since changes ripple widely."
+    static let weightedMethodsBlurb =
+        "Weighted methods per type (method count). Large types carry many responsibilities (low "
+        + "cohesion / SRP risk) and are prime candidates for splitting."
 
     /// A card for a per-type metric: max/avg with every type achieving the max named in the caption.
     /// Tapping opens the full ranked list (`typeDetail`).
@@ -332,7 +339,7 @@ extension CodebaseDetailView {
                 callGraphConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
                 return
             }
-            if let id = model.addGeneratedDiagram(
+            if let id = model.diagrams.add(
                 to: projectID,
                 codebaseID: codebase.id,
                 content: GeneratedDiagram.Content(type: type)
@@ -373,7 +380,7 @@ extension CodebaseDetailView {
             Button {
                 isIndexing = true
                 Task {
-                    await model.reindex(codebaseID: codebase.id)
+                    await model.editing.reindex(codebaseID: codebase.id)
                     isIndexing = false
                 }
             } label: {
@@ -398,7 +405,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { stateConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .stateDiagram(config)
@@ -419,7 +426,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { callGraphConfigContext = nil },
                 onCreate: { scope in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .callGraph(scope)
@@ -440,7 +447,7 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { sequenceConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.addGeneratedDiagram(
+                    if let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .sequenceDiagram(config)

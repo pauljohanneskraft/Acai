@@ -42,7 +42,8 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     ) -> Result<StateDiagram, StateDiagramAnalysisError>? {
         guard let configuration else { return nil }
         do {
-            return .success(try artifact.resolvingExtensions().stateDiagram(configuration: configuration))
+            return .success(try StateDiagramBuilder(configuration: configuration)
+                .build(from: artifact.resolvingExtensions()))
         } catch let error as StateDiagramAnalysisError {
             return .failure(error)
         } catch {
@@ -94,7 +95,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
         guard let diagram else { throw DiagramImageRenderError.renderingFailed }
-        return try DiagramImageRenderer.renderPNG(
+        return try StateImageRenderer().renderPNG(
             stateDiagram: diagram,
             positionOverrides: positionOverrides,
             scale: scale

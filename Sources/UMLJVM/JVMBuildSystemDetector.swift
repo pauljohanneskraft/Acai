@@ -27,33 +27,26 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
     public static let maven = JVMBuildSystemDetector(indicatorFiles: ["pom.xml"])
 
     public func isPresent(at root: URL) -> Bool {
-        indicatorFiles.contains {
-            FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
-        }
+        IndicatorFiles(indicatorFiles).present(at: root)
     }
 
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        func wants(_ lang: CodeArtifact.SourceLanguage) -> Bool {
-            requestedLanguages.isEmpty || requestedLanguages.contains(lang)
-        }
-
+        let request = LanguageRequest(requestedLanguages)
         let (kotlinDirs, javaDirs) = findSourceDirs(in: root)
         var specs: [SourceSpec] = []
 
-        if !kotlinDirs.isEmpty, wants(.kotlin) {
+        if !kotlinDirs.isEmpty, request.wants(.kotlin) {
             specs.append(SourceSpec(language: .kotlin, sourceDirs: kotlinDirs))
-        } else if wants(.kotlin),
-                  !FileManager.default.fileURLs(in: root, withExtensions: ["kt", "kts"]).isEmpty {
+        } else if request.wants(.kotlin), SourceFilePresence(extensions: ["kt", "kts"]).exist(in: root) {
             specs.append(SourceSpec(language: .kotlin, sourceDirs: [root]))
         }
 
-        if !javaDirs.isEmpty, wants(.java) {
+        if !javaDirs.isEmpty, request.wants(.java) {
             specs.append(SourceSpec(language: .java, sourceDirs: javaDirs))
-        } else if wants(.java),
-                  !FileManager.default.fileURLs(in: root, withExtensions: ["java"]).isEmpty {
+        } else if request.wants(.java), SourceFilePresence(extensions: ["java"]).exist(in: root) {
             specs.append(SourceSpec(language: .java, sourceDirs: [root]))
         }
 
@@ -62,6 +55,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     private func findSourceDirs(in root: URL) -> (kotlin: [URL], java: [URL]) {
         let fileManager = FileManager.default
+        let indicator = IndicatorFiles(indicatorFiles)
         var kotlinDirs: [URL] = []
         var javaDirs: [URL] = []
 
@@ -78,9 +72,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
             for entry in entries {
                 guard !Self.excludedDirs.contains(entry.lastPathComponent) else { continue }
                 guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
-                if indicatorFiles.contains(where: {
-                    fileManager.fileExists(atPath: entry.appendingPathComponent($0).path)
-                }) {
+                if indicator.present(at: entry) {
                     probe(entry)
                 }
             }

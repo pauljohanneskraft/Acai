@@ -20,7 +20,9 @@ struct NewCodebaseSheet: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                 Button("Add") {
-                    if let dir = directoryURL { model.addCodebase(to: projectID, name: name, directoryURL: dir) }
+                    if let dir = directoryURL {
+                        model.editing.addCodebase(to: projectID, name: name, directoryURL: dir)
+                    }
                     dismiss()
                 }.disabled(name.isEmpty || directoryURL == nil)
             }
