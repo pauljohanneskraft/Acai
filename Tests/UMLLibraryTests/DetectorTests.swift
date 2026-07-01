@@ -167,6 +167,21 @@ struct DetectorTests {
         }
     }
 
+    // MARK: - Rust / Cargo
+
+    @Test func cargoDetectsManifestAndPrefersSrcDir() throws {
+        let detector = CargoDetector()
+        try withTempDir { root in
+            #expect(!detector.isPresent(at: root))
+            try write("Cargo.toml", in: root, contents: "[package]\nname = \"app\"\nversion = \"0.1.0\"")
+            #expect(detector.isPresent(at: root))
+            #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).isEmpty)
+            try write("src/main.rs", in: root, contents: "fn main() {}")
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .rust) == ["src"])
+            #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.swift]).isEmpty)
+        }
+    }
+
     // MARK: - C-family (CMake / Make / Meson)
 
     @Test func cmakeDetectsCAndCpp() throws {

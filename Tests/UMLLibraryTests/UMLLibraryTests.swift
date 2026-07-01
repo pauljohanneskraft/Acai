@@ -45,6 +45,10 @@ struct UMLLibraryTests {
         #expect(service.parser(for: .kotlin) == nil)
     }
 
+    @Test func standardServiceRegistersRust() {
+        #expect(AnalysisService.standard.parser(for: .rust)?.language == .rust)
+    }
+
     /// Dart previously produced no call sites, so its sequence diagrams were always empty.
     @Test func dartSequenceDiagramIsNoLongerEmpty() {
         let source = """
