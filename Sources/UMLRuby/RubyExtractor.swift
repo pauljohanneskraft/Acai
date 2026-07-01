@@ -95,15 +95,31 @@ struct RubyExtractor: TreeSitterExtracting {
     private mutating func extractTypeBody(from body: Node) -> (members: [Member], nestedTypes: [TypeDeclaration]) {
         var members: [Member] = []
         var nestedTypes: [TypeDeclaration] = []
+        var currentAccessLevel: AccessLevel = .public
 
         for child in body.namedChildren() {
             switch child.nodeType {
+            case "identifier":
+                let text = self.text(child)
+                if text == "public" { currentAccessLevel = .public }
+                else if text == "protected" { currentAccessLevel = .protected }
+                else if text == "private" { currentAccessLevel = .private }
+            case "call", "method_call":
+                guard let methodNode = child.child(byFieldName: "method") else { continue }
+                let methodText = self.text(methodNode)
+                if methodText == "attr_accessor" || methodText == "attr_reader" || methodText == "attr_writer" {
+                    members.append(contentsOf: extractAttribute(from: child, accessLevel: currentAccessLevel))
+                } else if methodText == "include" || methodText == "extend" {
+                    extractIncludes(from: child)
+                }
             case "method":
-                if let member = extractMethod(from: child, isStatic: false) {
+                if var member = extractMethod(from: child, isStatic: false) {
+                    member.accessLevel = currentAccessLevel
                     members.append(member)
                 }
             case "singleton_method":
-                if let member = extractMethod(from: child, isStatic: true) {
+                if var member = extractMethod(from: child, isStatic: true) {
+                    member.accessLevel = currentAccessLevel
                     members.append(member)
                 }
             case "class":
@@ -120,6 +136,27 @@ struct RubyExtractor: TreeSitterExtracting {
         }
 
         return (members, nestedTypes)
+    }
+
+    private mutating func extractAttribute(from node: Node, accessLevel: AccessLevel) -> [Member] {
+        guard let argsNode = node.child(byFieldName: "arguments") else { return [] }
+        var members: [Member] = []
+        for child in argsNode.namedChildren() {
+            let rawName = text(child)
+            let name = rawName.hasPrefix(":") ? String(rawName.dropFirst()) : rawName
+            let member = Member(name: name, kind: .property, accessLevel: accessLevel, location: loc(child))
+            members.append(member)
+        }
+        return members
+    }
+
+    private mutating func extractIncludes(from node: Node) {
+        guard let argsNode = node.child(byFieldName: "arguments") else { return }
+        guard let currentNamespace else { return }
+        for child in argsNode.namedChildren() {
+            guard let ref = constantPath(from: child) else { continue }
+            relationships.append(Relationship(kind: .conformance, source: currentNamespace, target: ref.simple))
+        }
     }
 
     private func extractMethod(from node: Node, isStatic: Bool) -> Member? {
