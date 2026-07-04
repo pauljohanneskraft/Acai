@@ -42,6 +42,12 @@ enum CLITestSupport {
     }
     #endif
 
+    /// Parses `rules init`-subcommand `arguments` into the concrete nested `Rules.Init` command.
+    static func parseRulesInit(_ arguments: [String]) throws -> UMLCommand.Rules.Init {
+        let root = try UMLCommand.parseAsRoot(["rules", "init"] + arguments)
+        return try #require(root as? UMLCommand.Rules.Init)
+    }
+
     /// The human-readable message ArgumentParser would print for `error`.
     static func message(for error: Error) -> String {
         UMLCommand.message(for: error)

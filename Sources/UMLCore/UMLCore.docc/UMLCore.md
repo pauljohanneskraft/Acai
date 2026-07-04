@@ -23,6 +23,39 @@ and the ``Relationship``s between them. Call-graph and value-flow data (``CallSi
 ``VariableAssignment``) ride along so the diagram layer can derive sequence, state, and call-graph
 views without re-parsing.
 
+### Code-smell metrics
+
+``CodeArtifact/computeMetrics()`` folds the parsed model into ``CodeMetrics`` — concept counts,
+per-module coupling (Martin's Ca/Ce/I/A/D) and per-type OO metrics (DIT/NOC/WMC/fan-in/out). It also
+surfaces a family of *code-smell* metrics computed purely from data the parser already captured, with
+no thresholds and no language configuration (raw values only — judgement is left to the reader):
+
+- **Response For a Class** (``CodeMetrics/TypeMetric/responseForClass``) — declared methods plus the
+  distinct methods the type calls.
+- **Public API surface** (``CodeMetrics/TypeMetric/publicMemberCount`` /
+  ``CodeMetrics/TypeMetric/publicMemberRatio``, and ``CodeMetrics/ModuleCoupling/publicMemberCount``)
+  — public/open members, per type and per module.
+- **Mutable public state** (``CodeMetrics/TypeMetric/mutablePublicState``) — publicly settable stored
+  properties, which break encapsulation.
+- **Parameter pressure** (``CodeMetrics/TypeMetric/maxParameters`` /
+  ``CodeMetrics/TypeMetric/meanParameters``) — the widest and mean parameter list across a type's
+  callable members (the long-parameter-list smell).
+- **Data-class score** (``CodeMetrics/TypeMetric/dataClassScore``) — the share of a type that is data
+  rather than behaviour, `properties / (properties + methods)`; a high score marks an anemic model.
+- **Nesting burden** (``CodeMetrics/TypeMetric/nestingDepth``) — the depth of a type's nested-type tree.
+- **Inheritance shape** (``CodeMetrics/TypeMetric/overrideCount`` and the derived
+  ``CodeMetrics/TypeMetric/deepAndWide``, `DIT × NOC`) — refused-bequest and fragile-hierarchy-hub
+  signals.
+- **Cohesion** (``CodeMetrics/TypeMetric/lackOfCohesion``, see ``LcomAnalysis``) — an LCOM4-style count
+  of the connected components among a type's methods (1 = cohesive; higher = several unrelated jobs).
+- **Feature envy** (``CodeMetrics/TypeMetric/featureEnvyMethods``, see ``FeatureEnvy``) — methods more
+  interested in another declared type than their own.
+
+**Known limitation:** ``SourceLocation`` records only a start line, so true method length and
+cyclomatic complexity are not derivable; ``CodeMetrics/TypeMetric/weightedMethods`` stays a method-count
+proxy for WMC. Parsers capture property *writes* but not reads, so ``CodeMetrics/TypeMetric/lackOfCohesion``
+links methods by shared writes and calls only — an upper bound on the true LCOM4.
+
 ### Writing a new parser
 
 A language is a self-contained plugin. It provides a ``CodeParser`` (which owns its file
