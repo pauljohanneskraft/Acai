@@ -52,20 +52,26 @@ struct CodebaseDetailView: View {
                     if let artifact {
                         diagramsSection(codebase: codebase, artifact: artifact)
                         Divider()
-                        CodebaseAnalysesSection(codebase: codebase, artifact: artifact)
-                        Divider()
                         statisticsSection(artifact: artifact)
                         Divider()
-                        CodebaseTypesSection(codebase: codebase, artifact: artifact)
+                        ArchitectureCheckSection(codebase: codebase, artifact: artifact)
                         Divider()
-                        if !artifact.freestandingFunctions.isEmpty {
-                            CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
-                            Divider()
-                        }
+                        CodeSmellsSection(artifact: artifact)
+                        Divider()
+                        DeadCodeSection(artifact: artifact)
+                        Divider()
+                        ParseHealthSection(artifact: artifact)
+                        Divider()
                         if !artifact.globalVariables.isEmpty {
                             CodebaseGlobalsSection(codebase: codebase, artifact: artifact)
                             Divider()
                         }
+                        if !artifact.freestandingFunctions.isEmpty {
+                            CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
+                            Divider()
+                        }
+                        CodebaseTypesSection(codebase: codebase, artifact: artifact)
+                        Divider()
                         CodebaseRelationshipsSection(artifact: artifact)
                     } else {
                         notIndexedSection(codebase: codebase)
@@ -134,8 +140,6 @@ struct CodebaseDetailView: View {
                     Label("Reindex", systemImage: "arrow.clockwise")
                 }
                 .disabled(isIndexing)
-
-                exportButtons(codebase: codebase)
             }
         }
         .padding()
@@ -160,20 +164,6 @@ struct CodebaseDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private func exportButtons(codebase: Codebase) -> some View {
-        Button {
-            model.exportDOT(for: codebase.id)
-        } label: {
-            Label("Export DOT", systemImage: "square.and.arrow.up")
-        }
-
-        Button {
-            model.exportMermaid(for: codebase.id)
-        } label: {
-            Label("Export Mermaid", systemImage: "square.and.arrow.up")
-        }
-    }
 }
 
 // Statistics, diagram buttons, and their layout helpers — kept in an extension so the main type body
@@ -196,19 +186,13 @@ extension CodebaseDetailView {
     // MARK: - Diagrams
 
     private func diagramsSection(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Diagrams")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.top, 12)
-
+        CollapsibleSection(title: "Diagrams") {
             LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
                 ForEach(DiagramType.allCases) { type in
                     diagramButton(codebase: codebase, type: type)
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, 12)
             .onPreferenceChange(CardHeightPreferenceKey.self) { height in
                 if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
             }

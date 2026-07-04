@@ -9,11 +9,7 @@ extension CodebaseDetailView {
 
     func statisticsSection(artifact: CodeArtifact) -> some View {
         let metrics = artifact.computeMetrics()
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Statistics")
-                .font(.headline)
-                .padding(.horizontal)
-
+        return CollapsibleSection(title: "Statistics") {
             LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
                 classicMetricCards(metrics: metrics)
                 smellMetricCards(metrics: metrics)
@@ -23,7 +19,6 @@ extension CodebaseDetailView {
                 if abs(statCardHeight - height) > 0.5 { statCardHeight = height }
             }
         }
-        .padding(.vertical, 12)
     }
 
     /// Per-module coupling and the classic OO metrics (DIT/fan/WMC).
