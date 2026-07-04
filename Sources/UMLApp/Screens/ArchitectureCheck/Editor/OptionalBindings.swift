@@ -21,3 +21,14 @@ extension Binding where Value == Double? {
         )
     }
 }
+
+extension Binding where Value == Int? {
+    /// Presents an optional integer as a text binding: blank/invalid input reads back as `nil` (facet
+    /// stays unset), any parseable integer becomes the value.
+    var asText: Binding<String> {
+        Binding<String>(
+            get: { wrappedValue.map { String($0) } ?? "" },
+            set: { wrappedValue = Int($0) }
+        )
+    }
+}
