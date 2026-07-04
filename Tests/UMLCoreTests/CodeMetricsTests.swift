@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import UMLCore
 
@@ -12,6 +13,13 @@ struct CodeMetricsTests {
         TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: kind, accessLevel: accessLevel, members: members,
             location: SourceLocation(filePath: "Sources/\(module)/\(name).swift", line: 1, column: 1))
+    }
+
+    /// A method whose body writes the stored property `field` (via `self`) — for cohesion tests.
+    private func method(_ name: String, writes field: String) -> Member {
+        Member(name: name, kind: .method, accessLevel: .internal, assignments: [
+            VariableAssignment(targetName: field, op: .assign, value: .init(kind: .expression, text: "0"))
+        ])
     }
 
     /// Two modules: `Core` (a protocol + conforming struct) and `App` (a class that
@@ -151,6 +159,196 @@ struct CodeMetricsTests {
         let metrics = sampleArtifact().computeMetrics()
         #expect(metrics.types.first { $0.name == "Shape" }?.module == "Core")
         #expect(metrics.types.first { $0.name == "View" }?.module == "App")
+    }
+
+    // MARK: - Code-smell metrics (issue #101)
+
+    @Test func responseForClassCountsMethodsPlusDistinctCallTargets() {
+        // `Service` declares 2 methods and its bodies call 3 distinct targets — one repeated call
+        // (`log`) must be de-duplicated, and a same-name call on a different receiver counts separately.
+        let service = type("Service", kind: .class, module: "App", members: [
+            Member(name: "run", kind: .method, accessLevel: .public, callSites: [
+                CallSite(receiverType: "Logger", methodName: "log"),
+                CallSite(receiverType: "Logger", methodName: "log"),
+                CallSite(receiverType: "Store", methodName: "save")
+            ]),
+            Member(name: "reset", kind: .method, accessLevel: .public, callSites: [
+                CallSite(receiverType: "Store", methodName: "log")   // same method, different receiver
+            ])
+        ])
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [service], relationships: []
+        ).enriched().computeMetrics()
+        // 2 methods + 3 distinct targets (Logger.log, Store.save, Store.log).
+        #expect(metrics.types.first { $0.name == "Service" }?.responseForClass == 5)
+    }
+
+    @Test func publicApiSurfaceCountAndRatio() {
+        let widget = type("Widget", kind: .struct, accessLevel: .public, module: "App", members: [
+            Member(name: "title", kind: .property, accessLevel: .public),
+            Member(name: "open", kind: .method, accessLevel: .open),
+            Member(name: "cache", kind: .property, accessLevel: .private),
+            Member(name: "helper", kind: .method, accessLevel: .internal)
+        ])
+        // The fold is exposed on the type itself (behaviour on a value).
+        #expect(widget.publicMemberCount == 2)
+        #expect(widget.publicMemberRatio == 0.5)
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [widget], relationships: []
+        ).enriched().computeMetrics()
+        let m = metrics.types.first { $0.name == "Widget" }
+        #expect(m?.publicMemberCount == 2)          // public property + open method
+        #expect(m?.publicMemberRatio == 0.5)        // 2 of 4 members
+        // Module surface sums the type surfaces.
+        #expect(metrics.modules.first { $0.name == "App" }?.publicMemberCount == 2)
+    }
+
+    @Test func mutablePublicStateCountsPubliclySettableStoredProperties() {
+        let model = type("Model", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "name", kind: .property, accessLevel: .public),                         // counts
+            Member(name: "id", kind: .property, accessLevel: .public, setAccessLevel: .private),  // private(set): out
+            Member(name: "computed", kind: .property, accessLevel: .public, isComputed: true),    // computed: out
+            Member(name: "secret", kind: .property, accessLevel: .private)                        // non-public: out
+        ])
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [model], relationships: []
+        ).enriched().computeMetrics()
+        #expect(metrics.types.first { $0.name == "Model" }?.mutablePublicState == 1)
+    }
+
+    @Test func parameterPressureReportsMaxAndMean() {
+        let api = type("API", kind: .class, module: "App", members: [
+            Member(name: "noArgs", kind: .method, accessLevel: .public),
+            Member(name: "twoArgs", kind: .method, accessLevel: .public, parameters: [
+                Parameter(internalName: "a"), Parameter(internalName: "b")
+            ]),
+            Member(name: "fourArgs", kind: .initializer, accessLevel: .public, parameters: [
+                Parameter(internalName: "a"), Parameter(internalName: "b"),
+                Parameter(internalName: "c"), Parameter(internalName: "d")
+            ]),
+            // A property carries no parameter list and must not dilute the mean.
+            Member(name: "flag", kind: .property, accessLevel: .public)
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [api], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "API" }
+        #expect(m?.maxParameters == 4)
+        #expect(m?.meanParameters == 2.0)   // (0 + 2 + 4) / 3 callable members
+    }
+
+    @Test func dataClassScoreIsPropertyShareOfMembers() {
+        let record = type("Record", kind: .struct, module: "App", members: [
+            Member(name: "a", kind: .property, accessLevel: .public),
+            Member(name: "b", kind: .property, accessLevel: .public),
+            Member(name: "c", kind: .property, accessLevel: .public),
+            Member(name: "describe", kind: .method, accessLevel: .public)
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [record], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Record" }
+        #expect(m?.dataClassScore == 0.75)   // 3 properties of 4 data-or-behaviour members
+    }
+
+    @Test func overrideCountCountsOverriddenMembers() {
+        let child = type("Child", kind: .class, module: "App", members: [
+            Member(name: "draw", kind: .method, accessLevel: .public, modifiers: [.override]),
+            Member(name: "size", kind: .property, accessLevel: .public, modifiers: [.override]),
+            Member(name: "extra", kind: .method, accessLevel: .public)
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [child], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Child" }
+        #expect(m?.overrideCount == 2)
+    }
+
+    @Test func nestingDepthMeasuresNestedTypeTree() {
+        let inner = type("Inner", kind: .struct, module: "App")
+        let middle = TypeDeclaration(
+            id: "Middle", name: "Middle", qualifiedName: "Outer.Middle", kind: .struct,
+            accessLevel: .internal, nestedTypes: [inner],
+            location: SourceLocation(filePath: "Sources/App/Outer.swift", line: 1, column: 1))
+        let outer = TypeDeclaration(
+            id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .struct,
+            accessLevel: .internal, nestedTypes: [middle],
+            location: SourceLocation(filePath: "Sources/App/Outer.swift", line: 1, column: 1))
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [outer], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Outer" }
+        #expect(m?.nestingDepth == 2)   // Outer → Middle → Inner
+    }
+
+    @Test func deepAndWideIsDepthTimesChildren() {
+        // Base ← Mid ← Leaf gives Mid DIT 1 and NOC 1 → deepAndWide 1.
+        let base = type("Base", kind: .class, accessLevel: .public, module: "App")
+        let mid = type("Mid", kind: .class, accessLevel: .public, module: "App")
+        let leaf = type("Leaf", kind: .class, accessLevel: .public, module: "App")
+        let rels = [
+            Relationship(kind: .inheritance, source: "Mid", target: "Base"),
+            Relationship(kind: .inheritance, source: "Leaf", target: "Mid")
+        ]
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [base, mid, leaf], relationships: rels
+        ).enriched().computeMetrics().types.first { $0.name == "Mid" }
+        #expect(m?.depthOfInheritance == 1)
+        #expect(m?.numberOfChildren == 1)
+        #expect(m?.deepAndWide == 1)
+    }
+
+    @Test func lackOfCohesionCountsDisjointMethodGroups() {
+        // Two method pairs that never share a field or call each other → 2 cohesion components.
+        // `a`/`b` both write `x`; `c`/`d` both write `y`; the two groups are disconnected.
+        let split = type("Split", kind: .class, module: "App", members: [
+            Member(name: "x", kind: .property, accessLevel: .private),
+            Member(name: "y", kind: .property, accessLevel: .private),
+            method("a", writes: "x"), method("b", writes: "x"),
+            method("c", writes: "y"), method("d", writes: "y")
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [split], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Split" }
+        #expect(m?.lackOfCohesion == 2)
+    }
+
+    @Test func cohesiveTypeHasSingleComponent() {
+        // Every method touches the shared field `state`, so the type is a single cohesive component.
+        let cohesive = type("Cohesive", kind: .class, module: "App", members: [
+            Member(name: "state", kind: .property, accessLevel: .private),
+            method("start", writes: "state"), method("stop", writes: "state"), method("reset", writes: "state")
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [cohesive], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Cohesive" }
+        #expect(m?.lackOfCohesion == 1)
+    }
+
+    @Test func featureEnvyFlagsMethodsBiasedTowardAnotherType() {
+        // `shuffle` calls `Ledger` twice and itself once → envious. `local` only calls itself → not.
+        let ledger = type("Ledger", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "credit", kind: .method, accessLevel: .public),
+            Member(name: "debit", kind: .method, accessLevel: .public)
+        ])
+        let clerk = type("Clerk", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "shuffle", kind: .method, accessLevel: .public, callSites: [
+                CallSite(receiverType: "Ledger", methodName: "credit"),
+                CallSite(receiverType: "Ledger", methodName: "debit"),
+                CallSite(methodName: "local")   // one self call
+            ]),
+            Member(name: "local", kind: .method, accessLevel: .public, callSites: [
+                CallSite(methodName: "shuffle")   // self only → not envious
+            ])
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [ledger, clerk], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Clerk" }
+        #expect(m?.featureEnvyMethods == 1)
+    }
+
+    @Test func metricsRoundTripThroughCodable() throws {
+        let metrics = sampleArtifact().computeMetrics()
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let decoded = try JSONDecoder().decode(CodeMetrics.self, from: encoder.encode(metrics))
+        #expect(decoded == metrics)
     }
 
     @Test func ooMetricsForInheritanceAndDependencies() {
