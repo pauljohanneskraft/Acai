@@ -14,7 +14,9 @@ struct CodebaseTypesSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Types (\(artifact.types.count))") {
+        CollapsibleSection(title: "Types") {
+            SectionCountBadge(text: "\(artifact.types.count)")
+        } content: {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
                 .sorted {

@@ -13,7 +13,9 @@ struct CodebaseRelationshipsSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Relationships (\(artifact.relationships.count))") {
+        CollapsibleSection(title: "Relationships") {
+            SectionCountBadge(text: "\(artifact.relationships.count)")
+        } content: {
             let sortedRelationships = artifact.relationships
                 // Key on kind and labels too — distinct relationships between the same pair
                 // (inheritance + dependency, or differently-labeled associations) must not collapse.

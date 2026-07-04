@@ -8,7 +8,9 @@ struct CodebaseGlobalsSection: View {
     let artifact: CodeArtifact
 
     var body: some View {
-        CollapsibleSection(title: "Global Variables & Constants (\(artifact.globalVariables.count))") {
+        CollapsibleSection(title: "Global Variables & Constants") {
+            SectionCountBadge(text: "\(artifact.globalVariables.count)")
+        } content: {
             let sortedGlobals = artifact.globalVariables
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             LazyVStack(spacing: 1) {

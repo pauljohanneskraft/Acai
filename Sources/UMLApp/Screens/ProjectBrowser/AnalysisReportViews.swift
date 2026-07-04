@@ -64,19 +64,12 @@ private struct LocationRow: View {
 /// The card body cap: report cards show the top findings inline, not an unbounded wall.
 private let analysisReportLimit = 20
 
-/// Ranked code smells for the codebase (top findings inline).
+/// Ranked code smells for the codebase (top findings inline). Findings are computed by the enclosing
+/// section (which also surfaces the count in its header) and injected, so the scan runs once.
 struct SmellsReportView: View {
-    let artifact: CodeArtifact
-
-    private var findings: [Violation] {
-        SmellScan(
-            artifact: artifact,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
-        ).findings
-    }
+    let findings: [Violation]
 
     var body: some View {
-        let findings = findings
         if findings.isEmpty {
             ArchitectureCheckPlaceholder(text: "No smells found.", systemImage: "checkmark.seal")
         } else {
@@ -91,19 +84,12 @@ struct SmellsReportView: View {
     }
 }
 
-/// Dead-code candidates with the call-graph coverage floor.
+/// Dead-code candidates with the call-graph coverage floor. The report is computed by the enclosing
+/// section (which also surfaces the counts in its header) and injected, so the scan runs once.
 struct DeadCodeReportView: View {
-    let artifact: CodeArtifact
-
-    private var report: DeadCodeScan.Report {
-        DeadCodeScan(
-            artifact: artifact,
-            entryPoints: artifact.standardLanguageConfiguration.entryPointMarkers
-        ).report
-    }
+    let report: DeadCodeScan.Report
 
     var body: some View {
-        let report = report
         let coverage = Int((report.coverage.fraction * 100).rounded())
         if report.candidates.isEmpty {
             ArchitectureCheckPlaceholder(
@@ -124,14 +110,12 @@ struct DeadCodeReportView: View {
     }
 }
 
-/// Parse-health score and diagnostics.
+/// Parse-health score and diagnostics. The report is computed by the enclosing section (which also
+/// surfaces the score in its header) and injected, so the check runs once.
 struct HealthReportView: View {
-    let artifact: CodeArtifact
-
-    private var report: HealthCheck.Report { HealthCheck(artifact: artifact).report }
+    let report: HealthCheck.Report
 
     var body: some View {
-        let report = report
         let percent = Int((report.score * 100).rounded())
         if report.diagnostics.isEmpty {
             ArchitectureCheckPlaceholder(

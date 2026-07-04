@@ -1,23 +1,28 @@
 import SwiftUI
 import UMLConformance
 import UMLCore
+import UMLLibrary
 
-/// Renders the outcome of evaluating a set of conformance `rules` against an artifact: a pass banner
-/// or the list of violations. Pure rendering — it recomputes the report from its inputs, so both the
-/// codebase's Analyses section and the editor's live preview can share it.
-struct ArchitectureCheckReportView: View {
-    let rules: ConformanceRules
-    let artifact: CodeArtifact
-
-    private var report: ConformanceReport {
+extension ConformanceRules {
+    /// Evaluates these rules against `artifact`, using the artifact's own language configuration to
+    /// resolve annotation stereotypes. The single evaluation entry point shared by the Architecture
+    /// Check section (header count + report) and the editor's live preview.
+    func report(for artifact: CodeArtifact) -> ConformanceReport {
         ConformanceEvaluator(
-            rules: rules,
+            rules: self,
             annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
         ).evaluate(artifact)
     }
+}
+
+/// Renders the outcome of evaluating a set of conformance rules against an artifact: a pass banner or
+/// the list of violations. Pure rendering — the report is computed by the caller (which also surfaces
+/// the violation count in its header) and injected, so both the codebase's Architecture Check section
+/// and the editor's live preview share it without re-evaluating.
+struct ArchitectureCheckReportView: View {
+    let report: ConformanceReport
 
     var body: some View {
-        let report = report
         if report.isPassing {
             ArchitectureCheckPlaceholder(
                 text: report.checkedRuleCount == 0
