@@ -9,7 +9,13 @@ import UMLLibrary
 /// violations inline, and opens the rules editor from the header.
 struct ArchitectureCheckSection: View {
     let codebase: Codebase
+    /// Still needed to seed the rules editor sheet.
     let artifact: CodeArtifact
+    /// The conformance report, precomputed in the background — `nil` when no check is configured or its
+    /// rules failed to load (see `rulesError`).
+    let report: ConformanceReport?
+    /// The rules-load failure message, when a check is configured but its file couldn't be read.
+    let rulesError: String?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var editing = false
@@ -20,13 +26,6 @@ struct ArchitectureCheckSection: View {
     }
 
     var body: some View {
-        // Load and evaluate once per render: the rules feed the status line, and the report feeds both
-        // the header's violation count and the inline report.
-        let rules = resolvedRules
-        let report: ConformanceReport? = {
-            guard case .success(let rules) = rules else { return nil }
-            return rules.report(for: artifact)
-        }()
         CollapsibleSection(title: "Architecture Check") {
             HStack(spacing: 8) {
                 if let report, !report.isPassing {
@@ -36,11 +35,11 @@ struct ArchitectureCheckSection: View {
             }
         } content: {
             VStack(alignment: .leading, spacing: 8) {
-                Text(statusLine(for: rules))
+                Text(statusLine)
                     .font(.caption).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.middle)
                 if configuration != nil {
-                    reportBody(rules: rules, report: report)
+                    reportBody
                 }
             }
             .padding(.horizontal)
@@ -52,54 +51,35 @@ struct ArchitectureCheckSection: View {
     }
 
     @ViewBuilder
-    private func reportBody(rules: Result<ConformanceRules, Error>?, report: ConformanceReport?) -> some View {
-        switch rules {
-        case .none:
-            EmptyView()
-        case .success:
-            if let report {
-                ArchitectureCheckReportView(report: report)
-            }
-        case .failure(let error):
+    private var reportBody: some View {
+        if let rulesError {
             ArchitectureCheckPlaceholder(
-                text: "Could not load rules: \(error.localizedDescription)",
+                text: "Could not load rules: \(rulesError)",
                 systemImage: "exclamationmark.triangle")
+        } else if let report {
+            ArchitectureCheckReportView(report: report)
         }
     }
 
-    /// `nil` when no check is configured, otherwise the decoded rules or the load error.
-    private var resolvedRules: Result<ConformanceRules, Error>? {
-        configuration.map { config in Result { try config.loadRules() } }
-    }
-
-    private func statusLine(for rules: Result<ConformanceRules, Error>?) -> String {
+    private var statusLine: String {
         guard let config = configuration else { return "No check configured yet." }
         let origin = model.store.isManaged(path: config.rulesPath)
             ? "Defined in app"
             : (config.rulesPath as NSString).abbreviatingWithTildeInPath
-        switch rules {
-        case .success(let rules):
-            return "\(origin) · \(rules.ruleCount) rule(s)"
-        default:
-            return origin
+        if let report {
+            return "\(origin) · \(report.checkedRuleCount) rule(s)"
         }
+        return origin
     }
 }
 
 /// Ranked code smells as their own collapsible section. The scan runs once here: its count is shown
 /// in the header and the findings are handed to the report view.
 struct CodeSmellsSection: View {
-    let artifact: CodeArtifact
-
-    private var findings: [Violation] {
-        SmellScan(
-            artifact: artifact,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
-        ).findings
-    }
+    /// Precomputed in the background (see ``CodebaseAnalysis``).
+    let findings: [Violation]
 
     var body: some View {
-        let findings = findings
         CollapsibleSection(title: "Code Smells") {
             SectionCountBadge(
                 text: findings.isEmpty ? "none" : "\(findings.count) smell(s)",
@@ -114,17 +94,10 @@ struct CodeSmellsSection: View {
 /// Dead-code candidates as their own collapsible section. The scan runs once here: its candidate
 /// count and call-graph coverage are shown in the header and the report is handed to the report view.
 struct DeadCodeSection: View {
-    let artifact: CodeArtifact
-
-    private var report: DeadCodeScan.Report {
-        DeadCodeScan(
-            artifact: artifact,
-            entryPoints: artifact.standardLanguageConfiguration.entryPointMarkers
-        ).report
-    }
+    /// Precomputed in the background (see ``CodebaseAnalysis``).
+    let report: DeadCodeScan.Report
 
     var body: some View {
-        let report = report
         let coverage = Int((report.coverage.fraction * 100).rounded())
         CollapsibleSection(title: "Dead Code") {
             SectionCountBadge(
@@ -143,12 +116,10 @@ struct DeadCodeSection: View {
 /// default with a compact score in the header, expanding only when there are diagnostics. The check
 /// runs once here and the report is handed to the report view.
 struct ParseHealthSection: View {
-    let artifact: CodeArtifact
-
-    private var report: HealthCheck.Report { HealthCheck(artifact: artifact).report }
+    /// Precomputed in the background (see ``CodebaseAnalysis``).
+    let report: HealthCheck.Report
 
     var body: some View {
-        let report = report
         let percent = Int((report.score * 100).rounded())
         CollapsibleSection(
             title: "Parse Health",

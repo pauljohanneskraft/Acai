@@ -125,6 +125,9 @@ struct ProjectCodebaseEditor {
     let persist: () -> Void
     /// Notifies observers without a full save.
     let notify: () -> Void
+    /// Drops a codebase's cached analysis, so its architecture check recomputes after a rules change
+    /// the analysis token can't see (an in-place edit that keeps the same rules path).
+    let invalidateAnalysis: (UUID) -> Void
 
     // MARK: Projects
 
@@ -211,6 +214,7 @@ struct ProjectCodebaseEditor {
     /// Points a codebase's architecture check at an external YAML rules file.
     func setArchitectureCheckRulesPath(codebaseID: UUID, path: String) {
         mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: path) }
+        invalidateAnalysis(codebaseID)
     }
 
     /// Persists UI-authored rules to the codebase's managed YAML file and points its check there.
@@ -218,6 +222,7 @@ struct ProjectCodebaseEditor {
         do {
             let url = try store.saveManagedRules(rules, forCodebase: codebaseID)
             mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: url.path) }
+            invalidateAnalysis(codebaseID)
         } catch {
             store.report("Failed to save architecture rules: \(error.localizedDescription)")
         }

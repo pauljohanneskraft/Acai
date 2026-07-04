@@ -52,16 +52,12 @@ struct CodebaseDetailView: View {
                     if let artifact {
                         diagramsSection(codebase: codebase, artifact: artifact)
                         Divider()
-                        statisticsSection(artifact: artifact)
-                        Divider()
-                        ArchitectureCheckSection(codebase: codebase, artifact: artifact)
-                        Divider()
-                        CodeSmellsSection(artifact: artifact)
-                        Divider()
-                        DeadCodeSection(artifact: artifact)
-                        Divider()
-                        ParseHealthSection(artifact: artifact)
-                        Divider()
+                        if let analysis = model.analysis(for: codebaseID) {
+                            analysisSections(codebase: codebase, artifact: artifact, analysis: analysis)
+                        } else {
+                            analyzingPlaceholder
+                            Divider()
+                        }
                         if !artifact.globalVariables.isEmpty {
                             CodebaseGlobalsSection(codebase: codebase, artifact: artifact)
                             Divider()
@@ -78,6 +74,9 @@ struct CodebaseDetailView: View {
                     }
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
+            }
+            .task(id: model.analysisToken(for: codebaseID)) {
+                await model.ensureAnalysisLoaded(codebaseID: codebaseID)
             }
             .sheet(item: $sequenceConfigContext) { context in
                 sequenceConfigSheet(for: context)
@@ -162,6 +161,42 @@ struct CodebaseDetailView: View {
                 .help("Some files could not be fully parsed; the diagram may be incomplete.")
             }
         }
+    }
+
+    // MARK: - Analysis-backed sections
+
+    /// The report sections whose scans are computed once in the background (``CodebaseAnalysis``) and
+    /// cached until reindex. Rendered only once the analysis is ready — until then the pane shows
+    /// `analyzingPlaceholder` in their place.
+    @ViewBuilder
+    private func analysisSections(
+        codebase: Codebase, artifact: CodeArtifact, analysis: CodebaseAnalysis
+    ) -> some View {
+        statisticsSection(metrics: analysis.metrics)
+        Divider()
+        ArchitectureCheckSection(
+            codebase: codebase, artifact: artifact,
+            report: analysis.architecture, rulesError: analysis.architectureError)
+        Divider()
+        CodeSmellsSection(findings: analysis.smells)
+        Divider()
+        DeadCodeSection(report: analysis.deadCode)
+        Divider()
+        ParseHealthSection(report: analysis.health)
+        Divider()
+    }
+
+    /// Shown while the codebase's analysis is being computed on a background thread, so selecting a
+    /// codebase never blocks on the scans.
+    private var analyzingPlaceholder: some View {
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text("Analyzing codebase…")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 28)
     }
 
 }

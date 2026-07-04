@@ -7,9 +7,8 @@ extension CodebaseDetailView {
 
     // MARK: - Statistics
 
-    func statisticsSection(artifact: CodeArtifact) -> some View {
-        let metrics = artifact.computeMetrics()
-        return CollapsibleSection(title: "Statistics") {
+    func statisticsSection(metrics: CodeMetrics) -> some View {
+        CollapsibleSection(title: "Statistics") {
             LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
                 classicMetricCards(metrics: metrics)
                 smellMetricCards(metrics: metrics)
@@ -107,7 +106,8 @@ extension CodebaseDetailView {
         descriptor: String, types: [CodeMetrics.TypeMetric]
     ) -> MetricStatCard {
         let summary = MetricSummary(types) { Double($0[keyPath: keyPath]) }
-        let detail = typeDetail(visual.title, visual.blurb, types, by: keyPath)
+        // Build the ranked drill-down lazily on tap — it sorts every type and resolves each row's
+        // source file, so keeping it out of the render path matters when the pane re-lays out.
         return MetricStatCard(
             title: visual.title,
             icon: visual.icon,
@@ -116,7 +116,9 @@ extension CodebaseDetailView {
             secondary: String(format: "avg %.1f", summary.average),
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             uniformHeight: statCardHeight,
-            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
+            onTap: summary.maximum > 0
+                ? { statisticDetail = typeDetail(visual.title, visual.blurb, types, by: keyPath) }
+                : nil)
     }
 
     /// A card for a `Double`-valued per-type metric (a ratio or mean), formatted by `format`. Mirrors
@@ -124,10 +126,9 @@ extension CodebaseDetailView {
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>,
-        descriptor: String, types: [CodeMetrics.TypeMetric], format: (Double) -> String
+        descriptor: String, types: [CodeMetrics.TypeMetric], format: @escaping (Double) -> String
     ) -> MetricStatCard {
         let summary = MetricSummary(types) { $0[keyPath: keyPath] }
-        let detail = typeDetail(visual.title, visual.blurb, types, by: keyPath, format: format)
         return MetricStatCard(
             title: visual.title,
             icon: visual.icon,
@@ -136,7 +137,9 @@ extension CodebaseDetailView {
             secondary: "avg \(format(summary.average))",
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             uniformHeight: statCardHeight,
-            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
+            onTap: summary.maximum > 0
+                ? { statisticDetail = typeDetail(visual.title, visual.blurb, types, by: keyPath, format: format) }
+                : nil)
     }
 
     /// A card for the per-module instability metric, rendered as a percentage with every most-unstable
@@ -146,7 +149,6 @@ extension CodebaseDetailView {
         descriptor: String, modules: [CodeMetrics.ModuleCoupling]
     ) -> MetricStatCard {
         let summary = MetricSummary(modules) { $0.instability }
-        let detail = moduleDetail(visual.title, visual.blurb, modules)
         return MetricStatCard(
             title: visual.title,
             icon: visual.icon,
@@ -155,7 +157,9 @@ extension CodebaseDetailView {
             secondary: String(format: "avg %.0f%%", summary.average * 100),
             exemplar: caption(descriptor, summary.exemplars.map(\.name)),
             uniformHeight: statCardHeight,
-            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
+            onTap: modules.isEmpty
+                ? nil
+                : { statisticDetail = moduleDetail(visual.title, visual.blurb, modules) })
     }
 
     /// "`descriptor.lowercased()`: name, name, name and N more" — or `nil` when there are no exemplars.
