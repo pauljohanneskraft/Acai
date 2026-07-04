@@ -19,6 +19,8 @@ public struct Selector: Codable, Equatable, Sendable {
     public var kind: TypeKind?
     /// Minimum member count — selects "god" types (e.g. classes with many members).
     public var minMembers: Int?
+    /// Minimum nested-type depth — selects deeply nested types (scope a rule onto them).
+    public var minNesting: Int?
 
     public init(
         module: String? = nil,
@@ -27,7 +29,8 @@ public struct Selector: Codable, Equatable, Sendable {
         annotation: String? = nil,
         minimumAccess: AccessLevel? = nil,
         kind: TypeKind? = nil,
-        minMembers: Int? = nil
+        minMembers: Int? = nil,
+        minNesting: Int? = nil
     ) {
         self.module = module
         self.typeGlob = typeGlob
@@ -36,6 +39,7 @@ public struct Selector: Codable, Equatable, Sendable {
         self.minimumAccess = minimumAccess
         self.kind = kind
         self.minMembers = minMembers
+        self.minNesting = minNesting
     }
 
     /// Lenient decoding so a rules file may omit any facet it doesn't use.
@@ -48,6 +52,7 @@ public struct Selector: Codable, Equatable, Sendable {
         minimumAccess = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccess)
         kind = try container.decodeIfPresent(TypeKind.self, forKey: .kind)
         minMembers = try container.decodeIfPresent(Int.self, forKey: .minMembers)
+        minNesting = try container.decodeIfPresent(Int.self, forKey: .minNesting)
     }
 
     /// Whether `node` satisfies every present facet.
@@ -61,6 +66,7 @@ public struct Selector: Codable, Equatable, Sendable {
         if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
         if let kind, node.kind != kind { return false }
         if let minMembers, node.memberCount < minMembers { return false }
+        if let minNesting, node.nestingDepth < minNesting { return false }
         return true
     }
 

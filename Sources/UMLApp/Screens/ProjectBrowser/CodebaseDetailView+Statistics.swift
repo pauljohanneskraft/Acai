@@ -24,6 +24,26 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
+    /// Types ranked by a `Double`-valued metric (descending, value > 0), each value formatted by
+    /// `format`. Mirrors the `Int` overload for ratio/mean metrics.
+    func typeDetail(
+        _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
+        by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>, format: (Double) -> String
+    ) -> StatisticDetail {
+        let rows = types
+            .filter { $0[keyPath: keyPath] > 0 }
+            .sorted { lhs, rhs in
+                let left = lhs[keyPath: keyPath], right = rhs[keyPath: keyPath]
+                return left != right ? left > right : lhs.name < rhs.name
+            }
+            .map { metric in
+                StatisticDetail.Row(
+                    id: metric.id, name: shortName(metric.name),
+                    value: format(metric[keyPath: keyPath]), reveal: typeReveal(metric.id))
+            }
+        return StatisticDetail(title: title, description: description, rows: rows)
+    }
+
     /// Modules ranked by instability (descending), each row revealing the module's directory.
     func moduleDetail(
         _ title: String, _ description: String, _ modules: [CodeMetrics.ModuleCoupling]

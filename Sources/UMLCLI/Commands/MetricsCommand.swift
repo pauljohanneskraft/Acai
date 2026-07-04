@@ -17,8 +17,11 @@ extension UMLCommand {
         var format: ReportFormatOption = .json
 
         @Option(name: .long, help: ArgumentHelp(
-            "Per-type ranking for the human table: "
-            + "fanOut (default), fanIn, weightedMethods, depthOfInheritance, numberOfChildren."))
+            "Per-type ranking for the human tables: "
+            + "fanOut (default), fanIn, weightedMethods, depthOfInheritance, numberOfChildren, "
+            + "responseForClass, publicMemberCount, publicMemberRatio, mutablePublicState, maxParameters, "
+            + "meanParameters, dataClassScore, overrideCount, nestingDepth, deepAndWide, lackOfCohesion, "
+            + "featureEnvyMethods."))
         var sort: MetricsSortKey = .fanOut
 
         @Option(name: .long, help: "Limit the human type table to the top N rows.")
