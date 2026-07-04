@@ -57,6 +57,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var numberOfChildren: Int
         /// Weighted methods per class (method count).
         public var weightedMethods: Int
+        /// Stored/computed property count — the data half of the anemic-vs-behaviour balance.
+        public var numberOfProperties: Int
         public var fanIn: Int
         public var fanOut: Int
         /// Response For a Class: declared methods + distinct call targets in member bodies (see
@@ -179,6 +181,7 @@ extension CodeArtifact {
                 depthOfInheritance: depth(of: type.id, visiting: [type.id]),
                 numberOfChildren: childCount[type.id, default: 0],
                 weightedMethods: type.members.filter { $0.kind == .method }.count,
+                numberOfProperties: type.members.filter { $0.kind == .property }.count,
                 fanIn: fanIn[type.id]?.count ?? 0,
                 fanOut: fanOut[type.id]?.count ?? 0,
                 responseForClass: ResponseForClass(type: type).count,

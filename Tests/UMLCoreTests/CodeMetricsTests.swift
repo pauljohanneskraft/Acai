@@ -364,3 +364,20 @@ struct CodeMetricsTests {
         #expect((view?.fanOut ?? 0) >= 1)
     }
 }
+
+@Suite("Core: Property Count Metric")
+struct NumberOfPropertiesMetricTests {
+    @Test func numberOfPropertiesCountsOnlyProperties() {
+        let bag = TypeDeclaration(
+            id: "Bag", name: "Bag", qualifiedName: "Bag", kind: .struct, accessLevel: .internal,
+            members: [
+                Member(name: "a", kind: .property, accessLevel: .internal),
+                Member(name: "b", kind: .property, accessLevel: .internal),
+                Member(name: "run", kind: .method, accessLevel: .internal)
+            ],
+            location: SourceLocation(filePath: "Sources/App/Bag.swift", line: 1, column: 1))
+        let m = CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [bag])
+            .enriched().computeMetrics().types.first { $0.name == "Bag" }
+        #expect(m?.numberOfProperties == 2)
+    }
+}

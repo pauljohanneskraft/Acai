@@ -23,21 +23,21 @@ budgets:
     max: 50
     message: "Over-central hub type — keep stable and well-tested; consider narrowing its surface."
 
-  # Code-smell budgets (issue #101). Reported today via `uml metrics`; gating them through `uml check`
-  # needs the budget resolver to learn these metric names — tracked in the check-expansion epic (#103),
-  # so these stay commented examples until then.
-  #  - metric: responseForClass      # RFC: methods + distinct call targets — high = costly to test.
-  #    max: 40
-  #    message: "Large response set — the type reacts to too much; consider splitting."
-  #  - metric: mutablePublicState    # Publicly settable stored properties — encapsulation leak.
-  #    max: 0
-  #    message: "Publicly mutable state — expose read-only and narrow the setter."
-  #  - metric: lackOfCohesion        # LCOM4 components among methods — high = unrelated jobs.
-  #    max: 1
-  #    message: "Low cohesion — the type's methods split into unrelated groups; consider extracting."
-  #  - metric: featureEnvyMethods    # Methods more interested in another type than their own.
-  #    max: 0
-  #    message: "Feature envy — move the behaviour onto the type it keeps reaching into."
+  # Code-smell budgets (issue #101), now gateable via the expanded budget resolver (issue #103).
+  # Seeded at the current worst-case value so they act as no-regression ratchets today; tighten each
+  # ceiling as the debt behind it (mostly the essential-complexity exceptions noted below) is paid down.
+  - metric: rfc                     # RFC: declared methods + distinct call targets — high = costly to test.
+    max: 69
+    message: "Large response set — the type reacts to too much; consider splitting."
+  - metric: mutablePublicState      # Publicly settable stored properties — encapsulation leak.
+    max: 35
+    message: "Publicly mutable state — expose read-only and narrow the setter."
+  - metric: lcom                    # LCOM4 components among methods — high = unrelated jobs.
+    max: 68
+    message: "Low cohesion — the type's methods split into unrelated groups; consider extracting."
+  - metric: featureEnvyMethods      # Methods more interested in another type than their own.
+    max: 40
+    message: "Feature envy — move the behaviour onto the type it keeps reaching into."
 
 # NOTE on module `distance` from the main sequence (intentionally NOT gated):
 # UMLCore (data model) and UMLDiagram (diagram models) sit near the "stable + concrete" corner, so
