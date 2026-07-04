@@ -24,9 +24,24 @@ struct CodebaseAnalysesSection: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
 
-            card
+            architectureCard
                 .padding(.horizontal)
-                .padding(.bottom, 8)
+
+            analysisCard(icon: "nose", tint: .orange, title: "Code Smells") {
+                SmellsReportView(artifact: artifact)
+            }
+            .padding(.horizontal)
+
+            analysisCard(icon: "trash", tint: .orange, title: "Dead Code") {
+                DeadCodeReportView(artifact: artifact)
+            }
+            .padding(.horizontal)
+
+            analysisCard(icon: "stethoscope", tint: .blue, title: "Parse Health") {
+                HealthReportView(artifact: artifact)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
         }
         .sheet(isPresented: $editing) {
             ArchitectureCheckEditorSheet(codebaseID: codebase.id, artifact: artifact)
@@ -34,7 +49,7 @@ struct CodebaseAnalysesSection: View {
         }
     }
 
-    private var card: some View {
+    private var architectureCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 Image(systemName: "checkmark.shield").font(.title2).foregroundStyle(.blue)
@@ -50,6 +65,25 @@ struct CodebaseAnalysesSection: View {
                 Divider()
                 report
             }
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// Chrome for a computed analysis card (no configuration): an icon + title header, a divider, then
+    /// the analysis's own report view.
+    private func analysisCard(
+        icon: String, tint: Color, title: String, @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.title2).foregroundStyle(tint)
+                Text(title).font(.headline)
+                Spacer()
+            }
+            Divider()
+            content()
         }
         .padding(12)
         .background(Color.accentColor.opacity(0.06))

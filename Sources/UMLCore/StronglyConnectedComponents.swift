@@ -1,15 +1,18 @@
 /// Tarjan's strongly-connected-components over a string-keyed adjacency map. Construct it with the
 /// graph and read `cycles` — every SCC with more than one node, or a node with a self-loop, is a
 /// dependency cycle. Deterministic: nodes are visited in sorted order.
-struct StronglyConnectedComponents: Sendable {
+///
+/// A generic graph algorithm reused across the engine: module/type dependency cycles
+/// (`CycleFinder`) and method-level call cycles both build an adjacency map and read `cycles`.
+public struct StronglyConnectedComponents: Sendable {
     private let adjacency: [String: Set<String>]
 
-    init(adjacency: [String: Set<String>]) {
+    public init(adjacency: [String: Set<String>]) {
         self.adjacency = adjacency
     }
 
     /// The non-trivial strongly-connected components — i.e. the dependency cycles.
-    var cycles: [Set<String>] {
+    public var cycles: [Set<String>] {
         var search = Search(adjacency: adjacency)
         return search.run()
     }

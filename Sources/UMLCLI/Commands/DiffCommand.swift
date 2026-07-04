@@ -118,12 +118,7 @@ extension UMLCommand {
             case .human:
                 return diff.humanReport()
             case .json:
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                guard let json = String(data: try encoder.encode(diff), encoding: .utf8) else {
-                    throw ValidationError("Failed to encode diff as JSON.")
-                }
-                return json
+                return try JSONReport(diff).text
             }
         }
 

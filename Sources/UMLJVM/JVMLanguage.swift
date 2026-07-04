@@ -24,6 +24,16 @@ private let jvmAnnotationStereotypes: [String: String] = [
 /// Build-output / tooling directories common to Gradle and Maven projects.
 private let jvmExcludedDirectories: Set<String> = ["build", "target", "bin", "out", ".gradle", ".idea"]
 
+/// JVM entry points invoked by frameworks rather than resolvable call sites: JUnit test methods and
+/// lifecycle callbacks, Spring bean lifecycle hooks, and `@Override` methods (handled agnostically);
+/// `main` is the process entry point.
+private let jvmEntryPointMarkers = EntryPointMarkers(
+    annotations: [
+        "test", "beforeeach", "aftereach", "beforeall", "afterall", "before", "after",
+        "parameterizedtest", "postconstruct", "predestroy", "eventlistener", "scheduled", "bean"
+    ],
+    methodNames: ["main"])
+
 extension JavaCodeParser {
     public var configuration: LanguageConfiguration {
         LanguageConfiguration(
@@ -41,7 +51,8 @@ extension JavaCodeParser {
                 "Collection", "Iterable"
             ],
             annotationStereotypes: jvmAnnotationStereotypes,
-            excludedDirectories: jvmExcludedDirectories
+            excludedDirectories: jvmExcludedDirectories,
+            entryPointMarkers: jvmEntryPointMarkers
         )
     }
 }
@@ -61,7 +72,8 @@ extension KotlinCodeParser {
                 "Collection", "Iterable", "Sequence", "Array", "ArrayDeque"
             ],
             annotationStereotypes: jvmAnnotationStereotypes,
-            excludedDirectories: jvmExcludedDirectories
+            excludedDirectories: jvmExcludedDirectories,
+            entryPointMarkers: jvmEntryPointMarkers
         )
     }
 }

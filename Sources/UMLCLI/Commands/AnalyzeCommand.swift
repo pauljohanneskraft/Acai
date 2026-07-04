@@ -39,7 +39,7 @@ extension UMLCommand {
                 throw ValidationError("Specify either --from or --source, not both.")
             }
             let artifact = try ArtifactSource.resolve(from: from, source: effectiveSource, language: language)
-            try artifact.encodedJSON().writeOutput(to: output, label: "analysis")
+            try JSONReport(artifact).text.writeOutput(to: output, label: "analysis")
         }
     }
 }

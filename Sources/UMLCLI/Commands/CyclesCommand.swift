@@ -63,12 +63,8 @@ extension UMLCommand {
 
         private func jsonReport(_ cycles: [CycleFinder.Cycle]) -> String {
             let payload = cycles.map { CyclePayload(scope: $0.scope.rawValue, members: $0.members) }
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            guard let data = try? encoder.encode(payload), let json = String(data: data, encoding: .utf8) else {
-                return "[]\n"
-            }
-            return json + "\n"
+            guard let report = try? JSONReport(payload) else { return "[]\n" }
+            return report.text + "\n"
         }
 
         private struct CyclePayload: Codable {

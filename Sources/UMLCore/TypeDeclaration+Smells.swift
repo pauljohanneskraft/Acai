@@ -19,10 +19,7 @@ extension TypeDeclaration {
     /// (its `setAccessLevel`, or `accessLevel` when the setter isn't narrowed). Publicly mutable state
     /// breaks encapsulation — callers can mutate the type's internals directly.
     var mutablePublicState: Int {
-        members.filter { member in
-            member.kind == .property && !member.isComputed
-                && (member.setAccessLevel ?? member.accessLevel).visibilityRank >= AccessLevel.public.visibilityRank
-        }.count
+        members.filter(\.isPubliclySettable).count
     }
 
     /// The largest parameter count of any callable member (0 when the type has none). A wide signature

@@ -52,7 +52,8 @@ enum CFamilyDialect: Sendable {
                     fileSuffixes: [".pb-c.h", ".pb-c.c"],
                     typeNamePatterns: []
                 ),
-                excludedDirectories: Self.excludedDirectories
+                excludedDirectories: Self.excludedDirectories,
+                entryPointMarkers: EntryPointMarkers(methodNames: ["main"])
             )
         case .cpp:
             LanguageConfiguration(
@@ -68,7 +69,8 @@ enum CFamilyDialect: Sendable {
                     fileSuffixes: [".pb.h", ".pb.cc", ".pb.cpp", ".moc"],
                     typeNamePatterns: []
                 ),
-                excludedDirectories: Self.excludedDirectories
+                excludedDirectories: Self.excludedDirectories,
+                entryPointMarkers: EntryPointMarkers(methodNames: ["main"])
             )
         }
     }

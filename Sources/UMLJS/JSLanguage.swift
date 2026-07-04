@@ -19,7 +19,15 @@ extension JSCodeParser {
             collectionTypeNames: [
                 "Array", "Map", "Set", "WeakMap", "WeakSet", "Record", "ReadonlyArray"
             ],
-            excludedDirectories: ["node_modules", "dist", "build", ".next", "out"]
+            excludedDirectories: ["node_modules", "dist", "build", ".next", "out"],
+            // React/Angular component lifecycle callbacks are invoked by the framework, not by
+            // resolvable call sites.
+            entryPointMarkers: EntryPointMarkers(
+                annotations: ["component", "injectable", "input", "output", "hostlistener"],
+                methodNames: [
+                    "main", "componentdidmount", "componentwillunmount", "componentdidupdate",
+                    "render", "ngoninit", "ngondestroy", "ngonchanges"
+                ])
         )
     }
 }

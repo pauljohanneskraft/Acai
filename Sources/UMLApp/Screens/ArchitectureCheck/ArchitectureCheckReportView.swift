@@ -35,33 +35,9 @@ struct ArchitectureCheckReportView: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(.red)
             ForEach(Array(report.violations.enumerated()), id: \.offset) { _, violation in
-                violationRow(violation)
+                ViolationRowView(violation: violation)
             }
         }
-    }
-
-    private func violationRow(_ violation: Violation) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text(violation.ruleKind)
-                    .font(.caption.monospaced())
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Color.red.opacity(0.12))
-                    .clipShape(Capsule())
-                Text(violation.subject).font(.callout.bold())
-            }
-            Text(violation.message).font(.callout)
-            if let source = violation.source {
-                Text("\(source.filePath):\(source.line)")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 

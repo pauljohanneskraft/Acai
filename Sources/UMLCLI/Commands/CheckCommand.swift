@@ -79,13 +79,7 @@ extension UMLCommand {
                 }
                 return text
             case .json:
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                let payload = CheckPayload(conformance: report, drift: drift)
-                guard let json = String(data: try encoder.encode(payload), encoding: .utf8) else {
-                    throw ValidationError("Failed to encode report as JSON.")
-                }
-                return json
+                return try JSONReport(CheckPayload(conformance: report, drift: drift)).text
             }
         }
     }

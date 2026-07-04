@@ -15,9 +15,10 @@ narrows; reading confirms; editing fixes; re-running verifies. Nothing in the to
 
 `Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]` analyzes once and fans every command out
 against that snapshot (via `--from`), writing `metrics.json`, `metrics.txt`, `cycles.json`,
+`smells.json`, `deadcode.json`, `callgraph.json`, `call-cycles.json`, `doctor.json`, `inspect.json`,
 `package.dot`, `check.json`, and PNGs. Or compose manually: `uml analyze <dir> --output a.json`,
-then point `metrics`/`cycles`/`diagram`/`image`/`check` at `--from a.json` (one analysis pass, one
-consistent snapshot). Build first: `swift build`, binary at `.build/debug/UMLCLI`.
+then point any read-only command at `--from a.json` (one analysis pass, one consistent snapshot).
+Build first: `swift build`, binary at `.build/debug/UMLCLI`.
 
 ## Strategies
 
@@ -36,6 +37,30 @@ consistent snapshot). Build first: `swift build`, binary at `.build/debug/UMLCLI
    Visual review catches what metrics/source can't (hairballs, layout/legibility defects).
 6. **Gate drift** — store a baseline, then `uml diff <old> <new> --format json` / `uml check
    --baseline <name>`; fail CI on adverse movement (fan-out creep, new cross-layer edge, new cycle).
+
+## Surface the parsed model (query commands)
+
+Every command below emits JSON rows with `file:line` jump targets, so an agent gets precise targets
+instead of a whole-graph dump. All take the shared `--from`/`--source`.
+
+- **`uml inspect`** (alias `query`) — enumerate types **and** members, filtered by a type selector
+  (`--kind`, `--module`, `--min-members`, `--stereotype`, …) plus member facets (`--member-kind`,
+  `--min-parameters`, `--public-vars`, `--overrides`). The highest-leverage lookup: "which public
+  classes have a 4+-parameter method?"
+- **`uml smells`** — the code-smell detectors (long parameter lists, data classes, low cohesion,
+  feature envy, deep nesting) ranked most-severe first, each with a fix hint. Thresholds default to a
+  curated set; `--rules architecture.yml` reuses its `MetricBudget`s so a finding graduates into
+  `check` unchanged.
+- **`uml deadcode`** — methods no resolved call targets and that aren't entry points (public API,
+  overrides, protocol requirements, or language markers). *Candidates*, not verdicts: always read the
+  reported call-graph **coverage** — low coverage means more false positives.
+- **`uml callgraph`** / **`uml call-cycles`** — per-method fan-in/out, recursion, hot methods and
+  coverage; and method-level SCCs (mutual recursion).
+- **`uml impact <Type>`** — the blast radius (transitive dependents) of a type — "is this safe to
+  change?" before you touch it.
+- **`uml doctor`** — parse-health trust score over parse diagnostics. **Run it first**: a low score
+  means the rest of the audit is built on an incomplete parse and is correspondingly untrustworthy.
+- **`uml enums`** — enum-case inventory with associated values.
 
 ## The loop
 

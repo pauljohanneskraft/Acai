@@ -31,7 +31,7 @@ extension UMLCommand {
             let allowedLanguages = language.map { $0.sourceLanguage }
             let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
             artifact.warnIfParseErrors()
-            let json = try artifact.encodedJSON()
+            let json = try JSONReport(artifact).text
 
             let storageDir = UMLConstants.standard.analysisDirectory
             try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
