@@ -21,7 +21,12 @@ extension SwiftCodeParser {
             collectionTypeNames: [
                 "Array", "Dictionary", "Set", "Sequence", "Collection"
             ],
-            excludedDirectories: [".build", "DerivedData", "Pods", ".swiftpm"]
+            excludedDirectories: [".build", "DerivedData", "Pods", ".swiftpm"],
+            // Swift Testing (`@Test`) and runtime-dispatched members (`@objc`, `@IBAction`) are invoked
+            // by frameworks, not by resolvable call sites; `main` is the process entry point.
+            entryPointMarkers: EntryPointMarkers(
+                annotations: ["test", "objc", "ibaction", "main"],
+                methodNames: ["main"])
         )
     }
 }

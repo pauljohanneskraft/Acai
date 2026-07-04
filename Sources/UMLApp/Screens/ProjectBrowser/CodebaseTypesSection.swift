@@ -14,15 +14,9 @@ struct CodebaseTypesSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Types (\(artifact.types.count))")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-
+        CollapsibleSection(title: "Types") {
+            SectionCountBadge(text: "\(artifact.types.count)")
+        } content: {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
                 .sorted {
@@ -33,7 +27,6 @@ struct CodebaseTypesSection: View {
                     typeRow(type: type)
                 }
             }
-            .padding(.bottom, 8)
         }
     }
 

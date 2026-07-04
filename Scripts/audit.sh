@@ -34,6 +34,22 @@ echo "▸ metrics (json + human)"
 echo "▸ cycles (modules + types)"
 "$UML" cycles --from "$ARTIFACT" --scope all --format json --no-fail --output "$OUT_DIR/cycles.json"
 
+echo "▸ smells (ranked)"
+"$UML" smells --from "$ARTIFACT" --output "$OUT_DIR/smells.json"
+
+echo "▸ dead-code candidates"
+"$UML" deadcode --from "$ARTIFACT" --output "$OUT_DIR/deadcode.json"
+
+echo "▸ call graph (metrics) + call cycles"
+"$UML" callgraph --from "$ARTIFACT" --output "$OUT_DIR/callgraph.json"
+"$UML" call-cycles --from "$ARTIFACT" --no-fail --output "$OUT_DIR/call-cycles.json"
+
+echo "▸ parse health (doctor)"
+"$UML" doctor --from "$ARTIFACT" --output "$OUT_DIR/doctor.json"
+
+echo "▸ type + member inventory"
+"$UML" inspect --from "$ARTIFACT" --output "$OUT_DIR/inspect.json"
+
 echo "▸ package diagram (dot)"
 "$UML" diagram --from "$ARTIFACT" --package --format dot --output "$OUT_DIR/package.dot"
 

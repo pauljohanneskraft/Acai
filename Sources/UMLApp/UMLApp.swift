@@ -20,5 +20,8 @@ struct UMLApp: App {
             ProjectBrowserView()
                 .modifier(DiagramThemeProvider())
         }
+        .commands {
+            DiagramThemeCommands()
+        }
     }
 }

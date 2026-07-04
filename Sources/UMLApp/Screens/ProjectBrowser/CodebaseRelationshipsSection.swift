@@ -13,15 +13,9 @@ struct CodebaseRelationshipsSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Relationships (\(artifact.relationships.count))")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-
+        CollapsibleSection(title: "Relationships") {
+            SectionCountBadge(text: "\(artifact.relationships.count)")
+        } content: {
             let sortedRelationships = artifact.relationships
                 // Key on kind and labels too — distinct relationships between the same pair
                 // (inheritance + dependency, or differently-labeled associations) must not collapse.
@@ -37,7 +31,6 @@ struct CodebaseRelationshipsSection: View {
                     relationshipRow(rel: rel)
                 }
             }
-            .padding(.bottom, 8)
         }
     }
 

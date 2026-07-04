@@ -29,7 +29,14 @@ extension DartCodeParser {
                     NamePattern(prefix: "$", suffix: "CopyWith")  // freezed copy-with interfaces
                 ]
             ),
-            excludedDirectories: [".dart_tool", "build"]
+            excludedDirectories: [".dart_tool", "build"],
+            // Flutter widget lifecycle methods are called by the framework, not by resolvable call
+            // sites; `main` is the app entry point.
+            entryPointMarkers: EntryPointMarkers(
+                methodNames: [
+                    "main", "build", "createstate", "initstate", "dispose",
+                    "didchangedependencies", "didupdatewidget"
+                ])
         )
     }
 }

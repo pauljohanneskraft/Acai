@@ -99,6 +99,14 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         guard let minimum else { return true }
         return accessLevel.visibilityRank >= minimum.visibilityRank
     }
+
+    /// Whether this is a publicly *settable* stored property: its setter (`setAccessLevel`, or
+    /// `accessLevel` when the setter isn't narrowed) is public/open. Mirrors the `mutablePublicState`
+    /// smell — publicly mutable state that breaks encapsulation.
+    public var isPubliclySettable: Bool {
+        kind == .property && !isComputed
+            && (setAccessLevel ?? accessLevel).visibilityRank >= AccessLevel.public.visibilityRank
+    }
 }
 
 extension Sequence where Element == Member {

@@ -77,19 +77,38 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable, Codable {
     public var generatedCodeFilter: GeneratedCodeFilter?
     /// Build-output / dependency directories to skip while collecting this language's sources.
     public var excludedDirectories: Set<String>
+    /// What makes a member reachable-by-contract in this language (test/framework entry points), so
+    /// dead-code analysis doesn't flag them as unused.
+    public var entryPointMarkers: EntryPointMarkers
 
     public init(
         primitiveTypeNames: Set<String> = [],
         collectionTypeNames: Set<String> = [],
         annotationStereotypes: [String: String] = [:],
         generatedCodeFilter: GeneratedCodeFilter? = nil,
-        excludedDirectories: Set<String> = []
+        excludedDirectories: Set<String> = [],
+        entryPointMarkers: EntryPointMarkers = EntryPointMarkers()
     ) {
         self.primitiveTypeNames = primitiveTypeNames
         self.collectionTypeNames = collectionTypeNames
         self.annotationStereotypes = annotationStereotypes
         self.generatedCodeFilter = generatedCodeFilter
         self.excludedDirectories = excludedDirectories
+        self.entryPointMarkers = entryPointMarkers
+    }
+
+    /// Lenient decoding so a configuration encoded before `entryPointMarkers` existed still reads
+    /// (the field defaults to empty). Everything else round-trips as synthesized.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        primitiveTypeNames = try container.decodeIfPresent(Set<String>.self, forKey: .primitiveTypeNames) ?? []
+        collectionTypeNames = try container.decodeIfPresent(Set<String>.self, forKey: .collectionTypeNames) ?? []
+        annotationStereotypes =
+            try container.decodeIfPresent([String: String].self, forKey: .annotationStereotypes) ?? [:]
+        generatedCodeFilter = try container.decodeIfPresent(GeneratedCodeFilter.self, forKey: .generatedCodeFilter)
+        excludedDirectories = try container.decodeIfPresent(Set<String>.self, forKey: .excludedDirectories) ?? []
+        entryPointMarkers =
+            try container.decodeIfPresent(EntryPointMarkers.self, forKey: .entryPointMarkers) ?? EntryPointMarkers()
     }
 
     public func isPrimitive(_ name: String) -> Bool { primitiveTypeNames.contains(name) }

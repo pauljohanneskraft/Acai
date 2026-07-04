@@ -39,21 +39,11 @@ extension UMLCommand {
             let rendered: String
             switch format {
             case .json:
-                rendered = try encodeJSON(metrics)
+                rendered = try JSONReport(metrics).text
             case .human:
                 rendered = MetricsTextReport(metrics: metrics, sort: sort, top: top).render() + "\n"
             }
             try rendered.writeOutput(to: output, label: "metrics")
-        }
-
-        private func encodeJSON(_ metrics: CodeMetrics) throws -> String {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(metrics)
-            guard let json = String(data: data, encoding: .utf8) else {
-                throw ValidationError("Failed to encode metrics as JSON.")
-            }
-            return json
         }
     }
 }

@@ -73,22 +73,21 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     }
 }
 
-/// A toolbar menu for picking the global diagram theme.
-struct DiagramThemeMenu: View {
+/// Adds the global diagram-theme picker to the app's menu bar. `CommandGroup(after: .toolbar)`
+/// places it inside macOS's built-in **View** menu (alongside Show Toolbar / Sidebar), so the theme
+/// isn't an always-visible window control.
+struct DiagramThemeCommands: Commands {
     @AppStorage(DiagramThemeSelection.storageKey) private var selection: DiagramThemeSelection = .system
 
-    var body: some View {
-        Menu {
+    var body: some Commands {
+        CommandGroup(after: .toolbar) {
             Picker("Diagram Theme", selection: $selection) {
                 ForEach(DiagramThemeSelection.allCases) { option in
                     Label(option.label, systemImage: option.symbol).tag(option)
                 }
             }
             .pickerStyle(.inline)
-        } label: {
-            Label("Diagram Theme", systemImage: "paintpalette")
         }
-        .help("Diagram theme for the canvas and DOT/Mermaid exports")
     }
 }
 

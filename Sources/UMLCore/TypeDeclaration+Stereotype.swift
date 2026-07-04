@@ -22,7 +22,7 @@ extension TypeDeclaration {
     }
 }
 
-private extension String {
+extension String {
 
     /// This string reduced to a bare, comparable annotation name: a leading `@`, any argument
     /// list (`@Table(name="x")` → `table`) and any package qualifier

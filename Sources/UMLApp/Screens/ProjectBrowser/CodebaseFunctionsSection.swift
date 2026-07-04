@@ -9,15 +9,9 @@ struct CodebaseFunctionsSection: View {
     let artifact: CodeArtifact
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Top-Level Functions (\(artifact.freestandingFunctions.count))")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-
+        CollapsibleSection(title: "Top-Level Functions") {
+            SectionCountBadge(text: "\(artifact.freestandingFunctions.count)")
+        } content: {
             let sortedFunctions = artifact.freestandingFunctions
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             LazyVStack(spacing: 1) {
@@ -25,7 +19,6 @@ struct CodebaseFunctionsSection: View {
                     functionRow(function: function)
                 }
             }
-            .padding(.bottom, 8)
         }
     }
 

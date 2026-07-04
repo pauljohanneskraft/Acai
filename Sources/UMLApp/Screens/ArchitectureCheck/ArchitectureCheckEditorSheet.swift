@@ -68,7 +68,7 @@ struct ArchitectureCheckEditorSheet: View {
                     ConformanceRulesEditor(rules: $rules)
                     Divider()
                     Text("Preview").font(.headline)
-                    ArchitectureCheckReportView(rules: rules, artifact: artifact)
+                    ArchitectureCheckReportView(report: rules.report(for: artifact))
                 }
                 .padding()
             }
@@ -102,7 +102,7 @@ struct ArchitectureCheckEditorSheet: View {
         } else {
             switch externalRules {
             case .success(let rules):
-                ScrollView { ArchitectureCheckReportView(rules: rules, artifact: artifact) }
+                ScrollView { ArchitectureCheckReportView(report: rules.report(for: artifact)) }
             case .failure(let error):
                 ArchitectureCheckPlaceholder(
                     text: "Could not load rules: \(error.localizedDescription)",

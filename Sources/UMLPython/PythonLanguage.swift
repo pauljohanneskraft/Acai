@@ -27,7 +27,12 @@ extension PythonCodeParser {
             excludedDirectories: [
                 "__pycache__", ".venv", "venv", "env", ".tox", ".mypy_cache",
                 ".pytest_cache", ".eggs", "build", "dist", "site-packages", ".git"
-            ]
+            ],
+            // pytest fixtures and dunder hooks are invoked by the runtime/test framework, not by
+            // resolvable call sites.
+            entryPointMarkers: EntryPointMarkers(
+                annotations: ["fixture", "pytestfixture"],
+                methodNames: ["main", "__init__", "setup_method", "teardown_method", "setup", "teardown"])
         )
     }
 }

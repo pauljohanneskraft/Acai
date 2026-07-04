@@ -17,11 +17,6 @@ struct ProjectBrowserView: View {
             detailContent
                 .containerBackground(.windowBackground, for: .window)
         }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                DiagramThemeMenu()
-            }
-        }
         .onChange(of: sidebarSelection) { _, newValue in
             switch newValue {
             case .project(let id):
