@@ -9,7 +9,7 @@ struct CardHeightPreferenceKey: PreferenceKey {
 }
 
 /// A statistics card: an icon, a title, a primary value, and optional secondary text and an exemplar
-/// caption (the item(s) driving the metric — all named, so ties are fully listed). When `onTap` is set
+/// caption (the item(s) driving the metric — up to three named, then "and N more"). When `onTap` is set
 /// the whole card is a button (opens the metric's drill-down list). Reports its natural height and
 /// stretches to `uniformHeight` so a row of cards shares one height. Knows nothing about the model.
 struct MetricStatCard: View {

@@ -104,8 +104,8 @@ extension CodebaseDetailView {
         let blurb: String
     }
 
-    /// A card for a per-type metric: max/avg with every type achieving the max named in the caption.
-    /// Tapping opens the full ranked list (`typeDetail`).
+    /// A card for a per-type metric: max/avg with the types achieving the max named in the caption (up
+    /// to three, then "and N more"). Tapping opens the full ranked list (`typeDetail`).
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>,
@@ -163,8 +163,14 @@ extension CodebaseDetailView {
             onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
     }
 
-    /// "`descriptor.lowercased()`: name, name, …" — or `nil` when there are no exemplars.
+    /// "`descriptor.lowercased()`: name, name, name and N more" — or `nil` when there are no exemplars.
+    /// Names beyond the first three are folded into a trailing count so a large tie stays one short line.
     private func caption(_ descriptor: String, _ names: [String]) -> String? {
-        names.isEmpty ? nil : "\(descriptor.lowercased()): \(names.joined(separator: ", "))"
+        guard !names.isEmpty else { return nil }
+        let shown = names.prefix(3)
+        let remaining = names.count - shown.count
+        var list = shown.joined(separator: ", ")
+        if remaining > 0 { list += " and \(remaining) more" }
+        return "\(descriptor.lowercased()): \(list)"
     }
 }
