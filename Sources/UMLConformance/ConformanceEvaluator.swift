@@ -154,18 +154,8 @@ public struct ConformanceEvaluator: Sendable {
 
     private func moduleBudgetViolations(_ graph: GraphView, budget: MetricBudget) -> [Violation] {
         graph.metrics.modules.compactMap { module in
-            guard budget.target.matchesModule(named: module.name) else { return nil }
-            let value: Double
-            switch budget.metric {
-            case .instability:
-                value = module.instability
-            case .abstractness:
-                value = module.abstractness
-            case .distance:
-                value = module.distanceFromMainSequence
-            default:
-                return nil
-            }
+            guard budget.target.matchesModule(named: module.name),
+                  let value = budget.metric.value(in: module) else { return nil }
             return budget.breach(value: value, subject: module.name, source: nil)
         }
     }
@@ -173,22 +163,8 @@ public struct ConformanceEvaluator: Sendable {
     private func typeBudgetViolations(_ graph: GraphView, budget: MetricBudget) -> [Violation] {
         let nodesByID = Dictionary(graph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return graph.metrics.types.compactMap { metric in
-            guard let node = nodesByID[metric.id], budget.target.matches(node) else { return nil }
-            let value: Double
-            switch budget.metric {
-            case .fanIn:
-                value = Double(metric.fanIn)
-            case .fanOut:
-                value = Double(metric.fanOut)
-            case .depthOfInheritance:
-                value = Double(metric.depthOfInheritance)
-            case .weightedMethods:
-                value = Double(metric.weightedMethods)
-            case .numberOfChildren:
-                value = Double(metric.numberOfChildren)
-            default:
-                return nil
-            }
+            guard let node = nodesByID[metric.id], budget.target.matches(node),
+                  let value = budget.metric.value(in: metric) else { return nil }
             return budget.breach(value: value, subject: metric.id, source: node.location)
         }
     }

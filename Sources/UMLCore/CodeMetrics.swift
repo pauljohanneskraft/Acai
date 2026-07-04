@@ -40,6 +40,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var abstractness: Double
         /// Distance from the main sequence `D = |A + I - 1|` (0 = on the sequence, 1 = worst).
         public var distanceFromMainSequence: Double
+        /// Public/open members across the module's types — the module's outward API surface.
+        public var publicMemberCount: Int
     }
 
     /// Per-type OO metrics.
@@ -55,8 +57,39 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var numberOfChildren: Int
         /// Weighted methods per class (method count).
         public var weightedMethods: Int
+        /// Stored/computed property count — the data half of the anemic-vs-behaviour balance.
+        public var numberOfProperties: Int
         public var fanIn: Int
         public var fanOut: Int
+        /// Response For a Class: declared methods + distinct call targets in member bodies (see
+        /// ``ResponseForClass``). High RFC = a large response set, costly to test and reason about.
+        public var responseForClass: Int
+        /// Public/open members — the type's outward API surface.
+        public var publicMemberCount: Int
+        /// Fraction of members that are public/open (0 when the type has no members).
+        public var publicMemberRatio: Double
+        /// Publicly settable stored properties — mutable public state that breaks encapsulation.
+        public var mutablePublicState: Int
+        /// Largest parameter count of any callable member — the long-parameter-list smell.
+        public var maxParameters: Int
+        /// Mean parameter count across the type's callable members.
+        public var meanParameters: Double
+        /// Data-class / anemic score: `properties / (properties + methods)` (1 = pure data).
+        public var dataClassScore: Double
+        /// Members that `override` an inherited member — refused-bequest candidates.
+        public var overrideCount: Int
+        /// Depth of the nested-type tree rooted at this type (0 when it declares no nested types).
+        public var nestingDepth: Int
+        /// LCOM4-style lack of cohesion: connected components among the type's methods (1 = cohesive;
+        /// higher = several unrelated responsibilities). See ``LcomAnalysis``.
+        public var lackOfCohesion: Int
+        /// Methods more interested in another declared type than their own — feature envy. See
+        /// ``FeatureEnvy``.
+        public var featureEnvyMethods: Int
+
+        /// Deep-and-wide inheritance shape (`DIT × NOC`): a type that is both deeply derived and widely
+        /// subclassed sits at a fragile hierarchy hub. Derived from the stored metrics, not stored.
+        public var deepAndWide: Int { depthOfInheritance * numberOfChildren }
     }
 }
 
@@ -135,6 +168,9 @@ extension CodeArtifact {
         }
 
         let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
+        // Nesting depth reads a type's `nestedTypes`, which `allTypes(_:)` clears on the flattened
+        // copies — so measure it over the original (un-flattened) tree, keyed by id.
+        let nesting = nestingDepths(types)
 
         let resolver = ModuleResolver.standard
         return flat.map { type in
@@ -145,10 +181,33 @@ extension CodeArtifact {
                 depthOfInheritance: depth(of: type.id, visiting: [type.id]),
                 numberOfChildren: childCount[type.id, default: 0],
                 weightedMethods: type.members.filter { $0.kind == .method }.count,
+                numberOfProperties: type.members.filter { $0.kind == .property }.count,
                 fanIn: fanIn[type.id]?.count ?? 0,
-                fanOut: fanOut[type.id]?.count ?? 0
+                fanOut: fanOut[type.id]?.count ?? 0,
+                responseForClass: ResponseForClass(type: type).count,
+                publicMemberCount: type.publicMemberCount,
+                publicMemberRatio: type.publicMemberRatio,
+                mutablePublicState: type.mutablePublicState,
+                maxParameters: type.maxParameters,
+                meanParameters: type.meanParameters,
+                dataClassScore: type.dataClassScore,
+                overrideCount: type.overrideCount,
+                nestingDepth: nesting[type.id] ?? 0,
+                lackOfCohesion: LcomAnalysis(type: type).componentCount,
+                featureEnvyMethods: FeatureEnvy(type: type, identity: identity).enviousMethodCount
             )
         }
+    }
+
+    /// Subtree nesting depth per type id, walked over the original (un-flattened) `types` tree where
+    /// `nestedTypes` is still populated (``CodeArtifact/allTypes(_:)`` clears it on flattened copies).
+    private func nestingDepths(_ roots: [TypeDeclaration]) -> [String: Int] {
+        var result: [String: Int] = [:]
+        for type in roots {
+            result[type.id] = type.nestingDepth
+            result.merge(nestingDepths(type.nestedTypes)) { current, _ in current }
+        }
+        return result
     }
 
     /// Per-type fan-in/fan-out sets: signature edges (dependency/composition/aggregation/association)
@@ -254,7 +313,8 @@ extension CodeArtifact {
                 efferentCoupling: efferentCount,
                 instability: instability,
                 abstractness: abstractness,
-                distanceFromMainSequence: abs(abstractness + instability - 1)
+                distanceFromMainSequence: abs(abstractness + instability - 1),
+                publicMemberCount: moduleTypeList.reduce(0) { $0 + $1.publicMemberCount }
             )
         }
     }

@@ -18,9 +18,9 @@ struct CodebaseDetailView: View {
     /// they fill the full width and wrap to more rows only when space runs out.
     @State private var contentWidth: CGFloat = 0
     /// The ranked drill-down presented when a statistics card is tapped.
-    @State private var statisticDetail: StatisticDetail?
+    @State var statisticDetail: StatisticDetail?
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
-    @State private var statCardHeight: CGFloat = 0
+    @State var statCardHeight: CGFloat = 0
     @State private var diagramCardHeight: CGFloat = 0
 
     /// Identifies the codebase a pending diagram configuration belongs to.
@@ -180,120 +180,13 @@ struct CodebaseDetailView: View {
 // stays within SwiftLint's `type_body_length`.
 extension CodebaseDetailView {
 
-    // MARK: - Statistics
-
-    private func statisticsSection(artifact: CodeArtifact) -> some View {
-        let metrics = artifact.computeMetrics()
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Statistics")
-                .font(.headline)
-                .padding(.horizontal)
-
-            LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
-                moduleMetricCard(
-                    MetricVisual(title: "Instability", icon: "tornado", color: .orange, blurb: Self.instabilityBlurb),
-                    descriptor: "Most unstable", modules: metrics.modules)
-                typeMetricCard(
-                    MetricVisual(title: "Inheritance Depth", icon: "arrow.down.to.line", color: .blue,
-                                 blurb: Self.inheritanceDepthBlurb),
-                    by: \.depthOfInheritance, descriptor: "Deepest", types: metrics.types)
-                typeMetricCard(
-                    MetricVisual(title: "Fan-out", icon: "arrow.up.right", color: .purple, blurb: Self.fanOutBlurb),
-                    by: \.fanOut, descriptor: "Most coupled", types: metrics.types)
-                typeMetricCard(
-                    MetricVisual(title: "Fan-in", icon: "arrow.down.left", color: .green, blurb: Self.fanInBlurb),
-                    by: \.fanIn, descriptor: "Hotspot", types: metrics.types)
-                typeMetricCard(
-                    MetricVisual(title: "Methods", icon: "function", color: .pink,
-                                 blurb: Self.weightedMethodsBlurb),
-                    by: \.weightedMethods, descriptor: "Largest", types: metrics.types)
-            }
-            .padding(.horizontal)
-            .onPreferenceChange(CardHeightPreferenceKey.self) { height in
-                if abs(statCardHeight - height) > 0.5 { statCardHeight = height }
-            }
-        }
-        .padding(.vertical, 12)
-    }
-
-    /// Title, icon, tint, and explanation for a statistics card, bundled so the card builders stay
-    /// within the parameter limit.
-    private struct MetricVisual {
-        let title: String
-        let icon: String
-        let color: Color
-        let blurb: String
-    }
-
-    static let instabilityBlurb =
-        "I = Ce / (Ca + Ce): how exposed a module is to change from its dependencies. "
-        + "0% = stable (depended upon, depends on little); 100% = unstable (depends outward, nothing "
-        + "depends on it). Neither is inherently bad — foundational modules should be stable, leaf/app "
-        + "modules unstable."
-    static let inheritanceDepthBlurb =
-        "Longest inheritance/conformance chain for a type. 0–2 is easy to follow; deep chains (>5) are "
-        + "a complexity smell."
-    static let fanOutBlurb =
-        "How many other types this type depends on. High fan-out means many responsibilities — harder "
-        + "to change and test, and a candidate for splitting."
-    static let fanInBlurb =
-        "How many types depend on this type. High fan-in marks a core/hub type; expected for shared "
-        + "models, but keep them stable and well-tested since changes ripple widely."
-    static let weightedMethodsBlurb =
-        "Weighted methods per type (method count). Large types carry many responsibilities (low "
-        + "cohesion / SRP risk) and are prime candidates for splitting."
-
-    /// A card for a per-type metric: max/avg with every type achieving the max named in the caption.
-    /// Tapping opens the full ranked list (`typeDetail`).
-    private func typeMetricCard(
-        _ visual: MetricVisual,
-        by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>,
-        descriptor: String, types: [CodeMetrics.TypeMetric]
-    ) -> MetricStatCard {
-        let summary = MetricSummary(types) { Double($0[keyPath: keyPath]) }
-        let detail = typeDetail(visual.title, visual.blurb, types, by: keyPath)
-        return MetricStatCard(
-            title: visual.title,
-            icon: visual.icon,
-            color: visual.color,
-            primary: "max \(Int(summary.maximum))",
-            secondary: String(format: "avg %.1f", summary.average),
-            exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
-            uniformHeight: statCardHeight,
-            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
-    }
-
-    /// A card for the per-module instability metric, rendered as a percentage with every most-unstable
-    /// module named. Tapping opens the ranked module list (`moduleDetail`).
-    private func moduleMetricCard(
-        _ visual: MetricVisual,
-        descriptor: String, modules: [CodeMetrics.ModuleCoupling]
-    ) -> MetricStatCard {
-        let summary = MetricSummary(modules) { $0.instability }
-        let detail = moduleDetail(visual.title, visual.blurb, modules)
-        return MetricStatCard(
-            title: visual.title,
-            icon: visual.icon,
-            color: visual.color,
-            primary: String(format: "max %.0f%%", summary.maximum * 100),
-            secondary: String(format: "avg %.0f%%", summary.average * 100),
-            exemplar: caption(descriptor, summary.exemplars.map(\.name)),
-            uniformHeight: statCardHeight,
-            onTap: detail.rows.isEmpty ? nil : { statisticDetail = detail })
-    }
-
-    /// "`descriptor.lowercased()`: name, name, …" — or `nil` when there are no exemplars.
-    private func caption(_ descriptor: String, _ names: [String]) -> String? {
-        names.isEmpty ? nil : "\(descriptor.lowercased()): \(names.joined(separator: ", "))"
-    }
-
     // MARK: - Card grid layout
 
     /// Flexible columns sized so `count` cards fill the full content width, wrapping to more rows only
     /// when the pane is too narrow to fit them all at `target` width. Capping the column count at the
     /// card count (rather than `.adaptive`) keeps the row full-width instead of leaving empty trailing
     /// columns when there are fewer cards than would fit.
-    private func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
+    func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
         let usableWidth = contentWidth - 32  // outer .padding(.horizontal) on each side
         let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
         let columns = max(1, min(count, fitting))

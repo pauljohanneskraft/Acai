@@ -21,6 +21,14 @@ struct SelectorEditor: View {
                     Text(level.rawValue).tag(AccessLevel?.some(level))
                 }
             }
+            Picker("Kind", selection: $selector.kind) {
+                Text("Any").tag(TypeKind?.none)
+                ForEach(TypeKind.allCases, id: \.self) { kind in
+                    Text(kind.rawValue).tag(TypeKind?.some(kind))
+                }
+            }
+            TextField("Min members (e.g. 20)", text: $selector.minMembers.asText)
+            TextField("Min nesting (e.g. 2)", text: $selector.minNesting.asText)
         }
         .textFieldStyle(.roundedBorder)
     }

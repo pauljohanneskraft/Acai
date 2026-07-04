@@ -75,6 +75,30 @@ struct ConformancePhase4Tests {
         #expect(ConformanceEvaluator(rules: ConformanceRules(cycles: CycleRule(scope: .types))).evaluate(art).isPassing)
     }
 
+    // MARK: Selector — minNesting (#103)
+
+    @Test func minNestingSelectorMatchesOnlyDeeplyNestedTypes() {
+        // `Outer` declares a nested type (nestingDepth 1); `Plain` is flat (0). A forbidden rule scoped
+        // to `minNesting: 1` must flag `Outer`'s edge but not `Plain`'s.
+        let inner = TypeDeclaration(
+            id: "Outer.Inner", name: "Inner", qualifiedName: "Outer.Inner", kind: .struct, accessLevel: .internal,
+            location: SourceLocation(filePath: "Sources/App/Outer.swift", line: 2, column: 1))
+        let outer = TypeDeclaration(
+            id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .class, accessLevel: .internal,
+            nestedTypes: [inner],
+            location: SourceLocation(filePath: "Sources/App/Outer.swift", line: 1, column: 1))
+        let art = artifact(
+            [outer, type("Plain"), type("Target")],
+            [Relationship(kind: .dependency, source: "Outer", target: "Target"),
+             Relationship(kind: .dependency, source: "Plain", target: "Target")])
+        let rules = ConformanceRules(forbidden: [
+            DependencyRule(from: Selector(minNesting: 1), to: Selector(typeGlob: "Target"))
+        ])
+        let report = ConformanceEvaluator(rules: rules).evaluate(art)
+        #expect(report.violations.contains { $0.subject == "Outer→Target" })
+        #expect(!report.violations.contains { $0.subject == "Plain→Target" })
+    }
+
     // MARK: Stereotype contracts
 
     @Test func onlyRepositoryMayTouchDatabase() {
