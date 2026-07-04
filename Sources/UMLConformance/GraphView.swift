@@ -21,6 +21,8 @@ public struct GraphView: Sendable {
         public var location: SourceLocation?
         /// Declared member count (properties + methods + cases) — used by member-count selectors.
         public var memberCount: Int
+        /// Depth of the nested-type tree rooted at this type — used by the `minNesting` selector.
+        public var nestingDepth: Int
     }
 
     public let nodes: [Node]
@@ -35,6 +37,11 @@ public struct GraphView: Sendable {
         annotationStereotypes: [String: String] = [:]
     ) {
         let flat = artifact.flattened()
+        // Compute metrics up front so each node can be tagged with its metric-derived fields
+        // (single source of truth — the node's `nestingDepth` comes from the metric, not a re-walk).
+        let metrics = artifact.computeMetrics()
+        let nestingByID = Dictionary(
+            metrics.types.map { ($0.id, $0.nestingDepth) }, uniquingKeysWith: { first, _ in first })
         let nodes = flat.map { type in
             Node(
                 id: type.id,
@@ -45,12 +52,13 @@ public struct GraphView: Sendable {
                 stereotype: type.stereotype(annotationStereotypes: annotationStereotypes),
                 annotations: type.annotations.map(\.normalizedAnnotation),
                 location: type.location,
-                memberCount: type.members.count + type.enumCases.count
+                memberCount: type.members.count + type.enumCases.count,
+                nestingDepth: nestingByID[type.id] ?? 0
             )
         }
         self.nodes = nodes
         self.relationships = artifact.relationships
-        self.metrics = artifact.computeMetrics()
+        self.metrics = metrics
         self.nodesByID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
