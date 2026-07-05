@@ -27,7 +27,12 @@ extension UMLCommand {
 
         mutating func validate() throws {
             try artifactSource.validate()
-            _ = try CallGraphScopeOption(raw: scope).resolved()
+            // Surface a malformed --scope as a usage error (exit 64), mapping the diagram layer's error.
+            do {
+                _ = try CallGraphScopeOption(raw: scope).resolved()
+            } catch let error as DiagramRequestError {
+                throw ValidationError(error.message)
+            }
         }
 
         mutating func run() throws {

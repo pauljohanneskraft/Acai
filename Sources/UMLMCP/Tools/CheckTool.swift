@@ -25,7 +25,7 @@ struct CheckTool: AnalysisTool {
             required: ["path", "rules"])
     }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         // `ConformanceRules` is Codable; decode the YAML rules file directly (the CLI's `.load` helper
         // is a UMLCLI-internal extension, so we mirror it here rather than reach across the target).
@@ -36,6 +36,6 @@ struct CheckTool: AnalysisTool {
             rules: ruleSet,
             annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
         ).evaluate(artifact)
-        return try Value(report)
+        return .json(try Value(report))
     }
 }

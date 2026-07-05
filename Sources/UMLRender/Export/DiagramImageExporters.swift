@@ -2,25 +2,35 @@
 import CoreGraphics
 import Foundation
 import SwiftUI
+import UMLCore
 import UMLDiagram
 import UMLDiff
-import UMLLibrary
-import UMLRender
 
-// Per-diagram-kind PNG rendering for `uml image`. Each value carries the output scale + palette and
-// renders one diagram kind — plain and, where it has a two-revision form, a delta with each element
-// tinted by its diff status — via `DiagramImageRenderer`. Extracted from `UMLCommand.Image` so the
-// command delegates instead of referencing every diff type, layout model, and the renderer directly.
+// Per-diagram-kind PNG rendering shared by the CLI `uml image` command and the MCP `uml_image` tool.
+// Each value carries the output scale + palette and renders one diagram kind — plain and, where it has
+// a two-revision form, a delta with each element tinted by its diff status — via the UMLRender
+// `*ImageRenderer`s. Promoted here from the CLI. Kinds that enrich (class, package) take the artifact's
+// `LanguageConfiguration` injected, so this target names no language.
 
 /// Class-diagram PNG rendering.
-struct ClassImageExporter {
-    let scale: Double
-    let palette: DiagramPalette
-    let configuration: ClassDiagramConfiguration
+public struct ClassImageExporter: Sendable {
+    public let scale: Double
+    public let palette: DiagramPalette
+    public let configuration: ClassDiagramConfiguration
+    public let language: LanguageConfiguration
 
-    func render(artifact: CodeArtifact) async throws -> Data {
-        let language = artifact.standardLanguageConfiguration
-        let (configuration, scale, palette) = (configuration, scale, palette)
+    public init(
+        scale: Double, palette: DiagramPalette,
+        configuration: ClassDiagramConfiguration, language: LanguageConfiguration
+    ) {
+        self.scale = scale
+        self.palette = palette
+        self.configuration = configuration
+        self.language = language
+    }
+
+    public func render(artifact: CodeArtifact) async throws -> Data {
+        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
                 artifact: artifact, configuration: configuration, language: language,
@@ -30,7 +40,7 @@ struct ClassImageExporter {
 
     /// The union diagram with each edge/node tinted by its diff status (added green / removed red /
     /// changed amber).
-    func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
+    public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let differ = ArtifactDiffer()
         let diff = differ.diff(old: old, new: new)
         let union = differ.unionArtifact(old: old, new: new)
@@ -40,8 +50,7 @@ struct ClassImageExporter {
             edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
         }
         let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
-        let language = union.standardLanguageConfiguration
-        let (configuration, scale, palette) = (configuration, scale, palette)
+        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
                 artifact: union, configuration: configuration, language: language,
@@ -51,16 +60,26 @@ struct ClassImageExporter {
 }
 
 /// Sequence-diagram PNG rendering traced from an entry point.
-struct SequenceImageExporter {
-    let scale: Double
-    let palette: DiagramPalette
-    let entryPoint: String
-    let maxDepth: Int
-    /// `--map` entries, applied to the plain trace only (the delta path traces both sides unmapped,
-    /// preserving the original command's behaviour).
-    var map: [String] = []
+public struct SequenceImageExporter: Sendable {
+    public let scale: Double
+    public let palette: DiagramPalette
+    public let entryPoint: String
+    public let maxDepth: Int
+    /// Mapping entries, applied to the plain trace only (the delta path traces both sides unmapped,
+    /// preserving the original behaviour).
+    public let map: [String]
 
-    func render(artifact: CodeArtifact) async throws -> Data {
+    public init(
+        scale: Double, palette: DiagramPalette, entryPoint: String, maxDepth: Int, map: [String] = []
+    ) {
+        self.scale = scale
+        self.palette = palette
+        self.entryPoint = entryPoint
+        self.maxDepth = maxDepth
+        self.map = map
+    }
+
+    public func render(artifact: CodeArtifact) async throws -> Data {
         let diagram = try SequenceDiagramRequest(entryPoint: entryPoint, maxDepth: maxDepth, map: map)
             .buildTraceable(from: artifact)
         let (scale, palette) = (scale, palette)
@@ -71,7 +90,7 @@ struct SequenceImageExporter {
 
     /// The union trace with each message tinted by its diff status. Messages are coloured by their
     /// layout id, which equals the message's position in the (order-sorted) union.
-    func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
+    public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = SequenceDiagramRequest(entryPoint: entryPoint, maxDepth: maxDepth)
         let diff = SequenceDiagramDiff(old: try request.build(from: old), new: try request.build(from: new))
         let ordered = diff.union.messages.sorted { $0.order < $1.order }
@@ -88,15 +107,22 @@ struct SequenceImageExporter {
 }
 
 /// Value-flow state-diagram PNG rendering for a variable.
-struct StateImageExporter {
-    let scale: Double
-    let palette: DiagramPalette
-    let variable: String
-    let maxStates: Int
+public struct StateImageExporter: Sendable {
+    public let scale: Double
+    public let palette: DiagramPalette
+    public let variable: String
+    public let maxStates: Int
+
+    public init(scale: Double, palette: DiagramPalette, variable: String, maxStates: Int) {
+        self.scale = scale
+        self.palette = palette
+        self.variable = variable
+        self.maxStates = maxStates
+    }
 
     private var request: StateDiagramRequest { StateDiagramRequest(variable: variable, maxStates: maxStates) }
 
-    func render(artifact: CodeArtifact) async throws -> Data {
+    public func render(artifact: CodeArtifact) async throws -> Data {
         let diagram = try request.build(from: artifact)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
@@ -107,7 +133,7 @@ struct StateImageExporter {
     /// The union machine with each transition tinted by its diff status. Transitions are coloured by
     /// their layout id (their index in the union), so parallel transitions on different events stay
     /// distinct.
-    func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
+    public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = request
         let diff = StateDiagramDiff(old: try request.build(from: old), new: try request.build(from: new))
         let transitions = diff.union.transitions
@@ -123,13 +149,21 @@ struct StateImageExporter {
     }
 }
 
-/// Package/module dependency-diagram PNG rendering.
-struct PackageImageExporter {
-    let scale: Double
-    let palette: DiagramPalette
+/// Package/module dependency-diagram PNG rendering. Takes the artifact's `LanguageConfiguration`
+/// injected (the package build enriches first).
+public struct PackageImageExporter: Sendable {
+    public let scale: Double
+    public let palette: DiagramPalette
+    public let language: LanguageConfiguration
 
-    func render(artifact: CodeArtifact) async throws -> Data {
-        let diagram = PackageDiagramRequest().build(from: artifact)
+    public init(scale: Double, palette: DiagramPalette, language: LanguageConfiguration) {
+        self.scale = scale
+        self.palette = palette
+        self.language = language
+    }
+
+    public func render(artifact: CodeArtifact) async throws -> Data {
+        let diagram = PackageDiagramRequest().build(from: artifact, language: language)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try PackageImageRenderer().renderPNG(packageDiagram: diagram, scale: CGFloat(scale), palette: palette)
@@ -137,9 +171,12 @@ struct PackageImageExporter {
     }
 
     /// The union with each module node and dependency edge tinted by its diff status.
-    func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
+    public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = PackageDiagramRequest()
-        let diff = PackageDiagramDiff(old: request.build(from: old), new: request.build(from: new))
+        let language = language
+        let diff = PackageDiagramDiff(
+            old: request.build(from: old, language: language),
+            new: request.build(from: new, language: language))
         let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
         let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
         let (scale, palette) = (scale, palette)
@@ -152,12 +189,18 @@ struct PackageImageExporter {
 }
 
 /// Static call-graph PNG rendering for an optional scope.
-struct CallGraphImageExporter {
-    let scale: Double
-    let palette: DiagramPalette
-    let scope: CallGraphScopeOption
+public struct CallGraphImageExporter: Sendable {
+    public let scale: Double
+    public let palette: DiagramPalette
+    public let scope: CallGraphScopeOption
 
-    func render(artifact: CodeArtifact) async throws -> Data {
+    public init(scale: Double, palette: DiagramPalette, scope: CallGraphScopeOption) {
+        self.scale = scale
+        self.palette = palette
+        self.scope = scope
+    }
+
+    public func render(artifact: CodeArtifact) async throws -> Data {
         let graph = try CallGraphRequest(scope: scope).buildWithEdges(from: artifact)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
@@ -166,7 +209,7 @@ struct CallGraphImageExporter {
     }
 
     /// The union with each method node and call edge tinted by its diff status.
-    func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
+    public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = CallGraphRequest(scope: scope)
         let diff = CallGraphDiff(old: try request.build(from: old), new: try request.build(from: new))
         let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
@@ -181,8 +224,8 @@ struct CallGraphImageExporter {
 }
 
 extension DeltaStatus {
-    /// The delta tint for image rendering (added green / removed red / changed amber), or `nil`
-    /// for `.unchanged` so the element keeps its themed colour.
+    /// The delta tint for image rendering (added green / removed red / changed amber), or `nil` for
+    /// `.unchanged` so the element keeps its themed colour.
     var deltaColor: Color? {
         deltaHex.map(Color.init(hex:))
     }

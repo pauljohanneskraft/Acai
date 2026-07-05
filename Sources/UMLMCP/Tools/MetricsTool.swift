@@ -13,8 +13,8 @@ struct MetricsTool: AnalysisTool {
 
     var inputSchema: Value { objectSchema() }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let metrics = try await resolveArtifact(arguments, cache).computeMetrics()
-        return try Value(metrics)
+        return .json(try Value(metrics))
     }
 }

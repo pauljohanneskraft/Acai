@@ -20,26 +20,9 @@ struct CallGraphTool: AnalysisTool {
         ])
     }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
-        let report = CallGraphMetrics(artifact: artifact, scope: try scope(from: arguments.string("scope"))).report
-        return try Value(report)
-    }
-
-    /// Parses the `scope` string into a `CallGraphScope`; whole-codebase when absent.
-    private func scope(from raw: String?) throws -> CallGraphScope {
-        guard let raw, !raw.isEmpty else { return .wholeCodebase }
-        let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
-        guard parts.count == 2, !parts[1].isEmpty else {
-            throw MCPError.invalidParams("scope must be 'type:Name' or 'module:Name'.")
-        }
-        switch parts[0] {
-        case "type":
-            return .type(parts[1])
-        case "module":
-            return .module(parts[1])
-        default:
-            throw MCPError.invalidParams("scope prefix must be 'type' or 'module'.")
-        }
+        let scope = try resolvedCallGraphScope(arguments.string("scope"))
+        return .json(try Value(CallGraphMetrics(artifact: artifact, scope: scope).report))
     }
 }

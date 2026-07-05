@@ -14,21 +14,29 @@ struct ToolRegistry: Sendable {
         self.cache = cache
     }
 
-    /// The built-in tool set: the eight from issue #106 plus `doctor` (parse-health guardrail) and
-    /// `callgraph`. Deliberately small — each schema is context an always-on server pays every session.
+    /// The built-in tool set. Cross-platform everywhere; `uml_image` is appended on macOS only (it
+    /// links the SwiftUI renderer), mirroring the CLI's `image` gating.
     static var standard: ToolRegistry {
-        ToolRegistry(tools: [
+        var tools: [any AnalysisTool] = [
             AnalyzeTool(),
             MetricsTool(),
             CyclesTool(),
+            CallCyclesTool(),
             SmellsTool(),
             InspectTool(),
+            EnumsTool(),
             DeadCodeTool(),
             ImpactTool(),
+            DiffTool(),
             CheckTool(),
             DoctorTool(),
-            CallGraphTool()
-        ])
+            CallGraphTool(),
+            DiagramTool()
+        ]
+        #if os(macOS)
+        tools.append(ImageTool())
+        #endif
+        return ToolRegistry(tools: tools)
     }
 
     /// The MCP descriptors advertised to clients — all flagged `readOnlyHint`, since no tool mutates.
@@ -48,10 +56,17 @@ struct ToolRegistry: Sendable {
         guard let tool = tools.first(where: { $0.name == name }) else {
             throw MCPError.methodNotFound("Unknown tool '\(name)'.")
         }
-        let report = try await tool.run(arguments: ToolArguments(arguments), cache: cache)
-        return try CallTool.Result(
-            content: [.text(text: prettyJSON(report), annotations: nil, _meta: nil)],
-            structuredContent: report)
+        switch try await tool.run(arguments: ToolArguments(arguments), cache: cache) {
+        case .json(let value):
+            // JSON as text (what a human reads) plus the same value as structuredContent (what a
+            // program consumes).
+            return try CallTool.Result(
+                content: [.text(text: prettyJSON(value), annotations: nil, _meta: nil)],
+                structuredContent: value)
+        case .content(let content):
+            // Ready-made content (diagram source text, or a PNG image) — passed through unchanged.
+            return CallTool.Result(content: content)
+        }
     }
 
     /// Registers this registry's `tools/list` and `tools/call` handlers on `server`.

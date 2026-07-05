@@ -13,7 +13,7 @@ struct AnalyzeTool: AnalysisTool {
 
     var inputSchema: Value { objectSchema() }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let health = HealthCheck(artifact: artifact).report
         let snapshot = Snapshot(
@@ -24,7 +24,7 @@ struct AnalyzeTool: AnalysisTool {
             relationshipCount: artifact.relationships.count,
             parseHealthScore: health.score,
             hasParseErrors: artifact.metadata.hasParseErrors)
-        return try Value(snapshot)
+        return .json(try Value(snapshot))
     }
 
     private struct Snapshot: Codable {

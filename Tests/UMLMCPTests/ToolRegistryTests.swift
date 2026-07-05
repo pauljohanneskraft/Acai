@@ -3,18 +3,27 @@ import MCP
 import Testing
 @testable import UMLMCP
 
-/// Covers the tool registry's advertised surface: exactly the ten read-only tools with well-formed,
+/// Covers the tool registry's advertised surface: the read-only tool set with well-formed,
 /// self-describing schemas, and clean dispatch errors.
 @Suite("Tool Registry")
 struct ToolRegistryTests {
 
-    @Test func advertisesExactlyTheTenReadOnlyTools() {
+    /// The 14 cross-platform tools; `uml_image` is added on macOS (it links the SwiftUI renderer).
+    private var expectedNames: [String] {
+        var names = [
+            "uml_analyze", "uml_callcycles", "uml_callgraph", "uml_check", "uml_cycles",
+            "uml_deadcode", "uml_diagram", "uml_diff", "uml_doctor", "uml_enums",
+            "uml_impact", "uml_inspect", "uml_metrics", "uml_smells"
+        ]
+        #if os(macOS)
+        names.append("uml_image")
+        #endif
+        return names.sorted()
+    }
+
+    @Test func advertisesTheReadOnlyToolSet() {
         let descriptors = ToolRegistry.standard.descriptors
-        let names = descriptors.map(\.name).sorted()
-        #expect(names == [
-            "uml_analyze", "uml_callgraph", "uml_check", "uml_cycles", "uml_deadcode",
-            "uml_doctor", "uml_impact", "uml_inspect", "uml_metrics", "uml_smells"
-        ])
+        #expect(descriptors.map(\.name).sorted() == expectedNames)
         // Every tool is read-only, and its description is the autonomous-trigger surface — never empty.
         for descriptor in descriptors {
             #expect(descriptor.annotations.readOnlyHint == true)
@@ -22,14 +31,18 @@ struct ToolRegistryTests {
         }
     }
 
-    @Test func everySchemaIsAnObjectRequiringPath() throws {
+    @Test func everySchemaIsAnObjectWithRequiredPathInputs() throws {
         for tool in ToolRegistry.standard.tools {
             let schema = try #require(tool.inputSchema.objectValue)
             #expect(schema["type"]?.stringValue == "object")
             let properties = try #require(schema["properties"]?.objectValue)
-            #expect(properties["path"] != nil)
             let required = try #require(schema["required"]?.arrayValue).compactMap(\.stringValue)
-            #expect(required.contains("path"))
+            // Most tools take a single `path`; `uml_diff` compares two (`pathOld`/`pathNew`).
+            let pathKeys = tool.name == "uml_diff" ? ["pathOld", "pathNew"] : ["path"]
+            for key in pathKeys {
+                #expect(properties[key] != nil)
+                #expect(required.contains(key))
+            }
         }
     }
 

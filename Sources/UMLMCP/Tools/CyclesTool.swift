@@ -20,7 +20,7 @@ struct CyclesTool: AnalysisTool {
         ])
     }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let finder = CycleFinder(
             artifact: artifact,
@@ -35,7 +35,7 @@ struct CyclesTool: AnalysisTool {
             scopes = [.modules, .types]
         }
         let cycles = scopes.flatMap { finder.cycles(scope: $0) }
-        return try Value(cycles.map { CyclePayload(scope: $0.scope.rawValue, members: $0.members) })
+        return .json(try Value(cycles.map { CyclePayload(scope: $0.scope.rawValue, members: $0.members) }))
     }
 
     private struct CyclePayload: Codable {

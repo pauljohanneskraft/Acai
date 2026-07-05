@@ -1,5 +1,5 @@
 ---
-name: code-quality-audit
+name: audit
 description: Use the UML tool to deterministically surface code-quality and architecture issues in a codebase (its own or any supported language) — coupling / fan-in-out, dependency cycles, responsibility bloat (god classes), layering/boundary violations, and visual structure — then drive and verify fixes. Use when asked to audit code quality, find architectural debt, prepare or de-risk a refactor, or gate architecture in CI.
 ---
 
@@ -34,31 +34,37 @@ All return JSON with `file:line` jump targets.
 - **`uml_deadcode`** — methods with no resolved callers that aren't entry points. *Candidates*, not
   verdicts: always read the reported call-graph **coverage** — low coverage means more false positives.
 - **`uml_callgraph`** (`scope: type:Name|module:Name`) — per-method fan-in/out, recursion, hot methods,
-  coverage.
+  coverage. **`uml_callcycles`** — method-level SCCs (mutual recursion / tangled clusters).
 - **`uml_impact <type>`** — the blast radius (transitive dependents) of a type — "is this safe to
   change?" before you touch it.
+- **`uml_enums`** — enum-case inventory with raw + associated values.
 - **`uml_check` (`rules:`)** — validate against an `architecture.yml` and get the pass/fail verdict
   with each violation's `file:line`.
+- **`uml_diff` (`pathOld`, `pathNew`)** — the structural delta between two revisions (added/removed
+  types, changed relationships, metric movement). Each side is a source dir or a `.json` baseline —
+  the drift check, "what did this change alter?".
+- **`uml_diagram`** (`kind: class|package|sequence|state|callgraph`, `format: dot|mermaid`) — the
+  diagram source as text you can embed; **`uml_image`** (macOS) returns a PNG you can *see*. Read the
+  package/class diagram for hairballs, lopsided layouts, edges pointing "up" the layer stack, orphans;
+  `focus` a type to zoom its neighbourhood.
 
 ## When to drop to the CLI
 
-The MCP set is deliberately small and omits everything below — reach for the `uml` CLI (build first:
-`swift build`, binary at `.build/debug/UMLCLI`) for these:
+The MCP now covers sensing, diagrams, images, and drift. Reach for the `uml` CLI (build first:
+`swift build`, binary at `.build/debug/UMLCLI`) only for the things that are inherently process- or
+file-shaped:
 
-1. **See it** — `uml diagram --from a.json --package` / the class diagram (`--focus <Type>` to zoom a
-   neighbourhood), and `uml image ... --output x.png` (macOS), then **read the PNG back as an image**.
-   Visual review catches what metrics/source can't: hairballs, lopsided layouts, edges pointing "up"
-   the layer stack, orphan nodes. The MCP exposes no rendering.
-2. **Gate drift** — store a baseline, then `uml diff <old> <new> --format json` / `uml check
-   --baseline <name>`; fail CI on adverse movement (fan-out creep, new cross-layer edge, new cycle).
-3. **Gate architecture in CI** — `uml check --source . --rules architecture.yml` **fails the build**
+1. **Gate architecture in CI** — `uml check --source . --rules architecture.yml` **fails the build**
    (non-zero exit); the MCP's `uml_check` only returns a verdict. Gate module cycles as a hard
-   invariant.
-4. **One-shot file audit** — `Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]` analyzes once
+   invariant. Also `uml diff --format json` / `uml check --baseline <name>` in a CI step to fail on
+   adverse drift.
+2. **Author rules** — `uml rules init` generates a candidate `architecture.yml` seeded from the current
+   worst-case metrics (no MCP tool).
+3. **One-shot file audit** — `Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]` analyzes once
    and fans every command out against that snapshot, writing `metrics.json`, `cycles.json`,
    `smells.json`, `deadcode.json`, `callgraph.json`, `doctor.json`, `package.dot`, `check.json`, PNGs.
-5. **Extras with no MCP tool** — `uml call-cycles` (method-level SCCs / mutual recursion) and
-   `uml enums` (enum-case inventory with associated values).
+4. **Persisted baselines** — `uml store` / `uml list` keep named snapshots across sessions (the MCP's
+   cache is in-process; for cross-session drift, pass `uml_diff` a stored `.json` baseline instead).
 
 ## The loop
 

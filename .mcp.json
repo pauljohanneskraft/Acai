@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "uml": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/Scripts/mcp_launch.sh",
-      "args": []
-    }
-  }
-}

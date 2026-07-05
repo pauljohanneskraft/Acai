@@ -53,4 +53,21 @@ enum MCPTestSupport {
         let result = try await registry.call(name: name, arguments: arguments(path: path, extra))
         return try #require(result.structuredContent)
     }
+
+    /// Calls a tool and returns the whole result — for content-returning tools (`uml_diagram`,
+    /// `uml_image`) that emit text/image content rather than structured JSON.
+    static func callResult(
+        _ name: String, on registry: ToolRegistry, path: URL, _ extra: [String: Value] = [:]
+    ) async throws -> CallTool.Result {
+        try await registry.call(name: name, arguments: arguments(path: path, extra))
+    }
+
+    /// The text of a tool result's first content item, or a recorded failure.
+    static func firstText(_ result: CallTool.Result) -> String {
+        if case let .text(text, _, _) = result.content.first {
+            return text
+        }
+        Issue.record("expected text content")
+        return ""
+    }
 }

@@ -13,11 +13,11 @@ struct DeadCodeTool: AnalysisTool {
 
     var inputSchema: Value { objectSchema() }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let report = DeadCodeScan(
             artifact: artifact,
             entryPoints: artifact.standardLanguageConfiguration.entryPointMarkers).report
-        return try Value(report)
+        return .json(try Value(report))
     }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "uml",
+  "name": "code-quality",
   "description": "Read-only code-structure analysis over eight languages: metrics, dependency cycles, smells, dead code, blast radius, and architecture checks — as autonomous MCP tools, plus the code-quality-audit methodology skill.",
   "version": "0.1.0",
   "author": {

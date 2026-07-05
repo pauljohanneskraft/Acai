@@ -10,7 +10,7 @@ protocol AnalysisTool: Sendable {
     var description: String { get }
     var inputSchema: Value { get }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput
 }
 
 extension AnalysisTool {
@@ -70,6 +70,16 @@ extension AnalysisTool {
             "properties": .object(properties),
             "required": .array(required.map(Value.string))
         ]
+    }
+
+    /// Resolves a `"type:Name"` / `"module:Name"` scope string (whole-codebase when absent) via the
+    /// shared diagram-layer parser, mapping its error onto `invalidParams`.
+    func resolvedCallGraphScope(_ raw: String?) throws -> CallGraphScope {
+        do {
+            return try CallGraphScopeOption(raw: raw).resolved()
+        } catch let error as DiagramRequestError {
+            throw MCPError.invalidParams(error.message)
+        }
     }
 
     /// Maps the shared selector arguments onto the engine `Selector`. Absent facets stay `nil`, so a

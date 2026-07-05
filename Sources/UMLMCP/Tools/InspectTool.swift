@@ -20,7 +20,7 @@ struct InspectTool: AnalysisTool {
         return objectSchema(extraProperties: properties)
     }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let rows = TypeQuery(
             artifact: artifact,
@@ -32,6 +32,6 @@ struct InspectTool: AnalysisTool {
                 isOverride: (arguments.bool("overrides") ?? false) ? true : nil),
             annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
         ).rows
-        return try Value(rows)
+        return .json(try Value(rows))
     }
 }

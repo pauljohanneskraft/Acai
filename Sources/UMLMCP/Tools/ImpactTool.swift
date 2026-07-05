@@ -26,12 +26,12 @@ struct ImpactTool: AnalysisTool {
             required: ["path", "type"])
     }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let report = ImpactAnalysis(
             artifact: artifact,
             rootType: try arguments.requiredString("type"),
             maxDepth: arguments.int("depth")).report
-        return try Value(report)
+        return .json(try Value(report))
     }
 }

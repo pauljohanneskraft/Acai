@@ -21,6 +21,13 @@ struct SourceTreeSignature: Equatable, Sendable {
         let keys: Set<URLResourceKey> = [.contentModificationDateKey, .isDirectoryKey, .isRegularFileKey]
         var latest: TimeInterval = 0
         var count = 0
+        // A single file (e.g. a `.json` baseline) signs on its own mtime — the directory walk below
+        // enumerates nothing for a non-directory.
+        if let values = try? root.resourceValues(forKeys: keys), values.isRegularFile == true {
+            self.latestModification = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
+            self.fileCount = 1
+            return
+        }
         let enumerator = FileManager.default.enumerator(
             at: root,
             includingPropertiesForKeys: Array(keys),
@@ -67,12 +74,14 @@ actor AnalysisSnapshotCache {
         self.service = service
     }
 
-    /// The enriched artifact for `path`. Reuses the cached snapshot when the tree signature is
-    /// unchanged and `refresh` is false; otherwise analyzes and caches. Throws `invalidParams` when the
-    /// path does not exist.
+    /// The enriched artifact for `path` — a source directory to analyze, or a `.json` artifact file to
+    /// decode (a stored baseline, used by `uml_diff`). Reuses the cached snapshot when the signature is
+    /// unchanged and `refresh` is false; otherwise (re)loads and caches. Throws `invalidParams` when the
+    /// path does not exist or a `.json` file can't be decoded.
     func artifact(path: String, languageNames: [String] = [], refresh: Bool = false) throws -> CodeArtifact {
         let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
             throw MCPError.invalidParams("Path does not exist: \(path)")
         }
         let key = url.path
@@ -80,10 +89,25 @@ actor AnalysisSnapshotCache {
         if !refresh, let cached = entries[key], cached.signature == signature {
             return cached.artifact
         }
-        let artifact = try service.analyzeProject(
-            at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
+        let artifact: CodeArtifact
+        if !isDirectory.boolValue && url.pathExtension == "json" {
+            artifact = try decodeArtifact(at: url)
+        } else {
+            artifact = try service.analyzeProject(
+                at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
+        }
         analysisCount += 1
         entries[key] = Entry(signature: signature, artifact: artifact)
         return artifact
+    }
+
+    /// Decodes a stored `CodeArtifact` JSON file (produced by `uml analyze`/`store`).
+    private func decodeArtifact(at url: URL) throws -> CodeArtifact {
+        do {
+            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))
+        } catch {
+            throw MCPError.invalidParams(
+                "Could not read a UML artifact from \(url.path): \(error.localizedDescription)")
+        }
     }
 }

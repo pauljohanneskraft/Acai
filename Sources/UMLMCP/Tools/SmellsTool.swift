@@ -13,13 +13,13 @@ struct SmellsTool: AnalysisTool {
 
     var inputSchema: Value { objectSchema(extraProperties: selectorProperties) }
 
-    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> Value {
+    func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let findings = SmellScan(
             artifact: artifact,
             selector: selector(from: arguments),
             annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
         ).findings
-        return try Value(findings)
+        return .json(try Value(findings))
     }
 }

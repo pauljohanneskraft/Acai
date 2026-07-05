@@ -19,6 +19,11 @@ struct ToolArguments: Sendable {
         values[key]?.intValue
     }
 
+    func double(_ key: String) -> Double? {
+        // A whole-valued number decodes as `.int`, so accept either.
+        values[key]?.doubleValue ?? values[key]?.intValue.map(Double.init)
+    }
+
     func bool(_ key: String) -> Bool? {
         values[key]?.boolValue
     }

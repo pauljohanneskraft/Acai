@@ -132,7 +132,9 @@ extension UMLCommand {
                     theme: selectedTheme
                 ).export(from: artifact)
             } else if package {
-                export = PackageDiagramTextExporter(theme: selectedTheme).export(from: artifact)
+                export = PackageDiagramTextExporter(
+                    language: artifact.standardLanguageConfiguration, theme: selectedTheme
+                ).export(from: artifact)
             } else if callGraph {
                 let scopeOption = CallGraphScopeOption(raw: callGraphScope)
                 export = try CallGraphTextExporter(

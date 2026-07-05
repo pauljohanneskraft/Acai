@@ -7,6 +7,8 @@ var optionalTargets: [Target] = []
 // Extra dependencies added to UMLCLI only on SwiftUI-capable hosts (macOS), where the
 // SwiftUI-based image renderer (`UMLRender`) exists. Kept empty on Linux so the CLI builds.
 var cliOptionalDependencies: [Target.Dependency] = []
+// Same, for UMLMCP: the `uml_image` tool links `UMLRender` on macOS; empty on Linux.
+var mcpOptionalDependencies: [Target.Dependency] = []
 
 #if canImport(SwiftUI)
 // MARK: SwiftUI rendering library, shared by the app and the CLI image command.
@@ -19,6 +21,7 @@ optionalTargets.append(
         dependencies: [
             "UMLCore",
             "UMLDiagram",
+            "UMLDiff",
         ]
     )
 )
@@ -26,6 +29,7 @@ optionalTargets.append(
     .testTarget(name: "UMLRenderTests", dependencies: ["UMLRender", "UMLCore", "UMLLibrary", "UMLDiagram"])
 )
 cliOptionalDependencies.append(.target(name: "UMLRender", condition: .when(platforms: [.macOS])))
+mcpOptionalDependencies.append(.target(name: "UMLRender", condition: .when(platforms: [.macOS])))
 
 optionalProducts.append(
     .executable(
@@ -259,7 +263,7 @@ let package = Package(
                 "UMLLibrary",
                 .product(name: "MCP", package: "swift-sdk"),
                 .product(name: "Yams", package: "Yams"),
-            ]
+            ] + mcpOptionalDependencies
         ),
 
         // MARK: Tests
