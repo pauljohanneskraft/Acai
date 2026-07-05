@@ -25,7 +25,7 @@ extension CFamilyExtractor: CallSiteResolving {
         case "identifier":
             let name = text(function)
             guard declaredFunctionNames.contains(name) else { return nil }
-            return CallSite(receiverType: nil, methodName: name, location: loc(node))
+            return CallSite(receiver: .free, methodName: name, location: loc(node))
         default:
             return nil
         }
@@ -41,7 +41,7 @@ extension CFamilyExtractor: CallSiteResolving {
 
         // `this->method()` / `this.method()` — a call on the enclosing instance.
         if receiver.nodeType == "this" {
-            return CallSite(receiverType: nil, methodName: methodName, location: location)
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
         }
         // Only a simple, provably-typed receiver is resolved.
         guard receiver.nodeType == "identifier" else { return nil }

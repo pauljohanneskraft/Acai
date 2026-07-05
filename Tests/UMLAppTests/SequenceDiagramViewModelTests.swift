@@ -19,7 +19,7 @@ struct SequenceDiagramViewModelTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "Repository", methodName: "save")
+                            CallSite(receiver: .type("Repository"), methodName: "save")
                         ])
                     ]
                 ),

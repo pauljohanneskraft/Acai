@@ -21,7 +21,7 @@ struct CallGraphFreeformConversionTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "B", methodName: "work")
+                            CallSite(receiver: .type("B"), methodName: "work")
                         ])
                     ]
                 ),

@@ -272,17 +272,24 @@ extension TreeSitterExtracting {
 /// declared type. Anything else (locals, parameters, external/stdlib receivers) is dropped
 /// so the resulting sequence diagrams keep their near-zero-false-edge guarantee.
 public struct CallSiteScope: Sendable {
-    /// `propertyName: typeName` for the enclosing type's stored properties.
+    /// `propertyName: typeName` for the enclosing type's stored properties — only those with a
+    /// determinable type (call-site resolution needs the type).
     public var knownProperties: [String: String]
     /// Simple names of types declared in the current file (for `TypeName.method()`).
     public var knownTypeNames: Set<String>
+    /// Names of **all** the enclosing type's stored properties, including untyped ones (e.g. Python's
+    /// `self.x = …`). Field-read capture filters by name only, so it needs the full set — not just the
+    /// typed subset in ``knownProperties``. Defaults to `knownProperties`' keys when unspecified.
+    public var knownPropertyNames: Set<String>
 
     public init(
         knownProperties: [String: String] = [:],
-        knownTypeNames: Set<String> = []
+        knownTypeNames: Set<String> = [],
+        knownPropertyNames: Set<String>? = nil
     ) {
         self.knownProperties = knownProperties
         self.knownTypeNames = knownTypeNames
+        self.knownPropertyNames = knownPropertyNames ?? Set(knownProperties.keys)
     }
 
     /// Resolves a single-identifier receiver (`receiver.method()`) to a ``UMLCore/CallSite``:
@@ -295,10 +302,10 @@ public struct CallSiteScope: Sendable {
         location: SourceLocation?
     ) -> CallSite? {
         if let receiverType = knownProperties[receiverName] {
-            return CallSite(receiverType: receiverType, methodName: methodName, location: location)
+            return CallSite(receiver: .type(receiverType), methodName: methodName, location: location)
         }
         if knownTypeNames.contains(receiverName) {
-            return CallSite(receiverType: receiverName, methodName: methodName, location: location)
+            return CallSite(receiver: .type(receiverName), methodName: methodName, location: location)
         }
         return nil
     }
@@ -372,7 +379,7 @@ extension CallSiteResolving {
     ) -> CallSite? {
         // Pattern: this.method(args) — a direct call on the enclosing instance.
         if receiver.nodeType == grammar.selfNodeType {
-            return CallSite(receiverType: nil, methodName: methodName, location: location)
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
         }
 
         var receiverName: String?

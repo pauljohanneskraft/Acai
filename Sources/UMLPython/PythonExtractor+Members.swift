@@ -28,7 +28,10 @@ extension PythonExtractor {
 
         let scope = CallSiteScope(
             knownProperties: propertyMap(from: fields),
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            // Python fields are frequently untyped (`self.x = …`), so the typed `propertyMap` misses
+            // them — pass every field name so field-read capture (issue #111) sees them all.
+            knownPropertyNames: Set(fields.map(\.name))
         )
 
         decl.members.append(contentsOf: fields)
@@ -174,6 +177,7 @@ extension PythonExtractor {
             location: loc(node),
             callSites: extractCallSites(from: body, scope: scope),
             assignments: extractAssignments(from: body),
+            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body)
         )
     }

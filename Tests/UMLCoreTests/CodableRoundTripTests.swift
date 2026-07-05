@@ -95,6 +95,30 @@ struct CodableRoundTripTests {
         #expect(original == decoded)
     }
 
+    @Test func memberBodyFactsRoundTrip() throws {
+        // Field reads and every `CallReceiver` case must survive the wire format (issues #111).
+        let original = Member(
+            name: "run",
+            kind: .method,
+            accessLevel: .internal,
+            callSites: [
+                CallSite(receiver: .selfDispatch, methodName: "step"),
+                CallSite(receiver: .type("Store"), methodName: "save"),
+                CallSite(receiver: .free, methodName: "log"),
+                CallSite(receiver: .unknown, methodName: "dynamic")
+            ],
+            fieldReads: [
+                FieldAccess(name: "state"),
+                FieldAccess(name: "counter", receiver: "Metrics",
+                            location: SourceLocation(filePath: "A.swift", line: 3, column: 7))
+            ]
+        )
+        let decoded = try roundTrip(original)
+        #expect(original == decoded)
+        #expect(decoded.callSites.map(\.receiver) == [.selfDispatch, .type("Store"), .free, .unknown])
+        #expect(decoded.fieldReads.map(\.name) == ["state", "counter"])
+    }
+
     @Test func typeDeclaration() throws {
         let original = TypeDeclaration(
             id: "MyModule.MyClass",

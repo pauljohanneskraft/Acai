@@ -44,6 +44,14 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// an explicit `self`/`this` member access. Empty for members whose bodies are
     /// not analysed or when the parser does not yet emit assignment data.
     public var assignments: [VariableAssignment]
+    /// Statically-observable reads of stored properties inside this member's body.
+    ///
+    /// Populated by parsers for reads whose target is a bare identifier or an explicit
+    /// `self`/`this` member access matching a known stored property (`receiver == nil`), plus
+    /// `Type.field` static reads (`receiver` = the type name). Best-effort and language-dependent;
+    /// consumed by the cohesion/feature-envy metrics (``LcomAnalysis``, ``FeatureEnvy``). Empty for
+    /// members whose bodies are not analysed.
+    public var fieldReads: [FieldAccess] = []
     /// For stored properties: the declaration initializer's classified value,
     /// when an initializer is present and the parser captures it.
     public var initialValue: VariableAssignment.Value?
@@ -68,6 +76,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         location: SourceLocation? = nil,
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = [],
+        fieldReads: [FieldAccess] = [],
         initialValue: VariableAssignment.Value? = nil,
         referencedTypeNames: [String] = []
     ) {
@@ -84,6 +93,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.location = location
         self.callSites = callSites
         self.assignments = assignments
+        self.fieldReads = fieldReads
         self.initialValue = initialValue
         self.referencedTypeNames = referencedTypeNames
     }

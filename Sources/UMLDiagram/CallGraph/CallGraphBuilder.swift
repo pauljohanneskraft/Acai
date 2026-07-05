@@ -8,8 +8,9 @@ import UMLCore
 /// known declaration. Resolved callees outside the scope are kept as leaf nodes so outgoing calls
 /// stay visible; the scope only bounds which methods are *callers*.
 ///
-/// A call site resolves when `receiverType.methodName` matches a member, or — for an implicit
-/// receiver — when `callerType.methodName` matches a member or `methodName` matches a free function.
+/// A call site resolves by its `CallReceiver`: a `.type` receiver when `receiverType.methodName`
+/// matches a member, a `.selfDispatch` when `callerType.methodName` matches a member, a `.free` when
+/// `methodName` matches a free function.
 /// The share of in-scope call sites that resolve is reported as `CallGraph.coverage`.
 ///
 /// A value you instantiate with the scope/title and ask to `build(from:)` — kept off `CodeArtifact`
@@ -107,20 +108,21 @@ private struct CallGraphAccumulator {
     private func resolve(
         site: CallSite, callerType: String, inScopeNames: Set<String>
     ) -> (typeName: String, methodName: String, inScope: Bool)? {
-        if let receiver = site.receiverType {
+        switch site.receiver {
+        case .type(let receiver):
             guard typesByName[receiver] != nil, methodKeys.contains("\(receiver).\(site.methodName)") else {
                 return nil
             }
             return (receiver, site.methodName, inScopeNames.contains(receiver))
-        }
-        // Implicit receiver: prefer a same-type method, then fall back to a free function.
-        if !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") {
+        case .selfDispatch:
+            guard !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") else { return nil }
             return (callerType, site.methodName, inScopeNames.contains(callerType))
-        }
-        if freeFunctionNames.contains(site.methodName) {
+        case .free:
+            guard freeFunctionNames.contains(site.methodName) else { return nil }
             return ("", site.methodName, false)
+        case .unknown:
+            return nil
         }
-        return nil
     }
 
     // MARK: - Scope

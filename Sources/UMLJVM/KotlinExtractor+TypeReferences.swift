@@ -118,7 +118,7 @@ extension KotlinExtractor {
 
         // Pattern: this.method(args) — a direct call on the enclosing instance.
         if navExpr.firstChild(withType: "this_expression") != nil {
-            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: loc(node))
         }
 
         // Resolve receiver variable / type name.

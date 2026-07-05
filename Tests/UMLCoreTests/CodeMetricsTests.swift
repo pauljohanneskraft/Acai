@@ -22,6 +22,12 @@ struct CodeMetricsTests {
         ])
     }
 
+    /// A method whose body only *reads* the stored property `field` (via `self`) — for cohesion and
+    /// feature-envy tests exercising read-capture (issue #111).
+    private func method(_ name: String, reads field: String) -> Member {
+        Member(name: name, kind: .method, accessLevel: .internal, fieldReads: [FieldAccess(name: field)])
+    }
+
     /// Two modules: `Core` (a protocol + conforming struct) and `App` (a class that
     /// depends on `Shape` through a stored property → cross-module composition).
     private func sampleArtifact() -> CodeArtifact {
@@ -168,12 +174,12 @@ struct CodeMetricsTests {
         // (`log`) must be de-duplicated, and a same-name call on a different receiver counts separately.
         let service = type("Service", kind: .class, module: "App", members: [
             Member(name: "run", kind: .method, accessLevel: .public, callSites: [
-                CallSite(receiverType: "Logger", methodName: "log"),
-                CallSite(receiverType: "Logger", methodName: "log"),
-                CallSite(receiverType: "Store", methodName: "save")
+                CallSite(receiver: .type("Logger"), methodName: "log"),
+                CallSite(receiver: .type("Logger"), methodName: "log"),
+                CallSite(receiver: .type("Store"), methodName: "save")
             ]),
             Member(name: "reset", kind: .method, accessLevel: .public, callSites: [
-                CallSite(receiverType: "Store", methodName: "log")   // same method, different receiver
+                CallSite(receiver: .type("Store"), methodName: "log")   // same method, different receiver
             ])
         ])
         let metrics = CodeArtifact(
@@ -329,12 +335,12 @@ struct CodeMetricsTests {
         ])
         let clerk = type("Clerk", kind: .class, accessLevel: .public, module: "App", members: [
             Member(name: "shuffle", kind: .method, accessLevel: .public, callSites: [
-                CallSite(receiverType: "Ledger", methodName: "credit"),
-                CallSite(receiverType: "Ledger", methodName: "debit"),
-                CallSite(methodName: "local")   // one self call
+                CallSite(receiver: .type("Ledger"), methodName: "credit"),
+                CallSite(receiver: .type("Ledger"), methodName: "debit"),
+                CallSite(receiver: .selfDispatch, methodName: "local")   // one self call
             ]),
             Member(name: "local", kind: .method, accessLevel: .public, callSites: [
-                CallSite(methodName: "shuffle")   // self only → not envious
+                CallSite(receiver: .selfDispatch, methodName: "shuffle")   // self only → not envious
             ])
         ])
         let m = CodeArtifact(
@@ -379,5 +385,102 @@ struct NumberOfPropertiesMetricTests {
         let m = CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [bag])
             .enriched().computeMetrics().types.first { $0.name == "Bag" }
         #expect(m?.numberOfProperties == 2)
+    }
+}
+
+// MARK: - Read-aware cohesion / feature-envy (#111) and derived-metric serialization (#112)
+
+extension CodeMetricsTests {
+
+    @Test func methodsSharingAFieldOnlyByReadingAreCohesive() {
+        // Neither method writes `state`; they share it purely by *reading* — still one component. Before
+        // read-capture (issue #111) this reported 2 (an upper bound); now it is the true LCOM4 of 1.
+        let reader = type("Reader", kind: .class, module: "App", members: [
+            Member(name: "state", kind: .property, accessLevel: .private),
+            method("show", reads: "state"), method("check", reads: "state")
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [reader], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Reader" }
+        #expect(m?.lackOfCohesion == 1)
+    }
+
+    @Test func sameNamedFreeFunctionCallDoesNotLinkToSiblingMethod() {
+        // `a` calls a *free function* named `b` that coincides with sibling method `b`. A `.free` call
+        // must not link them the way a self-call would, so the type stays 2 disjoint components — the
+        // nil-receiver-is-self imprecision the enum removes (issue #111).
+        let loose = type("Loose", kind: .class, module: "App", members: [
+            Member(name: "a", kind: .method, accessLevel: .internal, callSites: [
+                CallSite(receiver: .free, methodName: "b")]),
+            Member(name: "b", kind: .method, accessLevel: .internal)
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [loose], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Loose" }
+        #expect(m?.lackOfCohesion == 2)
+    }
+
+    @Test func methodReadingItsOwnFieldsIsNotEnvious() {
+        // `tally` reads its own field `total` twice and calls `Ledger` once → own(2) ≥ foreign(1), not
+        // envious. Without read-capture "own" would be 0 and it would be falsely flagged (issue #111).
+        let ledger = type("Ledger", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "credit", kind: .method, accessLevel: .public)
+        ])
+        let clerk = type("Clerk", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "total", kind: .property, accessLevel: .private),
+            Member(name: "tally", kind: .method, accessLevel: .public,
+                   callSites: [CallSite(receiver: .type("Ledger"), methodName: "credit")],
+                   fieldReads: [FieldAccess(name: "total"), FieldAccess(name: "total")])
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [ledger, clerk], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Clerk" }
+        #expect(m?.featureEnvyMethods == 0)
+    }
+
+    @Test func freeFunctionCallDoesNotCountAsOwnInterest() {
+        // One foreign call + one `.free` call → foreign(1) > own(0) → envious. If the free call were
+        // wrongly counted as "own" (the old nil-is-self assumption), own(1) would tie and hide it.
+        let ledger = type("Ledger", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "credit", kind: .method, accessLevel: .public)
+        ])
+        let clerk = type("Clerk", kind: .class, accessLevel: .public, module: "App", members: [
+            Member(name: "post", kind: .method, accessLevel: .public, callSites: [
+                CallSite(receiver: .type("Ledger"), methodName: "credit"),
+                CallSite(receiver: .free, methodName: "log")
+            ])
+        ])
+        let m = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [ledger, clerk], relationships: []
+        ).enriched().computeMetrics().types.first { $0.name == "Clerk" }
+        #expect(m?.featureEnvyMethods == 1)
+    }
+
+    @Test func deepAndWideIsStoredAndSerialized() throws {
+        // `B` derives from `A` (DIT 1) and is subclassed by `C` (NOC 1) → deepAndWide 1. Synthesized
+        // Codable drops computed properties, so a stored `deepAndWide` must appear in JSON (issue #112).
+        let a = type("A", kind: .class, module: "App")
+        let b = type("B", kind: .class, module: "App")
+        let c = type("C", kind: .class, module: "App")
+        let rels = [
+            Relationship(kind: .inheritance, source: "B", target: "A"),
+            Relationship(kind: .inheritance, source: "C", target: "B")
+        ]
+        let metrics = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [a, b, c], relationships: rels
+        ).enriched().computeMetrics()
+        let bMetric = metrics.types.first { $0.name == "B" }
+        #expect(bMetric?.depthOfInheritance == 1)
+        #expect(bMetric?.numberOfChildren == 1)
+        #expect(bMetric?.deepAndWide == 1)
+
+        let json = try JSONEncoder().encode(metrics)
+        let root = try JSONSerialization.jsonObject(with: json) as? [String: Any]
+        let typeEntries = root?["types"] as? [[String: Any]]
+        let bJSON = typeEntries?.first { $0["name"] as? String == "B" }
+        #expect(bJSON?["deepAndWide"] as? Int == 1)
+
+        let decoded = try JSONDecoder().decode(CodeMetrics.self, from: json)
+        #expect(decoded.types.first { $0.name == "B" }?.deepAndWide == 1)
     }
 }

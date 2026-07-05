@@ -179,6 +179,7 @@ extension KotlinExtractor {
             genericParameters: generics, annotations: modifierInfo.annotations,
             location: loc(node), callSites: callSites,
             assignments: extractAssignments(from: body),
+            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body)
         )
     }
@@ -343,7 +344,8 @@ extension KotlinExtractor {
             accessLevel: modifierInfo.accessLevel,
             parameters: params, location: loc(node),
             callSites: extractCallSites(from: body, scope: scope),
-            assignments: extractAssignments(from: body)
+            assignments: extractAssignments(from: body),
+            fieldReads: fieldReadResolver.reads(in: body, scope: scope)
         )
     }
 

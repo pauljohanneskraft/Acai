@@ -19,7 +19,7 @@ struct CallGraphViewModelTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "B", methodName: "work")
+                            CallSite(receiver: .type("B"), methodName: "work")
                         ])
                     ],
                     location: SourceLocation(filePath: "Core/A.swift", line: 1, column: 1)

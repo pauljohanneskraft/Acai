@@ -36,7 +36,7 @@ extension DartExtractor: CallSiteResolving {
 
         // Pattern: this.method(args) — a direct call on the enclosing instance.
         if receiverNode.nodeType == "this" {
-            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: loc(node))
         }
 
         guard receiverNode.nodeType == "identifier" else { return nil }

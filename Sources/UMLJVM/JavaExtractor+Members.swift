@@ -274,6 +274,7 @@ extension JavaExtractor {
             annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites,
             assignments: extractAssignments(from: body),
+            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body)
         )
     }
@@ -304,6 +305,7 @@ extension JavaExtractor {
             annotations: modifierInfo.annotations, location: nodeLoc,
             callSites: callSites,
             assignments: extractAssignments(from: body),
+            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body)
         )
     }
