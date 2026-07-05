@@ -1,6 +1,7 @@
 #!/bin/sh
-# Launcher for the UML MCP server, resolved at plugin start. Referenced by .mcp.json as
-# ${CLAUDE_PLUGIN_ROOT}/Scripts/mcp_launch.sh.
+# Launcher for the UML MCP server, resolved at plugin start. The plugin lives at
+# .claude/plugins/code-quality/, so its .mcp.json references this as
+# ${CLAUDE_PLUGIN_ROOT}/../../../Scripts/mcp_launch.sh (three levels up to the repo root).
 #
 # Resolution order — the LOCAL build wins, so that while developing the MCP a `swift build` is picked
 # up immediately without reinstalling, and a globally-installed copy never shadows work in progress:
