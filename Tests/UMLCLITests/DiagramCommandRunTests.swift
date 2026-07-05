@@ -34,7 +34,7 @@ struct DiagramCommandRunTests {
             for bad in [".method", "Type."] {
                 try expectRunError(
                     ["--source", dir.path, "--sequence-from", bad],
-                    contains: "--sequence-from must be"
+                    contains: "sequence entry point must be"
                 )
             }
         }
@@ -45,7 +45,7 @@ struct DiagramCommandRunTests {
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             try expectRunError(
                 ["--source", dir.path, "--sequence-from", "Service.run", "--map", "NoEquals"],
-                contains: "--map must be in the form"
+                contains: "type mapping must be in the form"
             )
         }
     }
@@ -55,11 +55,11 @@ struct DiagramCommandRunTests {
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             try expectRunError(
                 ["--source", dir.path, "--call-graph", "--call-graph-scope", "bogus:X"],
-                contains: "--call-graph-scope must start with"
+                contains: "scope must start with"
             )
             try expectRunError(
                 ["--source", dir.path, "--call-graph", "--call-graph-scope", "type:"],
-                contains: "--call-graph-scope must be"
+                contains: "scope must be"
             )
         }
     }

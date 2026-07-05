@@ -68,7 +68,9 @@ struct StateDeltaExporter {
 struct PackageDeltaExporter {
     func render(old: CodeArtifact, new: CodeArtifact, format: DiagramFormat) -> String {
         let request = PackageDiagramRequest()
-        let diff = PackageDiagramDiff(old: request.build(from: old), new: request.build(from: new))
+        let diff = PackageDiagramDiff(
+            old: request.build(from: old, language: old.standardLanguageConfiguration),
+            new: request.build(from: new, language: new.standardLanguageConfiguration))
         let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
         let edgeColor: @Sendable (String, String) -> String? = { diff.status(ofEdgeFrom: $0, to: $1).deltaHex }
         switch format {

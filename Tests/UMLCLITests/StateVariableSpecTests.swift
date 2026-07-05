@@ -2,7 +2,7 @@ import Testing
 @testable import UMLCLI
 import UMLDiagram
 
-/// Unit tests for the pure `--state-from` parser (Support/StateVariableSpec.swift).
+/// Unit tests for the pure state-variable parser (promoted to UMLDiagram/Export/StateVariableSpec.swift).
 @Suite("State Variable Spec")
 struct StateVariableSpecTests {
 
@@ -47,7 +47,7 @@ struct StateVariableSpecTests {
         #expect {
             _ = try StateDiagramConfiguration(stateFrom: value, maxStates: 20)
         } throws: { error in
-            "\(error)".contains("--state-from must be")
+            "\(error)".contains("state variable must be")
         }
     }
 }

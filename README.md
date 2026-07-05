@@ -197,7 +197,7 @@ UML is a layered Swift package — one module per concern, so you can pull in on
      │                         ├──►  UMLDiagram  →  DOT / Graphviz / Mermaid
      │                         └──►  UMLRender   →  PNG (SwiftUI ImageRenderer + Sugiyama layout)
      ▼
- UMLCLI (uml)  ·  UMLApp (UML.app)
+ UMLCLI (uml)  ·  UMLApp (UML.app)  ·  UMLMCP (uml-mcp)
 ```
 
 - **`UMLCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol. The vocabulary everything else speaks.
@@ -205,6 +205,7 @@ UML is a layered Swift package — one module per concern, so you can pull in on
 - **`UMLLibrary`** — the composition root. `AnalysisService` holds the parser registry and dispatches by language; importing this one module gives you everything.
 - **`UMLDiagram`** — turns the model into DOT/Graphviz and Mermaid.
 - **`UMLRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `uml image` command (Apple platforms only).
+- **`UMLMCP`** — a third entry point over `UMLLibrary` (alongside the CLI and app): an in-process [Model Context Protocol](https://modelcontextprotocol.io) server (`uml-mcp`) that exposes the read-only analysis engine as tools an AI agent can call directly. Shipped with the bundled **`code-quality`** Claude Code plugin under [`.claude/plugins/`](.claude/plugins/code-quality), which pairs the server with the `code-quality-audit` methodology skill.
 
 Full module-by-module documentation lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)**.
 

@@ -1,7 +1,5 @@
 # LLM / Claude Code — share team config & skills, ignore local & volatile state
-.claude/*
-!.claude/settings.json
-!.claude/skills/
+.claude/*.local.*
 .vscode/*
 
 # Xcode

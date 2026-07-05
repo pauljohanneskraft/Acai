@@ -162,7 +162,8 @@ extension UMLCommand {
                 if let old { return try await exporter.renderDelta(old: old, new: artifact) }
                 return try await exporter.render(artifact: artifact)
             } else if package {
-                let exporter = PackageImageExporter(scale: scale, palette: palette)
+                let exporter = PackageImageExporter(
+                    scale: scale, palette: palette, language: artifact.standardLanguageConfiguration)
                 if let old { return try await exporter.renderDelta(old: old, new: artifact) }
                 return try await exporter.render(artifact: artifact)
             } else if callGraph {
@@ -172,7 +173,8 @@ extension UMLCommand {
                 return try await exporter.render(artifact: artifact)
             } else {
                 let exporter = ClassImageExporter(
-                    scale: scale, palette: palette, configuration: classDiagramConfiguration())
+                    scale: scale, palette: palette, configuration: classDiagramConfiguration(),
+                    language: artifact.standardLanguageConfiguration)
                 if let old { return try await exporter.renderDelta(old: old, new: artifact) }
                 return try await exporter.render(artifact: artifact)
             }
