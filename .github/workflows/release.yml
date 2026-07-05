@@ -1,0 +1,111 @@
+name: Release Binaries
+
+# Deliberately runs only on a version tag or a manual dispatch — never on branch pushes or PRs — so
+# the expensive `-c release` cross-compile happens only when cutting a release. The per-push gate stays
+# in build-lint-test.yml. Ships prebuilt `uml` and `uml-mcp` binaries so non-Swift users (and the
+# Claude Code plugin's launcher) never need a toolchain (part of distribution epic #83).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build (macOS ${{ matrix.arch }})
+    runs-on: macos-26
+    strategy:
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Build uml + uml-mcp for release
+        run: |
+          swift build -c release --arch ${{ matrix.arch }} --product UMLCLI
+          swift build -c release --arch ${{ matrix.arch }} --product UMLMCP
+
+      - name: Stage and strip binaries
+        run: |
+          mkdir -p dist
+          cp .build/release/UMLCLI dist/uml
+          cp .build/release/UMLMCP dist/uml-mcp
+          strip -x dist/uml dist/uml-mcp || true
+
+      - name: Package archive
+        run: |
+          tar -C dist -czf uml-macos-${{ matrix.arch }}.tar.gz uml uml-mcp
+          shasum -a 256 uml-macos-${{ matrix.arch }}.tar.gz > uml-macos-${{ matrix.arch }}.tar.gz.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uml-macos-${{ matrix.arch }}
+          path: uml-macos-${{ matrix.arch }}.tar.gz*
+
+  build-linux:
+    name: Build (Linux ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    container:
+      image: swift:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Build uml + uml-mcp for release
+        run: |
+          swift build -c release --product UMLCLI
+          swift build -c release --product UMLMCP
+
+      - name: Stage and strip binaries
+        run: |
+          mkdir -p dist
+          cp .build/release/UMLCLI dist/uml
+          cp .build/release/UMLMCP dist/uml-mcp
+          strip dist/uml dist/uml-mcp || true
+
+      - name: Package archive
+        run: |
+          tar -C dist -czf uml-linux-${{ matrix.arch }}.tar.gz uml uml-mcp
+          sha256sum uml-linux-${{ matrix.arch }}.tar.gz > uml-linux-${{ matrix.arch }}.tar.gz.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uml-linux-${{ matrix.arch }}
+          path: uml-linux-${{ matrix.arch }}.tar.gz*
+
+  release:
+    name: Publish release
+    needs: [build-macos, build-linux]
+    runs-on: ubuntu-latest
+    # Only attach assets to a real release when triggered by a tag; a manual run just builds + archives.
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          fail_on_unmatched_files: true

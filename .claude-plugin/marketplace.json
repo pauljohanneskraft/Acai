@@ -1,0 +1,14 @@
+{
+  "name": "uml",
+  "owner": {
+    "name": "Paul Kraft",
+    "url": "https://github.com/pauljohanneskraft"
+  },
+  "plugins": [
+    {
+      "name": "uml",
+      "source": "./",
+      "description": "In-process MCP server + code-quality-audit skill for the UML code-analysis engine."
+    }
+  ]
+}

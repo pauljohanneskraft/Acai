@@ -88,6 +88,7 @@ let package = Package(
         .library(name: "UMLDiff", targets: ["UMLDiff"]),
         .library(name: "UMLConformance", targets: ["UMLConformance"]),
         .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
+        .executable(name: "UMLMCP", targets: ["UMLMCP"]),
     ] + optionalProducts,
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
@@ -108,6 +109,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
         .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
+        // The official Swift MCP SDK — the JSON-RPC/stdio transport behind the `UMLMCP` entry point.
+        .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.12.1"),
     ],
     targets: [
         // MARK: Core models
@@ -243,6 +246,22 @@ let package = Package(
             ] + cliOptionalDependencies,
         ),
 
+        // MARK: MCP server
+        // A third entry point over `UMLLibrary` (like the CLI and the app): an in-process MCP server
+        // exposing the read-only analysis engine as tools over JSON-RPC/stdio. The tool set is
+        // deliberately cross-platform (no rendering), so this target builds on Linux too.
+        .executableTarget(
+            name: "UMLMCP",
+            dependencies: [
+                "UMLCore",
+                "UMLDiagram",
+                "UMLConformance",
+                "UMLLibrary",
+                .product(name: "MCP", package: "swift-sdk"),
+                .product(name: "Yams", package: "Yams"),
+            ]
+        ),
+
         // MARK: Tests
         .testTarget(name: "UMLCoreTests", dependencies: ["UMLCore"]),
         .testTarget(name: "UMLSwiftTests", dependencies: ["UMLSwift", "UMLCore"]),
@@ -256,6 +275,7 @@ let package = Package(
         .testTarget(name: "UMLConformanceTests", dependencies: ["UMLConformance", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
         .testTarget(name: "UMLCLITests", dependencies: ["UMLCLI", "UMLCore"]),
+        .testTarget(name: "UMLMCPTests", dependencies: ["UMLMCP", "UMLLibrary", "UMLCore"]),
 
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no UMLRender dependency); the PNG checks live in UMLRenderTests.
