@@ -46,7 +46,8 @@ struct ParityToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("uml_callcycles", on: .standard, path: dir)
-            #expect(value.arrayValue != nil)  // no method cycles in the fixture, but a well-formed list
+            // no method cycles in the fixture, but a well-formed list inside the `items` envelope
+            #expect(value.objectValue?["items"]?.arrayValue != nil)
         }
     }
 
@@ -55,7 +56,7 @@ struct ParityToolsTests {
             try "enum Direction { case north, south }".write(
                 to: dir.appendingPathComponent("Direction.swift"), atomically: true, encoding: .utf8)
             let value = try await MCPTestSupport.call("uml_enums", on: .standard, path: dir)
-            let entries = try #require(value.arrayValue)
+            let entries = try #require(value.objectValue?["items"]?.arrayValue)
             let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "Direction" })
             let cases = try #require(direction.objectValue?["cases"]?.arrayValue)
             #expect(cases.count == 2)
