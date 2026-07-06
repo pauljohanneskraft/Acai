@@ -71,7 +71,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         self.restoredPositions = restoredPositions
         self.model = DiagramLayoutModel(
             artifact: artifact, configuration: configuration,
-            language: artifact.standardLanguageConfiguration
+            languages: artifact.standardLanguageResolver
         )
         if let restoredSizes {
             self.userNodeSizes = restoredSizes
@@ -100,7 +100,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
         model = DiagramLayoutModel(
             artifact: renderArtifact, configuration: configuration,
-            language: renderArtifact.standardLanguageConfiguration
+            languages: renderArtifact.standardLanguageResolver
         )
         nodes = model.nodes
         edges = model.edges

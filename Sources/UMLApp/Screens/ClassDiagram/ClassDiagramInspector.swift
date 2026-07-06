@@ -102,7 +102,7 @@ struct ClassDiagramSidebar: View {
 
             // Shown only for languages that declare a generated-code filter; the label and
             // explanation come from that filter, so the app names no language itself.
-            if let filter = artifact.standardLanguageConfiguration.generatedCodeFilter {
+            if let filter = artifact.standardLanguageResolver.defaultConfiguration.generatedCodeFilter {
                 Section(filter.displayName) {
                     Toggle("Hide Generated Types", isOn: config.hideGeneratedTypes)
                     Text(filter.explanation)

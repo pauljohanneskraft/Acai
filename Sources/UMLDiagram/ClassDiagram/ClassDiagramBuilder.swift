@@ -27,7 +27,7 @@ public struct ClassDiagramBuilder: Sendable {
                 inferDependencyFromMethods: options.inferDependencyFromMethods,
                 showExternalTypes: options.showExternalTypes,
                 focus: options.focus,
-                language: options.language
+                languages: options.languages
             )
         )
     }

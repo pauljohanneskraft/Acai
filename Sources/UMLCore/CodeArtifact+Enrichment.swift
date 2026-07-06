@@ -8,17 +8,25 @@ extension CodeArtifact {
 
     /// Runs the full enrichment pipeline in order.
     ///
-    /// `configuration` supplies the language's type-name classification (primitives/collections) used
-    /// when inferring structural edges. It is injected — never hard-coded here — so the agnostic
-    /// engine stays language-agnostic, and it is *required*: there is no real language with an empty
-    /// configuration, so there is deliberately no empty default to fall into. Because the pipeline is
-    /// idempotent, a re-run must use the *same* configuration as the first run to stay a no-op.
-    public func enriched(configuration: LanguageConfiguration) -> CodeArtifact {
+    /// `resolver` supplies each type's language classification (primitives/collections) used when
+    /// inferring structural edges, resolved *per type* from its stamped `sourceLanguage` — so a polyglot
+    /// artifact infers each language's edges with that language's rules rather than one dominant config.
+    /// It is injected (never hard-coded) so the engine stays language-agnostic, and it is *required*: the
+    /// resolver carries a mandatory default, so there is no empty configuration to fall into. Because the
+    /// pipeline is idempotent, a re-run with the same resolver stays a no-op.
+    public func enriched(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
         resolvingExtensions()
             .resolvingRelationshipNames()
             .reclassifyingRelationshipKinds()
-            .inferringStructuralEdges(configuration: configuration)
+            .inferringStructuralEdges(using: resolver)
             .deduplicatingRelationships()
+    }
+
+    /// Single-language convenience: enriches every type under one `configuration`. Correct for a
+    /// single-language artifact (a parser's own config, a test fixture); polyglot callers use
+    /// `enriched(using:)` with a real per-type resolver instead.
+    public func enriched(configuration: LanguageConfiguration) -> CodeArtifact {
+        enriched(using: LanguageConfigurationResolver(single: configuration))
     }
 
     // MARK: - Relationship name → id resolution (BUG-12 / GAP-7)
@@ -101,14 +109,16 @@ extension CodeArtifact {
 
     /// Adds composition/aggregation edges from property types, dependency edges from
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
-    /// `configuration` classifies primitive/collection type names (injected, language-supplied).
-    public func inferringStructuralEdges(configuration: LanguageConfiguration) -> CodeArtifact {
-        let resolver = TypeIdentityResolver(types: types)
-        let inference = StructuralEdgeInference(
-            configuration: configuration, resolveId: { resolver.canonicalName(for: $0) })
+    /// `resolver` classifies primitive/collection type names *per type* from its own language, so a
+    /// polyglot artifact doesn't misclassify one language's collections under another's rules.
+    public func inferringStructuralEdges(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
+        let identity = TypeIdentityResolver(types: types)
 
         var edges: [Relationship] = []
         for type in Self.allTypes(types) {
+            let inference = StructuralEdgeInference(
+                configuration: resolver.configuration(for: type),
+                resolveId: { identity.canonicalName(for: $0) })
             edges.append(contentsOf: inference.edges(for: type))
         }
 

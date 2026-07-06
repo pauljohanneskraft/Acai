@@ -40,7 +40,7 @@ struct DiffTool: AnalysisTool {
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let languages = arguments.stringArray("languages")
-        let refresh = arguments.bool("refresh") ?? false
+        let refresh = try arguments.bool("refresh") ?? false
         let old = try await cache.artifact(
             path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh)
         let new = try await cache.artifact(

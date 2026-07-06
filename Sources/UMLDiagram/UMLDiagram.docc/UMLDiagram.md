@@ -29,7 +29,7 @@ platforms, or render the DOT with Graphviz (`dot -Tpng`) anywhere.
 ### Quick example
 
 ```swift
-let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+let options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
 let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 ```
 

@@ -98,7 +98,7 @@ extension ClassDiagramOptions {
             showMultiplicities: showMultiplicities,
             showAnnotationStereotypes: showAnnotationStereotypes,
             focus: focus,
-            language: .test
+            languages: LanguageConfigurationResolver(single: .test)
         )
     }
 }
@@ -121,6 +121,7 @@ extension CodeArtifact {
 extension ClassDiagram {
     /// Test convenience building a `ClassDiagram` with the `.test` language fixture.
     init(_ artifact: CodeArtifact) {
-        self.init(artifact: artifact, options: EnrichmentOptions(language: .test))
+        self.init(artifact: artifact, options: EnrichmentOptions(
+            languages: LanguageConfigurationResolver(single: .test)))
     }
 }

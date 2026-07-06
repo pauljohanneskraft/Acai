@@ -69,20 +69,20 @@ public struct TypeQuery: Sendable {
     private let selector: Selector
     private let memberFilter: MemberFilter
     private let moduleResolver: ModuleResolver
-    private let annotationStereotypes: [String: String]
+    private let languageResolver: LanguageConfigurationResolver
 
     public init(
         artifact: CodeArtifact,
         selector: Selector = Selector(),
         members: MemberFilter = MemberFilter(),
         moduleResolver: ModuleResolver = .standard,
-        annotationStereotypes: [String: String] = [:]
+        languageResolver: LanguageConfigurationResolver
     ) {
         self.artifact = artifact
         self.selector = selector
         self.memberFilter = members
         self.moduleResolver = moduleResolver
-        self.annotationStereotypes = annotationStereotypes
+        self.languageResolver = languageResolver
     }
 
     /// Matching types, each with its (filtered) members, sorted by qualified name. When the member
@@ -91,7 +91,7 @@ public struct TypeQuery: Sendable {
         let graph = GraphView(
             artifact: artifact,
             moduleResolver: moduleResolver,
-            annotationStereotypes: annotationStereotypes)
+            languageResolver: languageResolver)
         return artifact.flattened().compactMap { type -> TypeRow? in
             guard let node = graph.node(id: type.id), selector.matches(node) else { return nil }
             let members = type.members.filter(memberFilter.matches)

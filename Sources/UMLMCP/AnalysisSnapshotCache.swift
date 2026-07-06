@@ -2,13 +2,19 @@ import Foundation
 import MCP
 import UMLLibrary
 
-/// A cheap change-signature for a source tree: the newest file modification time plus the file count,
-/// over everything under a root except build/VCS output. Two signatures compare equal when nothing an
-/// analysis would read has changed, so the snapshot cache can reuse a parse across a whole task and
-/// still notice an edit. A value computed from the tree (`SourceTreeSignature(root:)`).
+/// A cheap change-signature for a source tree: the newest file modification time, the file count, and an
+/// order-independent digest folding each file's `(relativePath, mtime, size)`, over everything under a
+/// root except build/VCS output. Two signatures compare equal when nothing an analysis would read has
+/// changed, so the snapshot cache can reuse a parse across a whole task and still notice an edit. The
+/// digest is what makes a rename/move or content-swap visible — those preserve the newest-mtime and the
+/// file count, so an mtime+count signature alone would serve a stale parse. A value computed from the
+/// tree (`SourceTreeSignature(root:)`).
 struct SourceTreeSignature: Equatable, Sendable {
     let latestModification: TimeInterval
     let fileCount: Int
+    /// Sum (commutative → enumeration-order-independent) of a stable per-file hash of
+    /// `(relativePath, mtime, size)`. Changes when a file is added, removed, edited, moved, or swapped.
+    let contentDigest: UInt64
 
     /// Directories whose contents never affect an analysis — skipped wholesale so the walk stays cheap
     /// and edits to build products don't invalidate the snapshot.
@@ -18,14 +24,20 @@ struct SourceTreeSignature: Equatable, Sendable {
     ]
 
     init(root: URL) {
-        let keys: Set<URLResourceKey> = [.contentModificationDateKey, .isDirectoryKey, .isRegularFileKey]
+        let keys: Set<URLResourceKey> = [
+            .contentModificationDateKey, .isDirectoryKey, .isRegularFileKey, .fileSizeKey]
+        let rootPath = root.standardizedFileURL.path
         var latest: TimeInterval = 0
         var count = 0
-        // A single file (e.g. a `.json` baseline) signs on its own mtime — the directory walk below
+        var digest: UInt64 = 0
+        // A single file (e.g. a `.json` baseline) signs on its own identity — the directory walk below
         // enumerates nothing for a non-directory.
         if let values = try? root.resourceValues(forKeys: keys), values.isRegularFile == true {
-            self.latestModification = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
+            let mtime = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
+            self.latestModification = mtime
             self.fileCount = 1
+            self.contentDigest = FileFingerprint(
+                relativePath: root.lastPathComponent, mtime: mtime, size: values.fileSize ?? 0).stableHash
             return
         }
         let enumerator = FileManager.default.enumerator(
@@ -42,13 +54,33 @@ struct SourceTreeSignature: Equatable, Sendable {
             }
             guard values?.isRegularFile == true else { continue }
             count += 1
-            if let modified = values?.contentModificationDate?.timeIntervalSinceReferenceDate,
-               modified > latest {
-                latest = modified
-            }
+            let mtime = values?.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
+            if mtime > latest { latest = mtime }
+            let relativePath = String(url.standardizedFileURL.path.dropFirst(rootPath.count))
+            digest &+= FileFingerprint(
+                relativePath: relativePath, mtime: mtime, size: values?.fileSize ?? 0).stableHash
         }
         self.latestModification = latest
         self.fileCount = count
+        self.contentDigest = digest
+    }
+}
+
+/// One file's identity — its path, modification time and size — reduced to a stable hash the signature
+/// folds together. A value with the hashing behaviour on it (not a static helper).
+private struct FileFingerprint {
+    let relativePath: String
+    let mtime: TimeInterval
+    let size: Int
+
+    /// A stable (seed-free) FNV-1a hash of the file's identity. Deterministic across the process's
+    /// lifetime so the in-process cache compares signatures reliably.
+    var stableHash: UInt64 {
+        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+        for byte in "\(relativePath)|\(mtime.bitPattern)|\(size)".utf8 {
+            hash = (hash ^ UInt64(byte)) &* 0x0000_0100_0000_01b3
+        }
+        return hash
     }
 }
 

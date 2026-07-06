@@ -22,11 +22,11 @@ public struct ClassImageRenderer {
     public func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
-        language: LanguageConfiguration,
+        languages: LanguageConfigurationResolver,
         context: RenderingContext = .default,
         colors: ClassColorOverrides = .plain
     ) throws -> Data {
-        let model = DiagramLayoutModel(artifact: artifact, configuration: configuration, language: language)
+        let model = DiagramLayoutModel(artifact: artifact, configuration: configuration, languages: languages)
         let sizes = nodeSizes(for: model.nodes)
         let positions = model.performLayout(sizes: sizes)
         let boxes = model.groupingBoxes(positions: positions, sizes: sizes)

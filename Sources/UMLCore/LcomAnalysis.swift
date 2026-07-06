@@ -6,10 +6,10 @@
 ///
 /// Two methods are linked when they share access to a stored property by **read or write**
 /// (``Member/fieldReads`` and ``Member/assignments``) or when one self-dispatches a call to the other.
-struct LcomAnalysis {
+public struct LcomAnalysis {
     let type: TypeDeclaration
 
-    init(type: TypeDeclaration) {
+    public init(type: TypeDeclaration) {
         self.type = type
     }
 
@@ -17,10 +17,29 @@ struct LcomAnalysis {
     var componentCount: Int {
         let methods = type.members.filter { $0.kind == .method }
         guard methods.count > 1 else { return methods.count }
+        return partition(of: methods).componentCount
+    }
+
+    /// The method-name clusters the type splits into — the *shape* of its lack of cohesion, turning the
+    /// `lackOfCohesion` count into an actionable extract-class proposal ("these methods belong together;
+    /// those form a separate responsibility"). One inner array per connected component; a cohesive type
+    /// yields a single cluster. Method names within each cluster and the clusters themselves are sorted
+    /// for stable output.
+    public var components: [[String]] {
+        let methods = type.members.filter { $0.kind == .method }
+        guard methods.count > 1 else { return methods.isEmpty ? [] : [[methods[0].name]] }
+        var partition = partition(of: methods)
+        return partition.groups()
+            .map { indices in indices.map { methods[$0].name }.sorted() }
+            .sorted { ($0.first ?? "") < ($1.first ?? "") }
+    }
+
+    /// The disjoint-set over method indices, linked by shared field access and mutual self-calls.
+    private func partition(of methods: [Member]) -> DisjointSet {
         var components = DisjointSet(count: methods.count)
         linkBySharedField(methods, into: &components)
         linkByMutualCall(methods, into: &components)
-        return components.componentCount
+        return components
     }
 
     /// Union methods that access a common stored property — by read or write, same field name and a
@@ -94,5 +113,12 @@ private struct DisjointSet {
     var componentCount: Int {
         var roots = self
         return Set((0..<parent.count).map { roots.root(of: $0) }).count
+    }
+
+    /// The nodes grouped by their connected component (one inner array per component).
+    mutating func groups() -> [[Int]] {
+        var byRoot: [Int: [Int]] = [:]
+        for node in 0..<parent.count { byRoot[root(of: node), default: []].append(node) }
+        return Array(byRoot.values)
     }
 }

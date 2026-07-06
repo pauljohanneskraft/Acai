@@ -17,23 +17,23 @@ public struct ClassImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
     public let configuration: ClassDiagramConfiguration
-    public let language: LanguageConfiguration
+    public let languages: LanguageConfigurationResolver
 
     public init(
         scale: Double, palette: DiagramPalette,
-        configuration: ClassDiagramConfiguration, language: LanguageConfiguration
+        configuration: ClassDiagramConfiguration, languages: LanguageConfigurationResolver
     ) {
         self.scale = scale
         self.palette = palette
         self.configuration = configuration
-        self.language = language
+        self.languages = languages
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
-        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
+        let (configuration, scale, palette, languages) = (configuration, scale, palette, languages)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
-                artifact: artifact, configuration: configuration, language: language,
+                artifact: artifact, configuration: configuration, languages: languages,
                 context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
@@ -50,10 +50,10 @@ public struct ClassImageExporter: Sendable {
             edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
         }
         let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
-        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
+        let (configuration, scale, palette, languages) = (configuration, scale, palette, languages)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
-                artifact: union, configuration: configuration, language: language,
+                artifact: union, configuration: configuration, languages: languages,
                 context: RenderingContext(scale: CGFloat(scale), palette: palette),
                 colors: ClassColorOverrides(edge: edgeColor, node: nodeColor))
         }
@@ -159,16 +159,16 @@ public struct StateImageExporter: Sendable {
 public struct PackageImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
-    public let language: LanguageConfiguration
+    public let languages: LanguageConfigurationResolver
 
-    public init(scale: Double, palette: DiagramPalette, language: LanguageConfiguration) {
+    public init(scale: Double, palette: DiagramPalette, languages: LanguageConfigurationResolver) {
         self.scale = scale
         self.palette = palette
-        self.language = language
+        self.languages = languages
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
-        let diagram = PackageDiagramRequest().build(from: artifact, language: language)
+        let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try PackageImageRenderer().renderPNG(
@@ -179,10 +179,10 @@ public struct PackageImageExporter: Sendable {
     /// The union with each module node and dependency edge tinted by its diff status.
     public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = PackageDiagramRequest()
-        let language = language
+        let languages = languages
         let diff = PackageDiagramDiff(
-            old: request.build(from: old, language: language),
-            new: request.build(from: new, language: language))
+            old: request.build(from: old, languages: languages),
+            new: request.build(from: new, languages: languages))
         let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
         let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
         let (scale, palette) = (scale, palette)

@@ -34,7 +34,7 @@ public struct GraphView: Sendable {
     public init(
         artifact: CodeArtifact,
         moduleResolver: ModuleResolver = .standard,
-        annotationStereotypes: [String: String] = [:]
+        languageResolver: LanguageConfigurationResolver
     ) {
         let flat = artifact.flattened()
         // Compute metrics up front so each node can be tagged with its metric-derived fields
@@ -49,7 +49,8 @@ public struct GraphView: Sendable {
                 module: moduleResolver.productName(forFilePath: type.location?.filePath ?? ""),
                 kind: type.kind,
                 access: type.accessLevel,
-                stereotype: type.stereotype(annotationStereotypes: annotationStereotypes),
+                stereotype: type.stereotype(
+                    annotationStereotypes: languageResolver.configuration(for: type).annotationStereotypes),
                 annotations: type.annotations.map(\.normalizedAnnotation),
                 location: type.location,
                 memberCount: type.members.count + type.enumCases.count,

@@ -57,7 +57,7 @@ struct ClassDiagramExportTests {
             ExampleExports.examples("ClassDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderClassDOT with default options.
-        let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+        let options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
         let generated = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("ClassDiagram", "Exports", "\(stem).dot")
@@ -71,7 +71,7 @@ struct ClassDiagramExportTests {
             ExampleExports.examples("ClassDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderClass with `--format mermaid` and default options.
-        let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+        let options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
         let generated = ClassDiagramMermaidRenderer(options: options).generate(from: artifact)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("ClassDiagram", "Exports", "\(stem).mmd")
@@ -161,7 +161,7 @@ struct PackageDiagramExportTests {
         )
         // Mirrors DiagramCommand.renderPackage (enriched + default theme/font).
         let diagram = PackageDiagramBuilder().build(
-            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
         #expect(diagram.nodes.count == 2, "\(stem) package diagram should have Core + Banking modules")
         let generated = PackageDiagramDOTRenderer().render(diagram)
         let expected = try ExampleExports.golden(
@@ -176,7 +176,7 @@ struct PackageDiagramExportTests {
             ExampleExports.examples("PackageDiagram", dir), language: language
         )
         let diagram = PackageDiagramBuilder().build(
-            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
         let generated = PackageDiagramMermaidRenderer().render(diagram)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("PackageDiagram", "Exports", "\(stem).mmd")

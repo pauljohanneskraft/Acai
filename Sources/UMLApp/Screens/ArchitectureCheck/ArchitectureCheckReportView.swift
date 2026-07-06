@@ -10,7 +10,7 @@ extension ConformanceRules {
     func report(for artifact: CodeArtifact) -> ConformanceReport {
         ConformanceEvaluator(
             rules: self,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+            languageResolver: artifact.standardLanguageResolver
         ).evaluate(artifact)
     }
 }

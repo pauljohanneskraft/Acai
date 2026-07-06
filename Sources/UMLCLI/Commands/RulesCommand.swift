@@ -39,7 +39,7 @@ extension UMLCommand {
                 let artifact = try artifactSource.resolve()
                 let graph = GraphView(
                     artifact: artifact,
-                    annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes)
+                    languageResolver: artifact.standardLanguageResolver)
                 try StarterArchitectureRules(graph: graph).yaml.writeOutput(to: output, label: "rules")
             }
         }

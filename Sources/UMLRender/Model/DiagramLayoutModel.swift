@@ -37,13 +37,13 @@ public struct DiagramLayoutModel: Sendable {
     public init(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
-        language: LanguageConfiguration
+        languages: LanguageConfigurationResolver
     ) {
         self.configuration = configuration
 
         var resolved = artifact.resolvingExtensions()
-        if configuration.hideGeneratedTypes, let filter = language.generatedCodeFilter {
-            resolved = resolved.filteringGeneratedTypes(using: filter)
+        if configuration.hideGeneratedTypes {
+            resolved = resolved.filteringGeneratedTypes(using: languages)
         }
 
         // Single-class focus: prune to the subgraph around one type before any
@@ -64,11 +64,12 @@ public struct DiagramLayoutModel: Sendable {
         // different files). A diagram node set keyed by id must be unique — otherwise downstream
         // `Dictionary(uniqueKeysWithValues:)` layout maps trap. First declaration wins, matching
         // the view layer, which already renders `nodes.removingDuplicates { $0.id }`.
-        self.nodes = visibleTypes.map {
-            GeneratedDiagramNode(
-                from: $0, configuration: configuration,
-                annotationStereotypes: language.annotationStereotypes,
-                collectionTypeNames: language.collectionTypeNames
+        self.nodes = visibleTypes.map { type in
+            let config = languages.configuration(for: type)
+            return GeneratedDiagramNode(
+                from: type, configuration: configuration,
+                annotationStereotypes: config.annotationStereotypes,
+                collectionTypeNames: config.collectionTypeNames
             )
         }.removingDuplicates { $0.id }
 

@@ -133,7 +133,7 @@ extension UMLCommand {
                 ).export(from: artifact)
             } else if package {
                 export = PackageDiagramTextExporter(
-                    language: artifact.standardLanguageConfiguration, theme: selectedTheme
+                    languages: artifact.standardLanguageResolver, theme: selectedTheme
                 ).export(from: artifact)
             } else if callGraph {
                 let scopeOption = CallGraphScopeOption(raw: callGraphScope)
@@ -152,7 +152,7 @@ extension UMLCommand {
 
         /// Builds the class-diagram options from the flags/config/theme/focus inputs.
         private func classDiagramOptions(for artifact: CodeArtifact) throws -> ClassDiagramOptions {
-            var options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+            var options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
 
             if let configPath = config {
                 let yamlString = try String(contentsOf: URL(fileURLWithPath: configPath), encoding: .utf8)

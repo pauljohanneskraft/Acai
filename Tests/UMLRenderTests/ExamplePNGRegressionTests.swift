@@ -174,7 +174,7 @@ struct ClassDiagramPNGTests {
             configuration.grouping = .none  // matches `uml image --grouping none`
             return try ClassImageRenderer().renderPNG(
                 artifact: artifact, configuration: configuration,
-                language: artifact.standardLanguageConfiguration,
+                languages: artifact.standardLanguageResolver,
                 context: RenderingContext(scale: 2, palette: theme.palette)
             )
         }
@@ -257,7 +257,7 @@ struct PackageDiagramPNGTests {
                 ExamplePNGs.examples("PackageDiagram", entry.dir), languages: [entry.language]
             )
             let diagram = PackageDiagramBuilder().build(
-                from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+                from: artifact.enriched(using: artifact.standardLanguageResolver))
             return try PackageImageRenderer().renderPNG(
                 packageDiagram: diagram, context: RenderingContext(scale: 2, palette: theme.palette))
         }

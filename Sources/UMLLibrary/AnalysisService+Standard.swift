@@ -52,15 +52,20 @@ extension AnalysisService {
 }
 
 extension CodeArtifact {
-    /// This artifact's `LanguageConfiguration` resolved from the standard registry — the single
-    /// place the app/CLI turn a `sourceLanguage` into its quirks before handing them to the
-    /// agnostic diagram layer.
+    /// The single place the app/CLI/MCP turn an artifact into its per-type language quirks before handing
+    /// them to the agnostic engine: a `LanguageConfigurationResolver` over the standard registry that
+    /// classifies **each type** by its own stamped `sourceLanguage`. A mixed Swift+Python codebase is
+    /// therefore styled, enriched and filtered with each language's own rules rather than one dominant
+    /// config, while a single-language codebase is byte-for-byte unchanged.
     ///
-    /// Returns an empty configuration only for a language not in the standard set, which cannot
-    /// happen for artifacts produced by `AnalysisService.standard`; it keeps the UI/CLI robust to a
-    /// hand-loaded artifact with an unknown language rather than crashing.
-    public var standardLanguageConfiguration: LanguageConfiguration {
-        AnalysisService.standard.registry.configuration(for: metadata.sourceLanguage)
-            ?? LanguageConfiguration()
+    /// Its default (used for a type with no stamped language, or a language not in the standard set —
+    /// neither of which happens for artifacts produced by `AnalysisService.standard`) is the artifact's
+    /// top-level language config, keeping the UI/CLI robust to a hand-loaded artifact rather than crashing.
+    /// There is deliberately no public single-config accessor: resolving one flat config per artifact was
+    /// the polyglot bug this replaced.
+    public var standardLanguageResolver: LanguageConfigurationResolver {
+        let registry = AnalysisService.standard.registry
+        let fallback = registry.configuration(for: metadata.sourceLanguage) ?? LanguageConfiguration()
+        return LanguageConfigurationResolver(registry: registry, default: fallback)
     }
 }

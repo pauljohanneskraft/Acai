@@ -23,7 +23,7 @@ struct CodebaseAnalyzer {
                 inferCompositionFromProperties: true,
                 inferDependencyFromMethods: true,
                 showExternalTypes: true,
-                language: artifact.standardLanguageConfiguration
+                languages: artifact.standardLanguageResolver
             )
         )
         return CodeArtifact(

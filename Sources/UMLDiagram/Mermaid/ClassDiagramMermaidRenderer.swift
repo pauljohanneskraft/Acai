@@ -54,16 +54,17 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
     // MARK: - Class rendering
 
     private func renderClass(_ type: TypeDeclaration, safeID: String) -> [String] {
+        let config = options.languages.configuration(for: type)
         let header = "    class \(safeID)[\"\(displayName(for: type).mermaidLabelEscaped)\"]"
 
         var body: [String] = []
-        if let stereotype = stereotypeString(for: type) {
+        if let stereotype = stereotypeString(for: type, config: config) {
             body.append("        <<\(stereotype)>>")
         }
         if options.showMembers {
             let (properties, methods) = type.partitionedMembers(visibleAtLeast: options.minimumAccessLevel)
-            body += properties.map { "        " + memberLine($0) }
-            body += methods.map { "        " + memberLine($0) }
+            body += properties.map { "        " + memberLine($0, config: config) }
+            body += methods.map { "        " + memberLine($0, config: config) }
             body += type.enumCases.map { "        \($0.name)" }
         }
 
@@ -76,7 +77,7 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         return type.name + "<" + type.genericParameters.map(\.name).joined(separator: ", ") + ">"
     }
 
-    private func memberLine(_ member: Member) -> String {
+    private func memberLine(_ member: Member, config: LanguageConfiguration) -> String {
         var line = ""
         if options.showAccessLevelSymbols {
             line += member.accessLevel.umlSymbol
@@ -86,14 +87,14 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         if member.isMethod {
             let params = member.parameters.map { parameter -> String in
                 guard options.showMemberTypes, let type = parameter.type else { return parameter.internalName }
-                return "\(parameter.internalName) \(typeString(type))"
+                return "\(parameter.internalName) \(typeString(type, config: config))"
             }.joined(separator: ", ")
             line += "(\(params))"
             if options.showMemberTypes, let returnType = member.type {
-                line += " \(typeString(returnType))"
+                line += " \(typeString(returnType, config: config))"
             }
         } else if options.showMemberTypes, let type = member.type {
-            line += " \(typeString(type))"
+            line += " \(typeString(type, config: config))"
         }
 
         if member.modifiers.contains(.static) || member.modifiers.contains(.class) {
@@ -151,9 +152,9 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         }
     }
 
-    private func stereotypeString(for type: TypeDeclaration) -> String? {
+    private func stereotypeString(for type: TypeDeclaration, config: LanguageConfiguration) -> String? {
         type.stereotype(
-            annotationStereotypes: options.showAnnotationStereotypes ? options.language.annotationStereotypes : [:]
+            annotationStereotypes: options.showAnnotationStereotypes ? config.annotationStereotypes : [:]
         )
     }
 
@@ -161,8 +162,8 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
 
     /// The `Name<Args>?[]` display string from the shared `TypeReference` formatter, with `<>`
     /// escaped for Mermaid. Shared so DOT, Mermaid, and the app canvas stay in sync.
-    private func typeString(_ ref: TypeReference) -> String {
-        ref.umlDisplayString(collectionTypeNames: options.language.collectionTypeNames).mermaidGenerics
+    private func typeString(_ ref: TypeReference, config: LanguageConfiguration) -> String {
+        ref.umlDisplayString(collectionTypeNames: config.collectionTypeNames).mermaidGenerics
     }
 
 }

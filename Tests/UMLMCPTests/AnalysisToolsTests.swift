@@ -108,6 +108,39 @@ struct AnalysisToolsTests {
         }
     }
 
+    @Test func cyclesRejectsAnUnknownScope() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            // A typo like "module" (singular) must error, not silently run the full scope.
+            await #expect(throws: (any Error).self) {
+                _ = try await MCPTestSupport.call(
+                    "uml_cycles", on: .standard, path: dir, ["scope": .string("module")])
+            }
+        }
+    }
+
+    @Test func refreshMustBeABooleanNotAString() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            // A stringified `"true"` used to silently read as `false` and serve a stale snapshot.
+            await #expect(throws: (any Error).self) {
+                _ = try await MCPTestSupport.call(
+                    "uml_metrics", on: .standard, path: dir, ["refresh": .string("true")])
+            }
+        }
+    }
+
+    @Test func checkRejectsAMissingRulesFile() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let missing = dir.appendingPathComponent("does-not-exist.yml")
+            await #expect(throws: (any Error).self) {
+                _ = try await MCPTestSupport.call(
+                    "uml_check", on: .standard, path: dir, ["rules": .string(missing.path)])
+            }
+        }
+    }
+
     @Test func doctorReportsAPerfectScoreForCleanParse() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)

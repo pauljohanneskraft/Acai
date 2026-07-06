@@ -50,7 +50,7 @@ extension UMLCommand {
 
             let evaluator = ConformanceEvaluator(
                 rules: ruleSet,
-                annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+                languageResolver: artifact.standardLanguageResolver
             )
             let report = evaluator.evaluate(artifact)
             let drift = try baseline.map { try driftDiff(current: artifact, baselineRef: $0) }

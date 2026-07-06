@@ -17,7 +17,7 @@ struct DeadCodeTool: AnalysisTool {
         let artifact = try await resolveArtifact(arguments, cache)
         let report = DeadCodeScan(
             artifact: artifact,
-            entryPoints: artifact.standardLanguageConfiguration.entryPointMarkers).report
+            languages: artifact.standardLanguageResolver).report
         return .json(try Value(report))
     }
 }

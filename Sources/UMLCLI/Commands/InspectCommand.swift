@@ -48,7 +48,7 @@ extension UMLCommand {
                     minParameters: minParameters,
                     isPublicVar: publicVars ? true : nil,
                     isOverride: overrides ? true : nil),
-                annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+                languageResolver: artifact.standardLanguageResolver
             ).rows
 
             let rendered: String
