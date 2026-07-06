@@ -47,7 +47,7 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("uml_inspect", on: .standard, path: dir)
-            let rows = try #require(value.arrayValue)
+            let rows = try #require(value.objectValue?["items"]?.arrayValue)
             #expect(rows.contains { $0.objectValue?["qualifiedName"]?.stringValue == "Service" })
             let service = try #require(rows.first { $0.objectValue?["qualifiedName"]?.stringValue == "Service" })
             let location = try #require(service.objectValue?["location"]?.objectValue)
@@ -72,7 +72,7 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("uml_smells", on: .standard, path: dir)
-            let findings = try #require(value.arrayValue)
+            let findings = try #require(value.objectValue?["items"]?.arrayValue)
             // The six-parameter method breaches the default maxParameters threshold.
             #expect(findings.contains { ($0.objectValue?["message"]?.stringValue ?? "").contains("maxParameters") })
         }
@@ -103,7 +103,8 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
                 "uml_cycles", on: .standard, path: dir, ["scope": .string("modules")])
-            #expect(value.arrayValue != nil)  // no cycles in the fixture, but a well-formed list
+            // no cycles in the fixture, but a well-formed list inside the `items` envelope
+            #expect(value.objectValue?["items"]?.arrayValue != nil)
         }
     }
 

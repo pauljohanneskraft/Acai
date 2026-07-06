@@ -63,6 +63,27 @@ struct ToolRegistryTests {
         }
     }
 
+    /// MCP requires `structuredContent` to be a JSON object. The five tools whose report is a
+    /// top-level list (cycles, smells, inspect, callcycles, enums) must wrap it in an object
+    /// envelope — a bare array is rejected by the client's schema validation. Guards the regression
+    /// that made half the tools unusable from an MCP client.
+    @Test func listReportingToolsWrapStructuredContentInAnObject() async throws {
+        let listTools = ["uml_cycles", "uml_smells", "uml_inspect", "uml_callcycles", "uml_enums"]
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            for name in listTools {
+                let result = try await ToolRegistry.standard.call(
+                    name: name, arguments: ["path": .string(dir.path)])
+                let structured = try #require(
+                    result.structuredContent, "\(name) must attach structuredContent")
+                #expect(
+                    structured.objectValue != nil,
+                    "\(name) structuredContent must be a JSON object, not \(structured)")
+                #expect(structured.objectValue?["items"]?.arrayValue != nil, "\(name) missing items list")
+            }
+        }
+    }
+
     @Test func callReturnsBothTextAndStructuredContent() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)

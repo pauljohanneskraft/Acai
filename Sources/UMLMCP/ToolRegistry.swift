@@ -58,11 +58,12 @@ struct ToolRegistry: Sendable {
         }
         switch try await tool.run(arguments: ToolArguments(arguments), cache: cache) {
         case .json(let value):
-            // JSON as text (what a human reads) plus the same value as structuredContent (what a
-            // program consumes).
+            // JSON as text (what a human reads, byte-identical to the 1:1 CLI command) plus the
+            // value as structuredContent (what a program consumes). MCP requires the structured
+            // channel to be an object, so a top-level array is wrapped in an `items` envelope.
             return try CallTool.Result(
                 content: [.text(text: prettyJSON(value), annotations: nil, _meta: nil)],
-                structuredContent: value)
+                structuredContent: value.asStructuredContent)
         case .content(let content):
             // Ready-made content (diagram source text, or a PNG image) — passed through unchanged.
             return CallTool.Result(content: content)
