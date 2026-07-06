@@ -61,6 +61,12 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// dependencies that aren't visible in signatures. Not added to the relationship graph, so diagrams
     /// are unaffected.
     public var referencedTypeNames: [String] = []
+    /// This method's cyclomatic complexity — `1 +` the number of decision points (branches, loops,
+    /// `case`s, `catch`es, short-circuit `&&`/`||`, ternaries) in its body. Set by parsers for methods
+    /// whose bodies are analysed; `nil` for members without a body or a parser that doesn't compute it
+    /// (so an aggregate metric can tell "no branches" from "not measured"). Surfaces the single gnarly
+    /// method that an aggregate method-count (WMC) hides.
+    public var cyclomaticComplexity: Int?
 
     public init(
         name: String,
@@ -78,7 +84,8 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         assignments: [VariableAssignment] = [],
         fieldReads: [FieldAccess] = [],
         initialValue: VariableAssignment.Value? = nil,
-        referencedTypeNames: [String] = []
+        referencedTypeNames: [String] = [],
+        cyclomaticComplexity: Int? = nil
     ) {
         self.name = name
         self.kind = kind
@@ -96,6 +103,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.fieldReads = fieldReads
         self.initialValue = initialValue
         self.referencedTypeNames = referencedTypeNames
+        self.cyclomaticComplexity = cyclomaticComplexity
     }
 
     /// Whether this member belongs in the "attributes" compartment of a class diagram.

@@ -8,7 +8,7 @@ struct CodebaseGlobalsSection: View {
     let artifact: CodeArtifact
 
     var body: some View {
-        CollapsibleSection(title: "Global Variables & Constants") {
+        CollapsibleSection(title: "Global Variables & Constants", defaultExpanded: false) {
             SectionCountBadge(text: "\(artifact.globalVariables.count)")
         } content: {
             let sortedGlobals = artifact.globalVariables

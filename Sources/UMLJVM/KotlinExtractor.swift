@@ -5,6 +5,13 @@ import UMLTreeSitter
 /// from a Kotlin source file's tree-sitter AST.
 struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
 
+    /// Kotlin structural decision-point node types for cyclomatic complexity (`when` entries, `if`/
+    /// loops, `catch`).
+    static let branchNodeKinds: Set<String> = [
+        "if_expression", "for_statement", "while_statement", "do_while_statement",
+        "when_entry", "catch_block"
+    ]
+
     // MARK: - State
 
     let context: SourceFileContext

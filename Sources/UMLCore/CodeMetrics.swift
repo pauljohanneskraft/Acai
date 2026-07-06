@@ -62,6 +62,9 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var numberOfChildren: Int
         /// Weighted methods per class (method count).
         public var weightedMethods: Int
+        /// The highest cyclomatic complexity of any single method (0 when none was measured) — surfaces
+        /// the one gnarly method that the method-count `weightedMethods` hides.
+        public var maxCyclomaticComplexity: Int
         /// Stored/computed property count — the data half of the anemic-vs-behaviour balance.
         public var numberOfProperties: Int
         public var fanIn: Int
@@ -177,17 +180,16 @@ extension CodeArtifact {
         // Nesting depth reads a type's `nestedTypes`, which `allTypes(_:)` clears on the flattened
         // copies — so measure it over the original (un-flattened) tree, keyed by id.
         let nesting = nestingDepths(types)
-
-        let resolver = ModuleResolver.standard
         // `depth(of:)` is memoised, so reading it twice (DIT and the derived deep-and-wide) is cheap.
         return flat.map { type in
             CodeMetrics.TypeMetric(
                 id: type.id,
                 name: type.qualifiedName,
-                module: resolver.productName(forFilePath: type.location?.filePath ?? ""),
+                module: ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? ""),
                 depthOfInheritance: depth(of: type.id, visiting: [type.id]),
                 numberOfChildren: childCount[type.id, default: 0],
                 weightedMethods: type.members.filter { $0.kind == .method }.count,
+                maxCyclomaticComplexity: type.members.compactMap(\.cyclomaticComplexity).max() ?? 0,
                 numberOfProperties: type.members.filter { $0.kind == .property }.count,
                 fanIn: fanIn[type.id]?.count ?? 0,
                 fanOut: fanOut[type.id]?.count ?? 0,

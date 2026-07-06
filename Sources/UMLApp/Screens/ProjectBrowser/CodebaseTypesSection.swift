@@ -14,7 +14,7 @@ struct CodebaseTypesSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Types") {
+        CollapsibleSection(title: "Types", defaultExpanded: false) {
             SectionCountBadge(text: "\(artifact.types.count)")
         } content: {
             let sortedTypes = artifact.types

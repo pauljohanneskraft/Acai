@@ -236,6 +236,26 @@ extension TreeSitterExtracting {
         return Array(names)
     }
 
+    /// The cyclomatic complexity of a method `body`: `1 +` the count of decision-point nodes whose
+    /// tree-sitter type is in `branchKinds` (the grammar's `if`/`for`/`while`/`case`/`catch`/`&&`/`||`/
+    /// ternary node types — supplied by the language plugin, so this helper names no language). Returns
+    /// `nil` when there is no body, so an aggregate metric distinguishes "not measured" from "no
+    /// branches". Walks iteratively so a deeply nested body can't overflow the stack.
+    public func cyclomaticComplexity(in body: Node?, branchKinds: Set<String>) -> Int? {
+        guard let body else { return nil }
+        var complexity = 1
+        var stack: [Node] = [body]
+        while let node = stack.popLast() {
+            if let type = node.nodeType, branchKinds.contains(type) {
+                complexity += 1
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map { stack.append($0) }
+            }
+        }
+        return complexity
+    }
+
     /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes (the parser
     /// could not make sense of the input) and `missing` nodes (a required token the source
     /// omitted, inserted during recovery). Walks *all* children, not just named ones, since

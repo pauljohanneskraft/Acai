@@ -62,6 +62,8 @@ extension CFamilyExtractor {
             members[pending.index].assignments = extractAssignments(from: pending.body)
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
+            members[pending.index].cyclomaticComplexity =
+                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
         }
     }
 

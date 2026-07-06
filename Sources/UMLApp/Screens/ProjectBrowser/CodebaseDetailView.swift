@@ -50,7 +50,7 @@ struct CodebaseDetailView: View {
                     Divider()
 
                     if let artifact {
-                        diagramsSection(codebase: codebase, artifact: artifact)
+                        diagramsBar(codebase: codebase, artifact: artifact)
                         Divider()
                         if let analysis = model.analysis(for: codebaseID) {
                             analysisSections(codebase: codebase, artifact: artifact, analysis: analysis)
@@ -220,17 +220,18 @@ extension CodebaseDetailView {
 
     // MARK: - Diagrams
 
-    private func diagramsSection(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        CollapsibleSection(title: "Diagrams") {
-            LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
-                ForEach(DiagramType.allCases) { type in
-                    diagramButton(codebase: codebase, type: type)
-                }
+    /// The diagram-generation buttons, shown inline directly under the header (no fold, no title) since
+    /// they are the pane's primary action.
+    private func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
+        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
+            ForEach(DiagramType.allCases) { type in
+                diagramButton(codebase: codebase, type: type)
             }
-            .padding(.horizontal)
-            .onPreferenceChange(CardHeightPreferenceKey.self) { height in
-                if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
-            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .onPreferenceChange(CardHeightPreferenceKey.self) { height in
+            if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
         }
     }
 

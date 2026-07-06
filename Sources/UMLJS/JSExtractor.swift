@@ -3,6 +3,13 @@ import UMLTreeSitter
 
 /// Walks a tree-sitter AST (JavaScript or TypeScript) and produces UMLCore model types.
 struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
+
+    /// JS/TS structural decision-point node types for cyclomatic complexity.
+    static let branchNodeKinds: Set<String> = [
+        "if_statement", "for_statement", "for_in_statement", "while_statement", "do_statement",
+        "catch_clause", "switch_case"
+    ]
+
     let context: SourceFileContext
     let isTypeScript: Bool
 

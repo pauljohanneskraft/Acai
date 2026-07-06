@@ -180,7 +180,8 @@ extension KotlinExtractor {
             location: loc(node), callSites: callSites,
             assignments: extractAssignments(from: body),
             fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body)
+            referencedTypeNames: referencedTypeNames(in: body),
+            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
         )
     }
 

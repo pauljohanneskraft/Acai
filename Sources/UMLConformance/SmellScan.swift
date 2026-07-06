@@ -19,7 +19,8 @@ public struct SmellScan: Sendable {
         MetricBudget(metric: .dataClassScore, max: 0.8, message: nil),
         MetricBudget(metric: .nestingDepth, max: 2, message: nil),
         MetricBudget(metric: .lcom, max: 1, message: nil),
-        MetricBudget(metric: .featureEnvyMethods, max: 2, message: nil)
+        MetricBudget(metric: .featureEnvyMethods, max: 2, message: nil),
+        MetricBudget(metric: .maxCyclomaticComplexity, max: 10, message: nil)
     ]
 
     private let artifact: CodeArtifact
@@ -136,6 +137,8 @@ extension MetricBudget.Metric {
             return "extract collaborators — the type does too much"
         case .numberOfProperties:
             return "group related fields into a value type"
+        case .maxCyclomaticComplexity:
+            return "extract the branchy method — split its decision paths"
         case .fanIn, .fanOut, .depthOfInheritance, .numberOfChildren,
              .instability, .abstractness, .distance, .publicApiSurface:
             return "review this coupling metric"

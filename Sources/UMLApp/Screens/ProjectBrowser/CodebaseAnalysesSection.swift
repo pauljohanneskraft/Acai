@@ -29,7 +29,9 @@ struct ArchitectureCheckSection: View {
         CollapsibleSection(title: "Architecture Check") {
             HStack(spacing: 8) {
                 if let report, !report.isPassing {
-                    SectionCountBadge(text: "\(report.violations.count) violation(s)", tint: .red)
+                    SectionCountBadge(
+                        text: "\(report.violations.count) violation(s) across \(report.checkedRuleCount) rule(s)",
+                        tint: .red)
                 }
                 Button(configuration == nil ? "Set Up…" : "Edit…") { editing = true }
             }
@@ -57,7 +59,7 @@ struct ArchitectureCheckSection: View {
                 text: "Could not load rules: \(rulesError)",
                 systemImage: "exclamationmark.triangle")
         } else if let report {
-            ArchitectureCheckReportView(report: report)
+            ArchitectureCheckReportView(report: report, showsSummary: false)
         }
     }
 
@@ -102,8 +104,8 @@ struct DeadCodeSection: View {
         CollapsibleSection(title: "Dead Code") {
             SectionCountBadge(
                 text: report.candidates.isEmpty
-                    ? "none · \(coverage)% coverage"
-                    : "\(report.candidates.count) · \(coverage)% coverage",
+                    ? "none · call-graph coverage \(coverage)%"
+                    : "\(report.candidates.count) candidate(s) · call-graph coverage \(coverage)%",
                 tint: report.candidates.isEmpty ? .secondary : .orange)
         } content: {
             DeadCodeReportView(report: report)
@@ -126,7 +128,9 @@ struct ParseHealthSection: View {
             defaultExpanded: !report.diagnostics.isEmpty
         ) {
             SectionCountBadge(
-                text: "health \(percent)%",
+                text: report.diagnostics.isEmpty
+                    ? "health \(percent)%"
+                    : "health \(percent)% · \(report.diagnosticCount) diagnostic(s)",
                 tint: percent >= 90 ? .secondary : .red)
         } content: {
             HealthReportView(report: report)

@@ -129,6 +129,8 @@ extension DartExtractor {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
+            members[pending.index].cyclomaticComplexity =
+                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
         }
     }
 

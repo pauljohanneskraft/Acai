@@ -3,6 +3,13 @@ import UMLCore
 import UMLTreeSitter
 
 struct DartExtractor: TreeSitterExtracting {
+
+    /// Dart structural decision-point node types for cyclomatic complexity.
+    static let branchNodeKinds: Set<String> = [
+        "if_statement", "for_statement", "for_element", "while_statement", "do_statement",
+        "switch_statement_case", "switch_expression_case", "catch_clause"
+    ]
+
     let context: SourceFileContext
 
     var types: [TypeDeclaration] = []

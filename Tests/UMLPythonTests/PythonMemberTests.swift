@@ -24,6 +24,28 @@ struct PythonMemberTests {
         #expect(initializer?.accessLevel == .public)
     }
 
+    @Test func cyclomaticComplexityCountsDecisionPoints() {
+        let source = """
+        class Analyzer:
+            def simple(self):
+                return 1
+
+            def branchy(self, xs):
+                total = 0
+                for x in xs:                 # +1
+                    if x > 0:                # +1
+                        total += x
+                    elif x == 0:             # +1
+                        total += 1
+                return total
+        """
+        let analyzer = type(named: "Analyzer", in: source)
+        let simple = analyzer?.members.first { $0.name == "simple" }
+        let branchy = analyzer?.members.first { $0.name == "branchy" }
+        #expect(simple?.cyclomaticComplexity == 1)   // no branches → base complexity
+        #expect(branchy?.cyclomaticComplexity == 4)  // 1 + for + if + elif
+    }
+
     @Test func classmethodAndStaticmethodDropReceiver() {
         let source = """
         class Factory:
