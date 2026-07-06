@@ -71,6 +71,75 @@ struct ParserConformanceTests {
         """)
     ]
 
+    /// A fixture whose `method` reads the stored property `field` in expression position, used to prove
+    /// every parser emits ``Member/fieldReads`` (issue #111). C is omitted — it has no member methods.
+    struct ReadFixture: Sendable {
+        let name: String
+        let parser: any CodeParser
+        let fileName: String
+        let source: String
+        let method: String
+        let field: String
+    }
+
+    static let readFixtures: [ReadFixture] = [
+        ReadFixture(name: "Swift", parser: SwiftCodeParser(), fileName: "Box.swift", source: """
+        class Box {
+            var value: Int = 0
+            func get() -> Int { return value }
+        }
+        """, method: "get", field: "value"),
+        ReadFixture(name: "Java", parser: JavaCodeParser(), fileName: "Box.java", source: """
+        class Box {
+            int value;
+            int get() { return value; }
+        }
+        """, method: "get", field: "value"),
+        ReadFixture(name: "Kotlin", parser: KotlinCodeParser(), fileName: "Box.kt", source: """
+        class Box {
+            var value: Int = 0
+            fun get(): Int { return value }
+        }
+        """, method: "get", field: "value"),
+        ReadFixture(name: "TypeScript", parser: JSCodeParser(), fileName: "box.ts", source: """
+        class Box {
+            value: number = 0
+            get(): number { return this.value }
+        }
+        """, method: "get", field: "value"),
+        ReadFixture(name: "Python", parser: PythonCodeParser(), fileName: "box.py", source: """
+        class Box:
+            def __init__(self):
+                self.value = 0
+            def get(self):
+                return self.value
+        """, method: "get", field: "value"),
+        ReadFixture(name: "Dart", parser: DartCodeParser(), fileName: "box.dart", source: """
+        class Box {
+            int value = 0;
+            int get() { return value; }
+        }
+        """, method: "get", field: "value"),
+        ReadFixture(name: "C++", parser: CppCodeParser(), fileName: "box.cpp", source: """
+        class Box {
+        public:
+            int value;
+            int get() { return value; }
+        };
+        """, method: "get", field: "value")
+    ]
+
+    @Test(arguments: readFixtures)
+    func parserCapturesOwnFieldReads(_ fixture: ReadFixture) {
+        let parsed = fixture.parser.parse(source: fixture.source, fileName: fixture.fileName)
+        let method = parsed.flattened().flatMap(\.members).first { $0.name == fixture.method }
+        #expect(method != nil, "\(fixture.name): method '\(fixture.method)' not found")
+        let readNames = method?.fieldReads.map(\.name) ?? []
+        #expect(
+            method?.fieldReads.contains { $0.name == fixture.field && $0.receiver == nil } == true,
+            "\(fixture.name): expected a read of '\(fixture.field)', got \(readNames)")
+    }
+
     @Test(arguments: fixtures)
     func parserSatisfiesProducerContract(_ fixture: Fixture) {
         let parsed = fixture.parser.parse(source: fixture.source, fileName: fixture.fileName)

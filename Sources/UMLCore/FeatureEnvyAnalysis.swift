@@ -14,17 +14,18 @@ struct FeatureEnvy {
 
     /// Count of methods that interact with some single other declared type more than with their owner.
     var enviousMethodCount: Int {
-        type.members.filter { $0.kind == .method && isEnvious($0) }.count
+        let ownProperties = Set(type.members.filter { $0.kind == .property }.map(\.name))
+        return type.members.filter { $0.kind == .method && isEnvious($0, ownProperties: ownProperties) }.count
     }
 
     /// A method is envious when its heaviest interaction with a single foreign declared type outweighs
-    /// its interaction with its own type (self calls). Methods that touch nothing foreign never qualify.
-    /// Own-field *reads* aren't captured by parsers, so "own" is self-calls only — see issue #111.
-    private func isEnvious(_ method: Member) -> Bool {
+    /// its interaction with its own type (self-dispatched calls plus reads of its own stored
+    /// properties). Methods that touch nothing foreign never qualify.
+    private func isEnvious(_ method: Member, ownProperties: Set<String>) -> Bool {
         var foreign: [String: Int] = [:]
         var own = 0
         for call in method.callSites {
-            switch classify(receiver: call.receiverType) {
+            switch classify(call.receiver) {
             case .own:
                 own += 1
             case .foreign(let id):
@@ -33,8 +34,12 @@ struct FeatureEnvy {
                 continue
             }
         }
+        // Reads of the method's own stored properties count toward "own" (issue #111).
+        for read in method.fieldReads where read.receiver == nil && ownProperties.contains(read.name) {
+            own += 1
+        }
         for name in method.referencedTypeNames {
-            if case .foreign(let id) = classify(receiver: name) { foreign[id, default: 0] += 1 }
+            if case .foreign(let id) = classifyTypeName(name) { foreign[id, default: 0] += 1 }
         }
         return (foreign.values.max() ?? 0) > own
     }
@@ -47,10 +52,23 @@ struct FeatureEnvy {
         case unknown
     }
 
-    private func classify(receiver: String?) -> Target {
-        guard let receiver else { return .own }        // no receiver = a call on `self`
-        if receiver == type.name { return .own }
-        guard let id = identity.resolvedID(for: receiver)?.value, id != type.id else { return .unknown }
+    /// Classifies a call's dispatch: `self` and calls on the type's own name are `.own`; a call on
+    /// another declared type is `.foreign`; free-function and unresolved calls are `.unknown` (issue
+    /// #111 — a nil receiver is no longer assumed to be `self`).
+    private func classify(_ receiver: CallReceiver) -> Target {
+        switch receiver {
+        case .selfDispatch:
+            return .own
+        case .type(let name):
+            return classifyTypeName(name)
+        case .free, .unknown:
+            return .unknown
+        }
+    }
+
+    private func classifyTypeName(_ name: String) -> Target {
+        if name == type.name { return .own }
+        guard let id = identity.resolvedID(for: name)?.value, id != type.id else { return .unknown }
         return .foreign(id)
     }
 }

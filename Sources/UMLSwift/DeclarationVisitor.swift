@@ -16,6 +16,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var functionBodyDepth = 0
     private var pendingCallSites: [CallSite] = []
     private var pendingAssignments: [VariableAssignment] = []
+    private var pendingFieldReads: [FieldAccess] = []
     // Maps stored-property name → declared type name for the current type.
     private var callSitePropertyMap: [String: String] = [:]
     // Simple names of every type declared in the file, seeded up front (in one pre-pass)
@@ -159,6 +160,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
         pendingAssignments = []
+        pendingFieldReads = []
         return .visitChildren   // descend so FunctionCallExprSyntax nodes are visited
     }
 
@@ -168,12 +170,13 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return }
         var member = members.extractFunction(
             from: node, fileName: fileName, callSites: pendingCallSites,
-            assignments: pendingAssignments)
+            assignments: pendingAssignments, fieldReads: pendingFieldReads)
         if let body = node.body {
             member.referencedTypeNames = callSites.referencedTypes(in: body)
         }
         pendingCallSites = []
         pendingAssignments = []
+        pendingFieldReads = []
         callSitePropertyMap = [:]
         if typeStack.isEmpty {
             freestandingFunctions.append(member)
@@ -222,6 +225,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         callSitePropertyMap = buildPropertyMap()
         pendingCallSites = []
         pendingAssignments = []
+        pendingFieldReads = []
         return .visitChildren
     }
 
@@ -230,12 +234,13 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
         var member = members.extractInitializer(
             from: node, fileName: fileName, callSites: pendingCallSites,
-            assignments: pendingAssignments)
+            assignments: pendingAssignments, fieldReads: pendingFieldReads)
         if let body = node.body {
             member.referencedTypeNames = callSites.referencedTypes(in: body)
         }
         pendingCallSites = []
         pendingAssignments = []
+        pendingFieldReads = []
         callSitePropertyMap = [:]
         typeStack[typeStack.count - 1].members.append(member)
     }
@@ -297,6 +302,18 @@ final class DeclarationVisitor: SyntaxVisitor {
         if functionBodyDepth > 0,
            let assignment = callSites.assignment(from: node, fileName: fileName) {
             pendingAssignments.append(assignment)
+        }
+        return .visitChildren
+    }
+
+    override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
+        // A bare identifier or the member of a `self.x` access — recorded when it names a stored
+        // property of the enclosing type (issue #111). Filtering to `callSitePropertyMap` keeps this
+        // to own-field reads; consumers tolerate the same-name-local ambiguity as for assignments.
+        if functionBodyDepth > 0,
+           let read = callSites.fieldRead(
+               from: node, propertyMap: callSitePropertyMap, fileName: fileName) {
+            pendingFieldReads.append(read)
         }
         return .visitChildren
     }

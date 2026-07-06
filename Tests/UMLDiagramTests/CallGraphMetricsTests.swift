@@ -17,7 +17,7 @@ struct CallGraphMetricsTests {
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal,
                             location: SourceLocation(filePath: "A.swift", line: 3, column: 1),
-                            callSites: [CallSite(receiverType: "B", methodName: "work")])
+                            callSites: [CallSite(receiver: .type("B"), methodName: "work")])
                     ]),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class, accessLevel: .public,
@@ -38,14 +38,14 @@ struct CallGraphMetricsTests {
                     members: [
                         Member(name: "ping", kind: .method, accessLevel: .internal,
                             location: SourceLocation(filePath: "A.swift", line: 1, column: 1),
-                            callSites: [CallSite(receiverType: "B", methodName: "pong")])
+                            callSites: [CallSite(receiver: .type("B"), methodName: "pong")])
                     ]),
                 TypeDeclaration(
                     id: "B", name: "B", qualifiedName: "B", kind: .class, accessLevel: .public,
                     members: [
                         Member(name: "pong", kind: .method, accessLevel: .internal,
                             location: SourceLocation(filePath: "B.swift", line: 1, column: 1),
-                            callSites: [CallSite(receiverType: "A", methodName: "ping")])
+                            callSites: [CallSite(receiver: .type("A"), methodName: "ping")])
                     ])
             ])
     }

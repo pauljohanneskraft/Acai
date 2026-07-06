@@ -24,7 +24,7 @@ struct CallSiteCollector {
         guard let resolved = resolveReceiver(
             from: memberAccess.base, propertyMap: propertyMap) else { return nil }
         return CallSite(
-            receiverType: resolved.receiverType,
+            receiver: resolved.receiver,
             methodName: methodName,
             location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
@@ -74,6 +74,22 @@ struct CallSiteCollector {
         )
     }
 
+    /// A read of a stored property, or `nil` when the identifier is not one of the type's properties.
+    /// `propertyMap` is the current type's `storedPropertyName → declaredTypeName` map. Bare
+    /// identifiers and the member of a `self.x` access both surface as `DeclReferenceExprSyntax`, so
+    /// this records them with `receiver == nil`; consumers filter by name (issue #111).
+    func fieldRead(
+        from node: DeclReferenceExprSyntax, propertyMap: [String: String], fileName: String
+    ) -> FieldAccess? {
+        let name = node.baseName.text
+        guard propertyMap[name] != nil else { return nil }
+        return FieldAccess(
+            name: name,
+            receiver: nil,
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+        )
+    }
+
     /// The capitalised type-like names referenced inside a syntax subtree (constructions, static
     /// access, casts, annotations) — the construction/body dependencies fed to the coupling metrics.
     func referencedTypes(in node: some SyntaxProtocol) -> [String] {
@@ -84,20 +100,20 @@ struct CallSiteCollector {
 
     // MARK: - Receiver resolution
 
-    /// A statically-resolved call-site receiver. `receiverType == nil` denotes a call on the
-    /// enclosing instance (`self.method()`), which the sequence-diagram generator renders as a
-    /// self-message keyed on the caller's type.
+    /// A statically-resolved call-site receiver. `.selfDispatch` denotes a call on the enclosing
+    /// instance (`self.method()`), which the sequence-diagram generator renders as a self-message
+    /// keyed on the caller's type.
     private struct ResolvedReceiver {
-        let receiverType: String?
+        let receiver: CallReceiver
     }
 
     /// Resolves the declared type for a receiver expression.
     ///
     /// Handles (only when provably resolvable — otherwise returns `nil`, dropping the call):
-    /// - `varName.method()` — known stored property → its declared type,
-    /// - `self.varName.method()` — strips the leading `self.` then looks up the property,
-    /// - `self.method()` — a call on the enclosing instance (`receiverType == nil`),
-    /// - `TypeName.method()` — `TypeName` is a known type → a static call.
+    /// - `varName.method()` — known stored property → its declared type (`.type`),
+    /// - `self.varName.method()` — strips the leading `self.` then looks up the property (`.type`),
+    /// - `self.method()` — a call on the enclosing instance (`.selfDispatch`),
+    /// - `TypeName.method()` — `TypeName` is a known type → a static call (`.type`).
     private func resolveReceiver(
         from base: ExprSyntax?, propertyMap: [String: String]
     ) -> ResolvedReceiver? {
@@ -106,13 +122,13 @@ struct CallSiteCollector {
         if let declRef = base.as(DeclReferenceExprSyntax.self) {
             let name = declRef.baseName.text
             if name == "self" {
-                return ResolvedReceiver(receiverType: nil)
+                return ResolvedReceiver(receiver: .selfDispatch)
             }
             if let propertyType = propertyMap[name] {
-                return ResolvedReceiver(receiverType: propertyType)
+                return ResolvedReceiver(receiver: .type(propertyType))
             }
             if knownTypeNames.contains(name) {
-                return ResolvedReceiver(receiverType: name)
+                return ResolvedReceiver(receiver: .type(name))
             }
             return nil
         }
@@ -120,7 +136,7 @@ struct CallSiteCollector {
         if let memberAccess = base.as(MemberAccessExprSyntax.self),
            memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
            let propertyType = propertyMap[memberAccess.declName.baseName.text] {
-            return ResolvedReceiver(receiverType: propertyType)
+            return ResolvedReceiver(receiver: .type(propertyType))
         }
 
         return nil

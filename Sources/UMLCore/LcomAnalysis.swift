@@ -4,9 +4,8 @@
 /// several unrelated jobs and a candidate for splitting. A value you instantiate and ask for
 /// ``componentCount``.
 ///
-/// Approximation, documented deliberately: parsers capture property *writes* (`assignments`) and
-/// calls, but not reads, so two methods that only *read* the same field are not linked. The count is
-/// therefore an upper bound on the true LCOM4 — tracked in issue #111 (capture field reads).
+/// Two methods are linked when they share access to a stored property by **read or write**
+/// (``Member/fieldReads`` and ``Member/assignments``) or when one self-dispatches a call to the other.
 struct LcomAnalysis {
     let type: TypeDeclaration
 
@@ -24,18 +23,23 @@ struct LcomAnalysis {
         return components.componentCount
     }
 
-    /// Union methods that write a common stored property (same field name, `self`/bare receiver).
+    /// Union methods that access a common stored property — by read or write, same field name and a
+    /// `self`/bare receiver.
     private func linkBySharedField(_ methods: [Member], into components: inout DisjointSet) {
         let properties = Set(type.members.filter { $0.kind == .property }.map(\.name))
-        var writersByField: [String: [Int]] = [:]
+        var accessorsByField: [String: [Int]] = [:]
         for (index, method) in methods.enumerated() {
             for assignment in method.assignments
             where assignment.targetReceiver == nil && properties.contains(assignment.targetName) {
-                writersByField[assignment.targetName, default: []].append(index)
+                accessorsByField[assignment.targetName, default: []].append(index)
+            }
+            for read in method.fieldReads
+            where read.receiver == nil && properties.contains(read.name) {
+                accessorsByField[read.name, default: []].append(index)
             }
         }
-        for writers in writersByField.values {
-            for writer in writers.dropFirst() { components.union(writers[0], writer) }
+        for accessors in accessorsByField.values {
+            for accessor in accessors.dropFirst() { components.union(accessors[0], accessor) }
         }
     }
 
@@ -50,10 +54,17 @@ struct LcomAnalysis {
         }
     }
 
-    /// Whether a call is dispatched on the type itself: no receiver (self call) or the type's own name.
+    /// Whether a call is dispatched on the type itself: a `self`-dispatch or an explicit receiver of
+    /// the type's own name. Free-function and unresolved calls are *not* self (issue #111).
     private func callsSelf(_ call: CallSite) -> Bool {
-        guard let receiver = call.receiverType else { return true }
-        return receiver == type.name
+        switch call.receiver {
+        case .selfDispatch:
+            return true
+        case .type(let name):
+            return name == type.name
+        case .free, .unknown:
+            return false
+        }
     }
 }
 

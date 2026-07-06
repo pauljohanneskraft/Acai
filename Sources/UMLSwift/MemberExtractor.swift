@@ -14,7 +14,8 @@ struct MemberExtractor {
         from node: FunctionDeclSyntax,
         fileName: String,
         callSites: [CallSite] = [],
-        assignments: [VariableAssignment] = []
+        assignments: [VariableAssignment] = [],
+        fieldReads: [FieldAccess] = []
     ) -> Member {
         let modifiers = signatures.extractModifiers(from: node.modifiers)
         let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
@@ -43,7 +44,8 @@ struct MemberExtractor {
             annotations: annotations,
             location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
-            assignments: assignments
+            assignments: assignments,
+            fieldReads: fieldReads
         )
     }
 
@@ -145,7 +147,8 @@ struct MemberExtractor {
         from node: InitializerDeclSyntax,
         fileName: String,
         callSites: [CallSite] = [],
-        assignments: [VariableAssignment] = []
+        assignments: [VariableAssignment] = [],
+        fieldReads: [FieldAccess] = []
     ) -> Member {
         let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
         var modifiers = signatures.extractModifiers(from: node.modifiers)
@@ -171,7 +174,8 @@ struct MemberExtractor {
             annotations: annotations,
             location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
-            assignments: assignments
+            assignments: assignments,
+            fieldReads: fieldReads
         )
     }
 

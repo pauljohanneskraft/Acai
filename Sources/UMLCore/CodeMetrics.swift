@@ -88,8 +88,9 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var featureEnvyMethods: Int
 
         /// Deep-and-wide inheritance shape (`DIT × NOC`): a type that is both deeply derived and widely
-        /// subclassed sits at a fragile hierarchy hub. Derived from the stored metrics, not stored.
-        public var deepAndWide: Int { depthOfInheritance * numberOfChildren }
+        /// subclassed sits at a fragile hierarchy hub. Stored (not computed) so it serializes alongside
+        /// every other metric — filled from `depthOfInheritance × numberOfChildren` in `computeTypeMetrics`.
+        public var deepAndWide: Int
     }
 }
 
@@ -173,6 +174,7 @@ extension CodeArtifact {
         let nesting = nestingDepths(types)
 
         let resolver = ModuleResolver.standard
+        // `depth(of:)` is memoised, so reading it twice (DIT and the derived deep-and-wide) is cheap.
         return flat.map { type in
             CodeMetrics.TypeMetric(
                 id: type.id,
@@ -194,7 +196,8 @@ extension CodeArtifact {
                 overrideCount: type.overrideCount,
                 nestingDepth: nesting[type.id] ?? 0,
                 lackOfCohesion: LcomAnalysis(type: type).componentCount,
-                featureEnvyMethods: FeatureEnvy(type: type, identity: identity).enviousMethodCount
+                featureEnvyMethods: FeatureEnvy(type: type, identity: identity).enviousMethodCount,
+                deepAndWide: depth(of: type.id, visiting: [type.id]) * childCount[type.id, default: 0]
             )
         }
     }

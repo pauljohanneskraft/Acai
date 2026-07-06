@@ -61,7 +61,7 @@ struct ParserConformanceChecker {
         }
     }
 
-    // MARK: - Invariant 4: CallSite.receiverType is a simple name matching a declared type
+    // MARK: - Invariant 4: a CallReceiver.type carries a simple name matching a declared type
 
     private func checkCallSites(
         _ flat: [TypeDeclaration], declaredSimpleNames: Set<String>, into violations: inout [Violation]
@@ -69,11 +69,12 @@ struct ParserConformanceChecker {
         for type in flat {
             for member in type.members {
                 for site in member.callSites {
+                    // Only `.type` carries a name; `.selfDispatch`/`.free`/`.unknown` structurally can't.
                     guard let receiver = site.receiverType else { continue }
                     if receiver.contains(".") {
                         violations.append(Violation(
                             invariant: 4,
-                            detail: "call site in \(type.id).\(member.name): receiverType "
+                            detail: "call site in \(type.id).\(member.name): receiver type "
                                 + "'\(receiver)' is not a simple name"))
                     }
                 }

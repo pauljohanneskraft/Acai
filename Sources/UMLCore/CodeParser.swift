@@ -19,8 +19,8 @@ public protocol CodeParser: Sendable {
     /// - A nested type's id/qualified name is **hierarchically prefixed** by its parent's.
     /// - ``Relationship`` and supertype endpoints are names the resolver can map to a declared id, or
     ///   legitimately-external names (carried through as-is).
-    /// - ``TypeReference/name`` and ``CallSite/receiverType`` are **simple** names (primitive/collection
-    ///   classification and call-site resolution match by exact simple name).
+    /// - ``TypeReference/name`` and a ``CallReceiver/type(_:)`` receiver are **simple** names
+    ///   (primitive/collection classification and call-site resolution match by exact simple name).
     /// - ``TypeDeclaration/extensionOf`` matches a target's qualified name / id / name after generics
     ///   are stripped.
     func parse(source: String, fileName: String) -> CodeArtifact

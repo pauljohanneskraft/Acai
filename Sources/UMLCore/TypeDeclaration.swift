@@ -13,7 +13,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// hierarchically prefixed by its parent's id.
     public var id: String
     /// The **simple** (unqualified) source name — must match the simple names used in
-    /// `TypeReference.name` and `CallSite.receiverType` for resolution to succeed.
+    /// `TypeReference.name` and a `CallReceiver.type` receiver for resolution to succeed.
     public var name: String
     /// The namespace/package-qualified name; equal to ``id``.
     public var qualifiedName: String

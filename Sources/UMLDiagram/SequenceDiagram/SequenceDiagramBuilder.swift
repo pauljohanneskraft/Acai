@@ -9,7 +9,7 @@ import UMLCore
 /// A value you instantiate with the entry point/options and ask to `build(from:)` — kept off
 /// `CodeArtifact` so the data model does not depend on the diagram layer.
 ///
-/// - Note: requires parsers to populate `Member.callSites` (with `CallSite.receiverType` for
+/// - Note: requires parsers to populate `Member.callSites` (with a `CallReceiver.type` receiver for
 ///   cross-type calls); without it the diagram has the entry participant but no messages.
 public struct SequenceDiagramBuilder: Sendable {
     public var entryPoint: (typeName: String, methodName: String)
@@ -208,18 +208,18 @@ private struct SequenceTraversal {
     }
 
     /// Resolves a call site to its participant id, callee body (if any), and whether the target is a
-    /// free function. Returns `nil` for an **implicit-receiver** call that matches neither a method
-    /// nor a free function, so the caller drops it — this covers a builtin (`print`), a call on a
-    /// local variable, *and* a `self.x()` whose method is only on a base class not in the artifact.
-    /// Dropping (rather than drawing a dead-end self-message) keeps the diagram clean and matches
-    /// the call graph's resolution.
+    /// free function, keyed on the call's ``CallReceiver``:
     ///
-    /// - An **explicit** receiver always yields a participant (the named type), even when its body
-    ///   isn't in the artifact — the message still shows the call, just without expansion.
-    /// - An implicit receiver prefers a same-type method (self-call), then a free function (its own
-    ///   lifeline).
+    /// - A **`.type`** receiver always yields a participant (the named type), even when its body isn't
+    ///   in the artifact — the message still shows the call, just without expansion.
+    /// - A **`.selfDispatch`** resolves to a same-type method; if that method isn't in the artifact
+    ///   (e.g. it lives only on a base class), the call is dropped rather than drawing a dead-end
+    ///   self-message.
+    /// - A **`.free`** call resolves to a top-level function on its own lifeline.
+    /// - **`.unknown`** (an unresolved receiver) is dropped.
     private func resolveTarget(site: CallSite, callerId: String) -> ResolvedTarget? {
-        if let receiver = site.receiverType {
+        switch site.receiver {
+        case .type(let receiver):
             let concrete = typeMapping[receiver] ?? receiver
             return ResolvedTarget(
                 id: concrete, name: concrete,
@@ -227,21 +227,22 @@ private struct SequenceTraversal {
                 decl: lookups.typesByName[concrete],
                 isFreeFunction: false
             )
-        }
-        let concreteCaller = typeMapping[callerId] ?? callerId
-        if let member = lookups.membersByKey["\(concreteCaller).\(site.methodName)"] {
+        case .selfDispatch:
+            let concreteCaller = typeMapping[callerId] ?? callerId
+            guard let member = lookups.membersByKey["\(concreteCaller).\(site.methodName)"] else { return nil }
             return ResolvedTarget(
                 id: concreteCaller, name: concreteCaller, member: member,
                 decl: lookups.typesByName[concreteCaller], isFreeFunction: false
             )
-        }
-        if let function = lookups.freeFunctionsByName[site.methodName] {
+        case .free:
+            guard let function = lookups.freeFunctionsByName[site.methodName] else { return nil }
             return ResolvedTarget(
                 id: SequenceTraversal.freeFunctionID(site.methodName), name: site.methodName,
                 member: function, decl: nil, isFreeFunction: true
             )
+        case .unknown:
+            return nil
         }
-        return nil
     }
 }
 

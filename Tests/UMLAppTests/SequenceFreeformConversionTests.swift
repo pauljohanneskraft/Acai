@@ -23,7 +23,7 @@ struct SequenceFreeformConversionTests {
                     members: [Member(
                         name: "run", kind: .method,
                         accessLevel: .internal,
-                        callSites: [CallSite(receiverType: "Callee", methodName: "work")]
+                        callSites: [CallSite(receiver: .type("Callee"), methodName: "work")]
                     )]
                 ),
                 TypeDeclaration(

@@ -152,7 +152,7 @@ extension PythonExtractor {
     // MARK: - Call sites
 
     /// Matches Python `call { function: attribute { object, attribute } }`:
-    /// - `self.method(...)` — a call on the enclosing instance (`receiverType` nil),
+    /// - `self.method(...)` — a call on the enclosing instance (`.selfDispatch`),
     /// - `self.prop.method(...)` — `prop` resolved against the enclosing type's properties,
     /// - `receiver.method(...)` — `receiver` resolved as a known property,
     /// - `TypeName.method(...)` — `TypeName` resolved as a declared type (static call).
@@ -163,7 +163,7 @@ extension PythonExtractor {
         // layers resolve it to a top-level function against the whole-artifact view (or drop it,
         // e.g. builtins/constructors), so a call to a free function becomes its own participant.
         if funcNode.nodeType == "identifier" {
-            return CallSite(receiverType: nil, methodName: text(funcNode), location: loc(node))
+            return CallSite(receiver: .free, methodName: text(funcNode), location: loc(node))
         }
 
         guard funcNode.nodeType == "attribute",
@@ -173,7 +173,7 @@ extension PythonExtractor {
         let methodName = text(attr)
 
         if object.nodeType == "identifier", text(object) == "self" {
-            return CallSite(receiverType: nil, methodName: methodName, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: loc(node))
         }
 
         var receiverName: String?

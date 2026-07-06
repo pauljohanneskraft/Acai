@@ -60,6 +60,7 @@ extension CFamilyExtractor {
         for pending in pendingBodies where pending.index < members.count {
             members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
             members[pending.index].assignments = extractAssignments(from: pending.body)
+            members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
         }
     }

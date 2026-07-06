@@ -15,7 +15,7 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "B", methodName: "work")
+                            CallSite(receiver: .type("B"), methodName: "work")
                         ])
                     ],
                     location: SourceLocation(filePath: "Core/A.swift", line: 1, column: 1)
@@ -48,8 +48,8 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "B", methodName: "work"),
-                            CallSite(receiverType: "Unknown", methodName: "gone")
+                            CallSite(receiver: .type("B"), methodName: "work"),
+                            CallSite(receiver: .type("Unknown"), methodName: "gone")
                         ])
                     ]
                 ),
@@ -76,7 +76,7 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: nil, methodName: "helper")
+                            CallSite(receiver: .selfDispatch, methodName: "helper")
                         ]),
                         Member(name: "helper", kind: .method, accessLevel: .internal)
                     ]
@@ -96,8 +96,8 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: "B", methodName: "work"),
-                            CallSite(receiverType: "B", methodName: "work")
+                            CallSite(receiver: .type("B"), methodName: "work"),
+                            CallSite(receiver: .type("B"), methodName: "work")
                         ])
                     ]
                 ),
@@ -141,14 +141,14 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: nil, methodName: "log")
+                            CallSite(receiver: .free, methodName: "log")
                         ])
                     ]
                 )
             ],
             freestandingFunctions: [
                 Member(name: "log", kind: .method, accessLevel: .internal, callSites: [
-                    CallSite(receiverType: nil, methodName: "format")
+                    CallSite(receiver: .free, methodName: "format")
                 ]),
                 Member(name: "format", kind: .method, accessLevel: .internal)
             ]
@@ -172,7 +172,7 @@ struct CallGraphTests {
                     accessLevel: .public,
                     members: [
                         Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
-                            CallSite(receiverType: nil, methodName: "helper")
+                            CallSite(receiver: .selfDispatch, methodName: "helper")
                         ]),
                         Member(name: "helper", kind: .method, accessLevel: .internal)
                     ]
@@ -196,7 +196,7 @@ struct CallGraphTests {
             ],
             freestandingFunctions: [
                 Member(name: "log", kind: .method, accessLevel: .internal, callSites: [
-                    CallSite(receiverType: "A", methodName: "run")
+                    CallSite(receiver: .type("A"), methodName: "run")
                 ])
             ]
         )

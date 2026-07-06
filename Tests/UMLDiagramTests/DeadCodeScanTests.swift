@@ -24,7 +24,7 @@ struct DeadCodeScanTests {
         let service = TypeDeclaration(
             id: "Service", name: "Service", qualifiedName: "Service", kind: .class, accessLevel: .public,
             members: [
-                method("entry", access: .public, calls: [CallSite(receiverType: "Service", methodName: "used")]),
+                method("entry", access: .public, calls: [CallSite(receiver: .type("Service"), methodName: "used")]),
                 method("used"),
                 method("unused"),
                 method("publicButUncalled", access: .public),

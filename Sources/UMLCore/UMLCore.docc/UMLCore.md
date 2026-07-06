@@ -53,8 +53,8 @@ no thresholds and no language configuration (raw values only — judgement is le
 
 **Known limitation:** ``SourceLocation`` records only a start line, so true method length and
 cyclomatic complexity are not derivable; ``CodeMetrics/TypeMetric/weightedMethods`` stays a method-count
-proxy for WMC. Parsers capture property *writes* but not reads, so ``CodeMetrics/TypeMetric/lackOfCohesion``
-links methods by shared writes and calls only — an upper bound on the true LCOM4.
+proxy for WMC. ``CodeMetrics/TypeMetric/lackOfCohesion`` links methods by shared property access —
+reads (``Member/fieldReads``) and writes (``Member/assignments``) — plus self-dispatched calls.
 
 ### Writing a new parser
 

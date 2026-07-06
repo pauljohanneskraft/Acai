@@ -31,7 +31,7 @@ struct SequenceDiagramTests {
     @Test func tracesSingleCrossTypeCall() {
         let art = artifact(types: [
             type("LoginService", members: [
-                method("login", calls: [CallSite(receiverType: "AuthService", methodName: "authenticate")])
+                method("login", calls: [CallSite(receiver: .type("AuthService"), methodName: "authenticate")])
             ]),
             type("AuthService", members: [method("authenticate")])
         ])
@@ -61,7 +61,7 @@ struct SequenceDiagramTests {
         let checkout = TypeDeclaration(
             id: "shop.Checkout", name: "Checkout", qualifiedName: "shop.Checkout", kind: .class,
             accessLevel: .public,
-            members: [method("placeOrder", calls: [CallSite(receiverType: "PaymentService", methodName: "charge")])]
+            members: [method("placeOrder", calls: [CallSite(receiver: .type("PaymentService"), methodName: "charge")])]
         )
         let service = TypeDeclaration(
             id: "shop.PaymentService", name: "PaymentService", qualifiedName: "shop.PaymentService",
@@ -83,8 +83,8 @@ struct SequenceDiagramTests {
         let art = artifact(types: [
             type("Controller", members: [
                 method("handle", calls: [
-                    CallSite(receiverType: "Validator", methodName: "validate"),
-                    CallSite(receiverType: "Store", methodName: "persist")
+                    CallSite(receiver: .type("Validator"), methodName: "validate"),
+                    CallSite(receiver: .type("Store"), methodName: "persist")
                 ])
             ]),
             type("Validator", members: [method("validate")]),
@@ -106,7 +106,7 @@ struct SequenceDiagramTests {
         // A call with no resolvable receiver is treated as a self-message.
         let art = artifact(types: [
             type("Worker", members: [
-                method("run", calls: [CallSite(receiverType: nil, methodName: "step")]),
+                method("run", calls: [CallSite(receiver: .selfDispatch, methodName: "step")]),
                 method("step")
             ])
         ])
@@ -143,7 +143,7 @@ struct SequenceDiagramTests {
         // An empty type name selects a top-level function as the entry point.
         let art = artifact(
             types: [type("Service", members: [method("run")])],
-            freeFunctions: [method("main", calls: [CallSite(receiverType: "Service", methodName: "run")])]
+            freeFunctions: [method("main", calls: [CallSite(receiver: .type("Service"), methodName: "run")])]
         )
 
         let diagram = SequenceDiagramBuilder(entryPoint: ("", "main")).build(from: art)
@@ -162,7 +162,7 @@ struct SequenceDiagramTests {
         // function is its own lifeline.
         let art = artifact(
             types: [type("Worker", members: [
-                method("run", calls: [CallSite(receiverType: nil, methodName: "log")])
+                method("run", calls: [CallSite(receiver: .free, methodName: "log")])
             ])],
             freeFunctions: [method("log")]
         )
@@ -180,7 +180,7 @@ struct SequenceDiagramTests {
         let art = artifact(
             types: [],
             freeFunctions: [
-                method("main", calls: [CallSite(receiverType: nil, methodName: "helper")]),
+                method("main", calls: [CallSite(receiver: .free, methodName: "helper")]),
                 method("helper")
             ]
         )
@@ -202,8 +202,8 @@ struct SequenceDiagramTests {
         let art = artifact(
             types: [
                 type("Caller", members: [method("run", calls: [
-                    CallSite(receiverType: "Logger", methodName: "write"),  // the type
-                    CallSite(receiverType: nil, methodName: "Logger")       // the free function
+                    CallSite(receiver: .type("Logger"), methodName: "write"),  // the type
+                    CallSite(receiver: .free, methodName: "Logger")       // the free function
                 ])]),
                 type("Logger", members: [method("write")])
             ],
@@ -230,7 +230,7 @@ struct SequenceDiagramTests {
         // previously rendered as a `Caller → Caller` self-message; this matches the call graph.)
         let art = artifact(
             types: [type("Worker", kind: .class, accessLevel: .public, members: [
-                method("run", calls: [CallSite(receiverType: nil, methodName: "inheritedSetup")])
+                method("run", calls: [CallSite(receiver: .selfDispatch, methodName: "inheritedSetup")])
             ])],
             freeFunctions: []
         )
@@ -246,7 +246,7 @@ struct SequenceDiagramTests {
         // resolve to the same-type method (a self-call), not the free function.
         let art = artifact(
             types: [type("Worker", members: [
-                method("run", calls: [CallSite(receiverType: nil, methodName: "step")]),
+                method("run", calls: [CallSite(receiver: .selfDispatch, methodName: "step")]),
                 method("step")
             ])],
             freeFunctions: [method("step")]
@@ -264,9 +264,9 @@ struct SequenceDiagramTests {
     @Test func maxDepthStopsExpansion() {
         // A -> B -> C -> D, but maxDepth 2 should stop expanding at C (D never appears).
         let art = artifact(types: [
-            type("A", members: [method("a", calls: [CallSite(receiverType: "B", methodName: "b")])]),
-            type("B", members: [method("b", calls: [CallSite(receiverType: "C", methodName: "c")])]),
-            type("C", members: [method("c", calls: [CallSite(receiverType: "D", methodName: "d")])]),
+            type("A", members: [method("a", calls: [CallSite(receiver: .type("B"), methodName: "b")])]),
+            type("B", members: [method("b", calls: [CallSite(receiver: .type("C"), methodName: "c")])]),
+            type("C", members: [method("c", calls: [CallSite(receiver: .type("D"), methodName: "d")])]),
             type("D", members: [method("d")])
         ])
 
@@ -279,8 +279,8 @@ struct SequenceDiagramTests {
     @Test func mutualRecursionTerminates() {
         // A.ping -> B.pong -> A.ping ... must terminate via the visited guard.
         let art = artifact(types: [
-            type("A", members: [method("ping", calls: [CallSite(receiverType: "B", methodName: "pong")])]),
-            type("B", members: [method("pong", calls: [CallSite(receiverType: "A", methodName: "ping")])])
+            type("A", members: [method("ping", calls: [CallSite(receiver: .type("B"), methodName: "pong")])]),
+            type("B", members: [method("pong", calls: [CallSite(receiver: .type("A"), methodName: "ping")])])
         ])
 
         let diagram = SequenceDiagramBuilder(entryPoint: ("A", "ping"), maxDepth: 50).build(from: art)
@@ -297,11 +297,11 @@ struct SequenceDiagramTests {
         // only when the protocol is mapped to it.
         let art = artifact(types: [
             type("Service", members: [
-                method("run", calls: [CallSite(receiverType: "RepositoryProtocol", methodName: "save")])
+                method("run", calls: [CallSite(receiver: .type("RepositoryProtocol"), methodName: "save")])
             ]),
             type("RepositoryProtocol", kind: .protocol, accessLevel: .public, members: [method("save")]),
             type("SQLRepository", members: [
-                method("save", calls: [CallSite(receiverType: "Database", methodName: "commit")])
+                method("save", calls: [CallSite(receiver: .type("Database"), methodName: "commit")])
             ]),
             type("Database", members: [method("commit")])
         ])
