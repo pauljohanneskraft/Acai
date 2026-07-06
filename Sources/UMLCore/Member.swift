@@ -104,6 +104,14 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// Whether this member belongs in the "operations" compartment of a class diagram.
     public var isMethod: Bool { kind == .method || kind == .initializer || kind == .deinitializer }
 
+    /// A stored property (data): a property with a stored backing, not a computed getter. The cohesion
+    /// and data-class metrics reason about *stored fields*, so a computed property never qualifies.
+    public var isStoredProperty: Bool { kind == .property && !isComputed }
+
+    /// Behaviour (code, not data): methods/inits/deinits, computed properties (their getter is code),
+    /// and subscripts. The complement of ``isStoredProperty`` — the two partition all members.
+    public var isBehaviour: Bool { isMethod || (kind == .property && isComputed) || kind == .subscript }
+
     /// Whether this member is at least as visible as `minimum`. A `nil` `minimum` keeps everything.
     public func isVisible(atLeast minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }

@@ -22,14 +22,12 @@ extension JavaExtractor {
     ]
 
     mutating func walkSourceFile(_ node: Node) {
-        for child in node.children() {
-            guard let nodeType = child.nodeType,
-                  let action = Self.sourceFileDispatch[nodeType] else { continue }
+        for (child, action) in NodeDispatch(Self.sourceFileDispatch).matches(in: node) {
             switch action {
             case .setPackage:
                 currentNamespace = extractPackageName(child)
             case .extractType:
-                if let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
+                if let nodeType = child.nodeType, let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
                     types.append(typeDecl)
                 }
             }

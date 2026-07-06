@@ -256,15 +256,12 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
             edgeColor = { edgeColors[$0.id] }
             nodeColor = { nodeColors[$0.id] }
         }
+        let laidOut = LaidOutDiagram(
+            nodes: nodes, edges: edges, positions: nodePositions, sizes: sizes, groupingBoxes: groupingBoxes)
         return try ClassImageRenderer().renderPNG(
-            nodes: nodes,
-            edges: edges,
-            positions: nodePositions,
-            sizes: sizes,
-            groupingBoxes: groupingBoxes,
-            scale: scale,
-            edgeColor: edgeColor,
-            nodeColor: nodeColor
+            laidOut: laidOut,
+            context: RenderingContext(scale: scale),
+            colors: ClassColorOverrides(edge: edgeColor, node: nodeColor)
         )
     }
 }

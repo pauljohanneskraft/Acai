@@ -14,7 +14,7 @@ struct FeatureEnvy {
 
     /// Count of methods that interact with some single other declared type more than with their owner.
     var enviousMethodCount: Int {
-        let ownProperties = Set(type.members.filter { $0.kind == .property }.map(\.name))
+        let ownProperties = Set(type.members.filter(\.isStoredProperty).map(\.name))
         return type.members.filter { $0.kind == .method && isEnvious($0, ownProperties: ownProperties) }.count
     }
 

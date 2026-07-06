@@ -90,7 +90,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         try SequenceImageRenderer().renderPNG(
             sequenceDiagram: diagram,
             positionOverrides: positionOverrides.mapValues(\.x),
-            scale: scale
+            context: RenderingContext(scale: scale)
         )
     }
 }

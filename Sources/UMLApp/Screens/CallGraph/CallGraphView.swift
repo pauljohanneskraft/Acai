@@ -226,10 +226,10 @@ private struct CallGraphCanvasView: View {
     }
 
     private func centerDiagram() {
-        guard let fit = fitToView(
+        guard let fit = FitToView(
             nodeIDs: viewModel.layout.nodes.map(\.id),
             rect: { viewModel.nodeRect($0) }
-        ) else { return }
+        ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()

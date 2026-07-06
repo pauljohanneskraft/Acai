@@ -48,17 +48,31 @@ public struct FocusConfiguration: Codable, Hashable, Sendable {
     }
 }
 
-extension CodeArtifact {
-    /// Returns the subset of `types`/`relationships` that falls within the focus.
-    ///
-    /// Endpoints are normalized to canonical type ids via `buildNameToId`, so this works
-    /// whether or not the caller already resolved relationship names. An unresolvable root
-    /// yields an empty subset.
-    public static func focusedSubset(
+/// Restricts a type/relationship set to one type and the slice of the relationship graph around it —
+/// the class-diagram counterpart of tracing a call graph from an entry method. A value you instantiate
+/// with the graph and a ``FocusConfiguration``, then ask for its ``subset`` (behaviour on a value, not
+/// a `static func` namespace on `CodeArtifact`).
+public struct FocusedSubsetBuilder {
+    let types: [TypeDeclaration]
+    let relationships: [Relationship]
+    let configuration: FocusConfiguration
+
+    public init(
         types: [TypeDeclaration],
         relationships: [Relationship],
         configuration: FocusConfiguration
-    ) -> (types: [TypeDeclaration], relationships: [Relationship]) {
+    ) {
+        self.types = types
+        self.relationships = relationships
+        self.configuration = configuration
+    }
+
+    /// The subset of `types`/`relationships` that falls within the focus.
+    ///
+    /// Endpoints are normalized to canonical type ids via the identity resolver, so this works
+    /// whether or not the caller already resolved relationship names. An unresolvable root yields an
+    /// empty subset.
+    public var subset: (types: [TypeDeclaration], relationships: [Relationship]) {
         let identity = TypeIdentityResolver(types: types)
         guard let rootId = identity.resolvedID(for: configuration.rootTypeName)?.value else {
             return (types: [], relationships: [])
@@ -88,7 +102,7 @@ extension CodeArtifact {
 
     /// Keeps types whose id is selected, preserving nesting — a parent is retained as a
     /// container when one of its nested types is selected even if the parent itself is not.
-    private static func filterTypes(
+    private func filterTypes(
         _ types: [TypeDeclaration], keeping selected: Set<String>
     ) -> [TypeDeclaration] {
         var result: [TypeDeclaration] = []

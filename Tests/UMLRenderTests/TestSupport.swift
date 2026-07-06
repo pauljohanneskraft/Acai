@@ -31,9 +31,7 @@ extension ClassImageRenderer {
             artifact: artifact,
             configuration: configuration,
             language: artifact.standardLanguageConfiguration,
-            scale: scale,
-            padding: padding,
-            palette: palette
+            context: RenderingContext(scale: scale, padding: padding, palette: palette)
         )
     }
 }

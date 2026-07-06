@@ -109,9 +109,9 @@ public struct ClassDiagram: Sendable {
         // externals and directory groups reflect the focused set.
         var resultTypes = flatTypes
         if let focus = options.focus {
-            let subset = CodeArtifact.focusedSubset(
+            let subset = FocusedSubsetBuilder(
                 types: flatTypes, relationships: relationships, configuration: focus
-            )
+            ).subset
             resultTypes = subset.types
             relationships = subset.relationships
         }

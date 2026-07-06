@@ -122,9 +122,8 @@ extension JavaExtractor {
         context: inout BodyExtractionContext,
         dispatch: [String: BodyChildRole]
     ) {
-        for child in node.children() {
-            guard let nodeType = child.nodeType,
-                  let role = dispatch[nodeType] else { continue }
+        for (child, role) in NodeDispatch(dispatch).matches(in: node) {
+            guard let nodeType = child.nodeType else { continue }
             dispatchBodyChild(role, child: child, nodeType: nodeType, context: &context)
         }
     }

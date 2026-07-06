@@ -83,7 +83,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         try PackageImageRenderer().renderPNG(
             packageDiagram: diagram,
             positionOverrides: positionOverrides,
-            scale: scale
+            context: RenderingContext(scale: scale)
         )
     }
 }

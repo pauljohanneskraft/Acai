@@ -177,9 +177,8 @@ struct ClassDiagramView: View {
                     #endif
                     viewModel.selectNode(node.id, extending: extending)
                 }
-                .highPriorityGesture(canvasNodeDragGesture(
+                .highPriorityGesture(viewModel.nodeDragGesture(
                     id: node.id,
-                    model: viewModel,
                     dragStartPositions: $dragStartPositions,
                     activeDragCanvasLocation: $activeDragCanvasLocation,
                     onCommit: savePositions
@@ -267,10 +266,10 @@ extension ClassDiagramView {
     }
 
     private func centerDiagram() {
-        guard let fit = fitToView(
+        guard let fit = FitToView(
             nodeIDs: viewModel.nodes.map(\.id),
             rect: { viewModel.nodeRect(for: $0) }
-        ) else { return }
+        ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()

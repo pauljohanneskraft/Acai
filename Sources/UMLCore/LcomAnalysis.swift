@@ -26,7 +26,7 @@ struct LcomAnalysis {
     /// Union methods that access a common stored property — by read or write, same field name and a
     /// `self`/bare receiver.
     private func linkBySharedField(_ methods: [Member], into components: inout DisjointSet) {
-        let properties = Set(type.members.filter { $0.kind == .property }.map(\.name))
+        let properties = Set(type.members.filter(\.isStoredProperty).map(\.name))
         var accessorsByField: [String: [Int]] = [:]
         for (index, method) in methods.enumerated() {
             for assignment in method.assignments

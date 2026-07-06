@@ -1,5 +1,12 @@
 import UMLCore
 
+// Design note — this is a deliberate *options bag*, not a long-parameter-list smell. Every field is an
+// independently-defaulted toggle, and the `var`s exist so callers build it with a couple of labelled
+// arguments (`ClassDiagramOptions(theme: .dark)`) and mutate the rest after the fact (the CLI does
+// `options.theme = …` / `classFlags.apply(to: &options)`). No call site passes a long positional list,
+// so grouping the initializer into sub-objects would only break ~30 construction + ~55 reader sites and
+// worsen the common case for no real gain. The `maxParameters` metric measures this correctly; the
+// judgement (per the audit's "tool measures, human judges" principle) is that the bag is the right shape.
 public struct ClassDiagramOptions: Sendable {
     public var layoutDirection: LayoutDirection
     public var showMembers: Bool

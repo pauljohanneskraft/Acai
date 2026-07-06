@@ -49,9 +49,9 @@ public struct DiagramLayoutModel: Sendable {
         // Single-class focus: prune to the subgraph around one type before any
         // visibility filtering, so access/relationship toggles apply to the focused set.
         if let focus = configuration.focus {
-            let subset = CodeArtifact.focusedSubset(
+            let subset = FocusedSubsetBuilder(
                 types: resolved.types, relationships: resolved.relationships, configuration: focus
-            )
+            ).subset
             resolved.types = subset.types
             resolved.relationships = subset.relationships
         }

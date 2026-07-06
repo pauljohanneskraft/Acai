@@ -174,7 +174,8 @@ struct ClassDiagramPNGTests {
             configuration.grouping = .none  // matches `uml image --grouping none`
             return try ClassImageRenderer().renderPNG(
                 artifact: artifact, configuration: configuration,
-                language: artifact.standardLanguageConfiguration, scale: 2, palette: theme.palette
+                language: artifact.standardLanguageConfiguration,
+                context: RenderingContext(scale: 2, palette: theme.palette)
             )
         }
     }
@@ -204,7 +205,8 @@ struct SequenceDiagramPNGTests {
             let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("SequenceDiagram"), languages: [entry.language])
             let diagram = SequenceDiagramBuilder(entryPoint: entry.entry, maxDepth: 5, typeMapping: [:])
                 .build(from: artifact)
-            return try SequenceImageRenderer().renderPNG(sequenceDiagram: diagram, scale: 2, palette: theme.palette)
+            return try SequenceImageRenderer().renderPNG(
+                sequenceDiagram: diagram, context: RenderingContext(scale: 2, palette: theme.palette))
         }
     }
 }
@@ -228,7 +230,8 @@ struct StateDiagramPNGTests {
             let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
             let diagram = try StateDiagramBuilder(configuration: configuration)
                 .build(from: artifact.resolvingExtensions())
-            return try StateImageRenderer().renderPNG(stateDiagram: diagram, scale: 2, palette: theme.palette)
+            return try StateImageRenderer().renderPNG(
+                stateDiagram: diagram, context: RenderingContext(scale: 2, palette: theme.palette))
         }
     }
 }
@@ -255,7 +258,8 @@ struct PackageDiagramPNGTests {
             )
             let diagram = PackageDiagramBuilder().build(
                 from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
-            return try PackageImageRenderer().renderPNG(packageDiagram: diagram, scale: 2, palette: theme.palette)
+            return try PackageImageRenderer().renderPNG(
+                packageDiagram: diagram, context: RenderingContext(scale: 2, palette: theme.palette))
         }
     }
 }
@@ -279,7 +283,8 @@ struct CallGraphPNGTests {
                 ExamplePNGs.examples("CallGraph", entry.dir), languages: [entry.language]
             )
             let graph = CallGraphBuilder(scope: .wholeCodebase).build(from: artifact)
-            return try CallGraphImageRenderer().renderPNG(callGraph: graph, scale: 2, palette: theme.palette)
+            return try CallGraphImageRenderer().renderPNG(
+                callGraph: graph, context: RenderingContext(scale: 2, palette: theme.palette))
         }
     }
 }
