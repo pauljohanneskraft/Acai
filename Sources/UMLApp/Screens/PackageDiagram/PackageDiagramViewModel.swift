@@ -28,10 +28,10 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil) {
         let new = PackageDiagramBuilder().build(
-            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
         if let comparisonArtifact {
             let old = PackageDiagramBuilder().build(
-                from: comparisonArtifact.enriched(configuration: comparisonArtifact.standardLanguageConfiguration))
+                from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
             let diff = PackageDiagramDiff(old: old, new: new)
             self.diff = diff
             self.diagram = diff.union
@@ -83,7 +83,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         try PackageImageRenderer().renderPNG(
             packageDiagram: diagram,
             positionOverrides: positionOverrides,
-            scale: scale
+            context: RenderingContext(scale: scale)
         )
     }
 }

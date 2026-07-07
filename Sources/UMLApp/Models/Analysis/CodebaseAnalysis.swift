@@ -25,15 +25,14 @@ struct CodebaseAnalysis: Sendable {
     /// actor. `configuration` drives the architecture check: when present its rules are loaded from
     /// disk and evaluated (any load error is captured, not thrown).
     init(artifact: CodeArtifact, configuration: ArchitectureCheckConfiguration?) {
-        let language = artifact.standardLanguageConfiguration
         self.metrics = artifact.computeMetrics()
         self.smells = SmellScan(
             artifact: artifact,
-            annotationStereotypes: language.annotationStereotypes
+            languageResolver: artifact.standardLanguageResolver
         ).findings
         self.deadCode = DeadCodeScan(
             artifact: artifact,
-            entryPoints: language.entryPointMarkers
+            languages: artifact.standardLanguageResolver
         ).report
         self.health = HealthCheck(artifact: artifact).report
 

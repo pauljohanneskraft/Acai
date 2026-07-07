@@ -24,13 +24,13 @@ struct InspectTool: AnalysisTool {
         let artifact = try await resolveArtifact(arguments, cache)
         let rows = TypeQuery(
             artifact: artifact,
-            selector: selector(from: arguments),
+            selector: try selector(from: arguments),
             members: MemberFilter(
                 kind: arguments.string("memberKind").flatMap(MemberKind.init(rawValue:)),
-                minParameters: arguments.int("minParameters"),
-                isPublicVar: (arguments.bool("publicVars") ?? false) ? true : nil,
-                isOverride: (arguments.bool("overrides") ?? false) ? true : nil),
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+                minParameters: try arguments.int("minParameters"),
+                isPublicVar: (try arguments.bool("publicVars") ?? false) ? true : nil,
+                isOverride: (try arguments.bool("overrides") ?? false) ? true : nil),
+            languageResolver: artifact.standardLanguageResolver
         ).rows
         return .json(try Value(rows))
     }

@@ -48,6 +48,12 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var namespace: String?
     /// Where the type is declared (drives provenance-aware module attribution).
     public var location: SourceLocation?
+    /// The language this type was parsed from, stamped during enrichment so a *polyglot* artifact
+    /// (a base directory mixing e.g. Swift and Python) can resolve each type's own
+    /// `LanguageConfiguration` at consume time instead of a single artifact-wide one. `nil` for a
+    /// type produced outside the enrichment pipeline (e.g. a synthesised external placeholder or a
+    /// hand-built fixture); a `LanguageConfigurationResolver` maps that to its required default.
+    public var sourceLanguage: CodeArtifact.SourceLanguage?
 
     public init(
         id: String,
@@ -65,7 +71,8 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         annotations: [String] = [],
         extensionOf: String? = nil,
         namespace: String? = nil,
-        location: SourceLocation? = nil
+        location: SourceLocation? = nil,
+        sourceLanguage: CodeArtifact.SourceLanguage? = nil
     ) {
         self.id = id
         self.name = name
@@ -83,5 +90,15 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         self.extensionOf = extensionOf
         self.namespace = namespace
         self.location = location
+        self.sourceLanguage = sourceLanguage
+    }
+
+    /// A copy of this type (and its nested types, recursively) stamped with `language` — used during
+    /// enrichment to record each type's originating language for later per-type config resolution.
+    public func stampingSourceLanguage(_ language: CodeArtifact.SourceLanguage) -> TypeDeclaration {
+        var copy = self
+        copy.sourceLanguage = language
+        copy.nestedTypes = nestedTypes.map { $0.stampingSourceLanguage(language) }
+        return copy
     }
 }

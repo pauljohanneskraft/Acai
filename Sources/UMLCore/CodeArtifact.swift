@@ -72,6 +72,14 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
 }
 
 extension CodeArtifact {
+    /// A copy with every type (and nested type) stamped with `language`. Applied per language group
+    /// during enrichment so each type in a merged polyglot artifact records where it came from.
+    public func stampingSourceLanguage(_ language: SourceLanguage) -> CodeArtifact {
+        var copy = self
+        copy.types = types.map { $0.stampingSourceLanguage(language) }
+        return copy
+    }
+
     public func merging(with other: CodeArtifact) -> CodeArtifact {
         CodeArtifact(
             metadata: Metadata(
@@ -125,15 +133,16 @@ extension CodeArtifact {
 
     // MARK: - Generated-Code Filtering
 
-    /// Returns a new artifact with the language's generated types (and their relationships) removed.
+    /// Returns a new artifact with each language's generated types (and their relationships) removed.
     ///
-    /// The `filter` (supplied by the language's `LanguageConfiguration`) decides what counts as
-    /// generated, by file name (e.g. `.freezed.dart`, `.g.dart`) or by type-name pattern
-    /// (e.g. `_$Foo`, `$FooCopyWith`). This stays language-agnostic: the agnostic engine applies a
-    /// filter it is handed and never knows which language produced it.
-    public func filteringGeneratedTypes(using filter: GeneratedCodeFilter) -> CodeArtifact {
+    /// The `resolver` supplies each type's `GeneratedCodeFilter` from *its own* language, so a polyglot
+    /// artifact filters each language's generated files (e.g. Dart's `.freezed.dart`, Python's stubs)
+    /// under that language's rules rather than one dominant filter. Stays language-agnostic: the engine
+    /// applies filters it is handed and never knows which language produced them.
+    public func filteringGeneratedTypes(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
         let removedIDs: Set<String> = Set(
             types.filter { type in
+                guard let filter = resolver.configuration(for: type).generatedCodeFilter else { return false }
                 if let path = type.location?.filePath, filter.matchesFile(path) {
                     return true
                 }

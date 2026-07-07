@@ -41,7 +41,7 @@ struct ClassDiagramDeltaExportTests {
         let union = differ.unionArtifact(old: old, new: new)
         let options = ClassDiagramOptions(
             showExternalTypes: true,
-            language: new.standardLanguageConfiguration,
+            languages: new.standardLanguageResolver,
             edgeColorOverride: { rel in DeltaEdgeColors.standard.hex(forStatus: diff.status(of: rel).rawValue) },
             nodeColorOverride: { DeltaEdgeColors.standard.hex(forStatus: diff.status(ofType: $0.id).rawValue) }
         )
@@ -207,9 +207,9 @@ struct PackageDiagramDeltaExportTests {
         let newArtifact = try ExampleExports.analyze(
             ExampleExports.examples("PackageDiagramDiff", dir, "After"), language: language)
         let old = PackageDiagramBuilder().build(
-            from: oldArtifact.enriched(configuration: oldArtifact.standardLanguageConfiguration))
+            from: oldArtifact.enriched(using: oldArtifact.standardLanguageResolver))
         let new = PackageDiagramBuilder().build(
-            from: newArtifact.enriched(configuration: newArtifact.standardLanguageConfiguration))
+            from: newArtifact.enriched(using: newArtifact.standardLanguageResolver))
         let diff = PackageDiagramDiff(old: old, new: new)
         let nodeColor: @Sendable (String) -> String? = {
             DeltaEdgeColors.standard.hex(forStatus: diff.status(ofNode: $0).rawValue)

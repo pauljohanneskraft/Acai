@@ -35,11 +35,11 @@ public struct CycleFinder: Sendable {
     public init(
         artifact: CodeArtifact,
         moduleResolver: ModuleResolver = .standard,
-        annotationStereotypes: [String: String] = [:]
+        languageResolver: LanguageConfigurationResolver
     ) {
         self.init(
             graph: GraphView(
-                artifact: artifact, moduleResolver: moduleResolver, annotationStereotypes: annotationStereotypes),
+                artifact: artifact, moduleResolver: moduleResolver, languageResolver: languageResolver),
             moduleResolver: moduleResolver)
     }
 

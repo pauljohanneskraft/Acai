@@ -17,8 +17,8 @@ struct SmellsTool: AnalysisTool {
         let artifact = try await resolveArtifact(arguments, cache)
         let findings = SmellScan(
             artifact: artifact,
-            selector: selector(from: arguments),
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+            selector: try selector(from: arguments),
+            languageResolver: artifact.standardLanguageResolver
         ).findings
         return .json(try Value(findings))
     }

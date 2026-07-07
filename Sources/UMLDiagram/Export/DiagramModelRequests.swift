@@ -146,12 +146,12 @@ public struct CallGraphRequest: Sendable {
 }
 
 /// Builds the package/module dependency diagram for an artifact. The caller injects the artifact's
-/// `LanguageConfiguration` (the package path enriches first, and enrichment is language-specific) —
-/// keeping this agnostic: it names no language, it is handed one.
+/// `LanguageConfigurationResolver` (the package path enriches first, per type) — keeping this agnostic:
+/// it names no language, it is handed one.
 public struct PackageDiagramRequest: Sendable {
     public init() {}
 
-    public func build(from artifact: CodeArtifact, language: LanguageConfiguration) -> PackageDiagram {
-        PackageDiagramBuilder().build(from: artifact.enriched(configuration: language))
+    public func build(from artifact: CodeArtifact, languages: LanguageConfigurationResolver) -> PackageDiagram {
+        PackageDiagramBuilder().build(from: artifact.enriched(using: languages))
     }
 }

@@ -23,16 +23,16 @@ public struct DeadCodeScan: Sendable {
     }
 
     private let artifact: CodeArtifact
-    private let entryPoints: EntryPointMarkers
+    private let languages: LanguageConfigurationResolver
     private let scope: CallGraphScope
 
     public init(
         artifact: CodeArtifact,
-        entryPoints: EntryPointMarkers = EntryPointMarkers(),
+        languages: LanguageConfigurationResolver,
         scope: CallGraphScope = .wholeCodebase
     ) {
         self.artifact = artifact
-        self.entryPoints = entryPoints
+        self.languages = languages
         self.scope = scope
     }
 
@@ -43,14 +43,20 @@ public struct DeadCodeScan: Sendable {
         var candidates: [Candidate] = []
         for type in artifact.flattened() {
             let isContract = type.kind.isInterfaceLike
+            // Each type's entry-point markers come from *its own* language, so a polyglot artifact
+            // doesn't judge one language's methods by another's entry-point conventions.
+            let markers = languages.configuration(for: type).entryPointMarkers
             for member in type.members where member.kind == .method {
                 let id = "\(type.name).\(member.name)"
-                guard !targeted.contains(id), !isEntryPoint(member, inContract: isContract) else { continue }
+                guard !targeted.contains(id),
+                      !isEntryPoint(member, inContract: isContract, markers: markers) else { continue }
                 candidates.append(Candidate(id: id, location: member.location))
             }
         }
+        let freestandingMarkers = languages.defaultConfiguration.entryPointMarkers
         for function in artifact.freestandingFunctions where function.kind == .method {
-            guard !targeted.contains(function.name), !isEntryPoint(function, inContract: false) else { continue }
+            guard !targeted.contains(function.name),
+                  !isEntryPoint(function, inContract: false, markers: freestandingMarkers) else { continue }
             candidates.append(Candidate(id: function.name, location: function.location))
         }
 
@@ -59,12 +65,12 @@ public struct DeadCodeScan: Sendable {
     }
 
     /// A member is reachable-by-contract when it is public API, satisfies a supertype/interface
-    /// requirement, or is flagged by a language entry-point marker.
-    private func isEntryPoint(_ member: Member, inContract: Bool) -> Bool {
+    /// requirement, or is flagged by its language's entry-point `markers`.
+    private func isEntryPoint(_ member: Member, inContract: Bool, markers: EntryPointMarkers) -> Bool {
         if inContract { return true }
         if member.isVisible(atLeast: .public) { return true }
         if member.modifiers.contains(.override) { return true }
-        return entryPoints.marks(member)
+        return markers.marks(member)
     }
 }
 

@@ -61,22 +61,23 @@ struct DiagramTool: AnalysisTool {
     }
 
     private func export(for arguments: ToolArguments, artifact: CodeArtifact) throws -> DiagramExport {
-        let language = artifact.standardLanguageConfiguration
+        let languages = artifact.standardLanguageResolver
         switch arguments.string("kind") ?? "class" {
         case "class":
-            return ClassDiagramTextExporter(options: classOptions(arguments, language: language)).export(from: artifact)
+            let options = try classOptions(arguments, languages: languages)
+            return ClassDiagramTextExporter(options: options).export(from: artifact)
         case "package":
-            return PackageDiagramTextExporter(language: language, theme: nil).export(from: artifact)
+            return PackageDiagramTextExporter(languages: languages, theme: nil).export(from: artifact)
         case "sequence":
             let request = SequenceDiagramRequest(
                 entryPoint: try arguments.requiredString("sequenceFrom"),
-                maxDepth: arguments.int("maxDepth") ?? 5,
+                maxDepth: try arguments.int("maxDepth") ?? 5,
                 map: arguments.stringArray("map"))
             return try SequenceDiagramTextExporter(request: request, theme: nil).export(from: artifact)
         case "state":
             let request = StateDiagramRequest(
                 variable: try arguments.requiredString("stateFrom"),
-                maxStates: arguments.int("maxStates") ?? 20)
+                maxStates: try arguments.int("maxStates") ?? 20)
             return try StateDiagramTextExporter(request: request, theme: nil).export(from: artifact)
         case "callgraph":
             let request = CallGraphRequest(scope: CallGraphScopeOption(raw: arguments.string("scope")))
@@ -86,11 +87,13 @@ struct DiagramTool: AnalysisTool {
         }
     }
 
-    private func classOptions(_ arguments: ToolArguments, language: LanguageConfiguration) -> ClassDiagramOptions {
-        var options = ClassDiagramOptions(language: language)
+    private func classOptions(
+        _ arguments: ToolArguments, languages: LanguageConfigurationResolver
+    ) throws -> ClassDiagramOptions {
+        var options = ClassDiagramOptions(languages: languages)
         if let focus = arguments.string("focus") {
             options.focus = FocusConfiguration(
-                rootTypeName: focus, maxDepth: arguments.int("focusDepth"), direction: .both)
+                rootTypeName: focus, maxDepth: try arguments.int("focusDepth"), direction: .both)
             // A focused view is a local neighbourhood; grouping splits it into mismatched clusters.
             options.groupBy = .none
         }

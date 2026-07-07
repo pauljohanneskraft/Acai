@@ -204,9 +204,8 @@ extension FreeformDiagramView {
             #endif
             viewModel.selectNode(node.id, extending: extending)
         }
-        .highPriorityGesture(canvasNodeDragGesture(
+        .highPriorityGesture(viewModel.nodeDragGesture(
             id: node.id,
-            model: viewModel,
             dragStartPositions: $dragStartPositions,
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: { viewModel.save() }
@@ -236,9 +235,8 @@ extension FreeformDiagramView {
                 #endif
                 viewModel.selectNode(node.id, extending: extending)
             }
-            .highPriorityGesture(canvasNodeDragGesture(
+            .highPriorityGesture(viewModel.nodeDragGesture(
                 id: node.id,
-                model: viewModel,
                 dragStartPositions: $dragStartPositions,
                 activeDragCanvasLocation: $activeDragCanvasLocation,
                 onCommit: { viewModel.save() }

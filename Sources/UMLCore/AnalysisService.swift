@@ -168,7 +168,10 @@ public struct AnalysisService: Sendable {
         for language in order {
             guard let group = parsed.byLanguage[language] else { continue }
             let configuration = registry.configuration(for: language) ?? fallback
-            let enriched = group.enriched(configuration: configuration)
+            // Stamp each type with its own language *before* enrichment so the provenance survives into
+            // the merged artifact and a later `LanguageConfigurationResolver` can classify per type. Each
+            // group is single-language, so the single-config `enriched` convenience is exact here.
+            let enriched = group.stampingSourceLanguage(language).enriched(configuration: configuration)
             result = result.map { $0.merging(with: enriched) } ?? enriched
         }
 

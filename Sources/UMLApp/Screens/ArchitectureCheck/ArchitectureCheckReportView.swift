@@ -10,7 +10,7 @@ extension ConformanceRules {
     func report(for artifact: CodeArtifact) -> ConformanceReport {
         ConformanceEvaluator(
             rules: self,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+            languageResolver: artifact.standardLanguageResolver
         ).evaluate(artifact)
     }
 }
@@ -21,6 +21,9 @@ extension ConformanceRules {
 /// and the editor's live preview share it without re-evaluating.
 struct ArchitectureCheckReportView: View {
     let report: ConformanceReport
+    /// Whether to show the leading "N violation(s) across N rule(s)" summary. The codebase section
+    /// carries that string in its collapsible header instead, so it opts out; the editor keeps it.
+    var showsSummary: Bool = true
 
     var body: some View {
         if report.isPassing {
@@ -36,9 +39,11 @@ struct ArchitectureCheckReportView: View {
 
     private func violationList(_ report: ConformanceReport) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(report.violations.count) violation(s) across \(report.checkedRuleCount) rule(s)")
-                .font(.subheadline.bold())
-                .foregroundStyle(.red)
+            if showsSummary {
+                Text("\(report.violations.count) violation(s) across \(report.checkedRuleCount) rule(s)")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.red)
+            }
             ForEach(Array(report.violations.enumerated()), id: \.offset) { _, violation in
                 ViolationRowView(violation: violation)
             }

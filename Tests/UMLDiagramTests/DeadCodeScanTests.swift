@@ -38,7 +38,8 @@ struct DeadCodeScanTests {
     @Test func onlyUncalledNonEntryPrivateMethodIsCandidate() {
         let report = DeadCodeScan(
             artifact: artifact(),
-            entryPoints: EntryPointMarkers(annotations: ["test"])).report
+            languages: LanguageConfigurationResolver(
+                single: LanguageConfiguration(entryPointMarkers: EntryPointMarkers(annotations: ["test"])))).report
 
         #expect(report.candidates.map(\.id) == ["Service.unused"])
         // A resolved call to `used` means coverage is 100%.
@@ -48,7 +49,9 @@ struct DeadCodeScanTests {
     @Test func markerlessScanStillExcludesUniversalEntryPoints() {
         // Without the language markers, `lifecycle` (@Test) is no longer excluded, but public/override
         // members still are.
-        let report = DeadCodeScan(artifact: artifact()).report
+        let report = DeadCodeScan(
+            artifact: artifact(),
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
         #expect(report.candidates.map(\.id).sorted() == ["Service.lifecycle", "Service.unused"])
     }
 }

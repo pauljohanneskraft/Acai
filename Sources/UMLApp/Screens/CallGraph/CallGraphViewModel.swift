@@ -81,7 +81,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         try CallGraphImageRenderer().renderPNG(
             callGraph: graph,
             positionOverrides: positionOverrides,
-            scale: scale
+            context: RenderingContext(scale: scale)
         )
     }
 }

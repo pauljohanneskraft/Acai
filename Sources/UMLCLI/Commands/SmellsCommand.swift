@@ -38,7 +38,7 @@ extension UMLCommand {
                 artifact: artifact,
                 thresholds: thresholds,
                 selector: selector.selector,
-                annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+                languageResolver: artifact.standardLanguageResolver
             ).findings
 
             let rendered: String

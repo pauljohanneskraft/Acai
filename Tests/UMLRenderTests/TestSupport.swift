@@ -14,7 +14,7 @@ extension DiagramLayoutModel {
         self.init(
             artifact: artifact,
             configuration: configuration,
-            language: artifact.standardLanguageConfiguration
+            languages: artifact.standardLanguageResolver
         )
     }
 }
@@ -30,10 +30,8 @@ extension ClassImageRenderer {
         try renderPNG(
             artifact: artifact,
             configuration: configuration,
-            language: artifact.standardLanguageConfiguration,
-            scale: scale,
-            padding: padding,
-            palette: palette
+            languages: artifact.standardLanguageResolver,
+            context: RenderingContext(scale: scale, padding: padding, palette: palette)
         )
     }
 }

@@ -22,7 +22,7 @@ extension AnalysisTool {
         try await cache.artifact(
             path: arguments.requiredString("path"),
             languageNames: arguments.stringArray("languages"),
-            refresh: arguments.bool("refresh") ?? false)
+            refresh: try arguments.bool("refresh") ?? false)
     }
 
     /// The `path` / `languages` / `refresh` schema fragment every analysis tool shares.
@@ -83,8 +83,9 @@ extension AnalysisTool {
     }
 
     /// Maps the shared selector arguments onto the engine `Selector`. Absent facets stay `nil`, so a
-    /// call with no selector arguments matches every type.
-    func selector(from arguments: ToolArguments) -> Selector {
+    /// call with no selector arguments matches every type; a present numeric facet of the wrong JSON
+    /// type throws `invalidParams`.
+    func selector(from arguments: ToolArguments) throws -> Selector {
         Selector(
             module: arguments.string("module"),
             typeGlob: arguments.string("type"),
@@ -92,7 +93,7 @@ extension AnalysisTool {
             annotation: arguments.string("annotation"),
             minimumAccess: arguments.string("minAccess").flatMap(AccessLevel.init(rawValue:)),
             kind: arguments.string("kind").flatMap(TypeKind.init(rawValue:)),
-            minMembers: arguments.int("minMembers"),
-            minNesting: arguments.int("minNesting"))
+            minMembers: try arguments.int("minMembers"),
+            minNesting: try arguments.int("minNesting"))
     }
 }

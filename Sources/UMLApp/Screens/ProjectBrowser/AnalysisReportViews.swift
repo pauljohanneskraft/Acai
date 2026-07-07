@@ -74,8 +74,6 @@ struct SmellsReportView: View {
             ArchitectureCheckPlaceholder(text: "No smells found.", systemImage: "checkmark.seal")
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(findings.count) smell(s)")
-                    .font(.subheadline.bold()).foregroundStyle(.orange)
                 ForEach(Array(findings.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, finding in
                     ViolationRowView(violation: finding, tint: .orange)
                 }
@@ -97,8 +95,6 @@ struct DeadCodeReportView: View {
                 systemImage: "checkmark.seal")
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(report.candidates.count) candidate(s) · call-graph coverage \(coverage)%")
-                    .font(.subheadline.bold()).foregroundStyle(.orange)
                 Text("Candidates below this coverage floor may be false positives.")
                     .font(.caption).foregroundStyle(.secondary)
                 let candidates = Array(report.candidates.prefix(analysisReportLimit).enumerated())
@@ -123,9 +119,6 @@ struct HealthReportView: View {
                 systemImage: "checkmark.seal")
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Parse health \(percent)% · \(report.diagnosticCount) diagnostic(s)")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(percent >= 90 ? Color.primary : Color.red)
                 let diagnostics = Array(report.diagnostics.prefix(analysisReportLimit).enumerated())
                 ForEach(diagnostics, id: \.offset) { _, diagnostic in
                     LocationRow(

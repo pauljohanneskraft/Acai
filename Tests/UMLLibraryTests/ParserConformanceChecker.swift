@@ -114,8 +114,7 @@ struct ParserConformanceChecker {
     // MARK: - Enrichment idempotence
 
     private func checkIdempotence(_ artifact: CodeArtifact, into violations: inout [Violation]) {
-        let configuration = artifact.standardLanguageConfiguration
-        let reEnriched = artifact.enriched(configuration: configuration)
+        let reEnriched = artifact.enriched(using: artifact.standardLanguageResolver)
         if Set(reEnriched.relationships.map { "\($0.source)→\($0.target):\($0.kind.rawValue)" })
             != Set(artifact.relationships.map { "\($0.source)→\($0.target):\($0.kind.rawValue)" }) {
             violations.append(Violation(

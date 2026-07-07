@@ -6,23 +6,23 @@ import UMLCore
 public struct ConformanceEvaluator: Sendable {
     private let rules: ConformanceRules
     private let moduleResolver: ModuleResolver
-    private let annotationStereotypes: [String: String]
+    private let languageResolver: LanguageConfigurationResolver
 
     public init(
         rules: ConformanceRules,
         moduleResolver: ModuleResolver = .standard,
-        annotationStereotypes: [String: String] = [:]
+        languageResolver: LanguageConfigurationResolver
     ) {
         self.rules = rules
         self.moduleResolver = moduleResolver
-        self.annotationStereotypes = annotationStereotypes
+        self.languageResolver = languageResolver
     }
 
     public func evaluate(_ artifact: CodeArtifact) -> ConformanceReport {
         let graph = GraphView(
             artifact: artifact,
             moduleResolver: moduleResolver,
-            annotationStereotypes: annotationStereotypes
+            languageResolver: languageResolver
         )
 
         var violations: [Violation] = []

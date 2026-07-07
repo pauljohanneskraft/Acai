@@ -23,24 +23,17 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
     /// Per-type OO-metric changes (only types whose metrics actually moved).
     public var typeMetricDeltas: [TypeMetricDelta]
 
-    public init(
-        addedTypes: [String] = [],
-        removedTypes: [String] = [],
-        changedTypes: [TypeChange] = [],
-        addedRelationships: [Relationship] = [],
-        removedRelationships: [Relationship] = [],
-        changedRelationships: [RelationshipChange] = [],
-        moduleMetricDeltas: [ModuleMetricDelta] = [],
-        typeMetricDeltas: [TypeMetricDelta] = []
-    ) {
-        self.addedTypes = addedTypes
-        self.removedTypes = removedTypes
-        self.changedTypes = changedTypes
-        self.addedRelationships = addedRelationships
-        self.removedRelationships = removedRelationships
-        self.changedRelationships = changedRelationships
-        self.moduleMetricDeltas = moduleMetricDeltas
-        self.typeMetricDeltas = typeMetricDeltas
+    /// Builds a diff from its three cohesive change groups. The lists are still stored (and serialized)
+    /// flat; the grouped parameters just keep the constructor narrow — see ``TypeDelta`` et al.
+    public init(types: TypeDelta = .empty, relationships: RelationshipDelta = .empty, metrics: MetricDelta = .empty) {
+        self.addedTypes = types.added
+        self.removedTypes = types.removed
+        self.changedTypes = types.changed
+        self.addedRelationships = relationships.added
+        self.removedRelationships = relationships.removed
+        self.changedRelationships = relationships.changed
+        self.moduleMetricDeltas = metrics.modules
+        self.typeMetricDeltas = metrics.types
     }
 
     /// `true` when nothing structural changed between the two revisions. Metric-only movement

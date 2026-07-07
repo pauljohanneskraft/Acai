@@ -34,14 +34,15 @@ extension TypeDeclaration {
         return counts.isEmpty ? 0 : Double(counts.reduce(0, +)) / Double(counts.count)
     }
 
-    /// Data-class / anemic score: the share of behaviour-vs-data that is data, `properties / (properties
-    /// + methods)` (0 = pure behaviour, 1 = pure data; 0 when the type has neither). A high score on a
-    /// type others reach into is the anemic-domain-model smell.
+    /// Data-class / anemic score: the share of behaviour-vs-data that is data, `stored properties /
+    /// (stored + behaviour)` (0 = pure behaviour, 1 = pure data; 0 when the type has neither). Computed
+    /// properties count as behaviour (their getter is code) — so a SwiftUI `View`'s `body` doesn't read
+    /// as data. A high score on a type others reach into is the anemic-domain-model smell.
     var dataClassScore: Double {
-        let properties = members.filter { $0.kind == .property }.count
-        let methods = members.filter { $0.isMethod }.count
-        let total = properties + methods
-        return total == 0 ? 0 : Double(properties) / Double(total)
+        let stored = members.filter(\.isStoredProperty).count
+        let behaviour = members.filter(\.isBehaviour).count
+        let total = stored + behaviour
+        return total == 0 ? 0 : Double(stored) / Double(total)
     }
 
     /// Count of members that `override` an inherited member — refused-bequest candidates (a subclass

@@ -30,6 +30,8 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         case dataClassScore
         /// Depth of the nested-type tree rooted at the type.
         case nestingDepth
+        /// Highest cyclomatic complexity of any single method — the one gnarly method WMC hides.
+        case maxCyclomaticComplexity
 
         /// Module-scoped metrics are matched against module names; type-scoped against type nodes.
         public var isModuleScoped: Bool {
@@ -38,7 +40,7 @@ public struct MetricBudget: Codable, Equatable, Sendable {
                 return true
             case .fanIn, .fanOut, .depthOfInheritance, .weightedMethods, .numberOfChildren,
                  .numberOfProperties, .rfc, .maxParameters, .mutablePublicState, .lcom,
-                 .featureEnvyMethods, .dataClassScore, .nestingDepth:
+                 .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity:
                 return false
             }
         }
@@ -102,7 +104,8 @@ extension MetricBudget.Metric {
         .lcom: { Double($0.lackOfCohesion) },
         .featureEnvyMethods: { Double($0.featureEnvyMethods) },
         .dataClassScore: { $0.dataClassScore },
-        .nestingDepth: { Double($0.nestingDepth) }
+        .nestingDepth: { Double($0.nestingDepth) },
+        .maxCyclomaticComplexity: { Double($0.maxCyclomaticComplexity) }
     ]
 
     private static let moduleAccessors: [MetricBudget.Metric: @Sendable (CodeMetrics.ModuleCoupling) -> Double] = [

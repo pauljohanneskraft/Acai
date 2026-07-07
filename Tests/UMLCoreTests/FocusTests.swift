@@ -1,7 +1,7 @@
 import Testing
 @testable import UMLCore
 
-/// Tests for `CodeArtifact.focusedSubset` — single-class focus traversal and edge selection.
+/// Tests for `FocusedSubsetBuilder` — single-class focus traversal and edge selection.
 @Suite("Core: Single-Class Focus")
 struct FocusTests {
 
@@ -45,9 +45,9 @@ struct FocusTests {
             rootTypeName: "Root", maxDepth: depth, direction: direction,
             includedRelationshipKinds: kinds, includeInterconnections: interconnections
         )
-        let result = CodeArtifact.focusedSubset(
+        let result = FocusedSubsetBuilder(
             types: types, relationships: relationships, configuration: config
-        )
+        ).subset
         return (
             Set(result.types.map(\.id)),
             Set(result.relationships.map { "\($0.source)→\($0.target)" })
@@ -95,9 +95,9 @@ struct FocusTests {
 
     @Test func unresolvableRootYieldsEmptySubset() {
         let config = FocusConfiguration(rootTypeName: "DoesNotExist")
-        let result = CodeArtifact.focusedSubset(
+        let result = FocusedSubsetBuilder(
             types: types, relationships: relationships, configuration: config
-        )
+        ).subset
         #expect(result.types.isEmpty)
         #expect(result.relationships.isEmpty)
     }

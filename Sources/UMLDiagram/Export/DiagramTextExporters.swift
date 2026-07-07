@@ -63,18 +63,18 @@ public struct StateDiagramTextExporter: Sendable {
 }
 
 /// Builds the package/module dependency diagram and pairs both text renderers. The caller injects the
-/// artifact's `LanguageConfiguration` (the package build enriches first).
+/// artifact's `LanguageConfigurationResolver` (the package build enriches first, per type).
 public struct PackageDiagramTextExporter: Sendable {
-    public let language: LanguageConfiguration
+    public let languages: LanguageConfigurationResolver
     public let theme: DiagramTheme?
 
-    public init(language: LanguageConfiguration, theme: DiagramTheme?) {
-        self.language = language
+    public init(languages: LanguageConfigurationResolver, theme: DiagramTheme?) {
+        self.languages = languages
         self.theme = theme
     }
 
     public func export(from artifact: CodeArtifact) -> DiagramExport {
-        let diagram = PackageDiagramRequest().build(from: artifact, language: language)
+        let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
         let theme = theme
         return DiagramExport(
             dot: { PackageDiagramDOTRenderer(theme: theme).render(diagram) },

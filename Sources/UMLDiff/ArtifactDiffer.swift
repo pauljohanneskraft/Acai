@@ -35,14 +35,11 @@ public struct ArtifactDiffer: Sendable {
         let newMetrics = new.computeMetrics()
 
         return ArtifactDiff(
-            addedTypes: addedTypes,
-            removedTypes: removedTypes,
-            changedTypes: changedTypes,
-            addedRelationships: added,
-            removedRelationships: removed,
-            changedRelationships: changed,
-            moduleMetricDeltas: moduleMetricDeltas(old: oldMetrics, new: newMetrics),
-            typeMetricDeltas: typeMetricDeltas(old: oldMetrics, new: newMetrics)
+            types: TypeDelta(added: addedTypes, removed: removedTypes, changed: changedTypes),
+            relationships: RelationshipDelta(added: added, removed: removed, changed: changed),
+            metrics: MetricDelta(
+                modules: moduleMetricDeltas(old: oldMetrics, new: newMetrics),
+                types: typeMetricDeltas(old: oldMetrics, new: newMetrics))
         )
     }
 

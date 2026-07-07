@@ -39,7 +39,7 @@ extension UMLCommand {
             let artifact = try artifactSource.resolve()
             let finder = CycleFinder(
                 artifact: artifact,
-                annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes)
+                languageResolver: artifact.standardLanguageResolver)
 
             let scopes: [CycleFinder.Scope] = scope == .all ? [.modules, .types]
                 : [scope == .modules ? .modules : .types]

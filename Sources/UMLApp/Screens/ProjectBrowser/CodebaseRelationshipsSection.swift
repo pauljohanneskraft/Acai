@@ -13,7 +13,7 @@ struct CodebaseRelationshipsSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Relationships") {
+        CollapsibleSection(title: "Relationships", defaultExpanded: false) {
             SectionCountBadge(text: "\(artifact.relationships.count)")
         } content: {
             let sortedRelationships = artifact.relationships

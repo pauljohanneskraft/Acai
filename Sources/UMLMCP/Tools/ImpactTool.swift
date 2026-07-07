@@ -31,7 +31,7 @@ struct ImpactTool: AnalysisTool {
         let report = ImpactAnalysis(
             artifact: artifact,
             rootType: try arguments.requiredString("type"),
-            maxDepth: arguments.int("depth")).report
+            maxDepth: try arguments.int("depth")).report
         return .json(try Value(report))
     }
 }

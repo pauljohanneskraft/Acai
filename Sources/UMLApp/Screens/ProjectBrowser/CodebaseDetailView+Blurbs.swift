@@ -51,4 +51,32 @@ extension CodebaseDetailView {
     static let featureEnvyBlurb =
         "Methods more interested in another type than their own — they call into a neighbour more than "
         + "themselves. Feature envy hints the behaviour belongs on the type it keeps reaching into."
+    static let abstractnessBlurb =
+        "A = abstract types / total types in a module (interfaces, protocols, abstract classes). High "
+        + "abstractness suits a stable, foundational module; a concrete module heavily depended upon is "
+        + "rigid. Paired with instability via the distance-from-main-sequence metric."
+    static let distanceBlurb =
+        "D = |A + I − 1|: how far a module sits from Martin's ideal balance of abstractness and "
+        + "stability. 0% is on the main sequence; high values flag the 'zone of pain' (concrete + "
+        + "stable, rigid) or the 'zone of uselessness' (abstract + unstable, unused)."
+    static let sdpBlurb =
+        "Stable-Dependencies-Principle breaches: modules this one depends on that are *less* stable than "
+        + "it — a dependency on something likelier to change than you, so edits ripple up. Not a cycle, "
+        + "so cycle detection misses it. Tap for the offending modules."
+    static let cyclomaticComplexityBlurb =
+        "The highest cyclomatic complexity of any single method: 1 + its decision points (branches, "
+        + "loops, switch cases, catches), counted at every nesting depth. Surfaces the one gnarly method "
+        + "that a plain method count hides — a prime target to extract and test."
+    static let numberOfPropertiesBlurb =
+        "Stored/computed properties on a type — the data half of the anemic-vs-behaviour balance. A type "
+        + "that is mostly fields with little behaviour is a data class other code reaches into."
+    static let numberOfChildrenBlurb =
+        "Direct subtypes/conformers in the codebase. A widely-subclassed type is a hierarchy hub: changes "
+        + "to it ripple to every child, so keep its contract stable."
+    static let efferentBlurb =
+        "Efferent coupling (Ce): how many types outside the module it depends on. High Ce means the "
+        + "module reaches broadly outward — sensitive to changes elsewhere and harder to reuse in isolation."
+    static let afferentBlurb =
+        "Afferent coupling (Ca): how many types outside the module depend on it. High Ca marks a "
+        + "foundational module many others rely on — keep it stable, since changes ripple widely."
 }

@@ -9,6 +9,13 @@ import UMLTreeSitter
 /// (`class_specifier`, `namespace_definition`, `template_declaration`, `access_specifier`,
 /// `base_class_clause`) never appear in a C tree, so handling them unconditionally is safe.
 struct CFamilyExtractor: TreeSitterExtracting {
+
+    /// C/C++ structural decision-point node types for cyclomatic complexity.
+    static let branchNodeKinds: Set<String> = [
+        "if_statement", "for_statement", "for_range_loop", "while_statement", "do_statement",
+        "case_statement", "catch_clause"
+    ]
+
     let context: SourceFileContext
     let dialect: CFamilyDialect
 

@@ -30,11 +30,19 @@ struct CheckTool: AnalysisTool {
         // `ConformanceRules` is Codable; decode the YAML rules file directly (the CLI's `.load` helper
         // is a UMLCLI-internal extension, so we mirror it here rather than reach across the target).
         let rulesPath = try arguments.requiredString("rules")
-        let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
-        let ruleSet = try YAMLDecoder().decode(ConformanceRules.self, from: yaml)
+        let ruleSet: ConformanceRules
+        do {
+            let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
+            ruleSet = try YAMLDecoder().decode(ConformanceRules.self, from: yaml)
+        } catch {
+            // Match every other tool's clean `invalidParams` for bad input rather than surfacing an
+            // opaque `internalError` from Foundation/Yams for a missing path or malformed YAML.
+            throw MCPError.invalidParams(
+                "Could not read architecture rules from \(rulesPath): \(error.localizedDescription)")
+        }
         let report = ConformanceEvaluator(
             rules: ruleSet,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes
+            languageResolver: artifact.standardLanguageResolver
         ).evaluate(artifact)
         return .json(try Value(report))
     }

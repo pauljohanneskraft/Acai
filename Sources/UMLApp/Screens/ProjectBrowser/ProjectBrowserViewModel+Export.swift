@@ -56,14 +56,13 @@ extension ProjectBrowserViewModel {
     private func exportOptions(for artifact: CodeArtifact) -> ClassDiagramOptions {
         ClassDiagramOptions(
             theme: DiagramThemeSelection.currentExportTheme,
-            language: artifact.standardLanguageConfiguration
+            languages: artifact.standardLanguageResolver
         )
     }
 
     /// Drops the source language's machine-generated types when it declares a generated-code filter.
     private func hidingGeneratedTypes(_ artifact: CodeArtifact) -> CodeArtifact {
-        guard let filter = artifact.standardLanguageConfiguration.generatedCodeFilter else { return artifact }
-        return artifact.filteringGeneratedTypes(using: filter)
+        artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
     func exportDOT(for codebaseID: UUID) {
@@ -135,8 +134,8 @@ extension ProjectBrowserViewModel {
 
         // Sequence diagrams have no class configuration; default to hiding generated types.
         let hideGeneratedTypes = diagram.classConfiguration?.hideGeneratedTypes ?? true
-        if hideGeneratedTypes, let filter = artifact.standardLanguageConfiguration.generatedCodeFilter {
-            artifact = artifact.filteringGeneratedTypes(using: filter)
+        if hideGeneratedTypes {
+            artifact = artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
         }
         let freeformDiagram = diagram.convertToFreeform(
             artifact: artifact,

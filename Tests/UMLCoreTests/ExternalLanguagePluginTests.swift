@@ -88,8 +88,9 @@ struct ExternalLanguagePluginTests {
         )
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .fake), types: [real, byName, byFile])
 
-        let filter = try #require(parser.configuration.generatedCodeFilter)
-        let filtered = artifact.filteringGeneratedTypes(using: filter)
+        _ = try #require(parser.configuration.generatedCodeFilter)  // the language declares a filter
+        let filtered = artifact.filteringGeneratedTypes(
+            using: LanguageConfigurationResolver(single: parser.configuration))
 
         let names = Set(filtered.types.map(\.name))
         #expect(names == ["Real"])                    // both generated types removed

@@ -178,7 +178,16 @@ extension PythonExtractor {
             callSites: extractCallSites(from: body, scope: scope),
             assignments: extractAssignments(from: body),
             fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body)
+            referencedTypeNames: referencedTypeNames(in: body),
+            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
         )
     }
+
+    /// Python structural decision-point node types for cyclomatic complexity: conditionals, loops,
+    /// exception handlers, `match` cases and ternaries. Short-circuit `and`/`or` are excluded so the
+    /// metric is consistent across languages (several grammars model them as generic binary nodes).
+    static let branchNodeKinds: Set<String> = [
+        "if_statement", "elif_clause", "for_statement", "while_statement", "except_clause",
+        "case_clause"
+    ]
 }

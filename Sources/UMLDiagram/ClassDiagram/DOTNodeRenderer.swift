@@ -10,7 +10,7 @@ struct DOTNodeRenderer {
 
     func render(_ type: TypeDeclaration) -> String {
         let nodeId = type.id.dotNodeID
-        let label = buildHTMLLabel(for: type)
+        let label = buildHTMLLabel(for: type, config: options.languages.configuration(for: type))
         return "  \(nodeId) [label=<\(label)>];\n"
     }
 
@@ -20,7 +20,7 @@ struct DOTNodeRenderer {
         var output = "  // External dependencies\n"
         for type in types {
             let nodeId = type.id.dotNodeID
-            let label = buildExternalHTMLLabel(for: type)
+            let label = buildExternalHTMLLabel(for: type, config: options.languages.configuration(for: type))
             output += "  \(nodeId) [label=<\(label)>];\n"
         }
         return output
@@ -44,14 +44,14 @@ struct DOTNodeRenderer {
         return tag + ">"
     }
 
-    private func buildHTMLLabel(for type: TypeDeclaration) -> String {
+    private func buildHTMLLabel(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
         let font = options.theme?.fontColor
         let fontSize = options.fontSize
         var html = tableOpenTag(for: type)
 
         // Header: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
-        if let stereotype = stereotypeString(for: type) {
+        if let stereotype = stereotypeString(for: type, config: config) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
@@ -75,7 +75,7 @@ struct DOTNodeRenderer {
         if properties.isEmpty {
             html += "\(fontOpen(font)) \(fontClose(font))"
         } else {
-            html += properties.map { renderMember($0) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
+            html += properties.map { renderMember($0, config: config) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
             html += "<BR ALIGN=\"LEFT\"/>"
         }
         html += "</TD></TR>"
@@ -85,7 +85,7 @@ struct DOTNodeRenderer {
         if methods.isEmpty {
             html += "\(fontOpen(font)) \(fontClose(font))"
         } else {
-            html += methods.map { renderMember($0) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
+            html += methods.map { renderMember($0, config: config) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
             html += "<BR ALIGN=\"LEFT\"/>"
         }
         html += "</TD></TR>"
@@ -103,7 +103,7 @@ struct DOTNodeRenderer {
     }
 
     /// Builds a simplified gray HTML table label for an external dependency type.
-    private func buildExternalHTMLLabel(for type: TypeDeclaration) -> String {
+    private func buildExternalHTMLLabel(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
         let fill = "#E8E8E8"
         let border = "#B0B0B0"
         let font = "#808080"
@@ -114,7 +114,7 @@ struct DOTNodeRenderer {
 
         // Header only: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
-        if let stereotype = stereotypeString(for: type) {
+        if let stereotype = stereotypeString(for: type, config: config) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
@@ -128,7 +128,7 @@ struct DOTNodeRenderer {
 
     // MARK: - Member rendering
 
-    private func renderMember(_ member: Member) -> String {
+    private func renderMember(_ member: Member, config: LanguageConfiguration) -> String {
         let font = options.theme?.fontColor
         var result = fontOpen(font)
         if options.showAccessLevelSymbols {
@@ -147,7 +147,7 @@ struct DOTNodeRenderer {
             let paramStr = member.parameters.map { p in
                 var parameterString = p.internalName.dotHTMLEscaped
                 if options.showMemberTypes, let parameterType = p.type {
-                    parameterString += ": " + typeRefString(parameterType).dotHTMLEscaped
+                    parameterString += ": " + typeRefString(parameterType, config: config).dotHTMLEscaped
                 }
                 return parameterString
             }.joined(separator: ", ")
@@ -155,7 +155,7 @@ struct DOTNodeRenderer {
         }
 
         if options.showMemberTypes, let type = member.type {
-            result += ": " + typeRefString(type).dotHTMLEscaped
+            result += ": " + typeRefString(type, config: config).dotHTMLEscaped
         }
 
         if isAbstract { result += "</I>" }
@@ -196,13 +196,13 @@ struct DOTNodeRenderer {
 
     /// The `Name<Args>?[]` display string, using the shared `TypeReference` formatter so DOT,
     /// Mermaid, and the app canvas stay in sync. Caller HTML-escapes the result.
-    private func typeRefString(_ ref: TypeReference) -> String {
-        ref.umlDisplayString(collectionTypeNames: options.language.collectionTypeNames)
+    private func typeRefString(_ ref: TypeReference, config: LanguageConfiguration) -> String {
+        ref.umlDisplayString(collectionTypeNames: config.collectionTypeNames)
     }
 
-    private func stereotypeString(for type: TypeDeclaration) -> String? {
+    private func stereotypeString(for type: TypeDeclaration, config: LanguageConfiguration) -> String? {
         type.stereotype(
-            annotationStereotypes: options.showAnnotationStereotypes ? options.language.annotationStereotypes : [:]
+            annotationStereotypes: options.showAnnotationStereotypes ? config.annotationStereotypes : [:]
         )
     }
 

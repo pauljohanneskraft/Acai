@@ -1,42 +1,43 @@
 import SwiftUI
 
-/// Shared, group-aware node-drag gesture used by every diagram canvas: records one undo
-/// checkpoint at the start of a drag, moves the whole selection together, reports the dragged
-/// node's location for edge auto-pan, and commits (persists) on release.
-@MainActor
-func canvasNodeDragGesture<Model: CanvasInteraction>(
-    id: String,
-    model: Model,
-    dragStartPositions: Binding<[String: CGPoint]>,
-    activeDragCanvasLocation: Binding<CGPoint?>,
-    onCommit: @escaping () -> Void
-) -> some Gesture {
-    DragGesture(minimumDistance: 3)
-        .onChanged { value in
-            if dragStartPositions.wrappedValue.isEmpty {
-                model.recordUndo()
-                if !model.selectedNodeIDs.contains(id) {
-                    model.selectedNodeIDs = [id]
+extension CanvasInteraction {
+    /// Shared, group-aware node-drag gesture used by every diagram canvas: records one undo
+    /// checkpoint at the start of a drag, moves the whole selection together, reports the dragged
+    /// node's location for edge auto-pan, and commits (persists) on release. Behaviour on the model
+    /// it drives (not a free function).
+    func nodeDragGesture(
+        id: String,
+        dragStartPositions: Binding<[String: CGPoint]>,
+        activeDragCanvasLocation: Binding<CGPoint?>,
+        onCommit: @escaping () -> Void
+    ) -> some Gesture {
+        DragGesture(minimumDistance: 3)
+            .onChanged { value in
+                if dragStartPositions.wrappedValue.isEmpty {
+                    self.recordUndo()
+                    if !self.selectedNodeIDs.contains(id) {
+                        self.selectedNodeIDs = [id]
+                    }
+                    for nodeID in self.selectedNodeIDs {
+                        dragStartPositions.wrappedValue[nodeID] = self.nodePosition(nodeID)
+                    }
                 }
-                for nodeID in model.selectedNodeIDs {
-                    dragStartPositions.wrappedValue[nodeID] = model.nodePosition(nodeID)
+                let tx = value.translation.width
+                let ty = value.translation.height
+                for nodeID in self.selectedNodeIDs {
+                    guard let start = dragStartPositions.wrappedValue[nodeID] else { continue }
+                    self.moveNode(nodeID, to: CGPoint(x: start.x + tx, y: start.y + ty))
+                }
+                if let start = dragStartPositions.wrappedValue[id] {
+                    activeDragCanvasLocation.wrappedValue = CGPoint(x: start.x + tx, y: start.y + ty)
                 }
             }
-            let tx = value.translation.width
-            let ty = value.translation.height
-            for nodeID in model.selectedNodeIDs {
-                guard let start = dragStartPositions.wrappedValue[nodeID] else { continue }
-                model.moveNode(nodeID, to: CGPoint(x: start.x + tx, y: start.y + ty))
+            .onEnded { _ in
+                dragStartPositions.wrappedValue = [:]
+                activeDragCanvasLocation.wrappedValue = nil
+                onCommit()
             }
-            if let start = dragStartPositions.wrappedValue[id] {
-                activeDragCanvasLocation.wrappedValue = CGPoint(x: start.x + tx, y: start.y + ty)
-            }
-        }
-        .onEnded { _ in
-            dragStartPositions.wrappedValue = [:]
-            activeDragCanvasLocation.wrappedValue = nil
-            onCommit()
-        }
+    }
 }
 
 extension View {
@@ -59,9 +60,8 @@ extension View {
             #endif
             model.selectNode(id, extending: extending)
         }
-        .highPriorityGesture(canvasNodeDragGesture(
+        .highPriorityGesture(model.nodeDragGesture(
             id: id,
-            model: model,
             dragStartPositions: dragStartPositions,
             activeDragCanvasLocation: activeDragCanvasLocation,
             onCommit: onCommit

@@ -51,27 +51,28 @@ struct ImageTool: AnalysisTool {
     }
 
     private func renderData(_ arguments: ToolArguments, artifact: CodeArtifact) async throws -> Data {
-        let scale = arguments.double("scale") ?? 2
+        let scale = try arguments.double("scale") ?? 2
         let palette: DiagramPalette = arguments.string("theme") == "dark" ? .dark : .light
-        let language = artifact.standardLanguageConfiguration
+        let languages = artifact.standardLanguageResolver
         switch arguments.string("kind") ?? "class" {
         case "class":
             return try await ClassImageExporter(
                 scale: scale, palette: palette,
-                configuration: classConfiguration(arguments), language: language).render(artifact: artifact)
+                configuration: try classConfiguration(arguments), languages: languages).render(artifact: artifact)
         case "package":
             return try await PackageImageExporter(
-                scale: scale, palette: palette, language: language).render(artifact: artifact)
+                scale: scale, palette: palette, languages: languages).render(artifact: artifact)
         case "sequence":
             return try await SequenceImageExporter(
                 scale: scale, palette: palette,
                 entryPoint: try arguments.requiredString("sequenceFrom"),
-                maxDepth: arguments.int("maxDepth") ?? 5, map: arguments.stringArray("map")).render(artifact: artifact)
+                maxDepth: try arguments.int("maxDepth") ?? 5,
+                map: arguments.stringArray("map")).render(artifact: artifact)
         case "state":
             return try await StateImageExporter(
                 scale: scale, palette: palette,
                 variable: try arguments.requiredString("stateFrom"),
-                maxStates: arguments.int("maxStates") ?? 20).render(artifact: artifact)
+                maxStates: try arguments.int("maxStates") ?? 20).render(artifact: artifact)
         case "callgraph":
             return try await CallGraphImageExporter(
                 scale: scale, palette: palette,
@@ -81,11 +82,11 @@ struct ImageTool: AnalysisTool {
         }
     }
 
-    private func classConfiguration(_ arguments: ToolArguments) -> ClassDiagramConfiguration {
+    private func classConfiguration(_ arguments: ToolArguments) throws -> ClassDiagramConfiguration {
         var configuration = ClassDiagramConfiguration()
         if let focus = arguments.string("focus") {
             configuration.focus = FocusConfiguration(
-                rootTypeName: focus, maxDepth: arguments.int("focusDepth"), direction: .both)
+                rootTypeName: focus, maxDepth: try arguments.int("focusDepth"), direction: .both)
             configuration.grouping = .none
         }
         return configuration

@@ -22,57 +22,47 @@ public struct ClassImageRenderer {
     public func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
-        language: LanguageConfiguration,
-        scale: CGFloat = 2,
-        padding: CGFloat = DiagramImageRenderer.defaultPadding,
-        palette: DiagramPalette = .light,
-        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
+        languages: LanguageConfigurationResolver,
+        context: RenderingContext = .default,
+        colors: ClassColorOverrides = .plain
     ) throws -> Data {
-        let model = DiagramLayoutModel(artifact: artifact, configuration: configuration, language: language)
+        let model = DiagramLayoutModel(artifact: artifact, configuration: configuration, languages: languages)
         let sizes = nodeSizes(for: model.nodes)
         let positions = model.performLayout(sizes: sizes)
         let boxes = model.groupingBoxes(positions: positions, sizes: sizes)
-        return try renderPNG(
-            nodes: model.nodes, edges: model.edges, positions: positions, sizes: sizes,
-            groupingBoxes: boxes, scale: scale, padding: padding, palette: palette,
-            edgeColor: edgeColor, nodeColor: nodeColor)
+        let laidOut = LaidOutDiagram(
+            nodes: model.nodes, edges: model.edges, positions: positions, sizes: sizes, groupingBoxes: boxes)
+        return try renderPNG(laidOut: laidOut, context: context, colors: colors)
     }
 
     /// Renders an already-laid-out diagram to PNG. Positions/sizes are in any coordinate space; they
     /// are normalized internally so the content's top-left maps to the origin.
     public func renderPNG(
-        nodes: [GeneratedDiagramNode],
-        edges: [GeneratedDiagramEdge],
-        positions: [String: CGPoint],
-        sizes: [String: CGSize],
-        groupingBoxes: [DiagramLayoutModel.GroupingBox],
-        scale: CGFloat = 2,
-        padding: CGFloat = DiagramImageRenderer.defaultPadding,
-        palette: DiagramPalette = .light,
-        edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
+        laidOut: LaidOutDiagram,
+        context: RenderingContext = .default,
+        colors: ClassColorOverrides = .plain
     ) throws -> Data {
-        let bounds = contentBounds(positions: positions, sizes: sizes, boxes: groupingBoxes)
+        let bounds = contentBounds(
+            positions: laidOut.positions, sizes: laidOut.sizes, boxes: laidOut.groupingBoxes)
 
         // Normalize so the content's top-left sits at the origin.
         let dx = -bounds.minX
         let dy = -bounds.minY
-        let normalizedPositions = positions.mapValues { CGPoint(x: $0.x + dx, y: $0.y + dy) }
-        let normalizedBoxes = groupingBoxes.map { box in
+        let normalizedPositions = laidOut.positions.mapValues { CGPoint(x: $0.x + dx, y: $0.y + dy) }
+        let normalizedBoxes = laidOut.groupingBoxes.map { box in
             DiagramLayoutModel.GroupingBox(
                 id: box.id, label: box.label, rect: box.rect.offsetBy(dx: dx, dy: dy), depth: box.depth)
         }
 
         let view = DiagramSnapshotView(
-            nodes: nodes, edges: edges, positions: normalizedPositions, sizes: sizes,
+            nodes: laidOut.nodes, edges: laidOut.edges, positions: normalizedPositions, sizes: laidOut.sizes,
             groupingBoxes: normalizedBoxes,
             contentSize: CGSize(width: bounds.width, height: bounds.height),
-            padding: padding, palette: palette, edgeColor: edgeColor, nodeColor: nodeColor)
+            padding: context.padding, palette: context.palette, edgeColor: colors.edge, nodeColor: colors.node)
 
         return try engine.render(
             view, contentSize: CGSize(width: bounds.width, height: bounds.height),
-            scale: scale, padding: padding)
+            scale: context.scale, padding: context.padding)
     }
 
     // MARK: - Node sizing

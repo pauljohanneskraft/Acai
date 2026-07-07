@@ -98,7 +98,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         return try StateImageRenderer().renderPNG(
             stateDiagram: diagram,
             positionOverrides: positionOverrides,
-            scale: scale
+            context: RenderingContext(scale: scale)
         )
     }
 }

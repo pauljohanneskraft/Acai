@@ -1,7 +1,7 @@
 /// The blast radius of a type: every type that (transitively) depends on it — the reverse-reachability
 /// slice of the relationship graph. Answers "what could break if I change this?" as a count plus the
 /// list of dependents with `file:line`. A value you instantiate over an artifact
-/// (`ImpactAnalysis(artifact:rootType:).report`), wrapping `CodeArtifact.focusedSubset` with
+/// (`ImpactAnalysis(artifact:rootType:).report`), wrapping `FocusedSubsetBuilder` with
 /// `direction: .dependents`.
 public struct ImpactAnalysis: Sendable {
     /// One type that depends on the root.
@@ -32,14 +32,14 @@ public struct ImpactAnalysis: Sendable {
 
     public var report: Report {
         let types = artifact.flattened()
-        let (subset, _) = CodeArtifact.focusedSubset(
+        let (subset, _) = FocusedSubsetBuilder(
             types: types,
             relationships: artifact.relationships,
             configuration: FocusConfiguration(
                 rootTypeName: rootType,
                 maxDepth: maxDepth,
                 direction: .dependents,
-                includeInterconnections: false))
+                includeInterconnections: false)).subset
 
         // An unresolvable root yields an empty subset; a resolvable but isolated root yields just
         // itself. Distinguish the two so callers don't read "no dependents" as "type not found".

@@ -24,15 +24,17 @@ struct CyclesTool: AnalysisTool {
         let artifact = try await resolveArtifact(arguments, cache)
         let finder = CycleFinder(
             artifact: artifact,
-            annotationStereotypes: artifact.standardLanguageConfiguration.annotationStereotypes)
+            languageResolver: artifact.standardLanguageResolver)
         let scopes: [CycleFinder.Scope]
         switch arguments.string("scope") ?? "all" {
         case "modules":
             scopes = [.modules]
         case "types":
             scopes = [.types]
-        default:
+        case "all":
             scopes = [.modules, .types]
+        case let other:
+            throw MCPError.invalidParams("scope must be modules, types, or all (got '\(other)').")
         }
         let cycles = scopes.flatMap { finder.cycles(scope: $0) }
         return .json(try Value(cycles.map { CyclePayload(scope: $0.scope.rawValue, members: $0.members) }))

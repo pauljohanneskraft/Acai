@@ -28,7 +28,7 @@ extension UMLCommand {
             let artifact = try artifactSource.resolve()
             let report = DeadCodeScan(
                 artifact: artifact,
-                entryPoints: artifact.standardLanguageConfiguration.entryPointMarkers).report
+                languages: artifact.standardLanguageResolver).report
 
             let rendered: String
             switch format {

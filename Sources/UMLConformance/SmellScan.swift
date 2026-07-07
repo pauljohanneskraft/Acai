@@ -19,27 +19,28 @@ public struct SmellScan: Sendable {
         MetricBudget(metric: .dataClassScore, max: 0.8, message: nil),
         MetricBudget(metric: .nestingDepth, max: 2, message: nil),
         MetricBudget(metric: .lcom, max: 1, message: nil),
-        MetricBudget(metric: .featureEnvyMethods, max: 2, message: nil)
+        MetricBudget(metric: .featureEnvyMethods, max: 2, message: nil),
+        MetricBudget(metric: .maxCyclomaticComplexity, max: 10, message: nil)
     ]
 
     private let artifact: CodeArtifact
     private let thresholds: [MetricBudget]
     private let selector: Selector
     private let moduleResolver: ModuleResolver
-    private let annotationStereotypes: [String: String]
+    private let languageResolver: LanguageConfigurationResolver
 
     public init(
         artifact: CodeArtifact,
         thresholds: [MetricBudget] = SmellScan.defaultThresholds,
         selector: Selector = Selector(),
         moduleResolver: ModuleResolver = .standard,
-        annotationStereotypes: [String: String] = [:]
+        languageResolver: LanguageConfigurationResolver
     ) {
         self.artifact = artifact
         self.thresholds = thresholds
         self.selector = selector
         self.moduleResolver = moduleResolver
-        self.annotationStereotypes = annotationStereotypes
+        self.languageResolver = languageResolver
     }
 
     /// Every threshold breach across the codebase's types, ranked most-severe first (by how far the
@@ -48,7 +49,7 @@ public struct SmellScan: Sendable {
         let graph = GraphView(
             artifact: artifact,
             moduleResolver: moduleResolver,
-            annotationStereotypes: annotationStereotypes)
+            languageResolver: languageResolver)
         let nodesByID = Dictionary(graph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         let scored = graph.metrics.types.flatMap { metric -> [(severity: Double, violation: Violation)] in
@@ -61,9 +62,37 @@ public struct SmellScan: Sendable {
                 return (severity, smell(metric: budget.metric, value: value, max: max, node: node))
             }
         }
-        return scored
+
+        let typesByID = Dictionary(
+            artifact.flattened().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return rank(scored).map { violation in
+            enrichWithCohesionPartition(violation, typesByID: typesByID)
+        }
+    }
+
+    /// Ranks scored violations most-severe first (ties broken by subject for stable output).
+    private func rank(
+        _ scored: [(severity: Double, violation: Violation)]
+    ) -> [Violation] {
+        scored
             .sorted { ($0.severity, $0.violation.subject) > ($1.severity, $1.violation.subject) }
             .map(\.violation)
+    }
+
+    /// For a low-cohesion (`lcom`) finding, appends the actual method clusters so the report says *how*
+    /// to split the type, not just that it should be split. A no-op for every other smell.
+    private func enrichWithCohesionPartition(
+        _ violation: Violation, typesByID: [String: TypeDeclaration]
+    ) -> Violation {
+        guard violation.detail["metric"] == MetricBudget.Metric.lcom.rawValue,
+              let type = typesByID[violation.subject] else { return violation }
+        let clusters = LcomAnalysis(type: type).components
+            .map { "{" + $0.joined(separator: ", ") + "}" }
+            .joined(separator: " | ")
+        var enriched = violation
+        enriched.detail["clusters"] = clusters
+        enriched.message += " — clusters: \(clusters)"
+        return enriched
     }
 
     private func smell(
@@ -108,6 +137,8 @@ extension MetricBudget.Metric {
             return "extract collaborators — the type does too much"
         case .numberOfProperties:
             return "group related fields into a value type"
+        case .maxCyclomaticComplexity:
+            return "extract the branchy method — split its decision paths"
         case .fanIn, .fanOut, .depthOfInheritance, .numberOfChildren,
              .instability, .abstractness, .distance, .publicApiSurface:
             return "review this coupling metric"

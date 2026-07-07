@@ -9,7 +9,7 @@ struct CodebaseFunctionsSection: View {
     let artifact: CodeArtifact
 
     var body: some View {
-        CollapsibleSection(title: "Top-Level Functions") {
+        CollapsibleSection(title: "Top-Level Functions", defaultExpanded: false) {
             SectionCountBadge(text: "\(artifact.freestandingFunctions.count)")
         } content: {
             let sortedFunctions = artifact.freestandingFunctions

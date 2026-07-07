@@ -17,24 +17,24 @@ public struct ClassImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
     public let configuration: ClassDiagramConfiguration
-    public let language: LanguageConfiguration
+    public let languages: LanguageConfigurationResolver
 
     public init(
         scale: Double, palette: DiagramPalette,
-        configuration: ClassDiagramConfiguration, language: LanguageConfiguration
+        configuration: ClassDiagramConfiguration, languages: LanguageConfigurationResolver
     ) {
         self.scale = scale
         self.palette = palette
         self.configuration = configuration
-        self.language = language
+        self.languages = languages
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
-        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
+        let (configuration, scale, palette, languages) = (configuration, scale, palette, languages)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
-                artifact: artifact, configuration: configuration, language: language,
-                scale: CGFloat(scale), palette: palette)
+                artifact: artifact, configuration: configuration, languages: languages,
+                context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
 
@@ -50,11 +50,12 @@ public struct ClassImageExporter: Sendable {
             edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
         }
         let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
-        let (configuration, scale, palette, language) = (configuration, scale, palette, language)
+        let (configuration, scale, palette, languages) = (configuration, scale, palette, languages)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
-                artifact: union, configuration: configuration, language: language,
-                scale: CGFloat(scale), palette: palette, edgeColor: edgeColor, nodeColor: nodeColor)
+                artifact: union, configuration: configuration, languages: languages,
+                context: RenderingContext(scale: CGFloat(scale), palette: palette),
+                colors: ClassColorOverrides(edge: edgeColor, node: nodeColor))
         }
     }
 }
@@ -84,7 +85,8 @@ public struct SequenceImageExporter: Sendable {
             .buildTraceable(from: artifact)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
-            try SequenceImageRenderer().renderPNG(sequenceDiagram: diagram, scale: CGFloat(scale), palette: palette)
+            try SequenceImageRenderer().renderPNG(
+                sequenceDiagram: diagram, context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
 
@@ -101,7 +103,8 @@ public struct SequenceImageExporter: Sendable {
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try SequenceImageRenderer().renderPNG(
-                sequenceDiagram: diff.union, scale: CGFloat(scale), palette: palette, messageColor: messageColor)
+                sequenceDiagram: diff.union, context: RenderingContext(scale: CGFloat(scale), palette: palette),
+                messageColor: messageColor)
         }
     }
 }
@@ -126,7 +129,8 @@ public struct StateImageExporter: Sendable {
         let diagram = try request.build(from: artifact)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
-            try StateImageRenderer().renderPNG(stateDiagram: diagram, scale: CGFloat(scale), palette: palette)
+            try StateImageRenderer().renderPNG(
+                stateDiagram: diagram, context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
 
@@ -144,7 +148,8 @@ public struct StateImageExporter: Sendable {
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try StateImageRenderer().renderPNG(
-                stateDiagram: diff.union, scale: CGFloat(scale), palette: palette, edgeColor: edgeColor)
+                stateDiagram: diff.union, context: RenderingContext(scale: CGFloat(scale), palette: palette),
+                edgeColor: edgeColor)
         }
     }
 }
@@ -154,36 +159,37 @@ public struct StateImageExporter: Sendable {
 public struct PackageImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
-    public let language: LanguageConfiguration
+    public let languages: LanguageConfigurationResolver
 
-    public init(scale: Double, palette: DiagramPalette, language: LanguageConfiguration) {
+    public init(scale: Double, palette: DiagramPalette, languages: LanguageConfigurationResolver) {
         self.scale = scale
         self.palette = palette
-        self.language = language
+        self.languages = languages
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
-        let diagram = PackageDiagramRequest().build(from: artifact, language: language)
+        let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
-            try PackageImageRenderer().renderPNG(packageDiagram: diagram, scale: CGFloat(scale), palette: palette)
+            try PackageImageRenderer().renderPNG(
+                packageDiagram: diagram, context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
 
     /// The union with each module node and dependency edge tinted by its diff status.
     public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = PackageDiagramRequest()
-        let language = language
+        let languages = languages
         let diff = PackageDiagramDiff(
-            old: request.build(from: old, language: language),
-            new: request.build(from: new, language: language))
+            old: request.build(from: old, languages: languages),
+            new: request.build(from: new, languages: languages))
         let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
         let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try PackageImageRenderer().renderPNG(
-                packageDiagram: diff.union, scale: CGFloat(scale), palette: palette,
-                nodeColor: nodeColor, edgeColor: edgeColor)
+                packageDiagram: diff.union, context: RenderingContext(scale: CGFloat(scale), palette: palette),
+                colors: GraphColorOverrides(node: nodeColor, edge: edgeColor))
         }
     }
 }
@@ -204,7 +210,8 @@ public struct CallGraphImageExporter: Sendable {
         let graph = try CallGraphRequest(scope: scope).buildWithEdges(from: artifact)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
-            try CallGraphImageRenderer().renderPNG(callGraph: graph, scale: CGFloat(scale), palette: palette)
+            try CallGraphImageRenderer().renderPNG(
+                callGraph: graph, context: RenderingContext(scale: CGFloat(scale), palette: palette))
         }
     }
 
@@ -217,8 +224,8 @@ public struct CallGraphImageExporter: Sendable {
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try CallGraphImageRenderer().renderPNG(
-                callGraph: diff.union, scale: CGFloat(scale), palette: palette,
-                nodeColor: nodeColor, edgeColor: edgeColor)
+                callGraph: diff.union, context: RenderingContext(scale: CGFloat(scale), palette: palette),
+                colors: GraphColorOverrides(node: nodeColor, edge: edgeColor))
         }
     }
 }

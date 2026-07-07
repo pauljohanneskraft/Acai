@@ -26,9 +26,7 @@ extension KotlinExtractor {
     ]
 
     mutating func walkSourceFile(_ node: Node) {
-        for child in node.children() {
-            guard let nodeType = child.nodeType,
-                  let action = Self.sourceFileDispatch[nodeType] else { continue }
+        for (child, action) in NodeDispatch(Self.sourceFileDispatch).matches(in: node) {
             performSourceFileAction(action, on: child)
         }
     }

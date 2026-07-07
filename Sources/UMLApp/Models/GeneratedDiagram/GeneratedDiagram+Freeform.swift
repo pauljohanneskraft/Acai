@@ -233,7 +233,7 @@ extension GeneratedDiagram {
         offset: CGPoint
     ) -> FreeformDiagram {
         let package = PackageDiagramBuilder().build(
-            from: artifact.enriched(configuration: artifact.standardLanguageConfiguration))
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
 
         var nodeIDByModuleID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []

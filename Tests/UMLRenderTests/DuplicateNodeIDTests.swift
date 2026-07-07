@@ -29,7 +29,7 @@ struct DuplicateNodeIDTests {
         let model = DiagramLayoutModel(
             artifact: artifactWithDuplicateIDs(),
             configuration: ClassDiagramConfiguration(),
-            language: LanguageConfiguration()
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())
         )
         let ids = model.nodes.map(\.id)
         #expect(Set(ids).count == ids.count, "diagram node ids must be unique")
@@ -40,7 +40,7 @@ struct DuplicateNodeIDTests {
         let model = DiagramLayoutModel(
             artifact: artifactWithDuplicateIDs(),
             configuration: ClassDiagramConfiguration(),
-            language: LanguageConfiguration()
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())
         )
         // Mirrors the app's `Dictionary(uniqueKeysWithValues:)` layout map, which traps on dupes.
         let sizes = Dictionary(uniqueKeysWithValues: model.nodes.map { ($0.id, CGSize(width: 100, height: 60)) })

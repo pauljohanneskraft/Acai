@@ -217,8 +217,7 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func artifact(for codebaseID: UUID) -> CodeArtifact? {
         guard let artifact = store.artifact(for: codebaseID)?.resolvingExtensions() else { return nil }
-        guard let filter = artifact.standardLanguageConfiguration.generatedCodeFilter else { return artifact }
-        return artifact.filteringGeneratedTypes(using: filter)
+        return artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
     func projectForDiagram(_ diagramID: UUID) -> Project? {

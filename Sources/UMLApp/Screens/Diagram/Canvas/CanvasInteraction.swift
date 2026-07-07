@@ -142,26 +142,32 @@ extension LayoutBackedCanvas {
     func resizeNode(_ id: String, width: CGFloat, height: CGFloat) {}
 }
 
-/// Computes a canvas scale + offset that fits all node rects within `viewport`, used by the
-/// "fit to view" / re-center actions across diagram types.
+/// Computes a canvas scale + offset that fits all node rects within `viewport` — the "fit to view" /
+/// re-center action shared across diagram types. A value you instantiate with the nodes to frame and
+/// ask for its ``transform`` (behaviour on a value, not a free function).
 @MainActor
-func fitToView(
-    nodeIDs: [String],
-    rect: (String) -> CGRect?,
-    viewport: CGSize = CGSize(width: 900, height: 600),
-    padding: CGFloat = 60,
-    maxScale: CGFloat = 1.2,
-    minScale: CGFloat = 0.2
-) -> (scale: CGFloat, offset: CGPoint)? {
-    let rects = nodeIDs.compactMap(rect)
-    guard let first = rects.first else { return nil }
-    let bounds = rects.dropFirst().reduce(first) { $0.union($1) }
-    let scaleX = (viewport.width - padding * 2) / max(bounds.width, 1)
-    let scaleY = (viewport.height - padding * 2) / max(bounds.height, 1)
-    let scale = max(min(min(scaleX, scaleY), maxScale), minScale)
-    let offset = CGPoint(
-        x: (viewport.width - bounds.width * scale) / 2 - bounds.minX * scale,
-        y: (viewport.height - bounds.height * scale) / 2 - bounds.minY * scale
-    )
-    return (scale, offset)
+struct FitToView {
+    /// The nodes to frame, and how to resolve each one's rect (`nil` skips a node without a rect).
+    let nodeIDs: [String]
+    let rect: (String) -> CGRect?
+    var viewport: CGSize = CGSize(width: 900, height: 600)
+    var padding: CGFloat = 60
+    var maxScale: CGFloat = 1.2
+    var minScale: CGFloat = 0.2
+
+    /// The scale + offset that centres and fits the node rects in `viewport`, or `nil` when no node
+    /// has a rect to frame.
+    var transform: (scale: CGFloat, offset: CGPoint)? {
+        let rects = nodeIDs.compactMap(rect)
+        guard let first = rects.first else { return nil }
+        let bounds = rects.dropFirst().reduce(first) { $0.union($1) }
+        let scaleX = (viewport.width - padding * 2) / max(bounds.width, 1)
+        let scaleY = (viewport.height - padding * 2) / max(bounds.height, 1)
+        let scale = max(min(min(scaleX, scaleY), maxScale), minScale)
+        let offset = CGPoint(
+            x: (viewport.width - bounds.width * scale) / 2 - bounds.minX * scale,
+            y: (viewport.height - bounds.height * scale) / 2 - bounds.minY * scale
+        )
+        return (scale, offset)
+    }
 }

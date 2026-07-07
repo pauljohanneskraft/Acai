@@ -2,6 +2,13 @@ import UMLCore
 import UMLTreeSitter
 
 struct JavaExtractor: TreeSitterExtracting, CallSiteResolving {
+
+    /// Java structural decision-point node types for cyclomatic complexity.
+    static let branchNodeKinds: Set<String> = [
+        "if_statement", "for_statement", "enhanced_for_statement", "while_statement", "do_statement",
+        "catch_clause", "switch_label"
+    ]
+
     let context: SourceFileContext
 
     var types: [TypeDeclaration] = []

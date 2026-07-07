@@ -45,7 +45,8 @@ struct MemberExtractor {
             location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
             assignments: assignments,
-            fieldReads: fieldReads
+            fieldReads: fieldReads,
+            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value
         )
     }
 
@@ -175,7 +176,8 @@ struct MemberExtractor {
             location: sourceLocations.sourceLocation(of: node, fileName: fileName),
             callSites: callSites,
             assignments: assignments,
-            fieldReads: fieldReads
+            fieldReads: fieldReads,
+            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value
         )
     }
 

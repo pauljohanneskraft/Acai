@@ -28,8 +28,9 @@ public struct DiagramImageRenderer {
 
     public init() {}
 
-    /// Uniform space left around the diagram content, in points.
-    public static let defaultPadding: CGFloat = 40
+    /// Uniform space left around the diagram content, in points. A pure constant — `nonisolated` so
+    /// it can seed default arguments (e.g. ``RenderingContext``) outside the main actor.
+    nonisolated public static let defaultPadding: CGFloat = 40
 
     /// Hard ceiling on either output dimension, in pixels. Beyond this, CoreGraphics PNG
     /// encoding starts to fail and the bitmap becomes impractically large, so the effective

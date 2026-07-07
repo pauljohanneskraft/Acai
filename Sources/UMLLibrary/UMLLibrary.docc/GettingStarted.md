@@ -31,9 +31,9 @@ Pass an empty `allowedLanguages` array to let UML analyze every language it reco
 ### Render a class diagram
 
 ```swift
-// `language` carries the source language's quirks (type classification, stereotypes);
-// resolve it from the standard registry for the artifact's language.
-let options = ClassDiagramOptions(language: artifact.standardLanguageConfiguration)
+// `languages` resolves each type's quirks (type classification, stereotypes) from its own
+// language, so a polyglot codebase is styled per type. Built from the standard registry.
+let options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
 let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 try dot.write(to: URL(filePath: "project.dot"), atomically: true, encoding: .utf8)
 // Render anywhere Graphviz runs:  dot -Tpng project.dot -o project.png

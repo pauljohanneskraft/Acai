@@ -17,23 +17,24 @@ public struct EnrichmentOptions: Sendable {
     /// When set, restricts the result to one type and its surrounding subgraph.
     public var focus: FocusConfiguration?
 
-    /// The language's type-name classification, injected so enrichment + external-type detection
-    /// stay agnostic. Must match the configuration used by the analysis pipeline for the same
-    /// artifact, since `enriched(configuration:)` is only idempotent under a consistent configuration.
-    public var language: LanguageConfiguration
+    /// Resolves each type's classification from its own language, injected so enrichment +
+    /// external-type detection stay agnostic and a polyglot artifact infers each language's edges with
+    /// its own rules. Must be consistent with the analysis pipeline's configuration for the same
+    /// artifact, since `enriched(using:)` is only idempotent under a consistent resolver.
+    public var languages: LanguageConfigurationResolver
 
     public init(
         inferCompositionFromProperties: Bool = true,
         inferDependencyFromMethods: Bool = true,
         showExternalTypes: Bool = false,
         focus: FocusConfiguration? = nil,
-        language: LanguageConfiguration
+        languages: LanguageConfigurationResolver
     ) {
         self.inferCompositionFromProperties = inferCompositionFromProperties
         self.inferDependencyFromMethods = inferDependencyFromMethods
         self.showExternalTypes = showExternalTypes
         self.focus = focus
-        self.language = language
+        self.languages = languages
     }
 }
 
@@ -79,7 +80,7 @@ public struct ClassDiagram: Sendable {
         // dependency edges, dedup) is owned by UMLCore and runs exactly once here.
         // It is idempotent, so an already-enriched artifact (e.g. from AnalysisService)
         // is unaffected.
-        let base = artifact.enriched(configuration: options.language)
+        let base = artifact.enriched(using: options.languages)
 
         // Flatten nested types, giving them display names that include nesting context.
         let flatTypes = Self.flattenTypes(base.types)
@@ -109,9 +110,9 @@ public struct ClassDiagram: Sendable {
         // externals and directory groups reflect the focused set.
         var resultTypes = flatTypes
         if let focus = options.focus {
-            let subset = CodeArtifact.focusedSubset(
+            let subset = FocusedSubsetBuilder(
                 types: flatTypes, relationships: relationships, configuration: focus
-            )
+            ).subset
             resultTypes = subset.types
             relationships = subset.relationships
         }
@@ -121,7 +122,8 @@ public struct ClassDiagram: Sendable {
             types: resultTypes,
             relationships: relationships,
             externalTypes: Self.identifyExternalTypes(
-                relationships: relationships, knownIds: resultKnownIds, language: options.language
+                relationships: relationships, knownIds: resultKnownIds,
+                language: options.languages.defaultConfiguration
             ),
             directoryGroups: Self.buildDirectoryGroups(resultTypes)
         )

@@ -18,7 +18,7 @@ struct ClassDeltaExporter {
         let typeStatus = diff.typeStatusLookup()
         let options = ClassDiagramOptions(
             showExternalTypes: true,
-            language: new.standardLanguageConfiguration,
+            languages: new.standardLanguageResolver,
             edgeColorOverride: { edgeStatus($0).deltaHex },
             nodeColorOverride: { typeStatus($0.id).deltaHex }
         )
@@ -69,8 +69,8 @@ struct PackageDeltaExporter {
     func render(old: CodeArtifact, new: CodeArtifact, format: DiagramFormat) -> String {
         let request = PackageDiagramRequest()
         let diff = PackageDiagramDiff(
-            old: request.build(from: old, language: old.standardLanguageConfiguration),
-            new: request.build(from: new, language: new.standardLanguageConfiguration))
+            old: request.build(from: old, languages: old.standardLanguageResolver),
+            new: request.build(from: new, languages: new.standardLanguageResolver))
         let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
         let edgeColor: @Sendable (String, String) -> String? = { diff.status(ofEdgeFrom: $0, to: $1).deltaHex }
         switch format {

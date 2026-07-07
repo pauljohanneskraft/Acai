@@ -1,5 +1,12 @@
 import UMLCore
 
+// Design note — this is a deliberate *options bag*, not a long-parameter-list smell. Every field is an
+// independently-defaulted toggle, and the `var`s exist so callers build it with a couple of labelled
+// arguments (`ClassDiagramOptions(theme: .dark)`) and mutate the rest after the fact (the CLI does
+// `options.theme = …` / `classFlags.apply(to: &options)`). No call site passes a long positional list,
+// so grouping the initializer into sub-objects would only break ~30 construction + ~55 reader sites and
+// worsen the common case for no real gain. The `maxParameters` metric measures this correctly; the
+// judgement (per the audit's "tool measures, human judges" principle) is that the bag is the right shape.
 public struct ClassDiagramOptions: Sendable {
     public var layoutDirection: LayoutDirection
     public var showMembers: Bool
@@ -44,11 +51,13 @@ public struct ClassDiagramOptions: Sendable {
     /// whole codebase.
     public var focus: FocusConfiguration?
 
-    /// The source language's quirks (type-name classification + annotation stereotypes), injected
-    /// by the caller from the registry keyed on `artifact.metadata.sourceLanguage`. Required — the
-    /// diagram layer stays agnostic by receiving this rather than knowing any language, and there is
-    /// no empty default to silently mis-classify into.
-    public var language: LanguageConfiguration
+    /// Resolves each type's language quirks (type-name classification + annotation stereotypes) from
+    /// its own `sourceLanguage`, so a polyglot codebase is styled per type rather than under one
+    /// artifact-wide language. Injected by the caller (`artifact.standardLanguageResolver`, or
+    /// `LanguageConfigurationResolver(single:)` for a single-language render). Required — the diagram
+    /// layer stays agnostic by receiving this rather than knowing any language, and the resolver's
+    /// required default means there is no empty configuration to silently mis-classify into.
+    public var languages: LanguageConfigurationResolver
 
     /// An optional per-edge colour override (a hex like `#2e7d32`). When it returns a non-`nil`
     /// colour for a relationship, that colour wins over `theme.edgeColor`; when it returns `nil`,
@@ -80,7 +89,7 @@ public struct ClassDiagramOptions: Sendable {
         showMultiplicities: Bool = true,
         showAnnotationStereotypes: Bool = true,
         focus: FocusConfiguration? = nil,
-        language: LanguageConfiguration,
+        languages: LanguageConfigurationResolver,
         edgeColorOverride: (@Sendable (Relationship) -> String?)? = nil,
         nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)? = nil
     ) {
@@ -101,7 +110,7 @@ public struct ClassDiagramOptions: Sendable {
         self.showMultiplicities = showMultiplicities
         self.showAnnotationStereotypes = showAnnotationStereotypes
         self.focus = focus
-        self.language = language
+        self.languages = languages
         self.edgeColorOverride = edgeColorOverride
         self.nodeColorOverride = nodeColorOverride
     }

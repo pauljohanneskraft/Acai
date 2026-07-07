@@ -44,16 +44,19 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
-    /// Modules ranked by instability (descending), each row revealing the module's directory.
+    /// Modules ranked by a metric (`value`, descending, value > 0), each value formatted by `format`
+    /// and each row revealing the module's directory.
     func moduleDetail(
-        _ title: String, _ description: String, _ modules: [CodeMetrics.ModuleCoupling]
+        _ title: String, _ description: String, _ modules: [CodeMetrics.ModuleCoupling],
+        value: (CodeMetrics.ModuleCoupling) -> Double, format: (Double) -> String
     ) -> StatisticDetail {
         let rows = modules
-            .sorted { $0.instability != $1.instability ? $0.instability > $1.instability : $0.name < $1.name }
+            .filter { value($0) > 0 }
+            .sorted { value($0) != value($1) ? value($0) > value($1) : $0.name < $1.name }
             .map { module in
                 StatisticDetail.Row(
                     id: module.name, name: module.name,
-                    value: String(format: "%.0f%%", module.instability * 100), reveal: moduleReveal(module.name))
+                    value: format(value(module)), reveal: moduleReveal(module.name))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
