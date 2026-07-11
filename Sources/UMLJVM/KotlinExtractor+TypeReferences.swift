@@ -106,9 +106,15 @@ extension KotlinExtractor {
     /// - `this.method(args)` — a call on the enclosing instance,
     /// - `TypeName.method(args)` where `TypeName` is a known (companion/static) type.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
-        guard node.nodeType == "call_expression",
-              let navExpr = node.firstChild(withType: "navigation_expression")
-        else { return nil }
+        guard node.nodeType == "call_expression" else { return nil }
+
+        guard let navExpr = node.firstChild(withType: "navigation_expression") else {
+            // Bare `foo()` — an implicit-receiver call (a member of the enclosing type or a top-level
+            // function). Tagged `.selfDispatch`; the builder falls back to a free function. The
+            // `knownTypeNames` guard drops constructor calls `Foo()`, which share this grammar shape.
+            guard let calleeId = node.firstChild(withType: "simple_identifier") else { return nil }
+            return scope.bareCall(named: text(calleeId), implicitSelf: true, location: loc(node))
+        }
 
         // Method name lives in the last navigation_suffix → simple_identifier
         guard let navSuffix = navExpr.firstChild(withType: "navigation_suffix"),
@@ -136,6 +142,29 @@ extension KotlinExtractor {
 
         guard let name = receiverName else { return nil }
         return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
+    }
+
+    /// Provable local-variable types: an explicit annotation (`val x: Foo`) or a `Foo()` construction
+    /// of a declared type (`val x = Foo()`), so `x.method()` resolves to `Foo` (RC4).
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "property_declaration",
+                  let varDecl = node.firstChild(withType: "variable_declaration"),
+                  let nameNode = varDecl.firstChild(withType: "simple_identifier")
+            else { return nil }
+            let name = text(nameNode)
+            if let userType = varDecl.firstChild(withType: "user_type"),
+               let typeId = userType.firstChild(withType: "type_identifier") {
+                return (name, text(typeId))
+            }
+            if let call = node.firstChild(withType: "call_expression"),
+               call.firstChild(withType: "navigation_expression") == nil,
+               let callee = call.firstChild(withType: "simple_identifier"),
+               declaredTypeNames.contains(text(callee)) {
+                return (name, text(callee))
+            }
+            return nil
+        }
     }
 
     // MARK: - Generic Parameters

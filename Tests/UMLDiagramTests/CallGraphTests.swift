@@ -184,6 +184,29 @@ struct CallGraphTests {
         #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
     }
 
+    @Test func selfDispatchFallsBackToFreeFunctionWhenNoSelfMethod() {
+        // A bare `foo()` is recorded as `.selfDispatch`; when the caller's type has no such method,
+        // the resolver falls back to a free function of that name so the edge (and coverage) survives.
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "A", name: "A", qualifiedName: "A", kind: .class,
+                    accessLevel: .public,
+                    members: [
+                        Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                            CallSite(receiver: .selfDispatch, methodName: "format")
+                        ])
+                    ]
+                )
+            ],
+            freestandingFunctions: [Member(name: "format", kind: .method, accessLevel: .internal)]
+        )
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.coverage.resolved == 1)
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "format", weight: 1)])
+    }
+
     @Test func typeScopeExcludesFreeFunctionsAsCallers() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),

@@ -52,6 +52,7 @@ extension JavaExtractor {
         case method
         case constructor
         case field
+        case initializerBlock
         case nestedType
         case enumConstant
         case enumBodyDeclarations
@@ -63,6 +64,8 @@ extension JavaExtractor {
         "method_declaration": .method,
         "constructor_declaration": .constructor,
         "field_declaration": .field,
+        "static_initializer": .initializerBlock,
+        "block": .initializerBlock,
         "class_declaration": .nestedType,
         "interface_declaration": .nestedType,
         "enum_declaration": .nestedType,
@@ -89,6 +92,8 @@ extension JavaExtractor {
         "method_declaration": .method,
         "constructor_declaration": .constructor,
         "field_declaration": .field,
+        "static_initializer": .initializerBlock,
+        "block": .initializerBlock,
         "class_declaration": .nestedType,
         "interface_declaration": .nestedType
     ]
@@ -147,7 +152,16 @@ extension JavaExtractor {
                 to: &context.members
             )
         case .field:
-            context.members.append(contentsOf: extractFieldDeclaration(child))
+            context.members.append(contentsOf: extractFieldDeclaration(child, scope: context.scope))
+        case .initializerBlock:
+            // A `static { … }` / instance `{ … }` initializer block. Its calls run during class/object
+            // construction, so record them on an `.initializer` member (never a dead-code candidate) (RC2).
+            context.members.append(
+                Member(
+                    name: "init", kind: .initializer, accessLevel: .internal, location: loc(child),
+                    callSites: extractCallSites(from: child, scope: context.scope)
+                )
+            )
         case .nestedType:
             appendIfPresent(
                 extractNestedTypeFromChild(
@@ -313,7 +327,7 @@ extension JavaExtractor {
 
     // MARK: - Field Declaration
 
-    func extractFieldDeclaration(_ node: Node) -> [Member] {
+    func extractFieldDeclaration(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> [Member] {
         let modifierInfo = extractModifiersFromParent(node)
         let nodeLoc = loc(node)
 
@@ -326,14 +340,15 @@ extension JavaExtractor {
         let declarators = node.allChildren(withType: "variable_declarator")
         if !declarators.isEmpty {
             return declarators.compactMap {
-                extractVariableDeclarator($0, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc)
+                extractVariableDeclarator(
+                    $0, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc, scope: scope)
             }
         }
 
         // Fallback: try declarator field name
         if let declaratorNode = node.child(byFieldName: "declarator") {
             if let member = extractVariableDeclarator(
-                declaratorNode, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc
+                declaratorNode, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc, scope: scope
             ) {
                 return [member]
             }
@@ -345,7 +360,8 @@ extension JavaExtractor {
         _ node: Node,
         fieldType: TypeReference?,
         modifierInfo: ModifierInfo,
-        loc: SourceLocation
+        loc: SourceLocation,
+        scope: CallSiteScope
     ) -> Member? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = text(nameNode)
@@ -367,6 +383,7 @@ extension JavaExtractor {
             name: name, kind: .property,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: actualType, annotations: modifierInfo.annotations, location: loc,
+            callSites: extractCallSites(from: node.child(byFieldName: "value"), scope: scope),
             initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
             referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
         )

@@ -220,13 +220,6 @@ final class ProjectBrowserViewModel: ObservableObject {
         return artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
-    func projectForDiagram(_ diagramID: UUID) -> Project? {
-        store.projects.first {
-            $0.generatedDiagramIDs.contains(diagramID) ||
-            $0.freeformDiagramIDs.contains(diagramID)
-        }
-    }
-
     /// All generated diagrams for a project.
     func generatedDiagramsForProject(_ projectID: UUID) -> [GeneratedDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }

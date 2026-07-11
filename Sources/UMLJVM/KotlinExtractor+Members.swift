@@ -81,9 +81,13 @@ extension KotlinExtractor {
             )
             context.typeDecl.members.append(
                 extractPropertyDeclaration(
-                    child, isComputed: hasGetterOrSetter
+                    child, isComputed: hasGetterOrSetter, scope: context.scope
                 )
             )
+        case "anonymous_initializer":
+            // An `init { … }` block — the real constructor body in Kotlin. Its calls belong to
+            // construction, so record them on an `.initializer` member (never a dead-code candidate) (RC2).
+            context.typeDecl.members.append(extractAnonymousInitializer(child, scope: context.scope))
         case "secondary_constructor":
             context.typeDecl.members.append(
                 extractSecondaryConstructor(
@@ -91,20 +95,22 @@ extension KotlinExtractor {
                     scope: context.scope
                 )
             )
-        case "companion_object":
-            if let obj = extractCompanionObject(child) {
-                context.typeDecl.nestedTypes.append(obj)
-            }
-        case "class_declaration":
-            handleNestedClassDeclaration(
-                child, into: &context.typeDecl
-            )
-        case "object_declaration":
-            if let nestedType = extractObjectDeclaration(child) {
-                context.typeDecl.nestedTypes.append(nestedType)
-            }
+        case "companion_object", "class_declaration", "object_declaration":
+            handleNestedTypeChild(child, into: &context.typeDecl)
         default:
             break
+        }
+    }
+
+    /// Routes a nested type / companion / object declaration to its extractor.
+    private mutating func handleNestedTypeChild(_ child: Node, into typeDecl: inout TypeDeclaration) {
+        switch child.nodeType {
+        case "companion_object":
+            if let obj = extractCompanionObject(child) { typeDecl.nestedTypes.append(obj) }
+        case "object_declaration":
+            if let nestedType = extractObjectDeclaration(child) { typeDecl.nestedTypes.append(nestedType) }
+        default:
+            handleNestedClassDeclaration(child, into: &typeDecl)
         }
     }
 
@@ -249,7 +255,8 @@ extension KotlinExtractor {
 
     func extractPropertyDeclaration(
         _ node: Node,
-        isComputed: Bool = false
+        isComputed: Bool = false,
+        scope: CallSiteScope = CallSiteScope()
     ) -> Member {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let isVal = bindingKind(of: node) == "val"
@@ -267,20 +274,37 @@ extension KotlinExtractor {
             typeRef = extractFirstTypeRef(from: node)
         }
 
+        // A custom accessor (`get()`/`set()`) nests inside the `property_declaration` as a child; walk
+        // each so accessor-only calls aren't lost, and treat the property as computed (RC2).
+        let accessors = node.namedChildren().filter { $0.nodeType == "getter" || $0.nodeType == "setter" }
+        var callSites = extractCallSites(from: propertyInitializerNode(of: node), scope: scope)
+        for accessor in accessors {
+            callSites += extractCallSites(from: accessor, scope: scope)
+        }
+
         return Member(
             name: name, kind: .property,
             accessLevel: modifierInfo.accessLevel, modifiers: modifiers,
             type: typeRef,
-            isComputed: isComputed,
+            isComputed: isComputed || !accessors.isEmpty,
             annotations: modifierInfo.annotations, location: loc(node),
+            callSites: callSites,
             initialValue: propertyInitializerValue(of: node),
             referencedTypeNames: referencedTypeNames(in: propertyInitializerNode(of: node))
         )
     }
 
+    /// Records an `init { … }` block's calls on an `.initializer` member (the Kotlin analogue of a
+    /// constructor body), so calls made only during construction aren't lost (RC2).
+    func extractAnonymousInitializer(_ node: Node, scope: CallSiteScope) -> Member {
+        Member(
+            name: "init", kind: .initializer, accessLevel: .internal,
+            location: loc(node),
+            callSites: extractCallSites(from: node, scope: scope)
+        )
+    }
+
     /// The property's initializer expression node (the node after the anonymous `=`), if present.
-    /// Used for construction/body dependencies; accessor (`get()/set()`) bodies are deliberately not
-    /// walked.
     private func propertyInitializerNode(of node: Node) -> Node? {
         var foundEq = false
         for child in node.children() {

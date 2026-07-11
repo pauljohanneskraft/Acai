@@ -91,9 +91,9 @@ struct ProjectDetailView: View {
         HStack(spacing: 8) {
             Image(systemName: "tray.full")
                 .font(.title)
-                .foregroundStyle(.blue)
+                .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
-                .background(Color.blue.opacity(0.1))
+                .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             projectTitleFields(index: index)
             Spacer()
@@ -153,7 +153,7 @@ struct ProjectDetailView: View {
     private func codebaseRowContent(codebase: Codebase) -> some View {
         HStack {
             Image(systemName: "folder")
-                .foregroundStyle(.blue)
+                .foregroundStyle(.primary)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(codebase.name)
@@ -212,7 +212,7 @@ struct ProjectDetailView: View {
         } label: {
             HStack {
                 Image(systemName: FreeformDiagram.systemImage)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.primary)
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(diagram.name)

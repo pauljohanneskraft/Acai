@@ -97,6 +97,13 @@ extension JavaExtractor {
             }
         }
 
+        // `@Override` maps to the `.override` modifier, so the dead-code scan exempts an override of a
+        // supertype/interface member the same way it does for other languages (RC3).
+        if !modifiers.contains(.override),
+           annotations.contains(where: { $0.lowercased() == "@override" }) {
+            modifiers.append(.override)
+        }
+
         // Java's default (no explicit modifier) is package-private — resolved here so the engine
         // never sees a nil visibility.
         return ModifierInfo(

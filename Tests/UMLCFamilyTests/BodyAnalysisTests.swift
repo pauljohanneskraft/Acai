@@ -32,6 +32,73 @@ struct CppBodyAnalysisTests {
         #expect(calls.contains { $0.receiverType == nil && $0.methodName == "charge" })
     }
 
+    /// A bare `foo()` inside a member function is an implicit `this->foo()` sibling call — captured
+    /// as `.selfDispatch` (was `.free`, which the call-graph builder dropped since a member is not a
+    /// freestanding function), so private sibling methods aren't false-flagged as dead (RC1).
+    @Test func capturesBareSiblingMethodCall() {
+        let source = """
+        class Worker {
+        public:
+            void run() { helper(); }
+        private:
+            void helper() {}
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "worker.cpp")
+        let run = artifact.types
+            .first { $0.name == "Worker" }?
+            .members.first { $0.name == "run" }
+        let calls = run?.callSites ?? []
+        #expect(calls.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
+    }
+
+    /// Calls in a member-initializer list (`: x(helper())`) or a default member initializer
+    /// (`int y = compute();`) are recorded so their targets aren't false-flagged as dead (RC2).
+    @Test func capturesMemberInitializerListAndDefaultInitializerCalls() {
+        let source = """
+        class Worker {
+        public:
+            Worker() : x(helper()) {}
+        private:
+            int helper() { return 1; }
+            int x;
+            int y = compute();
+            int compute() { return 2; }
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "worker.cpp")
+        let members = artifact.types.first { $0.name == "Worker" }?.members ?? []
+        let allSites = members.flatMap(\.callSites)
+        #expect(allSites.contains { $0.methodName == "helper" })
+        #expect(allSites.contains { $0.methodName == "compute" })
+    }
+
+    /// A local declared with an explicit type (`Helper h;`) or a pointer to a `new`-constructed type
+    /// (`Helper* p = new Helper();`) resolves the receiver of `h.method()` / `p->method()` (RC4).
+    @Test func resolvesLocalAndPointerReceivers() {
+        let source = """
+        class Helper {
+        public:
+            void doThing() {}
+        };
+        class Worker {
+        public:
+            void run() {
+                Helper h;
+                h.doThing();
+                Helper* p = new Helper();
+                p->doThing();
+            }
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "worker.cpp")
+        let run = artifact.types
+            .first { $0.name == "Worker" }?
+            .members.first { $0.name == "run" }
+        let sites = run?.callSites ?? []
+        #expect(sites.filter { $0.methodName == "doThing" && $0.receiverType == "Helper" }.count == 2)
+    }
+
     @Test func freeFunctionCallGraph() {
         let source = """
         void validateCart() {}

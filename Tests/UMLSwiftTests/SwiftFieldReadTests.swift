@@ -45,18 +45,22 @@ struct SwiftFieldReadTests {
         #expect(reads.isEmpty)
     }
 
-    @Test func selfDispatchedCallIsSelf_freeCallIsNotRecorded() {
-        // `self.helper()` is a self-dispatch; a free function call has no member-access receiver and is
-        // dropped by the Swift collector — so it never masquerades as a self call (issue #111).
+    @Test func explicitAndBareSelfCallsBothRecordAsSelfDispatch() {
+        // Both `self.helper()` and a bare `helper()` are recorded as `.selfDispatch`; the parser can't
+        // tell an implicit-self method call from a free function at single-file parse time, so it emits
+        // the optimistic receiver and the whole-artifact resolvers disambiguate self vs. free.
         let source = """
         class Worker {
             func run() {
                 self.helper()
+                other()
             }
             func helper() {}
+            func other() {}
         }
         """
         let calls = member("run", in: source)?.callSites ?? []
         #expect(calls.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
+        #expect(calls.contains { $0.methodName == "other" && $0.receiver == .selfDispatch })
     }
 }

@@ -90,11 +90,6 @@ final class SequenceEditor {
         return CGFloat(minY) - SequenceLayoutModel.headerHeight / 2
     }
 
-    /// The display name of a lifeline node, for message-edge inspectors.
-    func lifelineName(_ nodeID: String) -> String {
-        context.nodes.first { $0.id == nodeID }?.name ?? "?"
-    }
-
     // MARK: Editing
 
     /// The selected lifeline ids in click order (drives message direction: first → second).
@@ -163,12 +158,6 @@ final class SequenceEditor {
         if let operands { content.operands = operands }
         context.nodes[idx].content = .fragment(content)
         context.save()
-    }
-
-    /// Whether a node is a combined fragment.
-    func isFragment(_ nodeID: String) -> Bool {
-        if case .fragment = context.node(nodeID)?.content { return true }
-        return false
     }
 
     /// Update a lifeline node's participant role (actor, boundary, control, …).

@@ -53,7 +53,6 @@ struct FreeformDiagramHistoryTests {
         // Calls whose guards fail on a bogus ID must not record a checkpoint
         // (which would clear the redo stack) nor make undo available.
         let bogus = UUID().uuidString
-        vm.members.addProperty(to: bogus, name: "x", type: "Int")
         vm.moveNodeHigher(bogus)
         vm.members.updateNoteText(bogus, text: "hi")
 

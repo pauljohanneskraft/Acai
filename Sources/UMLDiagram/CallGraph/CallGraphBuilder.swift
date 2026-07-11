@@ -9,7 +9,8 @@ import UMLCore
 /// stay visible; the scope only bounds which methods are *callers*.
 ///
 /// A call site resolves by its `CallReceiver`: a `.type` receiver when `receiverType.methodName`
-/// matches a member, a `.selfDispatch` when `callerType.methodName` matches a member, a `.free` when
+/// matches a member, a `.selfDispatch` when `callerType.methodName` matches a member (falling back to
+/// a free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free` when
 /// `methodName` matches a free function.
 /// The share of in-scope call sites that resolve is reported as `CallGraph.coverage`.
 ///
@@ -115,8 +116,13 @@ private struct CallGraphAccumulator {
             }
             return (receiver, site.methodName, inScopeNames.contains(receiver))
         case .selfDispatch:
-            guard !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") else { return nil }
-            return (callerType, site.methodName, inScopeNames.contains(callerType))
+            if !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") {
+                return (callerType, site.methodName, inScopeNames.contains(callerType))
+            }
+            // A bare `foo()` the parser optimistically tagged `.selfDispatch` may actually be a free
+            // function; fall back to a free-function match before giving up.
+            guard freeFunctionNames.contains(site.methodName) else { return nil }
+            return ("", site.methodName, false)
         case .free:
             guard freeFunctionNames.contains(site.methodName) else { return nil }
             return ("", site.methodName, false)

@@ -19,6 +19,9 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var pendingFieldReads: [FieldAccess] = []
     // Maps stored-property name → declared type name for the current type.
     private var callSitePropertyMap: [String: String] = [:]
+    // Maps local-variable name → provable declared type within the current body, so `local.method()`
+    // resolves. Kept separate from the property map: locals are call-site receivers, not field reads.
+    private var callSiteLocalMap: [String: String] = [:]
     // Simple names of every type declared in the file, seeded up front (in one pre-pass)
     // so `TypeName.method()` static calls resolve regardless of declaration order — including
     // forward-declared siblings — without misclassifying calls on unknown/external receivers.
@@ -158,6 +161,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
         // Capture the property map for this type before we descend.
         callSitePropertyMap = buildPropertyMap()
+        callSiteLocalMap = [:]
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -186,8 +190,17 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
-        // Skip local variables inside function bodies.
-        guard functionBodyDepth == 0 else { return .skipChildren }
+        // Local variables inside a function body aren't members, but recording their provable type
+        // lets a later `local.method()` call resolve. Descend into the initializer too, so a call in
+        // `let x = obj.compute()` is collected rather than lost with the declaration.
+        guard functionBodyDepth == 0 else {
+            for binding in node.bindings {
+                if let local = callSites.localBinding(from: binding) {
+                    callSiteLocalMap[local.name] = local.type
+                }
+            }
+            return .visitChildren
+        }
         var extractedMembers = members.extractVariable(from: node, fileName: fileName)
         // Capture type references in the property's *initializer* only (e.g. `= Foo()`), which the
         // signature misses — surfaces construction dependencies for the coupling metrics. Deliberately
@@ -207,6 +220,17 @@ final class DeclarationVisitor: SyntaxVisitor {
                 return copy
             }
         }
+        // Collect call sites made inside computed-property accessor bodies (e.g. a SwiftUI `var body`
+        // that calls helper methods), so callees reached only through a property aren't seen as dead.
+        let accessorSites = collectAccessorCallSites(from: node)
+        if !accessorSites.isEmpty {
+            extractedMembers = extractedMembers.map { member in
+                guard member.isComputed else { return member }
+                var copy = member
+                copy.callSites = accessorSites
+                return copy
+            }
+        }
         if typeStack.isEmpty {
             // Top-level (module-scope) `let`/`var`.
             globalVariables.append(contentsOf: extractedMembers)
@@ -223,6 +247,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth += 1
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
         callSitePropertyMap = buildPropertyMap()
+        callSiteLocalMap = [:]
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -290,9 +315,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     // walk and stores what the collector recovers.
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
+        // Locals resolve receivers too, but they must not leak into field-read detection, so they're
+        // merged in only here (with locals shadowing same-named stored properties).
+        let receiverMap = callSiteLocalMap.isEmpty
+            ? callSitePropertyMap
+            : callSitePropertyMap.merging(callSiteLocalMap) { _, local in local }
         if functionBodyDepth > 0,
            let site = callSites.callSite(
-               from: node, propertyMap: callSitePropertyMap, fileName: fileName) {
+               from: node, propertyMap: receiverMap, fileName: fileName) {
             pendingCallSites.append(site)
         }
         return .visitChildren
@@ -355,5 +385,22 @@ extension DeclarationVisitor {
             }
         }
         return map
+    }
+
+    /// Call sites gathered from every accessor body of a type-level `var`/`let` declaration, so a
+    /// method reached only from a computed property (a SwiftUI `body`, a derived value) is not
+    /// mistaken for dead code. Only reached at type scope — `visit` already skips local declarations.
+    private func collectAccessorCallSites(from node: VariableDeclSyntax) -> [CallSite] {
+        guard !typeStack.isEmpty else { return [] }
+        let propertyMap = buildPropertyMap()
+        var sites: [CallSite] = []
+        for binding in node.bindings {
+            guard let accessor = binding.accessorBlock else { continue }
+            let walker = AccessorCallSiteWalker(
+                collector: callSites, propertyMap: propertyMap, fileName: fileName)
+            walker.walk(accessor)
+            sites.append(contentsOf: walker.collected)
+        }
+        return sites
     }
 }
