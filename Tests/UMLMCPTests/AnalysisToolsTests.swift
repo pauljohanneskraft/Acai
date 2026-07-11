@@ -68,27 +68,28 @@ struct AnalysisToolsTests {
         }
     }
 
-    @Test func smellsFlagTheWideParameterList() async throws {
+    @Test func qualityDefaultBudgetsFlagTheWideParameterList() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let value = try await MCPTestSupport.call("uml_smells", on: .standard, path: dir)
-            let findings = try #require(value.objectValue?["items"]?.arrayValue)
-            // The six-parameter method breaches the default maxParameters threshold.
+            // No rules → the built-in curated smell budgets; the wide method breaches maxParameters.
+            let value = try await MCPTestSupport.call("uml_quality", on: .standard, path: dir)
+            let findings = try #require(value.objectValue?["violations"]?.arrayValue)
             #expect(findings.contains { ($0.objectValue?["message"]?.stringValue ?? "").contains("maxParameters") })
         }
     }
 
-    @Test func deadCodeReturnsCandidatesAndCoverage() async throws {
+    @Test func callGraphDeadCodeModeReturnsCandidatesAndCoverage() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let value = try await MCPTestSupport.call("uml_deadcode", on: .standard, path: dir)
+            let value = try await MCPTestSupport.call(
+                "uml_callgraph", on: .standard, path: dir, ["mode": .string("deadcode")])
             let object = try #require(value.objectValue)
             #expect(object["candidates"]?.arrayValue != nil)
             #expect(object["coverage"] != nil)
         }
     }
 
-    @Test func callGraphReportsNodes() async throws {
+    @Test func callGraphMetricsModeReportsNodes() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("uml_callgraph", on: .standard, path: dir)
@@ -98,24 +99,14 @@ struct AnalysisToolsTests {
         }
     }
 
-    @Test func cyclesReturnsAnArray() async throws {
+    @Test func qualityExploreListsCycles() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            // Explore mode lists dependency cycles; the fixture is acyclic, but the report is well-formed.
             let value = try await MCPTestSupport.call(
-                "uml_cycles", on: .standard, path: dir, ["scope": .string("modules")])
-            // no cycles in the fixture, but a well-formed list inside the `items` envelope
-            #expect(value.objectValue?["items"]?.arrayValue != nil)
-        }
-    }
-
-    @Test func cyclesRejectsAnUnknownScope() async throws {
-        try await MCPTestSupport.withTempDirectory { dir in
-            try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            // A typo like "module" (singular) must error, not silently run the full scope.
-            await #expect(throws: (any Error).self) {
-                _ = try await MCPTestSupport.call(
-                    "uml_cycles", on: .standard, path: dir, ["scope": .string("module")])
-            }
+                "uml_quality", on: .standard, path: dir,
+                ["explore": .bool(true), "scope": .string("modules")])
+            #expect(value.objectValue?["violations"]?.arrayValue != nil)
         }
     }
 
@@ -130,33 +121,34 @@ struct AnalysisToolsTests {
         }
     }
 
-    @Test func checkRejectsAMissingRulesFile() async throws {
+    @Test func qualityRejectsAMissingRulesFile() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let missing = dir.appendingPathComponent("does-not-exist.yml")
             await #expect(throws: (any Error).self) {
                 _ = try await MCPTestSupport.call(
-                    "uml_check", on: .standard, path: dir, ["rules": .string(missing.path)])
+                    "uml_quality", on: .standard, path: dir, ["rules": .string(missing.path)])
             }
         }
     }
 
-    @Test func doctorReportsAPerfectScoreForCleanParse() async throws {
+    @Test func analyzeHealthReportsAPerfectScoreForCleanParse() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let value = try await MCPTestSupport.call("uml_doctor", on: .standard, path: dir)
+            let value = try await MCPTestSupport.call(
+                "uml_analyze", on: .standard, path: dir, ["health": .bool(true)])
             #expect(number(value.objectValue?["score"]) == 1)
         }
     }
 
-    @Test func checkEvaluatesARulesFile() async throws {
+    @Test func qualityEvaluatesARulesFile() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let rules = dir.appendingPathComponent("architecture.yml")
+            let rules = dir.appendingPathComponent("quality.yml")
             try "budgets: []\n".write(to: rules, atomically: true, encoding: .utf8)
             let value = try await MCPTestSupport.call(
-                "uml_check", on: .standard, path: dir, ["rules": .string(rules.path)])
-            #expect(value.objectValue != nil)  // a decodable ConformanceReport verdict
+                "uml_quality", on: .standard, path: dir, ["rules": .string(rules.path)])
+            #expect(value.objectValue != nil)  // a decodable QualityReport verdict
         }
     }
 }

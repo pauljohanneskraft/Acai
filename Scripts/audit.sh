@@ -9,12 +9,12 @@
 # Usage: Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]
 #   SOURCE_DIR  directory to analyze            (default: .)
 #   OUTPUT_DIR  where the bundle is written     (default: ./audit-report)
-#   RULES_YAML  conformance rules for check     (default: architecture.yml if present, else skipped)
+#   RULES_YAML  quality rules for the gate      (default: quality.yml if present, else default budgets)
 set -euo pipefail
 
 SOURCE_DIR="${1:-.}"
 OUT_DIR="${2:-./audit-report}"
-RULES="${3:-architecture.yml}"
+RULES="${3:-quality.yml}"
 
 # Prefer an installed `uml`; fall back to a debug build of this repo.
 UML="$(command -v uml || true)"
@@ -31,37 +31,36 @@ echo "▸ metrics (json + human)"
 "$UML" metrics --from "$ARTIFACT" --format human --sort weightedMethods --top 25 \
     --output "$OUT_DIR/metrics.txt"
 
-echo "▸ cycles (modules + types)"
-"$UML" cycles --from "$ARTIFACT" --scope all --format json --no-fail --output "$OUT_DIR/cycles.json"
+echo "▸ quality explore (ranked smells + dependency cycles, no gate)"
+"$UML" quality --from "$ARTIFACT" --explore --scope all --format json --output "$OUT_DIR/quality-explore.json"
 
-echo "▸ smells (ranked)"
-"$UML" smells --from "$ARTIFACT" --output "$OUT_DIR/smells.json"
+echo "▸ call graph (metrics + method cycles + dead code)"
+"$UML" callgraph --from "$ARTIFACT" --mode metrics --output "$OUT_DIR/callgraph.json"
+"$UML" callgraph --from "$ARTIFACT" --mode cycles --no-fail --output "$OUT_DIR/call-cycles.json"
+"$UML" callgraph --from "$ARTIFACT" --mode deadcode --output "$OUT_DIR/deadcode.json"
 
-echo "▸ dead-code candidates"
-"$UML" deadcode --from "$ARTIFACT" --output "$OUT_DIR/deadcode.json"
+echo "▸ parse health"
+"$UML" analyze --from "$ARTIFACT" --health --output "$OUT_DIR/health.json"
 
-echo "▸ call graph (metrics) + call cycles"
-"$UML" callgraph --from "$ARTIFACT" --output "$OUT_DIR/callgraph.json"
-"$UML" call-cycles --from "$ARTIFACT" --no-fail --output "$OUT_DIR/call-cycles.json"
-
-echo "▸ parse health (doctor)"
-"$UML" doctor --from "$ARTIFACT" --output "$OUT_DIR/doctor.json"
-
-echo "▸ type + member inventory"
+echo "▸ type + member inventory (+ enum inventory)"
 "$UML" inspect --from "$ARTIFACT" --output "$OUT_DIR/inspect.json"
+"$UML" inspect --from "$ARTIFACT" --enums --output "$OUT_DIR/enums.json"
 
 echo "▸ package diagram (dot)"
 "$UML" diagram --from "$ARTIFACT" --package --format dot --output "$OUT_DIR/package.dot"
 
-# Conformance check (only if a rules file exists). Non-zero exit is preserved so CI can gate on it.
+# Quality gate. With a rules file it gates on that; otherwise the built-in curated smell budgets.
+# Non-zero exit is preserved so CI can gate on it.
 CHECK_STATUS=0
 if [ -f "$RULES" ]; then
-    echo "▸ check against $RULES"
-    "$UML" check --from "$ARTIFACT" --rules "$RULES" --format json --no-fail \
-        --output "$OUT_DIR/check.json"
-    "$UML" check --from "$ARTIFACT" --rules "$RULES" >/dev/null 2>&1 || CHECK_STATUS=$?
+    echo "▸ quality gate against $RULES"
+    "$UML" quality --from "$ARTIFACT" --rules "$RULES" --format json --explore \
+        --output "$OUT_DIR/quality.json"
+    "$UML" quality --from "$ARTIFACT" --rules "$RULES" >/dev/null 2>&1 || CHECK_STATUS=$?
 else
-    echo "▸ check skipped (no $RULES)"
+    echo "▸ quality gate against built-in smell budgets"
+    "$UML" quality --from "$ARTIFACT" --format json --explore --output "$OUT_DIR/quality.json"
+    "$UML" quality --from "$ARTIFACT" >/dev/null 2>&1 || CHECK_STATUS=$?
 fi
 
 # PNGs are macOS-only (the image command links UMLRender there).

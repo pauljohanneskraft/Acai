@@ -8,14 +8,26 @@ struct AnalyzeTool: AnalysisTool {
     let description = """
         Index a codebase for structural analysis and return a summary (languages, type/relationship \
         counts, parse-health score). Call this first when starting to reason about an unfamiliar or \
-        large project; the other uml_* tools reuse the cached parse.
+        large project; the other uml_* tools reuse the cached parse. Set 'health' for the full \
+        parse-health report (diagnostics with file:line) — run it before trusting the other tools, \
+        since a low score means metrics and cycles built on this parse are unreliable.
         """
 
-    var inputSchema: Value { objectSchema() }
+    var inputSchema: Value {
+        objectSchema(extraProperties: [
+            "health": [
+                "type": "boolean",
+                "description": "Return the full parse-health report (a trust score + diagnostics) instead."
+            ]
+        ])
+    }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let health = HealthCheck(artifact: artifact).report
+        if try arguments.bool("health") ?? false {
+            return .json(try Value(health))
+        }
         let snapshot = Snapshot(
             path: try arguments.requiredString("path"),
             language: artifact.metadata.sourceLanguage.rawValue,

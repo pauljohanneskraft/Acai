@@ -4,8 +4,8 @@ import Testing
 import UMLLibrary
 @testable import UMLMCP
 
-/// Covers the tools that brought the MCP to parity with the CLI: diff, call-cycles, enums, diagram,
-/// and (macOS) image.
+/// Covers the tools that brought the MCP to parity with the CLI: diff, callgraph cycles mode, inspect
+/// enums mode, diagram, and (macOS) image.
 @Suite("Parity Tools")
 struct ParityToolsTests {
 
@@ -42,20 +42,22 @@ struct ParityToolsTests {
         }
     }
 
-    @Test func callCyclesReturnsAnArray() async throws {
+    @Test func callGraphCyclesModeReturnsAnArray() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let value = try await MCPTestSupport.call("uml_callcycles", on: .standard, path: dir)
+            let value = try await MCPTestSupport.call(
+                "uml_callgraph", on: .standard, path: dir, ["mode": .string("cycles")])
             // no method cycles in the fixture, but a well-formed list inside the `items` envelope
             #expect(value.objectValue?["items"]?.arrayValue != nil)
         }
     }
 
-    @Test func enumsListsCasesWithLocation() async throws {
+    @Test func inspectEnumsModeListsCasesWithLocation() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try "enum Direction { case north, south }".write(
                 to: dir.appendingPathComponent("Direction.swift"), atomically: true, encoding: .utf8)
-            let value = try await MCPTestSupport.call("uml_enums", on: .standard, path: dir)
+            let value = try await MCPTestSupport.call(
+                "uml_inspect", on: .standard, path: dir, ["enums": .bool(true)])
             let entries = try #require(value.objectValue?["items"]?.arrayValue)
             let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "Direction" })
             let cases = try #require(direction.objectValue?["cases"]?.arrayValue)

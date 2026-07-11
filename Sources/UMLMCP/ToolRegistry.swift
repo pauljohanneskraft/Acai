@@ -20,17 +20,11 @@ struct ToolRegistry: Sendable {
         var tools: [any AnalysisTool] = [
             AnalyzeTool(),
             MetricsTool(),
-            CyclesTool(),
-            CallCyclesTool(),
-            SmellsTool(),
+            QualityTool(),
+            CallGraphTool(),
             InspectTool(),
-            EnumsTool(),
-            DeadCodeTool(),
             ImpactTool(),
             DiffTool(),
-            CheckTool(),
-            DoctorTool(),
-            CallGraphTool(),
             DiagramTool()
         ]
         #if os(macOS)

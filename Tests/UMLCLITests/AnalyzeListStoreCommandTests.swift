@@ -14,7 +14,7 @@ struct AnalyzeListStoreCommandTests {
     // MARK: - analyze
 
     @Test func analyzeNonexistentSourceThrows() throws {
-        var cmd = try CLITestSupport.parseAnalyze([CLITestSupport.nonexistentPath()])
+        var cmd = try CLITestSupport.parseAnalyze(["--source", CLITestSupport.nonexistentPath()])
         #expect {
             try cmd.run()
         } throws: { error in
@@ -27,7 +27,7 @@ struct AnalyzeListStoreCommandTests {
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("artifact.json")
             var cmd = try CLITestSupport.parseAnalyze(
-                [dir.path, "--language", "swift", "--output", output.path]
+                ["--source", dir.path, "--language", "swift", "--output", output.path]
             )
             try cmd.run()
 
@@ -39,8 +39,8 @@ struct AnalyzeListStoreCommandTests {
     }
 
     @Test func analyzeRequiresSourceArgument() throws {
-        // A source is required, but it may now come from a positional path or --source/--from, so the
-        // requirement is enforced at run time (the positional is an optional, deprecated alias).
+        // A source is required, but it may come from --source or --from, so the requirement is
+        // enforced at run time rather than by ArgumentParser.
         var cmd = try CLITestSupport.parseAnalyze([])
         #expect {
             try cmd.run()

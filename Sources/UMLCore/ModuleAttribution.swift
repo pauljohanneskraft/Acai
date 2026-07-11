@@ -7,7 +7,7 @@
 /// this, such cross-module extensions manufacture phantom upward dependencies and false module
 /// cycles. The *target* module is always the referenced type's home module.
 ///
-/// Shared by the metrics engine and the conformance evaluator so coupling numbers and cycle
+/// Shared by the metrics engine and the quality evaluator so coupling numbers and cycle
 /// detection agree on the same module graph.
 public struct ModuleAttribution: Sendable {
     private let resolver: ModuleResolver

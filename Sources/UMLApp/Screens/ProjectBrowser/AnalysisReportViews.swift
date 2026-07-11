@@ -1,11 +1,11 @@
 import SwiftUI
-import UMLConformance
+import UMLQuality
 import UMLCore
 import UMLDiagram
 import UMLLibrary
 
 /// A single finding row — a rule-kind capsule, subject, message and a selectable `file:line`. Shared
-/// by the architecture-check report and the code-smell report so both render findings identically.
+/// by the quality-check report views so every finding renders identically.
 struct ViolationRowView: View {
     let violation: Violation
     var tint: Color = .red
@@ -62,25 +62,7 @@ private struct LocationRow: View {
 }
 
 /// The card body cap: report cards show the top findings inline, not an unbounded wall.
-private let analysisReportLimit = 20
-
-/// Ranked code smells for the codebase (top findings inline). Findings are computed by the enclosing
-/// section (which also surfaces the count in its header) and injected, so the scan runs once.
-struct SmellsReportView: View {
-    let findings: [Violation]
-
-    var body: some View {
-        if findings.isEmpty {
-            ArchitectureCheckPlaceholder(text: "No smells found.", systemImage: "checkmark.seal")
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(findings.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, finding in
-                    ViolationRowView(violation: finding, tint: .orange)
-                }
-            }
-        }
-    }
-}
+let analysisReportLimit = 20
 
 /// Dead-code candidates with the call-graph coverage floor. The report is computed by the enclosing
 /// section (which also surfaces the counts in its header) and injected, so the scan runs once.
@@ -90,7 +72,7 @@ struct DeadCodeReportView: View {
     var body: some View {
         let coverage = Int((report.coverage.fraction * 100).rounded())
         if report.candidates.isEmpty {
-            ArchitectureCheckPlaceholder(
+            QualityCheckPlaceholder(
                 text: "No dead-code candidates (call-graph coverage \(coverage)%).",
                 systemImage: "checkmark.seal")
         } else {
@@ -114,7 +96,7 @@ struct HealthReportView: View {
     var body: some View {
         let percent = Int((report.score * 100).rounded())
         if report.diagnostics.isEmpty {
-            ArchitectureCheckPlaceholder(
+            QualityCheckPlaceholder(
                 text: "Parse health \(percent)% — no diagnostics across \(report.typeCount) type(s).",
                 systemImage: "checkmark.seal")
         } else {

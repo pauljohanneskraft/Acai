@@ -44,7 +44,7 @@ optionalTargets.append(
             "UMLCore",
             "UMLDiagram",
             "UMLDiff",
-            "UMLConformance",
+            "UMLQuality",
             "UMLLibrary",
             "UMLRender",
             .product(name: "Yams", package: "Yams"),
@@ -90,7 +90,7 @@ let package = Package(
         .library(name: "UMLCFamily", targets: ["UMLCFamily"]),
         .library(name: "UMLDiagram", targets: ["UMLDiagram"]),
         .library(name: "UMLDiff", targets: ["UMLDiff"]),
-        .library(name: "UMLConformance", targets: ["UMLConformance"]),
+        .library(name: "UMLQuality", targets: ["UMLQuality"]),
         .library(name: "UMLLibrary", targets: ["UMLLibrary"]),
         .executable(name: "UMLMCP", targets: ["UMLMCP"]),
     ] + optionalProducts,
@@ -214,7 +214,7 @@ let package = Package(
 
         // MARK: Architecture conformance / fitness functions — agnostic rule evaluation.
         .target(
-            name: "UMLConformance",
+            name: "UMLQuality",
             dependencies: ["UMLCore"]
         ),
 
@@ -226,7 +226,7 @@ let package = Package(
                 "UMLCore",
                 "UMLDiagram",
                 "UMLDiff",
-                "UMLConformance",
+                "UMLQuality",
                 "UMLSwift",
                 "UMLJS",
                 "UMLJVM",
@@ -243,7 +243,7 @@ let package = Package(
                 "UMLCore",
                 "UMLDiagram",
                 "UMLDiff",
-                "UMLConformance",
+                "UMLQuality",
                 "UMLLibrary",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Yams", package: "Yams"),
@@ -259,7 +259,7 @@ let package = Package(
             dependencies: [
                 "UMLCore",
                 "UMLDiagram",
-                "UMLConformance",
+                "UMLQuality",
                 "UMLLibrary",
                 .product(name: "MCP", package: "swift-sdk"),
                 .product(name: "Yams", package: "Yams"),
@@ -276,7 +276,7 @@ let package = Package(
         .testTarget(name: "UMLCFamilyTests", dependencies: ["UMLCFamily", "UMLCore"]),
         .testTarget(name: "UMLDiagramTests", dependencies: ["UMLDiagram", "UMLCore"]),
         .testTarget(name: "UMLDiffTests", dependencies: ["UMLDiff", "UMLCore", "UMLDiagram"]),
-        .testTarget(name: "UMLConformanceTests", dependencies: ["UMLConformance", "UMLCore"]),
+        .testTarget(name: "UMLQualityTests", dependencies: ["UMLQuality", "UMLCore"]),
         .testTarget(name: "UMLLibraryTests", dependencies: ["UMLLibrary", "UMLDiagram"]),
         .testTarget(name: "UMLCLITests", dependencies: ["UMLCLI", "UMLCore"]),
         .testTarget(name: "UMLMCPTests", dependencies: ["UMLMCP", "UMLLibrary", "UMLCore"]),

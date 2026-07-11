@@ -54,22 +54,10 @@ enum CLITestSupport {
         return try #require(root as? UMLCommand.Inspect)
     }
 
-    /// Parses `doctor`-subcommand `arguments` into the concrete `Doctor` command.
-    static func parseDoctor(_ arguments: [String]) throws -> UMLCommand.Doctor {
-        let root = try UMLCommand.parseAsRoot(["doctor"] + arguments)
-        return try #require(root as? UMLCommand.Doctor)
-    }
-
-    /// Parses `enums`-subcommand `arguments` into the concrete `Enums` command.
-    static func parseEnums(_ arguments: [String]) throws -> UMLCommand.Enums {
-        let root = try UMLCommand.parseAsRoot(["enums"] + arguments)
-        return try #require(root as? UMLCommand.Enums)
-    }
-
-    /// Parses `smells`-subcommand `arguments` into the concrete `Smells` command.
-    static func parseSmells(_ arguments: [String]) throws -> UMLCommand.Smells {
-        let root = try UMLCommand.parseAsRoot(["smells"] + arguments)
-        return try #require(root as? UMLCommand.Smells)
+    /// Parses `quality`-subcommand `arguments` into the concrete `Quality` command.
+    static func parseQuality(_ arguments: [String]) throws -> UMLCommand.Quality {
+        let root = try UMLCommand.parseAsRoot(["quality"] + arguments)
+        return try #require(root as? UMLCommand.Quality)
     }
 
     /// Parses `callgraph`-subcommand `arguments` into the concrete `CallGraph` command.
@@ -78,22 +66,10 @@ enum CLITestSupport {
         return try #require(root as? UMLCommand.CallGraph)
     }
 
-    /// Parses `call-cycles`-subcommand `arguments` into the concrete `CallCycles` command.
-    static func parseCallCycles(_ arguments: [String]) throws -> UMLCommand.CallCycles {
-        let root = try UMLCommand.parseAsRoot(["call-cycles"] + arguments)
-        return try #require(root as? UMLCommand.CallCycles)
-    }
-
     /// Parses `impact`-subcommand `arguments` into the concrete `Impact` command.
     static func parseImpact(_ arguments: [String]) throws -> UMLCommand.Impact {
         let root = try UMLCommand.parseAsRoot(["impact"] + arguments)
         return try #require(root as? UMLCommand.Impact)
-    }
-
-    /// Parses `deadcode`-subcommand `arguments` into the concrete `DeadCode` command.
-    static func parseDeadCode(_ arguments: [String]) throws -> UMLCommand.DeadCode {
-        let root = try UMLCommand.parseAsRoot(["deadcode"] + arguments)
-        return try #require(root as? UMLCommand.DeadCode)
     }
 
     /// The human-readable message ArgumentParser would print for `error`.

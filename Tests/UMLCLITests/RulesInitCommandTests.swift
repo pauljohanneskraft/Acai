@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-import UMLConformance
+import UMLQuality
 @testable import UMLCLI
 
 @Suite("CLI: rules init")
@@ -9,7 +9,7 @@ struct RulesInitCommandTests {
     @Test func generatesADraftThatReloadsViaTheChecker() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
-            let output = dir.appendingPathComponent("architecture.yml")
+            let output = dir.appendingPathComponent("quality.yml")
 
             var cmd = try CLITestSupport.parseRulesInit(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
@@ -20,7 +20,7 @@ struct RulesInitCommandTests {
             #expect(yaml.contains("budgets:"))
 
             // The active sections must re-parse — a draft the checker can immediately consume.
-            let reloaded = try ConformanceRules.load(contentsOf: output.path)
+            let reloaded = try QualityRules.load(contentsOf: output.path)
             #expect(reloaded.cycles?.scope == .modules)
             #expect(!reloaded.budgets.isEmpty)
         }
