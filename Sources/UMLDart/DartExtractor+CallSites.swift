@@ -18,7 +18,33 @@ extension DartExtractor: CallSiteResolving {
     /// - `this.method(args)` — a call on the enclosing instance,
     /// - `TypeName.method(args)` where `TypeName` is a known type (static call).
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        // A field or constructor-init initializer `field = callee(args)` flattens as siblings
+        // [field-id, callee-id, selector(argument_part)] inside `field_initializer` (constructor init
+        // list) or `initialized_identifier` (field declaration). Capture the callee as a bare call; the
+        // guard drops constructions `Foo()` and initializers that aren't a call (RC2).
+        if node.nodeType == "field_initializer" || node.nodeType == "initialized_identifier" {
+            let kids = node.namedChildren()
+            guard kids.count >= 2,
+                  kids[kids.count - 1].nodeType == "selector",
+                  kids[kids.count - 1].firstChild(withType: "argument_part") != nil,
+                  kids[kids.count - 2].nodeType == "identifier"
+            else { return nil }
+            return scope.bareCall(named: text(kids[kids.count - 2]), implicitSelf: true, location: loc(node))
+        }
+
         let named = node.namedChildren()
+
+        // Bare `foo(args)` — an `identifier` callee and a single `selector` carrying the `argument_part`
+        // (no separate receiver node). An implicit `this.foo()` or a top-level function; tagged
+        // `.selfDispatch` so the call-graph builder can fall back to a free function. The `knownTypeNames`
+        // guard in `bareCall` drops constructor calls `Foo()`, which share this shape.
+        if named.count == 2,
+           named[0].nodeType == "identifier",
+           named[1].nodeType == "selector",
+           named[1].firstChild(withType: "argument_part") != nil {
+            return scope.bareCall(named: text(named[0]), implicitSelf: true, location: loc(node))
+        }
+
         guard named.count == 3 else { return nil }
 
         let receiverNode = named[0]
@@ -45,5 +71,59 @@ extension DartExtractor: CallSiteResolving {
             methodName: methodName,
             location: loc(node)
         )
+    }
+
+    /// Resolves and attaches call sites for the recorded method bodies, using a scope built
+    /// from the type's fully-extracted members (so all stored properties are known) plus the
+    /// current file's known type names.
+    func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
+        guard !pendingBodies.isEmpty else { return }
+        let scope = CallSiteScope(
+            knownProperties: buildPropertyMap(from: members),
+            knownTypeNames: declaredTypeNames
+        )
+        for pending in pendingBodies where pending.index < members.count {
+            // `+=`: a constructor may already carry initializer-list call sites set during the body walk.
+            members[pending.index].callSites += extractCallSites(from: pending.body, scope: scope)
+            members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
+            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
+            members[pending.index].cyclomaticComplexity =
+                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
+        }
+    }
+
+    /// A Dart method with no paired body is abstract (a body-less method is only legal as an abstract
+    /// requirement); mark it so the dead-code scan treats it as a reachable-by-contract member — the
+    /// analogue of an interface requirement, which Dart expresses with abstract classes (RC3).
+    func markBodylessMethodsAbstract(_ members: inout [Member], bodiedIndices: Set<Int>) {
+        for index in members.indices
+        where members[index].kind == .method
+            && !bodiedIndices.contains(index)
+            && !members[index].modifiers.contains(.abstract) {
+            members[index].modifiers.append(.abstract)
+        }
+    }
+
+    /// Provable local-variable types: an explicit annotation (`Helper h = …`) or an inferred
+    /// construction (`var h = Helper()`) of a declared type, so `h.method()` resolves to `Helper` (RC4).
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "initialized_variable_definition",
+                  let nameNode = node.child(byFieldName: "name")
+            else { return nil }
+            let name = text(nameNode)
+            if let typeId = node.firstChild(withType: "type_identifier") {
+                return (name, text(typeId))
+            }
+            // Inferred `var h = Helper()`: a `value` identifier followed by a `selector` argument part.
+            if let value = node.child(byFieldName: "value"), value.nodeType == "identifier",
+               node.namedChildren().contains(where: {
+                   $0.nodeType == "selector" && $0.firstChild(withType: "argument_part") != nil
+               }),
+               declaredTypeNames.contains(text(value)) {
+                return (name, text(value))
+            }
+            return nil
+        }
     }
 }

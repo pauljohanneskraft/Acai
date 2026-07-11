@@ -30,7 +30,14 @@ extension CFamilyExtractor {
                 appendField(child, ownerName: ownerName, access: access,
                             members: &members, nestedTypes: &nestedTypes)
             case "function_definition":
-                if let method = functionMember(from: child, ownerName: ownerName, access: access) {
+                if var method = functionMember(from: child, ownerName: ownerName, access: access) {
+                    // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
+                    // body; walk it so calls made during construction aren't lost (RC2). Its receivers
+                    // are static/sibling/free, so file-level type names are enough to resolve them.
+                    if let initList = child.firstChild(withType: "field_initializer_list") {
+                        method.callSites += extractCallSites(
+                            from: initList, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+                    }
                     members.append(method)
                     if let methodBody = child.child(byFieldName: "body") {
                         pendingBodies.append((members.count - 1, methodBody))
@@ -58,7 +65,8 @@ extension CFamilyExtractor {
             knownTypeNames: declaredTypeNames
         )
         for pending in pendingBodies where pending.index < members.count {
-            members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
+            // `+=`: a constructor may already carry member-initializer-list call sites set at append time.
+            members[pending.index].callSites += extractCallSites(from: pending.body, scope: scope)
             members[pending.index].assignments = extractAssignments(from: pending.body)
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
@@ -196,7 +204,13 @@ extension CFamilyExtractor {
             name: Self.lastComponent(of: info.name), kind: .property, accessLevel: access,
             modifiers: modifiers(from: node),
             type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
-            location: loc(node), initialValue: initialValue,
+            location: loc(node),
+            // A default member initializer's calls (`int n = compute();`) are recorded so their targets
+            // aren't false-flagged dead (RC2). File-level type names cover static/`Type::method()` calls.
+            callSites: extractCallSites(
+                from: node.child(byFieldName: "default_value"),
+                scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
+            initialValue: initialValue,
             referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "default_value")))
     }
 

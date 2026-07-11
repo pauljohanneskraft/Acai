@@ -71,6 +71,19 @@ struct DeadCodeScanTests {
         #expect(report.candidates.isEmpty)
     }
 
+    /// An abstract method is a body-less contract implemented by subtypes and reached polymorphically,
+    /// so it is never a dead-code candidate even when non-public and uncalled (RC3).
+    @Test func abstractMethodIsNotACandidate() {
+        let base = TypeDeclaration(
+            id: "Base", name: "Base", qualifiedName: "Base", kind: .class, accessLevel: .internal,
+            members: [method("hook", modifiers: [.abstract])],
+            location: SourceLocation(filePath: "Base.swift", line: 1, column: 1))
+        let report = DeadCodeScan(
+            artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [base]),
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
+        #expect(report.candidates.isEmpty)
+    }
+
     /// A non-public method that satisfies a requirement of an in-artifact protocol the type conforms to
     /// is a witness — reached through the conformance, so never a candidate even with no call edge.
     @Test func protocolWitnessIsNotACandidate() {

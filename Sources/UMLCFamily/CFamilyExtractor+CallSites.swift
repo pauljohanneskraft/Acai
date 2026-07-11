@@ -23,9 +23,14 @@ extension CFamilyExtractor: CallSiteResolving {
         case "qualified_identifier":
             return qualifiedCallSite(function, scope: scope, location: loc(node))
         case "identifier":
+            // Bare `foo(args)` — a C free function, or (C++) an implicit `this->foo()` sibling-method
+            // call. Tagged `.selfDispatch`: the call-graph builder resolves it against the enclosing
+            // type first, then falls back to a free function (a freestanding C caller has an empty
+            // caller type, so it resolves straight through the free fallback). The `declaredFunctionNames`
+            // guard keeps stdlib calls (`printf`, …) out of the coverage denominator.
             let name = text(function)
             guard declaredFunctionNames.contains(name) else { return nil }
-            return CallSite(receiver: .free, methodName: name, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: name, location: loc(node))
         default:
             return nil
         }
@@ -61,5 +66,39 @@ extension CFamilyExtractor: CallSiteResolving {
             methodName: text(nameNode),
             location: location
         )
+    }
+
+    /// Provable local-variable types: an explicit declared type (`Foo x;` / `Foo* p = …;`) or an
+    /// `auto p = new Foo()` construction, so `x.method()` / `p->method()` resolves to `Foo` (RC4).
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "declaration",
+                  let declarator = node.child(byFieldName: "declarator"),
+                  let name = declaratorIdentifier(declarator)
+            else { return nil }
+            if let typeNode = node.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
+                return (name, text(typeNode))
+            }
+            if declarator.nodeType == "init_declarator",
+               let value = declarator.child(byFieldName: "value"), value.nodeType == "new_expression",
+               let typeNode = value.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
+                return (name, text(typeNode))
+            }
+            return nil
+        }
+    }
+
+    /// Digs through `init_declarator`/`pointer_declarator`/`reference_declarator` wrappers to the
+    /// declared variable's identifier.
+    private func declaratorIdentifier(_ node: Node) -> String? {
+        switch node.nodeType {
+        case "identifier", "field_identifier":
+            return text(node)
+        case "init_declarator", "pointer_declarator", "reference_declarator", "array_declarator":
+            if let inner = node.child(byFieldName: "declarator") { return declaratorIdentifier(inner) }
+            return node.firstChild(withType: "identifier").map { text($0) }
+        default:
+            return node.firstChild(withType: "identifier").map { text($0) }
+        }
     }
 }

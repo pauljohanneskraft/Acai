@@ -22,7 +22,9 @@ extension PythonExtractor {
 
         // Fields come from two places, both required for real Python code:
         // (a) class-body annotated/assigned attributes, (b) `self.x = …` inside methods.
-        var fields = collectClassBodyFields(body)
+        // A class-body initializer can't reference `self`, so file-level type names are the only
+        // resolvable receivers — enough to record its calls (RC2) without the (not-yet-built) field map.
+        var fields = collectClassBodyFields(body, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
         let existing = Set(fields.map(\.name))
         fields.append(contentsOf: synthesizeSelfFields(fromMethods: methodNodes, existing: existing))
 
@@ -66,7 +68,7 @@ extension PythonExtractor {
 
     /// Direct class-body attributes: plain `x = …`, annotated `x: T`, or annotated `x: T = …`
     /// (the dataclass/`__slots__`-free style of field declaration).
-    private func collectClassBodyFields(_ body: Node) -> [Member] {
+    private func collectClassBodyFields(_ body: Node, scope: CallSiteScope) -> [Member] {
         var fields: [Member] = []
         for child in body.namedChildren() where child.nodeType == "expression_statement" {
             for assign in child.namedChildren() where assign.nodeType == "assignment" {
@@ -80,6 +82,7 @@ extension PythonExtractor {
                     accessLevel: accessLevel(forName: name),
                     type: type,
                     location: loc(assign),
+                    callSites: extractCallSites(from: assign.child(byFieldName: "right"), scope: scope),
                     initialValue: initial,
                     referencedTypeNames: referencedTypeNames(in: assign.child(byFieldName: "right"))
                 ))

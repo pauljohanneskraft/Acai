@@ -189,4 +189,26 @@ extension PythonExtractor {
         guard let name = receiverName else { return nil }
         return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
     }
+
+    /// Provable local-variable types: an explicit annotation (`x: Foo = …`) or a `Foo()` construction
+    /// of a declared type (`x = Foo()`), so `x.method()` resolves to `Foo` (RC4). A `self.x = …`
+    /// assignment has an `attribute` target, not an `identifier`, so it is left to field synthesis.
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "assignment",
+                  let left = node.child(byFieldName: "left"), left.nodeType == "identifier"
+            else { return nil }
+            let name = text(left)
+            if let typeField = node.child(byFieldName: "type"),
+               let typeId = typeField.firstChild(withType: "identifier") {
+                return (name, text(typeId))
+            }
+            if let right = node.child(byFieldName: "right"), right.nodeType == "call",
+               let function = right.child(byFieldName: "function"), function.nodeType == "identifier",
+               declaredTypeNames.contains(text(function)) {
+                return (name, text(function))
+            }
+            return nil
+        }
+    }
 }

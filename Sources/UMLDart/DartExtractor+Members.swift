@@ -112,26 +112,16 @@ extension DartExtractor {
             assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
+            // A constructor's initializer list (`: x = compute()`) lives inside the `method_signature`,
+            // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
+            // file-level type names are enough to resolve their static/top-level receivers (RC2).
+            if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
+                members[members.count - 1].callSites += extractCallSites(
+                    from: initializers, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+            }
         }
         attachCallSites(pendingBodies, to: &members)
-    }
-
-    /// Resolves and attaches call sites for the recorded method bodies, using a scope built
-    /// from the type's fully-extracted members (so all stored properties are known) plus the
-    /// current file's known type names.
-    func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
-        guard !pendingBodies.isEmpty else { return }
-        let scope = CallSiteScope(
-            knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: declaredTypeNames
-        )
-        for pending in pendingBodies where pending.index < members.count {
-            members[pending.index].callSites = extractCallSites(from: pending.body, scope: scope)
-            members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
-            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
-            members[pending.index].cyclomaticComplexity =
-                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
-        }
+        markBodylessMethodsAbstract(&members, bodiedIndices: Set(pendingBodies.map(\.index)))
     }
 
     /// Handles `declaration` nodes inside class bodies.
@@ -205,6 +195,13 @@ extension DartExtractor {
             assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
+            // A constructor's initializer list (`: x = compute()`) lives inside the `method_signature`,
+            // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
+            // file-level type names are enough to resolve their static/top-level receivers (RC2).
+            if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
+                members[members.count - 1].callSites += extractCallSites(
+                    from: initializers, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+            }
         }
         attachCallSites(pendingBodies, to: &members)
     }

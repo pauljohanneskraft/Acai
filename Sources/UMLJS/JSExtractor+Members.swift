@@ -45,7 +45,7 @@ extension JSExtractor {
             return member
 
         case "field_definition", "public_field_definition":
-            return extractFieldDefinition(child)
+            return extractFieldDefinition(child, scope: scope)
 
         case "method_signature" where isTypeScript:
             return extractMethodSignature(child)
@@ -186,7 +186,7 @@ extension JSExtractor {
 
     // MARK: - Field Definition
 
-    private func extractFieldDefinition(_ node: Node) -> Member {
+    private func extractFieldDefinition(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> Member {
         let nodeLoc = loc(node)
         let nameNode = node.child(byFieldName: "property") ?? node.child(byFieldName: "name")
         let name = nameNode.map { text($0) } ?? ""
@@ -230,6 +230,7 @@ extension JSExtractor {
             type: propType,
             annotations: annotations,
             location: nodeLoc,
+            callSites: extractCallSites(from: node.child(byFieldName: "value"), scope: scope),
             initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
             referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
         )
@@ -485,11 +486,13 @@ extension JSExtractor {
         let generics = isTypeScript ? extractTypeParameters(node) : []
         let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
         let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
+        // A freestanding function has no enclosing instance, so only file-level type names resolve
+        // receivers; its body is still walked so its outgoing calls (bare, `Type.method()`, …) count.
+        let callSites = extractCallSites(
+            from: node.child(byFieldName: "body"), scope: CallSiteScope(knownTypeNames: declaredTypeNames))
         return Member(
-            name: name, kind: .method,
-            accessLevel: isExported ? .public : .internal,
-            modifiers: modifiers, type: returnType,
-            parameters: params, genericParameters: generics, location: nodeLoc
-        )
+            name: name, kind: .method, accessLevel: isExported ? .public : .internal,
+            modifiers: modifiers, type: returnType, parameters: params,
+            genericParameters: generics, location: nodeLoc, callSites: callSites)
     }
 }

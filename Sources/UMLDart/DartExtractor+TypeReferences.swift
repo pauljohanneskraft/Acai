@@ -308,8 +308,18 @@ extension DartExtractor {
         _ annotations: [String], toMembersFrom startIndex: Int, in members: inout [Member]
     ) {
         guard !annotations.isEmpty, startIndex < members.count else { return }
+        // `@override` (idiomatic in Dart on `implements`/`extends` overrides via the `annotate_overrides`
+        // lint) maps to the `.override` modifier, so the dead-code scan exempts the override the same way
+        // it does for other languages (RC3).
+        let isOverride = annotations.contains { annotation in
+            let name = annotation.hasPrefix("@") ? String(annotation.dropFirst()) : annotation
+            return name.lowercased() == "override"
+        }
         for index in startIndex..<members.count {
             members[index].annotations = annotations
+            if isOverride, !members[index].modifiers.contains(.override) {
+                members[index].modifiers.append(.override)
+            }
         }
     }
 

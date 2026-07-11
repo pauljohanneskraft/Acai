@@ -73,14 +73,16 @@ public struct DeadCodeScan: Sendable {
         return Report(coverage: graph.coverage, candidates: candidates)
     }
 
-    /// A member is reachable-by-contract when it is public API, overrides a supertype member, is the
-    /// witness for a protocol requirement its type conforms to, or is flagged by its language's
+    /// A member is reachable-by-contract when it is public API, an abstract requirement (a body-less
+    /// contract implemented by subtypes and reached polymorphically), overrides a supertype member, is
+    /// the witness for a protocol requirement its type conforms to, or is flagged by its language's
     /// entry-point `markers`.
     private func isEntryPoint(
         _ member: Member, inContract: Bool, requirementNames: Set<String>, markers: EntryPointMarkers
     ) -> Bool {
         if inContract { return true }
         if member.isVisible(atLeast: .public) { return true }
+        if member.modifiers.contains(.abstract) { return true }
         if member.modifiers.contains(.override) { return true }
         if requirementNames.contains(member.name) { return true }
         return markers.marks(member)

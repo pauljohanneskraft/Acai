@@ -55,6 +55,39 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "load" && $0.receiverType == "Config" })
     }
 
+    /// A call made only from a class-body field initializer is recorded so its target isn't
+    /// false-flagged as dead (RC2).
+    @Test func capturesClassBodyFieldInitializerCall() {
+        let source = """
+        def make_handler():
+            pass
+
+        class Worker:
+            handler = make_handler()
+        """
+        let sites = callSites(source, method: "handler")
+        #expect(sites.contains { $0.methodName == "make_handler" && $0.receiver == .free })
+    }
+
+    /// A local whose type is provable from construction (`x = Foo()`) or an annotation (`x: Foo = …`)
+    /// resolves the receiver of a later `x.method()` (RC4).
+    @Test func resolvesLocalFromConstructionAndAnnotation() {
+        let source = """
+        class Engine:
+            def start(self):
+                pass
+
+        class Car:
+            def drive(self):
+                a = Engine()
+                a.start()
+                b: Engine = make()
+                b.start()
+        """
+        let sites = callSites(source, method: "drive")
+        #expect(sites.filter { $0.methodName == "start" && $0.receiverType == "Engine" }.count == 2)
+    }
+
     @Test func callOnUnknownReceiverIsDropped() {
         let source = """
         class App:

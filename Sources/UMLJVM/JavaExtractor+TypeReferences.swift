@@ -14,9 +14,14 @@ extension JavaExtractor {
     /// - `TypeName.method(args)` — `object` is a known type (static call).
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "method_invocation",
-              let nameNode = node.child(byFieldName: "name"),
-              let objectNode = node.child(byFieldName: "object")
+              let nameNode = node.child(byFieldName: "name")
         else { return nil }
+
+        // Bare `foo()` — no `object` field: an implicit `this.foo()` (or a static import). Tag it
+        // `.selfDispatch`; the call-graph builder falls back to a free function if it is a static import.
+        guard let objectNode = node.child(byFieldName: "object") else {
+            return scope.bareCall(named: text(nameNode), implicitSelf: true, location: loc(node))
+        }
 
         return resolveMemberCall(
             receiver: objectNode,
@@ -27,6 +32,28 @@ extension JavaExtractor {
             scope: scope,
             location: loc(node)
         )
+    }
+
+    /// Provable local-variable types: an explicit annotation (`Foo x = …`) or a `new Foo()` construction
+    /// (`var x = new Foo()`), so `x.method()` resolves to `Foo` (RC4).
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "local_variable_declaration",
+                  let declarator = node.child(byFieldName: "declarator"),
+                  let nameNode = declarator.child(byFieldName: "name")
+            else { return nil }
+            let name = text(nameNode)
+            if let typeNode = node.child(byFieldName: "type"),
+               typeNode.nodeType == "type_identifier", text(typeNode) != "var" {
+                return (name, text(typeNode))
+            }
+            if let value = declarator.child(byFieldName: "value"),
+               value.nodeType == "object_creation_expression",
+               let typeNode = value.child(byFieldName: "type") {
+                return (name, text(typeNode))
+            }
+            return nil
+        }
     }
 
     // MARK: - Type References

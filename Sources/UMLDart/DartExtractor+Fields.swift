@@ -130,6 +130,9 @@ extension DartExtractor {
             name: name, kind: .property,
             accessLevel: accessLevel(for: name),
             modifiers: attributes.modifiers, type: type, location: location,
+            // A field initializer can't reference `this`, so file-level type names are the only
+            // resolvable receivers — enough to record its calls (RC2) without the type's field map.
+            callSites: extractCallSites(from: node, scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
             initialValue: initialValue,
             referencedTypeNames: referencedTypeNames(in: node)
         )

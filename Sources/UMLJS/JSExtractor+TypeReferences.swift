@@ -16,8 +16,15 @@ extension JSExtractor {
     /// - `TypeName.method(args)` — `object` is a known type (static call).
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call_expression",
-              let funcNode = node.child(byFieldName: "function"),
-              funcNode.nodeType == "member_expression",
+              let funcNode = node.child(byFieldName: "function")
+        else { return nil }
+
+        // Bare `foo()` — no receiver. JS has no implicit `this`, so this is a free/imported function.
+        if funcNode.nodeType == "identifier" {
+            return scope.bareCall(named: text(funcNode), implicitSelf: false, location: loc(node))
+        }
+
+        guard funcNode.nodeType == "member_expression",
               let propertyNode = funcNode.child(byFieldName: "property"),
               let objectNode   = funcNode.child(byFieldName: "object")
         else { return nil }
@@ -31,6 +38,26 @@ extension JSExtractor {
             scope: scope,
             location: loc(node)
         )
+    }
+
+    /// Provable local-variable types: a TypeScript annotation (`const x: Foo`) or a `new Foo()`
+    /// construction, so `x.method()` resolves to `Foo` (RC4).
+    func localBindings(in body: Node) -> [String: String] {
+        collectLocalBindings(in: body) { node in
+            guard node.nodeType == "variable_declarator",
+                  let nameNode = node.child(byFieldName: "name"), nameNode.nodeType == "identifier"
+            else { return nil }
+            let name = text(nameNode)
+            if let typeAnnotation = node.child(byFieldName: "type"),
+               let typeId = typeAnnotation.firstChild(withType: "type_identifier") {
+                return (name, text(typeId))
+            }
+            if let value = node.child(byFieldName: "value"), value.nodeType == "new_expression",
+               let ctor = value.child(byFieldName: "constructor"), ctor.nodeType == "identifier" {
+                return (name, text(ctor))
+            }
+            return nil
+        }
     }
 
     // MARK: - Parameters
