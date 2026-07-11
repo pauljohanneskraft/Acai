@@ -18,9 +18,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # 1. A local build — prioritized so development iteration and the checked-out plugin win.
 for candidate in \
+    "$ROOT/.build/artifacts/uml-mcp" \
     "$ROOT/.build/debug/UMLMCP" \
-    "$ROOT/.build/release/UMLMCP" \
-    "$ROOT/.build/artifacts/uml-mcp"; do
+    "$ROOT/.build/release/UMLMCP"; do
     if [ -x "$candidate" ]; then
         exec "$candidate" "$@"
     fi
