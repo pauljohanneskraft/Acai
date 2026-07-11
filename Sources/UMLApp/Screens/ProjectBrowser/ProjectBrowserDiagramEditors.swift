@@ -116,7 +116,7 @@ struct GeneratedDiagramEditor {
     }
 }
 
-/// Project/codebase lifecycle: CRUD, reindexing, and per-codebase architecture-check rules. Carved
+/// Project/codebase lifecycle: CRUD, reindexing, and per-codebase quality-check rules. Carved
 /// out of `ProjectBrowserViewModel` for a single responsibility; shares the store + change hooks.
 @MainActor
 struct ProjectCodebaseEditor {
@@ -125,7 +125,7 @@ struct ProjectCodebaseEditor {
     let persist: () -> Void
     /// Notifies observers without a full save.
     let notify: () -> Void
-    /// Drops a codebase's cached analysis, so its architecture check recomputes after a rules change
+    /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
 
@@ -209,31 +209,31 @@ struct ProjectCodebaseEditor {
         }
     }
 
-    // MARK: Architecture-check rules
+    // MARK: Quality-check rules
 
-    /// Points a codebase's architecture check at an external YAML rules file.
-    func setArchitectureCheckRulesPath(codebaseID: UUID, path: String) {
-        mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: path) }
+    /// Points a codebase's code-quality check at an external YAML rules file.
+    func setQualityCheckRulesPath(codebaseID: UUID, path: String) {
+        mutateCodebase(codebaseID) { $0.qualityCheck = QualityCheckConfiguration(rulesPath: path) }
         invalidateAnalysis(codebaseID)
     }
 
     /// Persists UI-authored rules to the codebase's managed YAML file and points its check there.
-    func saveAuthoredRules(codebaseID: UUID, rules: ConformanceRules) {
+    func saveAuthoredRules(codebaseID: UUID, rules: QualityRules) {
         do {
             let url = try store.saveManagedRules(rules, forCodebase: codebaseID)
-            mutateCodebase(codebaseID) { $0.architectureCheck = ArchitectureCheckConfiguration(rulesPath: url.path) }
+            mutateCodebase(codebaseID) { $0.qualityCheck = QualityCheckConfiguration(rulesPath: url.path) }
             invalidateAnalysis(codebaseID)
         } catch {
-            store.report("Failed to save architecture rules: \(error.localizedDescription)")
+            store.report("Failed to save quality rules: \(error.localizedDescription)")
         }
     }
 
     /// The rules to seed the form editor with: the codebase's managed rules when app-managed,
     /// otherwise an empty rule set (external files are referenced, not form-edited).
-    func loadEditableRules(codebaseID: UUID) -> ConformanceRules {
-        guard let path = codebase(for: codebaseID)?.architectureCheck?.rulesPath, store.isManaged(path: path)
-        else { return ConformanceRules() }
-        return store.loadManagedRules(forCodebase: codebaseID) ?? ConformanceRules()
+    func loadEditableRules(codebaseID: UUID) -> QualityRules {
+        guard let path = codebase(for: codebaseID)?.qualityCheck?.rulesPath, store.isManaged(path: path)
+        else { return QualityRules() }
+        return store.loadManagedRules(forCodebase: codebaseID) ?? QualityRules()
     }
 
     // MARK: Helpers

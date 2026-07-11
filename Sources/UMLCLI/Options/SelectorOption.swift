@@ -1,5 +1,5 @@
 import ArgumentParser
-import UMLConformance
+import UMLQuality
 import UMLCore
 
 extension TypeKind: ExpressibleByArgument {}

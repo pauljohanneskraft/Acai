@@ -8,7 +8,8 @@ struct InspectTool: AnalysisTool {
     let description = """
         Enumerate types and members matching a selector, each with a file:line jump target. Answers \
         "where is type X / which public classes in module Y have a method with 4+ parameters?" without \
-        grepping. Combine the type selector facets with member facets (memberKind, minParameters, …).
+        grepping. Combine the type selector facets with member facets (memberKind, minParameters, …). \
+        Set 'enums' to instead inventory enum-like types with their cases, raw and associated values.
         """
 
     var inputSchema: Value {
@@ -17,11 +18,15 @@ struct InspectTool: AnalysisTool {
         properties["minParameters"] = ["type": "integer", "description": "Only members with at least N parameters."]
         properties["publicVars"] = ["type": "boolean", "description": "Only publicly-settable stored properties."]
         properties["overrides"] = ["type": "boolean", "description": "Only members that override an inherited member."]
+        properties["enums"] = ["type": "boolean", "description": "List enum cases with raw/associated values instead."]
         return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
+        if try arguments.bool("enums") ?? false {
+            return .json(try Value(EnumInventory(artifact: artifact).entries))
+        }
         let rows = TypeQuery(
             artifact: artifact,
             selector: try selector(from: arguments),

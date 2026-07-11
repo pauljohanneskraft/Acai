@@ -1,5 +1,5 @@
 import ArgumentParser
-import UMLConformance
+import UMLQuality
 import UMLCore
 import UMLLibrary
 
@@ -28,6 +28,10 @@ extension UMLCommand {
         @Flag(name: .long, help: "Only members that override an inherited member.")
         var overrides = false
 
+        @Flag(name: .long, help: ArgumentHelp(
+            "List enum cases with their raw and associated values instead of types/members."))
+        var enums = false
+
         @Option(name: .long, help: "Report format: json (default) or human.")
         var format: ReportFormatOption = .json
 
@@ -39,6 +43,10 @@ extension UMLCommand {
         }
 
         mutating func run() throws {
+            if enums {
+                try runEnumInventory()
+                return
+            }
             let artifact = try artifactSource.resolve()
             let rows = TypeQuery(
                 artifact: artifact,
@@ -59,6 +67,31 @@ extension UMLCommand {
                 rendered = humanReport(rows)
             }
             try rendered.writeOutput(to: output, label: "inspection")
+        }
+
+        private func runEnumInventory() throws {
+            let entries = EnumInventory(artifact: try artifactSource.resolve()).entries
+            let rendered = format == .json ? try JSONReport(entries).text : enumHuman(entries)
+            try rendered.writeOutput(to: output, label: "enum inventory")
+        }
+
+        private func enumHuman(_ entries: [EnumInventory.Entry]) -> String {
+            guard !entries.isEmpty else { return "No enums found.\n" }
+            var lines: [String] = []
+            for entry in entries {
+                lines.append("\(entry.type)\(entry.location.suffix)")
+                for enumCase in entry.cases {
+                    var text = "  - \(enumCase.name)"
+                    if !enumCase.associatedValues.isEmpty {
+                        text += "(\(enumCase.associatedValues.joined(separator: ", ")))"
+                    }
+                    if let rawValue = enumCase.rawValue {
+                        text += " = \(rawValue)"
+                    }
+                    lines.append(text)
+                }
+            }
+            return lines.joined(separator: "\n") + "\n"
         }
 
         private func humanReport(_ rows: [TypeQuery.TypeRow]) -> String {

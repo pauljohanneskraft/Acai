@@ -1,5 +1,5 @@
 import Foundation
-import UMLConformance
+import UMLQuality
 import UMLCore
 import Yams
 
@@ -44,7 +44,7 @@ final class ProjectStore: ObservableObject {
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
-    /// Holds YAML rules files for UI-authored architecture checks (one per codebase). A check whose
+    /// Holds YAML rules files for UI-authored code-quality checks (one per codebase). A check whose
     /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
     /// path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
@@ -248,7 +248,7 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    // MARK: - Managed architecture-check rules
+    // MARK: - Managed quality-check rules
 
     /// The location of the app-managed YAML rules file for a codebase (whether or not it exists yet).
     func managedRulesURL(forCodebase codebaseID: UUID) -> URL {
@@ -267,7 +267,7 @@ final class ProjectStore: ObservableObject {
 
     /// Serializes UI-authored rules to the codebase's managed YAML file and returns its URL.
     @discardableResult
-    func saveManagedRules(_ rules: ConformanceRules, forCodebase codebaseID: UUID) throws -> URL {
+    func saveManagedRules(_ rules: QualityRules, forCodebase codebaseID: UUID) throws -> URL {
         let url = managedRulesURL(forCodebase: codebaseID)
         let yaml = try YAMLEncoder().encode(rules)
         try yaml.write(to: url, atomically: true, encoding: .utf8)
@@ -275,10 +275,10 @@ final class ProjectStore: ObservableObject {
     }
 
     /// Decodes the codebase's managed rules file, or `nil` if it doesn't exist yet / can't be read.
-    func loadManagedRules(forCodebase codebaseID: UUID) -> ConformanceRules? {
+    func loadManagedRules(forCodebase codebaseID: UUID) -> QualityRules? {
         let url = managedRulesURL(forCodebase: codebaseID)
         guard let yaml = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-        return try? YAMLDecoder().decode(ConformanceRules.self, from: yaml)
+        return try? YAMLDecoder().decode(QualityRules.self, from: yaml)
     }
 
     func deleteManagedRules(forCodebase codebaseID: UUID) {

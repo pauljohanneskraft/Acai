@@ -28,7 +28,7 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Project / Codebase lifecycle
 
-    /// Project/codebase CRUD, reindexing, and per-codebase architecture-check rules. Carved out of
+    /// Project/codebase CRUD, reindexing, and per-codebase quality-check rules. Carved out of
     /// this view model (see ``GeneratedDiagramEditor``); shares the store + change notifications.
     var editing: ProjectCodebaseEditor {
         ProjectCodebaseEditor(
@@ -109,12 +109,12 @@ final class ProjectBrowserViewModel: ObservableObject {
     // MARK: - Codebase analysis (metrics + scans)
 
     /// Identity of a cached analysis: it stays valid until the codebase is reindexed (`lastIndexed`),
-    /// its architecture-check configuration changes, or it is explicitly invalidated (`revision`,
+    /// its quality-check configuration changes, or it is explicitly invalidated (`revision`,
     /// bumped for an in-place managed-rules edit that keeps the same path). The detail view keys its
     /// `.task` on this, so any change re-triggers the background recompute.
     struct AnalysisToken: Equatable {
         let lastIndexed: Date?
-        let configuration: ArchitectureCheckConfiguration?
+        let configuration: QualityCheckConfiguration?
         let revision: Int
     }
 
@@ -137,7 +137,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         let codebase = codebase(for: codebaseID)
         return AnalysisToken(
             lastIndexed: codebase?.lastIndexed,
-            configuration: codebase?.architectureCheck,
+            configuration: codebase?.qualityCheck,
             revision: analysisRevisions[codebaseID, default: 0])
     }
 
@@ -162,7 +162,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         }
         guard let artifact = artifact(for: codebaseID) else { return }
         analyses[codebaseID] = .computing(token)
-        let configuration = codebase.architectureCheck
+        let configuration = codebase.qualityCheck
         let analysis = await Task.detached(priority: .userInitiated) {
             CodebaseAnalysis(artifact: artifact, configuration: configuration)
         }.value

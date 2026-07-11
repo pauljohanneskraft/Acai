@@ -1,28 +1,28 @@
 import ArgumentParser
 import Foundation
-import UMLConformance
+import UMLQuality
 import UMLLibrary
 
 extension UMLCommand {
-    /// Authoring helpers for the declarative architecture rules file consumed by `uml check`.
+    /// Authoring helpers for the declarative code-quality rules file consumed by `uml quality`.
     struct Rules: ParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "rules",
-            abstract: "Author and manage the architecture rules file",
+            abstract: "Author and manage the code-quality rules file",
             subcommands: [Init.self]
         )
 
-        /// Generates a candidate `architecture.yml` inferred from the current graph.
+        /// Generates a candidate `quality.yml` inferred from the current graph.
         struct Init: ParsableCommand {
             static let configuration = CommandConfiguration(
-                abstract: "Generate a candidate architecture.yml from the current graph",
+                abstract: "Generate a candidate quality.yml from the current graph",
                 discussion: """
                 Infers a draft rules file — the module-cycle invariant plus budgets seeded from the \
-                current worst-case metrics — so adopting `uml check` is "review and edit a draft" \
+                current worst-case metrics — so adopting `uml quality` is "review and edit a draft" \
                 rather than "author from a blank page". Review and tighten the thresholds before \
                 committing.
 
-                  uml rules init --source ./ --output architecture.yml
+                  uml rules init --source ./ --output quality.yml
                 """
             )
 
@@ -40,7 +40,7 @@ extension UMLCommand {
                 let graph = GraphView(
                     artifact: artifact,
                     languageResolver: artifact.standardLanguageResolver)
-                try StarterArchitectureRules(graph: graph).yaml.writeOutput(to: output, label: "rules")
+                try StarterQualityRules(graph: graph).yaml.writeOutput(to: output, label: "rules")
             }
         }
     }

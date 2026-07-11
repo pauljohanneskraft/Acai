@@ -174,11 +174,10 @@ struct CodebaseDetailView: View {
     ) -> some View {
         statisticsSection(metrics: analysis.metrics)
         Divider()
-        ArchitectureCheckSection(
+        QualityCheckSection(
             codebase: codebase, artifact: artifact,
-            report: analysis.architecture, rulesError: analysis.architectureError)
-        Divider()
-        CodeSmellsSection(findings: analysis.smells)
+            report: analysis.quality, usesConfiguredRules: analysis.usesConfiguredRules,
+            rulesError: analysis.qualityError)
         Divider()
         DeadCodeSection(report: analysis.deadCode)
         Divider()

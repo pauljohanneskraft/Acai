@@ -8,12 +8,11 @@ import Testing
 @Suite("Tool Registry")
 struct ToolRegistryTests {
 
-    /// The 14 cross-platform tools; `uml_image` is added on macOS (it links the SwiftUI renderer).
+    /// The 8 cross-platform tools; `uml_image` is added on macOS (it links the SwiftUI renderer).
     private var expectedNames: [String] {
         var names = [
-            "uml_analyze", "uml_callcycles", "uml_callgraph", "uml_check", "uml_cycles",
-            "uml_deadcode", "uml_diagram", "uml_diff", "uml_doctor", "uml_enums",
-            "uml_impact", "uml_inspect", "uml_metrics", "uml_smells"
+            "uml_analyze", "uml_callgraph", "uml_diagram", "uml_diff",
+            "uml_impact", "uml_inspect", "uml_metrics", "uml_quality"
         ]
         #if os(macOS)
         names.append("uml_image")
@@ -63,17 +62,21 @@ struct ToolRegistryTests {
         }
     }
 
-    /// MCP requires `structuredContent` to be a JSON object. The five tools whose report is a
-    /// top-level list (cycles, smells, inspect, callcycles, enums) must wrap it in an object
+    /// MCP requires `structuredContent` to be a JSON object. The tools whose report is a top-level
+    /// list (`uml_inspect`'s rows, `uml_callgraph --mode cycles`' clusters) must wrap it in an object
     /// envelope — a bare array is rejected by the client's schema validation. Guards the regression
     /// that made half the tools unusable from an MCP client.
     @Test func listReportingToolsWrapStructuredContentInAnObject() async throws {
-        let listTools = ["uml_cycles", "uml_smells", "uml_inspect", "uml_callcycles", "uml_enums"]
+        let listCalls: [(String, [String: Value])] = [
+            ("uml_inspect", [:]),
+            ("uml_callgraph", ["mode": .string("cycles")])
+        ]
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            for name in listTools {
-                let result = try await ToolRegistry.standard.call(
-                    name: name, arguments: ["path": .string(dir.path)])
+            for (name, extraArgs) in listCalls {
+                var arguments: [String: Value] = ["path": .string(dir.path)]
+                arguments.merge(extraArgs) { _, new in new }
+                let result = try await ToolRegistry.standard.call(name: name, arguments: arguments)
                 let structured = try #require(
                     result.structuredContent, "\(name) must attach structuredContent")
                 #expect(

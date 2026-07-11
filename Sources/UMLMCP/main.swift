@@ -11,11 +11,12 @@ let server = Server(
     version: "0.1.0",
     instructions: """
         Read-only code-structure analysis over eight languages. Reach for these when reasoning about \
-        an unfamiliar or large codebase: uml_analyze to index a project, then uml_metrics / uml_smells \
-        / uml_cycles to find architectural debt and god classes, uml_impact to gauge whether a change \
-        is safe, uml_inspect to locate types and members, uml_deadcode for unused code, uml_doctor to \
-        check whether the parse is trustworthy before relying on the rest, and uml_check to gate \
-        architecture rules. Every result carries file:line jump targets.
+        an unfamiliar or large codebase: uml_analyze to index a project (set health to check the parse \
+        is trustworthy before relying on the rest), then uml_metrics for the raw numbers and \
+        uml_quality to find architectural debt, god classes, and code smells (or gate a rules file). \
+        uml_callgraph reports method-level metrics, cycles, or dead code; uml_impact gauges whether a \
+        change is safe; uml_inspect locates types, members, and enums. Every result carries file:line \
+        jump targets.
         """,
     capabilities: .init(tools: .init(listChanged: false)))
 

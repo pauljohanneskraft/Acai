@@ -1,37 +1,41 @@
 import SwiftUI
-import UMLConformance
+import UMLQuality
 import UMLCore
 import UMLDiagram
 import UMLLibrary
 
-/// The architecture-conformance check as its own collapsible section. An analysis produces a report,
-/// not a canvas, so it lives here rather than among the diagrams. Shows the check's status and its
-/// violations inline, and opens the rules editor from the header.
-struct ArchitectureCheckSection: View {
+/// The code-quality check as its own collapsible section. An analysis produces a report, not a
+/// canvas, so it lives here rather than among the diagrams. It always evaluates — the configured
+/// `quality.yml` when one is set up, otherwise the built-in curated smell budgets — so god classes,
+/// feature envy, low cohesion and the like surface out of the box. Opens the rules editor from the
+/// header to attach or tighten a custom rules file.
+struct QualityCheckSection: View {
     let codebase: Codebase
     /// Still needed to seed the rules editor sheet.
     let artifact: CodeArtifact
-    /// The conformance report, precomputed in the background — `nil` when no check is configured or its
-    /// rules failed to load (see `rulesError`).
-    let report: ConformanceReport?
+    /// The quality report, precomputed in the background — always present (default budgets when no
+    /// rules file is configured).
+    let report: QualityReport
+    /// Whether `report` came from a configured rules file (vs the built-in default smell budgets).
+    let usesConfiguredRules: Bool
     /// The rules-load failure message, when a check is configured but its file couldn't be read.
     let rulesError: String?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var editing = false
 
-    private var configuration: ArchitectureCheckConfiguration? {
-        guard let config = codebase.architectureCheck, !config.rulesPath.isEmpty else { return nil }
+    private var configuration: QualityCheckConfiguration? {
+        guard let config = codebase.qualityCheck, !config.rulesPath.isEmpty else { return nil }
         return config
     }
 
     var body: some View {
-        CollapsibleSection(title: "Architecture Check") {
+        CollapsibleSection(title: "Code Quality Check") {
             HStack(spacing: 8) {
-                if let report, !report.isPassing {
+                if !report.isPassing {
                     SectionCountBadge(
-                        text: "\(report.violations.count) violation(s) across \(report.checkedRuleCount) rule(s)",
-                        tint: .red)
+                        text: "\(report.violations.count) finding(s) across \(report.checkedRuleCount) rule(s)",
+                        tint: .orange)
                 }
                 Button(configuration == nil ? "Set Up…" : "Edit…") { editing = true }
             }
@@ -40,14 +44,12 @@ struct ArchitectureCheckSection: View {
                 Text(statusLine)
                     .font(.caption).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.middle)
-                if configuration != nil {
-                    reportBody
-                }
+                reportBody
             }
             .padding(.horizontal)
         }
         .sheet(isPresented: $editing) {
-            ArchitectureCheckEditorSheet(codebaseID: codebase.id, artifact: artifact)
+            QualityCheckEditorSheet(codebaseID: codebase.id, artifact: artifact)
                 .environmentObject(model)
         }
     }
@@ -55,41 +57,21 @@ struct ArchitectureCheckSection: View {
     @ViewBuilder
     private var reportBody: some View {
         if let rulesError {
-            ArchitectureCheckPlaceholder(
-                text: "Could not load rules: \(rulesError)",
+            QualityCheckPlaceholder(
+                text: "Could not load rules: \(rulesError) — showing the built-in smell budgets instead.",
                 systemImage: "exclamationmark.triangle")
-        } else if let report {
-            ArchitectureCheckReportView(report: report, showsSummary: false)
         }
+        QualityCheckReportView(report: report, showsSummary: false, tint: .orange)
     }
 
     private var statusLine: String {
-        guard let config = configuration else { return "No check configured yet." }
+        guard usesConfiguredRules, let config = configuration else {
+            return "Built-in smell budgets · \(report.checkedRuleCount) rule(s)"
+        }
         let origin = model.store.isManaged(path: config.rulesPath)
             ? "Defined in app"
             : (config.rulesPath as NSString).abbreviatingWithTildeInPath
-        if let report {
-            return "\(origin) · \(report.checkedRuleCount) rule(s)"
-        }
-        return origin
-    }
-}
-
-/// Ranked code smells as their own collapsible section. The scan runs once here: its count is shown
-/// in the header and the findings are handed to the report view.
-struct CodeSmellsSection: View {
-    /// Precomputed in the background (see ``CodebaseAnalysis``).
-    let findings: [Violation]
-
-    var body: some View {
-        CollapsibleSection(title: "Code Smells") {
-            SectionCountBadge(
-                text: findings.isEmpty ? "none" : "\(findings.count) smell(s)",
-                tint: findings.isEmpty ? .secondary : .orange)
-        } content: {
-            SmellsReportView(findings: findings)
-                .padding(.horizontal)
-        }
+        return "\(origin) · \(report.checkedRuleCount) rule(s)"
     }
 }
 
