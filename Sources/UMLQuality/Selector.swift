@@ -42,19 +42,6 @@ public struct Selector: Codable, Equatable, Sendable {
         self.minNesting = minNesting
     }
 
-    /// Lenient decoding so a rules file may omit any facet it doesn't use.
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        module = try container.decodeIfPresent(String.self, forKey: .module)
-        typeGlob = try container.decodeIfPresent(String.self, forKey: .typeGlob)
-        stereotype = try container.decodeIfPresent(String.self, forKey: .stereotype)
-        annotation = try container.decodeIfPresent(String.self, forKey: .annotation)
-        minimumAccess = try container.decodeIfPresent(AccessLevel.self, forKey: .minimumAccess)
-        kind = try container.decodeIfPresent(TypeKind.self, forKey: .kind)
-        minMembers = try container.decodeIfPresent(Int.self, forKey: .minMembers)
-        minNesting = try container.decodeIfPresent(Int.self, forKey: .minNesting)
-    }
-
     /// Whether `node` satisfies every present facet.
     public func matches(_ node: GraphView.Node) -> Bool {
         if let module, !Glob(module).matches(node.module) { return false }

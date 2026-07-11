@@ -9,8 +9,7 @@ extension UMLCommand {
     /// X have a method with 4+ parameters?" answered as JSON jump targets.
     struct Inspect: ParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Enumerate types and members as JSON/human, filtered by a selector",
-            aliases: ["query"]
+            abstract: "Enumerate types and members as JSON/human, filtered by a selector"
         )
 
         @OptionGroup var artifactSource: ArtifactSource

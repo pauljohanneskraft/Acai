@@ -16,11 +16,6 @@ struct InspectCommandTests {
         }
     }
 
-    @Test func queryAliasResolvesToInspect() throws {
-        let root = try UMLCommand.parseAsRoot(["query", "--source", CLITestSupport.nonexistentPath()])
-        #expect(root is UMLCommand.Inspect)
-    }
-
     @Test func emitsTypesAndMembersWithLocations() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)

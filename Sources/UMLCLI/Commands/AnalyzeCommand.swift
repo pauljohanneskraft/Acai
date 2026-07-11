@@ -9,9 +9,6 @@ extension UMLCommand {
             abstract: "Analyze source code and output the code model as JSON, or its parse health"
         )
 
-        @Argument(help: "(Deprecated) source directory to analyze; prefer --source.")
-        var sourceDir: String?
-
         @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
         var from: String?
 
@@ -37,17 +34,13 @@ extension UMLCommand {
         var output: String?
 
         mutating func run() throws {
-            // Unifies on the shared `ArtifactSource` resolution; a bare positional path is a
-            // deprecated alias for `--source`. (Done here, not in `validate()`, so the auto-invoked
-            // group validate can't pre-empt the alias.)
-            let effectiveSource = source ?? sourceDir
-            if from == nil && effectiveSource == nil {
-                throw ValidationError("Either --from or --source (or a positional path) must be specified.")
+            if from == nil && source == nil {
+                throw ValidationError("Either --from or --source must be specified.")
             }
-            if from != nil && effectiveSource != nil {
+            if from != nil && source != nil {
                 throw ValidationError("Specify either --from or --source, not both.")
             }
-            let artifact = try ArtifactSource.resolve(from: from, source: effectiveSource, language: language)
+            let artifact = try ArtifactSource.resolve(from: from, source: source, language: language)
             if health {
                 try healthReport(artifact).writeOutput(to: output, label: "health report")
             } else {

@@ -133,7 +133,7 @@ Mix and match — UML produces one unified model across all of them. (C and C++ 
 Run `uml --help` (or `uml <command> --help`) for the full menu. The essentials:
 
 ```sh
-uml analyze ./MyProject --output model.json     # Parse code → JSON model
+uml analyze --source ./MyProject --output model.json   # Parse code → JSON model
 uml store myproj ./MyProject                    # Analyze and stash it under a name
 uml list                                        # Show stored analyses
 uml metrics --from myproj                       # Counts, coupling, OO metrics as JSON
@@ -205,7 +205,7 @@ UML is a layered Swift package — one module per concern, so you can pull in on
 - **`UMLLibrary`** — the composition root. `AnalysisService` holds the parser registry and dispatches by language; importing this one module gives you everything.
 - **`UMLDiagram`** — turns the model into DOT/Graphviz and Mermaid.
 - **`UMLRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `uml image` command (Apple platforms only).
-- **`UMLMCP`** — a third entry point over `UMLLibrary` (alongside the CLI and app): an in-process [Model Context Protocol](https://modelcontextprotocol.io) server (`uml-mcp`) that exposes the read-only analysis engine as tools an AI agent can call directly. Shipped with the bundled **`code-quality`** Claude Code plugin under [`.claude/plugins/`](.claude/plugins/code-quality), which pairs the server with the `code-quality-audit` methodology skill.
+- **`UMLMCP`** — a third entry point over `UMLLibrary` (alongside the CLI and app): an in-process [Model Context Protocol](https://modelcontextprotocol.io) server (`uml-mcp`) that exposes the read-only analysis engine as tools an AI agent can call directly. Shipped with the bundled **`code-quality`** Claude Code plugin under [`.claude/plugins/`](.claude/plugins/code-quality), which pairs the server with the `audit` methodology skill.
 
 Full module-by-module documentation lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)**.
 

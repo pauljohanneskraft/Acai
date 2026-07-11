@@ -8,7 +8,7 @@
     {
       "name": "code-quality",
       "source": "./.claude/plugins/code-quality",
-      "description": "In-process MCP server + code-quality-audit skill for the UML code-analysis engine."
+      "description": "In-process MCP server + audit skill for the UML code-analysis engine."
     }
   ]
 }
