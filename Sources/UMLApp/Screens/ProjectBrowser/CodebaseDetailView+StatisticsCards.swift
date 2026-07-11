@@ -9,7 +9,7 @@ extension CodebaseDetailView {
 
     func statisticsSection(metrics: CodeMetrics) -> some View {
         CollapsibleSection(title: "Statistics") {
-            LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
+            LazyVGrid(columns: cardColumns(), spacing: 12) {
                 moduleMetricCards(metrics: metrics)
                 classicMetricCards(metrics: metrics)
                 smellMetricCards(metrics: metrics)

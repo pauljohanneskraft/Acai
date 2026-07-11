@@ -209,7 +209,7 @@ extension CodebaseDetailView {
     /// when the pane is too narrow to fit them all at `target` width. Capping the column count at the
     /// card count (rather than `.adaptive`) keeps the row full-width instead of leaving empty trailing
     /// columns when there are fewer cards than would fit.
-    func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
+    func cardColumns(count: Int = DiagramType.allCases.count, target: CGFloat = 200) -> [GridItem] {
         let usableWidth = contentWidth - 32  // outer .padding(.horizontal) on each side
         let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
         let columns = max(1, min(count, fitting))
@@ -221,7 +221,7 @@ extension CodebaseDetailView {
     /// The diagram-generation buttons, shown inline directly under the header (no fold, no title) since
     /// they are the pane's primary action.
     private func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
+        LazyVGrid(columns: cardColumns(), spacing: 12) {
             ForEach(DiagramType.allCases) { type in
                 diagramButton(codebase: codebase, type: type)
             }
