@@ -4,7 +4,7 @@ import UMLCore
 /// quality rules see. Module adjacency is provenance-aware (via `ModuleAttribution`), so a
 /// cross-module extension does not manufacture a phantom upward edge / false cycle.
 ///
-/// Shared by `QualityEvaluator` (the `cycle` rule) and the standalone `uml cycles` command so the
+/// Shared by `QualityEvaluator` (the `cycle` rule) and the `quality --explore` cycle listing so the
 /// two never disagree.
 public struct CycleFinder: Sendable {
     public enum Scope: String, Sendable, CaseIterable {

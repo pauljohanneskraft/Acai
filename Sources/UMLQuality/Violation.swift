@@ -11,7 +11,7 @@ public struct Violation: Codable, Equatable, Sendable {
     public var subject: String
     /// Where the breach is, when a single source location applies (the offending type).
     public var source: SourceLocation?
-    /// Structured extras (e.g. `value`/`threshold` for a budget breach).
+    /// Structured extras (e.g. `metric`/`value` for a budget breach).
     public var detail: [String: String]
 
     public init(

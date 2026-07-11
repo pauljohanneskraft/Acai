@@ -147,16 +147,8 @@ struct QualityCheckEditorSheet: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.allowedContentTypes = [.yaml]
-        panel.message = "Select an quality rules file (YAML)."
+        panel.message = "Select a quality rules file (YAML)."
         guard panel.runModal() == .OK, let url = panel.url else { return }
         externalPath = url.path
-    }
-}
-
-extension Result where Failure == Error {
-    /// Wraps a throwing expression in a `Result`, mirroring `Result { try … }` but usable in a
-    /// `switch` expression position.
-    init(catching body: () throws -> Success) {
-        do { self = .success(try body()) } catch { self = .failure(error) }
     }
 }
