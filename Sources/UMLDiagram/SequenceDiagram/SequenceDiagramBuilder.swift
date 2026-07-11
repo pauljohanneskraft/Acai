@@ -212,9 +212,9 @@ private struct SequenceTraversal {
     ///
     /// - A **`.type`** receiver always yields a participant (the named type), even when its body isn't
     ///   in the artifact — the message still shows the call, just without expansion.
-    /// - A **`.selfDispatch`** resolves to a same-type method; if that method isn't in the artifact
-    ///   (e.g. it lives only on a base class), the call is dropped rather than drawing a dead-end
-    ///   self-message.
+    /// - A **`.selfDispatch`** resolves to a same-type method, falling back to a free function of that
+    ///   name (a bare `foo()` is recorded as `.selfDispatch`); if it matches neither (e.g. the method
+    ///   lives only on a base class), the call is dropped rather than drawing a dead-end self-message.
     /// - A **`.free`** call resolves to a top-level function on its own lifeline.
     /// - **`.unknown`** (an unresolved receiver) is dropped.
     private func resolveTarget(site: CallSite, callerId: String) -> ResolvedTarget? {
@@ -229,10 +229,18 @@ private struct SequenceTraversal {
             )
         case .selfDispatch:
             let concreteCaller = typeMapping[callerId] ?? callerId
-            guard let member = lookups.membersByKey["\(concreteCaller).\(site.methodName)"] else { return nil }
+            if let member = lookups.membersByKey["\(concreteCaller).\(site.methodName)"] {
+                return ResolvedTarget(
+                    id: concreteCaller, name: concreteCaller, member: member,
+                    decl: lookups.typesByName[concreteCaller], isFreeFunction: false
+                )
+            }
+            // A bare `foo()` recorded as `.selfDispatch` may be a free function rather than a
+            // same-type method; fall back to a free-function lifeline before dropping it.
+            guard let function = lookups.freeFunctionsByName[site.methodName] else { return nil }
             return ResolvedTarget(
-                id: concreteCaller, name: concreteCaller, member: member,
-                decl: lookups.typesByName[concreteCaller], isFreeFunction: false
+                id: SequenceTraversal.freeFunctionID(site.methodName), name: site.methodName,
+                member: function, decl: nil, isFreeFunction: true
             )
         case .free:
             guard let function = lookups.freeFunctionsByName[site.methodName] else { return nil }

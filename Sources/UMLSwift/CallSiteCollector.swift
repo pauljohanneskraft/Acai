@@ -19,15 +19,52 @@ struct CallSiteCollector {
     func callSite(
         from node: FunctionCallExprSyntax, propertyMap: [String: String], fileName: String
     ) -> CallSite? {
-        guard let memberAccess = node.calledExpression.as(MemberAccessExprSyntax.self) else { return nil }
-        let methodName = memberAccess.declName.baseName.text
-        guard let resolved = resolveReceiver(
-            from: memberAccess.base, propertyMap: propertyMap) else { return nil }
+        let callee = unwrappedCallee(node.calledExpression)
+        if let memberAccess = callee.as(MemberAccessExprSyntax.self) {
+            let methodName = memberAccess.declName.baseName.text
+            guard let resolved = resolveReceiver(
+                from: memberAccess.base, propertyMap: propertyMap) else { return nil }
+            return CallSite(
+                receiver: resolved.receiver,
+                methodName: methodName,
+                location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            )
+        }
+        if let declRef = callee.as(DeclReferenceExprSyntax.self) {
+            return implicitCall(named: declRef.baseName.text, node: node, propertyMap: propertyMap, fileName: fileName)
+        }
+        return nil
+    }
+
+    /// A bare `foo()` — an implicit-`self` method call or a free-function call. We can't tell which at
+    /// parse time (a free function may live in another file), so we record `.selfDispatch` and let the
+    /// whole-artifact resolvers (`CallGraphBuilder`, `SequenceDiagramBuilder`) match it against the
+    /// caller's own methods first, then free functions. A construction (`Foo()`) or a call through a
+    /// stored closure property (`handler()`) isn't a resolvable call target, so it's dropped.
+    private func implicitCall(
+        named name: String, node: FunctionCallExprSyntax, propertyMap: [String: String], fileName: String
+    ) -> CallSite? {
+        guard !isTypeName(name), propertyMap[name] == nil else { return nil }
         return CallSite(
-            receiver: resolved.receiver,
-            methodName: methodName,
+            receiver: .selfDispatch,
+            methodName: name,
             location: sourceLocations.sourceLocation(of: node, fileName: fileName)
         )
+    }
+
+    /// Treats a same-file declared type or any capitalised identifier as a type name, so `Foo()` /
+    /// `UUID()` / `URL()` read as construction, not a call. Cross-file types aren't in `knownTypeNames`,
+    /// hence the capitalisation guard; Swift methods are lowerCamelCase by convention.
+    private func isTypeName(_ name: String) -> Bool {
+        knownTypeNames.contains(name) || name.first?.isUppercase == true
+    }
+
+    /// Strips `foo<T>()` generic-specialisation and `foo?()` optional-chaining wrappers so the callee
+    /// reduces to its underlying `MemberAccessExprSyntax` / `DeclReferenceExprSyntax`.
+    private func unwrappedCallee(_ expr: ExprSyntax) -> ExprSyntax {
+        if let generic = expr.as(GenericSpecializationExprSyntax.self) { return generic.expression }
+        if let optional = expr.as(OptionalChainingExprSyntax.self) { return optional.expression }
+        return expr
     }
 
     /// A variable assignment recovered from a `SequenceExprSyntax`, or `nil` if the sequence is not an
@@ -139,6 +176,36 @@ struct CallSiteCollector {
             return ResolvedReceiver(receiver: .type(propertyType))
         }
 
+        // `Foo(...).method()` — a call on a freshly constructed value resolves to `Foo`.
+        if let call = base.as(FunctionCallExprSyntax.self), let type = constructedTypeName(call) {
+            return ResolvedReceiver(receiver: .type(type))
+        }
+
         return nil
+    }
+
+    /// The type a `let`/`var` binding provably introduces for receiver resolution, when it can be read
+    /// off an explicit annotation (`let x: Foo`) or a construction initializer (`let x = Foo()`).
+    /// Callers fold this into their property map so a later `x.method()` resolves to `Foo`.
+    func localBinding(from binding: PatternBindingSyntax) -> (name: String, type: String)? {
+        guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
+        if let identifier = binding.typeAnnotation?.type.as(IdentifierTypeSyntax.self) {
+            return (name, identifier.name.text)
+        }
+        if let call = binding.initializer?.value.as(FunctionCallExprSyntax.self),
+           let type = constructedTypeName(call) {
+            return (name, type)
+        }
+        return nil
+    }
+
+    /// The constructed type name of a `Foo(...)` call expression, or `nil` when its callee isn't a
+    /// type name (so `bar()` / `Foo.make()` aren't mistaken for constructions).
+    private func constructedTypeName(_ call: FunctionCallExprSyntax) -> String? {
+        guard let declRef = unwrappedCallee(call.calledExpression).as(DeclReferenceExprSyntax.self) else {
+            return nil
+        }
+        let name = declRef.baseName.text
+        return isTypeName(name) ? name : nil
     }
 }

@@ -39,24 +39,33 @@ public struct DeadCodeScan: Sendable {
     public var report: Report {
         let graph = CallGraphBuilder(scope: scope).build(from: artifact)
         let targeted = Set(graph.edges.map(\.to))
+        let allTypes = Array(artifact.flattened())
+        let witnesses = ProtocolWitnessIndex(types: allTypes)
 
         var candidates: [Candidate] = []
-        for type in artifact.flattened() {
+        for type in allTypes {
             let isContract = type.kind.isInterfaceLike
             // Each type's entry-point markers come from *its own* language, so a polyglot artifact
             // doesn't judge one language's methods by another's entry-point conventions.
             let markers = languages.configuration(for: type).entryPointMarkers
+            // Names of protocol requirements this type satisfies — reached through the conformance,
+            // so never dead even without a direct call edge (the witness analogue of `override`).
+            let requirementNames = witnesses.requirementNames(for: type)
             for member in type.members where member.kind == .method {
                 let id = "\(type.name).\(member.name)"
                 guard !targeted.contains(id),
-                      !isEntryPoint(member, inContract: isContract, markers: markers) else { continue }
+                      !isEntryPoint(
+                        member, inContract: isContract,
+                        requirementNames: requirementNames, markers: markers) else { continue }
                 candidates.append(Candidate(id: id, location: member.location))
             }
         }
         let freestandingMarkers = languages.defaultConfiguration.entryPointMarkers
         for function in artifact.freestandingFunctions where function.kind == .method {
             guard !targeted.contains(function.name),
-                  !isEntryPoint(function, inContract: false, markers: freestandingMarkers) else { continue }
+                  !isEntryPoint(
+                    function, inContract: false,
+                    requirementNames: [], markers: freestandingMarkers) else { continue }
             candidates.append(Candidate(id: function.name, location: function.location))
         }
 
@@ -64,13 +73,52 @@ public struct DeadCodeScan: Sendable {
         return Report(coverage: graph.coverage, candidates: candidates)
     }
 
-    /// A member is reachable-by-contract when it is public API, satisfies a supertype/interface
-    /// requirement, or is flagged by its language's entry-point `markers`.
-    private func isEntryPoint(_ member: Member, inContract: Bool, markers: EntryPointMarkers) -> Bool {
+    /// A member is reachable-by-contract when it is public API, overrides a supertype member, is the
+    /// witness for a protocol requirement its type conforms to, or is flagged by its language's
+    /// entry-point `markers`.
+    private func isEntryPoint(
+        _ member: Member, inContract: Bool, requirementNames: Set<String>, markers: EntryPointMarkers
+    ) -> Bool {
         if inContract { return true }
         if member.isVisible(atLeast: .public) { return true }
         if member.modifiers.contains(.override) { return true }
+        if requirementNames.contains(member.name) { return true }
         return markers.marks(member)
+    }
+}
+
+/// Resolves, per conforming type, the method-requirement names of every in-artifact protocol it
+/// conforms to — transitively through protocol inheritance. A method whose name matches one is a
+/// *witness*: a caller reaches it through the conformance, so it is never dead even when no direct
+/// call edge targets it. Protocols defined outside the analysed sources can't be inspected, so their
+/// witnesses stay best-effort (surfaced as the usual coverage caveat).
+private struct ProtocolWitnessIndex {
+    /// Interface-like type name → the names of its own method requirements.
+    private let requirementsByProtocol: [String: Set<String>]
+    /// Interface-like type name → the names of the protocols it refines.
+    private let refinementsByProtocol: [String: [String]]
+
+    init(types: [TypeDeclaration]) {
+        var requirements: [String: Set<String>] = [:]
+        var refinements: [String: [String]] = [:]
+        for type in types where type.kind.isInterfaceLike {
+            requirements[type.name] = Set(type.members.filter { $0.kind == .method }.map(\.name))
+            refinements[type.name] = type.inheritedTypes.map(\.name)
+        }
+        requirementsByProtocol = requirements
+        refinementsByProtocol = refinements
+    }
+
+    func requirementNames(for type: TypeDeclaration) -> Set<String> {
+        var result: Set<String> = []
+        var pending = type.inheritedTypes.map(\.name)
+        var seen: Set<String> = []
+        while let name = pending.popLast() {
+            guard requirementsByProtocol[name] != nil, seen.insert(name).inserted else { continue }
+            result.formUnion(requirementsByProtocol[name] ?? [])
+            pending.append(contentsOf: refinementsByProtocol[name] ?? [])
+        }
+        return result
     }
 }
 

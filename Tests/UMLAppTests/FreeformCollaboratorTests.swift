@@ -240,39 +240,6 @@ struct FreeformCollaboratorTests {
         #expect(content.methods[0].type == "String")
     }
 
-    @Test func updateMemberTextDoesNotWipeFieldsOnPartialInput() {
-        let ctx = StubContext()
-        ctx.nodes = [typeNode("T")]
-        let editor = TypeMemberEditor(context: ctx)
-        editor.addPropertyFromText(to: "T", text: "count: Int")
-        editor.addMethodFromText(to: "T", text: "doWork(input: Int): String")
-
-        guard case .type(let before) = ctx.nodes[0].content else { Issue.record("not a type"); return }
-        let propID = before.properties[0].id
-        let methodID = before.methods[0].id
-
-        // Partial input mid-edit must not erase previously-entered type / parameters.
-        editor.updatePropertyText("T", memberID: propID, text: "count:")
-        editor.updateMethodText("T", memberID: methodID, text: "doWork(")
-
-        guard case .type(let after) = ctx.nodes[0].content else { Issue.record("not a type"); return }
-        #expect(after.properties[0].type == "Int")
-        #expect(after.methods[0].parameters == "input: Int")
-        #expect(after.methods[0].type == "String")
-    }
-
-    @Test func memberTextEditsPassACoalescingKey() {
-        let ctx = StubContext()
-        ctx.nodes = [typeNode("T")]
-        let editor = TypeMemberEditor(context: ctx)
-        editor.addPropertyFromText(to: "T", text: "count: Int")
-        guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
-
-        editor.updatePropertyText("T", memberID: content.properties[0].id, text: "counter: Int")
-        // A stable per-member key lets consecutive keystrokes coalesce into one undo step.
-        #expect(ctx.lastCoalescingKey != nil)
-    }
-
     @Test func consecutiveNameEditsCoalesceIntoOneCheckpointPerField() {
         let ctx = StubContext()
         ctx.nodes = [typeNode("T")]

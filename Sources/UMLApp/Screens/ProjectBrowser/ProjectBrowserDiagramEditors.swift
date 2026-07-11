@@ -136,13 +136,6 @@ struct ProjectCodebaseEditor {
         persist()
     }
 
-    func updateProject(id: UUID, title: String, subtitle: String) {
-        guard let index = store.projects.firstIndex(where: { $0.id == id }) else { return }
-        store.projects[index].title = title
-        store.projects[index].subtitle = subtitle
-        persist()
-    }
-
     func removeProject(_ projectID: UUID) {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
         for did in project.generatedDiagramIDs { store.deleteGeneratedDiagramFile(did) }
