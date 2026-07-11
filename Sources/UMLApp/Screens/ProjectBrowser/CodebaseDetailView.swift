@@ -47,7 +47,6 @@ struct CodebaseDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     headerSection(codebase: codebase)
-                    Divider()
 
                     if let artifact {
                         diagramsBar(codebase: codebase, artifact: artifact)
@@ -104,9 +103,9 @@ struct CodebaseDetailView: View {
             HStack {
                 Image(systemName: "folder")
                     .font(.title)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.gray.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -228,7 +227,7 @@ extension CodebaseDetailView {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 12)
+        .padding(.bottom, 12)
         .onPreferenceChange(CardHeightPreferenceKey.self) { height in
             if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
         }
@@ -273,7 +272,7 @@ extension CodebaseDetailView {
                 Color.clear.preference(key: CardHeightPreferenceKey.self, value: proxy.size.height)
             })
             .frame(minHeight: diagramCardHeight > 0 ? diagramCardHeight : nil, alignment: .topLeading)
-            .background(Color.accentColor.opacity(0.08))
+            .background(Color.gray.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)

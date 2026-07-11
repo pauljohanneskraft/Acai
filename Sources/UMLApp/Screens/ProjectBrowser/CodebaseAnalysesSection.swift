@@ -111,8 +111,8 @@ struct ParseHealthSection: View {
         ) {
             SectionCountBadge(
                 text: report.diagnostics.isEmpty
-                    ? "health \(percent)%"
-                    : "health \(percent)% · \(report.diagnosticCount) diagnostic(s)",
+                    ? "\(percent)%"
+                    : "\(percent)% · \(report.diagnosticCount) diagnostic(s)",
                 tint: percent >= 90 ? .secondary : .red)
         } content: {
             HealthReportView(report: report)
