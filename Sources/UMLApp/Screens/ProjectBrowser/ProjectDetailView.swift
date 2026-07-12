@@ -153,8 +153,9 @@ struct ProjectDetailView: View {
     private func codebaseRowContent(codebase: Codebase) -> some View {
         HStack {
             Image(systemName: "folder")
+                .font(.title2)
                 .foregroundStyle(.primary)
-                .frame(width: 20)
+                .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(codebase.name)
                     .fontWeight(.medium)
@@ -212,8 +213,9 @@ struct ProjectDetailView: View {
         } label: {
             HStack {
                 Image(systemName: FreeformDiagram.systemImage)
+                    .font(.title2)
                     .foregroundStyle(.primary)
-                    .frame(width: 20)
+                    .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(diagram.name)
                         .fontWeight(.medium)

@@ -39,10 +39,8 @@ struct ProjectBrowserView: View {
                 sidebarSelection = .codebase(id)
             case .generatedDiagram(let id):
                 sidebarSelection = .generatedDiagram(id)
-                columnVisibility = .detailOnly
             case .freeformDiagram(let id):
                 sidebarSelection = .freeformDiagram(id)
-                columnVisibility = .detailOnly
             case .none:
                 break
             }
