@@ -43,13 +43,6 @@ struct PackageDiagramViewModelTests {
         #expect(vm.diagram.edges.count == 1)
     }
 
-    @Test func moduleLookupReturnsBackingNodeOrNil() throws {
-        let vm = PackageDiagramViewModel(artifact: artifact())
-        let id = try #require(vm.diagram.nodes.first?.id)
-        #expect(vm.module(for: id)?.id == id)
-        #expect(vm.module(for: "no-such-module") == nil)
-    }
-
     @Test func restoredPositionsSeedState() throws {
         let id = try #require(PackageDiagramViewModel(artifact: artifact()).diagram.nodes.first?.id)
         let vm = PackageDiagramViewModel(artifact: artifact(), restoredPositions: [id: CGPoint(x: 8, y: 9)])

@@ -62,11 +62,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         CallGraphLayoutModel(graph: graph, positionOverrides: positionOverrides)
     }
 
-    /// The node backing a given id, for the inspector.
-    func node(for id: String) -> CallGraph.Node? {
-        graph.nodes.first { $0.id == id }
-    }
-
     // MARK: - LayoutBackedCanvas
 
     var allNodeIDs: [String] { layout.nodes.map(\.id) }

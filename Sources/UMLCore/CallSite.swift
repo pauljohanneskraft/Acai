@@ -50,6 +50,27 @@ public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
     /// `propertyChain` walks `hops`; an unresolvable property or hop leaves this case in place,
     /// treated the same as `unknown` by any consumer.
     case ownProperty(propertyName: String, remainingHops: [String])
+
+    /// A closure's implicit `$0`, bound to the *element* type of a same-type array-typed stored
+    /// property not resolvable within the file it was parsed in (`addedRelationships.map {
+    /// $0.reportPhrase() }` when `addedRelationships` is declared in a sibling `extension` block).
+    /// Unlike `ownProperty`, which resolves to the property's own declared type, this resolves to its
+    /// *element* type — `propertyName` must name an array-typed property for this to resolve at all.
+    /// Resolved post-merge by ``CodeArtifact/resolvingCallSiteReceivers()``; an unresolvable or
+    /// non-array property leaves this case in place, treated the same as `unknown` by any consumer.
+    case ownPropertyElement(propertyName: String)
+
+    /// A local/guard-let binding's value, when it comes from a same-type method call (`compute()`/
+    /// `self.compute()`) whose return type isn't resolvable within the file it was parsed in — most
+    /// often because the method is declared in a sibling `extension` block (this project's own
+    /// `Type.swift` + `Type+Feature.swift` convention: `let diagram = generatedDiagram(for: id)` when
+    /// `generatedDiagram(for:)` lives in a different file than the call site). `methodName` is the
+    /// method whose return type this defers to; `remainingHops` are any further property accesses
+    /// before the final method call (mirrors `ownProperty`'s `remainingHops`). Resolved post-merge by
+    /// ``CodeArtifact/resolvingCallSiteReceivers()``, which looks the method up on the call site's own
+    /// (fully-merged) enclosing type and reads its declared return type; an unresolvable method or hop
+    /// leaves this case in place, treated the same as `unknown` by any consumer.
+    case ownMethodReturn(methodName: String, remainingHops: [String])
 }
 
 /// A statically-observable call to a method or free function, recorded

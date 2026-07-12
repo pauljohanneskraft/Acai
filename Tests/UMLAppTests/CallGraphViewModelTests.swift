@@ -43,8 +43,8 @@ struct CallGraphViewModelTests {
 
     @Test func typeScopeMarksOnlyScopedMethodsInScope() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .type("A"))
-        #expect(vm.node(for: "A.run")?.inScope == true)
-        #expect(vm.node(for: "B.work")?.inScope == false)
+        #expect(vm.graph.nodes.first { $0.id == "A.run" }?.inScope == true)
+        #expect(vm.graph.nodes.first { $0.id == "B.work" }?.inScope == false)
     }
 
     @Test func selectionTogglesAndClears() {

@@ -64,11 +64,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         PackageLayoutModel(diagram: diagram, positionOverrides: positionOverrides)
     }
 
-    /// The module backing a given node id, for the inspector.
-    func module(for id: String) -> PackageDiagram.Node? {
-        diagram.nodes.first { $0.id == id }
-    }
-
     // MARK: - LayoutBackedCanvas
 
     var allNodeIDs: [String] { layout.nodes.map(\.id) }

@@ -298,21 +298,65 @@ private struct CallSiteReceiverResolver {
     func resolved(_ receiver: CallReceiver, owningTypeID: String?) -> CallReceiver {
         switch receiver {
         case .unresolvedTypeName(let name):
-            guard case .resolved = identity.resolve(name) else { return receiver }
-            return .type(name)
+            return resolvedUnresolvedTypeName(name, orElse: receiver)
         case .propertyChain(let headTypeName, let hops):
             guard let finalTypeName = walkChain(headTypeName: headTypeName, hops: hops) else { return receiver }
             return .type(finalTypeName)
         case .ownProperty(let propertyName, let remainingHops):
-            guard let owningTypeID, let owningType = typesByID[owningTypeID],
-                  let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
-                  let propertyType = property.type?.name,
-                  let finalTypeName = walkChain(headTypeName: propertyType, hops: remainingHops)
-            else { return receiver }
-            return .type(finalTypeName)
+            return resolvedOwnProperty(
+                propertyName, remainingHops: remainingHops, owningTypeID: owningTypeID, orElse: receiver)
+        case .ownPropertyElement(let propertyName):
+            return resolvedOwnPropertyElement(propertyName, owningTypeID: owningTypeID, orElse: receiver)
+        case .ownMethodReturn(let methodName, let remainingHops):
+            return resolvedOwnMethodReturn(
+                methodName, remainingHops: remainingHops, owningTypeID: owningTypeID, orElse: receiver)
         case .selfDispatch, .type, .free, .unknown:
             return receiver
         }
+    }
+
+    /// `name` may be a simple name (the common case) or a dotted qualified-path (a fully-qualified
+    /// nested-type receiver, e.g. `Outer.Inner.method()`) — either way, `.type`'s producer contract
+    /// requires the *simple* name, so the resolved declaration's own `.name` is used rather than
+    /// echoing `name` back unchanged.
+    private func resolvedUnresolvedTypeName(_ name: String, orElse receiver: CallReceiver) -> CallReceiver {
+        guard case .resolved(let id) = identity.resolve(name), let type = typesByID[id.value] else {
+            return receiver
+        }
+        return .type(type.name)
+    }
+
+    private func resolvedOwnProperty(
+        _ propertyName: String, remainingHops: [String], owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
+              let propertyType = property.type?.name,
+              let finalTypeName = walkChain(headTypeName: propertyType, hops: remainingHops)
+        else { return receiver }
+        return .type(finalTypeName)
+    }
+
+    private func resolvedOwnPropertyElement(
+        _ propertyName: String, owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
+              let type = property.type, type.isArray, let elementName = type.genericArguments.first?.name,
+              case .resolved = identity.resolve(elementName)
+        else { return receiver }
+        return .type(elementName)
+    }
+
+    private func resolvedOwnMethodReturn(
+        _ methodName: String, remainingHops: [String], owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let method = owningType.members.first(where: { $0.kind == .method && $0.name == methodName }),
+              let returnTypeName = method.type?.name,
+              let finalTypeName = walkChain(headTypeName: returnTypeName, hops: remainingHops)
+        else { return receiver }
+        return .type(finalTypeName)
     }
 
     /// Walks `hops` from `headTypeName`'s declared properties, one hop at a time, resolving each

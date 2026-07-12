@@ -1,6 +1,15 @@
 import SwiftSyntax
 import UMLCore
 
+/// What a local/guard-let binding's declared type resolves to: a concrete simple type name (folded
+/// into a scalar `varName → typeName` map, same as a stored property), or — when only provable
+/// post-merge (a cross-file same-type method return, a `Type.staticMember` access) — a deferred
+/// `CallReceiver` descriptor carried forward to the binding's later use as a receiver.
+enum LocalBindingOrigin {
+    case concrete(String)
+    case deferred(CallReceiver)
+}
+
 /// Resolves the body-level facts the sequence/state generators need — call sites, assignments, and
 /// referenced type names — from individual expression nodes. Holds no traversal state: the visitor
 /// drives the walk and hands each node (plus the current property map) here for interpretation, so
@@ -41,6 +50,25 @@ struct CallSiteCollector {
         return nil
     }
 
+    /// A call site whose receiver is a local/guard-let/global binding previously deferred to a
+    /// `CallReceiver` descriptor (`localReceiverOriginMap`) rather than a concrete type name — the
+    /// binding's own type couldn't be proven in this file, so its later use as a receiver carries that
+    /// same deferred descriptor forward rather than being dropped. Tried only after normal
+    /// `callSite(from:)` resolution misses.
+    func deferredCallSite(
+        from node: FunctionCallExprSyntax, localReceiverOriginMap: [String: CallReceiver], fileName: String
+    ) -> CallSite? {
+        guard !localReceiverOriginMap.isEmpty,
+              let memberAccess = unwrappedCallee(node.calledExpression).as(MemberAccessExprSyntax.self),
+              let name = bareLowercaseIdentifier(memberAccess.base),
+              let origin = localReceiverOriginMap[name]
+        else { return nil }
+        return CallSite(
+            receiver: origin, methodName: memberAccess.declName.baseName.text,
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+        )
+    }
+
     /// A bare `foo()` — an implicit-`self` method call or a free-function call. We can't tell which at
     /// parse time (a free function may live in another file), so we record `.selfDispatch` and let the
     /// whole-artifact resolvers (`CallGraphBuilder`, `SequenceDiagramBuilder`) match it against the
@@ -59,17 +87,37 @@ struct CallSiteCollector {
 
     /// Treats a same-file declared type or any capitalised identifier as a type name, so `Foo()` /
     /// `UUID()` / `URL()` read as construction, not a call. Cross-file types aren't in `knownTypeNames`,
-    /// hence the capitalisation guard; Swift methods are lowerCamelCase by convention.
-    private func isTypeName(_ name: String) -> Bool {
+    /// hence the capitalisation guard; Swift methods are lowerCamelCase by convention. Not `private`:
+    /// also used from `CallSiteCollector+LocalBindings.swift`.
+    func isTypeName(_ name: String) -> Bool {
         knownTypeNames.contains(name) || name.first?.isUppercase == true
     }
 
     /// Strips `foo<T>()` generic-specialisation and `foo?()` optional-chaining wrappers so the callee
-    /// reduces to its underlying `MemberAccessExprSyntax` / `DeclReferenceExprSyntax`.
-    private func unwrappedCallee(_ expr: ExprSyntax) -> ExprSyntax {
+    /// reduces to its underlying `MemberAccessExprSyntax` / `DeclReferenceExprSyntax`. Not `private`:
+    /// also used from `CallSiteCollector+IterationClosures.swift`.
+    func unwrappedCallee(_ expr: ExprSyntax) -> ExprSyntax {
         if let generic = expr.as(GenericSpecializationExprSyntax.self) { return generic.expression }
         if let optional = expr.as(OptionalChainingExprSyntax.self) { return optional.expression }
         return expr
+    }
+
+    /// Strips `?`/`!` postfix wrappers so a receiver base (`self?`, `weakRef?`, `a?.b?`) reduces to
+    /// its underlying identifier/member-access expression. Swift parses `x?.foo()` as
+    /// `MemberAccessExprSyntax(base: OptionalChainingExprSyntax(x), …)` — the `?` wraps only the base,
+    /// not the whole chain — so every receiver-resolution entry point needs this, not just the callee.
+    /// Loops since `?`/`!` can interleave (`a?.b!.c`).
+    private func unwrappedReceiverBase(_ expr: ExprSyntax) -> ExprSyntax {
+        var current = expr
+        while true {
+            if let optional = current.as(OptionalChainingExprSyntax.self) {
+                current = optional.expression
+            } else if let forced = current.as(ForceUnwrapExprSyntax.self) {
+                current = forced.expression
+            } else {
+                return current
+            }
+        }
     }
 
     /// A variable assignment recovered from a `SequenceExprSyntax`, or `nil` if the sequence is not an
@@ -132,6 +180,56 @@ struct CallSiteCollector {
         )
     }
 
+    /// A bare method name used as a first-class value (`action: chooseFile`, `.onAppear(perform:
+    /// loadInitialState)`, a label-disambiguated reference like `participantKind(for:)`) rather than a
+    /// direct call — the method is reached the same way a `self`-implicit call would reach it, so it
+    /// must count as a use even though no `FunctionCallExprSyntax` wraps it here. Callers guard with
+    /// `isBareReferenceUse` first; only a node that isn't a real call's callee and isn't the tail of a
+    /// qualified member access reaches here — restricted to that shape because a member-access
+    /// reference (`object.method`, no call) isn't handled yet. `methodNames` is the enclosing type's
+    /// own method-name set (a raw pre-pass, so a forward-declared method is still recognised, mirroring
+    /// `returnTypeMap`).
+    func methodReference(
+        from node: DeclReferenceExprSyntax, propertyMap: [String: String], methodNames: Set<String>,
+        fileName: String
+    ) -> CallSite? {
+        let name = node.baseName.text
+        guard propertyMap[name] == nil, methodNames.contains(name) else { return nil }
+        return CallSite(
+            receiver: .selfDispatch,
+            methodName: name,
+            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+        )
+    }
+
+    /// Whether `node` is a genuinely bare identifier reference — not the callee of its immediately
+    /// enclosing call (`chooseFile()`, `maybe?()`, `render<T>()` — already recorded from the
+    /// `FunctionCallExprSyntax` it's part of) and not the tail of a qualified member access
+    /// (`self.chooseFile`, `object.chooseFile` — member-access references as values aren't handled;
+    /// scoped out since none of the audited false positives need it). Shared by both call-site walkers
+    /// (`DeclarationVisitor`, `AccessorCallSiteWalker`) so the shape check lives in one place.
+    func isBareReferenceUse(_ node: DeclReferenceExprSyntax) -> Bool {
+        guard var parent = node.parent else { return false }
+        if let memberAccess = parent.as(MemberAccessExprSyntax.self), memberAccess.declName.id == node.id {
+            return false
+        }
+        // Walk up through `foo<T>` / `foo?` callee wrappers (mirrors `unwrappedCallee`) so a call whose
+        // callee is decorated this way (`maybe?()`, `render<T>()`) is still recognised as a real call,
+        // not double-recorded as a bare reference on top of it.
+        var childID = node.id
+        while true {
+            if let call = parent.as(FunctionCallExprSyntax.self) {
+                return call.calledExpression.id != childID
+            }
+            guard parent.is(OptionalChainingExprSyntax.self) || parent.is(GenericSpecializationExprSyntax.self),
+                  let grandparent = parent.parent else {
+                return true
+            }
+            childID = parent.id
+            parent = grandparent
+        }
+    }
+
     /// The capitalised type-like names referenced inside a syntax subtree (constructions, static
     /// access, casts, annotations) — the construction/body dependencies fed to the coupling metrics.
     func referencedTypes(in node: some SyntaxProtocol) -> [String] {
@@ -172,21 +270,22 @@ struct CallSiteCollector {
         knownLocalNames: Set<String>
     ) -> ResolvedReceiver? {
         guard let base else { return nil }
+        let unwrapped = unwrappedReceiverBase(base)
 
-        if let declRef = base.as(DeclReferenceExprSyntax.self) {
+        if let declRef = unwrapped.as(DeclReferenceExprSyntax.self) {
             return resolveIdentifierReceiver(
                 declRef, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
                 knownLocalNames: knownLocalNames)
         }
 
-        if let memberAccess = base.as(MemberAccessExprSyntax.self) {
+        if let memberAccess = unwrapped.as(MemberAccessExprSyntax.self) {
             return resolveChainedReceiver(
                 memberAccess, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
                 knownLocalNames: knownLocalNames)
         }
 
         // `Foo(...).method()` — a call on a freshly constructed value resolves to `Foo`.
-        if let call = base.as(FunctionCallExprSyntax.self), let type = constructedTypeName(call) {
+        if let call = unwrapped.as(FunctionCallExprSyntax.self), let type = constructedTypeName(call) {
             return ResolvedReceiver(receiver: .type(type))
         }
 
@@ -239,9 +338,23 @@ struct CallSiteCollector {
         knownLocalNames: Set<String>
     ) -> ResolvedReceiver? {
         let hop = memberAccess.declName.baseName.text
-        if memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
+        let unwrappedBase = memberAccess.base.map(unwrappedReceiverBase)
+        if unwrappedBase?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
            let propertyType = propertyMap[hop] {
             return ResolvedReceiver(receiver: .type(propertyType))
+        }
+        // A capitalised hop is a nested-type reference, never a property — whatever precedes it
+        // (`FreeformDiagram.Node.Content.method()`) is a namespace/type-path prefix, not a value
+        // chain to walk. The *whole* capitalised prefix is joined into a dotted path (matching this
+        // project's `qualifiedName` scheme, `"\(enclosingPath).\(name)"`, no module prefix) rather
+        // than just using the bare last segment — a bare "Content" is ambiguous when two unrelated
+        // nested types share that simple name (confirmed in this project: `GeneratedDiagram.Content`
+        // vs. `FreeformDiagram.Node.Content`), while the full path disambiguates via an exact
+        // `qualifiedName` match. Always deferred (never eager `.type`) to the post-merge pass, so an
+        // absent/ambiguous match never guesses.
+        if hop.first?.isUppercase == true {
+            let path = memberAccess.base.flatMap(capitalizedChainPath).map { "\($0).\(hop)" } ?? hop
+            return ResolvedReceiver(receiver: .unresolvedTypeName(path))
         }
         // A deeper chain (`model.diagrams.method()`, `self.model.method()` when `model` isn't a
         // known-typed property directly): resolve the chain's *head* (everything before this last
@@ -265,11 +378,31 @@ struct CallSiteCollector {
 
     /// A bare, lowercase identifier receiver expression — the shape an unqualified property access
     /// takes (as opposed to `self`/`Self`/a capitalised type name, each handled by their own branch).
-    private func bareLowercaseIdentifier(_ expr: ExprSyntax?) -> String? {
-        guard let declRef = expr?.as(DeclReferenceExprSyntax.self) else { return nil }
+    /// Not `private`: also used from `CallSiteCollector+IterationClosures.swift`.
+    func bareLowercaseIdentifier(_ expr: ExprSyntax?) -> String? {
+        guard let declRef = expr.map(unwrappedReceiverBase)?.as(DeclReferenceExprSyntax.self) else { return nil }
         let name = declRef.baseName.text
         guard name != "self", name != "Self", name.first?.isUppercase != true else { return nil }
         return name
+    }
+
+    /// The dotted path of a pure capitalised-identifier chain (`FreeformDiagram.Node` for the base of
+    /// `FreeformDiagram.Node.Content`), or `nil` when `expr` isn't itself such a chain (`self`, a
+    /// lowercase property, a call) — only a genuine namespace/type-path prefix is joined, never a
+    /// value chain that happens to end in a capitalised segment.
+    private func capitalizedChainPath(_ expr: ExprSyntax) -> String? {
+        let unwrapped = unwrappedReceiverBase(expr)
+        if let declRef = unwrapped.as(DeclReferenceExprSyntax.self) {
+            let name = declRef.baseName.text
+            return name.first?.isUppercase == true ? name : nil
+        }
+        if let memberAccess = unwrapped.as(MemberAccessExprSyntax.self) {
+            let name = memberAccess.declName.baseName.text
+            guard name.first?.isUppercase == true, let base = memberAccess.base,
+                  let basePath = capitalizedChainPath(base) else { return nil }
+            return "\(basePath).\(name)"
+        }
+        return nil
     }
 
     /// The type of a property-access chain's head (`self`, `Self`, a known-typed property, or a
@@ -280,7 +413,7 @@ struct CallSiteCollector {
     private func chainHeadType(
         of expr: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?
     ) -> String? {
-        guard let declRef = expr?.as(DeclReferenceExprSyntax.self) else { return nil }
+        guard let declRef = expr.map(unwrappedReceiverBase)?.as(DeclReferenceExprSyntax.self) else { return nil }
         let name = declRef.baseName.text
         if name == "self" || name == "Self" {
             return enclosingTypeName
@@ -291,46 +424,10 @@ struct CallSiteCollector {
         return knownTypeNames.contains(name) ? name : nil
     }
 
-    /// The type a `let`/`var` binding provably introduces for receiver resolution, when it can be read
-    /// off an explicit annotation (`let x: Foo`), a construction initializer (`let x = Foo()`), or a
-    /// same-type method call whose return type is unambiguous (`let x = compute()` / `let x =
-    /// self.compute()`, resolved via `methodReturnTypes`). Callers fold this into their property map
-    /// so a later `x.method()` resolves to `Foo`.
-    func localBinding(
-        from binding: PatternBindingSyntax, methodReturnTypes: [String: String] = [:]
-    ) -> (name: String, type: String)? {
-        guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
-        if let identifier = binding.typeAnnotation?.type.as(IdentifierTypeSyntax.self) {
-            return (name, identifier.name.text)
-        }
-        guard let call = binding.initializer?.value.as(FunctionCallExprSyntax.self) else { return nil }
-        if let type = constructedTypeName(call) {
-            return (name, type)
-        }
-        if let methodName = calleeMethodName(call), let returnType = methodReturnTypes[methodName] {
-            return (name, returnType)
-        }
-        return nil
-    }
-
-    /// The bare method name of a `compute()` / `self.compute()` call expression's callee, or `nil` for
-    /// any other shape (a construction, a static call, a receiver-typed call) — those are handled by
-    /// their own resolution paths and must not be double-counted as a same-type method call.
-    private func calleeMethodName(_ call: FunctionCallExprSyntax) -> String? {
-        let callee = unwrappedCallee(call.calledExpression)
-        if let declRef = callee.as(DeclReferenceExprSyntax.self), !isTypeName(declRef.baseName.text) {
-            return declRef.baseName.text
-        }
-        if let memberAccess = callee.as(MemberAccessExprSyntax.self),
-           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self" {
-            return memberAccess.declName.baseName.text
-        }
-        return nil
-    }
-
     /// The constructed type name of a `Foo(...)` call expression, or `nil` when its callee isn't a
-    /// type name (so `bar()` / `Foo.make()` aren't mistaken for constructions).
-    private func constructedTypeName(_ call: FunctionCallExprSyntax) -> String? {
+    /// type name (so `bar()` / `Foo.make()` aren't mistaken for constructions). Not `private`: also
+    /// used from `CallSiteCollector+LocalBindings.swift`.
+    func constructedTypeName(_ call: FunctionCallExprSyntax) -> String? {
         guard let declRef = unwrappedCallee(call.calledExpression).as(DeclReferenceExprSyntax.self) else {
             return nil
         }
