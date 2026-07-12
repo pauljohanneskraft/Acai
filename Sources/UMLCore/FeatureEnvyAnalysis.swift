@@ -61,7 +61,7 @@ struct FeatureEnvy {
             return .own
         case .type(let name):
             return classifyTypeName(name)
-        case .free, .unknown:
+        case .free, .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             return .unknown
         }
     }

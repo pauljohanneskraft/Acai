@@ -61,7 +61,7 @@ struct QualityCheckSection: View {
                 text: "Could not load rules: \(rulesError) — showing the built-in smell budgets instead.",
                 systemImage: "exclamationmark.triangle")
         }
-        QualityCheckReportView(report: report, showsSummary: false, tint: .orange)
+        QualityCheckReportView(report: report, showsSummary: false, tint: .orange, codebase: codebase)
     }
 
     private var statusLine: String {
@@ -78,6 +78,7 @@ struct QualityCheckSection: View {
 /// Dead-code candidates as their own collapsible section. The scan runs once here: its candidate
 /// count and call-graph coverage are shown in the header and the report is handed to the report view.
 struct DeadCodeSection: View {
+    let codebase: Codebase
     /// Precomputed in the background (see ``CodebaseAnalysis``).
     let report: DeadCodeScan.Report
 
@@ -90,7 +91,7 @@ struct DeadCodeSection: View {
                     : "\(report.candidates.count) candidate(s) · call-graph coverage \(coverage)%",
                 tint: report.candidates.isEmpty ? .secondary : .orange)
         } content: {
-            DeadCodeReportView(report: report)
+            DeadCodeReportView(report: report, codebase: codebase)
                 .padding(.horizontal)
         }
     }
@@ -100,6 +101,7 @@ struct DeadCodeSection: View {
 /// default with a compact score in the header, expanding only when there are diagnostics. The check
 /// runs once here and the report is handed to the report view.
 struct ParseHealthSection: View {
+    let codebase: Codebase
     /// Precomputed in the background (see ``CodebaseAnalysis``).
     let report: HealthCheck.Report
 
@@ -115,7 +117,7 @@ struct ParseHealthSection: View {
                     : "\(percent)% · \(report.diagnosticCount) diagnostic(s)",
                 tint: percent >= 90 ? .secondary : .red)
         } content: {
-            HealthReportView(report: report)
+            HealthReportView(report: report, codebase: codebase)
                 .padding(.horizontal)
         }
     }

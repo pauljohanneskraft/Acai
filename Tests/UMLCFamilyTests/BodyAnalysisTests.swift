@@ -99,6 +99,56 @@ struct CppBodyAnalysisTests {
         #expect(sites.filter { $0.methodName == "doThing" && $0.receiverType == "Helper" }.count == 2)
     }
 
+    /// A typed parameter (by value, pointer, or reference) is a provable call-site receiver, just
+    /// like a stored field (dead-code false positive: RC-G).
+    @Test func resolvesCallOnTypedParameter() {
+        let source = """
+        class Helper {
+        public:
+            void process() {}
+        };
+        class Worker {
+        public:
+            void run(Helper helper) {
+                helper.process();
+            }
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "worker.cpp")
+        let run = artifact.types
+            .first { $0.name == "Worker" }?
+            .members.first { $0.name == "run" }
+        let sites = run?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
+    }
+
+    /// A local initialized from a same-type method call (`auto x = compute();`) resolves its receiver
+    /// type from the method's unambiguous return type, the same way `auto p = new Helper();` already
+    /// does — including when the method is declared *after* the caller (dead-code false positive:
+    /// RC-I).
+    @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
+        let source = """
+        class Widget {
+        public:
+            void use() {}
+        };
+        class Worker {
+        public:
+            void run() {
+                auto x = compute();
+                x.use();
+            }
+            Widget compute() { return Widget(); }
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "worker.cpp")
+        let run = artifact.types
+            .first { $0.name == "Worker" }?
+            .members.first { $0.name == "run" }
+        let sites = run?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
+    }
+
     @Test func freeFunctionCallGraph() {
         let source = """
         void validateCart() {}

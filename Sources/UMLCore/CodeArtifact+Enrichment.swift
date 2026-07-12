@@ -137,6 +137,59 @@ extension CodeArtifact {
         return copy
     }
 
+    // MARK: - Deferred call-site receiver resolution (cross-file + multi-hop)
+
+    /// Resolves deferred call-site receivers — `.unresolvedTypeName` (a capitalised receiver not
+    /// declared in its own file, possibly declared elsewhere in the project) and `.propertyChain` (a
+    /// multi-hop property access, e.g. `model.diagrams.add()`, whose middle hop wasn't resolvable
+    /// in-file) — against the *fully-merged* project type graph, promoting either to `.type` when it
+    /// resolves unambiguously.
+    ///
+    /// Unlike the rest of `enriched(using:)` (which runs per-language-group inside
+    /// `AnalysisService.enrichPerLanguage`, before the final cross-spec merge), this pass needs to see
+    /// *every* file project-wide, so `AnalysisService.analyzeProject` calls it once at the very end,
+    /// after all specs are merged — additive, not a restructuring of the existing per-language passes.
+    /// Idempotent: re-running over an already-resolved artifact changes nothing, since no new
+    /// information appears the second time.
+    public func resolvingCallSiteReceivers() -> CodeArtifact {
+        let flat = Self.allTypes(types)
+        let resolver = CallSiteReceiverResolver(
+            identity: TypeIdentityResolver(types: types),
+            typesByID: Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        )
+
+        func resolvingCallSites(_ sites: [CallSite], owningTypeID: String?) -> [CallSite] {
+            sites.map { site in
+                var copy = site
+                copy.receiver = resolver.resolved(site.receiver, owningTypeID: owningTypeID)
+                return copy
+            }
+        }
+        func resolvingMembers(_ members: [Member], owningTypeID: String?) -> [Member] {
+            members.map { member in
+                var copy = member
+                copy.callSites = resolvingCallSites(member.callSites, owningTypeID: owningTypeID)
+                return copy
+            }
+        }
+        func resolvingTypes(_ types: [TypeDeclaration]) -> [TypeDeclaration] {
+            types.map { type in
+                var copy = type
+                copy.members = resolvingMembers(type.members, owningTypeID: type.id)
+                copy.nestedTypes = resolvingTypes(type.nestedTypes)
+                return copy
+            }
+        }
+
+        var copy = self
+        copy.types = resolvingTypes(types)
+        // No enclosing type for a freestanding function, so `.ownProperty` (which resolves against
+        // the call site's *own* type) can never apply here — matches `CallSiteCollector` only ever
+        // producing that case when it has an enclosing type name to defer against.
+        copy.freestandingFunctions = resolvingMembers(freestandingFunctions, owningTypeID: nil)
+        return copy
+    }
+
     // MARK: - Flattening (GAP-7)
 
     /// A flat list of every type incl. nested ones (nested copies have `nestedTypes`
@@ -159,27 +212,66 @@ extension CodeArtifact {
         return result
     }
 
-    /// Recursively finds an extension's target type (incl. nested types like
-    /// `extension Outer.Inner`) and merges the extension's members + nested types into
-    /// it. Generic args are stripped (`Foo<T>` → `Foo`). Returns the target's id, or
-    /// `nil` when the target is external (extension dropped).
+    /// Finds an extension's target type (incl. nested types like `extension Outer.Inner`) anywhere
+    /// in `types` and merges the extension's members + nested types into it. Generic args are
+    /// stripped (`Foo<T>` → `Foo`). Returns the target's id, or `nil` when the target is external
+    /// (extension dropped).
     static func mergeExtension(
         _ ext: TypeDeclaration, targetName: String, into types: inout [TypeDeclaration]
     ) -> String? {
         let name = normalizeTypeName(targetName)
+        guard let targetId = extensionTargetID(ext, name: name, in: types) else { return nil }
+        mergeExtensionMembers(ext, intoTypeWithID: targetId, into: &types)
+        return targetId
+    }
+
+    /// Resolves the id of the single type `name` should merge into.
+    ///
+    /// An exact `qualifiedName`/`id` match is unambiguous by construction (this project's id scheme
+    /// carries no module prefix, so a collision there would mean two identically-named *top-level*
+    /// types — a separate, unaddressed edge case, not the one this resolves) and wins outright.
+    /// Otherwise falls back to a bare simple-name match, scoped to the extension's own module (via
+    /// ``ModuleResolver``): a bare name shared with an unrelated type in another module — e.g. an
+    /// extension of an *external* type (`extension Node` on `SwiftTreeSitter.Node`) that happens to
+    /// share a name with an unrelated in-project nested type (`FreeformDiagram.Node`) — must not
+    /// silently merge into it, so the fallback only accepts the match when it is the *sole*
+    /// same-module candidate.
+    private static func extensionTargetID(
+        _ ext: TypeDeclaration, name: String, in types: [TypeDeclaration]
+    ) -> String? {
+        let flat = allTypes(types)
+        if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
+            return exact.id
+        }
+        let extModule = ModuleResolver.standard.productName(forFilePath: ext.location?.filePath ?? "")
+        let sameModuleMatches = flat.filter {
+            $0.name == name
+                && ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") == extModule
+        }
+        guard sameModuleMatches.count == 1 else { return nil }
+        return sameModuleMatches[0].id
+    }
+
+    /// Merges `ext`'s members/nested types/inherited types into the (possibly nested) type with
+    /// `id`, recursing into `nestedTypes` to find it.
+    private static func mergeExtensionMembers(
+        _ ext: TypeDeclaration, intoTypeWithID id: String, into types: inout [TypeDeclaration]
+    ) {
         for index in types.indices {
-            if types[index].qualifiedName == name
-                || types[index].id == name
-                || types[index].name == name {
+            if types[index].id == id {
                 types[index].members.append(contentsOf: ext.members)
                 types[index].nestedTypes.append(contentsOf: ext.nestedTypes)
-                return types[index].id
+                // An extension's own conformance (`extension X: SomeProtocol { ... }`) is often
+                // where a type picks up a protocol it satisfies — dropping it here would hide the
+                // conformance from anything that reads `inheritedTypes` (e.g. protocol-witness
+                // dead-code exemption), so it must be merged alongside members/nestedTypes.
+                let existingNames = Set(types[index].inheritedTypes.map(\.name))
+                types[index].inheritedTypes.append(
+                    contentsOf: ext.inheritedTypes.filter { !existingNames.contains($0.name) })
+                return
             }
-            if let found = mergeExtension(ext, targetName: targetName, into: &types[index].nestedTypes) {
-                return found
-            }
+            mergeExtensionMembers(ext, intoTypeWithID: id, into: &types[index].nestedTypes)
         }
-        return nil
     }
 
     static func normalizeTypeName(_ raw: String) -> String {
@@ -189,4 +281,99 @@ extension CodeArtifact {
         return raw
     }
 
+}
+
+/// Resolves a call site's deferred receiver (`.unresolvedTypeName`/`.propertyChain`) against the
+/// fully-merged project type graph — the whole-project context neither is provable at parse time.
+/// A value you instantiate once per `resolvingCallSiteReceivers()` call and ask to resolve each site.
+private struct CallSiteReceiverResolver {
+    let identity: TypeIdentityResolver
+    let typesByID: [String: TypeDeclaration]
+
+    /// The receiver unchanged, or promoted to `.type` when a deferred case now resolves
+    /// unambiguously against the full project; never guesses across an ambiguous or absent match.
+    /// `owningTypeID` is the fully-merged type the call site's own member belongs to — needed only
+    /// to resolve `.ownProperty`, which looks a property up on that exact type (`nil` for a
+    /// freestanding function, which has no enclosing type to check).
+    func resolved(_ receiver: CallReceiver, owningTypeID: String?) -> CallReceiver {
+        switch receiver {
+        case .unresolvedTypeName(let name):
+            return resolvedUnresolvedTypeName(name, orElse: receiver)
+        case .propertyChain(let headTypeName, let hops):
+            guard let finalTypeName = walkChain(headTypeName: headTypeName, hops: hops) else { return receiver }
+            return .type(finalTypeName)
+        case .ownProperty(let propertyName, let remainingHops):
+            return resolvedOwnProperty(
+                propertyName, remainingHops: remainingHops, owningTypeID: owningTypeID, orElse: receiver)
+        case .ownPropertyElement(let propertyName):
+            return resolvedOwnPropertyElement(propertyName, owningTypeID: owningTypeID, orElse: receiver)
+        case .ownMethodReturn(let methodName, let remainingHops):
+            return resolvedOwnMethodReturn(
+                methodName, remainingHops: remainingHops, owningTypeID: owningTypeID, orElse: receiver)
+        case .selfDispatch, .type, .free, .unknown:
+            return receiver
+        }
+    }
+
+    /// `name` may be a simple name (the common case) or a dotted qualified-path (a fully-qualified
+    /// nested-type receiver, e.g. `Outer.Inner.method()`) — either way, `.type`'s producer contract
+    /// requires the *simple* name, so the resolved declaration's own `.name` is used rather than
+    /// echoing `name` back unchanged.
+    private func resolvedUnresolvedTypeName(_ name: String, orElse receiver: CallReceiver) -> CallReceiver {
+        guard case .resolved(let id) = identity.resolve(name), let type = typesByID[id.value] else {
+            return receiver
+        }
+        return .type(type.name)
+    }
+
+    private func resolvedOwnProperty(
+        _ propertyName: String, remainingHops: [String], owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
+              let propertyType = property.type?.name,
+              let finalTypeName = walkChain(headTypeName: propertyType, hops: remainingHops)
+        else { return receiver }
+        return .type(finalTypeName)
+    }
+
+    private func resolvedOwnPropertyElement(
+        _ propertyName: String, owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
+              let type = property.type, type.isArray, let elementName = type.genericArguments.first?.name,
+              case .resolved = identity.resolve(elementName)
+        else { return receiver }
+        return .type(elementName)
+    }
+
+    private func resolvedOwnMethodReturn(
+        _ methodName: String, remainingHops: [String], owningTypeID: String?, orElse receiver: CallReceiver
+    ) -> CallReceiver {
+        guard let owningTypeID, let owningType = typesByID[owningTypeID],
+              let method = owningType.members.first(where: { $0.kind == .method && $0.name == methodName }),
+              let returnTypeName = method.type?.name,
+              let finalTypeName = walkChain(headTypeName: returnTypeName, hops: remainingHops)
+        else { return receiver }
+        return .type(finalTypeName)
+    }
+
+    /// Walks `hops` from `headTypeName`'s declared properties, one hop at a time, resolving each
+    /// hop's declared property type through the full project type graph. Returns the final hop's
+    /// type name only when every hop — including the last — resolves to a single, unambiguous,
+    /// declared type; drops (returns `nil`) at the first unknown/ambiguous hop rather than guessing.
+    private func walkChain(headTypeName: String, hops: [String]) -> String? {
+        var currentTypeName = headTypeName
+        for hop in hops {
+            guard case .resolved(let id) = identity.resolve(currentTypeName),
+                  let currentType = typesByID[id.value],
+                  let property = currentType.members.first(where: { $0.kind == .property && $0.name == hop }),
+                  let nextTypeName = property.type?.name
+            else { return nil }
+            currentTypeName = nextTypeName
+        }
+        guard case .resolved = identity.resolve(currentTypeName) else { return nil }
+        return currentTypeName
+    }
 }

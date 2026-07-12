@@ -35,6 +35,30 @@ struct PythonFieldTests {
         #expect(items?.type?.name == "list")
     }
 
+    /// `self.x = Foo()` with no annotation — the far more common idiom than `self.x: Foo = Foo()` —
+    /// must still infer `Foo` as the attribute's type, so a call through it (`self.cache.process()`)
+    /// resolves instead of looking like dead code.
+    @Test func unannotatedSelfAttributeInfersTypeFromConstruction() {
+        let source = """
+        class Cache:
+            def process(self):
+                pass
+
+        class Worker:
+            def __init__(self):
+                self.cache = Cache()
+
+            def run(self):
+                self.cache.process()
+        """
+        let worker = type(named: "Worker", in: source)
+        let cache = worker?.members.first { $0.name == "cache" }
+        #expect(cache?.type?.name == "Cache")
+
+        let run = worker?.members.first { $0.name == "run" }
+        #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Cache" } == true)
+    }
+
     @Test func classBodyAnnotatedFields() {
         let source = """
         from dataclasses import dataclass

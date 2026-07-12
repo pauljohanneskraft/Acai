@@ -91,7 +91,7 @@ extension CFamilyExtractor {
     /// type drives a dependency edge in enrichment.
     mutating func extractTypedef(_ node: Node) {
         let declarator = parseDeclarator(node.child(byFieldName: "declarator"))
-        let aliasName = Self.lastComponent(of: declarator.name)
+        let aliasName = lastComponent(of: declarator.name)
         guard !aliasName.isEmpty, let typeNode = node.child(byFieldName: "type") else { return }
 
         switch typeNode.nodeType {

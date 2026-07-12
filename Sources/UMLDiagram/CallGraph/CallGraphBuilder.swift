@@ -26,7 +26,8 @@ public struct CallGraphBuilder: Sendable {
     }
 
     public func build(from artifact: CodeArtifact) -> CallGraph {
-        var accumulator = CallGraphAccumulator(types: artifact.types, freeFunctions: artifact.freestandingFunctions)
+        var accumulator = CallGraphAccumulator(
+            types: artifact.flattened(), freeFunctions: artifact.freestandingFunctions)
         accumulator.run(scope: scope)
         return accumulator.makeGraph(title: title)
     }
@@ -126,7 +127,10 @@ private struct CallGraphAccumulator {
         case .free:
             guard freeFunctionNames.contains(site.methodName) else { return nil }
             return ("", site.methodName, false)
-        case .unknown:
+        case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
+            // `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
+            // `.type` before the graph is built; anything still in any deferred-resolution case
+            // is genuinely unresolvable, not merely not-yet-tried — same as `.unknown`.
             return nil
         }
     }

@@ -3,49 +3,17 @@ import SwiftUI
 struct ProjectBrowserView: View {
     @StateObject private var model = ProjectBrowserViewModel()
     @State private var newProjectPresented = false
-    @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
-    @State private var sidebarSelection: SidebarItem?
     @State private var collapsedProjects = Set<UUID>()
     @State private var renamingDiagramID: UUID?
     @State private var renamingText: String = ""
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView {
             sidebarContent
                 .navigationTitle("Projects")
         } detail: {
             detailContent
                 .containerBackground(.windowBackground, for: .window)
-        }
-        .onChange(of: sidebarSelection) { _, newValue in
-            switch newValue {
-            case .project(let id):
-                model.selection = .project(id)
-            case .codebase(let id):
-                model.selection = .codebase(id)
-            case .generatedDiagram(let id):
-                model.selection = .generatedDiagram(id)
-            case .freeformDiagram(let id):
-                model.selection = .freeformDiagram(id)
-            case .none:
-                break
-            }
-        }
-        .onChange(of: model.selection) { _, newValue in
-            switch newValue {
-            case .project(let id):
-                sidebarSelection = .project(id)
-            case .codebase(let id):
-                sidebarSelection = .codebase(id)
-            case .generatedDiagram(let id):
-                sidebarSelection = .generatedDiagram(id)
-                columnVisibility = .detailOnly
-            case .freeformDiagram(let id):
-                sidebarSelection = .freeformDiagram(id)
-                columnVisibility = .detailOnly
-            case .none:
-                break
-            }
         }
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
@@ -59,7 +27,7 @@ struct ProjectBrowserView: View {
 
     private var sidebarContent: some View {
         VStack(spacing: 0) {
-            List(selection: $sidebarSelection) {
+            List(selection: $model.selection) {
                 let projects = model.store.projects.sorted(by: {
                     $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
                 })
@@ -81,7 +49,7 @@ struct ProjectBrowserView: View {
                         })
                         ForEach(sortedCodebases) { codebase in
                             Label(codebase.name, systemImage: "folder")
-                                .tag(SidebarItem.codebase(codebase.id))
+                                .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
                                 .contextMenu {
                                     Button {
                                         Task { await model.editing.reindex(codebaseID: codebase.id) }
@@ -110,7 +78,7 @@ struct ProjectBrowserView: View {
                                 .font(.callout)
                             } else {
                                 Label(diagram.name, systemImage: diagram.type.systemImage)
-                                    .tag(SidebarItem.generatedDiagram(diagram.id))
+                                    .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -140,7 +108,7 @@ struct ProjectBrowserView: View {
                                 .font(.callout)
                             } else {
                                 Label(diagram.name, systemImage: FreeformDiagram.systemImage)
-                                    .tag(SidebarItem.freeformDiagram(diagram.id))
+                                    .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -159,7 +127,7 @@ struct ProjectBrowserView: View {
                     } label: {
                         Label(project.title, systemImage: "tray.full")
                             .font(.headline)
-                            .tag(SidebarItem.project(project.id))
+                            .tag(ProjectBrowserViewModel.Selection.project(project.id))
                             .contextMenu {
                                 Button(role: .destructive) {
                                     model.editing.removeProject(project.id)
@@ -227,9 +195,11 @@ struct ProjectBrowserView: View {
                         comparisonArtifact: model.comparisonArtifact(for: diagram))
                 }
             case .callGraph:
-                CallGraphView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) {
+                    CallGraphView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             default:
                 deltaHosted(diagram: diagram) {
                     ClassDiagramView(
@@ -306,13 +276,4 @@ private struct StoreErrorAlert: ViewModifier {
             )
         }
     }
-}
-
-// MARK: - Sidebar Item
-
-enum SidebarItem: Hashable {
-    case project(UUID)
-    case codebase(UUID)
-    case generatedDiagram(UUID)
-    case freeformDiagram(UUID)
 }

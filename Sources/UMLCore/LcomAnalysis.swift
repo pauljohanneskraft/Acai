@@ -81,7 +81,7 @@ public struct LcomAnalysis {
             return true
         case .type(let name):
             return name == type.name
-        case .free, .unknown:
+        case .free, .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             return false
         }
     }

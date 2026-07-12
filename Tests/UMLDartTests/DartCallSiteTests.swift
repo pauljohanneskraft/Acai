@@ -45,6 +45,73 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
+    /// A field with no explicit type annotation, initialized by a direct construction
+    /// (`var helper = Helper();` — the idiomatic Dart form), must still get its type inferred so a
+    /// call through it resolves instead of looking uncalled.
+    @Test func unannotatedFieldInfersTypeFromConstructionInitializer() {
+        let source = """
+        class Helper {
+            void process() {}
+        }
+        class Worker {
+            var helper = Helper();
+
+            void run() {
+                helper.process();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let helperField = worker?.members.first { $0.name == "helper" }
+        #expect(helperField?.type?.name == "Helper")
+
+        let run = worker?.members.first { $0.name == "run" }
+        #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
+    }
+
+    /// A typed method parameter is a provable call-site receiver, just like a typed field
+    /// (dead-code false positive: RC-G).
+    @Test func resolvesCallOnTypedParameter() {
+        let source = """
+        class Helper {
+            void process() {}
+        }
+        class Worker {
+            void run(Helper helper) {
+                helper.process();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
+    }
+
+    /// A local initialized from a same-type method call (`var x = compute();`) resolves its receiver
+    /// type from the method's unambiguous return type, the same way `var h = Helper();` already
+    /// does — including when the method is declared *after* the caller (dead-code false positive:
+    /// RC-I).
+    @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
+        let source = """
+        class Widget {
+            void use() {}
+        }
+        class Worker {
+            void run() {
+                var x = compute();
+                x.use();
+            }
+            Widget compute() { return Widget(); }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
+    }
+
     /// A bare `foo()` is an implicit `this.foo()` (or a top-level function) — captured as
     /// `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
     @Test func capturesBareImplicitSelfCallButNotConstruction() {

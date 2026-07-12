@@ -116,8 +116,7 @@ extension DartExtractor {
             // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
             // file-level type names are enough to resolve their static/top-level receivers (RC2).
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
-                members[members.count - 1].callSites += extractCallSites(
-                    from: initializers, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+                appendInitializerListCallSites(initializers, to: &members)
             }
         }
         attachCallSites(pendingBodies, to: &members)
@@ -199,8 +198,7 @@ extension DartExtractor {
             // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
             // file-level type names are enough to resolve their static/top-level receivers (RC2).
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
-                members[members.count - 1].callSites += extractCallSites(
-                    from: initializers, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+                appendInitializerListCallSites(initializers, to: &members)
             }
         }
         attachCallSites(pendingBodies, to: &members)

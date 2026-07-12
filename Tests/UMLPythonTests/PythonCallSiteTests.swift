@@ -55,6 +55,43 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "load" && $0.receiverType == "Config" })
     }
 
+    /// A type-annotated parameter is a provable call-site receiver, just like a typed property
+    /// (dead-code false positive: RC-G).
+    @Test func callOnTypedParameter() {
+        let source = """
+        class Engine:
+            def start(self):
+                pass
+
+        class Car:
+            def drive(self, engine: Engine):
+                engine.start()
+        """
+        let sites = callSites(source, method: "drive")
+        #expect(sites.contains { $0.methodName == "start" && $0.receiverType == "Engine" })
+    }
+
+    /// A local initialized from a same-type method call (`x = compute()`) resolves its receiver type
+    /// from the method's unambiguous `-> Type` annotation, the same way `x = Engine()` already does —
+    /// including when the method is declared *after* the caller (dead-code false positive: RC-I).
+    @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
+        let source = """
+        class Widget:
+            def use(self):
+                pass
+
+        class Worker:
+            def run(self):
+                x = self.compute()
+                x.use()
+
+            def compute(self) -> Widget:
+                return Widget()
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
+    }
+
     /// A call made only from a class-body field initializer is recorded so its target isn't
     /// false-flagged as dead (RC2).
     @Test func capturesClassBodyFieldInitializerCall() {
@@ -86,6 +123,23 @@ struct PythonCallSiteTests {
         """
         let sites = callSites(source, method: "drive")
         #expect(sites.filter { $0.methodName == "start" && $0.receiverType == "Engine" }.count == 2)
+    }
+
+    /// The idiomatic `if __name__ == "__main__": main()` entry point makes a call whose target has
+    /// nowhere to attach as a caller — collected separately and given a synthetic reachable member so
+    /// `main` isn't a dead-code false positive (RC-H).
+    @Test func capturesTopLevelMainGuardCall() {
+        let source = """
+        def main():
+            pass
+
+        if __name__ == "__main__":
+            main()
+        """
+        let artifact = parser.parse(source: source, fileName: "script.py")
+        let topLevel = artifact.freestandingFunctions.first { $0.name == "<top-level>" }
+        #expect(topLevel?.accessLevel == .public)
+        #expect(topLevel?.callSites.contains { $0.methodName == "main" } == true)
     }
 
     @Test func callOnUnknownReceiverIsDropped() {

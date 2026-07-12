@@ -87,7 +87,7 @@ struct CodebaseDetailView: View {
                 callGraphConfigSheet(for: context)
             }
             .sheet(item: $statisticDetail) { detail in
-                StatisticDetailSheet(detail: detail)
+                StatisticDetailSheet(codebase: codebase, detail: detail)
             }
         } else {
             Text("Codebase not found")
@@ -178,9 +178,9 @@ struct CodebaseDetailView: View {
             report: analysis.quality, usesConfiguredRules: analysis.usesConfiguredRules,
             rulesError: analysis.qualityError)
         Divider()
-        DeadCodeSection(report: analysis.deadCode)
+        DeadCodeSection(codebase: codebase, report: analysis.deadCode)
         Divider()
-        ParseHealthSection(report: analysis.health)
+        ParseHealthSection(codebase: codebase, report: analysis.health)
         Divider()
     }
 

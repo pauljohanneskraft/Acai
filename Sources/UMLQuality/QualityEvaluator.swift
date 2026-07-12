@@ -18,7 +18,12 @@ public struct QualityEvaluator: Sendable {
         self.languageResolver = languageResolver
     }
 
-    public func evaluate(_ artifact: CodeArtifact) -> QualityReport {
+    public func evaluate(_ rawArtifact: CodeArtifact) -> QualityReport {
+        // Machine-generated types are dropped before evaluation unless the rules opt in — so budgets
+        // and cycles reflect only hand-written code. Idempotent, so a pre-filtered artifact is fine.
+        let artifact = rules.includeGeneratedTypes
+            ? rawArtifact
+            : rawArtifact.filteringGeneratedTypes(using: languageResolver)
         let graph = GraphView(
             artifact: artifact,
             moduleResolver: moduleResolver,

@@ -194,6 +194,22 @@ extension TreeSitterExtracting {
         return map
     }
 
+    /// Builds a `[methodName: returnTypeName]` map from already-extracted members (unambiguous
+    /// overloads only), so a same-type method call can seed a local's type the same way a direct
+    /// construction already does (RC-I). Only usable by extractors that collect a type's full member
+    /// set *before* resolving any body (CFamily, Dart) — one that resolves bodies inline as members
+    /// are encountered needs its own per-type raw-syntax pre-pass instead, since a forward-declared
+    /// method wouldn't yet be in `members` here.
+    public func methodReturnTypeMap(from members: [Member]) -> [String: String] {
+        var typesByName: [String: Set<String>] = [:]
+        for member in members where member.kind == .method {
+            if let typeName = member.type?.name {
+                typesByName[member.name, default: []].insert(typeName)
+            }
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+    }
+
     /// One pre-pass over the raw AST collecting the simple name of every type declaration
     /// (recursively, including nested types), so the full set is known before any body is
     /// resolved. `name` extracts the declaration node's simple name (declarations whose name
@@ -279,203 +295,5 @@ extension TreeSitterExtracting {
         }
         walk(root)
         return diagnostics
-    }
-}
-
-// MARK: - CallSiteScope
-
-/// The statically-known context used to resolve a method call's receiver to a type.
-///
-/// Resolution stays deliberately conservative — a call site is only captured when its
-/// receiver is *provably* a known type: a typed stored property, an explicit `this`/`self`
-/// (a call on the enclosing instance), or a `TypeName.method()` where `TypeName` is a
-/// declared type. Anything else (locals, parameters, external/stdlib receivers) is dropped
-/// so the resulting sequence diagrams keep their near-zero-false-edge guarantee.
-public struct CallSiteScope: Sendable {
-    /// `propertyName: typeName` for the enclosing type's stored properties — only those with a
-    /// determinable type (call-site resolution needs the type).
-    public var knownProperties: [String: String]
-    /// Simple names of types declared in the current file (for `TypeName.method()`).
-    public var knownTypeNames: Set<String>
-    /// Names of **all** the enclosing type's stored properties, including untyped ones (e.g. Python's
-    /// `self.x = …`). Field-read capture filters by name only, so it needs the full set — not just the
-    /// typed subset in ``knownProperties``. Defaults to `knownProperties`' keys when unspecified.
-    public var knownPropertyNames: Set<String>
-
-    public init(
-        knownProperties: [String: String] = [:],
-        knownTypeNames: Set<String> = [],
-        knownPropertyNames: Set<String>? = nil
-    ) {
-        self.knownProperties = knownProperties
-        self.knownTypeNames = knownTypeNames
-        self.knownPropertyNames = knownPropertyNames ?? Set(knownProperties.keys)
-    }
-
-    /// Resolves a single-identifier receiver (`receiver.method()`) to a ``UMLCore/CallSite``:
-    /// a typed stored property resolves to its declared type; otherwise a name matching a
-    /// known type is treated as a static/`TypeName.method()` call. Returns `nil` for anything
-    /// not provably resolvable (locals, parameters, external receivers).
-    public func resolvedCallSite(
-        receiverName: String,
-        methodName: String,
-        location: SourceLocation?
-    ) -> CallSite? {
-        if let receiverType = knownProperties[receiverName] {
-            return CallSite(receiver: .type(receiverType), methodName: methodName, location: location)
-        }
-        if knownTypeNames.contains(receiverName) {
-            return CallSite(receiver: .type(receiverName), methodName: methodName, location: location)
-        }
-        return nil
-    }
-
-    /// A copy of this scope with `locals` overlaid onto `knownProperties` (a local shadows a same-named
-    /// stored property). Leaves `knownPropertyNames` — the field-read set — untouched, since a local is
-    /// not a field. Returns `self` unchanged when there are no locals.
-    public func merging(locals: [String: String]) -> CallSiteScope {
-        guard !locals.isEmpty else { return self }
-        var copy = self
-        copy.knownProperties = knownProperties.merging(locals) { _, local in local }
-        return copy
-    }
-
-    /// Resolves a bare `foo()` with no explicit receiver. Skipped when `name` is a known type (it is a
-    /// construction `Foo()`, not a call). `implicitSelf` tags it `.selfDispatch` — the call-graph
-    /// builder resolves that against the enclosing type first, then falls back to a free function of
-    /// the same name — for languages with an implicit receiver; otherwise `.free` (e.g. JS, which has
-    /// no implicit `this`, so a bare call is always a free/imported function).
-    public func bareCall(named name: String, implicitSelf: Bool, location: SourceLocation?) -> CallSite? {
-        guard !knownTypeNames.contains(name) else { return nil }
-        return CallSite(receiver: implicitSelf ? .selfDispatch : .free, methodName: name, location: location)
-    }
-}
-
-// MARK: - CallSiteResolving
-
-/// Opt-in protocol for extractors that support call-site resolution.
-///
-/// Not every language needs call-site extraction (e.g. Dart does not).
-/// This protocol adds the capability by requiring a single method
-/// ``resolveCallSite(_:knownProperties:)`` and providing the recursive
-/// walk infrastructure in the extension.
-public protocol CallSiteResolving: TreeSitterExtracting {
-
-    /// Resolves a single AST node to a ``UMLCore/CallSite`` if it
-    /// represents a statically-resolvable method call (on a known property,
-    /// on `this`/`self`, or on a known type).
-    ///
-    /// Return `nil` for nodes that are not relevant call
-    /// expressions, or whose receiver cannot be provably resolved.
-    func resolveCallSite(
-        _ node: Node,
-        scope: CallSiteScope
-    ) -> CallSite?
-
-    /// Local-variable name → provably-declared type, collected from a method/function body so calls on
-    /// locals resolve (`var x = Foo(); x.method()`). Default: no locals. A language overrides this to
-    /// recognise its typed/constructed local declarations, emitting only *provable* types (an explicit
-    /// annotation or a direct construction of a declared type) to keep resolution certain.
-    func localBindings(in body: Node) -> [String: String]
-}
-
-// MARK: - CallSiteResolving Default Implementations
-
-extension CallSiteResolving {
-
-    public func localBindings(in body: Node) -> [String: String] { [:] }
-
-    /// Recursively collects local bindings by applying `binding` to every node in `body`; a language's
-    /// ``localBindings(in:)`` uses this so it only writes a per-node recogniser, not the traversal.
-    /// A later binding for the same name wins (approximates last-declaration-wins without block scopes).
-    public func collectLocalBindings(
-        in body: Node, binding: (Node) -> (name: String, type: String)?
-    ) -> [String: String] {
-        var map: [String: String] = [:]
-        func walk(_ node: Node) {
-            if let found = binding(node), !found.name.isEmpty, !found.type.isEmpty {
-                map[found.name] = found.type
-            }
-            for child in node.namedChildren() { walk(child) }
-        }
-        walk(body)
-        return map
-    }
-
-    /// Extracts call sites from a body node using the statically-known ``CallSiteScope``.
-    ///
-    /// Walks the AST recursively, calling ``resolveCallSite(_:scope:)`` on each node.
-    /// Unlike property-only resolution, this is worth walking even when no properties are
-    /// known, because `this`/`self` and `TypeName.method()` calls are still resolvable.
-    /// The body's provable local bindings are folded into the scope first so calls on locals resolve.
-    public func extractCallSites(
-        from body: Node?,
-        scope: CallSiteScope
-    ) -> [CallSite] {
-        guard let body else { return [] }
-        var sites: [CallSite] = []
-        walkForCallSites(body, scope: scope.merging(locals: localBindings(in: body)), into: &sites)
-        return sites
-    }
-
-    /// Recursively walks AST nodes, collecting resolved call sites.
-    private func walkForCallSites(
-        _ node: Node,
-        scope: CallSiteScope,
-        into sites: inout [CallSite]
-    ) {
-        if let site = resolveCallSite(node, scope: scope) {
-            sites.append(site)
-        }
-        for child in node.namedChildren() {
-            walkForCallSites(child, scope: scope, into: &sites)
-        }
-    }
-
-    /// Resolves a member call's `receiver` to a ``UMLCore/CallSite`` using the receiver decision tree
-    /// shared by field-name-based grammars: `this.method()` → an unqualified self-call;
-    /// `receiver.method()` and `this.prop.method()` → resolved against `scope`. The grammar-specific
-    /// call-node unwrapping (finding the receiver node and method name) stays with the caller.
-    public func resolveMemberCall(
-        receiver: Node,
-        methodName: String,
-        grammar: MemberCallGrammar,
-        scope: CallSiteScope,
-        location: SourceLocation?
-    ) -> CallSite? {
-        // Pattern: this.method(args) — a direct call on the enclosing instance.
-        if receiver.nodeType == grammar.selfNodeType {
-            return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
-        }
-
-        var receiverName: String?
-        if receiver.nodeType == "identifier" {
-            receiverName = text(receiver)
-        } else if receiver.nodeType == grammar.memberAccessType,
-                  receiver.child(byFieldName: "object")?.nodeType == grammar.selfNodeType,
-                  let member = receiver.child(byFieldName: grammar.memberField) {
-            // Pattern: this.prop.method(args)
-            receiverName = text(member)
-        }
-
-        guard let name = receiverName else { return nil }
-        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: location)
-    }
-}
-
-/// The grammar node types a language uses for member-call receiver resolution (see
-/// ``CallSiteResolving/resolveMemberCall(receiver:methodName:grammar:scope:location:)``).
-public struct MemberCallGrammar: Sendable {
-    /// The node type of a `this`/`self` expression (e.g. `"this"`).
-    public let selfNodeType: String
-    /// The node type of a `<self>.<member>` access (e.g. `"field_access"`).
-    public let memberAccessType: String
-    /// The field name holding the member in that access (e.g. `"field"`).
-    public let memberField: String
-
-    public init(selfNodeType: String, memberAccessType: String, memberField: String) {
-        self.selfNodeType = selfNodeType
-        self.memberAccessType = memberAccessType
-        self.memberField = memberField
     }
 }

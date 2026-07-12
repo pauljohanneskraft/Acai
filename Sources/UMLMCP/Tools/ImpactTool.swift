@@ -12,22 +12,22 @@ struct ImpactTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(
-            extraProperties: [
-                "type": [
-                    "type": "string",
-                    "description": "The type to analyze (simple name, qualified name, or id)."
-                ],
-                "depth": [
-                    "type": "integer",
-                    "description": "Limit reverse reachability to this many hops. Unlimited if omitted."
-                ]
+        var properties: [String: Value] = [
+            "type": [
+                "type": "string",
+                "description": "The type to analyze (simple name, qualified name, or id)."
             ],
-            required: ["path", "type"])
+            "depth": [
+                "type": "integer",
+                "description": "Limit reverse reachability to this many hops. Unlimited if omitted."
+            ]
+        ]
+        properties.merge(generatedScopeProperty) { $1 }
+        return objectSchema(extraProperties: properties, required: ["path", "type"])
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let artifact = try await resolveArtifact(arguments, cache)
+        let artifact = try await analysisArtifact(arguments, cache)
         let report = ImpactAnalysis(
             artifact: artifact,
             rootType: try arguments.requiredString("type"),

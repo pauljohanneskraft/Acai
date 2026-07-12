@@ -40,9 +40,10 @@ extension JSExtractor {
         )
     }
 
-    /// Provable local-variable types: a TypeScript annotation (`const x: Foo`) or a `new Foo()`
-    /// construction, so `x.method()` resolves to `Foo` (RC4).
-    func localBindings(in body: Node) -> [String: String] {
+    /// Provable local-variable types: a TypeScript annotation (`const x: Foo`), a `new Foo()`
+    /// construction, or a same-type method call with an unambiguous return type (`const x =
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "variable_declarator",
                   let nameNode = node.child(byFieldName: "name"), nameNode.nodeType == "identifier"
@@ -52,9 +53,15 @@ extension JSExtractor {
                let typeId = typeAnnotation.firstChild(withType: "type_identifier") {
                 return (name, text(typeId))
             }
-            if let value = node.child(byFieldName: "value"), value.nodeType == "new_expression",
+            guard let value = node.child(byFieldName: "value") else { return nil }
+            if value.nodeType == "new_expression",
                let ctor = value.child(byFieldName: "constructor"), ctor.nodeType == "identifier" {
                 return (name, text(ctor))
+            }
+            if value.nodeType == "call_expression",
+               let callee = value.child(byFieldName: "function"), callee.nodeType == "identifier",
+               let returnType = scope.knownMethodReturnTypes[text(callee)] {
+                return (name, returnType)
             }
             return nil
         }

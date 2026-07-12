@@ -19,7 +19,7 @@ extension CodebaseDetailView {
             .map { metric in
                 StatisticDetail.Row(
                     id: metric.id, name: shortName(metric.name),
-                    value: "\(metric[keyPath: keyPath])", reveal: typeReveal(metric.id))
+                    value: "\(metric[keyPath: keyPath])", relativePath: typeRelativePath(metric.id))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
@@ -39,7 +39,7 @@ extension CodebaseDetailView {
             .map { metric in
                 StatisticDetail.Row(
                     id: metric.id, name: shortName(metric.name),
-                    value: format(metric[keyPath: keyPath]), reveal: typeReveal(metric.id))
+                    value: format(metric[keyPath: keyPath]), relativePath: typeRelativePath(metric.id))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
@@ -56,7 +56,7 @@ extension CodebaseDetailView {
             .map { module in
                 StatisticDetail.Row(
                     id: module.name, name: module.name,
-                    value: format(value(module)), reveal: moduleReveal(module.name))
+                    value: format(value(module)), relativePath: moduleDirectory(named: module.name))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
@@ -66,15 +66,8 @@ extension CodebaseDetailView {
         qualifiedName.split(separator: ".").last.map(String.init) ?? qualifiedName
     }
 
-    private func typeReveal(_ id: String) -> (() -> Void)? {
-        guard let location = artifact.flatMap({ location(forTypeID: id, in: $0) }), let codebase
-        else { return nil }
-        return { revealInFinder(relativePath: location.filePath, codebase: codebase) }
-    }
-
-    private func moduleReveal(_ name: String) -> (() -> Void)? {
-        guard let directory = moduleDirectory(named: name), let codebase else { return nil }
-        return { revealInFinder(relativePath: directory, codebase: codebase) }
+    private func typeRelativePath(_ id: String) -> String? {
+        artifact.flatMap { location(forTypeID: id, in: $0) }?.filePath
     }
 
     /// The source location of a (possibly nested) type by its canonical id — looked up in the
@@ -96,13 +89,5 @@ extension CodebaseDetailView {
             return parts[...index].joined(separator: "/")
         }
         return parts.dropLast().joined(separator: "/")
-    }
-
-    private func revealInFinder(relativePath: String, codebase: Codebase) {
-        #if os(macOS)
-        let url = URL(filePath: codebase.directoryPath).appending(path: relativePath)
-        guard FileManager.default.fileExists(atPath: url.path()) else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([url])
-        #endif
     }
 }

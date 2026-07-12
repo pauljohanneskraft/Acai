@@ -55,21 +55,31 @@ public struct TypeIdentityResolver: Sendable {
     private let ambiguousSimpleNames: Set<String>
 
     public init(types: [TypeDeclaration]) {
-        var idByName: [String: String] = [:]
+        var exactKeyCount: [String: Int] = [:]
+        var exactKeyID: [String: String] = [:]
         var simpleNameCount: [String: Int] = [:]
 
-        // Exact keys (id + qualified name) map unconditionally; a top-level type also becomes
-        // reachable by its simple name here because its qualified name equals it.
-        func indexExact(_ types: [TypeDeclaration]) {
+        // Counts each exact key (id + qualified name) rather than mapping it unconditionally: a
+        // top-level type's qualified name equals its bare name, so two top-level types sharing a
+        // name collide *here*, not just at the simple-name tier below — a collision must not
+        // silently resolve to whichever type was counted last.
+        func countKeys(_ types: [TypeDeclaration]) {
             for type in types {
-                idByName[type.id] = type.id
-                idByName[type.qualifiedName] = type.id
+                for key in Set([type.id, type.qualifiedName]) {
+                    exactKeyCount[key, default: 0] += 1
+                    exactKeyID[key] = type.id
+                }
                 let simple = type.name.components(separatedBy: ".").last ?? type.name
                 simpleNameCount[simple, default: 0] += 1
-                indexExact(type.nestedTypes)
+                countKeys(type.nestedTypes)
             }
         }
-        indexExact(types)
+        countKeys(types)
+
+        var idByName: [String: String] = [:]
+        for (key, count) in exactKeyCount where count == 1 {
+            idByName[key] = exactKeyID[key]
+        }
 
         // Simple names map only when globally unambiguous and not already an exact key — mapping an
         // ambiguous nested name would fabricate spurious edges to whichever type was indexed last.
@@ -86,6 +96,7 @@ public struct TypeIdentityResolver: Sendable {
 
         self.idByName = idByName
         self.ambiguousSimpleNames = Set(simpleNameCount.filter { $0.value > 1 }.keys)
+            .union(exactKeyCount.filter { $0.value > 1 }.keys)
     }
 
     /// Resolves a referenced type name (generics stripped by the caller where relevant) to a

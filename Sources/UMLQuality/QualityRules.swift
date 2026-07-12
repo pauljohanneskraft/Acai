@@ -18,18 +18,26 @@ public struct QualityRules: Codable, Equatable, Sendable {
     /// "Only `only`-matching types may depend into `into`" contracts.
     public var contracts: [StereotypeContract]
 
+    /// Whether machine-generated types are analysed. `false` (the default) drops each language's
+    /// generated types before metrics/smells/cycles are evaluated, so the report reflects only
+    /// hand-written code; set `true` in the rules file to include generated code. Mirrors the CLI's
+    /// `--include-generated` / MCP `includeGenerated` for the tools that aren't rules-file driven.
+    public var includeGeneratedTypes: Bool
+
     public init(
         forbidden: [DependencyRule] = [],
         cycles: CycleRule? = nil,
         budgets: [MetricBudget] = [],
         layers: LayerRule? = nil,
-        contracts: [StereotypeContract] = []
+        contracts: [StereotypeContract] = [],
+        includeGeneratedTypes: Bool = false
     ) {
         self.forbidden = forbidden
         self.cycles = cycles
         self.budgets = budgets
         self.layers = layers
         self.contracts = contracts
+        self.includeGeneratedTypes = includeGeneratedTypes
     }
 
     /// Lenient decoding so a rules file may omit any section it doesn't use (an absent `forbidden`/
@@ -41,6 +49,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         budgets = try container.decodeIfPresent([MetricBudget].self, forKey: .budgets) ?? []
         layers = try container.decodeIfPresent(LayerRule.self, forKey: .layers)
         contracts = try container.decodeIfPresent([StereotypeContract].self, forKey: .contracts) ?? []
+        includeGeneratedTypes = try container.decodeIfPresent(Bool.self, forKey: .includeGeneratedTypes) ?? false
     }
 
     /// The number of distinct rules evaluated — reported so a passing run still proves it checked

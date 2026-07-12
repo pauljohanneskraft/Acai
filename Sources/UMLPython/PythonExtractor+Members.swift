@@ -33,7 +33,8 @@ extension PythonExtractor {
             knownTypeNames: declaredTypeNames,
             // Python fields are frequently untyped (`self.x = …`), so the typed `propertyMap` misses
             // them — pass every field name so field-read capture (issue #111) sees them all.
-            knownPropertyNames: Set(fields.map(\.name))
+            knownPropertyNames: Set(fields.map(\.name)),
+            knownMethodReturnTypes: methodReturnTypeMap(fromMethodNodes: methodNodes)
         )
 
         decl.members.append(contentsOf: fields)
@@ -54,6 +55,24 @@ extension PythonExtractor {
             }
         }
         return result
+    }
+
+    /// A `methodName → returnTypeName` map from the class's own method nodes (annotated with an
+    /// explicit `-> Type`; Python has no implicit return-type inference to fall back to), so a
+    /// same-type method call — including one declared later in the class — can seed a local's type
+    /// (RC-I). Overloaded names with differing return types are dropped rather than guessed.
+    private func methodReturnTypeMap(
+        fromMethodNodes methodNodes: [(node: Node, decorators: [String])]
+    ) -> [String: String] {
+        var typesByName: [String: Set<String>] = [:]
+        for method in methodNodes {
+            guard let nameNode = method.node.child(byFieldName: "name"),
+                  let returnTypeNode = method.node.child(byFieldName: "return_type"),
+                  let returnType = extractType(fromTypeField: returnTypeNode)
+            else { continue }
+            typesByName[text(nameNode), default: []].insert(returnType.name)
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
     private func propertyMap(from fields: [Member]) -> [String: String] {
@@ -97,7 +116,9 @@ extension PythonExtractor {
     /// only place idiomatic Python declares instance attributes, so it is core to producing useful
     /// diagrams. Attributes already declared in the class body (passed via `existing`) are skipped,
     /// and each attribute is emitted once even if assigned in several methods. A type is recorded
-    /// only when the assignment is annotated (`self.x: T = …`).
+    /// when the assignment is annotated (`self.x: T = …`) or, failing that, when it's a direct
+    /// construction of a same-file declared type (`self.x = Foo()` — the far more common idiom),
+    /// the same fallback `localBindings` already applies to locals.
     private func synthesizeSelfFields(
         fromMethods methods: [(node: Node, decorators: [String])], existing: Set<String>
     ) -> [Member] {
@@ -116,6 +137,7 @@ extension PythonExtractor {
                 guard !seen.contains(name) else { continue }
                 seen.insert(name)
                 let type = assign.child(byFieldName: "type").flatMap { extractType(fromTypeField: $0) }
+                    ?? constructedType(fromAssignmentRight: assign.child(byFieldName: "right"))
                 fields.append(Member(
                     name: name,
                     kind: .property,
@@ -126,6 +148,17 @@ extension PythonExtractor {
             }
         }
         return fields
+    }
+
+    /// Infers a field's type from a direct construction of a same-file declared type
+    /// (`Foo()`, not `foo.Bar()` — a call whose function is a bare `identifier`), when there's no
+    /// type annotation. Mirrors the construction check `localBindings` already applies to locals.
+    private func constructedType(fromAssignmentRight right: Node?) -> TypeReference? {
+        guard let call = right, call.nodeType == "call",
+              let function = call.child(byFieldName: "function"), function.nodeType == "identifier",
+              declaredTypeNames.contains(text(function))
+        else { return nil }
+        return TypeReference(name: text(function))
     }
 
     /// Collects every `assignment`/`augmented_assignment` node reachable from `node`, in source order.
@@ -178,7 +211,7 @@ extension PythonExtractor {
             isComputed: isComputed,
             annotations: decorators,
             location: loc(node),
-            callSites: extractCallSites(from: body, scope: scope),
+            callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
             assignments: extractAssignments(from: body),
             fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body),

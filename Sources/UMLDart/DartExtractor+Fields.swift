@@ -75,7 +75,7 @@ extension DartExtractor {
             let name = extractIdentifierName(child)
             guard !name.isEmpty else { return nil }
             return makeFieldMember(
-                name: name, type: info.type,
+                name: name, type: info.type ?? constructedFieldType(from: child),
                 attributes: attrs, location: loc(child),
                 initialValue: fieldInitializerValue(of: child), node: child
             )
@@ -95,11 +95,28 @@ extension DartExtractor {
             let name = extractIdentifierName(child)
             guard !name.isEmpty else { return nil }
             return makeFieldMember(
-                name: name, type: info.type,
+                name: name, type: info.type ?? constructedFieldType(from: child),
                 attributes: attrs, location: loc(child),
                 initialValue: fieldInitializerValue(of: child), node: child
             )
         }
+    }
+
+    /// Infers a field's type from a direct construction initializer (`helper = Helper();`) when
+    /// there's no explicit annotation — the idiomatic Dart form for a composed collaborator.
+    /// The grammar flattens this the same way `resolveCallSite` matches a bare call inside an
+    /// `initialized_identifier` (`[…, callee-id, selector(argument_part)]`), so a known-type
+    /// callee is what distinguishes a construction from an actual call — the same check
+    /// `localBindings` already applies to locals.
+    private func constructedFieldType(from node: Node) -> TypeReference? {
+        let kids = node.namedChildren()
+        guard kids.count >= 2,
+              kids[kids.count - 1].nodeType == "selector",
+              kids[kids.count - 1].firstChild(withType: "argument_part") != nil,
+              kids[kids.count - 2].nodeType == "identifier",
+              declaredTypeNames.contains(text(kids[kids.count - 2]))
+        else { return nil }
+        return TypeReference(name: text(kids[kids.count - 2]))
     }
 
     // MARK: - Field Attributes & Helpers
@@ -150,7 +167,7 @@ extension DartExtractor {
             let varName = extractIdentifierName(child)
             guard !varName.isEmpty else { return [] }
             return [makeFieldMember(
-                name: varName, type: fieldType,
+                name: varName, type: fieldType ?? constructedFieldType(from: child),
                 attributes: attributes, location: loc(child),
                 initialValue: fieldInitializerValue(of: child)
             )]
@@ -162,7 +179,7 @@ extension DartExtractor {
             attrs.isLate = false
             attrs.isFinal = true
             return [makeFieldMember(
-                name: varName, type: fieldType,
+                name: varName, type: fieldType ?? constructedFieldType(from: child),
                 attributes: attrs, location: loc(child),
                 initialValue: fieldInitializerValue(of: child)
             )]

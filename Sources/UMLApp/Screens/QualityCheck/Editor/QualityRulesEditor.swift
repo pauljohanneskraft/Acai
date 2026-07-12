@@ -8,6 +8,8 @@ struct QualityRulesEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            scopeEditor
+            Divider()
             ForbiddenRulesEditor(rules: $rules.forbidden)
             Divider()
             cyclesEditor
@@ -18,6 +20,19 @@ struct QualityRulesEditor: View {
             Divider()
             ContractsEditor(contracts: $rules.contracts)
         }
+    }
+
+    @ViewBuilder
+    private var scopeEditor: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Include generated types", isOn: $rules.includeGeneratedTypes)
+                .font(.headline)
+            Text("When off (the default), machine-generated types are excluded from metrics, code "
+                + "smells and cycles — matching the CLI (`--include-generated`) and MCP defaults.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder

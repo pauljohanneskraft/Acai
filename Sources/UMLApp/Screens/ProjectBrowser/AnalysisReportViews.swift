@@ -5,10 +5,12 @@ import UMLDiagram
 import UMLLibrary
 
 /// A single finding row — a rule-kind capsule, subject, message and a selectable `file:line`. Shared
-/// by the quality-check report views so every finding renders identically.
+/// by the quality-check report views so every finding renders identically. Clickable to reveal its
+/// file in Finder when `codebase` is supplied.
 struct ViolationRowView: View {
     let violation: Violation
     var tint: Color = .red
+    var codebase: Codebase?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -32,14 +34,17 @@ struct ViolationRowView: View {
         .padding(8)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .revealsInFinder(codebase: codebase, relativePath: violation.source?.filePath)
     }
 }
 
-/// A `file:line` row shared by the dead-code and health reports.
+/// A `file:line` row shared by the dead-code and health reports. Clickable to reveal its file in
+/// Finder when `codebase` is supplied.
 private struct LocationRow: View {
     let title: String
     let detail: String?
     let location: SourceLocation?
+    var codebase: Codebase?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -58,6 +63,7 @@ private struct LocationRow: View {
         .padding(8)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .revealsInFinder(codebase: codebase, relativePath: location?.filePath)
     }
 }
 
@@ -65,9 +71,11 @@ private struct LocationRow: View {
 let analysisReportLimit = 20
 
 /// Dead-code candidates with the call-graph coverage floor. The report is computed by the enclosing
-/// section (which also surfaces the counts in its header) and injected, so the scan runs once.
+/// section (which also surfaces the counts in its header) and injected, so the scan runs once. Rows
+/// reveal their file in Finder when `codebase` is supplied.
 struct DeadCodeReportView: View {
     let report: DeadCodeScan.Report
+    var codebase: Codebase?
 
     var body: some View {
         let coverage = Int((report.coverage.fraction * 100).rounded())
@@ -81,7 +89,8 @@ struct DeadCodeReportView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 let candidates = Array(report.candidates.prefix(analysisReportLimit).enumerated())
                 ForEach(candidates, id: \.offset) { _, candidate in
-                    LocationRow(title: candidate.id, detail: nil, location: candidate.location)
+                    LocationRow(
+                        title: candidate.id, detail: nil, location: candidate.location, codebase: codebase)
                 }
             }
         }
@@ -89,9 +98,11 @@ struct DeadCodeReportView: View {
 }
 
 /// Parse-health score and diagnostics. The report is computed by the enclosing section (which also
-/// surfaces the score in its header) and injected, so the check runs once.
+/// surfaces the score in its header) and injected, so the check runs once. Rows reveal their file in
+/// Finder when `codebase` is supplied.
 struct HealthReportView: View {
     let report: HealthCheck.Report
+    var codebase: Codebase?
 
     var body: some View {
         let percent = Int((report.score * 100).rounded())
@@ -104,7 +115,8 @@ struct HealthReportView: View {
                 let diagnostics = Array(report.diagnostics.prefix(analysisReportLimit).enumerated())
                 ForEach(diagnostics, id: \.offset) { _, diagnostic in
                     LocationRow(
-                        title: diagnostic.message, detail: diagnostic.kind.rawValue, location: diagnostic.location)
+                        title: diagnostic.message, detail: diagnostic.kind.rawValue,
+                        location: diagnostic.location, codebase: codebase)
                 }
             }
         }

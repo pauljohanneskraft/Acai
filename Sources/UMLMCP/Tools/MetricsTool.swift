@@ -11,10 +11,10 @@ struct MetricsTool: AnalysisTool {
         classes and coupling hotspots when planning a refactor.
         """
 
-    var inputSchema: Value { objectSchema() }
+    var inputSchema: Value { objectSchema(extraProperties: generatedScopeProperty) }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let metrics = try await resolveArtifact(arguments, cache).computeMetrics()
+        let metrics = try await analysisArtifact(arguments, cache).computeMetrics()
         return .json(try Value(metrics))
     }
 }

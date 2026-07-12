@@ -57,6 +57,48 @@ struct JavaCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
     }
 
+    /// A typed method parameter is a provable call-site receiver, just like a stored property
+    /// (dead-code false positive: RC-G).
+    @Test func resolvesCallOnTypedParameter() {
+        let source = """
+        class Helper {
+            void process() {}
+        }
+        class Worker {
+            void run(Helper helper) {
+                helper.process();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.java")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
+    }
+
+    /// A local initialized from a same-type method call (`var x = compute();`) resolves its receiver
+    /// type from the method's unambiguous return type, the same way a `new Foo()` construction
+    /// already does — including when the method is declared *after* the caller (dead-code false
+    /// positive: RC-I).
+    @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
+        let source = """
+        class Widget {
+            void use() {}
+        }
+        class Worker {
+            void run() {
+                var x = compute();
+                x.use();
+            }
+            Widget compute() { return new Widget(); }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.java")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
+    }
+
     /// Calls made only from a field initializer, an instance `{ }` block, or a `static { }` block are
     /// recorded so their targets aren't false-flagged as dead (RC2).
     @Test func capturesFieldInitializerAndInitBlockCalls() {

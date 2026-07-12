@@ -18,6 +18,23 @@ extension JavaExtractor {
         return knownProperties
     }
 
+    /// A `methodName → returnTypeName` map from the type's *direct* method declarations (a one-level
+    /// pre-pass over the raw body, mirroring `buildPropertyMap` above), so a same-type method call
+    /// with an unambiguous return type — including one declared later in the type — can seed a
+    /// local's type (RC-I). Overloaded names with differing return types are dropped rather than
+    /// guessed.
+    private func buildMethodReturnTypeMap(node: Node) -> [String: String] {
+        var typesByName: [String: Set<String>] = [:]
+        for child in node.children() where child.nodeType == "method_declaration" {
+            guard let nameNode = child.child(byFieldName: "name"),
+                  let typeNode = child.child(byFieldName: "type"),
+                  let typeName = extractTypeReference(typeNode)?.name
+            else { continue }
+            typesByName[text(nameNode), default: []].insert(typeName)
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+    }
+
     mutating func extractNestedTypeFromChild(
         _ child: Node,
         nodeType: String,
@@ -187,7 +204,8 @@ extension JavaExtractor {
     ) {
         context.scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: context.members, node: node),
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            knownMethodReturnTypes: buildMethodReturnTypeMap(node: node)
         )
         extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
     }
@@ -278,7 +296,7 @@ extension JavaExtractor {
         }
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope)
+        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: parameters))
 
         return Member(
             name: name, kind: .method,
@@ -310,7 +328,7 @@ extension JavaExtractor {
         }
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope)
+        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: parameters))
 
         return Member(
             name: name, kind: .initializer,

@@ -15,6 +15,10 @@ extension JSExtractor {
         if !isTypeScript {
             detectPrototypePatterns(node)
         }
+        if !topLevelCallSites.isEmpty {
+            freestandingFunctions.append(Member(
+                name: "<top-level>", kind: .method, accessLevel: .public, callSites: topLevelCallSites))
+        }
     }
 
     // MARK: - Top-Level Dispatch
@@ -23,7 +27,10 @@ extension JSExtractor {
         guard let nodeType = node.nodeType else { return }
         if nodeType == "export_statement" {
             visitExportStatement(node)
-        } else if nodeType == "expression_statement", isTypeScript {
+        } else if nodeType == "expression_statement", isTypeScript,
+                  node.namedChildren().contains(where: {
+                      $0.nodeType == "internal_module" || $0.nodeType == "module"
+                  }) {
             // tree-sitter-typescript 0.23+: namespace Foo {} → expression_statement → internal_module
             for inner in node.namedChildren() {
                 guard let nodeType = inner.nodeType,
@@ -31,6 +38,12 @@ extension JSExtractor {
                 let (newTypes, newFunctions) = dispatchDeclaration(inner, isExported: false)
                 types += newTypes; freestandingFunctions += newFunctions
             }
+        } else if nodeType == "expression_statement" {
+            // A bare top-level statement (`bootstrap();`) — its call's target has nowhere to attach
+            // as a caller, so it's collected separately and given a synthetic reachable member in
+            // `walkSourceFile` (RC-H).
+            topLevelCallSites.append(contentsOf: extractCallSites(
+                from: node, scope: CallSiteScope(knownTypeNames: declaredTypeNames)))
         } else {
             let (newTypes, newFunctions) = dispatchDeclaration(node, isExported: false)
             types += newTypes; freestandingFunctions += newFunctions
