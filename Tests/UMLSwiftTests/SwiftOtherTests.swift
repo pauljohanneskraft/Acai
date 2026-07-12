@@ -147,6 +147,29 @@ struct SwiftOtherTests {
         #expect(artifact.freestandingFunctions.count == 1)
     }
 
+    /// A stored property with no explicit type annotation, initialized by a direct construction
+    /// (`private let helper = Helper()`), must still get its type inferred from the initializer —
+    /// the composed-collaborator idiom this codebase's own parsers use everywhere — so a call
+    /// through it resolves instead of looking like dead code.
+    @Test func unannotatedPropertyInfersTypeFromConstructionInitializer() {
+        let source = """
+        class Service {
+            private let helper = Helper()
+            func execute() {
+                helper.process()
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Service.swift")
+        let service = artifact.types[0]
+        let helperProperty = service.members.first { $0.name == "helper" }
+        #expect(helperProperty?.type?.name == "Helper")
+
+        let executeMethod = service.members.first { $0.name == "execute" }
+        #expect(executeMethod?.callSites.first?.receiverType == "Helper")
+        #expect(executeMethod?.callSites.first?.methodName == "process")
+    }
+
     @Test func callSiteTracking() {
         let source = """
         class Service {

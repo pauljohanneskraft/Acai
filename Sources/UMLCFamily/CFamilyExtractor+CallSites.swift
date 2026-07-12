@@ -62,7 +62,7 @@ extension CFamilyExtractor: CallSiteResolving {
               let nameNode = node.child(byFieldName: "name")
         else { return nil }
         return scope.resolvedCallSite(
-            receiverName: Self.lastComponent(of: text(scopeNode)),
+            receiverName: lastComponent(of: text(scopeNode)),
             methodName: text(nameNode),
             location: location
         )

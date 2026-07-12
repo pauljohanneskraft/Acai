@@ -140,7 +140,7 @@ extension CFamilyExtractor {
             } else {
                 let typeRef = typeReference(from: node.child(byFieldName: "type"), declarator: info)
                 globalVariables.append(Member(
-                    name: Self.lastComponent(of: info.name), kind: .property,
+                    name: lastComponent(of: info.name), kind: .property,
                     accessLevel: .public, modifiers: modifiers(from: node),
                     type: typeRef, location: loc(node)))
             }
@@ -186,7 +186,7 @@ extension CFamilyExtractor {
     private func methodMember(
         node: Node, info: CFamilyDeclarator, ownerName: String?, access: AccessLevel
     ) -> Member {
-        let simpleName = Self.lastComponent(of: info.name)
+        let simpleName = lastComponent(of: info.name)
         let returnType = typeReference(from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
         let kind = memberKind(name: simpleName, ownerName: ownerName, hasReturnType: returnType != nil)
         return Member(
@@ -201,7 +201,7 @@ extension CFamilyExtractor {
         // which the state-diagram value-flow analysis reads as the machine's initial state.
         let initialValue = node.child(byFieldName: "default_value").map { classifyValue($0) }
         return Member(
-            name: Self.lastComponent(of: info.name), kind: .property, accessLevel: access,
+            name: lastComponent(of: info.name), kind: .property, accessLevel: access,
             modifiers: modifiers(from: node),
             type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
             location: loc(node),
@@ -248,9 +248,9 @@ extension CFamilyExtractor {
         var modifiers: [Modifier] = []
         var isVirtual = false
         for child in node.children() {
-            if let modifier = Self.modifier(forChildType: child.nodeType, text: text(child)) {
+            if let modifier = modifier(forChildType: child.nodeType, text: text(child)) {
                 modifiers.append(modifier)
-            } else if Self.isVirtualMarker(nodeType: child.nodeType, text: text(child), isNamed: child.isNamed) {
+            } else if isVirtualMarker(nodeType: child.nodeType, text: text(child), isNamed: child.isNamed) {
                 isVirtual = true
             }
         }
@@ -262,7 +262,7 @@ extension CFamilyExtractor {
         return modifiers
     }
 
-    private static func modifier(forChildType nodeType: String?, text: String) -> Modifier? {
+    private func modifier(forChildType nodeType: String?, text: String) -> Modifier? {
         switch nodeType {
         case "storage_class_specifier":
             return storageClassModifier(text)
@@ -275,7 +275,7 @@ extension CFamilyExtractor {
         }
     }
 
-    private static func storageClassModifier(_ text: String) -> Modifier? {
+    private func storageClassModifier(_ text: String) -> Modifier? {
         switch text {
         case "static":
             return .static
@@ -288,7 +288,7 @@ extension CFamilyExtractor {
         }
     }
 
-    private static func typeQualifierModifier(_ text: String) -> Modifier? {
+    private func typeQualifierModifier(_ text: String) -> Modifier? {
         switch text {
         case "const":
             return .const
@@ -299,7 +299,7 @@ extension CFamilyExtractor {
         }
     }
 
-    private static func virtualSpecifierModifier(_ text: String) -> Modifier? {
+    private func virtualSpecifierModifier(_ text: String) -> Modifier? {
         switch text {
         case "override":
             return .override
@@ -310,7 +310,7 @@ extension CFamilyExtractor {
         }
     }
 
-    private static func isVirtualMarker(nodeType: String?, text: String, isNamed: Bool) -> Bool {
+    private func isVirtualMarker(nodeType: String?, text: String, isNamed: Bool) -> Bool {
         nodeType == "virtual_function_specifier" || (!isNamed && text == "virtual")
     }
 }

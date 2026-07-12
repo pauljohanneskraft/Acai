@@ -45,6 +45,31 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
+    /// A field with no explicit type annotation, initialized by a direct construction
+    /// (`var helper = Helper();` — the idiomatic Dart form), must still get its type inferred so a
+    /// call through it resolves instead of looking uncalled.
+    @Test func unannotatedFieldInfersTypeFromConstructionInitializer() {
+        let source = """
+        class Helper {
+            void process() {}
+        }
+        class Worker {
+            var helper = Helper();
+
+            void run() {
+                helper.process();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let helperField = worker?.members.first { $0.name == "helper" }
+        #expect(helperField?.type?.name == "Helper")
+
+        let run = worker?.members.first { $0.name == "run" }
+        #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
+    }
+
     /// A bare `foo()` is an implicit `this.foo()` (or a top-level function) — captured as
     /// `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
     @Test func capturesBareImplicitSelfCallButNotConstruction() {

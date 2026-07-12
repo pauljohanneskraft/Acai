@@ -26,7 +26,8 @@ public struct CallGraphBuilder: Sendable {
     }
 
     public func build(from artifact: CodeArtifact) -> CallGraph {
-        var accumulator = CallGraphAccumulator(types: artifact.types, freeFunctions: artifact.freestandingFunctions)
+        var accumulator = CallGraphAccumulator(
+            types: artifact.flattened(), freeFunctions: artifact.freestandingFunctions)
         accumulator.run(scope: scope)
         return accumulator.makeGraph(title: title)
     }

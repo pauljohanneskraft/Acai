@@ -273,6 +273,13 @@ extension KotlinExtractor {
             name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
             typeRef = extractFirstTypeRef(from: node)
         }
+        // No explicit `: Type` annotation — fall back to inferring the type from a direct
+        // construction initializer (`val helper = Helper()`, idiomatic Kotlin), the same heuristic
+        // `localBindings` already applies to locals. Without this, a composed collaborator field
+        // gets no recorded type, so calls through it (`helper.doThing()`) can't resolve.
+        if typeRef == nil, let constructed = constructedTypeRef(from: propertyInitializerNode(of: node)) {
+            typeRef = constructed
+        }
 
         // A custom accessor (`get()`/`set()`) nests inside the `property_declaration` as a child; walk
         // each so accessor-only calls aren't lost, and treat the property as computed (RC2).
@@ -332,6 +339,18 @@ extension KotlinExtractor {
             }
         }
         return nil
+    }
+
+    /// Infers a property's type from a direct construction initializer (`Helper()`, no navigation —
+    /// so `foo.Bar()` isn't mistaken for a construction), when the callee is a same-file declared
+    /// type. Mirrors the construction check `localBindings` already applies to local declarations.
+    private func constructedTypeRef(from initializerNode: Node?) -> TypeReference? {
+        guard let call = initializerNode, call.nodeType == "call_expression",
+              call.firstChild(withType: "navigation_expression") == nil,
+              let callee = call.firstChild(withType: "simple_identifier"),
+              declaredTypeNames.contains(text(callee))
+        else { return nil }
+        return TypeReference(name: text(callee))
     }
 
     private func extractFirstTypeRef(from node: Node) -> TypeReference? {

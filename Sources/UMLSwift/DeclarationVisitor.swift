@@ -30,13 +30,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     // Composable extractors: each owns one slice of the SwiftSyntax-to-model mapping, so this visitor
     // delegates rather than depending on every syntax node type directly.
     private let typeDeclarations = TypeDeclarationExtractor()
-    private let members = MemberExtractor()
+    private let members: MemberExtractor
     private let signatures = DeclarationSignatureExtractor()
     private let callSites: CallSiteCollector
 
     init(fileName: String, knownTypeNames: Set<String> = []) {
         self.fileName = fileName
         self.knownTypeNames = knownTypeNames
+        self.members = MemberExtractor(knownTypeNames: knownTypeNames)
         self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames)
         super.init(viewMode: .sourceAccurate)
     }

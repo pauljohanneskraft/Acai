@@ -229,6 +229,36 @@ struct CallGraphTests {
         #expect(CallGraphBuilder(scope: .type("A")).build(from: artifact).edges.isEmpty)
     }
 
+    @Test func nestedTypeMethodsAreVisibleAsCallersAndTargets() {
+        // A nested type's own bare self-dispatch call (e.g. a helper class declared inside another
+        // type) must resolve even though it never appears in `CodeArtifact.types` directly — only
+        // inside its parent's `nestedTypes`.
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .class,
+                    accessLevel: .public,
+                    nestedTypes: [
+                        TypeDeclaration(
+                            id: "Outer.Inner", name: "Inner", qualifiedName: "Outer.Inner", kind: .class,
+                            accessLevel: .internal,
+                            members: [
+                                Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                                    CallSite(receiver: .selfDispatch, methodName: "helper")
+                                ]),
+                                Member(name: "helper", kind: .method, accessLevel: .internal)
+                            ]
+                        )
+                    ]
+                )
+            ]
+        )
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.coverage.resolved == 1)
+        #expect(graph.edges == [CallGraph.Edge(from: "Inner.run", to: "Inner.helper", weight: 1)])
+    }
+
     @Test func emptyWhenNoCallSites() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),

@@ -173,6 +173,13 @@ extension CodeArtifact {
                 || types[index].name == name {
                 types[index].members.append(contentsOf: ext.members)
                 types[index].nestedTypes.append(contentsOf: ext.nestedTypes)
+                // An extension's own conformance (`extension X: SomeProtocol { ... }`) is often
+                // where a type picks up a protocol it satisfies — dropping it here would hide the
+                // conformance from anything that reads `inheritedTypes` (e.g. protocol-witness
+                // dead-code exemption), so it must be merged alongside members/nestedTypes.
+                let existingNames = Set(types[index].inheritedTypes.map(\.name))
+                types[index].inheritedTypes.append(
+                    contentsOf: ext.inheritedTypes.filter { !existingNames.contains($0.name) })
                 return types[index].id
             }
             if let found = mergeExtension(ext, targetName: targetName, into: &types[index].nestedTypes) {

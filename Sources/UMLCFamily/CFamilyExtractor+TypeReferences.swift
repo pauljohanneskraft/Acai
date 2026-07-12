@@ -73,7 +73,7 @@ extension CFamilyExtractor {
     private func parseParameter(_ node: Node) -> Parameter? {
         let declarator = parseDeclarator(node.child(byFieldName: "declarator"))
         let typeRef = typeReference(from: node.child(byFieldName: "type"), declarator: declarator)
-        let name = Self.lastComponent(of: declarator.name)
+        let name = lastComponent(of: declarator.name)
         // A declarator-less, type-only parameter (`void f(int)`) has no name; skip empty/`void`.
         if name.isEmpty, typeRef == nil || typeRef?.name == "void" { return nil }
         return Parameter(internalName: name.isEmpty ? "_" : name, type: typeRef)
@@ -107,7 +107,7 @@ extension CFamilyExtractor {
     /// `qualified_identifier` wrapping a `template_type`, …) is split at the first `<` into its base
     /// name (`std::vector`, matched against `collectionTypeNames`) and its arguments (`Player`).
     private func genericTypeReference(_ node: Node) -> TypeReference? {
-        let full = Self.normalizeWhitespace(text(node))
+        let full = normalizeWhitespace(text(node))
         guard !full.isEmpty else { return nil }
         guard let angle = full.firstIndex(of: "<") else {
             return TypeReference(name: full)
@@ -166,12 +166,12 @@ extension CFamilyExtractor {
     // MARK: - Helpers
 
     /// The final component of a possibly-qualified name (`std::string` → `string`, `Foo::bar` → `bar`).
-    static func lastComponent(of name: String) -> String {
+    func lastComponent(of name: String) -> String {
         guard let range = name.range(of: "::", options: .backwards) else { return name }
         return String(name[range.upperBound...])
     }
 
-    static func normalizeWhitespace(_ text: String) -> String {
+    func normalizeWhitespace(_ text: String) -> String {
         text.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" })
             .joined(separator: " ")
     }

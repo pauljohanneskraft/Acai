@@ -42,6 +42,32 @@ struct JSCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
+    /// A field with no type annotation, initialized by a direct `new Foo()` construction, must still
+    /// get its type inferred — from either JS or untyped TS — so a call through it resolves instead
+    /// of looking uncalled.
+    @Test func unannotatedFieldInfersTypeFromConstructionInitializer() {
+        let source = """
+        class Helper {
+            process() {}
+        }
+        class Worker {
+            helper = new Helper();
+            run() {
+                this.helper.process();
+            }
+        }
+        """
+        for parser in [JSCodeParser(isTypeScript: true), JSCodeParser(isTypeScript: false)] {
+            let artifact = parser.parse(source: source, fileName: "Worker.ts")
+            let worker = artifact.types.first { $0.name == "Worker" }
+            let helperField = worker?.members.first { $0.name == "helper" }
+            #expect(helperField?.type?.name == "Helper")
+
+            let run = worker?.members.first { $0.name == "run" }
+            #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
+        }
+    }
+
     /// JS has no implicit `this`, so a bare `foo()` is a free/imported function — captured as `.free`
     /// (previously dropped). Also covers freestanding-function bodies now being walked (RC1).
     @Test func capturesBareFreeFunctionCall() {

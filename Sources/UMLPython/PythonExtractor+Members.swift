@@ -97,7 +97,9 @@ extension PythonExtractor {
     /// only place idiomatic Python declares instance attributes, so it is core to producing useful
     /// diagrams. Attributes already declared in the class body (passed via `existing`) are skipped,
     /// and each attribute is emitted once even if assigned in several methods. A type is recorded
-    /// only when the assignment is annotated (`self.x: T = …`).
+    /// when the assignment is annotated (`self.x: T = …`) or, failing that, when it's a direct
+    /// construction of a same-file declared type (`self.x = Foo()` — the far more common idiom),
+    /// the same fallback `localBindings` already applies to locals.
     private func synthesizeSelfFields(
         fromMethods methods: [(node: Node, decorators: [String])], existing: Set<String>
     ) -> [Member] {
@@ -116,6 +118,7 @@ extension PythonExtractor {
                 guard !seen.contains(name) else { continue }
                 seen.insert(name)
                 let type = assign.child(byFieldName: "type").flatMap { extractType(fromTypeField: $0) }
+                    ?? constructedType(fromAssignmentRight: assign.child(byFieldName: "right"))
                 fields.append(Member(
                     name: name,
                     kind: .property,
@@ -126,6 +129,17 @@ extension PythonExtractor {
             }
         }
         return fields
+    }
+
+    /// Infers a field's type from a direct construction of a same-file declared type
+    /// (`Foo()`, not `foo.Bar()` — a call whose function is a bare `identifier`), when there's no
+    /// type annotation. Mirrors the construction check `localBindings` already applies to locals.
+    private func constructedType(fromAssignmentRight right: Node?) -> TypeReference? {
+        guard let call = right, call.nodeType == "call",
+              let function = call.child(byFieldName: "function"), function.nodeType == "identifier",
+              declaredTypeNames.contains(text(function))
+        else { return nil }
+        return TypeReference(name: text(function))
     }
 
     /// Collects every `assignment`/`augmented_assignment` node reachable from `node`, in source order.

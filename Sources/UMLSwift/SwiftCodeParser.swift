@@ -12,8 +12,9 @@ public struct SwiftCodeParser: CodeParser {
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
         let sourceFile = Parser.parse(source: source)
-        let knownTypeNames = TypeNameCollector.collect(from: sourceFile)
-        let visitor = DeclarationVisitor(fileName: fileName, knownTypeNames: knownTypeNames)
+        let typeNameCollector = TypeNameCollector(viewMode: .sourceAccurate)
+        typeNameCollector.walk(sourceFile)
+        let visitor = DeclarationVisitor(fileName: fileName, knownTypeNames: typeNameCollector.names)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
         // Surface malformed input rather than silently returning a partial tree. SwiftSyntax

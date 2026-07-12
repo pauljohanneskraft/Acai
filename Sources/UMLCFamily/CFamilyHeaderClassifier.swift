@@ -45,9 +45,9 @@ struct CFamilyHeaderClassifier {
         var searchStart = text.startIndex
         while let range = text.range(of: word, range: searchStart..<text.endIndex) {
             let beforeOK = range.lowerBound == text.startIndex
-                || !Self.isIdentifierChar(text[text.index(before: range.lowerBound)])
+                || !isIdentifierChar(text[text.index(before: range.lowerBound)])
             let afterOK = range.upperBound == text.endIndex
-                || !Self.isIdentifierChar(text[range.upperBound])
+                || !isIdentifierChar(text[range.upperBound])
             if beforeOK && afterOK { return true }
             searchStart = range.upperBound
         }
@@ -61,7 +61,7 @@ struct CFamilyHeaderClassifier {
         while let range = text.range(of: label, range: searchStart..<text.endIndex) {
             searchStart = range.upperBound
             let beforeOK = range.lowerBound == text.startIndex
-                || !Self.isIdentifierChar(text[text.index(before: range.lowerBound)])
+                || !isIdentifierChar(text[text.index(before: range.lowerBound)])
             guard beforeOK else { continue }
             var index = range.upperBound
             while index < text.endIndex, text[index] == " " || text[index] == "\t" {
@@ -74,7 +74,7 @@ struct CFamilyHeaderClassifier {
         return false
     }
 
-    private static func isIdentifierChar(_ character: Character) -> Bool {
+    private func isIdentifierChar(_ character: Character) -> Bool {
         character.isLetter || character.isNumber || character == "_"
     }
 

@@ -24,9 +24,20 @@ extension SwiftCodeParser {
             excludedDirectories: [".build", "DerivedData", "Pods", ".swiftpm"],
             // Swift Testing (`@Test`) and runtime-dispatched members (`@objc`, `@IBAction`) are invoked
             // by frameworks, not by resolvable call sites; `main` is the process entry point.
+            // The method names below are witnesses of protocols declared *outside* the analyzed
+            // sources (ArgumentParser's `ParsableCommand`, SwiftUI's `View`/`PreferenceKey`, AppKit/
+            // UIKit's `NSViewRepresentable`/`UIViewRepresentable`) — the engine's protocol-witness
+            // exemption can only see conformances to protocols it has parsed, so these external-
+            // framework callbacks would otherwise look uncalled no matter how the framework invokes
+            // them.
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["test", "objc", "ibaction", "main"],
-                methodNames: ["main"])
+                methodNames: [
+                    "main", "run", "validate", "body", "reduce",
+                    "makensview", "makeuiview", "makecoordinator",
+                    "updatensview", "updateuiview",
+                    "dismantlensview", "dismantleuiview"
+                ])
         )
     }
 }

@@ -7,12 +7,6 @@ import SwiftSyntax
 final class TypeNameCollector: SyntaxVisitor {
     private(set) var names: Set<String> = []
 
-    static func collect(from tree: some SyntaxProtocol) -> Set<String> {
-        let collector = TypeNameCollector(viewMode: .sourceAccurate)
-        collector.walk(tree)
-        return collector.names
-    }
-
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         names.insert(node.name.text)
         return .visitChildren

@@ -178,7 +178,7 @@ struct CFamilyExtractor: TreeSitterExtracting {
         var names: Set<String> = []
         func walk(_ node: Node) {
             if node.nodeType == "function_declarator" {
-                let name = Self.lastComponent(of: parseDeclarator(node.child(byFieldName: "declarator")).name)
+                let name = lastComponent(of: parseDeclarator(node.child(byFieldName: "declarator")).name)
                 if !name.isEmpty { names.insert(name) }
             }
             for index in 0..<node.childCount {

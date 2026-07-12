@@ -9,6 +9,14 @@ struct MemberExtractor {
     private let signatures = DeclarationSignatureExtractor()
     private let typeReferences = TypeReferenceExtractor()
     private let sourceLocations = SourceLocationResolver()
+    /// Simple names of every type declared in the file — the same recognition set
+    /// `CallSiteCollector.knownTypeNames` uses, kept identical so a property's inferred type
+    /// (below) and a call's resolved receiver type agree on what counts as a construction.
+    private let knownTypeNames: Set<String>
+
+    init(knownTypeNames: Set<String> = []) {
+        self.knownTypeNames = knownTypeNames
+    }
 
     func extractFunction(
         from node: FunctionDeclSyntax,
@@ -68,9 +76,11 @@ struct MemberExtractor {
                 ?? bindings[index...].lazy.compactMap { $0.typeAnnotation?.type }.first
 
             if let pattern = binding.pattern.as(IdentifierPatternSyntax.self) {
+                let resolvedType = annotationType.map { typeReferences.extractTypeReference(from: $0) }
+                    ?? constructedType(from: binding.initializer?.value)
                 members.append(makeProperty(
                     name: pattern.identifier.text,
-                    type: annotationType.map { typeReferences.extractTypeReference(from: $0) },
+                    type: resolvedType,
                     isComputed: isComputedBinding(binding),
                     initialValue: binding.initializer.map { SwiftValueClassifier().classify($0.value) },
                     attributes: attributes
@@ -130,6 +140,28 @@ struct MemberExtractor {
                 name: elementId.identifier.text, type: elementType, isComputed: false,
                 attributes: attributes)
         }
+    }
+
+    /// Infers a stored property's type from a direct construction initializer (`= TypeName()`) when
+    /// there's no explicit annotation — the sibling of `CallSiteCollector.constructedTypeName` for
+    /// locals, extended to stored properties. Without this, a composed collaborator declared the
+    /// idiomatic way (`private let helper = Helper()`) gets no recorded type, so `buildPropertyMap()`
+    /// never learns it and calls through it (`helper.doThing()`) can't resolve.
+    private func constructedType(from value: ExprSyntax?) -> TypeReference? {
+        guard let call = value?.as(FunctionCallExprSyntax.self),
+              let declRef = unwrappedCallee(call.calledExpression).as(DeclReferenceExprSyntax.self)
+        else { return nil }
+        let name = declRef.baseName.text
+        guard knownTypeNames.contains(name) || name.first?.isUppercase == true else { return nil }
+        return TypeReference(name: name)
+    }
+
+    /// Strips `Foo<T>()` generic-specialisation and `Foo?()` optional-chaining wrappers so the callee
+    /// reduces to its underlying `DeclReferenceExprSyntax`. Mirrors `CallSiteCollector.unwrappedCallee`.
+    private func unwrappedCallee(_ expr: ExprSyntax) -> ExprSyntax {
+        if let generic = expr.as(GenericSpecializationExprSyntax.self) { return generic.expression }
+        if let optional = expr.as(OptionalChainingExprSyntax.self) { return optional.expression }
+        return expr
     }
 
     /// Whether a binding declares a computed property (has an explicit getter),

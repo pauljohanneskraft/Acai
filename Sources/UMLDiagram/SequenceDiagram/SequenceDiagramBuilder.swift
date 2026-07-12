@@ -37,7 +37,8 @@ public struct SequenceDiagramBuilder: Sendable {
             ? "\(entryPoint.methodName)()"
             : "\(entryPoint.typeName).\(entryPoint.methodName)()")
 
-        let lookups = SequenceTraversalLookups(types: artifact.types, freeFunctions: artifact.freestandingFunctions)
+        let lookups = SequenceTraversalLookups(
+            types: artifact.flattened(), freeFunctions: artifact.freestandingFunctions)
 
         let entryId: String
         let entryName: String

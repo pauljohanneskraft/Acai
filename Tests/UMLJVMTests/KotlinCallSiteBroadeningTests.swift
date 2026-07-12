@@ -44,6 +44,30 @@ struct KotlinCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
+    /// A property with no explicit `: Type` annotation, initialized by a direct construction
+    /// (`val helper = Helper()` — the idiomatic Kotlin form), must still get its type inferred so a
+    /// call through it resolves instead of looking uncalled.
+    @Test func unannotatedPropertyInfersTypeFromConstructionInitializer() {
+        let source = """
+        class Helper {
+            fun process() {}
+        }
+        class Worker {
+            private val helper = Helper()
+            fun run() {
+                helper.process()
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.kt")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let helperProperty = worker?.members.first { $0.name == "helper" }
+        #expect(helperProperty?.type?.name == "Helper")
+
+        let runMethod = worker?.members.first { $0.name == "run" }
+        #expect(runMethod?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
+    }
+
     /// A bare `foo()` (an implicit-receiver call to a sibling method or top-level function) is
     /// captured as `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
     @Test func capturesBareImplicitSelfCallButNotConstruction() {

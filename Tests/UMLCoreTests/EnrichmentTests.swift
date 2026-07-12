@@ -107,6 +107,33 @@ struct EnrichmentTests {
         #expect(resolved.relationships.allSatisfy { $0.kind != .extension })
     }
 
+    /// A protocol conformance declared on an `extension` (not the base declaration) must survive
+    /// onto the merged type's own `inheritedTypes` — not just as a derived `Relationship` edge —
+    /// so consumers that read `TypeDeclaration.inheritedTypes` directly (e.g. `DeadCodeScan`'s
+    /// protocol-witness exemption) see it too.
+    @Test func extensionConformanceSurvivesOntoMergedTypeInheritedTypes() {
+        let base = type("Foo", kind: .struct, accessLevel: .public, inherited: ["Baseline"])
+        var ext = type("Foo", extensionOf: "Foo")
+        ext.inheritedTypes = [TypeReference(name: "Bar")]
+        let resolved = artifact([base, ext]).enriched()
+
+        let foo = resolved.types.first { $0.name == "Foo" }
+        let names = Set(foo?.inheritedTypes.map(\.name) ?? [])
+        #expect(names.isSuperset(of: ["Baseline", "Bar"]))
+    }
+
+    /// The same conformance, appearing on both the base declaration and an extension, must not be
+    /// duplicated after merge.
+    @Test func extensionConformanceAlreadyOnBaseIsNotDuplicated() {
+        let base = type("Foo", kind: .struct, accessLevel: .public, inherited: ["Bar"])
+        var ext = type("Foo", extensionOf: "Foo")
+        ext.inheritedTypes = [TypeReference(name: "Bar")]
+        let resolved = artifact([base, ext]).enriched()
+
+        let foo = resolved.types.first { $0.name == "Foo" }
+        #expect(foo?.inheritedTypes.filter { $0.name == "Bar" }.count == 1)
+    }
+
     @Test func externalTypeExtensionIsDroppedEntirely() {
         // `extension Array: CustomThing` where Array is not in the codebase.
         let ext = type("Array", extensionOf: "Array")
