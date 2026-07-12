@@ -15,17 +15,20 @@ struct CallSiteCollector {
 
     /// A resolvable call site (`receiver.method()`), or `nil` when the receiver can't be resolved to
     /// a known property/type and the call should be dropped. `propertyMap` is the current type's
-    /// `storedPropertyName → declaredTypeName` map.
+    /// `storedPropertyName → declaredTypeName` map. `knownLocalNames` is every local/parameter name
+    /// declared so far in the current body, *whether or not* its type was provable (e.g. a local
+    /// initialized from an ambiguous overload) — consulted only to keep such a local from being
+    /// mistaken for an unresolved own-property receiver (see `resolveIdentifierReceiver`).
     func callSite(
         from node: FunctionCallExprSyntax, propertyMap: [String: String],
-        enclosingTypeName: String?, fileName: String
+        enclosingTypeName: String?, knownLocalNames: Set<String> = [], fileName: String
     ) -> CallSite? {
         let callee = unwrappedCallee(node.calledExpression)
         if let memberAccess = callee.as(MemberAccessExprSyntax.self) {
             let methodName = memberAccess.declName.baseName.text
             guard let resolved = resolveReceiver(
                 from: memberAccess.base, propertyMap: propertyMap,
-                enclosingTypeName: enclosingTypeName) else { return nil }
+                enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames) else { return nil }
             return CallSite(
                 receiver: resolved.receiver,
                 methodName: methodName,
@@ -165,18 +168,21 @@ struct CallSiteCollector {
     ///   *this* file's types → deferred (`.propertyChain`), resolved post-merge by walking `b`'s
     ///   declared type on `a`'s type through the full project type graph (RC-multi-hop).
     private func resolveReceiver(
-        from base: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?
+        from base: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?,
+        knownLocalNames: Set<String>
     ) -> ResolvedReceiver? {
         guard let base else { return nil }
 
         if let declRef = base.as(DeclReferenceExprSyntax.self) {
             return resolveIdentifierReceiver(
-                declRef, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
+                declRef, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
+                knownLocalNames: knownLocalNames)
         }
 
         if let memberAccess = base.as(MemberAccessExprSyntax.self) {
             return resolveChainedReceiver(
-                memberAccess, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
+                memberAccess, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
+                knownLocalNames: knownLocalNames)
         }
 
         // `Foo(...).method()` — a call on a freshly constructed value resolves to `Foo`.
@@ -190,7 +196,8 @@ struct CallSiteCollector {
     /// Resolves a bare-identifier receiver (`self`, `Self`, a known property, a same-file type name,
     /// or a capitalised name deferred to the post-merge cross-file pass).
     private func resolveIdentifierReceiver(
-        _ declRef: DeclReferenceExprSyntax, propertyMap: [String: String], enclosingTypeName: String?
+        _ declRef: DeclReferenceExprSyntax, propertyMap: [String: String], enclosingTypeName: String?,
+        knownLocalNames: Set<String>
     ) -> ResolvedReceiver? {
         let name = declRef.baseName.text
         if name == "self" {
@@ -212,13 +219,24 @@ struct CallSiteCollector {
         if name.first?.isUppercase == true {
             return ResolvedReceiver(receiver: .unresolvedTypeName(name))
         }
+        // A lowercase identifier not resolvable in this file: most often the enclosing type's own
+        // stored property, declared in a sibling `extension` block this file doesn't see (this
+        // project's own convention — `Type.swift` + `Type+Feature.swift`). Deferred, not dropped,
+        // when an enclosing type exists to check — but only when `name` isn't already known to be a
+        // local/parameter in this body (e.g. a local whose *type* couldn't be inferred, from an
+        // ambiguous overload or a tuple return): such a local must stay dropped, not be guessed at
+        // as an own-property. A free function has no enclosing type either way, so stays dropped.
+        if enclosingTypeName != nil, !knownLocalNames.contains(name) {
+            return ResolvedReceiver(receiver: .ownProperty(propertyName: name, remainingHops: []))
+        }
         return nil
     }
 
     /// Resolves a member-access receiver (`self.prop.method()`, or a deeper chain deferred to the
     /// post-merge multi-hop pass).
     private func resolveChainedReceiver(
-        _ memberAccess: MemberAccessExprSyntax, propertyMap: [String: String], enclosingTypeName: String?
+        _ memberAccess: MemberAccessExprSyntax, propertyMap: [String: String], enclosingTypeName: String?,
+        knownLocalNames: Set<String>
     ) -> ResolvedReceiver? {
         let hop = memberAccess.declName.baseName.text
         if memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
@@ -229,10 +247,29 @@ struct CallSiteCollector {
         // known-typed property directly): resolve the chain's *head* (everything before this last
         // hop) to a type and defer `hop` to the post-merge pass, which has the full project type
         // graph to look up `hop`'s declared type on the head's type.
-        guard let headType = chainHeadType(
-            of: memberAccess.base, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
-        else { return nil }
-        return ResolvedReceiver(receiver: .propertyChain(headTypeName: headType, hops: [hop]))
+        if let headType = chainHeadType(
+            of: memberAccess.base, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName) {
+            return ResolvedReceiver(receiver: .propertyChain(headTypeName: headType, hops: [hop]))
+        }
+        // The chain's head isn't resolvable in this file either — most often the enclosing type's
+        // own stored property, declared in a sibling `extension` block (same rationale as
+        // `resolveIdentifierReceiver`'s single-hop case, including the known-local exclusion).
+        // Defer the whole chain — head plus this hop — to the post-merge pass, which looks the head
+        // property up on the fully-merged type.
+        if let headName = bareLowercaseIdentifier(memberAccess.base), enclosingTypeName != nil,
+           !knownLocalNames.contains(headName) {
+            return ResolvedReceiver(receiver: .ownProperty(propertyName: headName, remainingHops: [hop]))
+        }
+        return nil
+    }
+
+    /// A bare, lowercase identifier receiver expression — the shape an unqualified property access
+    /// takes (as opposed to `self`/`Self`/a capitalised type name, each handled by their own branch).
+    private func bareLowercaseIdentifier(_ expr: ExprSyntax?) -> String? {
+        guard let declRef = expr?.as(DeclReferenceExprSyntax.self) else { return nil }
+        let name = declRef.baseName.text
+        guard name != "self", name != "Self", name.first?.isUppercase != true else { return nil }
+        return name
     }
 
     /// The type of a property-access chain's head (`self`, `Self`, a known-typed property, or a

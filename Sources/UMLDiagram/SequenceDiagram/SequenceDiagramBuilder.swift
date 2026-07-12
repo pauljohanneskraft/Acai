@@ -217,10 +217,11 @@ private struct SequenceTraversal {
     ///   name (a bare `foo()` is recorded as `.selfDispatch`); if it matches neither (e.g. the method
     ///   lives only on a base class), the call is dropped rather than drawing a dead-end self-message.
     /// - A **`.free`** call resolves to a top-level function on its own lifeline.
-    /// - **`.unknown`** (an unresolved receiver), and either deferred-resolution case
-    ///   (**`.unresolvedTypeName`**/**`.propertyChain`**) still unresolved by the time this runs, are
-    ///   dropped — `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
-    ///   `.type`, so anything left is genuinely unresolvable, not merely not-yet-tried.
+    /// - **`.unknown`** (an unresolved receiver), and any deferred-resolution case
+    ///   (**`.unresolvedTypeName`**/**`.propertyChain`**/**`.ownProperty`**) still unresolved by the
+    ///   time this runs, are dropped — `CodeArtifact.resolvingCallSiteReceivers()` already promoted
+    ///   whatever it could to `.type`, so anything left is genuinely unresolvable, not merely
+    ///   not-yet-tried.
     private func resolveTarget(site: CallSite, callerId: String) -> ResolvedTarget? {
         switch site.receiver {
         case .type(let receiver):
@@ -252,7 +253,7 @@ private struct SequenceTraversal {
                 id: SequenceTraversal.freeFunctionID(site.methodName), name: site.methodName,
                 member: function, decl: nil, isFreeFunction: true
             )
-        case .unknown, .unresolvedTypeName, .propertyChain:
+        case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty:
             return nil
         }
     }

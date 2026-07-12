@@ -38,6 +38,18 @@ public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
     /// declared property type through the full project type graph; an unresolvable hop leaves this
     /// case in place, treated the same as `unknown` by any consumer.
     case propertyChain(headTypeName: String, hops: [String])
+
+    /// A call reached through a bare, lowercase receiver (`aProperty.method()`, or a chain off one,
+    /// `aProperty.b.method()`) that isn't resolvable within the file it was parsed in — typically
+    /// because the enclosing type is split across multiple `extension` blocks (this project's own
+    /// convention: `Type.swift` + `Type+Feature.swift`) and `aProperty` is declared in a sibling
+    /// block this file never sees. `propertyName` is the unresolved receiver itself; `remainingHops`
+    /// are any further property accesses before the method call. Resolved post-merge by
+    /// ``CodeArtifact/resolvingCallSiteReceivers()``, which looks `propertyName` up against the call
+    /// site's own (fully-merged) enclosing type, then walks `remainingHops` the same way
+    /// `propertyChain` walks `hops`; an unresolvable property or hop leaves this case in place,
+    /// treated the same as `unknown` by any consumer.
+    case ownProperty(propertyName: String, remainingHops: [String])
 }
 
 /// A statically-observable call to a method or free function, recorded

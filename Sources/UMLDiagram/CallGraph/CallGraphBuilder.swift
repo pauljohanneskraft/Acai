@@ -127,9 +127,9 @@ private struct CallGraphAccumulator {
         case .free:
             guard freeFunctionNames.contains(site.methodName) else { return nil }
             return ("", site.methodName, false)
-        case .unknown, .unresolvedTypeName, .propertyChain:
+        case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty:
             // `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
-            // `.type` before the graph is built; anything still in either deferred-resolution case
+            // `.type` before the graph is built; anything still in any deferred-resolution case
             // is genuinely unresolvable, not merely not-yet-tried — same as `.unknown`.
             return nil
         }

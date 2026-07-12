@@ -210,10 +210,6 @@ final class ProjectBrowserViewModel: ObservableObject {
         }?.id
     }
 
-    func project(for projectID: UUID) -> Project? {
-        store.projects.first(where: { $0.id == projectID })
-    }
-
     func codebase(for codebaseID: UUID) -> Codebase? {
         for p in store.projects {
             if let c = p.codebases.first(where: { $0.id == codebaseID }) {

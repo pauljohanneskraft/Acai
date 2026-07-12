@@ -15,6 +15,11 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     /// Stored properties seeded up front, plus locals declared in the accessor recorded as they're
     /// visited — so `local.method()` inside a `body` resolves, just as in a function body.
     private var receiverMap: [String: String]
+    /// Every local name declared so far, *whether or not* its type was provable — so a local whose
+    /// type inference failed (an ambiguous overload, a tuple return) isn't mistaken for the enclosing
+    /// type's own property when `receiverMap` has no entry for it (mirrors `DeclarationVisitor`'s
+    /// `callSiteKnownLocalNames`).
+    private var knownLocalNames: Set<String>
     private let enclosingTypeName: String?
     private let methodReturnTypes: [String: String]
     private let fileName: String
@@ -26,6 +31,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     ) {
         self.collector = collector
         self.receiverMap = propertyMap
+        self.knownLocalNames = []
         self.enclosingTypeName = enclosingTypeName
         self.methodReturnTypes = methodReturnTypes
         self.fileName = fileName
@@ -34,6 +40,8 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
         for binding in node.bindings {
+            guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { continue }
+            knownLocalNames.insert(name)
             if let local = collector.localBinding(from: binding, methodReturnTypes: methodReturnTypes) {
                 receiverMap[local.name] = local.type
             }
@@ -44,7 +52,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         if let site = collector.callSite(
             from: node, propertyMap: receiverMap,
-            enclosingTypeName: enclosingTypeName, fileName: fileName) {
+            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames, fileName: fileName) {
             collected.append(site)
         }
         return .visitChildren

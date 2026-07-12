@@ -2,15 +2,17 @@ import SwiftSyntax
 import UMLCore
 
 final class DeclarationVisitor: SyntaxVisitor {
-    private let fileName: String
-    private var types: [TypeDeclaration] = []
+    // Not `private`: read from `DeclarationVisitor+CallSiteHelpers.swift`'s extension, which lives in
+    // a separate file (kept apart so this declaration stays within SwiftLint's `file_length`).
+    let fileName: String
+    var types: [TypeDeclaration] = []
     private var relationships: [Relationship] = []
     private var freestandingFunctions: [Member] = []
-    private var globalVariables: [Member] = []
-    private var typeStack: [TypeDeclaration] = []
+    var globalVariables: [Member] = []
+    var typeStack: [TypeDeclaration] = []
     // Mirrors `typeStack`: each entry is the current type's `methodName → returnType` map (RC-I),
     // pre-passed from the raw syntax so a forward-declared method's return type is seen too.
-    private var methodReturnTypeMapStack: [[String: String]] = []
+    var methodReturnTypeMapStack: [[String: String]] = []
 
     // MARK: - Call-site collection state
     // Tracks how many function/initializer bodies we are currently inside.
@@ -25,10 +27,21 @@ final class DeclarationVisitor: SyntaxVisitor {
     // Maps local-variable name → provable declared type within the current body, so `local.method()`
     // resolves. Kept separate from the property map: locals are call-site receivers, not field reads.
     private var callSiteLocalMap: [String: String] = [:]
+    // One entry per in-progress local `let`/`var` declaration, holding the bindings it will add to
+    // `callSiteLocalMap` once its initializer has been fully visited (see `visitPost`) — deferred so a
+    // self-referential initializer (`let size = size(for: id)`) still resolves against the *outer*
+    // `size` method rather than the not-yet-in-scope local being declared.
+    private var pendingLocalBindingsStack: [[(name: String, type: String)]] = []
+    // Every local/parameter name declared so far in the current body, *whether or not* its type was
+    // provable — unlike `callSiteLocalMap`/`callSiteParameterMap`, which only record the ones with a
+    // resolvable type. Consulted so a local whose type inference failed (an ambiguous overload, a
+    // tuple return) isn't mistaken for an unresolved own-property receiver (RC-multi-hop's
+    // `.ownProperty`): both look identical — a lowercase name with no map entry — without this.
+    var callSiteKnownLocalNames: Set<String> = []
     // Maps the current function/initializer's parameter name → declared type, so `param.method()`
     // resolves the same way a typed stored property does. Kept separate from the property map for
     // the same reason as `callSiteLocalMap`: a parameter is a call-site receiver, not a field.
-    private var callSiteParameterMap: [String: String] = [:]
+    var callSiteParameterMap: [String: String] = [:]
     // Call sites made by bare top-level statements (a `main.swift`-style script), outside any
     // function or type body. Attached to a synthetic always-reachable freestanding member in
     // `buildArtifact()` so a callee reached only from top-level code isn't a dead-code false
@@ -42,14 +55,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     // and seeded up front — a protocol extension's default implementation calling through one of
     // these (`history.undo()`) otherwise can't resolve, since the property lives on the protocol, not
     // the extension's own member list.
-    private let protocolProperties: [String: [String: String]]
+    let protocolProperties: [String: [String: String]]
 
     // Composable extractors: each owns one slice of the SwiftSyntax-to-model mapping, so this visitor
     // delegates rather than depending on every syntax node type directly.
     private let typeDeclarations = TypeDeclarationExtractor()
     private let members: MemberExtractor
-    private let signatures = DeclarationSignatureExtractor()
-    private let callSites: CallSiteCollector
+    let signatures = DeclarationSignatureExtractor()
+    let callSites: CallSiteCollector
 
     init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
         self.fileName = fileName
@@ -176,17 +189,25 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Always balance the depth counter against `visitPost`, even for nested
-        // functions we don't descend into — otherwise the counter underflows and
-        // every later declaration in the file is silently dropped.
+        // functions — otherwise the counter underflows and every later declaration
+        // in the file is silently dropped.
         let isNested = functionBodyDepth > 0
         functionBodyDepth += 1
-        // Inside another function body: skip the nested function entirely.
-        guard !isNested else { return .skipChildren }
+        if isNested {
+            // A local function declared inside another function's body isn't a member of its
+            // own, but its calls are reachable the moment the enclosing function runs — so they
+            // belong to the enclosing function's call sites, not a dead end. Descend and keep
+            // accumulating into the same pending buffers (merging in its own parameters so
+            // `param.method()` inside it still resolves).
+            mergeNestedFunctionParameters(from: node.signature.parameterClause)
+            return .visitChildren
+        }
 
         // Capture the property map for this type before we descend.
         callSitePropertyMap = buildPropertyMap()
         callSiteLocalMap = [:]
         callSiteParameterMap = parameterMap(from: node.signature.parameterClause)
+        callSiteKnownLocalNames = knownParameterNames(from: node.signature.parameterClause)
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -195,7 +216,8 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visitPost(_ node: FunctionDeclSyntax) {
         functionBodyDepth -= 1
-        // Only the top-of-body function becomes a member; nested ones are skipped.
+        // Only the top-of-body function becomes a member; nested ones contributed their call
+        // sites to it above but aren't finalized here.
         guard functionBodyDepth == 0 else { return }
         var member = members.extractFunction(
             from: node, fileName: fileName, callSites: pendingCallSites,
@@ -219,12 +241,9 @@ final class DeclarationVisitor: SyntaxVisitor {
         // lets a later `local.method()` call resolve. Descend into the initializer too, so a call in
         // `let x = obj.compute()` is collected rather than lost with the declaration.
         guard functionBodyDepth == 0 else {
-            let returnTypes = methodReturnTypeMapStack.last ?? [:]
-            for binding in node.bindings {
-                if let local = callSites.localBinding(from: binding, methodReturnTypes: returnTypes) {
-                    callSiteLocalMap[local.name] = local.type
-                }
-            }
+            // Bindings aren't added to `callSiteLocalMap` until `visitPost` (see its doc) — this
+            // only records their *names* immediately, and defers their resolved types.
+            pendingLocalBindingsStack.append(recordingKnownLocalNames(from: node.bindings))
             return .visitChildren
         }
         var extractedMembers = members.extractVariable(from: node, fileName: fileName)
@@ -266,6 +285,19 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .skipChildren
     }
 
+    // Only now — after the binding's initializer has been fully visited — are its resolved-type
+    // bindings folded into `callSiteLocalMap`. Swift scoping doesn't put a name in scope until after
+    // its own initializer finishes evaluating, so `let size = size(for: id)` must still resolve the
+    // RHS call against the *outer* `size` method rather than the local being declared.
+    override func visitPost(_ node: VariableDeclSyntax) {
+        guard functionBodyDepth == 0 else {
+            for local in pendingLocalBindingsStack.removeLast() {
+                callSiteLocalMap[local.name] = local.type
+            }
+            return
+        }
+    }
+
     override func visit(_ node: InitializerDeclSyntax) -> SyntaxVisitorContinueKind {
         // Balance the depth counter against `visitPost` unconditionally (see the
         // function-decl note above).
@@ -275,6 +307,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         callSitePropertyMap = buildPropertyMap()
         callSiteLocalMap = [:]
         callSiteParameterMap = parameterMap(from: node.signature.parameterClause)
+        callSiteKnownLocalNames = knownParameterNames(from: node.signature.parameterClause)
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -355,7 +388,8 @@ final class DeclarationVisitor: SyntaxVisitor {
         if functionBodyDepth > 0,
            let site = callSites.callSite(
                from: node, propertyMap: receiverMap,
-               enclosingTypeName: typeStack.last?.name, fileName: fileName) {
+               enclosingTypeName: typeStack.last?.name, knownLocalNames: callSiteKnownLocalNames,
+               fileName: fileName) {
             pendingCallSites.append(site)
         } else if functionBodyDepth == 0, typeStack.isEmpty,
                   let site = callSites.callSite(
@@ -369,15 +403,6 @@ final class DeclarationVisitor: SyntaxVisitor {
             topLevelCallSites.append(site)
         }
         return .visitChildren
-    }
-
-    /// `globalName → typeName` for every top-level `let`/`var` with a provable type, built fresh at
-    /// each top-level call site so it reflects every global declared so far.
-    private func topLevelGlobalPropertyMap() -> [String: String] {
-        Dictionary(
-            globalVariables.compactMap { global in global.type.map { (global.name, $0.name) } },
-            uniquingKeysWith: { first, _ in first }
-        )
     }
 
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
@@ -400,101 +425,4 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .visitChildren
     }
 
-}
-
-// Stack management — in an extension so the visitor's main body stays within SwiftLint's
-// `type_body_length`.
-extension DeclarationVisitor {
-
-    // MARK: - Stack Management
-
-    private var currentNamespace: String? {
-        typeStack.last?.qualifiedName
-    }
-
-    private func pushType(_ type: TypeDeclaration, memberBlock: MemberBlockSyntax) {
-        typeStack.append(type)
-        methodReturnTypeMapStack.append(returnTypeMap(from: memberBlock))
-    }
-
-    private func popType() {
-        guard let completed = typeStack.popLast() else { return }
-        methodReturnTypeMapStack.removeLast()
-        if typeStack.isEmpty {
-            types.append(completed)
-        } else {
-            typeStack[typeStack.count - 1].nestedTypes.append(completed)
-        }
-    }
-
-    /// Builds a `methodName → returnTypeName` map from a type's *direct* member list in one pre-pass
-    /// over the raw syntax (not the progressively-accumulated `Member`s), so a forward-declared
-    /// method's return type is seen regardless of source order — same rationale as `knownTypeNames`.
-    /// Keeps only names with a single, unambiguous return type across all overloads (an overloaded
-    /// name with differing return types is dropped rather than guessed).
-    private func returnTypeMap(from memberBlock: MemberBlockSyntax) -> [String: String] {
-        var typesByName: [String: Set<String>] = [:]
-        for item in memberBlock.members {
-            guard let function = item.decl.as(FunctionDeclSyntax.self),
-                  let returnType = function.signature.returnClause?.type.as(IdentifierTypeSyntax.self)
-            else { continue }
-            typesByName[function.name.text, default: []].insert(returnType.name.text)
-        }
-        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
-    }
-
-    /// Builds a `varName → typeName` map from the stored properties already
-    /// extracted for the current type.  Called just before descending into a
-    /// function body so we know which receiver names can be resolved.
-    ///
-    /// When the current type is a protocol extension, also seeds the extended protocol's own
-    /// requirement properties (`var x: T { get }`) — the extension's own member list never carries
-    /// them (they're declared on the protocol, not the extension), so a default implementation
-    /// calling through one (`history.undo()`) would otherwise be unresolvable.
-    private func buildPropertyMap() -> [String: String] {
-        guard let currentType = typeStack.last else { return [:] }
-        var map: [String: String] = [:]
-        for member in currentType.members where member.kind == .property {
-            if let typeName = member.type?.name {
-                map[member.name] = typeName
-            }
-        }
-        if currentType.kind == .extension, let extendedProtocol = currentType.extensionOf,
-           let requirements = protocolProperties[extendedProtocol] {
-            map.merge(requirements) { existing, _ in existing }
-        }
-        return map
-    }
-
-    /// Builds a `paramName → typeName` map from a function/initializer's parameter list, so a
-    /// `param.method()` call inside the body resolves. Only parameters with a provable simple type
-    /// name are included (mirrors `buildPropertyMap`'s "typed only" bar).
-    private func parameterMap(from parameterClause: FunctionParameterClauseSyntax) -> [String: String] {
-        var map: [String: String] = [:]
-        for parameter in signatures.extractParameters(from: parameterClause) {
-            if let typeName = parameter.type?.name {
-                map[parameter.internalName] = typeName
-            }
-        }
-        return map
-    }
-
-    /// Call sites gathered from every accessor body of a type-level `var`/`let` declaration, so a
-    /// method reached only from a computed property (a SwiftUI `body`, a derived value) is not
-    /// mistaken for dead code. Only reached at type scope — `visit` already skips local declarations.
-    private func collectAccessorCallSites(from node: VariableDeclSyntax) -> [CallSite] {
-        guard !typeStack.isEmpty else { return [] }
-        let propertyMap = buildPropertyMap()
-        var sites: [CallSite] = []
-        for binding in node.bindings {
-            guard let accessor = binding.accessorBlock else { continue }
-            let walker = AccessorCallSiteWalker(
-                collector: callSites, propertyMap: propertyMap,
-                enclosingTypeName: typeStack.last?.name,
-                methodReturnTypes: methodReturnTypeMapStack.last ?? [:], fileName: fileName)
-            walker.walk(accessor)
-            sites.append(contentsOf: walker.collected)
-        }
-        return sites
-    }
 }

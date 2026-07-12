@@ -11,9 +11,20 @@ struct CallGraphView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var isConfiguring = false
+
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
+        comparisonArtifact: CodeArtifact? = nil
+    ) {
+        self.diagram = diagram
+        self.artifact = artifact
+        self.codebase = codebase
+        self.comparisonArtifact = comparisonArtifact
+    }
 
     private var scope: CallGraphScope {
         if case .callGraph(let configured) = diagram.content { return configured }
@@ -25,6 +36,7 @@ struct CallGraphView: View {
             diagram: diagram,
             artifact: artifact,
             scope: scope,
+            comparisonArtifact: comparisonArtifact,
             onConfigure: { isConfiguring = true }
         )
         .id(scope)
@@ -62,7 +74,10 @@ private struct CallGraphCanvasView: View {
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = true
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope, onConfigure: @escaping () -> Void) {
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
+        comparisonArtifact: CodeArtifact? = nil, onConfigure: @escaping () -> Void
+    ) {
         self.diagram = diagram
         self.artifact = artifact
         self.scope = scope
@@ -70,7 +85,8 @@ private struct CallGraphCanvasView: View {
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
             scope: scope,
-            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint)
+            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint),
+            comparisonArtifact: comparisonArtifact
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -140,10 +156,19 @@ private struct CallGraphCanvasView: View {
                         kind: .dependency,
                         sourceRect: sourceRect,
                         targetRect: targetRect,
-                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight)
+                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
+                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to)
                     )
                 }
             }
+        }
+    }
+
+    /// A coloured delta outline overlaid on a node, or nothing when the node is unchanged.
+    @ViewBuilder
+    private func deltaBorder(_ color: Color?) -> some View {
+        if let color {
+            RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
         }
     }
 
@@ -153,6 +178,7 @@ private struct CallGraphCanvasView: View {
             isSelected: viewModel.selectedNodeIDs.contains(node.id)
         )
         .frame(width: node.rect.width, height: node.rect.height)
+        .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
         .position(x: node.rect.midX, y: node.rect.midY)
         .diagramNodeInteraction(
             id: node.id,

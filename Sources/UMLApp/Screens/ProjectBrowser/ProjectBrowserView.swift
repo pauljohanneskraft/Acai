@@ -195,9 +195,11 @@ struct ProjectBrowserView: View {
                         comparisonArtifact: model.comparisonArtifact(for: diagram))
                 }
             case .callGraph:
-                CallGraphView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) {
+                    CallGraphView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             default:
                 deltaHosted(diagram: diagram) {
                     ClassDiagramView(

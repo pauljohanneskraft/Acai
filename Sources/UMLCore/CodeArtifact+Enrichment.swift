@@ -158,24 +158,24 @@ extension CodeArtifact {
             typesByID: Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         )
 
-        func resolvingCallSites(_ sites: [CallSite]) -> [CallSite] {
+        func resolvingCallSites(_ sites: [CallSite], owningTypeID: String?) -> [CallSite] {
             sites.map { site in
                 var copy = site
-                copy.receiver = resolver.resolved(site.receiver)
+                copy.receiver = resolver.resolved(site.receiver, owningTypeID: owningTypeID)
                 return copy
             }
         }
-        func resolvingMembers(_ members: [Member]) -> [Member] {
+        func resolvingMembers(_ members: [Member], owningTypeID: String?) -> [Member] {
             members.map { member in
                 var copy = member
-                copy.callSites = resolvingCallSites(member.callSites)
+                copy.callSites = resolvingCallSites(member.callSites, owningTypeID: owningTypeID)
                 return copy
             }
         }
         func resolvingTypes(_ types: [TypeDeclaration]) -> [TypeDeclaration] {
             types.map { type in
                 var copy = type
-                copy.members = resolvingMembers(type.members)
+                copy.members = resolvingMembers(type.members, owningTypeID: type.id)
                 copy.nestedTypes = resolvingTypes(type.nestedTypes)
                 return copy
             }
@@ -183,7 +183,10 @@ extension CodeArtifact {
 
         var copy = self
         copy.types = resolvingTypes(types)
-        copy.freestandingFunctions = resolvingMembers(freestandingFunctions)
+        // No enclosing type for a freestanding function, so `.ownProperty` (which resolves against
+        // the call site's *own* type) can never apply here — matches `CallSiteCollector` only ever
+        // producing that case when it has an enclosing type name to defer against.
+        copy.freestandingFunctions = resolvingMembers(freestandingFunctions, owningTypeID: nil)
         return copy
     }
 
@@ -289,13 +292,23 @@ private struct CallSiteReceiverResolver {
 
     /// The receiver unchanged, or promoted to `.type` when a deferred case now resolves
     /// unambiguously against the full project; never guesses across an ambiguous or absent match.
-    func resolved(_ receiver: CallReceiver) -> CallReceiver {
+    /// `owningTypeID` is the fully-merged type the call site's own member belongs to — needed only
+    /// to resolve `.ownProperty`, which looks a property up on that exact type (`nil` for a
+    /// freestanding function, which has no enclosing type to check).
+    func resolved(_ receiver: CallReceiver, owningTypeID: String?) -> CallReceiver {
         switch receiver {
         case .unresolvedTypeName(let name):
             guard case .resolved = identity.resolve(name) else { return receiver }
             return .type(name)
         case .propertyChain(let headTypeName, let hops):
             guard let finalTypeName = walkChain(headTypeName: headTypeName, hops: hops) else { return receiver }
+            return .type(finalTypeName)
+        case .ownProperty(let propertyName, let remainingHops):
+            guard let owningTypeID, let owningType = typesByID[owningTypeID],
+                  let property = owningType.members.first(where: { $0.kind == .property && $0.name == propertyName }),
+                  let propertyType = property.type?.name,
+                  let finalTypeName = walkChain(headTypeName: propertyType, hops: remainingHops)
+            else { return receiver }
             return .type(finalTypeName)
         case .selfDispatch, .type, .free, .unknown:
             return receiver
