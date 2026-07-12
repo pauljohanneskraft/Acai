@@ -49,7 +49,7 @@ struct ProjectBrowserView: View {
                         })
                         ForEach(sortedCodebases) { codebase in
                             Label(codebase.name, systemImage: "folder")
-                                .tag(SidebarItem.codebase(codebase.id))
+                                .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
                                 .contextMenu {
                                     Button {
                                         Task { await model.editing.reindex(codebaseID: codebase.id) }
@@ -78,7 +78,7 @@ struct ProjectBrowserView: View {
                                 .font(.callout)
                             } else {
                                 Label(diagram.name, systemImage: diagram.type.systemImage)
-                                    .tag(SidebarItem.generatedDiagram(diagram.id))
+                                    .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -108,7 +108,7 @@ struct ProjectBrowserView: View {
                                 .font(.callout)
                             } else {
                                 Label(diagram.name, systemImage: FreeformDiagram.systemImage)
-                                    .tag(SidebarItem.freeformDiagram(diagram.id))
+                                    .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -127,7 +127,7 @@ struct ProjectBrowserView: View {
                     } label: {
                         Label(project.title, systemImage: "tray.full")
                             .font(.headline)
-                            .tag(SidebarItem.project(project.id))
+                            .tag(ProjectBrowserViewModel.Selection.project(project.id))
                             .contextMenu {
                                 Button(role: .destructive) {
                                     model.editing.removeProject(project.id)
@@ -274,13 +274,4 @@ private struct StoreErrorAlert: ViewModifier {
             )
         }
     }
-}
-
-// MARK: - Sidebar Item
-
-enum SidebarItem: Hashable {
-    case project(UUID)
-    case codebase(UUID)
-    case generatedDiagram(UUID)
-    case freeformDiagram(UUID)
 }
