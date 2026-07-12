@@ -25,6 +25,28 @@ extension AnalysisTool {
             refresh: try arguments.bool("refresh") ?? false)
     }
 
+    /// Resolves the artifact and drops each language's generated types unless the call passes
+    /// `includeGenerated: true` — so the metric/inspection tools default to hand-written-only,
+    /// matching the CLI's `--include-generated` and the app's statistics pane. (The `quality` tool
+    /// filters via its rules' `includeGeneratedTypes` instead, so it uses `resolveArtifact` directly.)
+    func analysisArtifact(
+        _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
+    ) async throws -> CodeArtifact {
+        let artifact = try await resolveArtifact(arguments, cache)
+        let include = try arguments.bool("includeGenerated") ?? false
+        return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
+    }
+
+    /// The `includeGenerated` schema fragment for the tools that expose generated-type filtering.
+    var generatedScopeProperty: [String: Value] {
+        [
+            "includeGenerated": [
+                "type": "boolean",
+                "description": "Include machine-generated types in the analysis (default false: excluded)."
+            ]
+        ]
+    }
+
     /// The `path` / `languages` / `refresh` schema fragment every analysis tool shares.
     var baseProperties: [String: Value] {
         [

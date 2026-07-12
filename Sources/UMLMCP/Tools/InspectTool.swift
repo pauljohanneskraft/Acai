@@ -19,11 +19,12 @@ struct InspectTool: AnalysisTool {
         properties["publicVars"] = ["type": "boolean", "description": "Only publicly-settable stored properties."]
         properties["overrides"] = ["type": "boolean", "description": "Only members that override an inherited member."]
         properties["enums"] = ["type": "boolean", "description": "List enum cases with raw/associated values instead."]
+        properties.merge(generatedScopeProperty) { $1 }
         return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let artifact = try await resolveArtifact(arguments, cache)
+        let artifact = try await analysisArtifact(arguments, cache)
         if try arguments.bool("enums") ?? false {
             return .json(try Value(EnumInventory(artifact: artifact).entries))
         }

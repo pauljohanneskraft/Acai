@@ -12,6 +12,7 @@ extension UMLCommand {
         )
 
         @OptionGroup var artifactSource: ArtifactSource
+        @OptionGroup var generatedScope: GeneratedScopeOption
 
         @Option(name: .long, help: "Report format: json (default) or human.")
         var format: ReportFormatOption = .json
@@ -35,7 +36,7 @@ extension UMLCommand {
         }
 
         mutating func run() throws {
-            let metrics = try artifactSource.resolve().computeMetrics()
+            let metrics = try generatedScope.applied(to: artifactSource.resolve()).computeMetrics()
             let rendered: String
             switch format {
             case .json:

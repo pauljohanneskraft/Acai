@@ -13,6 +13,7 @@ extension UMLCommand {
         )
 
         @OptionGroup var artifactSource: ArtifactSource
+        @OptionGroup var generatedScope: GeneratedScopeOption
         @OptionGroup var selector: SelectorOption
 
         @Option(name: .long, help: "Only members of this kind (e.g. method, property, initializer).")
@@ -46,7 +47,7 @@ extension UMLCommand {
                 try runEnumInventory()
                 return
             }
-            let artifact = try artifactSource.resolve()
+            let artifact = try generatedScope.applied(to: artifactSource.resolve())
             let rows = TypeQuery(
                 artifact: artifact,
                 selector: selector.selector,
@@ -69,7 +70,8 @@ extension UMLCommand {
         }
 
         private func runEnumInventory() throws {
-            let entries = EnumInventory(artifact: try artifactSource.resolve()).entries
+            let entries = EnumInventory(
+                artifact: try generatedScope.applied(to: artifactSource.resolve())).entries
             let rendered = format == .json ? try JSONReport(entries).text : enumHuman(entries)
             try rendered.writeOutput(to: output, label: "enum inventory")
         }

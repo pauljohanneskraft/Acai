@@ -14,16 +14,18 @@ struct AnalyzeTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
+        var properties: [String: Value] = [
             "health": [
                 "type": "boolean",
                 "description": "Return the full parse-health report (a trust score + diagnostics) instead."
             ]
-        ])
+        ]
+        properties.merge(generatedScopeProperty) { $1 }
+        return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let artifact = try await resolveArtifact(arguments, cache)
+        let artifact = try await analysisArtifact(arguments, cache)
         let health = HealthCheck(artifact: artifact).report
         if try arguments.bool("health") ?? false {
             return .json(try Value(health))

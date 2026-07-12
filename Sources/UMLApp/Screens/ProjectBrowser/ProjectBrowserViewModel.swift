@@ -62,6 +62,12 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// Cached "old"-side artifacts for delta mode, keyed by codebase directory + git ref. Populated
     /// asynchronously by `ensureComparisonLoaded`; read through `comparisonArtifact(for:)`.
     @Published private var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+
+    /// Memoised diagram-ready (flattened) form of each codebase's stored semantic artifact, keyed by
+    /// codebase and stamped with its `lastIndexed` so a reindex invalidates it. Not `@Published`: it
+    /// is a pure derivation of the stored artifact filled lazily on read (often during a view update),
+    /// so mutating it must not trigger `objectWillChange`.
+    private var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
     /// Most recent comparison load error, surfaced near the picker.
     @Published private(set) var comparisonError: String?
 
@@ -92,10 +98,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard comparisonArtifacts[key] == nil else { return }
         let url = URL(fileURLWithPath: directory).standardizedFileURL
         do {
-            let artifact = try await Task.detached(priority: .userInitiated) {
+            let semantic = try await Task.detached(priority: .userInitiated) {
                 try GitRevisionSnapshot(directory: url, reference: ref).artifact()
             }.value
-            comparisonArtifacts[key] = artifact
+            // Flatten to the same diagram-ready form as the current-side artifact so delta mode
+            // diffs like-for-like (node ids must match the flattened display artifact).
+            comparisonArtifacts[key] = CodebaseAnalyzer().flattenedForDisplay(semantic)
             comparisonError = nil
         } catch {
             comparisonError = error.localizedDescription
@@ -160,7 +168,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         default:
             break
         }
-        guard let artifact = artifact(for: codebaseID) else { return }
+        guard let artifact = semanticArtifact(for: codebaseID) else { return }
         analyses[codebaseID] = .computing(token)
         let configuration = codebase.qualityCheck
         let analysis = await Task.detached(priority: .userInitiated) {
@@ -215,9 +223,29 @@ final class ProjectBrowserViewModel: ObservableObject {
         return nil
     }
 
+    /// The diagram-ready (flattened) artifact the detail view, diagram views and export render from:
+    /// nested types are hoisted to the top level with qualified names, generated types filtered out.
+    /// Memoised per codebase (stamped with `lastIndexed`) since it is read on every view update.
     func artifact(for codebaseID: UUID) -> CodeArtifact? {
-        guard let artifact = store.artifact(for: codebaseID)?.resolvingExtensions() else { return nil }
-        return artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
+        guard let semantic = store.artifact(for: codebaseID) else { return nil }
+        let stamp = codebase(for: codebaseID)?.lastIndexed
+        if let cached = displayArtifactCache[codebaseID], cached.stamp == stamp {
+            return cached.artifact
+        }
+        let display = CodebaseAnalyzer()
+            .flattenedForDisplay(semantic)
+            .filteringGeneratedTypes(using: semantic.standardLanguageResolver)
+        displayArtifactCache[codebaseID] = (stamp, display)
+        return display
+    }
+
+    /// The **semantic** (un-flattened) artifact used for metrics and scans: nested types are
+    /// preserved so nesting depth and other tree-shaped metrics are computed correctly. Returned
+    /// unfiltered — `CodebaseAnalysis` applies generated-type filtering once, driven by the quality
+    /// rules' `includeGeneratedTypes` (default: exclude), so the whole statistics pane stays
+    /// consistent and matches the CLI/MCP.
+    func semanticArtifact(for codebaseID: UUID) -> CodeArtifact? {
+        store.artifact(for: codebaseID)
     }
 
     /// All generated diagrams for a project.

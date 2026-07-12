@@ -13,24 +13,38 @@ struct CodebaseAnalyzer {
         self.service = service
     }
 
-    /// Analyzes the directory at `url` and applies the standard class-diagram enrichment
-    /// (composition/dependency inference, external types), returning the artifact to store.
+    /// Analyzes the directory at `url` into the **semantic** artifact the app stores. This is exactly
+    /// the artifact `AnalysisService.analyzeProject` returns — already enriched (each language group
+    /// resolved via `enriched(configuration:)`) and with nested types **preserved** so metrics that
+    /// read the nested-type tree (e.g. nesting depth) are correct. It is stored verbatim, with no
+    /// further whole-artifact `enriched(using:)` pass, so the app computes metrics / parse-health /
+    /// scans on the **same** artifact the CLI (`uml metrics`) and MCP tools do — re-enriching here
+    /// would re-append diagnostics and diverge from those. The diagram/detail layer flattens (and
+    /// whole-artifact-enriches, via `ClassDiagram`) on demand in ``flattenedForDisplay(_:)``.
     func enrichedArtifact(at url: URL) throws -> CodeArtifact {
-        let artifact = try service.analyzeProject(at: url, allowedLanguages: [])
-        let enriched = ClassDiagram(
-            artifact: artifact,
+        try service.analyzeProject(at: url, allowedLanguages: [])
+    }
+
+    /// Flattens a stored semantic artifact into the diagram-ready form the views render from:
+    /// nested types are hoisted to the top level with qualified display names and edges are
+    /// re-resolved to the flattened ids. Idempotent, so an already-flat (pre-migration) artifact
+    /// passes through unchanged.
+    func flattenedForDisplay(_ semantic: CodeArtifact) -> CodeArtifact {
+        let diagram = ClassDiagram(
+            artifact: semantic,
             options: EnrichmentOptions(
                 inferCompositionFromProperties: true,
                 inferDependencyFromMethods: true,
                 showExternalTypes: true,
-                languages: artifact.standardLanguageResolver
+                languages: semantic.standardLanguageResolver
             )
         )
         return CodeArtifact(
-            metadata: artifact.metadata,
-            types: enriched.types,
-            relationships: enriched.relationships,
-            freestandingFunctions: artifact.freestandingFunctions
+            metadata: semantic.metadata,
+            types: diagram.types,
+            relationships: diagram.relationships,
+            freestandingFunctions: semantic.freestandingFunctions,
+            globalVariables: semantic.globalVariables
         )
     }
 }

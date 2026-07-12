@@ -24,31 +24,42 @@ struct CodebaseAnalysis: Sendable {
     /// report then falls back to the default budgets).
     let qualityError: String?
 
-    /// Runs every report against `artifact`. Pure and `nonisolated`, so callers run it off the main
+    /// Runs every report against `rawArtifact`. Pure and `nonisolated`, so callers run it off the main
     /// actor. `configuration` drives the quality check: when present its rules are loaded from disk
     /// and evaluated (any load error is captured, not thrown, and the default budgets are used).
-    init(artifact: CodeArtifact, configuration: QualityCheckConfiguration?) {
+    ///
+    /// The rules' `includeGeneratedTypes` (default `false`) governs the **whole** statistics pane —
+    /// metrics, health and dead-code are computed on the same filtered artifact the quality report
+    /// uses, so a single per-codebase setting keeps the pane internally consistent and matches the
+    /// CLI/MCP (whose tools default to the same exclude-generated behaviour).
+    init(artifact rawArtifact: CodeArtifact, configuration: QualityCheckConfiguration?) {
+        let rules: QualityRules
+        if let configuration, !configuration.rulesPath.isEmpty {
+            do {
+                rules = try configuration.loadRules()
+                self.usesConfiguredRules = true
+                self.qualityError = nil
+            } catch {
+                rules = QualityRules.defaultQuality
+                self.usesConfiguredRules = false
+                self.qualityError = error.localizedDescription
+            }
+        } else {
+            rules = QualityRules.defaultQuality
+            self.usesConfiguredRules = false
+            self.qualityError = nil
+        }
+
+        let artifact = rules.includeGeneratedTypes
+            ? rawArtifact
+            : rawArtifact.filteringGeneratedTypes(using: rawArtifact.standardLanguageResolver)
+
         self.metrics = artifact.computeMetrics()
         self.deadCode = DeadCodeScan(
             artifact: artifact,
             languages: artifact.standardLanguageResolver
         ).report
         self.health = HealthCheck(artifact: artifact).report
-
-        if let configuration, !configuration.rulesPath.isEmpty {
-            do {
-                self.quality = try configuration.loadRules().report(for: artifact)
-                self.usesConfiguredRules = true
-                self.qualityError = nil
-            } catch {
-                self.quality = QualityRules.defaultQuality.report(for: artifact)
-                self.usesConfiguredRules = false
-                self.qualityError = error.localizedDescription
-            }
-        } else {
-            self.quality = QualityRules.defaultQuality.report(for: artifact)
-            self.usesConfiguredRules = false
-            self.qualityError = nil
-        }
+        self.quality = rules.report(for: artifact)
     }
 }

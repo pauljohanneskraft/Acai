@@ -11,6 +11,7 @@ extension UMLCommand {
         )
 
         @OptionGroup var artifactSource: ArtifactSource
+        @OptionGroup var generatedScope: GeneratedScopeOption
 
         @Argument(help: "The type to analyze (simple name, qualified name, or id).")
         var type: String
@@ -29,7 +30,7 @@ extension UMLCommand {
         }
 
         mutating func run() throws {
-            let artifact = try artifactSource.resolve()
+            let artifact = try generatedScope.applied(to: artifactSource.resolve())
             let report = ImpactAnalysis(artifact: artifact, rootType: type, maxDepth: depth).report
 
             let rendered: String

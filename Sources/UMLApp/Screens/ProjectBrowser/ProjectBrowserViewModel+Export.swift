@@ -130,7 +130,11 @@ extension ProjectBrowserViewModel {
     ) {
         guard let diagram = generatedDiagram(for: diagramId),
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
-              var artifact = store.artifact(for: diagram.codebaseID)?.resolvingExtensions() else { return }
+              let semantic = store.artifact(for: diagram.codebaseID) else { return }
+
+        // Flatten to the same node ids the diagram was rendered with — the `positions` dict is keyed
+        // by them. Generated-type filtering stays conditional on the diagram's own configuration.
+        var artifact = CodebaseAnalyzer().flattenedForDisplay(semantic)
 
         // Sequence diagrams have no class configuration; default to hiding generated types.
         let hideGeneratedTypes = diagram.classConfiguration?.hideGeneratedTypes ?? true

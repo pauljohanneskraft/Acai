@@ -33,6 +33,8 @@ extension UMLCommand {
         @Option(name: .long, help: "Output file path for the result. Prints to stdout if omitted.")
         var output: String?
 
+        @OptionGroup var generatedScope: GeneratedScopeOption
+
         mutating func run() throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
@@ -40,7 +42,8 @@ extension UMLCommand {
             if from != nil && source != nil {
                 throw ValidationError("Specify either --from or --source, not both.")
             }
-            let artifact = try ArtifactSource.resolve(from: from, source: source, language: language)
+            let artifact = try generatedScope.applied(
+                to: ArtifactSource.resolve(from: from, source: source, language: language))
             if health {
                 try healthReport(artifact).writeOutput(to: output, label: "health report")
             } else {

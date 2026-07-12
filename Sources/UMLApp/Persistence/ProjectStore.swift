@@ -131,16 +131,36 @@ final class ProjectStore: ObservableObject {
         }
     }
 
+    /// Versioned envelope around a persisted `CodeArtifact`. Bumping ``currentArtifactFormat`` makes
+    /// `loadArtifact` treat older stored analyses as stale so the UI offers Reindex — this is how a
+    /// change in *what* the artifact stores is migrated. v2 persists the **semantic** (un-flattened)
+    /// artifact so nesting-depth and other tree-shaped metrics are computed correctly; v1 (the
+    /// pre-envelope bare `CodeArtifact`) stored the display-flattened form and read nesting as 0.
+    private struct StoredArtifact: Codable {
+        var formatVersion: Int
+        var artifact: CodeArtifact
+    }
+
+    /// Current on-disk artifact format. A file with a lower version — or a pre-envelope bare
+    /// `CodeArtifact` (which fails to decode as ``StoredArtifact``) — is dropped back to "not indexed".
+    private static let currentArtifactFormat = 2
+
     func loadArtifact(for codebaseID: UUID) {
         guard artifacts[codebaseID] == nil else { return }
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         do {
             let data = try Data(contentsOf: url)
-            artifacts[codebaseID] = try JSONDecoder().decode(CodeArtifact.self, from: data)
+            let stored = try JSONDecoder().decode(StoredArtifact.self, from: data)
+            guard stored.formatVersion >= Self.currentArtifactFormat else {
+                // An older format (e.g. the pre-fix display-flattened artifact) — reindex to regenerate.
+                markCodebaseNotIndexed(codebaseID)
+                return
+            }
+            artifacts[codebaseID] = stored.artifact
         } catch is DecodingError {
-            // The stored analysis predates a schema change (e.g. the now-required `accessLevel`).
-            // Treat the codebase as never indexed so the UI offers Reindex, rather than surfacing a
-            // decode error the user can't act on.
+            // Predates the versioned envelope (bare `CodeArtifact`) or a schema change (e.g. the
+            // now-required `accessLevel`). Treat the codebase as never indexed so the UI offers
+            // Reindex, rather than surfacing a decode error the user can't act on.
             markCodebaseNotIndexed(codebaseID)
         } catch {
             report("Failed to load a stored analysis: \(error.localizedDescription)")
@@ -219,7 +239,8 @@ final class ProjectStore: ObservableObject {
         let encoder = JSONEncoder()
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         do {
-            try encoder.encode(artifact).write(to: url, options: .atomic)
+            let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
+            try encoder.encode(stored).write(to: url, options: .atomic)
         } catch {
             report("Failed to save analysis: \(error.localizedDescription)")
         }

@@ -15,7 +15,7 @@ struct CallGraphTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
+        var properties: [String: Value] = [
             "mode": [
                 "type": "string",
                 "enum": ["metrics", "cycles", "deadcode"],
@@ -25,11 +25,13 @@ struct CallGraphTool: AnalysisTool {
                 "type": "string",
                 "description": "Scope (metrics/cycles): 'type:Name' or 'module:Name'. Whole codebase if omitted."
             ]
-        ])
+        ]
+        properties.merge(generatedScopeProperty) { $1 }
+        return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let artifact = try await resolveArtifact(arguments, cache)
+        let artifact = try await analysisArtifact(arguments, cache)
         switch arguments.string("mode") ?? "metrics" {
         case "metrics":
             let scope = try resolvedCallGraphScope(arguments.string("scope"))

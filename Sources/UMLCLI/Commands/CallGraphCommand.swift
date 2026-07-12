@@ -19,6 +19,7 @@ extension UMLCommand {
         }
 
         @OptionGroup var artifactSource: ArtifactSource
+        @OptionGroup var generatedScope: GeneratedScopeOption
 
         @Option(name: .long, help: "What to report: metrics (default), cycles, or deadcode.")
         var mode: Mode = .metrics
@@ -50,7 +51,7 @@ extension UMLCommand {
         }
 
         mutating func run() throws {
-            let artifact = try artifactSource.resolve()
+            let artifact = try generatedScope.applied(to: artifactSource.resolve())
             switch mode {
             case .metrics:
                 try renderMetrics(artifact)
