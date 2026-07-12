@@ -73,6 +73,16 @@ extension DartExtractor: CallSiteResolving {
         )
     }
 
+    /// Appends a constructor initializer-list's call sites (`: x = compute()`) to the just-appended
+    /// member, with that member's own parameters available as receivers (RC2 + RC-G).
+    func appendInitializerListCallSites(_ initializers: Node, to members: inout [Member]) {
+        let lastIndex = members.count - 1
+        members[lastIndex].callSites += extractCallSites(
+            from: initializers,
+            scope: CallSiteScope(knownTypeNames: declaredTypeNames)
+                .merging(parameters: members[lastIndex].parameters))
+    }
+
     /// Resolves and attaches call sites for the recorded method bodies, using a scope built
     /// from the type's fully-extracted members (so all stored properties are known) plus the
     /// current file's known type names.
@@ -80,11 +90,13 @@ extension DartExtractor: CallSiteResolving {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            knownMethodReturnTypes: methodReturnTypeMap(from: members)
         )
         for pending in pendingBodies where pending.index < members.count {
             // `+=`: a constructor may already carry initializer-list call sites set during the body walk.
-            members[pending.index].callSites += extractCallSites(from: pending.body, scope: scope)
+            members[pending.index].callSites += extractCallSites(
+                from: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
             members[pending.index].cyclomaticComplexity =
@@ -104,9 +116,11 @@ extension DartExtractor: CallSiteResolving {
         }
     }
 
-    /// Provable local-variable types: an explicit annotation (`Helper h = …`) or an inferred
-    /// construction (`var h = Helper()`) of a declared type, so `h.method()` resolves to `Helper` (RC4).
-    func localBindings(in body: Node) -> [String: String] {
+    /// Provable local-variable types: an explicit annotation (`Helper h = …`), an inferred
+    /// construction (`var h = Helper()`) of a declared type, or a same-type method call with an
+    /// unambiguous return type (`var h = compute()`, via `scope.knownMethodReturnTypes`), so
+    /// `h.method()` resolves to `Helper` (RC4/RC-I).
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "initialized_variable_definition",
                   let nameNode = node.child(byFieldName: "name")
@@ -115,13 +129,18 @@ extension DartExtractor: CallSiteResolving {
             if let typeId = node.firstChild(withType: "type_identifier") {
                 return (name, text(typeId))
             }
-            // Inferred `var h = Helper()`: a `value` identifier followed by a `selector` argument part.
-            if let value = node.child(byFieldName: "value"), value.nodeType == "identifier",
-               node.namedChildren().contains(where: {
-                   $0.nodeType == "selector" && $0.firstChild(withType: "argument_part") != nil
-               }),
-               declaredTypeNames.contains(text(value)) {
+            // Inferred `var h = Helper()` / `var h = compute()`: a `value` identifier followed by a
+            // `selector` argument part.
+            guard let value = node.child(byFieldName: "value"), value.nodeType == "identifier",
+                  node.namedChildren().contains(where: {
+                      $0.nodeType == "selector" && $0.firstChild(withType: "argument_part") != nil
+                  })
+            else { return nil }
+            if declaredTypeNames.contains(text(value)) {
                 return (name, text(value))
+            }
+            if let returnType = scope.knownMethodReturnTypes[text(value)] {
+                return (name, returnType)
             }
             return nil
         }

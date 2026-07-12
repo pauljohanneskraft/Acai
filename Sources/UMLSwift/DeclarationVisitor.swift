@@ -8,6 +8,9 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var freestandingFunctions: [Member] = []
     private var globalVariables: [Member] = []
     private var typeStack: [TypeDeclaration] = []
+    // Mirrors `typeStack`: each entry is the current type's `methodName → returnType` map (RC-I),
+    // pre-passed from the raw syntax so a forward-declared method's return type is seen too.
+    private var methodReturnTypeMapStack: [[String: String]] = []
 
     // MARK: - Call-site collection state
     // Tracks how many function/initializer bodies we are currently inside.
@@ -22,10 +25,24 @@ final class DeclarationVisitor: SyntaxVisitor {
     // Maps local-variable name → provable declared type within the current body, so `local.method()`
     // resolves. Kept separate from the property map: locals are call-site receivers, not field reads.
     private var callSiteLocalMap: [String: String] = [:]
+    // Maps the current function/initializer's parameter name → declared type, so `param.method()`
+    // resolves the same way a typed stored property does. Kept separate from the property map for
+    // the same reason as `callSiteLocalMap`: a parameter is a call-site receiver, not a field.
+    private var callSiteParameterMap: [String: String] = [:]
+    // Call sites made by bare top-level statements (a `main.swift`-style script), outside any
+    // function or type body. Attached to a synthetic always-reachable freestanding member in
+    // `buildArtifact()` so a callee reached only from top-level code isn't a dead-code false
+    // positive (RC-H).
+    private var topLevelCallSites: [CallSite] = []
     // Simple names of every type declared in the file, seeded up front (in one pre-pass)
     // so `TypeName.method()` static calls resolve regardless of declaration order — including
     // forward-declared siblings — without misclassifying calls on unknown/external receivers.
     private let knownTypeNames: Set<String>
+    // Each same-file protocol's requirement properties (`var x: T { get }`), keyed by protocol name
+    // and seeded up front — a protocol extension's default implementation calling through one of
+    // these (`history.undo()`) otherwise can't resolve, since the property lives on the protocol, not
+    // the extension's own member list.
+    private let protocolProperties: [String: [String: String]]
 
     // Composable extractors: each owns one slice of the SwiftSyntax-to-model mapping, so this visitor
     // delegates rather than depending on every syntax node type directly.
@@ -34,20 +51,26 @@ final class DeclarationVisitor: SyntaxVisitor {
     private let signatures = DeclarationSignatureExtractor()
     private let callSites: CallSiteCollector
 
-    init(fileName: String, knownTypeNames: Set<String> = []) {
+    init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
         self.fileName = fileName
         self.knownTypeNames = knownTypeNames
+        self.protocolProperties = protocolProperties
         self.members = MemberExtractor(knownTypeNames: knownTypeNames)
         self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames)
         super.init(viewMode: .sourceAccurate)
     }
 
     func buildArtifact() -> CodeArtifact {
-        CodeArtifact(
+        var functions = freestandingFunctions
+        if !topLevelCallSites.isEmpty {
+            functions.append(Member(
+                name: "<top-level>", kind: .method, accessLevel: .public, callSites: topLevelCallSites))
+        }
+        return CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: [fileName]),
             types: types,
             relationships: relationships,
-            freestandingFunctions: freestandingFunctions,
+            freestandingFunctions: functions,
             globalVariables: globalVariables
         )
     }
@@ -57,7 +80,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractClass(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -70,7 +93,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractStruct(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -83,7 +106,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractEnum(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -96,7 +119,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractProtocol(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -115,7 +138,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractExtension(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -139,7 +162,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractActor(from: node, fileName: fileName, namespace: currentNamespace)
-        pushType(typeDecl)
+        pushType(typeDecl, memberBlock: node.memberBlock)
         relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
@@ -163,6 +186,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         // Capture the property map for this type before we descend.
         callSitePropertyMap = buildPropertyMap()
         callSiteLocalMap = [:]
+        callSiteParameterMap = parameterMap(from: node.signature.parameterClause)
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -195,8 +219,9 @@ final class DeclarationVisitor: SyntaxVisitor {
         // lets a later `local.method()` call resolve. Descend into the initializer too, so a call in
         // `let x = obj.compute()` is collected rather than lost with the declaration.
         guard functionBodyDepth == 0 else {
+            let returnTypes = methodReturnTypeMapStack.last ?? [:]
             for binding in node.bindings {
-                if let local = callSites.localBinding(from: binding) {
+                if let local = callSites.localBinding(from: binding, methodReturnTypes: returnTypes) {
                     callSiteLocalMap[local.name] = local.type
                 }
             }
@@ -249,6 +274,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
         callSitePropertyMap = buildPropertyMap()
         callSiteLocalMap = [:]
+        callSiteParameterMap = parameterMap(from: node.signature.parameterClause)
         pendingCallSites = []
         pendingAssignments = []
         pendingFieldReads = []
@@ -316,17 +342,42 @@ final class DeclarationVisitor: SyntaxVisitor {
     // walk and stores what the collector recovers.
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
-        // Locals resolve receivers too, but they must not leak into field-read detection, so they're
-        // merged in only here (with locals shadowing same-named stored properties).
-        let receiverMap = callSiteLocalMap.isEmpty
-            ? callSitePropertyMap
-            : callSitePropertyMap.merging(callSiteLocalMap) { _, local in local }
+        // Parameters and locals resolve receivers too, but they must not leak into field-read
+        // detection, so they're merged in only here (parameters, then locals, shadowing same-named
+        // stored properties — and each other, in declaration order).
+        var receiverMap = callSitePropertyMap
+        if !callSiteParameterMap.isEmpty {
+            receiverMap.merge(callSiteParameterMap) { _, parameter in parameter }
+        }
+        if !callSiteLocalMap.isEmpty {
+            receiverMap.merge(callSiteLocalMap) { _, local in local }
+        }
         if functionBodyDepth > 0,
            let site = callSites.callSite(
-               from: node, propertyMap: receiverMap, fileName: fileName) {
+               from: node, propertyMap: receiverMap,
+               enclosingTypeName: typeStack.last?.name, fileName: fileName) {
             pendingCallSites.append(site)
+        } else if functionBodyDepth == 0, typeStack.isEmpty,
+                  let site = callSites.callSite(
+                    from: node, propertyMap: topLevelGlobalPropertyMap(),
+                    enclosingTypeName: nil, fileName: fileName) {
+            // A bare top-level statement (a `main.swift`-style script): its calls have nowhere to
+            // attach as a member, so they're recorded separately and given a synthetic reachable
+            // member in `buildArtifact()` (RC-H). Receivers resolve against `globalVariables`
+            // declared earlier in the file (Swift's top-level execution order guarantees a global's
+            // declaration precedes its use), the top-level analogue of `callSitePropertyMap`.
+            topLevelCallSites.append(site)
         }
         return .visitChildren
+    }
+
+    /// `globalName → typeName` for every top-level `let`/`var` with a provable type, built fresh at
+    /// each top-level call site so it reflects every global declared so far.
+    private func topLevelGlobalPropertyMap() -> [String: String] {
+        Dictionary(
+            globalVariables.compactMap { global in global.type.map { (global.name, $0.name) } },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
@@ -361,12 +412,14 @@ extension DeclarationVisitor {
         typeStack.last?.qualifiedName
     }
 
-    private func pushType(_ type: TypeDeclaration) {
+    private func pushType(_ type: TypeDeclaration, memberBlock: MemberBlockSyntax) {
         typeStack.append(type)
+        methodReturnTypeMapStack.append(returnTypeMap(from: memberBlock))
     }
 
     private func popType() {
         guard let completed = typeStack.popLast() else { return }
+        methodReturnTypeMapStack.removeLast()
         if typeStack.isEmpty {
             types.append(completed)
         } else {
@@ -374,15 +427,53 @@ extension DeclarationVisitor {
         }
     }
 
+    /// Builds a `methodName → returnTypeName` map from a type's *direct* member list in one pre-pass
+    /// over the raw syntax (not the progressively-accumulated `Member`s), so a forward-declared
+    /// method's return type is seen regardless of source order — same rationale as `knownTypeNames`.
+    /// Keeps only names with a single, unambiguous return type across all overloads (an overloaded
+    /// name with differing return types is dropped rather than guessed).
+    private func returnTypeMap(from memberBlock: MemberBlockSyntax) -> [String: String] {
+        var typesByName: [String: Set<String>] = [:]
+        for item in memberBlock.members {
+            guard let function = item.decl.as(FunctionDeclSyntax.self),
+                  let returnType = function.signature.returnClause?.type.as(IdentifierTypeSyntax.self)
+            else { continue }
+            typesByName[function.name.text, default: []].insert(returnType.name.text)
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+    }
+
     /// Builds a `varName → typeName` map from the stored properties already
     /// extracted for the current type.  Called just before descending into a
     /// function body so we know which receiver names can be resolved.
+    ///
+    /// When the current type is a protocol extension, also seeds the extended protocol's own
+    /// requirement properties (`var x: T { get }`) — the extension's own member list never carries
+    /// them (they're declared on the protocol, not the extension), so a default implementation
+    /// calling through one (`history.undo()`) would otherwise be unresolvable.
     private func buildPropertyMap() -> [String: String] {
         guard let currentType = typeStack.last else { return [:] }
         var map: [String: String] = [:]
         for member in currentType.members where member.kind == .property {
             if let typeName = member.type?.name {
                 map[member.name] = typeName
+            }
+        }
+        if currentType.kind == .extension, let extendedProtocol = currentType.extensionOf,
+           let requirements = protocolProperties[extendedProtocol] {
+            map.merge(requirements) { existing, _ in existing }
+        }
+        return map
+    }
+
+    /// Builds a `paramName → typeName` map from a function/initializer's parameter list, so a
+    /// `param.method()` call inside the body resolves. Only parameters with a provable simple type
+    /// name are included (mirrors `buildPropertyMap`'s "typed only" bar).
+    private func parameterMap(from parameterClause: FunctionParameterClauseSyntax) -> [String: String] {
+        var map: [String: String] = [:]
+        for parameter in signatures.extractParameters(from: parameterClause) {
+            if let typeName = parameter.type?.name {
+                map[parameter.internalName] = typeName
             }
         }
         return map
@@ -398,7 +489,9 @@ extension DeclarationVisitor {
         for binding in node.bindings {
             guard let accessor = binding.accessorBlock else { continue }
             let walker = AccessorCallSiteWalker(
-                collector: callSites, propertyMap: propertyMap, fileName: fileName)
+                collector: callSites, propertyMap: propertyMap,
+                enclosingTypeName: typeStack.last?.name,
+                methodReturnTypes: methodReturnTypeMapStack.last ?? [:], fileName: fileName)
             walker.walk(accessor)
             sites.append(contentsOf: walker.collected)
         }

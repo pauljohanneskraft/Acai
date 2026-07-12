@@ -80,7 +80,10 @@ public struct AnalysisService: Sendable {
         guard let result = combinedArtifact else {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
-        return result
+        // Runs on the *final* cross-spec-merged artifact — the rest of `enriched(using:)` runs
+        // per-language-group inside `parseSpec`/`enrichPerLanguage`, before specs are merged, so it
+        // can't see calls whose receiver's declaring type lives in a different spec/source directory.
+        return result.resolvingCallSiteReceivers()
     }
 
     /// Parses all files for a single language spec and returns the combined artifact.

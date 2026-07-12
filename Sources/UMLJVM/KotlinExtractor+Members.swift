@@ -36,9 +36,23 @@ extension KotlinExtractor {
             }
         }
 
+        // Pre-scan: build methodName → returnType map (unambiguous overloads only), so a same-type
+        // method call — including one declared later in the type — can seed a local's type (RC-I).
+        var returnTypesByName: [String: Set<String>] = [:]
+        for child in node.namedChildren() where child.nodeType == "function_declaration" {
+            guard let nameNode = child.firstChild(withType: "simple_identifier"),
+                  let returnTypeNode = findReturnType(in: child)
+            else { continue }
+            let returnType = extractTypeReferenceFromAny(returnTypeNode)
+            guard returnType.name != "Unit" else { continue }
+            returnTypesByName[text(nameNode), default: []].insert(returnType.name)
+        }
+        let knownMethodReturnTypes = returnTypesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+
         let scope = CallSiteScope(
             knownProperties: knownProperties,
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            knownMethodReturnTypes: knownMethodReturnTypes
         )
 
         let namedChildren = node.namedChildren()
@@ -176,7 +190,7 @@ extension KotlinExtractor {
         }()
 
         let body = node.firstChild(withType: "function_body")
-        let callSites = extractCallSites(from: body, scope: scope)
+        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: params))
 
         return Member(
             name: name, kind: .method,
@@ -387,7 +401,7 @@ extension KotlinExtractor {
             name: "init", kind: .initializer,
             accessLevel: modifierInfo.accessLevel,
             parameters: params, location: loc(node),
-            callSites: extractCallSites(from: body, scope: scope),
+            callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
             assignments: extractAssignments(from: body),
             fieldReads: fieldReadResolver.reads(in: body, scope: scope)
         )

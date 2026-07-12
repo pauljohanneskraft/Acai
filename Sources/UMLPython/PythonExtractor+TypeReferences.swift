@@ -190,10 +190,12 @@ extension PythonExtractor {
         return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
     }
 
-    /// Provable local-variable types: an explicit annotation (`x: Foo = …`) or a `Foo()` construction
-    /// of a declared type (`x = Foo()`), so `x.method()` resolves to `Foo` (RC4). A `self.x = …`
+    /// Provable local-variable types: an explicit annotation (`x: Foo = …`), a `Foo()` construction of
+    /// a declared type (`x = Foo()`), or a same-type method call with an unambiguous return type —
+    /// Python requires an explicit receiver for a method call, so this is `x = self.compute()`, via
+    /// `scope.knownMethodReturnTypes` — so `x.method()` resolves to `Foo` (RC4/RC-I). A `self.x = …`
     /// assignment has an `attribute` target, not an `identifier`, so it is left to field synthesis.
-    func localBindings(in body: Node) -> [String: String] {
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "assignment",
                   let left = node.child(byFieldName: "left"), left.nodeType == "identifier"
@@ -203,10 +205,20 @@ extension PythonExtractor {
                let typeId = typeField.firstChild(withType: "identifier") {
                 return (name, text(typeId))
             }
-            if let right = node.child(byFieldName: "right"), right.nodeType == "call",
-               let function = right.child(byFieldName: "function"), function.nodeType == "identifier",
-               declaredTypeNames.contains(text(function)) {
+            guard let right = node.child(byFieldName: "right"), right.nodeType == "call",
+                  let function = right.child(byFieldName: "function")
+            else { return nil }
+            if function.nodeType == "identifier", declaredTypeNames.contains(text(function)) {
                 return (name, text(function))
+            }
+            // `x = self.compute()` — Python has no implicit receiver, so a same-type method call
+            // always goes through `self.`.
+            if function.nodeType == "attribute",
+               let object = function.child(byFieldName: "object"), object.nodeType == "identifier",
+               text(object) == "self",
+               let attr = function.child(byFieldName: "attribute"),
+               let returnType = scope.knownMethodReturnTypes[text(attr)] {
+                return (name, returnType)
             }
             return nil
         }

@@ -33,7 +33,8 @@ extension PythonExtractor {
             knownTypeNames: declaredTypeNames,
             // Python fields are frequently untyped (`self.x = …`), so the typed `propertyMap` misses
             // them — pass every field name so field-read capture (issue #111) sees them all.
-            knownPropertyNames: Set(fields.map(\.name))
+            knownPropertyNames: Set(fields.map(\.name)),
+            knownMethodReturnTypes: methodReturnTypeMap(fromMethodNodes: methodNodes)
         )
 
         decl.members.append(contentsOf: fields)
@@ -54,6 +55,24 @@ extension PythonExtractor {
             }
         }
         return result
+    }
+
+    /// A `methodName → returnTypeName` map from the class's own method nodes (annotated with an
+    /// explicit `-> Type`; Python has no implicit return-type inference to fall back to), so a
+    /// same-type method call — including one declared later in the class — can seed a local's type
+    /// (RC-I). Overloaded names with differing return types are dropped rather than guessed.
+    private func methodReturnTypeMap(
+        fromMethodNodes methodNodes: [(node: Node, decorators: [String])]
+    ) -> [String: String] {
+        var typesByName: [String: Set<String>] = [:]
+        for method in methodNodes {
+            guard let nameNode = method.node.child(byFieldName: "name"),
+                  let returnTypeNode = method.node.child(byFieldName: "return_type"),
+                  let returnType = extractType(fromTypeField: returnTypeNode)
+            else { continue }
+            typesByName[text(nameNode), default: []].insert(returnType.name)
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
     private func propertyMap(from fields: [Member]) -> [String: String] {
@@ -192,7 +211,7 @@ extension PythonExtractor {
             isComputed: isComputed,
             annotations: decorators,
             location: loc(node),
-            callSites: extractCallSites(from: body, scope: scope),
+            callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
             assignments: extractAssignments(from: body),
             fieldReads: fieldReadResolver.reads(in: body, scope: scope),
             referencedTypeNames: referencedTypeNames(in: body),

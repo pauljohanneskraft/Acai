@@ -16,6 +16,10 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     var globalVariables: [Member] = []
     var currentNamespace: String?
     var declaredTypeNames: Set<String> = []
+    /// Call sites made by bare top-level statements (a script's `main()` call, or the idiomatic
+    /// `if __name__ == "__main__":` block), collected during `walkSourceFile` and attached to a
+    /// synthetic always-reachable freestanding member (RC-H).
+    var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String) {
         self.context = SourceFileContext(source: source, fileName: fileName)

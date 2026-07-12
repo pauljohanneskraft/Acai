@@ -36,7 +36,9 @@ extension CFamilyExtractor {
                     // are static/sibling/free, so file-level type names are enough to resolve them.
                     if let initList = child.firstChild(withType: "field_initializer_list") {
                         method.callSites += extractCallSites(
-                            from: initList, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+                            from: initList,
+                            scope: CallSiteScope(knownTypeNames: declaredTypeNames)
+                                .merging(parameters: method.parameters))
                     }
                     members.append(method)
                     if let methodBody = child.child(byFieldName: "body") {
@@ -62,11 +64,13 @@ extension CFamilyExtractor {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(
             knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            knownMethodReturnTypes: methodReturnTypeMap(from: members)
         )
         for pending in pendingBodies where pending.index < members.count {
             // `+=`: a constructor may already carry member-initializer-list call sites set at append time.
-            members[pending.index].callSites += extractCallSites(from: pending.body, scope: scope)
+            members[pending.index].callSites += extractCallSites(
+                from: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
             members[pending.index].assignments = extractAssignments(from: pending.body)
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
             members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
@@ -155,7 +159,7 @@ extension CFamilyExtractor {
         }
         if let body = node.child(byFieldName: "body") {
             let scope = CallSiteScope(knownProperties: [:], knownTypeNames: declaredTypeNames)
-            member.callSites = extractCallSites(from: body, scope: scope)
+            member.callSites = extractCallSites(from: body, scope: scope.merging(parameters: member.parameters))
             // Expose the function's typed parameters so a `param->field = …` write inside the body
             // can be attributed to the parameter's struct type; cleared once the body is analysed.
             currentReceiverTypes = parameterReceiverTypes(member.parameters)

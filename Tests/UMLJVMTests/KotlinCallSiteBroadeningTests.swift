@@ -68,6 +68,47 @@ struct KotlinCallSiteBroadeningTests {
         #expect(runMethod?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
     }
 
+    /// A typed function parameter is a provable call-site receiver, just like a stored property
+    /// (dead-code false positive: RC-G).
+    @Test func resolvesCallOnTypedParameter() {
+        let source = """
+        class Helper {
+            fun process() {}
+        }
+        class Worker {
+            fun run(helper: Helper) {
+                helper.process()
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.kt")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
+    }
+
+    /// A local initialized from a same-type method call (`val x = compute()`) resolves its receiver
+    /// type from the method's unambiguous return type, the same way `val x = Helper()` already does —
+    /// including when the method is declared *after* the caller (dead-code false positive: RC-I).
+    @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
+        let source = """
+        class Widget {
+            fun use() {}
+        }
+        class Worker {
+            fun run() {
+                val x = compute()
+                x.use()
+            }
+            fun compute(): Widget = Widget()
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.kt")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
+    }
+
     /// A bare `foo()` (an implicit-receiver call to a sibling method or top-level function) is
     /// captured as `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
     @Test func capturesBareImplicitSelfCallButNotConstruction() {

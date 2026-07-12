@@ -22,6 +22,22 @@ public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
     /// The call is observed but its receiver can't be resolved (a generic parameter / protocol
     /// existential whose concrete type is unknown). Counts toward neither `self` nor a declared type.
     case unknown
+
+    /// A capitalised-identifier receiver not known to be a declared type *within the file it was
+    /// parsed in* — possibly declared elsewhere in the project. Resolved post-merge by
+    /// ``CodeArtifact/resolvingCallSiteReceivers()``, which promotes it to ``type(_:)`` when the
+    /// merged project has exactly one declared type with this simple name; a consumer that runs
+    /// before that pass (or receives an artifact it never ran on) treats this the same as `unknown` —
+    /// never guesses across an ambiguous or absent match.
+    case unresolvedTypeName(String)
+
+    /// A call reached through a property-access chain (`a.b.c()`) whose head resolves to a known type
+    /// (`headTypeName` — the enclosing type for a `self`-headed chain, or a known property's type) but
+    /// whose intermediate hops (`hops`, each a property name) couldn't be resolved within the file.
+    /// Resolved post-merge by ``CodeArtifact/resolvingCallSiteReceivers()``, which walks each hop's
+    /// declared property type through the full project type graph; an unresolvable hop leaves this
+    /// case in place, treated the same as `unknown` by any consumer.
+    case propertyChain(headTypeName: String, hops: [String])
 }
 
 /// A statically-observable call to a method or free function, recorded

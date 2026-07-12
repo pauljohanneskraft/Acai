@@ -27,6 +27,9 @@ struct QualityCheckReportView: View {
     /// The row/summary accent. Red for the gate preview in the editor; orange for the advisory
     /// findings shown in the codebase Code Quality Check section.
     var tint: Color = .red
+    /// Lets each violation row reveal its file in Finder. `nil` in the rules editor's live preview,
+    /// which has no codebase directory to resolve a relative path against.
+    var codebase: Codebase?
 
     var body: some View {
         if report.isPassing {
@@ -48,7 +51,7 @@ struct QualityCheckReportView: View {
                     .foregroundStyle(tint)
             }
             ForEach(Array(report.violations.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, violation in
-                ViolationRowView(violation: violation, tint: tint)
+                ViolationRowView(violation: violation, tint: tint, codebase: codebase)
             }
         }
     }

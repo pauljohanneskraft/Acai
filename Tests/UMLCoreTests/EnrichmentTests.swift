@@ -167,6 +167,131 @@ struct EnrichmentTests {
         #expect(resolved.types.filter { $0.kind == .extension }.isEmpty)
     }
 
+    // MARK: RC-F — bare-name extension-target fallback is module-scoped
+
+    /// `extension Node { ... }` on an *external* type (e.g. `SwiftTreeSitter.Node`) must not
+    /// silently merge into an unrelated in-project nested type that happens to share the bare name
+    /// (`FreeformDiagram.Node`) just because it's the only declared `Node` — the extension's own
+    /// module (`UMLTreeSitter`) doesn't match the nested type's module (`UMLApp`), so the fallback
+    /// must refuse to guess and drop the extension like any other external-type extension.
+    @Test func bareNameExtensionDoesNotMergeAcrossModules() {
+        var nestedNode = type(
+            "Node", kind: .struct, accessLevel: .public,
+            file: "UMLApp/Sources/UMLApp/FreeformDiagram.swift")
+        nestedNode.id = "FreeformDiagram.Node"
+        nestedNode.qualifiedName = "FreeformDiagram.Node"
+        let outer = TypeDeclaration(
+            id: "FreeformDiagram", name: "FreeformDiagram", qualifiedName: "FreeformDiagram",
+            kind: .struct, accessLevel: .public,
+            nestedTypes: [nestedNode],
+            location: SourceLocation(filePath: "UMLApp/Sources/UMLApp/FreeformDiagram.swift", line: 1, column: 1))
+        let ext = type(
+            "Node", members: [Member(name: "allChildren", kind: .method, accessLevel: .internal)],
+            extensionOf: "Node",
+            file: "UMLTreeSitter/Sources/UMLTreeSitter/Node+Children.swift")
+
+        let resolved = artifact([outer, ext]).enriched()
+
+        let mergedNode = resolved.types.first { $0.name == "FreeformDiagram" }?.nestedTypes.first
+        #expect(mergedNode?.members.contains { $0.name == "allChildren" } == false)
+        // Dropped like any other external-type extension: no leftover extension node either.
+        #expect(resolved.types.filter { $0.kind == .extension }.isEmpty)
+    }
+
+    /// The bare-name fallback still works when the extension and its nested target genuinely share
+    /// a module — module-scoping must not break the legitimate case.
+    @Test func bareNameExtensionMergesIntoSameModuleNestedType() {
+        var nestedNode = type(
+            "Node", kind: .struct, accessLevel: .public,
+            file: "UMLApp/Sources/UMLApp/FreeformDiagram.swift")
+        nestedNode.id = "FreeformDiagram.Node"
+        nestedNode.qualifiedName = "FreeformDiagram.Node"
+        let outer = TypeDeclaration(
+            id: "FreeformDiagram", name: "FreeformDiagram", qualifiedName: "FreeformDiagram",
+            kind: .struct, accessLevel: .public,
+            nestedTypes: [nestedNode],
+            location: SourceLocation(filePath: "UMLApp/Sources/UMLApp/FreeformDiagram.swift", line: 1, column: 1))
+        let ext = type(
+            "Node", members: [Member(name: "helper", kind: .method, accessLevel: .internal)],
+            extensionOf: "Node",
+            file: "UMLApp/Sources/UMLApp/Node+Extras.swift")
+
+        let resolved = artifact([outer, ext]).enriched()
+
+        let mergedNode = resolved.types.first { $0.name == "FreeformDiagram" }?.nestedTypes.first
+        #expect(mergedNode?.members.contains { $0.name == "helper" } == true)
+    }
+
+    // MARK: WS6 — deferred call-site receiver resolution (cross-file + multi-hop)
+
+    private func method(_ name: String, callSites: [CallSite] = []) -> Member {
+        Member(name: name, kind: .method, accessLevel: .internal, callSites: callSites)
+    }
+
+    /// `.unresolvedTypeName` promotes to `.type` once the full project (not just the caller's own
+    /// file) shows exactly one declared type with that name — the cross-file case (`TypeName.method()`
+    /// where `TypeName` is declared in a different file than the call site).
+    @Test func unresolvedTypeNameResolvesAcrossFiles() {
+        let caller = type("Caller", members: [
+            method("run", callSites: [
+                CallSite(receiver: .unresolvedTypeName("Helper"), methodName: "assist")
+            ])
+        ])
+        let helper = type("Helper", members: [method("assist")])
+        let resolved = artifact([caller, helper]).resolvingCallSiteReceivers()
+        let site = resolved.types.first { $0.name == "Caller" }?.members.first?.callSites.first
+        #expect(site?.receiver == .type("Helper"))
+    }
+
+    /// Two declared types sharing a bare name is a real ambiguity (unlike the `mergeExtension`
+    /// module-scoped case) — an `.unresolvedTypeName` must stay deferred rather than guess between
+    /// them.
+    @Test func unresolvedTypeNameStaysUnresolvedWhenAmbiguous() {
+        let caller = type("Caller", members: [
+            method("run", callSites: [
+                CallSite(receiver: .unresolvedTypeName("Helper"), methodName: "assist")
+            ])
+        ])
+        let helperA = type("Helper", nested: [], file: "A/Sources/A/Helper.swift")
+        let helperB = type("Helper", nested: [], file: "B/Sources/B/Helper.swift")
+        let resolved = artifact([caller, helperA, helperB]).resolvingCallSiteReceivers()
+        let site = resolved.types.first { $0.name == "Caller" }?.members.first?.callSites.first
+        #expect(site?.receiver == .unresolvedTypeName("Helper"))
+    }
+
+    /// `.propertyChain(headTypeName:hops:)` promotes to `.type` when every hop resolves to a single,
+    /// unambiguous declared property type — the multi-hop case (`model.diagrams.add()`, where
+    /// `model`'s type is known but `diagrams` isn't a property of the *caller's* type).
+    @Test func propertyChainResolvesThroughIntermediateHop() {
+        let diagrams = type("Diagrams", members: [method("add")])
+        let model = type("Model", members: [
+            Member(name: "diagrams", kind: .property, accessLevel: .internal, type: TypeReference(name: "Diagrams"))
+        ])
+        let worker = type("Worker", members: [
+            method("run", callSites: [
+                CallSite(receiver: .propertyChain(headTypeName: "Model", hops: ["diagrams"]), methodName: "add")
+            ])
+        ])
+        let resolved = artifact([worker, model, diagrams]).resolvingCallSiteReceivers()
+        let site = resolved.types.first { $0.name == "Worker" }?.members.first?.callSites.first
+        #expect(site?.receiver == .type("Diagrams"))
+    }
+
+    /// A hop that isn't a real property of the head's type must not be guessed — the chain stays
+    /// deferred (never promoted, never dropped to `.unknown` either — a consumer that runs before or
+    /// without this pass already treats it the same as `.unknown`).
+    @Test func propertyChainStaysUnresolvedWhenHopIsUnknown() {
+        let model = type("Model", members: [])
+        let worker = type("Worker", members: [
+            method("run", callSites: [
+                CallSite(receiver: .propertyChain(headTypeName: "Model", hops: ["nonexistent"]), methodName: "add")
+            ])
+        ])
+        let resolved = artifact([worker, model]).resolvingCallSiteReceivers()
+        let site = resolved.types.first { $0.name == "Worker" }?.members.first?.callSites.first
+        #expect(site?.receiver == .propertyChain(headTypeName: "Model", hops: ["nonexistent"]))
+    }
+
     // MARK: BUG-3 — class conformance reclassified, true superclass kept
 
     @Test func inheritanceToProtocolBecomesConformance() {

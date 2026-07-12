@@ -15,12 +15,14 @@ struct StatisticDetail: Identifiable {
         let id: String
         let name: String
         let value: String
-        let reveal: (() -> Void)?
+        /// The item's path relative to the codebase directory, or `nil` when it can't be resolved.
+        let relativePath: String?
     }
 }
 
 /// Presents a `StatisticDetail` as a sortable, revealable list.
 struct StatisticDetailSheet: View {
+    let codebase: Codebase
     let detail: StatisticDetail
     @Environment(\.dismiss) private var dismiss
 
@@ -57,22 +59,16 @@ struct StatisticDetailSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(detail.rows) { row in
-                Button {
-                    row.reveal?()
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(row.name)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Spacer()
-                        Text(row.value)
-                            .font(.callout.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    }
-                    .contentShape(Rectangle())
+                HStack(spacing: 8) {
+                    Text(row.name)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Text(row.value)
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .disabled(row.reveal == nil)
+                .revealsInFinder(codebase: codebase, relativePath: row.relativePath)
             }
         }
     }

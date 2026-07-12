@@ -144,9 +144,11 @@ extension KotlinExtractor {
         return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: loc(node))
     }
 
-    /// Provable local-variable types: an explicit annotation (`val x: Foo`) or a `Foo()` construction
-    /// of a declared type (`val x = Foo()`), so `x.method()` resolves to `Foo` (RC4).
-    func localBindings(in body: Node) -> [String: String] {
+    /// Provable local-variable types: an explicit annotation (`val x: Foo`), a `Foo()` construction of
+    /// a declared type (`val x = Foo()`), or a same-type method call with an unambiguous return type
+    /// (`val x = compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`
+    /// (RC4/RC-I).
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "property_declaration",
                   let varDecl = node.firstChild(withType: "variable_declaration"),
@@ -157,11 +159,15 @@ extension KotlinExtractor {
                let typeId = userType.firstChild(withType: "type_identifier") {
                 return (name, text(typeId))
             }
-            if let call = node.firstChild(withType: "call_expression"),
-               call.firstChild(withType: "navigation_expression") == nil,
-               let callee = call.firstChild(withType: "simple_identifier"),
-               declaredTypeNames.contains(text(callee)) {
+            guard let call = node.firstChild(withType: "call_expression"),
+                  call.firstChild(withType: "navigation_expression") == nil,
+                  let callee = call.firstChild(withType: "simple_identifier")
+            else { return nil }
+            if declaredTypeNames.contains(text(callee)) {
                 return (name, text(callee))
+            }
+            if let returnType = scope.knownMethodReturnTypes[text(callee)] {
+                return (name, returnType)
             }
             return nil
         }

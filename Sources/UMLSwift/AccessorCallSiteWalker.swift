@@ -15,19 +15,26 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     /// Stored properties seeded up front, plus locals declared in the accessor recorded as they're
     /// visited — so `local.method()` inside a `body` resolves, just as in a function body.
     private var receiverMap: [String: String]
+    private let enclosingTypeName: String?
+    private let methodReturnTypes: [String: String]
     private let fileName: String
     private(set) var collected: [CallSite] = []
 
-    init(collector: CallSiteCollector, propertyMap: [String: String], fileName: String) {
+    init(
+        collector: CallSiteCollector, propertyMap: [String: String],
+        enclosingTypeName: String?, methodReturnTypes: [String: String] = [:], fileName: String
+    ) {
         self.collector = collector
         self.receiverMap = propertyMap
+        self.enclosingTypeName = enclosingTypeName
+        self.methodReturnTypes = methodReturnTypes
         self.fileName = fileName
         super.init(viewMode: .sourceAccurate)
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
         for binding in node.bindings {
-            if let local = collector.localBinding(from: binding) {
+            if let local = collector.localBinding(from: binding, methodReturnTypes: methodReturnTypes) {
                 receiverMap[local.name] = local.type
             }
         }
@@ -35,7 +42,9 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     }
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
-        if let site = collector.callSite(from: node, propertyMap: receiverMap, fileName: fileName) {
+        if let site = collector.callSite(
+            from: node, propertyMap: receiverMap,
+            enclosingTypeName: enclosingTypeName, fileName: fileName) {
             collected.append(site)
         }
         return .visitChildren

@@ -10,7 +10,8 @@ extension JSExtractor {
     func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
         let scope = CallSiteScope(
             knownProperties: buildPropertyMapFromBody(bodyNode),
-            knownTypeNames: declaredTypeNames
+            knownTypeNames: declaredTypeNames,
+            knownMethodReturnTypes: buildMethodReturnTypeMapFromBody(bodyNode)
         )
 
         for child in bodyNode.children() {
@@ -99,6 +100,23 @@ extension JSExtractor {
         return map
     }
 
+    /// A `methodName → returnTypeName` map from the class body's *direct* `method_definition`
+    /// children (TypeScript only — JS has no return-type annotations), so a same-type method call
+    /// with an unambiguous return type — including one declared later in the type — can seed a
+    /// local's type (RC-I). Overloaded names with differing return types are dropped rather than
+    /// guessed.
+    private func buildMethodReturnTypeMapFromBody(_ bodyNode: Node) -> [String: String] {
+        guard isTypeScript else { return [:] }
+        var typesByName: [String: Set<String>] = [:]
+        for child in bodyNode.children() where child.nodeType == "method_definition" {
+            guard let nameNode = child.child(byFieldName: "name"),
+                  let returnType = extractReturnTypeAnnotation(child)
+            else { continue }
+            typesByName[text(nameNode), default: []].insert(returnType.name)
+        }
+        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+    }
+
     // MARK: - Method Definition
 
     private static let methodKeywordModifiers: [String: Modifier] = [
@@ -124,7 +142,7 @@ extension JSExtractor {
         let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope)
+        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: params))
 
         return Member(
             name: name.isEmpty ? "_anonymous" : name,

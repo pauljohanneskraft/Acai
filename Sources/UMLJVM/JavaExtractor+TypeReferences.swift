@@ -34,9 +34,10 @@ extension JavaExtractor {
         )
     }
 
-    /// Provable local-variable types: an explicit annotation (`Foo x = …`) or a `new Foo()` construction
-    /// (`var x = new Foo()`), so `x.method()` resolves to `Foo` (RC4).
-    func localBindings(in body: Node) -> [String: String] {
+    /// Provable local-variable types: an explicit annotation (`Foo x = …`), a `new Foo()` construction
+    /// (`var x = new Foo()`), or a same-type method call with an unambiguous return type (`var x =
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "local_variable_declaration",
                   let declarator = node.child(byFieldName: "declarator"),
@@ -47,10 +48,15 @@ extension JavaExtractor {
                typeNode.nodeType == "type_identifier", text(typeNode) != "var" {
                 return (name, text(typeNode))
             }
-            if let value = declarator.child(byFieldName: "value"),
-               value.nodeType == "object_creation_expression",
+            guard let value = declarator.child(byFieldName: "value") else { return nil }
+            if value.nodeType == "object_creation_expression",
                let typeNode = value.child(byFieldName: "type") {
                 return (name, text(typeNode))
+            }
+            if value.nodeType == "method_invocation", value.child(byFieldName: "object") == nil,
+               let methodName = value.child(byFieldName: "name").map({ text($0) }),
+               let returnType = scope.knownMethodReturnTypes[methodName] {
+                return (name, returnType)
             }
             return nil
         }

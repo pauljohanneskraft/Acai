@@ -17,13 +17,15 @@ struct CallSiteCollector {
     /// a known property/type and the call should be dropped. `propertyMap` is the current type's
     /// `storedPropertyName → declaredTypeName` map.
     func callSite(
-        from node: FunctionCallExprSyntax, propertyMap: [String: String], fileName: String
+        from node: FunctionCallExprSyntax, propertyMap: [String: String],
+        enclosingTypeName: String?, fileName: String
     ) -> CallSite? {
         let callee = unwrappedCallee(node.calledExpression)
         if let memberAccess = callee.as(MemberAccessExprSyntax.self) {
             let methodName = memberAccess.declName.baseName.text
             guard let resolved = resolveReceiver(
-                from: memberAccess.base, propertyMap: propertyMap) else { return nil }
+                from: memberAccess.base, propertyMap: propertyMap,
+                enclosingTypeName: enclosingTypeName) else { return nil }
             return CallSite(
                 receiver: resolved.receiver,
                 methodName: methodName,
@@ -146,34 +148,35 @@ struct CallSiteCollector {
 
     /// Resolves the declared type for a receiver expression.
     ///
-    /// Handles (only when provably resolvable — otherwise returns `nil`, dropping the call):
+    /// Handles (only when provably resolvable, or deferrable to the post-merge pass — otherwise
+    /// returns `nil`, dropping the call):
     /// - `varName.method()` — known stored property → its declared type (`.type`),
     /// - `self.varName.method()` — strips the leading `self.` then looks up the property (`.type`),
     /// - `self.method()` — a call on the enclosing instance (`.selfDispatch`),
-    /// - `TypeName.method()` — `TypeName` is a known type → a static call (`.type`).
+    /// - `Self.method()` — a static call on the enclosing type (`.type(enclosingTypeName)`), kept
+    ///   distinct from `self.method()`/bare `method()`: Swift itself disambiguates static (`Self.`)
+    ///   from instance (`self.`/implicit) dispatch, so collapsing both into `.selfDispatch` would
+    ///   make a same-named static/instance pair on one type unresolvable to "which one,"
+    /// - `TypeName.method()` — `TypeName` is a known type → a static call (`.type`),
+    /// - a capitalised receiver not known in this file — `TypeName.method()` where `TypeName` is
+    ///   declared *elsewhere* in the project → deferred (`.unresolvedTypeName`), resolved post-merge
+    ///   by `CodeArtifact.resolvingCallSiteReceivers()` (RC-cross-file),
+    /// - `a.b.method()` where `a` (or `self.a`) resolves to a known type but `b` isn't a property of
+    ///   *this* file's types → deferred (`.propertyChain`), resolved post-merge by walking `b`'s
+    ///   declared type on `a`'s type through the full project type graph (RC-multi-hop).
     private func resolveReceiver(
-        from base: ExprSyntax?, propertyMap: [String: String]
+        from base: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?
     ) -> ResolvedReceiver? {
         guard let base else { return nil }
 
         if let declRef = base.as(DeclReferenceExprSyntax.self) {
-            let name = declRef.baseName.text
-            if name == "self" {
-                return ResolvedReceiver(receiver: .selfDispatch)
-            }
-            if let propertyType = propertyMap[name] {
-                return ResolvedReceiver(receiver: .type(propertyType))
-            }
-            if knownTypeNames.contains(name) {
-                return ResolvedReceiver(receiver: .type(name))
-            }
-            return nil
+            return resolveIdentifierReceiver(
+                declRef, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
         }
 
-        if let memberAccess = base.as(MemberAccessExprSyntax.self),
-           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
-           let propertyType = propertyMap[memberAccess.declName.baseName.text] {
-            return ResolvedReceiver(receiver: .type(propertyType))
+        if let memberAccess = base.as(MemberAccessExprSyntax.self) {
+            return resolveChainedReceiver(
+                memberAccess, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
         }
 
         // `Foo(...).method()` — a call on a freshly constructed value resolves to `Foo`.
@@ -184,17 +187,106 @@ struct CallSiteCollector {
         return nil
     }
 
+    /// Resolves a bare-identifier receiver (`self`, `Self`, a known property, a same-file type name,
+    /// or a capitalised name deferred to the post-merge cross-file pass).
+    private func resolveIdentifierReceiver(
+        _ declRef: DeclReferenceExprSyntax, propertyMap: [String: String], enclosingTypeName: String?
+    ) -> ResolvedReceiver? {
+        let name = declRef.baseName.text
+        if name == "self" {
+            return ResolvedReceiver(receiver: .selfDispatch)
+        }
+        if name == "Self" {
+            guard let enclosingTypeName else { return nil }
+            return ResolvedReceiver(receiver: .type(enclosingTypeName))
+        }
+        if let propertyType = propertyMap[name] {
+            return ResolvedReceiver(receiver: .type(propertyType))
+        }
+        if knownTypeNames.contains(name) {
+            return ResolvedReceiver(receiver: .type(name))
+        }
+        // Capitalised but not a type declared in *this* file: possibly declared elsewhere in the
+        // project. Deferred rather than dropped — resolved post-merge when the full type set is
+        // known, and left as this case (never guessed) if no unambiguous match turns up.
+        if name.first?.isUppercase == true {
+            return ResolvedReceiver(receiver: .unresolvedTypeName(name))
+        }
+        return nil
+    }
+
+    /// Resolves a member-access receiver (`self.prop.method()`, or a deeper chain deferred to the
+    /// post-merge multi-hop pass).
+    private func resolveChainedReceiver(
+        _ memberAccess: MemberAccessExprSyntax, propertyMap: [String: String], enclosingTypeName: String?
+    ) -> ResolvedReceiver? {
+        let hop = memberAccess.declName.baseName.text
+        if memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self",
+           let propertyType = propertyMap[hop] {
+            return ResolvedReceiver(receiver: .type(propertyType))
+        }
+        // A deeper chain (`model.diagrams.method()`, `self.model.method()` when `model` isn't a
+        // known-typed property directly): resolve the chain's *head* (everything before this last
+        // hop) to a type and defer `hop` to the post-merge pass, which has the full project type
+        // graph to look up `hop`'s declared type on the head's type.
+        guard let headType = chainHeadType(
+            of: memberAccess.base, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
+        else { return nil }
+        return ResolvedReceiver(receiver: .propertyChain(headTypeName: headType, hops: [hop]))
+    }
+
+    /// The type of a property-access chain's head (`self`, `Self`, a known-typed property, or a
+    /// same-file type name), used to seed `.propertyChain(headTypeName:hops:)` when the final hop
+    /// isn't resolvable in-file. Returns `nil` when the head itself isn't provably typed — a chain
+    /// starting from an unknown receiver stays dropped, not deferred (only the *last* hop before the
+    /// method call defers; a deeper unresolved head is not chased further).
+    private func chainHeadType(
+        of expr: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?
+    ) -> String? {
+        guard let declRef = expr?.as(DeclReferenceExprSyntax.self) else { return nil }
+        let name = declRef.baseName.text
+        if name == "self" || name == "Self" {
+            return enclosingTypeName
+        }
+        if let propertyType = propertyMap[name] {
+            return propertyType
+        }
+        return knownTypeNames.contains(name) ? name : nil
+    }
+
     /// The type a `let`/`var` binding provably introduces for receiver resolution, when it can be read
-    /// off an explicit annotation (`let x: Foo`) or a construction initializer (`let x = Foo()`).
-    /// Callers fold this into their property map so a later `x.method()` resolves to `Foo`.
-    func localBinding(from binding: PatternBindingSyntax) -> (name: String, type: String)? {
+    /// off an explicit annotation (`let x: Foo`), a construction initializer (`let x = Foo()`), or a
+    /// same-type method call whose return type is unambiguous (`let x = compute()` / `let x =
+    /// self.compute()`, resolved via `methodReturnTypes`). Callers fold this into their property map
+    /// so a later `x.method()` resolves to `Foo`.
+    func localBinding(
+        from binding: PatternBindingSyntax, methodReturnTypes: [String: String] = [:]
+    ) -> (name: String, type: String)? {
         guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
         if let identifier = binding.typeAnnotation?.type.as(IdentifierTypeSyntax.self) {
             return (name, identifier.name.text)
         }
-        if let call = binding.initializer?.value.as(FunctionCallExprSyntax.self),
-           let type = constructedTypeName(call) {
+        guard let call = binding.initializer?.value.as(FunctionCallExprSyntax.self) else { return nil }
+        if let type = constructedTypeName(call) {
             return (name, type)
+        }
+        if let methodName = calleeMethodName(call), let returnType = methodReturnTypes[methodName] {
+            return (name, returnType)
+        }
+        return nil
+    }
+
+    /// The bare method name of a `compute()` / `self.compute()` call expression's callee, or `nil` for
+    /// any other shape (a construction, a static call, a receiver-typed call) — those are handled by
+    /// their own resolution paths and must not be double-counted as a same-type method call.
+    private func calleeMethodName(_ call: FunctionCallExprSyntax) -> String? {
+        let callee = unwrappedCallee(call.calledExpression)
+        if let declRef = callee.as(DeclReferenceExprSyntax.self), !isTypeName(declRef.baseName.text) {
+            return declRef.baseName.text
+        }
+        if let memberAccess = callee.as(MemberAccessExprSyntax.self),
+           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.text == "self" {
+            return memberAccess.declName.baseName.text
         }
         return nil
     }

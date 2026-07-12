@@ -68,9 +68,11 @@ extension CFamilyExtractor: CallSiteResolving {
         )
     }
 
-    /// Provable local-variable types: an explicit declared type (`Foo x;` / `Foo* p = …;`) or an
-    /// `auto p = new Foo()` construction, so `x.method()` / `p->method()` resolves to `Foo` (RC4).
-    func localBindings(in body: Node) -> [String: String] {
+    /// Provable local-variable types: an explicit declared type (`Foo x;` / `Foo* p = …;`), an
+    /// `auto p = new Foo()` construction, or a same-type method call with an unambiguous return type
+    /// (`auto x = compute();`, via `scope.knownMethodReturnTypes`), so `x.method()` / `p->method()`
+    /// resolves to `Foo` (RC4/RC-I).
+    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "declaration",
                   let declarator = node.child(byFieldName: "declarator"),
@@ -79,10 +81,17 @@ extension CFamilyExtractor: CallSiteResolving {
             if let typeNode = node.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
                 return (name, text(typeNode))
             }
-            if declarator.nodeType == "init_declarator",
-               let value = declarator.child(byFieldName: "value"), value.nodeType == "new_expression",
+            guard declarator.nodeType == "init_declarator",
+                  let value = declarator.child(byFieldName: "value")
+            else { return nil }
+            if value.nodeType == "new_expression",
                let typeNode = value.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
                 return (name, text(typeNode))
+            }
+            if value.nodeType == "call_expression",
+               let function = value.child(byFieldName: "function"), function.nodeType == "identifier",
+               let returnType = scope.knownMethodReturnTypes[text(function)] {
+                return (name, returnType)
             }
             return nil
         }

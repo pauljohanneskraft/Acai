@@ -14,7 +14,11 @@ public struct SwiftCodeParser: CodeParser {
         let sourceFile = Parser.parse(source: source)
         let typeNameCollector = TypeNameCollector(viewMode: .sourceAccurate)
         typeNameCollector.walk(sourceFile)
-        let visitor = DeclarationVisitor(fileName: fileName, knownTypeNames: typeNameCollector.names)
+        let protocolPropertyCollector = ProtocolPropertyCollector(viewMode: .sourceAccurate)
+        protocolPropertyCollector.walk(sourceFile)
+        let visitor = DeclarationVisitor(
+            fileName: fileName, knownTypeNames: typeNameCollector.names,
+            protocolProperties: protocolPropertyCollector.propertiesByProtocol)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
         // Surface malformed input rather than silently returning a partial tree. SwiftSyntax
