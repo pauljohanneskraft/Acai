@@ -1,105 +1,6 @@
 {
-  "originHash" : "d7b055945d1674ce8d5fb8f7ef980c983b56ab94a339bfcc4f8bd9704c08bae6",
+  "originHash" : "9cdf2990ec4350988c9c073c6f2c2055408361704e3f78b24c320e1f33866cd0",
   "pins" : [
-    {
-      "identity" : "eventsource",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/mattt/eventsource.git",
-      "state" : {
-        "revision" : "a3a85a85214caf642abaa96ae664e4c772a59f6e",
-        "version" : "1.4.1"
-      }
-    },
-    {
-      "identity" : "swift-argument-parser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-argument-parser",
-      "state" : {
-        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
-        "version" : "1.8.2"
-      }
-    },
-    {
-      "identity" : "swift-atomics",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-atomics.git",
-      "state" : {
-        "revision" : "0442cb5a3f98ab802acb777929fdb446bda11a34",
-        "version" : "1.3.1"
-      }
-    },
-    {
-      "identity" : "swift-collections",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-collections.git",
-      "state" : {
-        "revision" : "a0cb0954ecb21e4e31b0070e6ed5674e8556685a",
-        "version" : "1.6.0"
-      }
-    },
-    {
-      "identity" : "swift-docc-plugin",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-docc-plugin",
-      "state" : {
-        "revision" : "647c708be89f834fa6a6d4945442793a77ddf5b6",
-        "version" : "1.5.0"
-      }
-    },
-    {
-      "identity" : "swift-docc-symbolkit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-docc-symbolkit",
-      "state" : {
-        "revision" : "b45d1f2ed151d057b54504d653e0da5552844e34",
-        "version" : "1.0.0"
-      }
-    },
-    {
-      "identity" : "swift-log",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-log.git",
-      "state" : {
-        "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
-        "version" : "1.14.0"
-      }
-    },
-    {
-      "identity" : "swift-nio",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-nio.git",
-      "state" : {
-        "revision" : "cd3e1152083706d77b223fb29110e590efcc70c0",
-        "version" : "2.101.2"
-      }
-    },
-    {
-      "identity" : "swift-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/modelcontextprotocol/swift-sdk",
-      "state" : {
-        "revision" : "a0ae212ebf6eab5f754c3129608bc5557637e605",
-        "version" : "0.12.1"
-      }
-    },
-    {
-      "identity" : "swift-syntax",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax.git",
-      "state" : {
-        "revision" : "0687f71944021d616d34d922343dcef086855920",
-        "version" : "600.0.1"
-      }
-    },
-    {
-      "identity" : "swift-system",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-system.git",
-      "state" : {
-        "revision" : "7502b711c92a17741fa625d722b0ccbd595d8ed1",
-        "version" : "1.7.2"
-      }
-    },
     {
       "identity" : "swift-tree-sitter",
       "kind" : "remoteSourceControl",
@@ -119,75 +20,12 @@
       }
     },
     {
-      "identity" : "tree-sitter-c",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-c",
-      "state" : {
-        "revision" : "b780e47fc780ddc8da13afa35a3f4ed5c157823d",
-        "version" : "0.24.2"
-      }
-    },
-    {
-      "identity" : "tree-sitter-cpp",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-cpp",
-      "state" : {
-        "revision" : "f41e1a044c8a84ea9fa8577fdd2eab92ec96de02",
-        "version" : "0.23.4"
-      }
-    },
-    {
-      "identity" : "tree-sitter-dart",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/UserNobody14/tree-sitter-dart",
-      "state" : {
-        "branch" : "master",
-        "revision" : "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"
-      }
-    },
-    {
-      "identity" : "tree-sitter-java",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-java",
-      "state" : {
-        "revision" : "94703d5a6bed02b98e438d7cad1136c01a60ba2c",
-        "version" : "0.23.5"
-      }
-    },
-    {
-      "identity" : "tree-sitter-kotlin",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/fwcd/tree-sitter-kotlin",
-      "state" : {
-        "revision" : "e1a2d5ad1f61f5740677183cd4125bb071cd2f30",
-        "version" : "0.3.8"
-      }
-    },
-    {
       "identity" : "tree-sitter-python",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter/tree-sitter-python",
       "state" : {
         "revision" : "293fdc02038ee2bf0e2e206711b69c90ac0d413f",
         "version" : "0.25.0"
-      }
-    },
-    {
-      "identity" : "tree-sitter-typescript",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-typescript",
-      "state" : {
-        "revision" : "f975a621f4e7f532fe322e13c4f79495e0a7b2e7",
-        "version" : "0.23.2"
-      }
-    },
-    {
-      "identity" : "yams",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/Yams",
-      "state" : {
-        "revision" : "3d6871d5b4a5cd519adf233fbb576e0a2af71c17",
-        "version" : "5.4.0"
       }
     }
   ],
