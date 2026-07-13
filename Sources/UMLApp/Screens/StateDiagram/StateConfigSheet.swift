@@ -21,6 +21,8 @@ struct StateConfigSheet: View {
     @State private var scope: Scope?
     @State private var variableName: String
     @State private var maxStates: Int
+    @State private var scopeQuery = ""
+    @State private var variableQuery = ""
 
     init(
         artifact: CodeArtifact,
@@ -54,30 +56,36 @@ struct StateConfigSheet: View {
                     .foregroundStyle(.secondary)
 
                 LabeledContent("Scope") {
-                    Picker("Scope", selection: $scope) {
-                        Text("Select…").tag(Scope?.none)
-                        if !artifact.globalVariables.isEmpty {
-                            Text("Global Variables").tag(Scope?.some(.globals))
+                    VStack(alignment: .leading, spacing: 4) {
+                        PickerFilterField(text: $scopeQuery)
+                        Picker("Scope", selection: $scope) {
+                            Text("Select…").tag(Scope?.none)
+                            if !artifact.globalVariables.isEmpty {
+                                Text("Global Variables").tag(Scope?.some(.globals))
+                            }
+                            ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
+                                Text(name).tag(Scope?.some(.type(name)))
+                            }
                         }
-                        ForEach(typeNamesWithStoredProperties, id: \.self) { name in
-                            Text(name).tag(Scope?.some(.type(name)))
-                        }
-                    }
-                    .labelsHidden()
-                    .onChange(of: scope) { _, _ in
-                        if !variableNames.contains(variableName) {
-                            variableName = variableNames.first ?? ""
+                        .labelsHidden()
+                        .onChange(of: scope) { _, _ in
+                            if !variableNames.contains(variableName) {
+                                variableName = variableNames.first ?? ""
+                            }
                         }
                     }
                 }
 
                 LabeledContent("Variable") {
-                    Picker("Variable", selection: $variableName) {
-                        Text("Select…").tag("")
-                        ForEach(variableNames, id: \.self) { Text($0).tag($0) }
+                    VStack(alignment: .leading, spacing: 4) {
+                        PickerFilterField(text: $variableQuery)
+                        Picker("Variable", selection: $variableName) {
+                            Text("Select…").tag("")
+                            ForEach(variableNames.filtered(by: variableQuery), id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                        .disabled(scope == nil)
                     }
-                    .labelsHidden()
-                    .disabled(scope == nil)
                 }
 
                 LabeledContent("Max states") {

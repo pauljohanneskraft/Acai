@@ -141,6 +141,8 @@ struct PackageDiagramView: View {
             } label: {
                 Label("Fit to View", systemImage: "rectangle.dashed")
             }
+            .help("Fit the diagram to the visible canvas (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
             Button {
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -155,16 +157,19 @@ struct PackageDiagramView: View {
             } label: {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
+            .help("Save a copy as an editable Freeform diagram")
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
+            .help("Export the diagram as an image")
             Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
+            .help("Toggle the sidebar")
         }
     }
 

@@ -170,6 +170,7 @@ extension CodebaseDetailView {
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
+            blurb: visual.blurb,
             onTap: summary.maximum > 0
                 ? { statisticDetail = typeDetail(visual.title, visual.blurb, types, by: keyPath) }
                 : nil)
@@ -192,6 +193,7 @@ extension CodebaseDetailView {
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
+            blurb: visual.blurb,
             onTap: summary.maximum > 0
                 ? { statisticDetail = typeDetail(visual.title, visual.blurb, types, by: keyPath, format: format) }
                 : nil)
@@ -213,6 +215,7 @@ extension CodebaseDetailView {
             exemplar: caption(descriptor, summary.exemplars.map(\.name)),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
+            blurb: visual.blurb,
             onTap: summary.maximum > 0
                 ? { statisticDetail = moduleDetail(visual.title, visual.blurb, modules, value: value, format: format) }
                 : nil)

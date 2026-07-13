@@ -13,6 +13,7 @@ struct CallGraphConfigSheet: View {
     let onCreate: (CallGraphScope) -> Void
 
     @State private var scope: CallGraphScope
+    @State private var scopeQuery = ""
 
     init(
         artifact: CodeArtifact,
@@ -40,22 +41,26 @@ struct CallGraphConfigSheet: View {
                     .foregroundStyle(.secondary)
 
                 LabeledContent("Scope") {
-                    Picker("Scope", selection: $scope) {
-                        Text("Whole Codebase").tag(CallGraphScope.wholeCodebase)
-                        if !moduleNames.isEmpty {
-                            Section("Modules") {
-                                ForEach(moduleNames, id: \.self) { name in
-                                    Text(name).tag(CallGraphScope.module(name))
+                    VStack(alignment: .leading, spacing: 4) {
+                        PickerFilterField(text: $scopeQuery)
+                        Picker("Scope", selection: $scope) {
+                            Text("Whole Codebase").tag(CallGraphScope.wholeCodebase)
+                            let modules = moduleNames.filtered(by: scopeQuery)
+                            if !modules.isEmpty {
+                                Section("Modules") {
+                                    ForEach(modules, id: \.self) { name in
+                                        Text(name).tag(CallGraphScope.module(name))
+                                    }
+                                }
+                            }
+                            Section("Types") {
+                                ForEach(typeNames.filtered(by: scopeQuery), id: \.self) { name in
+                                    Text(name).tag(CallGraphScope.type(name))
                                 }
                             }
                         }
-                        Section("Types") {
-                            ForEach(typeNames, id: \.self) { name in
-                                Text(name).tag(CallGraphScope.type(name))
-                            }
-                        }
+                        .labelsHidden()
                     }
-                    .labelsHidden()
                 }
             }
 

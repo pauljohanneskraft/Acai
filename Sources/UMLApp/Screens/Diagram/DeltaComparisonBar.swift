@@ -10,6 +10,7 @@ struct DeltaComparisonBar: View {
     let diagram: GeneratedDiagram
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var refText: String
+    @State private var availableRefs: [String] = []
 
     init(diagram: GeneratedDiagram) {
         self.diagram = diagram
@@ -34,6 +35,9 @@ struct DeltaComparisonBar: View {
                     .frame(width: 110)
                     .onSubmit { model.updateComparisonGitRef(diagramID: diagram.id, ref: refText) }
 
+                refPicker
+                    .task { loadAvailableRefs() }
+
                 legend
 
                 if let error = model.comparisonError {
@@ -51,6 +55,36 @@ struct DeltaComparisonBar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.bar)
+    }
+
+    /// A compact "pick a branch/tag" button next to the freeform ref field — `refText` still
+    /// accepts any typed ref (a SHA, `HEAD~3`, …), this just saves typing an exact branch/tag name.
+    private var refPicker: some View {
+        Menu {
+            if availableRefs.isEmpty {
+                Text("No branches or tags found").font(.caption)
+            } else {
+                ForEach(availableRefs, id: \.self) { ref in
+                    Button(ref) {
+                        refText = ref
+                        model.updateComparisonGitRef(diagramID: diagram.id, ref: ref)
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "chevron.down.circle")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Pick a branch or tag")
+    }
+
+    /// Loads the codebase's branch/tag names for `refPicker`. Best-effort: a failure (e.g. not a
+    /// git repository) just leaves the picker showing "No branches or tags found".
+    private func loadAvailableRefs() {
+        guard let codebase = model.codebase(for: diagram.codebaseID) else { return }
+        let directory = URL(fileURLWithPath: codebase.directoryPath)
+        availableRefs = (try? GitRefs(directory: directory).names()) ?? []
     }
 
     private var legend: some View {

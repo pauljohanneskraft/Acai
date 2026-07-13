@@ -112,11 +112,14 @@ struct SequenceDiagramView: View {
             } label: {
                 Label("Fit to View", systemImage: "rectangle.dashed")
             }
+            .help("Fit the diagram to the visible canvas (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
             Button {
                 showConfigSheet = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
+            .help("Change the sequence diagram's entry point and depth")
             Button {
                 // Pass every participant's live x (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -133,12 +136,14 @@ struct SequenceDiagramView: View {
             } label: {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
+            .help("Save a copy as an editable Freeform diagram")
             .disabled(viewModel.isEmpty)
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
+            .help("Export the diagram as an image")
             .disabled(viewModel.isEmpty)
         }
     }
