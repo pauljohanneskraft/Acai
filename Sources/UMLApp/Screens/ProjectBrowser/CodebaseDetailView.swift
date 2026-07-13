@@ -74,6 +74,7 @@ struct CodebaseDetailView: View {
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
+            .navigationTitle(codebase.name)
             .task(id: model.analysisToken(for: codebaseID)) {
                 await model.ensureAnalysisLoaded(codebaseID: codebaseID)
             }

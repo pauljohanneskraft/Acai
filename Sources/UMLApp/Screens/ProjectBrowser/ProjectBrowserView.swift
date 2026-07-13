@@ -6,11 +6,14 @@ struct ProjectBrowserView: View {
     @State private var collapsedProjects = Set<UUID>()
     @State private var renamingDiagramID: UUID?
     @State private var renamingText: String = ""
+    @State private var projectPendingDeletion: Project?
+    @State private var codebasePendingDeletion: Codebase?
 
     var body: some View {
         NavigationSplitView {
             sidebarContent
                 .navigationTitle("Projects")
+                .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
         } detail: {
             detailContent
                 .containerBackground(.windowBackground, for: .window)
@@ -21,6 +24,34 @@ struct ProjectBrowserView: View {
             }
         }
         .modifier(StoreErrorAlert(store: model.store))
+        .confirmationDialog(
+            "Delete \"\(projectPendingDeletion?.title ?? "")\"?",
+            isPresented: Binding(
+                get: { projectPendingDeletion != nil },
+                set: { if !$0 { projectPendingDeletion = nil } }
+            ),
+            presenting: projectPendingDeletion
+        ) { project in
+            Button("Delete Project", role: .destructive) {
+                model.editing.removeProject(project.id)
+            }
+        } message: { _ in
+            Text("This deletes all of its codebases and diagrams. This cannot be undone.")
+        }
+        .confirmationDialog(
+            "Delete \"\(codebasePendingDeletion?.name ?? "")\"?",
+            isPresented: Binding(
+                get: { codebasePendingDeletion != nil },
+                set: { if !$0 { codebasePendingDeletion = nil } }
+            ),
+            presenting: codebasePendingDeletion
+        ) { codebase in
+            Button("Delete Codebase", role: .destructive) {
+                model.editing.removeCodebase(codebase.id)
+            }
+        } message: { _ in
+            Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+        }
     }
 
     // MARK: - Sidebar (Left Column)
@@ -50,6 +81,7 @@ struct ProjectBrowserView: View {
                         ForEach(sortedCodebases) { codebase in
                             Label(codebase.name, systemImage: "folder")
                                 .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
+                                .help(codebase.name)
                                 .contextMenu {
                                     Button {
                                         Task { await model.editing.reindex(codebaseID: codebase.id) }
@@ -58,7 +90,7 @@ struct ProjectBrowserView: View {
                                     }
                                     Divider()
                                     Button(role: .destructive) {
-                                        model.editing.removeCodebase(codebase.id)
+                                        codebasePendingDeletion = codebase
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
@@ -79,6 +111,7 @@ struct ProjectBrowserView: View {
                             } else {
                                 Label(diagram.name, systemImage: diagram.type.systemImage)
                                     .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
+                                    .help(diagram.name)
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -109,6 +142,7 @@ struct ProjectBrowserView: View {
                             } else {
                                 Label(diagram.name, systemImage: FreeformDiagram.systemImage)
                                     .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
+                                    .help(diagram.name)
                                     .contextMenu {
                                         Button {
                                             renamingText = diagram.name
@@ -128,9 +162,10 @@ struct ProjectBrowserView: View {
                         Label(project.title, systemImage: "tray.full")
                             .font(.headline)
                             .tag(ProjectBrowserViewModel.Selection.project(project.id))
+                            .help(project.title)
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    model.editing.removeProject(project.id)
+                                    projectPendingDeletion = project
                                 } label: {
                                     Label("Delete Project", systemImage: "trash")
                                 }
@@ -171,6 +206,7 @@ struct ProjectBrowserView: View {
             freeformDiagramDetail(diagramID: diagramID)
         case .none:
             emptyState
+                .navigationTitle("")
         }
     }
 

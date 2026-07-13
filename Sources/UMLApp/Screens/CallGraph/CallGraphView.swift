@@ -279,6 +279,7 @@ private struct CallGraphNodeView: View {
             .truncationMode(.middle)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(Color(white: 0.1))
             .background(RoundedRectangle(cornerRadius: 8).fill(fill))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
