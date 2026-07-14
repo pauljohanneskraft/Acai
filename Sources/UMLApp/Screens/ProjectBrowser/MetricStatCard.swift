@@ -64,14 +64,19 @@ struct MetricStatCard: View {
     /// Traffic-light standing for the headline value; `nil` for metrics with no "bad" direction.
     var severity: MetricSeverity?
     var uniformHeight: CGFloat = 0
+    /// One-line explanation of what the metric measures, shown as a hover tooltip. Reuses the same
+    /// copy already shown in the tap-through drill-down, so hovering surfaces it without a click.
+    var blurb: String?
     var onTap: (() -> Void)?
 
     var body: some View {
         if let onTap {
             Button(action: onTap) { cardBody }
                 .buttonStyle(.plain)
+                .help(blurb ?? "")
         } else {
             cardBody
+                .help(blurb ?? "")
         }
     }
 

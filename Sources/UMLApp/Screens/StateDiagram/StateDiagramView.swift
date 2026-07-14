@@ -115,11 +115,14 @@ struct StateDiagramView: View {
             } label: {
                 Label("Fit to View", systemImage: "rectangle.dashed")
             }
+            .help("Fit the diagram to the visible canvas (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
             Button {
                 showConfigSheet = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
+            .help("Change the state diagram's tracked variable")
             Button {
                 // Pass every state's live centre (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -136,12 +139,14 @@ struct StateDiagramView: View {
             } label: {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
+            .help("Save a copy as an editable Freeform diagram")
             .disabled(viewModel.diagram == nil)
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
+            .help("Export the diagram as an image")
             .disabled(viewModel.diagram == nil)
         }
     }

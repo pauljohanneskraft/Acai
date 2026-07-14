@@ -20,6 +20,7 @@ struct ClassDiagramView: View {
     @State private var activeResizeState: DiagramResizeState?
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
+    @State private var hasCenteredAfterMeasurement = false
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
@@ -56,6 +57,13 @@ struct ClassDiagramView: View {
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             viewModel.updateMeasuredSizes(sizes)
+            // The initial auto-fit (`diagramCanvasLifecycle`'s fixed delay) can run before nodes
+            // report their real measured sizes, landing the camera on a stale, empty-looking fit.
+            // Re-fit once real sizes are in, so a freshly generated diagram opens on its content.
+            if !hasCenteredAfterMeasurement && viewModel.hasPerformedMeasuredLayout {
+                hasCenteredAfterMeasurement = true
+                centerDiagram()
+            }
         }
         .toolbar {
             ToolbarItemGroup {
@@ -68,11 +76,14 @@ struct ClassDiagramView: View {
                 } label: {
                     Label("Re-layout", systemImage: "rectangle.3.group")
                 }
+                .help("Re-run automatic layout")
                 Button {
                     centerDiagram()
                 } label: {
                     Label("Fit to View", systemImage: "rectangle.dashed")
                 }
+                .help("Fit the diagram to the visible canvas (⌘0)")
+                .keyboardShortcut("0", modifiers: .command)
                 Button {
                     model.saveAsFreeformDiagram(
                         id: diagram.id,
@@ -83,16 +94,19 @@ struct ClassDiagramView: View {
                 } label: {
                     Label("Save as Freeform", systemImage: "document.on.document")
                 }
+                .help("Save a copy as an editable Freeform diagram")
                 Button {
                     exportImage()
                 } label: {
                     Label("Export Image", systemImage: "photo")
                 }
+                .help("Export the diagram as an image")
                 Button {
                     showSidebar.toggle()
                 } label: {
                     Label("Sidebar", systemImage: "sidebar.trailing")
                 }
+                .help("Toggle the sidebar")
             }
         }
         .diagramCanvasLifecycle(

@@ -13,21 +13,21 @@ struct GitRevisionSnapshot {
 
     enum Failure: LocalizedError {
         case notAGitRepository(String)
-        case git(command: String, message: String)
+        case tarExtractionFailed(String)
 
         var errorDescription: String? {
             switch self {
             case .notAGitRepository(let path):
                 "\(path) is not inside a git repository."
-            case .git(let command, let message):
-                "git \(command) failed: \(message)"
+            case .tarExtractionFailed(let message):
+                "tar -x failed: \(message)"
             }
         }
     }
 
     /// Analyzes the codebase's subtree at `reference` and returns the enriched artifact.
     func artifact(analyzer: CodebaseAnalyzer = .init()) throws -> CodeArtifact {
-        let root = try runGit(["rev-parse", "--show-toplevel"], in: directory)
+        let root = try GitCommand(directory: directory, arguments: ["rev-parse", "--show-toplevel"]).run()
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !root.isEmpty else { throw Failure.notAGitRepository(directory.path) }
         let rootURL = URL(fileURLWithPath: root).standardizedFileURL
@@ -51,39 +51,20 @@ struct GitRevisionSnapshot {
         let tarURL = destination.appendingPathComponent("snapshot.tar")
         var archiveArgs = ["-C", repoRoot.path, "archive", "--format=tar", "--output", tarURL.path, reference]
         if !subpath.isEmpty { archiveArgs.append(subpath) }
-        _ = try runGit(archiveArgs, in: repoRoot)
+        try GitCommand(directory: repoRoot, arguments: archiveArgs).run()
 
-        try runProcess(
-            executable: "/usr/bin/tar", arguments: ["-x", "-f", tarURL.path, "-C", destination.path],
-            commandLabel: "tar -x")
-        try? FileManager.default.removeItem(at: tarURL)
-    }
-
-    @discardableResult
-    private func runGit(_ arguments: [String], in directory: URL) throws -> String {
-        try runProcess(executable: "/usr/bin/git", arguments: arguments,
-                       commandLabel: arguments.first ?? "git", workingDirectory: directory)
-    }
-
-    @discardableResult
-    private func runProcess(
-        executable: String, arguments: [String], commandLabel: String, workingDirectory: URL? = nil
-    ) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        if let workingDirectory { process.currentDirectoryURL = workingDirectory }
-        let stdout = Pipe(), stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        try process.run()
-        let outData = stdout.fileHandleForReading.readDataToEndOfFile()
-        let errData = stderr.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let message = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw Failure.git(command: commandLabel, message: message ?? "exit \(process.terminationStatus)")
+        let tarProcess = Process()
+        tarProcess.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+        tarProcess.arguments = ["-x", "-f", tarURL.path, "-C", destination.path]
+        let tarError = Pipe()
+        tarProcess.standardError = tarError
+        try tarProcess.run()
+        let tarErrData = tarError.fileHandleForReading.readDataToEndOfFile()
+        tarProcess.waitUntilExit()
+        guard tarProcess.terminationStatus == 0 else {
+            let message = String(data: tarErrData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw Failure.tarExtractionFailed(message ?? "exit \(tarProcess.terminationStatus)")
         }
-        return String(data: outData, encoding: .utf8) ?? ""
+        try? FileManager.default.removeItem(at: tarURL)
     }
 }

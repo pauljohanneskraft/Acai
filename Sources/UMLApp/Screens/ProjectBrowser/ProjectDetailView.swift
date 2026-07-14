@@ -4,6 +4,7 @@ struct ProjectDetailView: View {
     let projectID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var addingCodebase = false
+    @State private var codebasePendingDeletion: Codebase?
 
     private var project: Project? {
         model.store.projects.first(where: { $0.id == projectID })
@@ -64,14 +65,40 @@ struct ProjectDetailView: View {
                     }
                 }
             }
+            .navigationTitle(project.title)
             .sheet(isPresented: $addingCodebase) {
                 NewCodebaseSheet(projectID: project.id)
                     .environmentObject(model)
             }
+            .confirmationDialog(
+                "Delete \"\(codebasePendingDeletion?.name ?? "")\"?",
+                isPresented: Binding(
+                    get: { codebasePendingDeletion != nil },
+                    set: { if !$0 { codebasePendingDeletion = nil } }
+                ),
+                presenting: codebasePendingDeletion
+            ) { codebase in
+                Button("Delete Codebase", role: .destructive) {
+                    model.editing.removeCodebase(codebase.id)
+                }
+            } message: { _ in
+                Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+            }
         } else {
-            Text("Project not found")
+            emptyProjectPlaceholder
+        }
+    }
+
+    private var emptyProjectPlaceholder: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "tray.full")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("Select a project or diagram")
+                .font(.title3)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Section Header
@@ -199,7 +226,7 @@ struct ProjectDetailView: View {
         }
         Divider()
         Button(role: .destructive) {
-            model.editing.removeCodebase(codebase.id)
+            codebasePendingDeletion = codebase
         } label: {
             Label("Delete", systemImage: "trash")
         }

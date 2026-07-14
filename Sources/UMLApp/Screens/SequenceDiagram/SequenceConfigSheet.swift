@@ -20,6 +20,8 @@ struct SequenceConfigSheet: View {
     @State private var maxDepth: Int
     @State private var phase: Phase = .entryPoint
     @State private var mappingRows: [MappingRow] = []
+    @State private var typeQuery = ""
+    @State private var methodQuery = ""
 
     private enum Phase { case entryPoint, resolveInterfaces }
 
@@ -76,26 +78,32 @@ struct SequenceConfigSheet: View {
                 .foregroundStyle(.secondary)
 
             LabeledContent("Type") {
-                Picker("Type", selection: $entryTypeName) {
-                    // No class selected = top-level scope; the method picker then lists free functions.
-                    Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
-                    ForEach(callableTypeNames, id: \.self) { Text($0).tag($0) }
-                }
-                .labelsHidden()
-                .onChange(of: entryTypeName) { _, _ in
-                    if !methodNames.contains(entryMethodName) {
-                        entryMethodName = methodNames.first ?? ""
+                VStack(alignment: .leading, spacing: 4) {
+                    PickerFilterField(text: $typeQuery)
+                    Picker("Type", selection: $entryTypeName) {
+                        // No class selected = top-level scope; the method picker then lists free functions.
+                        Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
+                        ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
+                    }
+                    .labelsHidden()
+                    .onChange(of: entryTypeName) { _, _ in
+                        if !methodNames.contains(entryMethodName) {
+                            entryMethodName = methodNames.first ?? ""
+                        }
                     }
                 }
             }
 
             LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
-                Picker("Method", selection: $entryMethodName) {
-                    Text("Select…").tag("")
-                    ForEach(methodNames, id: \.self) { Text($0).tag($0) }
+                VStack(alignment: .leading, spacing: 4) {
+                    PickerFilterField(text: $methodQuery)
+                    Picker("Method", selection: $entryMethodName) {
+                        Text("Select…").tag("")
+                        ForEach(methodNames.filtered(by: methodQuery), id: \.self) { Text($0).tag($0) }
+                    }
+                    .labelsHidden()
+                    .disabled(methodNames.isEmpty)
                 }
-                .labelsHidden()
-                .disabled(methodNames.isEmpty)
             }
 
             LabeledContent("Max depth") {

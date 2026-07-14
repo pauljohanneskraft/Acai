@@ -206,9 +206,12 @@ private struct CallGraphCanvasView: View {
             } label: {
                 Label("Fit to View", systemImage: "rectangle.dashed")
             }
+            .help("Fit the diagram to the visible canvas (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
             Button(action: onConfigure) {
                 Label("Configure Scope", systemImage: "slider.horizontal.3")
             }
+            .help("Change the call graph's entry point and depth")
             Button {
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -223,16 +226,19 @@ private struct CallGraphCanvasView: View {
             } label: {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
+            .help("Save a copy as an editable Freeform diagram")
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
+            .help("Export the diagram as an image")
             Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
+            .help("Toggle the sidebar")
         }
     }
 
@@ -279,6 +285,7 @@ private struct CallGraphNodeView: View {
             .truncationMode(.middle)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(Color(white: 0.1))
             .background(RoundedRectangle(cornerRadius: 8).fill(fill))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

@@ -85,6 +85,19 @@ struct InfiniteCanvas<Content: View>: View {
             .overlay(ScrollWheelZoomHandler(scale: $scale, offset: $offset))
             #endif
         }
+        .overlay(alignment: .bottomTrailing) { zoomIndicator }
+    }
+
+    /// The current zoom level, read-only — scroll wheel/pinch already drive `scale` directly.
+    private var zoomIndicator: some View {
+        Text("\(Int((scale * 100).rounded()))%")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+            .padding(10)
+            .allowsHitTesting(false)
     }
 
     // MARK: - Auto-Pan Configuration

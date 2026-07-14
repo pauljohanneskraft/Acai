@@ -44,11 +44,20 @@ struct FreeformDiagramView: View {
                 UndoRedoToolbarButtons(model: viewModel, onChange: {})
 
                 Button {
+                    centerDiagram()
+                } label: {
+                    Label("Fit to View", systemImage: "rectangle.dashed")
+                }
+                .help("Fit the diagram to the visible canvas (⌘0)")
+                .keyboardShortcut("0", modifiers: .command)
+
+                Button {
                     sidebarTab = .catalog
                     showSidebar.toggle()
                 } label: {
                     Label("Sidebar", systemImage: "sidebar.trailing")
                 }
+                .help("Toggle the Node Catalog / Inspector sidebar")
             }
         }
         .navigationTitle(browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram")
@@ -144,6 +153,31 @@ struct FreeformDiagramView: View {
         .onDrop(of: [.text], isTargeted: nil) { providers, location in
             handleCatalogDrop(providers: providers, screenLocation: location)
         }
+        .overlay {
+            if viewModel.nodes.isEmpty {
+                emptyCanvasHint
+            }
+        }
+    }
+
+    /// Shown on a freshly created Freeform diagram until the first node is added, since neither
+    /// the right-click context menu nor the Node Catalog sidebar (hidden by default) is otherwise
+    /// discoverable.
+    private var emptyCanvasHint: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "hand.draw")
+                .font(.system(size: 40))
+                .foregroundStyle(.secondary)
+            Text("This canvas is empty")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text("Right-click to add a node, or open the Node Catalog in the sidebar.")
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: - Canvas Context Menu
@@ -165,6 +199,18 @@ struct FreeformDiagramView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Canvas Fit
+
+    private func centerDiagram() {
+        guard let fit = FitToView(
+            nodeIDs: viewModel.allNodeIDs,
+            rect: { viewModel.nodeRect($0) }
+        ).transform else { return }
+        canvasScale = fit.scale
+        canvasOffset = fit.offset
+        viewModel.saveCanvasState(scale: canvasScale, offset: canvasOffset)
     }
 
     // MARK: - Insertion Helpers

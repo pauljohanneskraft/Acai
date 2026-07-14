@@ -23,7 +23,33 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func persistChanges() {
         store.save()
-        objectWillChange.send()
+        // `withAnimation` here isn't cosmetic: without an active transaction, removing a row from
+        // the sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind
+        // (a SwiftUI/AppKit outline-diffing quirk) until an unrelated selection change forces a full
+        // reload. Wrapping the notify in a transaction makes the outline view compute a proper
+        // insert/remove diff instead.
+        withAnimation {
+            pruneDanglingSelection()
+            objectWillChange.send()
+        }
+    }
+
+    /// Clears `selection` when it points at a project/codebase/diagram that no longer exists (e.g.
+    /// after a delete), so the detail pane falls back to the empty state instead of a dead-end
+    /// "not found" message.
+    private func pruneDanglingSelection() {
+        switch selection {
+        case .project(let id):
+            if !store.projects.contains(where: { $0.id == id }) { selection = nil }
+        case .codebase(let id):
+            if codebase(for: id) == nil { selection = nil }
+        case .generatedDiagram(let id):
+            if store.generatedDiagrams[id] == nil { selection = nil }
+        case .freeformDiagram(let id):
+            if store.freeformDiagrams[id] == nil { selection = nil }
+        case .none:
+            break
+        }
     }
 
     // MARK: - Project / Codebase lifecycle
