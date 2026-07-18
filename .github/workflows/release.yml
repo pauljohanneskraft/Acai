@@ -120,6 +120,9 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
