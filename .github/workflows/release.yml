@@ -109,7 +109,8 @@ jobs:
         with:
           files: artifacts/*
           fail_on_unmatched_files: true
-release-ios:
+
+  release-ios:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
