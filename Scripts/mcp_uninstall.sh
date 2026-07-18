@@ -1,13 +1,13 @@
 #!/bin/zsh
 
-# Uninstalls the UML MCP server binary installed by mcp_install.sh
+# Uninstalls the Açaí MCP server binary installed by mcp_install.sh
 #
 # Usage:
 #   ./Scripts/mcp_uninstall.sh [install-dir]
 #
 # If no install-dir is provided, common locations like /usr/local/bin and /opt/homebrew/bin are tried.
 
-readonly MCP_NAME="uml-mcp"
+readonly MCP_NAME="acai-mcp"
 
 # Determine candidate directories
 CANDIDATES=()

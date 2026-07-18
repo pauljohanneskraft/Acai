@@ -1,11 +1,11 @@
-# Executable code-quality contract for the UML repo (dogfooding).
-#   uml quality --source . --rules quality.yml      # or: Scripts/audit.sh
+# Executable code-quality contract for the Açaí repo (dogfooding).
+#   acai quality --source . --rules quality.yml      # or: Scripts/audit.sh
 #
 # Encodes the intended design as a fitness function: hard invariants that must hold, plus budgets
 # that flag responsibility bloat and code smells. Tighten budgets as debt is paid down so they
 # ratchet against regression. Omit --rules for the built-in curated smell budgets.
 
-# Hard invariant: the module dependency graph must stay acyclic. (Type-level cycles: `uml quality
+# Hard invariant: the module dependency graph must stay acyclic. (Type-level cycles: `acai quality
 # --explore --scope types`.) Holds today — keep it that way.
 cycles:
   scope: modules
@@ -40,16 +40,16 @@ budgets:
     message: "Feature envy — move the behaviour onto the type it keeps reaching into."
 
 # NOTE on module `distance` from the main sequence (intentionally NOT gated):
-# UMLCore (data model) and UMLDiagram (diagram models) sit near the "stable + concrete" corner, so
+# AcaiCore (data model) and AcaiDiagram (diagram models) sit near the "stable + concrete" corner, so
 # their distance is high by design — a foundational data/model layer *should* be depended-upon and
 # concrete; forcing abstraction in for the metric's sake would be over-engineering. Track distance
-# informationally via `uml metrics`, but it is not an actionable budget for this codebase.
+# informationally via `acai metrics`, but it is not an actionable budget for this codebase.
 #
 # Known accepted budget exceptions (essential complexity, not regressions):
 #
 # 1. The per-language tree-sitter extractors (Dart/JS/Java/Kotlin/Python/C-family) carry high
 #    fan-out/method counts because each targets a distinct grammar. The genuinely shared logic is
-#    already factored into composable, config-driven seams in `UMLTreeSitter` — `TreeSitterExtracting`
+#    already factored into composable, config-driven seams in `AcaiTreeSitter` — `TreeSitterExtracting`
 #    (traversal skeleton, artifact assembly, `recordSupertypeRelationships`, `normalizedAnnotation`,
 #    referenced-type / parse-diagnostic collection), `CallSiteResolving` + `CallSiteScope` +
 #    `MemberCallGrammar`, and `AssignmentResolving` + `LiteralNodeTypes`. What remains per language is
@@ -60,7 +60,7 @@ budgets:
 #    over-engineering — a template-method base that each grammar only partially fits — so it is
 #    deliberately not done (issue #91).
 #
-# 2. `DeclarationVisitor` (UMLSwift) is a `SwiftSyntax.SyntaxVisitor`: it must declare one
+# 2. `DeclarationVisitor` (AcaiSwift) is a `SwiftSyntax.SyntaxVisitor`: it must declare one
 #    `visit`/`visitPost` override per syntax node kind it handles (~17 declaration/expression types),
 #    and each override references that concrete node type — so fan-out and method count have a floor
 #    set by the grammar surface, not by responsibility bloat. The separable logic *has* been carved
@@ -69,7 +69,7 @@ budgets:
 #    `CallSiteCollector` for the body-level call-site/assignment/reference analysis); what remains is
 #    the irreducible visitor dispatch surface.
 #
-# 3. `CodeArtifact` (UMLCore) has high fan-IN by design — it is the foundational data model every
+# 3. `CodeArtifact` (AcaiCore) has high fan-IN by design — it is the foundational data model every
 #    layer reads. The remedy for a hub is stability + tests + a documented contract (see #88/#94),
 #    not artificial fan-in reduction, which would only scatter the model. Keep it stable and small in
 #    behaviour, not split.

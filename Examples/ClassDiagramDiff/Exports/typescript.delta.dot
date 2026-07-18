@@ -1,4 +1,4 @@
-digraph UML {
+digraph Acai {
   rankdir=TB;
   compound=true;
   fontname="Helvetica";

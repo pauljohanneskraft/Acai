@@ -2,7 +2,7 @@ name: Release Binaries
 
 # Deliberately runs only on a version tag or a manual dispatch — never on branch pushes or PRs — so
 # the expensive `-c release` cross-compile happens only when cutting a release. The per-push gate stays
-# in build-lint-test.yml. Ships prebuilt `uml` and `uml-mcp` binaries so non-Swift users (and the
+# in build-lint-test.yml. Ships prebuilt `acai` and `acai-mcp` binaries so non-Swift users (and the
 # Claude Code plugin's launcher) never need a toolchain (part of distribution epic #83).
 on:
   push:
@@ -26,28 +26,28 @@ jobs:
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
-      - name: Build uml + uml-mcp for release
+      - name: Build acai + acai-mcp for release
         run: |
-          swift build -c release --arch ${{ matrix.arch }} --product UMLCLI
-          swift build -c release --arch ${{ matrix.arch }} --product UMLMCP
+          swift build -c release --arch ${{ matrix.arch }} --product AcaiCLI
+          swift build -c release --arch ${{ matrix.arch }} --product AcaiMCP
 
       - name: Stage and strip binaries
         run: |
           mkdir -p dist
-          cp .build/release/UMLCLI dist/uml
-          cp .build/release/UMLMCP dist/uml-mcp
-          strip -x dist/uml dist/uml-mcp || true
+          cp .build/release/AcaiCLI dist/acai
+          cp .build/release/AcaiMCP dist/acai-mcp
+          strip -x dist/acai dist/acai-mcp || true
 
       - name: Package archive
         run: |
-          tar -C dist -czf uml-macos-${{ matrix.arch }}.tar.gz uml uml-mcp
-          shasum -a 256 uml-macos-${{ matrix.arch }}.tar.gz > uml-macos-${{ matrix.arch }}.tar.gz.sha256
+          tar -C dist -czf acai-macos-${{ matrix.arch }}.tar.gz acai acai-mcp
+          shasum -a 256 acai-macos-${{ matrix.arch }}.tar.gz > acai-macos-${{ matrix.arch }}.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: uml-macos-${{ matrix.arch }}
-          path: uml-macos-${{ matrix.arch }}.tar.gz*
+          name: acai-macos-${{ matrix.arch }}
+          path: acai-macos-${{ matrix.arch }}.tar.gz*
 
   build-linux:
     name: Build (Linux ${{ matrix.arch }})
@@ -68,28 +68,28 @@ jobs:
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
-      - name: Build uml + uml-mcp for release
+      - name: Build acai + acai-mcp for release
         run: |
-          swift build -c release --product UMLCLI
-          swift build -c release --product UMLMCP
+          swift build -c release --product AcaiCLI
+          swift build -c release --product AcaiMCP
 
       - name: Stage and strip binaries
         run: |
           mkdir -p dist
-          cp .build/release/UMLCLI dist/uml
-          cp .build/release/UMLMCP dist/uml-mcp
-          strip dist/uml dist/uml-mcp || true
+          cp .build/release/AcaiCLI dist/acai
+          cp .build/release/AcaiMCP dist/acai-mcp
+          strip dist/acai dist/acai-mcp || true
 
       - name: Package archive
         run: |
-          tar -C dist -czf uml-linux-${{ matrix.arch }}.tar.gz uml uml-mcp
-          sha256sum uml-linux-${{ matrix.arch }}.tar.gz > uml-linux-${{ matrix.arch }}.tar.gz.sha256
+          tar -C dist -czf acai-linux-${{ matrix.arch }}.tar.gz acai acai-mcp
+          sha256sum acai-linux-${{ matrix.arch }}.tar.gz > acai-linux-${{ matrix.arch }}.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: uml-linux-${{ matrix.arch }}
-          path: uml-linux-${{ matrix.arch }}.tar.gz*
+          name: acai-linux-${{ matrix.arch }}
+          path: acai-linux-${{ matrix.arch }}.tar.gz*
 
   release:
     name: Publish release

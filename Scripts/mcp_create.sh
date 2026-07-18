@@ -1,13 +1,13 @@
 #!/bin/zsh
 
-# Builds the UML MCP server for release and stages the stripped binary in .build/artifacts.
+# Builds the Açaí MCP server for release and stages the stripped binary in .build/artifacts.
 # Mirrors cli_create.sh — the MCP server is a third entry point over the same engine, so it ships
 # the same way the CLI does. The release pipeline (release.yml) uses this to assemble per-platform
 # archives; a developer can also run it directly before mcp_install.sh.
 
 # --- CONFIGURATION ---
-readonly MCP_TARGET="UMLMCP"
-readonly MCP_NAME="uml-mcp"
+readonly MCP_TARGET="AcaiMCP"
+readonly MCP_NAME="acai-mcp"
 readonly ARTIFACTS_DIR=".build/artifacts"
 # ---------------------
 
@@ -39,4 +39,4 @@ if command -v strip >/dev/null 2>&1; then
     strip -x "$DEST_BIN" 2>/dev/null || true
 fi
 
-print "✅ Success! The UML MCP server is ready at $(dirs -p | head -1)/$DEST_BIN"
+print "✅ Success! The Açaí MCP server is ready at $(dirs -p | head -1)/$DEST_BIN"

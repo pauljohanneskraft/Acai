@@ -79,7 +79,7 @@ jobs:
         run: |
           swift test --enable-code-coverage
           xcrun llvm-cov export -format="lcov" \
-            .build/debug/UMLPackageTests.xctest/Contents/MacOS/UMLPackageTests \
+            .build/debug/AcaiPackageTests.xctest/Contents/MacOS/AcaiPackageTests \
             -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
 
       - name: Upload coverage to Codecov

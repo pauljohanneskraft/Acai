@@ -1,47 +1,36 @@
 #!/bin/zsh
 
+# Builds the macOS app via the XcodeGen-generated Xcode project (App/project.yml) rather than a raw
+# `swift build` + hand-assembled bundle — Xcode's own build system now handles Info.plist
+# generation and app-icon compilation (from App/macOS/Assets.xcassets) natively, so the old
+# iconutil/sips/PlistBuddy steps are no longer needed.
+
+set -euo pipefail
+
 # --- CONFIGURATION ---
-readonly APP_NAME="UML"
-readonly INFO_PLIST_PATH="./Sources/UMLApp/Resources/Info.plist"
-readonly BUNDLE_ID="de.pauljohanneskraft.uml"
-readonly EXECUTABLE_TARGET="UMLApp"
-readonly ICONSET_PATH="./Sources/UMLApp/Resources/Assets.xcassets/AppIcon.imageset"
+readonly APP_NAME="Acai"
+readonly SCHEME="Acai-macOS"
+readonly PROJECT_DIR="App"
+readonly DERIVED_DATA_DIR=".build/xcode-macos"
+readonly APP_BUNDLE_DIR=".build/artifacts/$APP_NAME.app"
 # ---------------------
 
-# 1. Clean and Build for Release
-echo "🚀 Building $EXECUTABLE_TARGET for Release..."
-swift build -c release --arch arm64
+echo "⚙️  Generating Xcode project..."
+xcodegen generate --spec "$PROJECT_DIR/project.yml"
 
-if [ $? -ne 0 ]; then
-    echo "❌ Build failed."
-    exit 1
-fi
+echo "🚀 Building $SCHEME for Release..."
+xcodebuild \
+    -project "$PROJECT_DIR/Acai.xcodeproj" \
+    -scheme "$SCHEME" \
+    -configuration Release \
+    -derivedDataPath "$DERIVED_DATA_DIR" \
+    -destination "platform=macOS" \
+    build \
+    CODE_SIGNING_ALLOWED=NO
 
-# 2. Setup Bundle Structure
-readonly APP_BUNDLE="$APP_NAME.app"
-readonly APP_BUNDLE_DIR=".build/artifacts/$APP_NAME.app"
-echo "📦 Creating $APP_BUNDLE..."
-
+echo "📦 Staging $APP_NAME.app..."
 rm -rf "$APP_BUNDLE_DIR"
-mkdir -p "$APP_BUNDLE_DIR/Contents/MacOS"
-mkdir -p "$APP_BUNDLE_DIR/Contents/Resources"
-
-echo "🎨 Converting Assets to .icns..."
-readonly TEMP_ICONSET="$APP_BUNDLE_DIR/Temporary.iconset"
-mkdir -p "$TEMP_ICONSET"
-cp "$ICONSET_PATH"/*.png "$TEMP_ICONSET"
-LARGEST_PNG=$(ls -S "$ICONSET_PATH"/*.png | head -n 1)
-sips -z 1024 1024 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_512x512@2x.png" > /dev/null
-sips -z 512 512 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_512x512.png" > /dev/null
-sips -z 256 256 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_256x256.png" > /dev/null
-sips -z 128 128 "$LARGEST_PNG" --out "$TEMP_ICONSET/icon_128x128.png" > /dev/null
-iconutil -c icns "$TEMP_ICONSET" -o "$APP_BUNDLE_DIR/Contents/Resources/AppIcon.icns"
-rm -rf "$TEMP_ICONSET"
-
-cp ".build/release/$EXECUTABLE_TARGET" "$APP_BUNDLE_DIR/Contents/MacOS/$EXECUTABLE_TARGET"
-cp "$INFO_PLIST_PATH" "$APP_BUNDLE_DIR/Contents/Info.plist"
-
-/usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" "$APP_BUNDLE_DIR/Contents/Info.plist" 2>/dev/null
-/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon.icns" "$APP_BUNDLE_DIR/Contents/Info.plist"
+mkdir -p "$(dirname "$APP_BUNDLE_DIR")"
+cp -R "$DERIVED_DATA_DIR/Build/Products/Release/$APP_NAME.app" "$APP_BUNDLE_DIR"
 
 echo "✅ Success! Your app is ready at $(dirs -p | head -1)/$APP_BUNDLE_DIR"

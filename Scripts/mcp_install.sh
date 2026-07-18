@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-# Installs the UML MCP server binary built by mcp_create.sh into a system path.
+# Installs the Açaí MCP server binary built by mcp_create.sh into a system path.
 #
 # Usage:
 #   ./Scripts/mcp_install.sh [install-dir]
@@ -9,7 +9,7 @@
 # Prompts for sudo if needed. This is the build-from-source path; released binaries can instead be
 # unpacked from a GitHub release archive.
 
-readonly MCP_NAME="uml-mcp"
+readonly MCP_NAME="acai-mcp"
 readonly SOURCE_BIN=".build/artifacts/$MCP_NAME"
 
 # Determine destination directory

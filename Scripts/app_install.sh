@@ -8,7 +8,7 @@
 # If no destination is provided, defaults to /Applications.
 # It will prompt for sudo if necessary.
 
-readonly APP_NAME="UML.app"
+readonly APP_NAME="Acai.app"
 readonly SOURCE_APP_DIR=".build/artifacts/$APP_NAME"
 
 DEST_DIR="$1"

@@ -1,0 +1,95 @@
+# ``AcaiLibrary``
+
+See your codebase. Point Açaí at a folder of source code and get a UML class diagram back.
+
+## Overview
+
+Açaí reads your source the way a compiler's front end would — it actually parses it,
+it doesn't grep for keywords — and builds **one unified model** of your types and how
+they relate. From that model it draws class diagrams: the boxes, the members, and the
+inheritance / composition / dependency arrows between them. It works across **Swift,
+Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++**, in a single mixed-language
+picture, with nothing to annotate and no build to run first.
+
+If you only read one page, make it <doc:GettingStarted> — one call to [AnalysisService](/documentation/acaicore/analysisservice)
+discovers, parses, and merges an entire project for you.
+
+## A map of the modules
+
+The package is split into small, focused modules. You rarely need all of them at once,
+so here's the lay of the land — follow a link whenever you want the full API for one.
+
+### Start here
+
+- **[AcaiLibrary](/documentation/acailibrary/)** — the front door. [AnalysisService](/documentation/acaicore/analysisservice) finds the source
+  in a project (SPM, Xcode, Gradle, Maven, Node, Flutter, pip…), runs the right parser for
+  each file, and merges the results. Re-exports the core model, so importing this is
+  usually all you need.
+
+### The core model
+
+- **[AcaiCore](/documentation/acaicore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
+  (the parsed model), `TypeDeclaration`, `Member`, `Relationship`, and the `CodeParser`
+  protocol every language parser conforms to. Start here if you want to understand the
+  shape of the data.
+
+### Language parsers
+
+Each one is a stateless `CodeParser` you can use directly, or let [AnalysisService](/documentation/acaicore/analysisservice) pick
+for you. They turn source text into the same [AcaiCore](/documentation/acaicore/) model.
+
+- **[AcaiSwift](/documentation/acaiswift/)** — Swift, via Apple's native SwiftSyntax.
+- **[AcaiJS](/documentation/acaijs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
+- **[AcaiJVM](/documentation/acaijvm/)** — Java and Kotlin (`.java`, `.kt`, `.kts`); one module, as they
+  share the JVM build systems.
+- **[AcaiDart](/documentation/acaidart/)** — Dart.
+- **[AcaiPython](/documentation/acaipython/)** — Python (`.py`).
+- **[AcaiCFamily](/documentation/acaicfamily/)** — C and C++ (`.c`, `.h`, `.cpp`, `.hpp`, …); one module,
+  as they share the C/C++ build systems. The C parser owns the shared `.h` extension and routes each
+  header to the C or C++ grammar by its contents.
+- **[AcaiTreeSitter](/documentation/acaitreesitter/)** — the shared Tree-sitter helpers the
+  grammar-based parsers above are built on. Reach for this only if you're writing a new
+  parser.
+
+Each plugin is self-contained: it owns its parser, its `SourceLanguage`, its
+[LanguageConfiguration](/documentation/acaicore/languageconfiguration) (the language's quirks), and its build-system detector(s).
+
+### Diagrams & rendering
+
+Turn a [AcaiCore](/documentation/acaicore/) model into something you can look at.
+
+- **[AcaiDiagram](/documentation/acaidiagram/)** — generates Graphviz **DOT** from a model, with options
+  for inferred composition, dependency edges, external types, and grouping.
+- **[AcaiRender](/documentation/acairender/)** — on Apple platforms, lays out and renders a model
+  straight to a **PNG**, no Graphviz required.
+
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+- [AnalysisService](/documentation/acaicore/analysisservice)
+
+### Contributing
+
+- <doc:AddingALanguage>
+
+### Project Discovery
+
+How [AnalysisService](/documentation/acaicore/analysisservice) finds the source folders inside a project before parsing. You don't
+usually touch these directly — they power the automatic discovery.
+
+- [ProjectDiscovery](/documentation/acaicore/projectdiscovery)
+- [BuildSystemDetector](/documentation/acaicore/buildsystemdetector)
+- [SwiftPackageManagerDetector](/documentation/acaiswift/swiftpackagemanagerdetector)
+- [JVMBuildSystemDetector](/documentation/acaijvm/jvmbuildsystemdetector)
+- [NodeDetector](/documentation/acaijs/nodedetector)
+- [FlutterDetector](/documentation/acaidart/flutterdetector)
+- [PythonDetector](/documentation/acaipython/pythondetector)
+- [XcodeDetector](/documentation/acaiswift/xcodedetector)
+- [FallbackDetector](/documentation/acaicore/fallbackdetector)
+- [SourceSpec](/documentation/acaicore/sourcespec)
+
+### Supporting Types
+
+- [AcaiConstants](/documentation/acaicore/acaiconstants)

@@ -7,7 +7,7 @@
 #
 # If no install-dir is provided, defaults to /Applications.
 
-readonly APP_NAME="UML.app"
+readonly APP_NAME="Acai.app"
 
 DEST_DIR="$1"
 if [[ -z "$DEST_DIR" ]]; then

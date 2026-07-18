@@ -1,8 +1,8 @@
 #!/bin/zsh
 
 # --- CONFIGURATION ---
-readonly CLI_TARGET="UMLCLI"
-readonly CLI_NAME="uml"
+readonly CLI_TARGET="AcaiCLI"
+readonly CLI_NAME="acai"
 readonly ARTIFACTS_DIR=".build/artifacts"
 # ---------------------
 
