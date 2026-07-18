@@ -2,7 +2,7 @@ name: Release Binaries
 
 # Deliberately runs only on a version tag or a manual dispatch — never on branch pushes or PRs — so
 # the expensive `-c release` cross-compile happens only when cutting a release. The per-push gate stays
-# in build-lint-test.yml. Ships prebuilt `uml` and `uml-mcp` binaries so non-Swift users (and the
+# in build-lint-test.yml. Ships prebuilt `acai` and `acai-mcp` binaries so non-Swift users (and the
 # Claude Code plugin's launcher) never need a toolchain (part of distribution epic #83).
 on:
   push:
@@ -26,28 +26,28 @@ jobs:
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
-      - name: Build uml + uml-mcp for release
+      - name: Build acai + acai-mcp for release
         run: |
-          swift build -c release --arch ${{ matrix.arch }} --product UMLCLI
-          swift build -c release --arch ${{ matrix.arch }} --product UMLMCP
+          swift build -c release --arch ${{ matrix.arch }} --product AcaiCLI
+          swift build -c release --arch ${{ matrix.arch }} --product AcaiMCP
 
       - name: Stage and strip binaries
         run: |
           mkdir -p dist
-          cp .build/release/UMLCLI dist/uml
-          cp .build/release/UMLMCP dist/uml-mcp
-          strip -x dist/uml dist/uml-mcp || true
+          cp .build/release/AcaiCLI dist/acai
+          cp .build/release/AcaiMCP dist/acai-mcp
+          strip -x dist/acai dist/acai-mcp || true
 
       - name: Package archive
         run: |
-          tar -C dist -czf uml-macos-${{ matrix.arch }}.tar.gz uml uml-mcp
-          shasum -a 256 uml-macos-${{ matrix.arch }}.tar.gz > uml-macos-${{ matrix.arch }}.tar.gz.sha256
+          tar -C dist -czf acai-macos-${{ matrix.arch }}.tar.gz acai acai-mcp
+          shasum -a 256 acai-macos-${{ matrix.arch }}.tar.gz > acai-macos-${{ matrix.arch }}.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: uml-macos-${{ matrix.arch }}
-          path: uml-macos-${{ matrix.arch }}.tar.gz*
+          name: acai-macos-${{ matrix.arch }}
+          path: acai-macos-${{ matrix.arch }}.tar.gz*
 
   build-linux:
     name: Build (Linux ${{ matrix.arch }})
@@ -68,28 +68,28 @@ jobs:
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
-      - name: Build uml + uml-mcp for release
+      - name: Build acai + acai-mcp for release
         run: |
-          swift build -c release --product UMLCLI
-          swift build -c release --product UMLMCP
+          swift build -c release --product AcaiCLI
+          swift build -c release --product AcaiMCP
 
       - name: Stage and strip binaries
         run: |
           mkdir -p dist
-          cp .build/release/UMLCLI dist/uml
-          cp .build/release/UMLMCP dist/uml-mcp
-          strip dist/uml dist/uml-mcp || true
+          cp .build/release/AcaiCLI dist/acai
+          cp .build/release/AcaiMCP dist/acai-mcp
+          strip dist/acai dist/acai-mcp || true
 
       - name: Package archive
         run: |
-          tar -C dist -czf uml-linux-${{ matrix.arch }}.tar.gz uml uml-mcp
-          sha256sum uml-linux-${{ matrix.arch }}.tar.gz > uml-linux-${{ matrix.arch }}.tar.gz.sha256
+          tar -C dist -czf acai-linux-${{ matrix.arch }}.tar.gz acai acai-mcp
+          sha256sum acai-linux-${{ matrix.arch }}.tar.gz > acai-linux-${{ matrix.arch }}.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: uml-linux-${{ matrix.arch }}
-          path: uml-linux-${{ matrix.arch }}.tar.gz*
+          name: acai-linux-${{ matrix.arch }}
+          path: acai-linux-${{ matrix.arch }}.tar.gz*
 
   release:
     name: Publish release
@@ -109,3 +109,100 @@ jobs:
         with:
           files: artifacts/*
           fail_on_unmatched_files: true
+
+  release-ios:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Import signing certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          BUILD_CERTIFICATE_PASSWORD: ${{ secrets.BUILD_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$BUILD_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+
+      - name: Configure App Store Connect API key
+        env:
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/private_keys"
+          echo -n "$APPSTORE_PRIVATE_KEY" | base64 --decode -o "$HOME/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8"
+
+      - name: Archive
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOS \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/Acai-iOS.xcarchive" \
+            -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8" \
+            -authenticationKeyID "$APPSTORE_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+        working-directory: App
+
+      - name: Export IPA
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Acai-iOS.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ci/ExportOptions-iOS.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8" \
+            -authenticationKeyID "$APPSTORE_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+        working-directory: App
+
+      - name: Upload to TestFlight
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcrun altool --upload-app \
+            -f "$RUNNER_TEMP/export/Acai.ipa" \
+            -t ios \
+            --apiKey "$APPSTORE_KEY_ID" \
+            --apiIssuer "$APPSTORE_ISSUER_ID"
+
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

@@ -1,16 +1,16 @@
-<img src="Sources/UMLApp/Resources/Assets.xcassets/AppIcon.imageset/Icon-macOS-Default-1024x1024%401x.png" height="140" align="right">
+<img src="App/macOS/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" height="140" align="right">
 
-# UML — See Your Codebase
+# Açaí — See Your Codebase
 
-**Point it at a folder. Get a diagram back.** No annotations, no project files, no build step — just your source code, parsed for real and drawn as a UML class diagram. Works across Swift, Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++, all in one picture. Explore it in the native macOS app, or wire the `uml` CLI into your build and docs.
+**Point it at a folder. Get a diagram back.** No annotations, no project files, no build step — just your source code, parsed for real and drawn as a UML class diagram. Works across Swift, Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++, all in one picture. Explore it in the native macOS app, or wire the `acai` CLI into your build and docs.
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
-[![Documentation](https://img.shields.io/badge/docs-DocC-informational.svg)](https://pauljohanneskraft.github.io/UML/)
+[![Documentation](https://img.shields.io/badge/docs-DocC-informational.svg)](https://pauljohanneskraft.github.io/Acai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
-  <img src="Documentation/Images/app-hero.png" alt="The UML macOS app: a project sidebar, a class diagram on the canvas, and the toolbar" width="100%">
+  <img src="Documentation/Images/app-hero.png" alt="The Açaí macOS app: a project sidebar, a class diagram on the canvas, and the toolbar" width="100%">
 </p>
 
 <sub>☝️ The macOS app exploring the bundled <a href="Examples/ClassDiagram"><code>Examples/ClassDiagram</code></a> sample.</sub>
@@ -19,9 +19,9 @@
 
 ## The pitch
 
-You've inherited a codebase. Or you're onboarding onto one. Or you just want to remember how the thing you wrote six months ago fits together. UML reads your source the way a compiler's front end would — it **actually parses** it, it doesn't grep for keywords — and builds one unified model of your types and how they relate. Then it draws the picture: the boxes, the members, and the inheritance / composition / dependency arrows between them.
+You've inherited a codebase. Or you're onboarding onto one. Or you just want to remember how the thing you wrote six months ago fits together. Açaí reads your source the way a compiler's front end would — it **actually parses** it, it doesn't grep for keywords — and builds one unified model of your types and how they relate. Then it draws the picture: the boxes, the members, and the inheritance / composition / dependency arrows between them.
 
-It runs on a folder. Got a polyglot repo with Swift up front and a C core underneath? Point UML at the root and every language lands in the same diagram. Nothing to annotate, no build to run first.
+It runs on a folder. Got a polyglot repo with Swift up front and a C core underneath? Point Açaí at the root and every language lands in the same diagram. Nothing to annotate, no build to run first.
 
 ---
 
@@ -30,10 +30,10 @@ It runs on a folder. Got a polyglot repo with Swift up front and a C core undern
 ### …with the app
 
 ```sh
-git clone https://github.com/pauljohanneskraft/UML.git
-cd UML
+git clone https://github.com/pauljohanneskraft/Acai.git
+cd Acai
 ./Scripts/app_create.sh && ./Scripts/app_install.sh
-open -a UML
+open -a Acai
 ```
 
 Then: add a **project**, point a **codebase** at any folder of source, and let it index. Open a **class diagram**, drag the boxes where you want them, fold members away, group by folder or namespace, dial in an access level — the diagram updates live. Happy with the layout? Hit **Export Image** and you get a PNG exactly as you arranged it.
@@ -44,10 +44,10 @@ Then: add a **project**, point a **codebase** at any folder of source, and let i
 ./Scripts/cli_create.sh && ./Scripts/cli_install.sh
 
 # Render any codebase straight to a PNG (macOS):
-uml image --source ~/path/to/your/project --output project.png
+acai image --source ~/path/to/your/project --output project.png
 
 # …or emit DOT and render it anywhere Graphviz runs:
-uml diagram --source ~/path/to/your/project --output project.dot
+acai diagram --source ~/path/to/your/project --output project.dot
 dot -Tpng project.dot -o project.png    # brew install graphviz
 ```
 
@@ -57,7 +57,7 @@ No config file required for either path.
 
 ## What you get
 
-Point UML at the whole repo and every language lands in one diagram, neatly grouped — here the bundled sample's Swift and Kotlin sides, side by side:
+Point Açaí at the whole repo and every language lands in one diagram, neatly grouped — here the bundled sample's Swift and Kotlin sides, side by side:
 
 <p align="center">
   <img src="Documentation/Images/diagram-full.png" alt="A UML class diagram of the sample media-library project, with languages grouped separately" width="100%">
@@ -82,12 +82,12 @@ Prefer the shape over the detail? Hide members for an architecture-at-a-glance o
 Generated diagrams are the fast path, but the app also ships a freeform editor. Drag types, actors, use cases, packages, and notes from the catalog onto an infinite canvas and wire them up by hand — or take a generated diagram and keep editing from there. Sequence, state-machine, and call-graph elements are all in the box.
 
 <p align="center">
-  <img src="Documentation/Images/app-custom-diagram.png" alt="The UML app's custom-diagram editor with the node catalog open" width="100%">
+  <img src="Documentation/Images/app-custom-diagram.png" alt="The Açaí app's custom-diagram editor with the node catalog open" width="100%">
 </p>
 
 ---
 
-## Why UML?
+## Why Açaí?
 
 - 🌍 **Multi-language out of the box** — one tool for polyglot repos, not six.
 - ⚡️ **Zero configuration** — point it at a directory and go.
@@ -102,8 +102,8 @@ Generated diagrams are the fast path, but the app also ships a freeform editor. 
 
 No tool is magic, and this one is no exception. Worth knowing up front:
 
-- **PNG rendering is macOS-only.** Both the app's **Export Image** and the `uml image` command render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `uml diagram` and render it with Graphviz (`dot -Tpng`) — that path runs everywhere.
-- **It's static analysis.** UML reads source text; it does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table.
+- **PNG rendering is macOS-only.** Both the app's **Export Image** and the `acai image` command render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`) — that path runs everywhere.
+- **It's static analysis.** Açaí reads source text; it does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table.
 - **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives you the full picture; for a JS example see [`Examples/StateDiagram`](Examples/StateDiagram).
 - **C is modeled with `struct`s.** C has no classes, so its domain shows up as structs plus composition, and method-receiver analysis maps free functions back to the type they mutate by pointer. Faithful, but it reads differently from the OO languages.
 
@@ -124,31 +124,31 @@ The per-language nuances are documented in detail — and proven with checked-in
 | C                       | Tree-sitter |
 | C++                     | Tree-sitter |
 
-Mix and match — UML produces one unified model across all of them. (C and C++ share the `.h` header extension; UML routes each header to the right grammar by its contents.)
+Mix and match — Açaí produces one unified model across all of them. (C and C++ share the `.h` header extension; Açaí routes each header to the right grammar by its contents.)
 
 ---
 
-## The `uml` CLI
+## The `acai` CLI
 
-Run `uml --help` (or `uml <command> --help`) for the full menu. The essentials:
+Run `acai --help` (or `acai <command> --help`) for the full menu. The essentials:
 
 ```sh
-uml analyze --source ./MyProject --output model.json   # Parse code → JSON model
-uml store myproj ./MyProject                    # Analyze and stash it under a name
-uml list                                        # Show stored analyses
-uml metrics --from myproj                       # Counts, coupling, OO metrics as JSON
+acai analyze --source ./MyProject --output model.json   # Parse code → JSON model
+acai store myproj ./MyProject                    # Analyze and stash it under a name
+acai list                                        # Show stored analyses
+acai metrics --from myproj                       # Counts, coupling, OO metrics as JSON
 
 # DOT / Graphviz output:
-uml diagram --from myproj --theme dark --group-by namespace --output app.dot
-uml diagram --source ./MyProject --language kotlin --language java
+acai diagram --from myproj --theme dark --group-by namespace --output app.dot
+acai diagram --source ./MyProject --language kotlin --language java
 
 # PNG output, rendered natively (macOS):
-uml image --source ./MyProject --grouping directory --output app.png
+acai image --source ./MyProject --grouping directory --output app.png
 ```
 
 Two ways to get an image, with deliberately different options:
 
-| | `uml diagram` | `uml image` |
+| | `acai diagram` | `acai image` |
 | --- | --- | --- |
 | **Output** | DOT/Graphviz text | PNG |
 | **Grouping** | `--group-by file\|namespace\|none` | `--grouping none\|directory\|product` |
@@ -162,71 +162,71 @@ Both accept `--from <stored-name-or-json>` or `--source <dir>` (with optional re
 
 ## Image export
 
-UML renders images two ways, for two jobs:
+Açaí renders images two ways, for two jobs:
 
 - **In the app — "Export Image."** Renders the diagram *exactly as you've arranged it*: your manual node positions, your resizes, your visibility settings. WYSIWYG, straight to a PNG.
-- **On the CLI — `uml image`.** Headless and scriptable, perfect for CI and docs. It runs the same SwiftUI layout and views as the app, so the output matches.
+- **On the CLI — `acai image`.** Headless and scriptable, perfect for CI and docs. It runs the same SwiftUI layout and views as the app, so the output matches.
 
 ```sh
-uml image --source ./MyProject --grouping directory --min-access public --scale 2 --output api.png
+acai image --source ./MyProject --grouping directory --min-access public --scale 2 --output api.png
 ```
 
-> **macOS only.** Both paths render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `uml diagram` and render it with Graphviz (`dot -Tpng`).
+> **macOS only.** Both paths render through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux, emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`).
 
-The class diagrams in this README were produced by `uml image` from the samples in [`Examples/`](Examples) — see [`Examples/README.md`](Examples/README.md) for the exact commands, plus DOT/PNG exports of every diagram type in all supported languages.
+The class diagrams in this README were produced by `acai image` from the samples in [`Examples/`](Examples) — see [`Examples/README.md`](Examples/README.md) for the exact commands, plus DOT/PNG exports of every diagram type in all supported languages.
 
 <p align="center">
-  <img src="Documentation/Images/app-export.png" alt="The macOS save panel exporting a class diagram to PNG from the UML app" width="70%">
+  <img src="Documentation/Images/app-export.png" alt="The macOS save panel exporting a class diagram to PNG from the Açaí app" width="70%">
 </p>
 
 ---
 
 ## How it works
 
-UML is a layered Swift package — one module per concern, so you can pull in only what you need:
+Açaí is a layered Swift package — one module per concern, so you can pull in only what you need:
 
 ```
  Source files
      │  per-language parsers (SwiftSyntax / Tree-sitter)
      ▼
- UMLSwift · UMLJVM (Java/Kotlin) · UMLJS · UMLDart · UMLPython · UMLCFamily (C/C++)
+ AcaiSwift · AcaiJVM (Java/Kotlin) · AcaiJS · AcaiDart · AcaiPython · AcaiCFamily (C/C++)
      │  one unified model
      ▼
- UMLCore  ──►  UMLLibrary (AnalysisService: discovery + dispatch)
+ AcaiCore  ──►  AcaiLibrary (AnalysisService: discovery + dispatch)
      │                         │
-     │                         ├──►  UMLDiagram  →  DOT / Graphviz / Mermaid
-     │                         └──►  UMLRender   →  PNG (SwiftUI ImageRenderer + Sugiyama layout)
+     │                         ├──►  AcaiDiagram  →  DOT / Graphviz / Mermaid
+     │                         └──►  AcaiRender   →  PNG (SwiftUI ImageRenderer + Sugiyama layout)
      ▼
- UMLCLI (uml)  ·  UMLApp (UML.app)  ·  UMLMCP (uml-mcp)
+ AcaiCLI (acai)  ·  AcaiApp (Acai.app)  ·  AcaiMCP (acai-mcp)
 ```
 
-- **`UMLCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol. The vocabulary everything else speaks.
-- **Per-language parsers** — `UMLSwift` uses SwiftSyntax; `UMLJVM` (Java + Kotlin), `UMLJS`, `UMLDart`, `UMLPython`, and `UMLCFamily` (C + C++) use Tree-sitter (shared helpers live in `UMLTreeSitter`). Each plugin is self-contained — its parser, its language config, its build-system detector.
-- **`UMLLibrary`** — the composition root. `AnalysisService` holds the parser registry and dispatches by language; importing this one module gives you everything.
-- **`UMLDiagram`** — turns the model into DOT/Graphviz and Mermaid.
-- **`UMLRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `uml image` command (Apple platforms only).
-- **`UMLMCP`** — a third entry point over `UMLLibrary` (alongside the CLI and app): an in-process [Model Context Protocol](https://modelcontextprotocol.io) server (`uml-mcp`) that exposes the read-only analysis engine as tools an AI agent can call directly. Shipped with the bundled **`code-quality`** Claude Code plugin under [`.claude/plugins/`](.claude/plugins/code-quality), which pairs the server with the `audit` methodology skill.
+- **`AcaiCore`** — the data model (`CodeArtifact`, `TypeDeclaration`, `Relationship`, …) and the `CodeParser` protocol. The vocabulary everything else speaks.
+- **Per-language parsers** — `AcaiSwift` uses SwiftSyntax; `AcaiJVM` (Java + Kotlin), `AcaiJS`, `AcaiDart`, `AcaiPython`, and `AcaiCFamily` (C + C++) use Tree-sitter (shared helpers live in `AcaiTreeSitter`). Each plugin is self-contained — its parser, its language config, its build-system detector.
+- **`AcaiLibrary`** — the composition root. `AnalysisService` holds the parser registry and dispatches by language; importing this one module gives you everything.
+- **`AcaiDiagram`** — turns the model into DOT/Graphviz and Mermaid.
+- **`AcaiRender`** — the diagram views, a Sugiyama hierarchical layout engine, and PNG rendering. Shared by the app and the `acai image` command (Apple platforms only).
+- **`AcaiMCP`** — a third entry point over `AcaiLibrary` (alongside the CLI and app): an in-process [Model Context Protocol](https://modelcontextprotocol.io) server (`acai-mcp`) that exposes the read-only analysis engine as tools an AI agent can call directly. Shipped with the bundled **`code-quality`** Claude Code plugin under [`.claude/plugins/`](.claude/plugins/code-quality), which pairs the server with the `audit` methodology skill.
 
-Full module-by-module documentation lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)**.
+Full module-by-module documentation lives at **[pauljohanneskraft.github.io/Acai](https://pauljohanneskraft.github.io/Acai/)**.
 
 ---
 
 ## Use it in your own package
 
-Everything the CLI and app are built on is a reusable library. Add UML as a dependency:
+Everything the CLI and app are built on is a reusable library. Add Açaí as a dependency:
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/pauljohanneskraft/UML.git", branch: "main"),
+    .package(url: "https://github.com/pauljohanneskraft/Acai.git", branch: "main"),
 ],
 targets: [
     .target(
         name: "MyTool",
         dependencies: [
-            .product(name: "UMLLibrary", package: "UML"),  // analysis + all parsers
-            // or cherry-pick: .product(name: "UMLCore", package: "UML"),
-            //                 .product(name: "UMLSwift", package: "UML"),
+            .product(name: "AcaiLibrary", package: "Acai"),  // analysis + all parsers
+            // or cherry-pick: .product(name: "AcaiCore", package: "Acai"),
+            //                 .product(name: "AcaiSwift", package: "Acai"),
         ]
     ),
 ]
@@ -235,8 +235,8 @@ targets: [
 Then analyze a directory and walk the model:
 
 ```swift
-import UMLCore
-import UMLLibrary
+import AcaiCore
+import AcaiLibrary
 
 let artifact = try AnalysisService.standard.analyzeProject(
     at: URL(filePath: "/path/to/project"),
@@ -251,18 +251,18 @@ for relationship in artifact.relationships {
 }
 ```
 
-From there, `UMLDiagram`'s `DOTGenerator` produces Graphviz, and on Apple platforms `UMLRender`'s `DiagramImageRenderer` produces a PNG.
+From there, `AcaiDiagram`'s `DOTGenerator` produces Graphviz, and on Apple platforms `AcaiRender`'s `DiagramImageRenderer` produces a PNG.
 
-**Available products:** `UMLCore`, `UMLTreeSitter`, `UMLSwift`, `UMLJVM` (Java + Kotlin), `UMLJS`, `UMLDart`, `UMLPython`, `UMLCFamily` (C + C++), `UMLDiagram`, `UMLLibrary`, and (Apple platforms only) `UMLRender`.
+**Available products:** `AcaiCore`, `AcaiTreeSitter`, `AcaiSwift`, `AcaiJVM` (Java + Kotlin), `AcaiJS`, `AcaiDart`, `AcaiPython`, `AcaiCFamily` (C + C++), `AcaiDiagram`, `AcaiLibrary`, and (Apple platforms only) `AcaiRender`.
 
-Full API documentation for every module lives at **[pauljohanneskraft.github.io/UML](https://pauljohanneskraft.github.io/UML/)** — start with the [Getting Started](https://pauljohanneskraft.github.io/UML/documentation/umllibrary/gettingstarted) guide. To build the docs locally, run `./Scripts/docs_generate.sh` and serve the output.
+Full API documentation for every module lives at **[pauljohanneskraft.github.io/Acai](https://pauljohanneskraft.github.io/Acai/)** — start with the [Getting Started](https://pauljohanneskraft.github.io/Acai/documentation/acailibrary/gettingstarted) guide. To build the docs locally, run `./Scripts/docs_generate.sh` and serve the output.
 
 ---
 
 ## Requirements
 
 - **Swift 6** toolchain.
-- **macOS 15+** for the app and for `uml image` (native PNG rendering needs a window-server session).
+- **macOS 15+** for the app and for `acai image` (native PNG rendering needs a window-server session).
 - Libraries and the rest of the CLI run on broader Apple platforms (iOS 16+, tvOS 16+, watchOS 9+, visionOS 1+) and on Linux.
 - **Graphviz** (optional) — only to render DOT into images: `brew install graphviz`.
 
@@ -278,12 +278,12 @@ swift test --parallel # Run the test suite
 Create and install the binaries with the helper scripts (these build `-c release --arch arm64` and assemble the `.app` bundle):
 
 ```sh
-./Scripts/cli_create.sh      # Produces `uml`
+./Scripts/cli_create.sh      # Produces `acai`
 ./Scripts/cli_install.sh     # Installs it on your PATH
 ./Scripts/cli_uninstall.sh   # Removes it
 
-./Scripts/app_create.sh      # Produces UML.app
-./Scripts/app_install.sh     # Installs to /Applications/UML.app
+./Scripts/app_create.sh      # Produces Acai.app
+./Scripts/app_install.sh     # Installs to /Applications/Acai.app
 ./Scripts/app_uninstall.sh   # Removes it
 ```
 
@@ -291,7 +291,7 @@ Create and install the binaries with the helper scripts (these build `-c release
 
 ## Contributing
 
-Issues and pull requests are welcome. Adding a language is the most common contribution — the existing Tree-sitter parsers under `Sources/UMLDart`, `Sources/UMLPython`, `Sources/UMLCFamily`, and friends are a good template (a `CodeParser` conformance plus an `AnalysisService` registration). CI enforces `swiftlint lint --strict` and `swift test --parallel` on macOS and Linux.
+Issues and pull requests are welcome. Adding a language is the most common contribution — the existing Tree-sitter parsers under `Sources/AcaiDart`, `Sources/AcaiPython`, `Sources/AcaiCFamily`, and friends are a good template (a `CodeParser` conformance plus an `AnalysisService` registration). CI enforces `swiftlint lint --strict` and `swift test --parallel` on macOS and Linux.
 
 ## License
 

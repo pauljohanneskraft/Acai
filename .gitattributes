@@ -3,7 +3,4 @@
 # exports beside the example PNGs stay plain text on purpose so they remain reviewable.
 *.png filter=lfs diff=lfs merge=lfs -text
 
-# Exception: the app icon is a *build input* — it's compiled into UMLApp (Assets.xcassets) and
-# consumed by Scripts/app_create.sh (sips/iconutil). Keep it a normal git blob so the app still
-# builds in a clone without git-lfs (where an LFS file would be a useless text pointer).
-Sources/UMLApp/Resources/Assets.xcassets/**/*.png !filter !diff !merge -text
+App/**/*.png !filter !diff !merge -text

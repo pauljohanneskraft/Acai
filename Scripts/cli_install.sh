@@ -8,7 +8,7 @@
 # If no install-dir is provided, the script defaults to /usr/local/bin
 # (or /opt/homebrew/bin if that exists). It will prompt for sudo if needed.
 
-readonly CLI_NAME="uml"
+readonly CLI_NAME="acai"
 readonly SOURCE_BIN=".build/artifacts/$CLI_NAME"
 
 # Determine destination directory

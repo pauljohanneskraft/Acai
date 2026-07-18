@@ -8,7 +8,7 @@
 # If no install-dir is provided, the script will attempt common locations
 # like /usr/local/bin and /opt/homebrew/bin.
 
-readonly CLI_NAME="uml"
+readonly CLI_NAME="acai"
 
 # Determine candidate directories
 CANDIDATES=()

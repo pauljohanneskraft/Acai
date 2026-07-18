@@ -1,33 +1,33 @@
 #!/bin/zsh
 
-# Generates the DocC documentation site for all UML modules, ready for static
+# Generates the DocC documentation site for all Açaí modules, ready for static
 # hosting on GitHub Pages.
 #
 # Usage:
 #   ./Scripts/docs_generate.sh [output-dir]
 #
 # If no output-dir is provided, the site is written to .build/docs. The output is
-# transformed for static hosting under the "/UML/" base path (the GitHub Pages repo
+# transformed for static hosting under the "/Acai/" base path (the GitHub Pages repo
 # path) and a top-level index.html redirects to the friendly landing page so the
 # site root lands somewhere welcoming.
 
 # --- CONFIGURATION ---
-readonly HOSTING_BASE_PATH="UML"
-readonly LANDING_PATH="documentation/umllibrary"
-# Every documentable module. UMLRender is macOS-only and UMLApp is a GUI executable
+readonly HOSTING_BASE_PATH="Acai"
+readonly LANDING_PATH="documentation/acailibrary"
+# Every documentable module. AcaiRender is macOS-only and AcaiApp is a GUI executable
 # with no public API, so the app is intentionally omitted.
 readonly TARGETS=(
-    UMLCore
-    UMLTreeSitter
-    UMLSwift
-    UMLJVM
-    UMLJS
-    UMLDart
-    UMLPython
-    UMLCFamily
-    UMLDiagram
-    UMLLibrary
-    UMLRender
+    AcaiCore
+    AcaiTreeSitter
+    AcaiSwift
+    AcaiJVM
+    AcaiJS
+    AcaiDart
+    AcaiPython
+    AcaiCFamily
+    AcaiDiagram
+    AcaiLibrary
+    AcaiRender
 )
 # ---------------------
 
@@ -53,7 +53,7 @@ if ! swift package --allow-writing-to-directory "$OUTPUT_DIR" \
 fi
 
 # 🧭 Redirect the site root to the friendly landing page. This makes
-# https://<owner>.github.io/$HOSTING_BASE_PATH/ open on UMLLibrary's overview
+# https://<owner>.github.io/$HOSTING_BASE_PATH/ open on AcaiLibrary's overview
 # regardless of what the combined-documentation root chooses to show.
 print "🧭 Writing root redirect → $LANDING_PATH ..."
 cat > "$OUTPUT_DIR/index.html" <<EOF
@@ -63,10 +63,10 @@ cat > "$OUTPUT_DIR/index.html" <<EOF
     <meta charset="utf-8">
     <meta http-equiv="refresh" content="0; url=./$LANDING_PATH/">
     <link rel="canonical" href="./$LANDING_PATH/">
-    <title>UML Documentation</title>
+    <title>Açaí Documentation</title>
 </head>
 <body>
-    <p>Redirecting to the <a href="./$LANDING_PATH/">UML documentation</a>…</p>
+    <p>Redirecting to the <a href="./$LANDING_PATH/">Açaí documentation</a>…</p>
 </body>
 </html>
 EOF

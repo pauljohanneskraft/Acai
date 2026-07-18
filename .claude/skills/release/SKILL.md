@@ -1,6 +1,6 @@
 ---
 name: release
-description: Build and/or install the release CLI (uml) and the macOS app via the Scripts/ helpers. Use when the user wants a release build, to install the uml CLI locally, or to produce the .app bundle.
+description: Build and/or install the release CLI (acai) and the macOS app via the Scripts/ helpers. Use when the user wants a release build, to install the acai CLI locally, or to produce the .app bundle.
 disable-model-invocation: true
 ---
 
@@ -13,7 +13,7 @@ Before building, confirm the working tree is in the state the user wants release
 Run only what the user asked for:
 
 - Build CLI binary: `./Scripts/cli_create.sh`
-- Install `uml` to the user's bin dir: `./Scripts/cli_install.sh`
+- Install `acai` to the user's bin dir: `./Scripts/cli_install.sh`
 - Build the `.app` bundle: `./Scripts/app_create.sh`
 - Install the app: `./Scripts/app_install.sh`
 - Uninstall: `./Scripts/cli_uninstall.sh` / `./Scripts/app_uninstall.sh`
