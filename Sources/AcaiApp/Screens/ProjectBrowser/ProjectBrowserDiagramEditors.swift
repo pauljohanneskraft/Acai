@@ -197,14 +197,14 @@ struct ProjectCodebaseEditor {
         do {
             let client = GitHubAPIClient(credential: credential)
             let headSHA = try await GitHubRepositoryClone(
-                client: client, owner: target.owner, repo: target.repo, ref: target.ref
+                client: client, owner: target.owner, repo: target.repo, ref: target.qualifiedRef
             ).sync(into: destination)
             let codebase = Codebase(
                 id: codebaseID,
                 name: name,
                 directoryPath: destination.path,
                 githubSource: GitHubSource(
-                    owner: target.owner, repo: target.repo, ref: target.ref,
+                    owner: target.owner, repo: target.repo, ref: target.ref, refKind: target.kind,
                     lastSyncedCommitSHA: headSHA, lastSyncedAt: Date())
             )
             store.projects[index].codebases.append(codebase)
@@ -225,9 +225,12 @@ struct ProjectCodebaseEditor {
         }
         do {
             let client = GitHubAPIClient(credential: account.credential)
-            let latestSHA = try await client.headCommitSHA(owner: source.owner, repo: source.repo, ref: source.ref)
+            let latestSHA = try await client.headCommitSHA(
+                owner: source.owner, repo: source.repo, ref: source.qualifiedRef)
             guard latestSHA != source.lastSyncedCommitSHA else { return }
-            try await GitHubRepositoryClone(client: client, owner: source.owner, repo: source.repo, ref: source.ref)
+            try await GitHubRepositoryClone(
+                client: client, owner: source.owner, repo: source.repo, ref: source.qualifiedRef
+            )
                 .sync(into: store.githubCloneURL(for: codebaseID))
             mutateCodebase(codebaseID) {
                 $0.githubSource?.lastSyncedCommitSHA = latestSHA
@@ -244,7 +247,7 @@ struct ProjectCodebaseEditor {
     /// ref itself just changed). Mirrors `pull`'s ordering above: the stored ref only changes once
     /// the resync against it has actually succeeded, so a failed switch leaves the codebase on its
     /// previous (still-valid) ref instead of pointing at a ref its on-disk content doesn't match.
-    func switchGitHubRef(codebaseID: UUID, ref: String) async {
+    func switchGitHubRef(codebaseID: UUID, ref: String, kind: GitHubRef.Kind) async {
         guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
             store.report("Sign in to GitHub to switch branches.")
@@ -252,11 +255,13 @@ struct ProjectCodebaseEditor {
         }
         do {
             let client = GitHubAPIClient(credential: account.credential)
+            let qualifiedRef = "\(kind.qualifiedRefPrefix)\(ref)"
             let headSHA = try await GitHubRepositoryClone(
-                client: client, owner: source.owner, repo: source.repo, ref: ref
+                client: client, owner: source.owner, repo: source.repo, ref: qualifiedRef
             ).sync(into: store.githubCloneURL(for: codebaseID))
             mutateCodebase(codebaseID) {
                 $0.githubSource?.ref = ref
+                $0.githubSource?.refKind = kind
                 $0.githubSource?.lastSyncedCommitSHA = headSHA
                 $0.githubSource?.lastSyncedAt = Date()
             }

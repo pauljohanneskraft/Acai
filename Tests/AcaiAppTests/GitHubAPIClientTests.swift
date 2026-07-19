@@ -76,6 +76,24 @@ struct GitHubNetworkingTests {
         #expect(capturedRequest?.url?.query?.contains("per_page=100") == true)
     }
 
+    @Test func repositoriesRequestsRequestedPageAtSharedPageSize() async throws {
+        nonisolated(unsafe) var capturedRequest: URLRequest?
+        MockURLProtocol.handler = { request in
+            capturedRequest = request
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data("[]".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("t"))
+        _ = try await client.repositories(page: 2)
+
+        #expect(capturedRequest?.url?.query?.contains("page=2") == true)
+        #expect(
+            capturedRequest?.url?.query?.contains("per_page=\(GitHubAPIClient.repositoriesPerPage)") == true
+        )
+    }
+
     @Test func zipballDataSendsBearerTokenAndReturnsBodyVerbatim() async throws {
         let payload = Data("not-really-a-zip".utf8)
         MockURLProtocol.handler = { request in

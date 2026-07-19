@@ -17,8 +17,7 @@ import Foundation
 ///    repositories/orgs they want to grant it access to — a separate one-time step on github.com,
 ///    distinct from sign-in, done per account/org rather than per device.
 struct GitHubAppConfiguration: Sendable {
-    static let standard = GitHubAppConfiguration()
+    static let standard = GitHubAppConfiguration(clientID: "Iv23liXDANpxcaVNAO4c")
 
-    /// A client ID is a public identifier, not a secret — safe to check in.
-    var clientID: String { "Iv23liXDANpxcaVNAO4c" }
+    let clientID: String
 }

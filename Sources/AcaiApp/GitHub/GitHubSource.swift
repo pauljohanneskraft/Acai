@@ -7,6 +7,10 @@ struct GitHubRepositoryRef: Hashable {
     var owner: String
     var repo: String
     var ref: String
+    var kind: GitHubRef.Kind
+
+    /// The ref string to actually send to GitHub — see `GitHubSource.qualifiedRef`.
+    var qualifiedRef: String { "\(kind.qualifiedRefPrefix)\(ref)" }
 }
 
 /// Marks a `Codebase` as originating from an in-app GitHub clone rather than a user-picked local
@@ -20,6 +24,53 @@ struct GitHubSource: Codable, Hashable {
     /// the clone folder's contents are replaced, rather than modeling multiple refs per codebase
     /// — a user wanting two branches side by side adds two codebases against the same repo.
     var ref: String
+    /// Whether `ref` names a branch or a tag — needed to disambiguate a repo where both exist
+    /// under the same name (`GitHubRef.id`'s original motivation) when actually resolving `ref`
+    /// against GitHub, since GitHub itself doesn't disambiguate a bare name for you.
+    var refKind: GitHubRef.Kind
     var lastSyncedCommitSHA: String?
     var lastSyncedAt: Date?
+
+    /// The ref string to send to GitHub's ref-taking endpoints (`heads/<name>` / `tags/<name>`)
+    /// so a branch and tag sharing `ref`'s name resolve to the one this codebase actually means,
+    /// rather than whichever one GitHub happens to prefer for a bare name.
+    var qualifiedRef: String { "\(refKind.qualifiedRefPrefix)\(ref)" }
+
+    init(
+        owner: String, repo: String, ref: String, refKind: GitHubRef.Kind = .branch,
+        lastSyncedCommitSHA: String? = nil, lastSyncedAt: Date? = nil
+    ) {
+        self.owner = owner
+        self.repo = repo
+        self.ref = ref
+        self.refKind = refKind
+        self.lastSyncedCommitSHA = lastSyncedCommitSHA
+        self.lastSyncedAt = lastSyncedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case owner, repo, ref, refKind, lastSyncedCommitSHA, lastSyncedAt
+    }
+
+    /// Codebases saved before `refKind` existed have no such key on disk — default those to
+    /// `.branch`, the only kind this feature supported at the time.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        owner = try container.decode(String.self, forKey: .owner)
+        repo = try container.decode(String.self, forKey: .repo)
+        ref = try container.decode(String.self, forKey: .ref)
+        refKind = try container.decodeIfPresent(GitHubRef.Kind.self, forKey: .refKind) ?? .branch
+        lastSyncedCommitSHA = try container.decodeIfPresent(String.self, forKey: .lastSyncedCommitSHA)
+        lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(owner, forKey: .owner)
+        try container.encode(repo, forKey: .repo)
+        try container.encode(ref, forKey: .ref)
+        try container.encode(refKind, forKey: .refKind)
+        try container.encodeIfPresent(lastSyncedCommitSHA, forKey: .lastSyncedCommitSHA)
+        try container.encodeIfPresent(lastSyncedAt, forKey: .lastSyncedAt)
+    }
 }

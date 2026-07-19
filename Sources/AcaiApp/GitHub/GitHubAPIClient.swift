@@ -7,10 +7,36 @@ struct GitHubRepositoryOwner: Decodable, Hashable {
     var login: String
 }
 
-/// A branch or tag name, as returned by the branches/tags list endpoints.
-struct GitHubRef: Decodable, Identifiable, Hashable {
+/// A branch or tag name, as returned by the branches/tags list endpoints. `kind` is attached by
+/// `GitHubAPIClient.branches`/`.tags` after decoding (the underlying endpoints don't return it) and
+/// folded into `id` so a branch and a tag sharing a name (e.g. both called `v1`) don't collide as
+/// `Identifiable` ids when the two lists are combined into one `ForEach`/`Picker`.
+struct GitHubRef: Identifiable, Hashable {
+    enum Kind: String, Hashable, Codable {
+        case branch
+        case tag
+
+        /// The prefix GitHub's ref-taking endpoints accept to disambiguate a branch and tag that
+        /// share a name, confirmed for `GET .../commits/{ref}`'s `ref` parameter: *"Can be a
+        /// commit SHA, branch name (heads/BRANCH_NAME), or tag name (tags/TAG_NAME)"*.
+        var qualifiedRefPrefix: String {
+            switch self {
+            case .branch:
+                "heads/"
+            case .tag:
+                "tags/"
+            }
+        }
+    }
+
     var name: String
-    var id: String { name }
+    var kind: Kind
+    var id: String { "\(kind.rawValue)-\(name)" }
+}
+
+/// The bare shape the branches/tags endpoints actually return.
+private struct GitHubRefResponse: Decodable {
+    var name: String
 }
 
 /// The head-commit response shape from `GET /repos/{owner}/{repo}/commits/{ref}` — only the field
@@ -72,13 +98,18 @@ struct GitHubAPIClient {
         try await get("user", as: User.self)
     }
 
-    /// `GET /user/repos` — paginated; the picker does client-side substring filtering over
-    /// fetched pages, which is enough for typical account sizes.
+    /// Page size `repositories(page:)` requests — a caller paging through results knows it has
+    /// reached the last page once a response comes back shorter than this.
+    static let repositoriesPerPage = 50
+
+    /// `GET /user/repos` — one page; the picker does client-side substring filtering over
+    /// fetched pages, which is enough for typical account sizes. Callers wanting every repository
+    /// should page through until a response shorter than `repositoriesPerPage` comes back.
     func repositories(page: Int = 1) async throws -> [Repository] {
         try await get(
             "user/repos",
             query: [
-                URLQueryItem(name: "per_page", value: "50"),
+                URLQueryItem(name: "per_page", value: String(Self.repositoriesPerPage)),
                 URLQueryItem(name: "page", value: String(page)),
                 URLQueryItem(name: "sort", value: "updated")
             ],
@@ -91,8 +122,8 @@ struct GitHubAPIClient {
         try await get(
             "repos/\(owner)/\(repo)/branches",
             query: [URLQueryItem(name: "per_page", value: "100")],
-            as: [GitHubRef].self
-        )
+            as: [GitHubRefResponse].self
+        ).map { GitHubRef(name: $0.name, kind: .branch) }
     }
 
     /// `GET /repos/{owner}/{repo}/tags` — for the ref picker.
@@ -100,8 +131,8 @@ struct GitHubAPIClient {
         try await get(
             "repos/\(owner)/\(repo)/tags",
             query: [URLQueryItem(name: "per_page", value: "100")],
-            as: [GitHubRef].self
-        )
+            as: [GitHubRefResponse].self
+        ).map { GitHubRef(name: $0.name, kind: .tag) }
     }
 
     /// The head commit SHA for `ref` (a branch, tag, or SHA) — used to decide whether a pull

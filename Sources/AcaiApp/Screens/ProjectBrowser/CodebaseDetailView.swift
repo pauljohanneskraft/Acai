@@ -166,20 +166,23 @@ struct CodebaseDetailView: View {
     @ViewBuilder
     private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
         Picker("Branch/Tag", selection: Binding(
-            get: { source.ref },
-            set: { newRef in
+            get: { GitHubRef(name: source.ref, kind: source.refKind).id },
+            set: { newID in
+                let currentRef = GitHubRef(name: source.ref, kind: source.refKind)
+                guard let selected = (availableRefs + [currentRef]).first(where: { $0.id == newID }) else { return }
                 isPulling = true
                 Task {
-                    await model.editing.switchGitHubRef(codebaseID: codebase.id, ref: newRef)
+                    await model.editing.switchGitHubRef(
+                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
                     isPulling = false
                 }
             }
         )) {
-            if !availableRefs.contains(where: { $0.name == source.ref }) {
-                Text(source.ref).tag(source.ref)
+            if !availableRefs.contains(where: { $0.name == source.ref && $0.kind == source.refKind }) {
+                Text(source.ref).tag(GitHubRef(name: source.ref, kind: source.refKind).id)
             }
             ForEach(availableRefs) { ref in
-                Text(ref.name).tag(ref.name)
+                Text(ref.name).tag(ref.id)
             }
         }
         .labelsHidden()

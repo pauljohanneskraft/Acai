@@ -6,6 +6,7 @@ import Foundation
 /// one-time app registration this depends on).
 struct GitHubDeviceAuthFlow {
     let clientID: String
+    var session: URLSession = .shared
 
     /// A pending sign-in: the code to show the user, where to enter it, and how long it's valid.
     struct DeviceCode {
@@ -75,7 +76,7 @@ struct GitHubDeviceAuthFlow {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = formBody(["client_id": clientID])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await session.data(for: request)
         let response = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
         guard let verificationURL = URL(string: response.verificationUri) else {
             throw Failure.server("Invalid verification URL.")
@@ -129,7 +130,7 @@ struct GitHubDeviceAuthFlow {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = body
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await session.data(for: request)
         let response = try JSONDecoder().decode(TokenResponse.self, from: data)
         if let error = response.error {
             switch error {

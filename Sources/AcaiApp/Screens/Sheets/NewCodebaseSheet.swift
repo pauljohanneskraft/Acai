@@ -26,7 +26,7 @@ struct NewCodebaseSheet: View {
     @State private var repositorySearch = ""
     @State private var selectedRepository: GitHubAPIClient.Repository?
     @State private var refs: [GitHubRef] = []
-    @State private var selectedRef: String?
+    @State private var selectedRef: GitHubRef?
     @State private var isLoadingRepositories = false
     @State private var isLoadingRefs = false
     @State private var isCloning = false
@@ -113,7 +113,7 @@ struct NewCodebaseSheet: View {
                     } else {
                         Picker("Branch/Tag", selection: $selectedRef) {
                             ForEach(refs) { ref in
-                                Text(ref.name).tag(Optional(ref.name))
+                                Text(ref.name).tag(Optional(ref))
                             }
                         }
                     }
@@ -150,7 +150,8 @@ struct NewCodebaseSheet: View {
                         to: projectID,
                         name: name.isEmpty ? repository.name : name,
                         credential: account.credential,
-                        target: GitHubRepositoryRef(owner: repository.owner.login, repo: repository.name, ref: ref)
+                        target: GitHubRepositoryRef(
+                            owner: repository.owner.login, repo: repository.name, ref: ref.name, kind: ref.kind)
                     )
                     isCloning = false
                     dismiss()
@@ -169,7 +170,16 @@ struct NewCodebaseSheet: View {
         isLoadingRepositories = true
         defer { isLoadingRepositories = false }
         do {
-            repositories = try await GitHubAPIClient(credential: account.credential).repositories()
+            let client = GitHubAPIClient(credential: account.credential)
+            var allRepositories: [GitHubAPIClient.Repository] = []
+            var page = 1
+            while true {
+                let batch = try await client.repositories(page: page)
+                allRepositories += batch
+                guard batch.count == GitHubAPIClient.repositoriesPerPage else { break }
+                page += 1
+            }
+            repositories = allRepositories
         } catch {
             gitHubErrorMessage = error.localizedDescription
         }
@@ -184,7 +194,7 @@ struct NewCodebaseSheet: View {
             async let branches = client.branches(owner: repository.owner.login, repo: repository.name)
             async let tags = client.tags(owner: repository.owner.login, repo: repository.name)
             refs = try await branches + tags
-            selectedRef = refs.first { $0.name == repository.defaultBranch }?.name ?? refs.first?.name
+            selectedRef = refs.first { $0.kind == .branch && $0.name == repository.defaultBranch } ?? refs.first
         } catch {
             gitHubErrorMessage = error.localizedDescription
         }

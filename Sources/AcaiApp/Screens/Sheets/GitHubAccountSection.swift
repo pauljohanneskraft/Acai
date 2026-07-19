@@ -135,6 +135,10 @@ struct GitHubAccountSection: View {
             deviceCode = code
             copyToClipboard(code.userCode)
             let credential = try await flow.pollForCredential(code)
+            // The poll can succeed at almost the same moment the user taps "Cancel" — check
+            // cancellation here too (not just in `catch` below), so a credential that arrives
+            // right on that boundary doesn't still get signed in and written to Keychain.
+            guard !Task.isCancelled else { return }
             deviceCode = nil
             signIn(with: credential)
         } catch {
