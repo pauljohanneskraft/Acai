@@ -18,5 +18,6 @@ import Foundation
 struct GitHubAppConfiguration: Sendable {
     static let standard = GitHubAppConfiguration()
 
-    var clientID: String { "" } // TODO: paste your GitHub App's Client ID here.
+    /// A client ID is a public identifier, not a secret — safe to check in.
+    var clientID: String { "Iv23liXDANpxcaVNAO4c" }
 }
