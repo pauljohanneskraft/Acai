@@ -241,21 +241,22 @@ struct ProjectCodebaseEditor {
 
     /// Switches a GitHub-backed codebase to a different branch/tag: updates the stored ref and
     /// forces a resync (bypassing the "unchanged head" short-circuit `pull` uses above, since the
-    /// ref itself just changed).
+    /// ref itself just changed). Mirrors `pull`'s ordering above: the stored ref only changes once
+    /// the resync against it has actually succeeded, so a failed switch leaves the codebase on its
+    /// previous (still-valid) ref instead of pointing at a ref its on-disk content doesn't match.
     func switchGitHubRef(codebaseID: UUID, ref: String) async {
-        guard let codebase = codebase(for: codebaseID), var source = codebase.githubSource else { return }
+        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
             store.report("Sign in to GitHub to switch branches.")
             return
         }
-        source.ref = ref
-        mutateCodebase(codebaseID) { $0.githubSource = source }
         do {
             let client = GitHubAPIClient(credential: account.credential)
             let headSHA = try await GitHubRepositoryClone(
                 client: client, owner: source.owner, repo: source.repo, ref: ref
             ).sync(into: store.githubCloneURL(for: codebaseID))
             mutateCodebase(codebaseID) {
+                $0.githubSource?.ref = ref
                 $0.githubSource?.lastSyncedCommitSHA = headSHA
                 $0.githubSource?.lastSyncedAt = Date()
             }

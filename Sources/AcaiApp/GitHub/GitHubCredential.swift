@@ -18,24 +18,4 @@ enum GitHubCredential: Codable, Hashable {
         }
     }
 
-    /// `true` once the stored expiry has passed. Always `false` for a PAT, which GitHub doesn't
-    /// expire this way.
-    var isExpired: Bool {
-        guard case .gitHubApp(_, let expiresAt, _) = self, let expiresAt else { return false }
-        return expiresAt < Date()
-    }
-}
-
-extension GitHubCredential {
-    /// Returns a refreshed credential if this is an expired GitHub App token with a refresh token
-    /// on hand, using `flow` to perform the actual refresh call; otherwise returns `self`
-    /// unchanged (the common case — a PAT, or a still-valid App token).
-    func refreshedIfNeeded(using flow: GitHubDeviceAuthFlow) async throws -> GitHubCredential {
-        guard case .gitHubApp(_, let expiresAt, let refreshToken) = self,
-              let expiresAt, expiresAt < Date(),
-              let refreshToken else {
-            return self
-        }
-        return try await flow.refreshedCredential(refreshToken: refreshToken)
-    }
 }

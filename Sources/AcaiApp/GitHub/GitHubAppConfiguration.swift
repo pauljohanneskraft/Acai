@@ -10,8 +10,9 @@ import Foundation
 ///    other permissions. This is what makes GitHub access read-only at the token level, not just
 ///    by app-side convention.
 /// 3. Under "Optional features", enable "Device Flow". No webhook or callback URL is needed.
-/// 4. Consider also opting out of user-token expiration there — it avoids ever needing
-///    `GitHubCredential.refreshedIfNeeded`, though that path is implemented as a fallback either way.
+/// 4. Opt out of user-token expiration there — tokens are used as-is with no refresh mechanism,
+///    so an expiring token would eventually make every GitHub operation fail until the user signs
+///    in again.
 /// 5. Paste the App's Client ID below. Users additionally "install" the App on whichever
 ///    repositories/orgs they want to grant it access to — a separate one-time step on github.com,
 ///    distinct from sign-in, done per account/org rather than per device.
