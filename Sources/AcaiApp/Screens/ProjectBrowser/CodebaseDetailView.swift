@@ -8,6 +8,11 @@ struct CodebaseDetailView: View {
     let codebaseID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var isIndexing = false
+    /// `true` while a GitHub `Pull` or branch/tag switch is in flight — mirrors `isIndexing`'s
+    /// role for the local-folder "Reindex" action.
+    @State private var isPulling = false
+    /// Branches + tags for a GitHub-backed codebase's ref picker, loaded once per codebase.
+    @State private var availableRefs: [GitHubRef] = []
     /// Set when the user clicks "Sequence Diagram"; drives the configuration popup.
     @State private var sequenceConfigContext: ConfigContext?
     /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
@@ -117,31 +122,89 @@ struct CodebaseDetailView: View {
                     .font(.title2.bold())
                     .textFieldStyle(.plain)
 
-                    Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
+                    if let source = codebase.githubSource {
+                        Text("\(source.owner)/\(source.repo) @ \(source.ref)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    } else {
+                        Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    }
                 }
 
                 Spacer()
 
                 indexStatus(codebase: codebase)
 
-                Button {
-                    isIndexing = true
-                    Task {
-                        await model.editing.reindex(codebaseID: codebase.id)
-                        isIndexing = false
+                if let source = codebase.githubSource {
+                    githubActions(codebase: codebase, source: source)
+                } else {
+                    Button {
+                        isIndexing = true
+                        Task {
+                            await model.editing.reindex(codebaseID: codebase.id)
+                            isIndexing = false
+                        }
+                    } label: {
+                        Label("Reindex", systemImage: "arrow.clockwise")
                     }
-                } label: {
-                    Label("Reindex", systemImage: "arrow.clockwise")
+                    .disabled(isIndexing)
                 }
-                .disabled(isIndexing)
             }
         }
         .padding()
+    }
+
+    /// The "Pull" + branch/tag picker shown instead of "Reindex" for a GitHub-backed codebase.
+    @ViewBuilder
+    private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
+        Picker("Branch/Tag", selection: Binding(
+            get: { source.ref },
+            set: { newRef in
+                isPulling = true
+                Task {
+                    await model.editing.switchGitHubRef(codebaseID: codebase.id, ref: newRef)
+                    isPulling = false
+                }
+            }
+        )) {
+            if !availableRefs.contains(where: { $0.name == source.ref }) {
+                Text(source.ref).tag(source.ref)
+            }
+            ForEach(availableRefs) { ref in
+                Text(ref.name).tag(ref.name)
+            }
+        }
+        .labelsHidden()
+        .frame(maxWidth: 160)
+        .disabled(isPulling)
+        .task(id: codebase.id) { await loadAvailableRefs(source: source) }
+
+        Button {
+            isPulling = true
+            Task {
+                await model.editing.pull(codebaseID: codebase.id)
+                isPulling = false
+            }
+        } label: {
+            Label("Pull", systemImage: "arrow.triangle.2.circlepath")
+        }
+        .disabled(isPulling)
+    }
+
+    private func loadAvailableRefs(source: GitHubSource) async {
+        guard let account = GitHubTokenStore().load() else { return }
+        let client = GitHubAPIClient(credential: account.credential)
+        async let branches = client.branches(owner: source.owner, repo: source.repo)
+        async let tags = client.tags(owner: source.owner, repo: source.repo)
+        availableRefs = (try? await branches + tags) ?? []
     }
 
     private func indexStatus(codebase: Codebase) -> some View {

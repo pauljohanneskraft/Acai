@@ -9,6 +9,10 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// sandboxed — `directoryPath` alone is authoritative there) and for codebases added before
     /// this field existed.
     var securityScopedBookmark: SecurityScopedBookmark?
+    /// Set when this codebase was cloned in-app from GitHub rather than pointed at a user-picked
+    /// local folder — see `GitHubSource`. When present, `directoryPath` is the app-managed clone
+    /// folder and `securityScopedBookmark` stays `nil`.
+    var githubSource: GitHubSource?
     var hasArtifact: Bool = false
     var lastIndexed: Date?
     /// `true` when the most recent index encountered files that could not be fully parsed.

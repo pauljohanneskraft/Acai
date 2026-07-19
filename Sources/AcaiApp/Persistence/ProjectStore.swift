@@ -48,6 +48,9 @@ final class ProjectStore: ObservableObject {
     /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
     /// path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
+    /// Holds the app-managed local folders for GitHub-backed codebases (see `GitHubSource`), one
+    /// subdirectory per codebase, named by its id — parallels `artifactsDir`/`rulesDir`.
+    var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
@@ -75,6 +78,7 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
         load()
     }
 
@@ -267,6 +271,19 @@ final class ProjectStore: ObservableObject {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - GitHub clones
+
+    /// Where a GitHub-backed codebase's synced folder lives (whether or not it exists yet) —
+    /// what `Codebase.directoryPath` points at once `githubSource` is set.
+    func githubCloneURL(for codebaseID: UUID) -> URL {
+        githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
+    }
+
+    /// Removes a GitHub-backed codebase's synced folder, mirroring `deleteArtifactFile`.
+    func deleteGitHubClone(for codebaseID: UUID) {
+        try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
     }
 
     // MARK: - Managed quality-check rules

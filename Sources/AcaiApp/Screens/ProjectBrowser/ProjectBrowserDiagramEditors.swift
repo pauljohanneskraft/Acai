@@ -180,7 +180,89 @@ struct ProjectCodebaseEditor {
         }
         store.deleteArtifactFile(for: codebaseID)
         store.deleteManagedRules(forCodebase: codebaseID)
+        store.deleteGitHubClone(for: codebaseID)
         persist()
+    }
+
+    // MARK: GitHub-backed codebases
+
+    /// Clones `owner/repo` at `ref` into a new app-managed folder and adds it as a codebase, then
+    /// indexes it — the GitHub equivalent of `addCodebase`.
+    func addGitHubCodebase(
+        to projectID: UUID, name: String, credential: GitHubCredential, target: GitHubRepositoryRef
+    ) async {
+        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
+        let codebaseID = UUID()
+        let destination = store.githubCloneURL(for: codebaseID)
+        do {
+            let client = GitHubAPIClient(credential: credential)
+            let headSHA = try await GitHubRepositoryClone(
+                client: client, owner: target.owner, repo: target.repo, ref: target.ref
+            ).sync(into: destination)
+            let codebase = Codebase(
+                id: codebaseID,
+                name: name,
+                directoryPath: destination.path,
+                githubSource: GitHubSource(
+                    owner: target.owner, repo: target.repo, ref: target.ref,
+                    lastSyncedCommitSHA: headSHA, lastSyncedAt: Date())
+            )
+            store.projects[index].codebases.append(codebase)
+            persist()
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Clone failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Re-syncs a GitHub-backed codebase against its stored ref if the upstream head commit has
+    /// moved since the last sync, then reindexes; a no-op (network check only) if it hasn't.
+    func pull(codebaseID: UUID) async {
+        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
+        guard let account = GitHubTokenStore().load() else {
+            store.report("Sign in to GitHub to pull \(source.owner)/\(source.repo).")
+            return
+        }
+        do {
+            let client = GitHubAPIClient(credential: account.credential)
+            let latestSHA = try await client.headCommitSHA(owner: source.owner, repo: source.repo, ref: source.ref)
+            guard latestSHA != source.lastSyncedCommitSHA else { return }
+            try await GitHubRepositoryClone(client: client, owner: source.owner, repo: source.repo, ref: source.ref)
+                .sync(into: store.githubCloneURL(for: codebaseID))
+            mutateCodebase(codebaseID) {
+                $0.githubSource?.lastSyncedCommitSHA = latestSHA
+                $0.githubSource?.lastSyncedAt = Date()
+            }
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Pull failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Switches a GitHub-backed codebase to a different branch/tag: updates the stored ref and
+    /// forces a resync (bypassing the "unchanged head" short-circuit `pull` uses above, since the
+    /// ref itself just changed).
+    func switchGitHubRef(codebaseID: UUID, ref: String) async {
+        guard let codebase = codebase(for: codebaseID), var source = codebase.githubSource else { return }
+        guard let account = GitHubTokenStore().load() else {
+            store.report("Sign in to GitHub to switch branches.")
+            return
+        }
+        source.ref = ref
+        mutateCodebase(codebaseID) { $0.githubSource = source }
+        do {
+            let client = GitHubAPIClient(credential: account.credential)
+            let headSHA = try await GitHubRepositoryClone(
+                client: client, owner: source.owner, repo: source.repo, ref: ref
+            ).sync(into: store.githubCloneURL(for: codebaseID))
+            mutateCodebase(codebaseID) {
+                $0.githubSource?.lastSyncedCommitSHA = headSHA
+                $0.githubSource?.lastSyncedAt = Date()
+            }
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Branch switch failed: \(error.localizedDescription)")
+        }
     }
 
     func reindex(codebaseID: UUID) async {

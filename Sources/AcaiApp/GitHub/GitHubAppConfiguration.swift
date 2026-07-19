@@ -1,0 +1,22 @@
+import Foundation
+
+/// The registered GitHub App's client ID, used by `GitHubDeviceAuthFlow` for sign-in — a value you
+/// read from `.standard`, not a namespace, matching `AcaiConstants.standard`'s shape.
+///
+/// One-time manual setup, done once in your own GitHub account (this can't be automated — it
+/// requires an interactive GitHub login):
+/// 1. Register a GitHub App at https://github.com/settings/apps/new.
+/// 2. Under "Repository permissions", set `Contents: Read-only` and `Metadata: Read-only` — no
+///    other permissions. This is what makes GitHub access read-only at the token level, not just
+///    by app-side convention.
+/// 3. Under "Optional features", enable "Device Flow". No webhook or callback URL is needed.
+/// 4. Consider also opting out of user-token expiration there — it avoids ever needing
+///    `GitHubCredential.refreshedIfNeeded`, though that path is implemented as a fallback either way.
+/// 5. Paste the App's Client ID below. Users additionally "install" the App on whichever
+///    repositories/orgs they want to grant it access to — a separate one-time step on github.com,
+///    distinct from sign-in, done per account/org rather than per device.
+struct GitHubAppConfiguration: Sendable {
+    static let standard = GitHubAppConfiguration()
+
+    var clientID: String { "" } // TODO: paste your GitHub App's Client ID here.
+}

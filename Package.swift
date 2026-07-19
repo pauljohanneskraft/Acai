@@ -48,11 +48,18 @@ optionalTargets.append(
             "AcaiLibrary",
             "AcaiRender",
             .product(name: "Yams", package: "Yams"),
+            // Reads the zip GitHub serves for `.../zipball/{ref}` when cloning a repository
+            // in-app (see `Sources/AcaiApp/GitHub`). Wraps minizip-ng (zlib-licensed, same
+            // lineage as zlib's own `contrib/minizip`), no bundled executable.
+            .product(name: "ZipArchive", package: "ZipArchive"),
         ]
     )
 )
 optionalTargets.append(
-    .testTarget(name: "AcaiAppTests", dependencies: ["AcaiApp", "AcaiCore"])
+    .testTarget(
+        name: "AcaiAppTests",
+        dependencies: ["AcaiApp", "AcaiCore", .product(name: "ZipArchive", package: "ZipArchive")]
+    )
 )
 #endif
 
@@ -107,6 +114,9 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
         // The official Swift MCP SDK — the JSON-RPC/stdio transport behind the `AcaiMCP` entry point.
         .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.12.1"),
+        // Zip extraction for in-app GitHub repository cloning (`AcaiApp`'s `GitHub/` sources) —
+        // wraps minizip-ng, not a general dependency of the analysis engine.
+        .package(url: "https://github.com/ZipArchive/ZipArchive", from: "2.5.5"),
     ],
     targets: [
         // MARK: Core models
