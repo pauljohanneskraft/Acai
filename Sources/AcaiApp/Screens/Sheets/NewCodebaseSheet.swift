@@ -11,35 +11,45 @@ struct NewCodebaseSheet: View {
     @State private var isChoosingDirectory = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Add Codebase").font(.title2).bold()
-            TextField("Name", text: $name)
-            HStack {
-                Text(directoryURL?.path ?? "No directory chosen").lineLimit(1).truncationMode(.middle)
-                Spacer()
-                Button("Choose…") { isChoosingDirectory = true }
-            }
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                Button("Add") {
-                    if let dir = directoryURL {
-                        model.editing.addCodebase(
-                            to: projectID, name: name, directoryURL: dir,
-                            securityScopedBookmark: securityScopedBookmark)
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name", text: $name)
+                    LabeledContent("Directory") {
+                        Text(directoryURL?.path ?? "No directory chosen")
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(directoryURL == nil ? .secondary : .primary)
                     }
-                    dismiss()
-                }.disabled(name.isEmpty || directoryURL == nil)
+                    Button("Choose…") { isChoosingDirectory = true }
+                }
             }
-        }
-        .padding()
-        .frame(maxWidth: 480)
-        .fileImporter(isPresented: $isChoosingDirectory, allowedContentTypes: [.folder]) { result in
-            guard let url = try? result.get() else { return }
-            guard url.startAccessingSecurityScopedResource() else { return }
-            defer { url.stopAccessingSecurityScopedResource() }
-            directoryURL = url
-            securityScopedBookmark = try? SecurityScopedBookmark(resolving: url)
+            #if os(macOS)
+            .frame(maxWidth: 480)
+            #endif
+            .navigationTitle("Add Codebase")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        if let dir = directoryURL {
+                            model.editing.addCodebase(
+                                to: projectID, name: name, directoryURL: dir,
+                                securityScopedBookmark: securityScopedBookmark)
+                        }
+                        dismiss()
+                    }.disabled(name.isEmpty || directoryURL == nil)
+                }
+            }
+            .fileImporter(isPresented: $isChoosingDirectory, allowedContentTypes: [.folder]) { result in
+                guard let url = try? result.get() else { return }
+                guard url.startAccessingSecurityScopedResource() else { return }
+                defer { url.stopAccessingSecurityScopedResource() }
+                directoryURL = url
+                securityScopedBookmark = try? SecurityScopedBookmark(resolving: url)
+            }
         }
     }
 }

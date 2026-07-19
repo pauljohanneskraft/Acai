@@ -188,10 +188,16 @@ struct ProjectCodebaseEditor {
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
         do {
-            let newArtifact = try await Task.detached(priority: .userInitiated) {
-                try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL { url in
-                    try CodebaseAnalyzer().enrichedArtifact(at: url)
-                }
+            // `refreshedBookmark` is populated (and only read) inside this single detached
+            // closure's own synchronous execution, then handed back through the return value —
+            // never captured mutably across the concurrency boundary.
+            let (newArtifact, refreshedBookmark) = try await Task.detached(priority: .userInitiated) {
+                var refreshedBookmark: SecurityScopedBookmark?
+                let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
+                    onRefresh: { refreshedBookmark = $0 },
+                    { url in try CodebaseAnalyzer().enrichedArtifact(at: url) }
+                )
+                return (artifact, refreshedBookmark)
             }.value
             // Re-resolve indices after the suspension — the user may have mutated the project/codebase
             // list during the (potentially long) analysis, invalidating any pre-`await` indices.
@@ -202,6 +208,9 @@ struct ProjectCodebaseEditor {
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
             store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
+            if let refreshedBookmark {
+                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshedBookmark
+            }
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {

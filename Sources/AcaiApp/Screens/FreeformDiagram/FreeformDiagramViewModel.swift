@@ -28,6 +28,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     @Published var nodes: [FreeformDiagram.Node] = []
     @Published var edges: [FreeformDiagram.Edge] = []
+    @Published var isMultiSelectActive = false
     @Published var selectedNodeIDs: Set<String> = [] {
         didSet {
             // Keep the click order in sync no matter how the set is mutated (taps, marquee,

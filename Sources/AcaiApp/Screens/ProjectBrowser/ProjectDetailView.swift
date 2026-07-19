@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectDetailView: View {
     let projectID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var addingCodebase = false
     @State private var codebasePendingDeletion: Codebase?
 
@@ -16,56 +17,38 @@ struct ProjectDetailView: View {
 
     var body: some View {
         if let project, let index = projectIndex {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Editable project header
-                    projectHeader(project: project, index: index)
-
-                    Divider()
-
-                    sectionHeader(title: "Codebases")
-
-                    let sortedCodebases = project.codebases.sorted(by: {
-                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                    })
-                    if sortedCodebases.isEmpty {
-                        Text("No codebases yet. Add one above.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal)
-                            .padding(.bottom, 12)
-                    } else {
-                        LazyVStack(spacing: 1) {
-                            ForEach(sortedCodebases) { codebase in
-                                codebaseRow(codebase: codebase)
-                            }
-                        }
-                        .padding(.bottom, 8)
-                    }
-
-                    Divider()
-
-                    sectionHeader(title: "Diagrams")
-
-                    let freeformDiagrams = model.freeformDiagramsForProject(projectID)
-                        .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-                    if freeformDiagrams.isEmpty {
-                        Text("No freeform diagrams yet. Create one above.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal)
-                            .padding(.bottom, 12)
-                    } else {
-                        LazyVStack(spacing: 1) {
-                            ForEach(freeformDiagrams) { diagram in
-                                freeformDiagramRow(diagram: diagram)
-                            }
-                        }
-                        .padding(.bottom, 8)
-                    }
+            Group {
+                if horizontalSizeClass == .compact {
+                    compactContent(project: project, index: index)
+                } else {
+                    regularContent(project: project, index: index)
                 }
             }
             .navigationTitle(project.title)
+            #if !os(macOS)
+            .toolbar {
+                if horizontalSizeClass == .compact {
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu {
+                            Button {
+                                addingCodebase = true
+                            } label: {
+                                Label("Add Codebase", systemImage: "folder.badge.plus")
+                            }
+                            Button {
+                                if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
+                                    model.selection = .freeformDiagram(id)
+                                }
+                            } label: {
+                                Label("Add Diagram", systemImage: "rectangle.3.group")
+                            }
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                    }
+                }
+            }
+            #endif
             .sheet(isPresented: $addingCodebase) {
                 NewCodebaseSheet(projectID: project.id)
                     .environmentObject(model)
@@ -86,6 +69,140 @@ struct ProjectDetailView: View {
             }
         } else {
             emptyProjectPlaceholder
+        }
+    }
+
+    // MARK: - Regular width (iPad, macOS) — unchanged
+
+    private func regularContent(project: Project, index: Int) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // Editable project header
+                projectHeader(project: project, index: index)
+
+                Divider()
+
+                sectionHeader(title: "Codebases")
+
+                let sortedCodebases = project.codebases.sorted(by: {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                })
+                if sortedCodebases.isEmpty {
+                    Text("No codebases yet. Add one above.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                } else {
+                    LazyVStack(spacing: 1) {
+                        ForEach(sortedCodebases) { codebase in
+                            codebaseRow(codebase: codebase)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+
+                Divider()
+
+                sectionHeader(title: "Diagrams")
+
+                let freeformDiagrams = model.freeformDiagramsForProject(projectID)
+                    .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+                if freeformDiagrams.isEmpty {
+                    Text("No freeform diagrams yet. Create one above.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                } else {
+                    LazyVStack(spacing: 1) {
+                        ForEach(freeformDiagrams) { diagram in
+                            freeformDiagramRow(diagram: diagram)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+            }
+        }
+    }
+
+    // MARK: - Compact width (iPhone)
+
+    private func compactContent(project: Project, index: Int) -> some View {
+        List {
+            Section {
+                projectTitleFields(index: index)
+            }
+            compactCodebasesSection(project: project)
+            compactDiagramsSection()
+        }
+    }
+
+    @ViewBuilder
+    private func compactCodebasesSection(project: Project) -> some View {
+        let sortedCodebases = project.codebases.sorted(by: {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        })
+        Section("Codebases") {
+            if sortedCodebases.isEmpty {
+                Text("No codebases yet.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(sortedCodebases) { codebase in
+                    Button {
+                        model.selection = .codebase(codebase.id)
+                    } label: {
+                        codebaseRowContent(codebase: codebase)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { codebaseContextMenu(codebase: codebase) }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            codebasePendingDeletion = codebase
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            Task { await model.editing.reindex(codebaseID: codebase.id) }
+                        } label: {
+                            Label("Reindex", systemImage: "arrow.clockwise")
+                        }
+                        .tint(.blue)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func compactDiagramsSection() -> some View {
+        let freeformDiagrams = model.freeformDiagramsForProject(projectID)
+            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+        Section("Diagrams") {
+            if freeformDiagrams.isEmpty {
+                Text("No freeform diagrams yet.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(freeformDiagrams) { diagram in
+                    Button {
+                        model.selection = .freeformDiagram(diagram.id)
+                    } label: {
+                        freeformDiagramRowContent(diagram: diagram)
+                    }
+                    .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            model.freeforms.remove(diagram.id)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -163,9 +280,12 @@ struct ProjectDetailView: View {
         }
     }
 
-    // MARK: - Codebase Row
+}
 
-    private func codebaseRow(codebase: Codebase) -> some View {
+// MARK: - Codebase Row
+
+extension ProjectDetailView {
+    fileprivate func codebaseRow(codebase: Codebase) -> some View {
         Button {
             model.selection = .codebase(codebase.id)
         } label: {
@@ -177,7 +297,7 @@ struct ProjectDetailView: View {
         }
     }
 
-    private func codebaseRowContent(codebase: Codebase) -> some View {
+    fileprivate func codebaseRowContent(codebase: Codebase) -> some View {
         HStack {
             Image(systemName: "folder")
                 .font(.title2)
@@ -212,7 +332,7 @@ struct ProjectDetailView: View {
     }
 
     @ViewBuilder
-    private func codebaseContextMenu(codebase: Codebase) -> some View {
+    fileprivate func codebaseContextMenu(codebase: Codebase) -> some View {
         Button {
             Task { await model.editing.reindex(codebaseID: codebase.id) }
         } label: {
@@ -231,33 +351,39 @@ struct ProjectDetailView: View {
             Label("Delete", systemImage: "trash")
         }
     }
+}
 
-    // MARK: - Freeform Diagram Row
+// MARK: - Freeform Diagram Row
 
-    private func freeformDiagramRow(diagram: FreeformDiagram) -> some View {
-        Button {
-            model.selection = .freeformDiagram(diagram.id)
-        } label: {
-            HStack {
-                Image(systemName: FreeformDiagram.systemImage)
-                    .font(.title2)
-                    .foregroundStyle(.primary)
-                    .frame(width: 32, height: 32)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(diagram.name)
-                        .fontWeight(.medium)
-                    Text("Freeform Diagram")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text(diagram.lastModified, style: .date)
+extension ProjectDetailView {
+    fileprivate func freeformDiagramRowContent(diagram: FreeformDiagram) -> some View {
+        HStack {
+            Image(systemName: FreeformDiagram.systemImage)
+                .font(.title2)
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(diagram.name)
+                    .fontWeight(.medium)
+                Text("Freeform Diagram")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 6)
-            .contentShape(Rectangle())
+            Spacer()
+            Text(diagram.lastModified, style: .date)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+
+    fileprivate func freeformDiagramRow(diagram: FreeformDiagram) -> some View {
+        Button {
+            model.selection = .freeformDiagram(diagram.id)
+        } label: {
+            freeformDiagramRowContent(diagram: diagram)
         }
         .buttonStyle(.plain)
         .contextMenu {

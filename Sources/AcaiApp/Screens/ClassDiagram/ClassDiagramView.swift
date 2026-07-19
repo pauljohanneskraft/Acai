@@ -67,6 +67,9 @@ struct ClassDiagramView: View {
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+                    #if !os(macOS)
+                    MultiSelectToggleButton(model: viewModel)
+                    #endif
 
                     Button {
                         viewModel.recordUndo()
@@ -186,7 +189,7 @@ struct ClassDiagramView: View {
                     #if os(macOS)
                     let extending = NSEvent.modifierFlags.contains(.command)
                     #else
-                    let extending = false
+                    let extending = viewModel.isMultiSelectActive
                     #endif
                     viewModel.selectNode(node.id, extending: extending)
                 }

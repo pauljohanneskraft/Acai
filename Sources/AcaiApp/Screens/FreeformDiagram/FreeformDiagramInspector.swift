@@ -53,6 +53,7 @@ struct FreeformDiagramInspector: View {
     // MARK: - Node Inspector
 
     private func nodeInspector(node: FreeformDiagram.Node) -> some View {
+        #if os(macOS)
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 nodeNameSection(node: node)
@@ -70,6 +71,23 @@ struct FreeformDiagramInspector: View {
             }
             .padding()
         }
+        #else
+        Form {
+            nodeNameSection(node: node)
+            nodeKindSection(node: node)
+            nodePositionSection(node: node)
+            nodeContentSections(node: node)
+            nodeRelationshipsSection(node: node)
+            Section {
+                Button(role: .destructive) {
+                    viewModel.removeNode(node.id)
+                } label: {
+                    Label("Delete Node", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        #endif
     }
 
     private func nodeNameSection(node: FreeformDiagram.Node) -> some View {
@@ -321,6 +339,7 @@ extension FreeformDiagramInspector {
         let isTransition = edge.transition != nil
         let deleteTitle = isMessage ? "Delete Message"
             : isTransition ? "Delete Transition" : "Delete Relationship"
+        #if os(macOS)
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if isMessage {
@@ -342,6 +361,29 @@ extension FreeformDiagramInspector {
             }
             .padding()
         }
+        #else
+        return Form {
+            if isMessage {
+                messageSection(edge: edge)
+            } else if isTransition {
+                transitionSection(edge: edge)
+            } else {
+                edgePickersSection(edge: edge)
+            }
+            Section {
+                edgeSummary(edge: edge)
+            }
+            Section {
+                Button(role: .destructive) {
+                    viewModel.removeEdge(edge.id)
+                    viewModel.selectedEdgeID = nil
+                } label: {
+                    Label(deleteTitle, systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        #endif
     }
 
     private func edgePickersSection(edge: FreeformDiagram.Edge) -> some View {
@@ -395,7 +437,9 @@ extension FreeformDiagramInspector {
 
     // MARK: - Multi-Node Inspector
 
+    @ViewBuilder
     private var multiNodeInspector: some View {
+        #if os(macOS)
         VStack(spacing: 12) {
             Text("\(viewModel.selectedNodeIDs.count) nodes selected")
                 .font(.headline)
@@ -421,5 +465,26 @@ extension FreeformDiagramInspector {
             .buttonStyle(.bordered)
             .padding()
         }
+        #else
+        Form {
+            Section {
+                ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
+                    if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
+                        Label(node.name, systemImage: node.content.kind.systemImage)
+                    }
+                }
+            } header: {
+                Text("\(viewModel.selectedNodeIDs.count) Nodes Selected")
+            }
+            Section {
+                Button(role: .destructive) {
+                    viewModel.deleteSelection()
+                } label: {
+                    Label("Delete Selected", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        #endif
     }
 }

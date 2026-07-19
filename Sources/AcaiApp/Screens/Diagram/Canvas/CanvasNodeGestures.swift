@@ -56,7 +56,7 @@ extension View {
             #if os(macOS)
             let extending = NSEvent.modifierFlags.contains(.command)
             #else
-            let extending = false
+            let extending = model.isMultiSelectActive
             #endif
             model.selectNode(id, extending: extending)
         }
@@ -82,15 +82,22 @@ struct CanvasResizeHandle<Model: CanvasInteraction>: View {
     var minWidth: CGFloat = 80
     var minHeight: CGFloat = 50
     var handleSize: CGFloat = 16
+    /// The tappable hit area on touch platforms, larger than `handleSize` to clear Apple's ~44pt
+    /// minimum touch target — macOS keeps `handleSize` itself as the hit area, matching mouse
+    /// precision.
+    var touchTargetSize: CGFloat = 44
 
     var body: some View {
         Rectangle()
             .fill(Color.clear)
             #if os(macOS)
             .cursorOnHover(.closedHand)
-            #endif
             .frame(width: handleSize, height: handleSize)
             .contentShape(Rectangle())
+            #else
+            .frame(width: handleSize, height: handleSize)
+            .contentShape(Rectangle().inset(by: -(touchTargetSize - handleSize) / 2))
+            #endif
             .position(x: position.x + size.width / 2, y: position.y + size.height / 2)
             .gesture(resizeGesture)
     }

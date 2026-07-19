@@ -136,7 +136,7 @@ extension FreeformDiagramView {
                 #if os(macOS)
                 let extending = NSEvent.modifierFlags.contains(.command)
                 #else
-                let extending = false
+                let extending = viewModel.isMultiSelectActive
                 #endif
                 viewModel.selectNode(fragment.id, extending: extending)
             }
@@ -200,7 +200,7 @@ extension FreeformDiagramView {
             #if os(macOS)
             let extending = NSEvent.modifierFlags.contains(.command)
             #else
-            let extending = false
+            let extending = viewModel.isMultiSelectActive
             #endif
             viewModel.selectNode(node.id, extending: extending)
         }
@@ -231,7 +231,7 @@ extension FreeformDiagramView {
                 #if os(macOS)
                 let extending = NSEvent.modifierFlags.contains(.command)
                 #else
-                let extending = false
+                let extending = viewModel.isMultiSelectActive
                 #endif
                 viewModel.selectNode(node.id, extending: extending)
             }

@@ -50,65 +50,88 @@ struct SequenceConfigSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(phase == .entryPoint ? "New Sequence Diagram" : "Resolve Interfaces")
-                .font(.title2.bold())
-
-            switch phase {
-            case .entryPoint:
-                entryPointForm
-            case .resolveInterfaces:
-                resolveInterfacesForm
+        NavigationStack {
+            Group {
+                switch phase {
+                case .entryPoint:
+                    entryPointForm
+                case .resolveInterfaces:
+                    resolveInterfacesForm
+                }
             }
-
-            Divider()
-            footer
+            #if os(macOS)
+            .frame(maxWidth: 460)
+            #endif
+            .navigationTitle(phase == .entryPoint ? "New Sequence Diagram" : "Resolve Interfaces")
+            .toolbar {
+                if phase == .resolveInterfaces {
+                    ToolbarItem(placement: .navigation) {
+                        Button("Back") { phase = .entryPoint }
+                    }
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", role: .cancel, action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    switch phase {
+                    case .entryPoint:
+                        Button("Next", action: advance)
+                            .keyboardShortcut(.defaultAction)
+                            .disabled(entryMethodName.isEmpty)
+                    case .resolveInterfaces:
+                        Button("Create", action: create)
+                            .keyboardShortcut(.defaultAction)
+                    }
+                }
+            }
         }
-        .padding(20)
-        .frame(maxWidth: 460)
     }
 
     // MARK: - Phase 1: entry point
 
     private var entryPointForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Choose where the trace begins. Calls are followed through explicitly-typed "
-                 + "property receivers.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+        Form {
+            Section {
+                Text("Choose where the trace begins. Calls are followed through explicitly-typed "
+                     + "property receivers.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
 
-            LabeledContent("Type") {
-                VStack(alignment: .leading, spacing: 4) {
-                    PickerFilterField(text: $typeQuery)
-                    Picker("Type", selection: $entryTypeName) {
-                        // No class selected = top-level scope; the method picker then lists free functions.
-                        Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
-                        ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
-                    }
-                    .labelsHidden()
-                    .onChange(of: entryTypeName) { _, _ in
-                        if !methodNames.contains(entryMethodName) {
-                            entryMethodName = methodNames.first ?? ""
+            Section {
+                LabeledContent("Type") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        PickerFilterField(text: $typeQuery)
+                        Picker("Type", selection: $entryTypeName) {
+                            // No class selected = top-level scope; the method picker then lists free functions.
+                            Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
+                            ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                        .onChange(of: entryTypeName) { _, _ in
+                            if !methodNames.contains(entryMethodName) {
+                                entryMethodName = methodNames.first ?? ""
+                            }
                         }
                     }
                 }
-            }
 
-            LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
-                VStack(alignment: .leading, spacing: 4) {
-                    PickerFilterField(text: $methodQuery)
-                    Picker("Method", selection: $entryMethodName) {
-                        Text("Select…").tag("")
-                        ForEach(methodNames.filtered(by: methodQuery), id: \.self) { Text($0).tag($0) }
+                LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        PickerFilterField(text: $methodQuery)
+                        Picker("Method", selection: $entryMethodName) {
+                            Text("Select…").tag("")
+                            ForEach(methodNames.filtered(by: methodQuery), id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                        .disabled(methodNames.isEmpty)
                     }
-                    .labelsHidden()
-                    .disabled(methodNames.isEmpty)
                 }
-            }
 
-            LabeledContent("Max depth") {
-                Stepper(value: $maxDepth, in: 1...20) {
-                    Text("\(maxDepth)")
+                LabeledContent("Max depth") {
+                    Stepper(value: $maxDepth, in: 1...20) {
+                        Text("\(maxDepth)")
+                    }
                 }
             }
         }
@@ -118,42 +141,24 @@ struct SequenceConfigSheet: View {
 
     @ViewBuilder
     private var resolveInterfacesForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("These abstractions appear along the call path. Pick a concrete type to follow "
-                 + "its implementation, or leave it abstract.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+        Form {
+            Section {
+                Text("These abstractions appear along the call path. Pick a concrete type to follow "
+                     + "its implementation, or leave it abstract.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
 
-            ForEach($mappingRows) { $row in
-                LabeledContent(row.protocolName) {
-                    Picker(row.protocolName, selection: $row.selection) {
-                        Text("Leave abstract").tag(String?.none)
-                        ForEach(row.candidates, id: \.self) { Text($0).tag(String?.some($0)) }
+            Section {
+                ForEach($mappingRows) { $row in
+                    LabeledContent(row.protocolName) {
+                        Picker(row.protocolName, selection: $row.selection) {
+                            Text("Leave abstract").tag(String?.none)
+                            ForEach(row.candidates, id: \.self) { Text($0).tag(String?.some($0)) }
+                        }
+                        .labelsHidden()
                     }
-                    .labelsHidden()
                 }
-            }
-        }
-    }
-
-    // MARK: - Footer
-
-    private var footer: some View {
-        HStack {
-            if phase == .resolveInterfaces {
-                Button("Back") { phase = .entryPoint }
-            }
-            Spacer()
-            Button("Cancel", role: .cancel, action: onCancel)
-                .keyboardShortcut(.cancelAction)
-            switch phase {
-            case .entryPoint:
-                Button("Next", action: advance)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(entryMethodName.isEmpty)
-            case .resolveInterfaces:
-                Button("Create", action: create)
-                    .keyboardShortcut(.defaultAction)
             }
         }
     }

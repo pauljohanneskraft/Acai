@@ -27,6 +27,26 @@ struct UndoRedoToolbarButtons<Model: CanvasInteraction>: View {
     }
 }
 
+/// Toggles a `CanvasInteraction` model's touch-only "Select" mode (see `isMultiSelectActive`'s
+/// documentation): while active, tapping a node adds/removes it from the selection instead of
+/// replacing it — the touch substitute for macOS's Cmd-click, which has no iOS/iPadOS equivalent.
+/// macOS doesn't need this button (it keeps Cmd-click), so callers gate it `#if !os(macOS)`.
+struct MultiSelectToggleButton<Model: CanvasInteraction>: View {
+    @ObservedObject var model: Model
+
+    var body: some View {
+        Button {
+            model.isMultiSelectActive.toggle()
+        } label: {
+            Label(
+                "Select",
+                systemImage: model.isMultiSelectActive ? "checkmark.circle.fill" : "checkmark.circle"
+            )
+        }
+        .help("Toggle multi-select mode: tap nodes to add or remove them from the selection")
+    }
+}
+
 extension View {
     /// Hidden buttons that capture ⌘Z / ⇧⌘Z and route them to the model's undo/redo. `enabled`
     /// lets a view yield the shortcut to native text-field undo while a field is focused.

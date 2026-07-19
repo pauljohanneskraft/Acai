@@ -16,6 +16,7 @@ struct CanvasInteractionDefaultsTests {
     private final class StubCanvas: ObservableObject, LayoutBackedCanvas {
         @Published var positionOverrides: [String: CGPoint] = [:]
         @Published var selectedNodeIDs: Set<String> = []
+        @Published var isMultiSelectActive = false
         let history = DiagramHistoryManager<[String: CGPoint]>()
         private let frames: [String: CGRect]
 

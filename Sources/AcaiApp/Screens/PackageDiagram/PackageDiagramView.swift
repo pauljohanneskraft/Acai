@@ -134,6 +134,9 @@ struct PackageDiagramView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+            #if !os(macOS)
+            MultiSelectToggleButton(model: viewModel)
+            #endif
 
             Button {
                 centerDiagram()
