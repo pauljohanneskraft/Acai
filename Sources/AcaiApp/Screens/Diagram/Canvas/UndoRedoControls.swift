@@ -15,6 +15,7 @@ struct UndoRedoToolbarButtons<Model: CanvasInteraction>: View {
         }
         .disabled(!model.canUndo)
         .help("Undo (⌘Z)")
+        .accessibilityIdentifier("diagram.undoButton")
 
         Button {
             model.redo()
@@ -24,6 +25,7 @@ struct UndoRedoToolbarButtons<Model: CanvasInteraction>: View {
         }
         .disabled(!model.canRedo)
         .help("Redo (⇧⌘Z)")
+        .accessibilityIdentifier("diagram.redoButton")
     }
 }
 

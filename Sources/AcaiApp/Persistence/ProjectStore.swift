@@ -57,6 +57,9 @@ final class ProjectStore: ObservableObject {
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
+        } else if let fixtureBaseDir = UITestFixtureResolver().resolveBaseDir() {
+            // A UI test requested deterministic, disposable state — see `UITestFixtureResolver`.
+            self.baseDir = fixtureBaseDir
         } else {
             #if os(macOS)
             let appSupport = try? fileManager.url(

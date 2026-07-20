@@ -11,7 +11,9 @@ struct NewProjectSheet: View {
             Form {
                 Section {
                     TextField("Title", text: $title)
+                        .accessibilityIdentifier("newProjectSheet.titleField")
                     TextField("Subtitle", text: $subtitle)
+                        .accessibilityIdentifier("newProjectSheet.subtitleField")
                 }
             }
             #if os(macOS)
@@ -21,12 +23,15 @@ struct NewProjectSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityIdentifier("newProjectSheet.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
                         onCreate(title, subtitle)
                         dismiss()
-                    }.disabled(title.isEmpty)
+                    }
+                    .disabled(title.isEmpty)
+                    .accessibilityIdentifier("newProjectSheet.createButton")
                 }
             }
         }

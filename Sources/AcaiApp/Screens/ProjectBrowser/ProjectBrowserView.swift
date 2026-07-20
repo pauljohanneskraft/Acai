@@ -32,6 +32,7 @@ public struct ProjectBrowserView: View {
                             } label: {
                                 Label("New project", systemImage: "plus")
                             }
+                            .accessibilityIdentifier("sidebar.newProjectButton")
                         }
                     }
                     ToolbarItem(placement: .secondaryAction) {
@@ -84,6 +85,7 @@ public struct ProjectBrowserView: View {
             Button("Delete Project", role: .destructive) {
                 model.editing.removeProject(project.id)
             }
+            .accessibilityIdentifier("sidebar.project.delete.confirmButton")
         } message: { _ in
             Text("This deletes all of its codebases and diagrams. This cannot be undone.")
         }
@@ -98,6 +100,7 @@ public struct ProjectBrowserView: View {
             Button("Delete Codebase", role: .destructive) {
                 model.editing.removeCodebase(codebase.id)
             }
+            .accessibilityIdentifier("sidebar.codebase.delete.confirmButton")
         } message: { _ in
             Text("This deletes its diagrams and cached analysis. This cannot be undone.")
         }
@@ -130,6 +133,7 @@ public struct ProjectBrowserView: View {
                 }
                 .buttonStyle(.plain)
                 .padding()
+                .accessibilityIdentifier("sidebar.newProjectButton")
             }
         }
     }
@@ -285,6 +289,7 @@ extension ProjectBrowserView {
                 .font(.headline)
                 .tag(ProjectBrowserViewModel.Selection.project(project.id))
                 .help(project.title)
+                .accessibilityIdentifier("sidebar.project.\(project.id)")
                 .contextMenu { projectContextMenu(project: project) }
         }
         #else
@@ -312,6 +317,7 @@ extension ProjectBrowserView {
                         .foregroundStyle(.primary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("sidebar.project.\(project.id)")
                 Spacer()
                 Button {
                     projectExpansionBinding(for: project).wrappedValue.toggle()
@@ -336,6 +342,7 @@ extension ProjectBrowserView {
             Label(codebase.name, systemImage: "folder")
                 .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
                 .help(codebase.name)
+                .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
                 .contextMenu {
                     Button {
                         Task { await model.editing.reindex(codebaseID: codebase.id) }

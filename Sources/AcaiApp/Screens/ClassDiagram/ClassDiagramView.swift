@@ -87,6 +87,7 @@ struct ClassDiagramView: View {
                     }
                     .help("Fit the diagram to the visible canvas (⌘0)")
                     .keyboardShortcut("0", modifiers: .command)
+                    .accessibilityIdentifier("diagram.fitToViewButton")
                     Button {
                         model.saveAsFreeformDiagram(
                             id: diagram.id,
@@ -110,6 +111,7 @@ struct ClassDiagramView: View {
                         Label("Sidebar", systemImage: "sidebar.trailing")
                     }
                     .help("Toggle the sidebar")
+                    .accessibilityIdentifier("diagram.sidebarToggleButton")
                 }
             }
             .diagramCanvasLifecycle(

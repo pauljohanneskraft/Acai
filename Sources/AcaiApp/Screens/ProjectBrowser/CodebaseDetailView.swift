@@ -181,6 +181,7 @@ struct CodebaseDetailView: View {
                     Label("Reindex", systemImage: "arrow.clockwise")
                 }
                 .disabled(isIndexing)
+                .accessibilityIdentifier("codebaseDetail.reindexButton")
             }
         }
     }
@@ -366,6 +367,7 @@ extension CodebaseDetailView {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("codebaseDetail.diagramButton.\(type.rawValue)")
     }
 
     // MARK: - Not Indexed

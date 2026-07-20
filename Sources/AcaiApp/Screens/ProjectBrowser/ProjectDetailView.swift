@@ -64,6 +64,7 @@ struct ProjectDetailView: View {
                 Button("Delete Codebase", role: .destructive) {
                     model.editing.removeCodebase(codebase.id)
                 }
+                .accessibilityIdentifier("projectDetail.codebase.delete.confirmButton")
             } message: { _ in
                 Text("This deletes its diagrams and cached analysis. This cannot be undone.")
             }
@@ -156,6 +157,7 @@ struct ProjectDetailView: View {
                         codebaseRowContent(codebase: codebase)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
                     .contextMenu { codebaseContextMenu(codebase: codebase) }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
@@ -246,6 +248,7 @@ struct ProjectDetailView: View {
             } label: {
                 Label("Add codebase", systemImage: "plus")
             }
+            .accessibilityIdentifier("projectDetail.addCodebaseButton")
             Button {
                 if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
                     model.selection = .freeformDiagram(id)
@@ -253,6 +256,7 @@ struct ProjectDetailView: View {
             } label: {
                 Label("Add Diagram", systemImage: "plus")
             }
+            .accessibilityIdentifier("projectDetail.addDiagramButton")
         }
         .padding()
     }
@@ -292,6 +296,7 @@ extension ProjectDetailView {
             codebaseRowContent(codebase: codebase)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
         .contextMenu {
             codebaseContextMenu(codebase: codebase)
         }
