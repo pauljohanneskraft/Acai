@@ -42,23 +42,6 @@ struct GitHubNetworkingTests {
         return GitHubAPIClient(credential: credential, session: URLSession(configuration: configuration))
     }
 
-    @Test func headCommitSHARequestsCorrectPathAndAuthHeader() async throws {
-        nonisolated(unsafe) var capturedRequest: URLRequest?
-        MockURLProtocol.handler = { request in
-            capturedRequest = request
-            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, try JSONEncoder().encode(["sha": "abc123"]))
-        }
-        defer { MockURLProtocol.handler = nil }
-
-        let client = makeClient(credential: .personalAccessToken("secret-token"))
-        let sha = try await client.headCommitSHA(owner: "acme", repo: "widgets", ref: "main")
-
-        #expect(sha == "abc123")
-        #expect(capturedRequest?.url?.path == "/repos/acme/widgets/commits/main")
-        #expect(capturedRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
-    }
-
     @Test func branchesRequestsExpectedPathAndPageSize() async throws {
         nonisolated(unsafe) var capturedRequest: URLRequest?
         MockURLProtocol.handler = { request in
@@ -68,12 +51,13 @@ struct GitHubNetworkingTests {
         }
         defer { MockURLProtocol.handler = nil }
 
-        let client = makeClient(credential: .personalAccessToken("t"))
+        let client = makeClient(credential: .personalAccessToken("secret-token"))
         let refs = try await client.branches(owner: "acme", repo: "widgets")
 
         #expect(refs.map(\.name) == ["main", "develop"])
         #expect(capturedRequest?.url?.path == "/repos/acme/widgets/branches")
         #expect(capturedRequest?.url?.query?.contains("per_page=100") == true)
+        #expect(capturedRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
     }
 
     @Test func repositoriesRequestsRequestedPageAtSharedPageSize() async throws {
@@ -94,20 +78,6 @@ struct GitHubNetworkingTests {
         )
     }
 
-    @Test func zipballDataSendsBearerTokenAndReturnsBodyVerbatim() async throws {
-        let payload = Data("not-really-a-zip".utf8)
-        MockURLProtocol.handler = { request in
-            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, payload)
-        }
-        defer { MockURLProtocol.handler = nil }
-
-        let client = makeClient(credential: .personalAccessToken("secret-token"))
-        let data = try await client.zipballData(owner: "acme", repo: "widgets", ref: "main")
-
-        #expect(data == payload)
-    }
-
     @Test func httpErrorStatusSurfacesAsFailure() async throws {
         MockURLProtocol.handler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!
@@ -117,7 +87,7 @@ struct GitHubNetworkingTests {
 
         let client = makeClient(credential: .personalAccessToken("t"))
         await #expect(throws: (any Error).self) {
-            _ = try await client.headCommitSHA(owner: "acme", repo: "widgets", ref: "missing")
+            _ = try await client.branches(owner: "acme", repo: "widgets")
         }
     }
 }

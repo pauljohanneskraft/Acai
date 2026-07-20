@@ -15,18 +15,6 @@ struct GitHubRef: Identifiable, Hashable {
     enum Kind: String, Hashable, Codable {
         case branch
         case tag
-
-        /// The prefix GitHub's ref-taking endpoints accept to disambiguate a branch and tag that
-        /// share a name, confirmed for `GET .../commits/{ref}`'s `ref` parameter: *"Can be a
-        /// commit SHA, branch name (heads/BRANCH_NAME), or tag name (tags/TAG_NAME)"*.
-        var qualifiedRefPrefix: String {
-            switch self {
-            case .branch:
-                "heads/"
-            case .tag:
-                "tags/"
-            }
-        }
     }
 
     var name: String
@@ -37,12 +25,6 @@ struct GitHubRef: Identifiable, Hashable {
 /// The bare shape the branches/tags endpoints actually return.
 private struct GitHubRefResponse: Decodable {
     var name: String
-}
-
-/// The head-commit response shape from `GET /repos/{owner}/{repo}/commits/{ref}` — only the field
-/// `GitHubAPIClient.headCommitSHA` needs.
-private struct GitHubCommitResponse: Decodable {
-    var sha: String
 }
 
 /// A thin, read-only `URLSession`-based client for the GitHub REST API — every endpoint here is a
@@ -133,24 +115,6 @@ struct GitHubAPIClient {
             query: [URLQueryItem(name: "per_page", value: "100")],
             as: [GitHubRefResponse].self
         ).map { GitHubRef(name: $0.name, kind: .tag) }
-    }
-
-    /// The head commit SHA for `ref` (a branch, tag, or SHA) — used to decide whether a pull
-    /// needs to re-download anything.
-    func headCommitSHA(owner: String, repo: String, ref: String) async throws -> String {
-        try await get("repos/\(owner)/\(repo)/commits/\(ref)", as: GitHubCommitResponse.self).sha
-    }
-
-    /// The zip GitHub builds server-side for `ref` — `GitHubRepositoryClone` extracts this.
-    /// Follows the redirect to `codeload.github.com` via the default `URLSession` behavior.
-    func zipballData(owner: String, repo: String, ref: String) async throws -> Data {
-        let url = baseURL.appendingPathComponent("repos/\(owner)/\(repo)/zipball/\(ref)")
-        var request = URLRequest(url: url)
-        request.setValue(credential.authorizationHeaderValue, forHTTPHeaderField: "Authorization")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        let (data, response) = try await session.data(for: request)
-        try validate(response, data: data)
-        return data
     }
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], as type: T.Type) async throws -> T {

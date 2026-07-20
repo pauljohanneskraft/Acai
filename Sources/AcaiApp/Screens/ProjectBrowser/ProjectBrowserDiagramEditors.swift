@@ -195,9 +195,8 @@ struct ProjectCodebaseEditor {
         let codebaseID = UUID()
         let destination = store.githubCloneURL(for: codebaseID)
         do {
-            let client = GitHubAPIClient(credential: credential)
             let headSHA = try await GitHubRepositoryClone(
-                client: client, owner: target.owner, repo: target.repo, ref: target.qualifiedRef
+                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref
             ).sync(into: destination)
             let codebase = Codebase(
                 id: codebaseID,
@@ -215,8 +214,9 @@ struct ProjectCodebaseEditor {
         }
     }
 
-    /// Re-syncs a GitHub-backed codebase against its stored ref if the upstream head commit has
-    /// moved since the last sync, then reindexes; a no-op (network check only) if it hasn't.
+    /// Re-syncs a GitHub-backed codebase against its stored ref, then reindexes if the upstream
+    /// head commit has actually moved. An incremental `fetch` (via `GitHubRepositoryClone`) is
+    /// cheap enough to just always run, rather than pre-checking via a separate REST call.
     func pull(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
@@ -224,14 +224,11 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let client = GitHubAPIClient(credential: account.credential)
-            let latestSHA = try await client.headCommitSHA(
-                owner: source.owner, repo: source.repo, ref: source.qualifiedRef)
-            guard latestSHA != source.lastSyncedCommitSHA else { return }
-            try await GitHubRepositoryClone(
-                client: client, owner: source.owner, repo: source.repo, ref: source.qualifiedRef
+            let latestSHA = try await GitHubRepositoryClone(
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref
             )
                 .sync(into: store.githubCloneURL(for: codebaseID))
+            guard latestSHA != source.lastSyncedCommitSHA else { return }
             mutateCodebase(codebaseID) {
                 $0.githubSource?.lastSyncedCommitSHA = latestSHA
                 $0.githubSource?.lastSyncedAt = Date()
@@ -254,10 +251,8 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let client = GitHubAPIClient(credential: account.credential)
-            let qualifiedRef = "\(kind.qualifiedRefPrefix)\(ref)"
             let headSHA = try await GitHubRepositoryClone(
-                client: client, owner: source.owner, repo: source.repo, ref: qualifiedRef
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: ref
             ).sync(into: store.githubCloneURL(for: codebaseID))
             mutateCodebase(codebaseID) {
                 $0.githubSource?.ref = ref

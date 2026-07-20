@@ -18,4 +18,15 @@ enum GitHubCredential: Codable, Hashable {
         }
     }
 
+    /// The raw token value — embedded as the password component of an authenticated `https://`
+    /// git remote URL (`GitHubRepositoryClone`), where GitHub accepts any username paired with a
+    /// valid token over Basic auth.
+    var token: String {
+        switch self {
+        case .personalAccessToken(let token):
+            token
+        case .gitHubApp(let accessToken, _, _):
+            accessToken
+        }
+    }
 }

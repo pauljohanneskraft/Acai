@@ -8,9 +8,6 @@ struct GitHubRepositoryRef: Hashable {
     var repo: String
     var ref: String
     var kind: GitHubRef.Kind
-
-    /// The ref string to actually send to GitHub — see `GitHubSource.qualifiedRef`.
-    var qualifiedRef: String { "\(kind.qualifiedRefPrefix)\(ref)" }
 }
 
 /// Marks a `Codebase` as originating from an in-app GitHub clone rather than a user-picked local
@@ -24,17 +21,11 @@ struct GitHubSource: Codable, Hashable {
     /// the clone folder's contents are replaced, rather than modeling multiple refs per codebase
     /// — a user wanting two branches side by side adds two codebases against the same repo.
     var ref: String
-    /// Whether `ref` names a branch or a tag — needed to disambiguate a repo where both exist
-    /// under the same name (`GitHubRef.id`'s original motivation) when actually resolving `ref`
-    /// against GitHub, since GitHub itself doesn't disambiguate a bare name for you.
+    /// Whether `ref` names a branch or a tag — for display (the branch/tag picker) and
+    /// `GitHubRef.id`'s disambiguation of a repo where a branch and tag share a name.
     var refKind: GitHubRef.Kind
     var lastSyncedCommitSHA: String?
     var lastSyncedAt: Date?
-
-    /// The ref string to send to GitHub's ref-taking endpoints (`heads/<name>` / `tags/<name>`)
-    /// so a branch and tag sharing `ref`'s name resolve to the one this codebase actually means,
-    /// rather than whichever one GitHub happens to prefer for a bare name.
-    var qualifiedRef: String { "\(refKind.qualifiedRefPrefix)\(ref)" }
 
     init(
         owner: String, repo: String, ref: String, refKind: GitHubRef.Kind = .branch,

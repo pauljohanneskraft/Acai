@@ -1,9 +1,6 @@
-// Git-backed (reads the codebase's branches/tags via `GitRefs`, which shells out to `/usr/bin/git`
-// via `Process` — unavailable on iOS) — macOS-only. `ProjectBrowserView.deltaHosted` skips this
-// entirely on iOS rather than presenting a toggle that can never load anything.
-#if os(macOS)
 import SwiftUI
 import AcaiDiagram
+import AcaiGit
 import AcaiRender
 
 /// A control strip shown above a diagram that toggles **delta mode**: comparing the codebase's
@@ -88,7 +85,7 @@ struct DeltaComparisonBar: View {
     private func loadAvailableRefs() {
         guard let codebase = model.codebase(for: diagram.codebaseID) else { return }
         let directory = URL(fileURLWithPath: codebase.directoryPath)
-        availableRefs = (try? GitRefs(directory: directory).names()) ?? []
+        availableRefs = (try? GitCheckout(directory: directory).refNames()) ?? []
     }
 
     private var legend: some View {
@@ -106,4 +103,3 @@ struct DeltaComparisonBar: View {
         }
     }
 }
-#endif

@@ -82,11 +82,6 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     // MARK: - Delta comparison (git revision)
-    //
-    // Git-backed (shells out to `/usr/bin/git`/`/usr/bin/tar` via `Process`, which doesn't exist on
-    // iOS) — macOS-only. See `DeltaComparisonBar` and `ProjectBrowserView.deltaHosted`, which skip
-    // this feature entirely on iOS rather than presenting a control that can never load anything.
-    #if os(macOS)
 
     /// Identity of a cached comparison snapshot: which directory at which git ref.
     private struct ComparisonKey: Hashable {
@@ -132,20 +127,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         }
     }
 
-    #endif
-
-    /// The cached "old" artifact for a diagram's current comparison ref, if already loaded. Delta
-    /// comparison is macOS-only (see the block above) — always `nil` on iOS, so the three call
-    /// sites in `ProjectBrowserView.generatedDiagramDetail` compile unconditionally on both.
+    /// The cached "old" artifact for a diagram's current comparison ref, if already loaded.
     func comparisonArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
-        #if os(macOS)
         guard let ref = diagram.comparisonGitRef,
               let directory = codebase(for: diagram.codebaseID)?.directoryPath
         else { return nil }
         return comparisonArtifacts[ComparisonKey(directory: directory, ref: ref)]
-        #else
-        return nil
-        #endif
     }
 
     /// Memoised diagram-ready (flattened) form of each codebase's stored semantic artifact, keyed by

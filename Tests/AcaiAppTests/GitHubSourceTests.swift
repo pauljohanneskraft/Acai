@@ -32,22 +32,6 @@ struct GitHubSourceTests {
         #expect(decoded.refKind == .tag)
     }
 
-    @Test func qualifiedRefPrefixesBranchAndTagDifferently() {
-        let branch = GitHubSource(owner: "acme", repo: "widgets", ref: "main", refKind: .branch)
-        let tag = GitHubSource(owner: "acme", repo: "widgets", ref: "v1", refKind: .tag)
-
-        #expect(branch.qualifiedRef == "heads/main")
-        #expect(tag.qualifiedRef == "tags/v1")
-    }
-
-    @Test func gitHubRepositoryRefQualifiesTheSameWay() {
-        let branch = GitHubRepositoryRef(owner: "acme", repo: "widgets", ref: "main", kind: .branch)
-        let tag = GitHubRepositoryRef(owner: "acme", repo: "widgets", ref: "v1", kind: .tag)
-
-        #expect(branch.qualifiedRef == "heads/main")
-        #expect(tag.qualifiedRef == "tags/v1")
-    }
-
     @Test func gitHubRefIDDisambiguatesSameNamedBranchAndTag() {
         let branch = GitHubRef(name: "v1", kind: .branch)
         let tag = GitHubRef(name: "v1", kind: .tag)

@@ -2,7 +2,7 @@
 # Regenerates the Xcode project and runs the iOS UI test target (Layer 2, TESTING_ARCHITECTURE.md),
 # mirroring the CI `test-ios-ui` job.
 #
-# Usage: Scripts/ios_test.sh [DEVICE]
+# Usage: Scripts/app_test_ios.sh [DEVICE]
 #   DEVICE  simulator name for -destination   (default: iPhone 17)
 set -euo pipefail
 

@@ -206,13 +206,11 @@ public struct ProjectBrowserView: View {
     }
 
     /// Wraps a drawable diagram with the delta-comparison bar, loading the git-revision snapshot on
-    /// demand and rebuilding the diagram once it (or a changed ref) is available. Git-backed
-    /// comparison is macOS-only (see `DeltaComparisonBar`), so iOS just shows the diagram itself.
+    /// demand and rebuilding the diagram once it (or a changed ref) is available.
     @ViewBuilder
     private func deltaHosted(
         diagram: GeneratedDiagram, @ViewBuilder content: () -> some View
     ) -> some View {
-        #if os(macOS)
         let loaded = model.comparisonArtifact(for: diagram) != nil
         VStack(spacing: 0) {
             DeltaComparisonBar(diagram: diagram)
@@ -223,9 +221,6 @@ public struct ProjectBrowserView: View {
             await model.ensureComparisonLoaded(for: diagram)
         }
         .environmentObject(model)
-        #else
-        content().environmentObject(model)
-        #endif
     }
 
     @ViewBuilder

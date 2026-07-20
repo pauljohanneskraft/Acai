@@ -4,7 +4,7 @@
 # no simulator for macOS, so an actual `xcodebuild test` run drives real windows/mouse/keyboard on
 # this Mac. Pass --run to opt into that explicitly.
 #
-# Usage: Scripts/macos_test.sh [--run]
+# Usage: Scripts/app_test_macos.sh [--run]
 set -euo pipefail
 
 ACTION="build-for-testing"
