@@ -7,6 +7,7 @@ import AcaiDiagram
 struct CodebaseDetailView: View {
     let codebaseID: UUID
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isIndexing = false
     /// `true` while a GitHub `Pull` or branch/tag switch is in flight — mirrors `isIndexing`'s
     /// role for the local-folder "Reindex" action.
@@ -104,62 +105,84 @@ struct CodebaseDetailView: View {
 
     // MARK: - Header
 
+    /// A single crowded row works on iPad/macOS, but on iPhone the title (icon + name + subtitle)
+    /// and the actions (index status + branch picker/Pull, or Reindex) don't both fit — so compact
+    /// width gets its own actions row underneath instead of squeezing everything into one line.
     private func headerSection(codebase: Codebase) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "folder")
-                    .font(.title)
-                    .foregroundStyle(.primary)
-                    .frame(width: 44, height: 44)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("Codebase Name", text: Binding(
-                        get: { codebase.name },
-                        set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
-                    ))
-                    .font(.title2.bold())
-                    .textFieldStyle(.plain)
-
-                    if let source = codebase.githubSource {
-                        Text("\(source.owner)/\(source.repo) @ \(source.ref)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .textSelection(.enabled)
-                    } else {
-                        Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .truncationMode(.middle)
-                            .textSelection(.enabled)
-                    }
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(alignment: .leading, spacing: 12) {
+                    headerTitleRow(codebase: codebase)
+                    headerActionsRow(codebase: codebase)
                 }
-
-                Spacer()
-
-                indexStatus(codebase: codebase)
-
-                if let source = codebase.githubSource {
-                    githubActions(codebase: codebase, source: source)
-                } else {
-                    Button {
-                        isIndexing = true
-                        Task {
-                            await model.editing.reindex(codebaseID: codebase.id)
-                            isIndexing = false
-                        }
-                    } label: {
-                        Label("Reindex", systemImage: "arrow.clockwise")
-                    }
-                    .disabled(isIndexing)
+            } else {
+                HStack {
+                    headerTitleRow(codebase: codebase)
+                    Spacer()
+                    headerActionsRow(codebase: codebase)
                 }
             }
         }
         .padding()
+    }
+
+    private func headerTitleRow(codebase: Codebase) -> some View {
+        HStack {
+            Image(systemName: "folder")
+                .font(.title)
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Codebase Name", text: Binding(
+                    get: { codebase.name },
+                    set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
+                ))
+                .font(.title2.bold())
+                .textFieldStyle(.plain)
+
+                if let source = codebase.githubSource {
+                    Text("\(source.owner)/\(source.repo) @ \(source.ref)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                } else {
+                    Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    private func headerActionsRow(codebase: Codebase) -> some View {
+        HStack {
+            indexStatus(codebase: codebase)
+            if horizontalSizeClass == .compact {
+                Spacer()
+            }
+            if let source = codebase.githubSource {
+                githubActions(codebase: codebase, source: source)
+            } else {
+                Button {
+                    isIndexing = true
+                    Task {
+                        await model.editing.reindex(codebaseID: codebase.id)
+                        isIndexing = false
+                    }
+                } label: {
+                    Label("Reindex", systemImage: "arrow.clockwise")
+                }
+                .disabled(isIndexing)
+            }
+        }
     }
 
     /// The "Pull" + branch/tag picker shown instead of "Reindex" for a GitHub-backed codebase.

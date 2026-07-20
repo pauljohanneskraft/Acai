@@ -14,6 +14,7 @@ import Yams
 ///   artifacts/
 ///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
 /// ```
+@MainActor
 final class ProjectStore: ObservableObject {
     @Published var projects: [Project] = []
 
@@ -238,15 +239,24 @@ final class ProjectStore: ObservableObject {
         }
     }
 
+    /// Updates the in-memory artifact immediately (so the UI reflects it right away), then encodes
+    /// and writes it to disk off the main actor — for a large codebase that JSON encode + atomic
+    /// write can take long enough to visibly stall the UI if done inline (this is called at the end
+    /// of every reindex/pull/branch-switch). The nested detached task only touches the plain
+    /// `Sendable` `url`/`stored` values; `self` is only touched again after hopping back to the
+    /// main actor, so no mutable app state crosses the concurrency boundary.
     func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
         artifacts[codebaseID] = artifact
-        let encoder = JSONEncoder()
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        do {
-            let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
-            try encoder.encode(stored).write(to: url, options: .atomic)
-        } catch {
-            report("Failed to save analysis: \(error.localizedDescription)")
+        let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
+        Task {
+            do {
+                try await Task.detached(priority: .utility) {
+                    try JSONEncoder().encode(stored).write(to: url, options: .atomic)
+                }.value
+            } catch {
+                report("Failed to save analysis: \(error.localizedDescription)")
+            }
         }
     }
 

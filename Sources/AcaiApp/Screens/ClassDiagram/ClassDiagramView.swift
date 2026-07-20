@@ -50,7 +50,8 @@ struct ClassDiagramView: View {
                     viewModel: viewModel,
                     diagram: diagram,
                     artifact: artifact,
-                    tab: $sidebarTab
+                    tab: $sidebarTab,
+                    isPresented: $showSidebar
                 )
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }

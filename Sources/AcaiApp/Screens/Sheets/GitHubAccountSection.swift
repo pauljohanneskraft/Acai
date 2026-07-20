@@ -29,7 +29,7 @@ struct GitHubAccountSection: View {
     private let tokenStore = GitHubTokenStore()
 
     var body: some View {
-        Group {
+        VStack {
             if let account {
                 signedInView(account)
             } else {
@@ -37,6 +37,26 @@ struct GitHubAccountSection: View {
             }
         }
         .onDisappear { pollTask?.cancel() }
+        #if os(iOS)
+        // Attach the sheet to a background view. This hides the presentation
+        // anchor from the root of the hierarchy, preventing conflicts with
+        // the host 'NewCodebaseSheet' that is already presented.
+        .background {
+            Color.clear
+                .sheet(isPresented: $isPresentingVerificationPage) {
+                    if let url = deviceCode?.verificationURI {
+                        SafariView(url: url)
+                    } else {
+                        // Shown during the dismissal animation after deviceCode is set to nil
+                        VStack(spacing: 16) {
+                            ProgressView()
+                            Text("Completing sign in...")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+        }
+        #endif
     }
 
     private func signedInView(_ account: GitHubTokenStore.StoredAccount) -> some View {
@@ -60,10 +80,12 @@ struct GitHubAccountSection: View {
                 .foregroundStyle(.secondary)
             SecureField("Personal Access Token", text: $patText)
             Button("Sign In with Token") { signIn(with: .personalAccessToken(patText)) }
+                .buttonStyle(.borderless)
                 .disabled(patText.isEmpty || isSigningIn)
 
             if !GitHubAppConfiguration.standard.clientID.isEmpty {
                 Button("Sign in with GitHub") { pollTask = Task { await startDeviceFlow() } }
+                    .buttonStyle(.borderless)
                     .disabled(isSigningIn)
             }
         }
@@ -90,9 +112,7 @@ struct GitHubAccountSection: View {
             Button("Open \(code.verificationURI.host ?? "github.com")") {
                 isPresentingVerificationPage = true
             }
-            .sheet(isPresented: $isPresentingVerificationPage) {
-                SafariView(url: code.verificationURI)
-            }
+            .buttonStyle(.borderless)
             #else
             Link("Open \(code.verificationURI.host ?? "github.com")", destination: code.verificationURI)
             #endif
@@ -104,6 +124,7 @@ struct GitHubAccountSection: View {
                     pollTask = nil
                     deviceCode = nil
                 }
+                .buttonStyle(.borderless)
             }
         }
     }
@@ -139,6 +160,10 @@ struct GitHubAccountSection: View {
             // cancellation here too (not just in `catch` below), so a credential that arrives
             // right on that boundary doesn't still get signed in and written to Keychain.
             guard !Task.isCancelled else { return }
+
+            #if os(iOS)
+            isPresentingVerificationPage = false
+            #endif
             deviceCode = nil
             signIn(with: credential)
         } catch {
@@ -146,6 +171,10 @@ struct GitHubAccountSection: View {
             // `deviceCode` itself) or by leaving the sheet — surfacing an error here would show a
             // spurious "cancelled" message after the user's own deliberate action.
             guard !Task.isCancelled else { return }
+
+            #if os(iOS)
+            isPresentingVerificationPage = false
+            #endif
             errorMessage = error.localizedDescription
             deviceCode = nil
         }

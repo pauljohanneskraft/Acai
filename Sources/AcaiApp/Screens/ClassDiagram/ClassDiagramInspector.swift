@@ -16,8 +16,36 @@ struct ClassDiagramSidebar: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     @Binding var tab: ClassDiagramSidebarTab
+    /// Mirrors the presenting `.inspector(isPresented:)` binding so this view can offer its own
+    /// close affordance — needed on iPhone, where `.inspector` collapses to a plain sheet with no
+    /// built-in dismiss chrome (unlike its native sidebar presentation on macOS/iPad).
+    @Binding var isPresented: Bool
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     var body: some View {
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            NavigationStack {
+                content
+                    .navigationTitle(diagram.name)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { isPresented = false }
+                        }
+                    }
+            }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
                 Text("Settings").tag(ClassDiagramSidebarTab.settings)

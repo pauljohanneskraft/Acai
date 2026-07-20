@@ -99,7 +99,7 @@ struct GitHubDeviceAuthFlow {
     func pollForCredential(_ deviceCode: DeviceCode) async throws -> GitHubCredential {
         var interval = deviceCode.interval
         while Date() < deviceCode.expiresAt {
-            try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            try await Task.sleep(nanoseconds: UInt64(interval * Double(NSEC_PER_SEC)))
             do {
                 return try await exchangeDeviceCode(deviceCode.deviceCode)
             } catch PollOutcome.pending {

@@ -191,13 +191,23 @@ extension URL {
     /// Comparison is on a path-component boundary so a sibling directory sharing a name
     /// prefix (e.g. `/a/foobar` against base `/a/foo`) is treated as unrelated rather than
     /// yielding a corrupted `bar/...` relative path.
+    ///
+    /// Both sides are symlink-resolved before comparing: `FileManager`'s directory enumerator
+    /// (used to collect the files this is called on) canonicalizes the paths it walks, while `base`
+    /// is typically whatever the caller passed to `analyzeProject(at:)` — often not canonicalized
+    /// (e.g. a bare `/var/...` path on a platform where that's a symlink to `/private/var/...`).
+    /// Comparing the raw strings in that case fails the prefix check for every file, silently
+    /// collapsing every path down to a bare filename (and, downstream, every type into one fake
+    /// module — see `ModuleResolver`'s `fallbackGroup`).
     func relativePath(from base: URL) -> String {
-        let basePath = base.path.hasSuffix("/") ? String(base.path.dropLast()) : base.path
-        if path == basePath {
+        let resolvedSelf = resolvingSymlinksInPath().path
+        let resolvedBasePath = base.resolvingSymlinksInPath().path
+        let basePath = resolvedBasePath.hasSuffix("/") ? String(resolvedBasePath.dropLast()) : resolvedBasePath
+        if resolvedSelf == basePath {
             return ""
         }
-        if path.hasPrefix(basePath + "/") {
-            return String(path.dropFirst(basePath.count + 1))
+        if resolvedSelf.hasPrefix(basePath + "/") {
+            return String(resolvedSelf.dropFirst(basePath.count + 1))
         }
         return lastPathComponent
     }
