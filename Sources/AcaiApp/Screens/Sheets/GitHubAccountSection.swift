@@ -12,6 +12,15 @@ import AppKit
 /// actually been filled in — see that type's doc comment for the one-time setup it depends on).
 struct GitHubAccountSection: View {
     @Binding var account: GitHubTokenStore.StoredAccount?
+    let service: GitHubAccountService
+
+    /// Defaults to the real network implementation, swapped for `FixtureGitHubAccountService`
+    /// under a UI test fixture — see `GitHubAccountService`.
+    init(account: Binding<GitHubTokenStore.StoredAccount?>, service: GitHubAccountService? = nil) {
+        self._account = account
+        self.service = service ?? (UITestFixtureResolver().resolveBaseDir() != nil
+            ? FixtureGitHubAccountService() : LiveGitHubAccountService())
+    }
 
     @State private var patText = ""
     @State private var isSigningIn = false
@@ -67,7 +76,9 @@ struct GitHubAccountSection: View {
                 tokenStore.clear()
                 self.account = nil
             }
+            .accessibilityIdentifier("github.signOutButton")
         }
+        .accessibilityIdentifier("github.signedInRow")
     }
 
     @ViewBuilder
@@ -79,14 +90,17 @@ struct GitHubAccountSection: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SecureField("Personal Access Token", text: $patText)
+                .accessibilityIdentifier("github.patField")
             Button("Sign In with Token") { signIn(with: .personalAccessToken(patText)) }
                 .buttonStyle(.borderless)
                 .disabled(patText.isEmpty || isSigningIn)
+                .accessibilityIdentifier("github.signInWithTokenButton")
 
             if !GitHubAppConfiguration.standard.clientID.isEmpty {
                 Button("Sign in with GitHub") { pollTask = Task { await startDeviceFlow() } }
                     .buttonStyle(.borderless)
                     .disabled(isSigningIn)
+                    .accessibilityIdentifier("github.signInWithDeviceFlowButton")
             }
         }
         if let errorMessage {
@@ -134,7 +148,7 @@ struct GitHubAccountSection: View {
         Task {
             defer { isSigningIn = false }
             do {
-                let user = try await GitHubAPIClient(credential: credential).authenticatedUser()
+                let user = try await service.authenticatedUser(credential: credential)
                 let stored = GitHubTokenStore.StoredAccount(
                     credential: credential, login: user.login, avatarURL: user.avatarURL)
                 try tokenStore.save(stored)
@@ -151,11 +165,11 @@ struct GitHubAccountSection: View {
         isSigningIn = true
         defer { isSigningIn = false }
         do {
-            let flow = GitHubDeviceAuthFlow(clientID: GitHubAppConfiguration.standard.clientID)
-            let code = try await flow.requestDeviceCode()
+            let clientID = GitHubAppConfiguration.standard.clientID
+            let code = try await service.requestDeviceCode(clientID: clientID)
             deviceCode = code
             copyToClipboard(code.userCode)
-            let credential = try await flow.pollForCredential(code)
+            let credential = try await service.pollForCredential(code, clientID: clientID)
             // The poll can succeed at almost the same moment the user taps "Cancel" — check
             // cancellation here too (not just in `catch` below), so a credential that arrives
             // right on that boundary doesn't still get signed in and written to Keychain.
