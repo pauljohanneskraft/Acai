@@ -29,12 +29,14 @@ struct DeltaComparisonBar: View {
                 Label("Compare vs git", systemImage: "arrow.triangle.branch")
             }
             .toggleStyle(.switch)
+            .accessibilityIdentifier("delta.toggle")
 
             if isOn {
                 TextField("ref", text: $refText)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 110)
                     .onSubmit { model.updateComparisonGitRef(diagramID: diagram.id, ref: refText) }
+                    .accessibilityIdentifier("delta.refField")
 
                 refPicker
                     .task { loadAvailableRefs() }
@@ -46,9 +48,13 @@ struct DeltaComparisonBar: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .lineLimit(1)
+                        .accessibilityIdentifier("delta.error")
                 } else if model.comparisonArtifact(for: diagram) == nil {
                     ProgressView().controlSize(.small)
                     Text("Loading \(refText)…").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Loaded").font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("delta.loaded")
                 }
             }
             Spacer()

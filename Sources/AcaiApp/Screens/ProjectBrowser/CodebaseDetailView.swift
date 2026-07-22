@@ -6,6 +6,7 @@ import AcaiDiagram
 /// Shows statistics, types, relationships, and diagram generation buttons.
 struct CodebaseDetailView: View {
     let codebaseID: UUID
+    private let repositoryService: GitHubRepositoryService
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isIndexing = false
@@ -34,6 +35,13 @@ struct CodebaseDetailView: View {
         let projectID: UUID
         let codebaseID: UUID
         var id: UUID { codebaseID }
+    }
+
+    /// Defaults to the real network implementation, swapped for `FixtureGitHubRepositoryService`
+    /// under a UI test fixture — see `GitHubRepositoryService`.
+    init(codebaseID: UUID, repositoryService: GitHubRepositoryService? = nil) {
+        self.codebaseID = codebaseID
+        self.repositoryService = repositoryService ?? GitHubRepositoryServiceResolver().resolve()
     }
 
     var codebase: Codebase? {
@@ -212,6 +220,7 @@ struct CodebaseDetailView: View {
         .labelsHidden()
         .frame(maxWidth: 160)
         .disabled(isPulling)
+        .accessibilityIdentifier("codebaseDetail.refPicker")
         .task(id: codebase.id) { await loadAvailableRefs(source: source) }
 
         Button {
@@ -224,14 +233,13 @@ struct CodebaseDetailView: View {
             Label("Pull", systemImage: "arrow.triangle.2.circlepath")
         }
         .disabled(isPulling)
+        .accessibilityIdentifier("codebaseDetail.pullButton")
     }
 
     private func loadAvailableRefs(source: GitHubSource) async {
         guard let account = GitHubTokenStore().load() else { return }
-        let client = GitHubAPIClient(credential: account.credential)
-        async let branches = client.branches(owner: source.owner, repo: source.repo)
-        async let tags = client.tags(owner: source.owner, repo: source.repo)
-        availableRefs = (try? await branches + tags) ?? []
+        availableRefs = (try? await repositoryService.refs(
+            credential: account.credential, owner: source.owner, repo: source.repo)) ?? []
     }
 
     private func indexStatus(codebase: Codebase) -> some View {

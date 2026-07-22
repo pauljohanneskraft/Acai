@@ -10,15 +10,18 @@ struct GitRepositoryRoot {
 
     /// The nearest ancestor of `directory` (or `directory` itself) containing a `.git` entry, or
     /// `nil` if none is found before reaching the filesystem root.
+    ///
+    /// Walks upward using `NSString.deletingLastPathComponent` rather than
+    /// `URL.deletingLastPathComponent()` — the latter never converges at `/` on Darwin (it keeps
+    /// prepending `..` indefinitely), which would spin this loop forever for any non-git directory.
     func find() -> URL? {
-        var candidate = directory.standardizedFileURL
+        var candidate = directory.standardizedFileURL.path
         while true {
-            if FileManager.default.fileExists(atPath: candidate.appendingPathComponent(".git").path) {
-                return candidate
+            if FileManager.default.fileExists(atPath: candidate + "/.git") {
+                return URL(fileURLWithPath: candidate)
             }
-            let parent = candidate.deletingLastPathComponent()
-            guard parent.path != candidate.path else { return nil }
-            candidate = parent
+            guard candidate != "/" else { return nil }
+            candidate = (candidate as NSString).deletingLastPathComponent
         }
     }
 }

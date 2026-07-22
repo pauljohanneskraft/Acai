@@ -39,9 +39,9 @@ final class ScreenshotJourneyTests: XCTestCase {
 
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30))
-        classDiagramButton.tap()
-
         let diagram = ClassDiagramScreen(app: app)
+        classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
+
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
         comparator.validate("classDiagram", screenshot: app.screenshot(), testCase: self)
     }

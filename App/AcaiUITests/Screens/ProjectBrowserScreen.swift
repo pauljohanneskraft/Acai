@@ -23,4 +23,11 @@ final class ProjectBrowserScreen {
     func codebaseRow(id: String) -> XCUIElement {
         app.descendants(matching: .any)["sidebar.codebase.\(id)"]
     }
+
+    /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
+    /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
+    /// See `ProjectDetailScreen.codebaseRow(named:)`'s identical reasoning.
+    func codebaseRow(named name: String) -> XCUIElement {
+        app.staticTexts[name].firstMatch
+    }
 }

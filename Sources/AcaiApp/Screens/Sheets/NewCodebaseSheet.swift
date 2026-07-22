@@ -9,8 +9,16 @@ struct NewCodebaseSheet: View {
     }
 
     let projectID: UUID
+    private let repositoryService: GitHubRepositoryService
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.dismiss) private var dismiss
+
+    /// Defaults to the real network implementation, swapped for `FixtureGitHubRepositoryService`
+    /// under a UI test fixture — see `GitHubRepositoryService`.
+    init(projectID: UUID, repositoryService: GitHubRepositoryService? = nil) {
+        self.projectID = projectID
+        self.repositoryService = repositoryService ?? GitHubRepositoryServiceResolver().resolve()
+    }
 
     @State private var source: Source = .localFolder
     @State private var name = ""
@@ -96,6 +104,7 @@ struct NewCodebaseSheet: View {
         if account != nil {
             Section {
                 TextField("Name (optional)", text: $name)
+                    .accessibilityIdentifier("newCodebase.nameField")
                 TextField("Search repositories", text: $repositorySearch)
                 if isLoadingRepositories {
                     ProgressView()
@@ -106,6 +115,7 @@ struct NewCodebaseSheet: View {
                             Text(repository.fullName).tag(Optional(repository))
                         }
                     }
+                    .accessibilityIdentifier("newCodebase.repositoryPicker")
                 }
                 if selectedRepository != nil {
                     if isLoadingRefs {
@@ -116,6 +126,7 @@ struct NewCodebaseSheet: View {
                                 Text(ref.name).tag(Optional(ref))
                             }
                         }
+                        .accessibilityIdentifier("newCodebase.refPicker")
                     }
                 }
             }
@@ -156,7 +167,9 @@ struct NewCodebaseSheet: View {
                     isCloning = false
                     dismiss()
                 }
-            }.disabled(selectedRepository == nil || selectedRef == nil || account == nil || isCloning)
+            }
+            .disabled(selectedRepository == nil || selectedRef == nil || account == nil || isCloning)
+            .accessibilityIdentifier("newCodebase.cloneButton")
         }
     }
 
@@ -170,16 +183,7 @@ struct NewCodebaseSheet: View {
         isLoadingRepositories = true
         defer { isLoadingRepositories = false }
         do {
-            let client = GitHubAPIClient(credential: account.credential)
-            var allRepositories: [GitHubAPIClient.Repository] = []
-            var page = 1
-            while true {
-                let batch = try await client.repositories(page: page)
-                allRepositories += batch
-                guard batch.count == GitHubAPIClient.repositoriesPerPage else { break }
-                page += 1
-            }
-            repositories = allRepositories
+            repositories = try await repositoryService.repositories(credential: account.credential)
         } catch {
             gitHubErrorMessage = error.localizedDescription
         }
@@ -190,10 +194,8 @@ struct NewCodebaseSheet: View {
         isLoadingRefs = true
         defer { isLoadingRefs = false }
         do {
-            let client = GitHubAPIClient(credential: account.credential)
-            async let branches = client.branches(owner: repository.owner.login, repo: repository.name)
-            async let tags = client.tags(owner: repository.owner.login, repo: repository.name)
-            refs = try await branches + tags
+            refs = try await repositoryService.refs(
+                credential: account.credential, owner: repository.owner.login, repo: repository.name)
             selectedRef = refs.first { $0.kind == .branch && $0.name == repository.defaultBranch } ?? refs.first
         } catch {
             gitHubErrorMessage = error.localizedDescription

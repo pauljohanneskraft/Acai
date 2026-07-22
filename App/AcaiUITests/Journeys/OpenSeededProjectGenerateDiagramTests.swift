@@ -27,9 +27,9 @@ final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
 
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
-        classDiagramButton.tap()
-
         let diagram = ClassDiagramScreen(app: app)
+        classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
+
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
         XCTAssertTrue(diagram.typeNode(named: "Derived").exists)
     }

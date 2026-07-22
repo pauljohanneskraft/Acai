@@ -128,6 +128,9 @@ struct ProjectCodebaseEditor {
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
+    /// Real network clone/fetch, swapped for `FixtureGitHubRepositoryService` under a UI test
+    /// fixture — see `GitHubRepositoryService`.
+    var repositoryService: GitHubRepositoryService = GitHubRepositoryServiceResolver().resolve()
 
     // MARK: Projects
 
@@ -195,9 +198,8 @@ struct ProjectCodebaseEditor {
         let codebaseID = UUID()
         let destination = store.githubCloneURL(for: codebaseID)
         do {
-            let headSHA = try await GitHubRepositoryClone(
-                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref
-            ).sync(into: destination)
+            let headSHA = try await repositoryService.sync(
+                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref, into: destination)
             let codebase = Codebase(
                 id: codebaseID,
                 name: name,
@@ -224,10 +226,9 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let latestSHA = try await GitHubRepositoryClone(
-                credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref
-            )
-                .sync(into: store.githubCloneURL(for: codebaseID))
+            let latestSHA = try await repositoryService.sync(
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
+                into: store.githubCloneURL(for: codebaseID))
             guard latestSHA != source.lastSyncedCommitSHA else { return }
             mutateCodebase(codebaseID) {
                 $0.githubSource?.lastSyncedCommitSHA = latestSHA
@@ -251,9 +252,9 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let headSHA = try await GitHubRepositoryClone(
-                credential: account.credential, owner: source.owner, repo: source.repo, ref: ref
-            ).sync(into: store.githubCloneURL(for: codebaseID))
+            let headSHA = try await repositoryService.sync(
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
+                into: store.githubCloneURL(for: codebaseID))
             mutateCodebase(codebaseID) {
                 $0.githubSource?.ref = ref
                 $0.githubSource?.refKind = kind

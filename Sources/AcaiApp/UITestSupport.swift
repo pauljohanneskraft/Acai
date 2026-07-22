@@ -26,7 +26,20 @@ struct UITestFixtureResolver {
 
     /// The staged fixture directory passed via `-AcaiUITestFixtureBaseDir <path>`, if any.
     func resolveBaseDir() -> URL? {
-        guard let flagIndex = arguments.firstIndex(of: Self.launchArgument),
+        resolve(Self.launchArgument)
+    }
+
+    static let gitHubRemoteLaunchArgument = "-AcaiUITestGitHubRemoteURL"
+
+    /// A local git repository passed via `-AcaiUITestGitHubRemoteURL <path>`, to clone/fetch from
+    /// instead of real github.com — see `FixtureGitHubRepositoryService`
+    /// (`Sources/AcaiApp/GitHub/GitHubRepositoryService.swift`).
+    func resolveGitHubRemoteURL() -> URL? {
+        resolve(Self.gitHubRemoteLaunchArgument)
+    }
+
+    private func resolve(_ flag: String) -> URL? {
+        guard let flagIndex = arguments.firstIndex(of: flag),
               arguments.indices.contains(flagIndex + 1) else { return nil }
         return URL(fileURLWithPath: arguments[flagIndex + 1], isDirectory: true)
     }

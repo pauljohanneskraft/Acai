@@ -59,7 +59,8 @@ final class AccessibilityAuditTests: XCTestCase {
 
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30))
-        classDiagramButton.tap()
+        let diagram = ClassDiagramScreen(app: app)
+        classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
 
         // `fitToViewButton`/`sidebarToggleButton` aren't audited on compact width either: the
         // diagram toolbar carries up to seven items (`USABILITY_IMPROVEMENTS.md` Part 6's own
@@ -67,7 +68,6 @@ final class AccessibilityAuditTests: XCTestCase {
         // the overflow behind a "More" button this first slice's screen objects don't open yet.
         // Undo/Redo happen to survive the collapse today; that's an iOS toolbar-ordering detail,
         // not a guarantee.
-        let diagram = ClassDiagramScreen(app: app)
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 15), "diagram canvas never rendered")
         XCTAssertTrue(diagram.undoButton.waitForExistence(timeout: 15))
         assertAccessible(diagram.undoButton, name: "Undo button")

@@ -71,6 +71,7 @@ struct GitHubAccountSection: View {
     private func signedInView(_ account: GitHubTokenStore.StoredAccount) -> some View {
         HStack {
             Text("Signed in as \(account.login)")
+                .accessibilityIdentifier("github.signedInRow")
             Spacer()
             Button("Sign Out") {
                 tokenStore.clear()
@@ -78,7 +79,6 @@ struct GitHubAccountSection: View {
             }
             .accessibilityIdentifier("github.signOutButton")
         }
-        .accessibilityIdentifier("github.signedInRow")
     }
 
     @ViewBuilder

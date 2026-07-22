@@ -35,6 +35,7 @@ struct ProjectDetailView: View {
                             } label: {
                                 Label("Add Codebase", systemImage: "folder.badge.plus")
                             }
+                            .accessibilityIdentifier("projectDetail.addCodebaseButton")
                             Button {
                                 if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
                                     model.selection = .freeformDiagram(id)
@@ -42,9 +43,12 @@ struct ProjectDetailView: View {
                             } label: {
                                 Label("Add Diagram", systemImage: "rectangle.3.group")
                             }
+                            .accessibilityIdentifier("projectDetail.addDiagramButton")
                         } label: {
                             Image(systemName: "plus")
                         }
+                        .accessibilityLabel("Add")
+                        .accessibilityIdentifier("projectDetail.addMenuButton")
                     }
                 }
             }

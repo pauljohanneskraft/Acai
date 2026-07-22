@@ -16,7 +16,16 @@ extension XCUIApplication {
     /// **The launch-argument name here must match `UITestFixtureResolver.launchArgument`**
     /// (`Sources/AcaiApp/UITestSupport.swift`) — the two can't share a constant across the SwiftPM
     /// package / Xcode-project boundary. See `TESTING_ARCHITECTURE.md` Layer 2.
-    func launchWithFixture(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+    ///
+    /// `configure`, if given, runs after staging (so it can edit the staged fixture in place — e.g.
+    /// turn a plain directory into a real git repo, or build a standalone "remote" repo alongside
+    /// it) and before `launch()`, so it can also append further `launchArguments` (e.g.
+    /// `-AcaiUITestGitHubRemoteURL`) that only make sense once its own setup ran.
+    func launchWithFixture(
+        _ name: String,
+        configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
         let testBundle = Bundle(for: FixtureBundleAnchor.self)
         guard let fixtureURL = testBundle.url(
             forResource: name, withExtension: nil, subdirectory: "Fixtures"
@@ -30,6 +39,7 @@ extension XCUIApplication {
         do {
             try FileManager.default.copyItem(at: fixtureURL, to: destination)
             try substituteFixtureRoot(in: destination)
+            try configure(self, destination)
         } catch {
             XCTFail("Could not stage UI test fixture '\(name)': \(error)", file: file, line: line)
             return

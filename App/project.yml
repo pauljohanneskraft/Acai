@@ -11,6 +11,14 @@ options:
 packages:
   Acai:
     path: ..
+  # Only `AcaiUITests/Support/GitFixtureRepository.swift` needs this directly — it builds real git
+  # history for the Compare/GitHub-clone journeys at launch time via `Repository.create`/`.commit`/
+  # `.branch.create` rather than shelling out to `/usr/bin/git` (`Process`/`Pipe` don't exist in
+  # iOS's Foundation at all — a real, compile-time platform constraint discovered while building
+  # this, not a style choice). Same version pin as `Package.swift`'s own `SwiftGitX` dependency.
+  SwiftGitX:
+    url: https://github.com/ibrahimcetin/SwiftGitX.git
+    from: 0.4.0
 targets:
   Acai-iOS:
     type: application
@@ -71,6 +79,7 @@ targets:
         type: folder
     dependencies:
       - target: Acai-iOS
+      - package: SwiftGitX
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
@@ -96,6 +105,7 @@ targets:
         type: folder
     dependencies:
       - target: Acai-macOS
+      - package: SwiftGitX
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
