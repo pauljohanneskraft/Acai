@@ -60,10 +60,15 @@ extension GeneratedDiagram {
         var nodes: [FreeformDiagram.Node] = []
 
         for type in artifact.types {
+            // Distinct types can share an id when a language doesn't qualify by module (e.g. two
+            // top-level Python classes of the same name in different files) — mirror the rendered
+            // diagram's `removingDuplicates { $0.id }` first-wins rule so a later same-id
+            // declaration maps onto the already-emitted node instead of creating a duplicate.
+            guard ids[type.id] == nil else { continue }
             let nodeID = UUID().uuidString
-            ids[type.name] = nodeID
-            let livePos = positions[type.name]
-            let storedPos = nodePositions[type.name]
+            ids[type.id] = nodeID
+            let livePos = positions[type.id]
+            let storedPos = nodePositions[type.id]
             let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? 0
             let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 0
             nodes.append(.init(
@@ -322,11 +327,11 @@ extension GeneratedDiagram {
         from artifact: CodeArtifact,
         ids: [String: String]
     ) -> [FreeformDiagram.Edge] {
-        let typeNames = Set(artifact.types.map(\.name))
-        return artifact.relationships.compactMap { rel in
-            guard typeNames.contains(rel.source),
-                  typeNames.contains(rel.target),
-                  rel.source != rel.target,
+        // `rel.source`/`rel.target` are already resolved to type ids by enrichment (falling back to
+        // the bare name only for an unresolved/external endpoint); `ids` holds only known type ids,
+        // so the lookup below both maps to the freeform node and gates membership in one step.
+        artifact.relationships.compactMap { rel in
+            guard rel.source != rel.target,
                   let srcID = ids[rel.source],
                   let tgtID = ids[rel.target] else { return nil }
             return .init(sourceNodeID: srcID, targetNodeID: tgtID, kind: rel.kind)
