@@ -15,9 +15,15 @@ struct GitRevisionSnapshot {
     let reference: String
 
     /// Analyzes the codebase's subtree at `reference` and returns the enriched artifact.
-    func artifact(analyzer: CodebaseAnalyzer = .init()) throws -> CodeArtifact {
+    ///
+    /// `fileFilter` should be the same codebase's current `Codebase.fileFilter` — the "new"
+    /// (working-tree) side of a delta comparison already applies it (`reindex(codebaseID:)`), so
+    /// omitting it here would make every excluded file's types look like a spurious "removed" (red)
+    /// diff the moment a filter is actually configured, since only the new side would have dropped
+    /// them.
+    func artifact(analyzer: CodebaseAnalyzer = .init(), fileFilter: FileFilter? = nil) throws -> CodeArtifact {
         let extracted = try GitDiffSnapshot(directory: directory, reference: reference).extractedDirectory()
         defer { try? FileManager.default.removeItem(at: extracted) }
-        return try analyzer.enrichedArtifact(at: extracted)
+        return try analyzer.enrichedArtifact(at: extracted, fileFilter: fileFilter)
     }
 }

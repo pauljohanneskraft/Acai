@@ -259,6 +259,39 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
     }
 
+    // MARK: - Checkpoints
+
+    /// The diagram's saved checkpoints, newest first.
+    var checkpoints: [FreeformDiagram.Checkpoint] {
+        guard let diagramID else { return [] }
+        return (browserModel?.freeformDiagram(for: diagramID)?.checkpoints ?? []).reversed()
+    }
+
+    /// Saves a new checkpoint capturing the current nodes and edges under `name`.
+    func saveCheckpoint(named name: String) {
+        guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
+        diagram.nodes = nodes
+        diagram.edges = edges
+        diagram.saveCheckpoint(named: name)
+        browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
+    }
+
+    /// Replaces the canvas's nodes and edges with the checkpoint's, as one undoable step.
+    func restoreCheckpoint(_ checkpointID: FreeformDiagram.Checkpoint.ID) {
+        guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
+        recordUndo()
+        diagram.restoreCheckpoint(checkpointID)
+        nodes = diagram.nodes
+        edges = diagram.edges
+        browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
+    }
+
+    func deleteCheckpoint(_ checkpointID: FreeformDiagram.Checkpoint.ID) {
+        guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
+        diagram.deleteCheckpoint(checkpointID)
+        browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
+    }
+
     // MARK: - Helpers
 
     func nodePosition(_ nodeID: String) -> CGPoint? {

@@ -108,15 +108,17 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// Loads the "old" artifact for a diagram's comparison ref via a read-only `git archive`
     /// snapshot, caching it. A no-op when delta mode is off or the snapshot is already cached.
     func ensureComparisonLoaded(for diagram: GeneratedDiagram) async {
-        guard let ref = diagram.comparisonGitRef,
-              let directory = codebase(for: diagram.codebaseID)?.directoryPath
+        guard let codebase = codebase(for: diagram.codebaseID),
+              let ref = diagram.comparisonGitRef
         else { return }
+        let directory = codebase.directoryPath
+        let fileFilter = codebase.fileFilter
         let key = ComparisonKey(directory: directory, ref: ref)
         guard comparisonArtifacts[key] == nil else { return }
         let url = URL(fileURLWithPath: directory).standardizedFileURL
         do {
             let semantic = try await Task.detached(priority: .userInitiated) {
-                try GitRevisionSnapshot(directory: url, reference: ref).artifact()
+                try GitRevisionSnapshot(directory: url, reference: ref).artifact(fileFilter: fileFilter)
             }.value
             // Flatten to the same diagram-ready form as the current-side artifact so delta mode
             // diffs like-for-like (node ids must match the flattened display artifact).

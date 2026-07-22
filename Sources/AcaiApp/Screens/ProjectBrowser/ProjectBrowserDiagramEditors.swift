@@ -88,6 +88,7 @@ struct GeneratedDiagramEditor {
             store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteGeneratedDiagramFile(diagramID)
+        store.removeFromRecentlyViewed(.generatedDiagram(diagramID))
         persist()
     }
 
@@ -134,15 +135,27 @@ struct ProjectCodebaseEditor {
 
     // MARK: Projects
 
-    func addProject(title: String, subtitle: String) {
-        store.projects.append(Project(title: title, subtitle: subtitle, codebases: []))
+    @discardableResult
+    func addProject(title: String, subtitle: String) -> UUID {
+        let project = Project(title: title, subtitle: subtitle, codebases: [])
+        store.projects.append(project)
         persist()
+        return project.id
     }
 
     func removeProject(_ projectID: UUID) {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
-        for did in project.generatedDiagramIDs { store.deleteGeneratedDiagramFile(did) }
-        for did in project.freeformDiagramIDs { store.deleteFreeformDiagramFile(did) }
+        for did in project.generatedDiagramIDs {
+            store.deleteGeneratedDiagramFile(did)
+            store.removeFromRecentlyViewed(.generatedDiagram(did))
+        }
+        for did in project.freeformDiagramIDs {
+            store.deleteFreeformDiagramFile(did)
+            store.removeFromRecentlyViewed(.freeformDiagram(did))
+        }
+        for codebase in project.codebases {
+            store.removeFromRecentlyViewed(.codebase(codebase.id))
+        }
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
         persist()
@@ -179,11 +192,13 @@ struct ProjectCodebaseEditor {
             for did in toRemove {
                 store.projects[i].generatedDiagramIDs.removeAll { $0 == did }
                 store.deleteGeneratedDiagramFile(did)
+                store.removeFromRecentlyViewed(.generatedDiagram(did))
             }
         }
         store.deleteArtifactFile(for: codebaseID)
         store.deleteManagedRules(forCodebase: codebaseID)
         store.deleteGitHubClone(for: codebaseID)
+        store.removeFromRecentlyViewed(.codebase(codebaseID))
         persist()
     }
 
@@ -271,6 +286,7 @@ struct ProjectCodebaseEditor {
         guard let codebase = codebase(for: codebaseID) else { return }
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
+        let fileFilter = codebase.fileFilter
         do {
             // `refreshedBookmark` is populated (and only read) inside this single detached
             // closure's own synchronous execution, then handed back through the return value —
@@ -279,7 +295,7 @@ struct ProjectCodebaseEditor {
                 var refreshedBookmark: SecurityScopedBookmark?
                 let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
                     onRefresh: { refreshedBookmark = $0 },
-                    { url in try CodebaseAnalyzer().enrichedArtifact(at: url) }
+                    { url in try CodebaseAnalyzer().enrichedArtifact(at: url, fileFilter: fileFilter) }
                 )
                 return (artifact, refreshedBookmark)
             }.value
@@ -369,9 +385,12 @@ struct FreeformDiagramEditor {
     let persist: () -> Void
     let notify: () -> Void
 
-    func add(to projectID: UUID, name: String) -> UUID? {
+    func add(to projectID: UUID, name: String, template: FreeformDiagramTemplate? = nil) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = FreeformDiagram(name: name)
+        var diagram = FreeformDiagram(name: name)
+        if let template {
+            diagram.nodes = template.nodes
+        }
         store.projects[projectIndex].freeformDiagramIDs.append(diagram.id)
         store.saveFreeformDiagram(diagram)
         persist()
@@ -398,6 +417,7 @@ struct FreeformDiagramEditor {
             store.projects[i].freeformDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteFreeformDiagramFile(diagramID)
+        store.removeFromRecentlyViewed(.freeformDiagram(diagramID))
         persist()
     }
 }

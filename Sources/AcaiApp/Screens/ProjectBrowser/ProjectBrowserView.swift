@@ -15,6 +15,9 @@ public struct ProjectBrowserView: View {
     @State private var renamingText: String = ""
     @State private var projectPendingDeletion: Project?
     @State private var codebasePendingDeletion: Codebase?
+    #if !os(macOS)
+    @State private var showKeyboardShortcuts = false
+    #endif
 
     public init() {}
 
@@ -42,6 +45,12 @@ public struct ProjectBrowserView: View {
                                     Label(option.label, systemImage: option.symbol).tag(option)
                                 }
                             }
+                            Button {
+                                showKeyboardShortcuts = true
+                            } label: {
+                                Label("Keyboard Shortcuts", systemImage: "keyboard")
+                            }
+                            .accessibilityIdentifier("sidebar.keyboardShortcutsButton")
                         } label: {
                             Label("Diagram Theme", systemImage: "paintbrush")
                         }
@@ -56,9 +65,15 @@ public struct ProjectBrowserView: View {
         }
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
-                model.editing.addProject(title: title, subtitle: subtitle)
+                let id = model.editing.addProject(title: title, subtitle: subtitle)
+                model.selection = .project(id)
             }
         }
+        #if !os(macOS)
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutsPanel()
+        }
+        #endif
         .fileExporter(
             isPresented: Binding(
                 get: { model.pendingExport != nil },

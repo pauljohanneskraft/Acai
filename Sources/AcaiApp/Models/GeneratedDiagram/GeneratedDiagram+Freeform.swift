@@ -2,6 +2,7 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 import AcaiLibrary
+import AcaiRender
 
 extension GeneratedDiagram {
 
@@ -41,10 +42,11 @@ extension GeneratedDiagram {
             ids: &ids
         )
         let edges = buildFreeformEdges(from: artifact, ids: ids)
+        let groupingNodes = buildFreeformGroupingNodes(from: artifact, memberNodes: nodes, ids: ids)
 
         return FreeformDiagram(
             name: name + " (Freeform)",
-            nodes: nodes,
+            nodes: groupingNodes + nodes,
             edges: edges,
             canvasScale: scale,
             canvasOffsetX: offset.x,
@@ -58,8 +60,10 @@ extension GeneratedDiagram {
         ids: inout [String: String]
     ) -> [FreeformDiagram.Node] {
         var nodes: [FreeformDiagram.Node] = []
+        let showAnnotationStereotypes = classConfiguration?.showAnnotationStereotypes ?? true
+        let languages = artifact.standardLanguageResolver
 
-        for type in artifact.types {
+        for (index, type) in artifact.types.enumerated() {
             // Distinct types can share an id when a language doesn't qualify by module (e.g. two
             // top-level Python classes of the same name in different files) — mirror the rendered
             // diagram's `removingDuplicates { $0.id }` first-wins rule so a later same-id
@@ -69,13 +73,19 @@ extension GeneratedDiagram {
             ids[type.id] = nodeID
             let livePos = positions[type.id]
             let storedPos = nodePositions[type.id]
-            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? 0
-            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 0
+            let x = livePos?.x ?? storedPos.map { CGFloat($0.x) } ?? CGFloat(index) * 200 + 120
+            let y = livePos?.y ?? storedPos.map { CGFloat($0.y) } ?? 120
+            let storedSize = nodeSizes[type.id]
+            let stereotype = type.stereotype(
+                annotationStereotypes: showAnnotationStereotypes
+                    ? languages.configuration(for: type).annotationStereotypes : [:]
+            )
             nodes.append(.init(
                 id: nodeID,
                 name: type.name,
                 content: .type(.init(
                     typeKind: type.kind,
+                    stereotype: stereotype,
                     properties: type.members
                         .filter { $0.kind == .property || $0.kind == .subscript }
                         .map { buildFreeformMember(from: $0) },
@@ -86,11 +96,110 @@ extension GeneratedDiagram {
                     genericParameters: type.genericParameters.map(\.name)
                 )),
                 positionX: Double(x),
-                positionY: Double(y)
+                positionY: Double(y),
+                width: storedSize?.width,
+                height: storedSize?.height
             ))
         }
 
         return nodes
+    }
+
+    /// One `.package` freeform container node per active-grouping box (`ClassDiagramConfiguration
+    /// .grouping`'s `.directory`/`.product` boxes, the same nested-prefix boxes
+    /// `GroupingBoxLayer`/`DiagramLayoutModel.groupingBoxes` draw behind the live Class Diagram),
+    /// sized to enclose the already-converted member nodes it contains. `.none` produces nothing.
+    ///
+    /// Deliberately re-derives the box geometry here (paralleling
+    /// `DiagramLayoutModel.groupingBoxes`'s prefix-merge algorithm) rather than calling it directly:
+    /// that type rebuilds its own `nodes` from `artifact` under the class diagram's access-level/
+    /// generated-code/focus filters, which can be a *different* type set than `buildFreeformNodes`
+    /// actually emitted above — recomputing from the emitted freeform nodes keeps every box's
+    /// members consistent with what's really in `memberNodes`.
+    private func buildFreeformGroupingNodes(
+        from artifact: CodeArtifact,
+        memberNodes: [FreeformDiagram.Node],
+        ids: [String: String]
+    ) -> [FreeformDiagram.Node] {
+        guard let grouping = classConfiguration?.grouping, grouping != .none else { return [] }
+        let memberByNodeID = Dictionary(uniqueKeysWithValues: memberNodes.map { ($0.id, $0) })
+        let byPrefix = groupingBoxPrefixes(
+            artifact: artifact, grouping: grouping, memberByNodeID: memberByNodeID, ids: ids
+        )
+
+        // Every box reserves a node-free strip at its top for its title tab; each ancestor level
+        // adds one more tab-height — same constants `DiagramLayoutModel.groupingBoxes` uses, so a
+        // converted diagram's boxes look the same size as the generated view's a moment before.
+        let maxDepth = byPrefix.values.map(\.depth).max() ?? 1
+        let titleStrip: CGFloat = 30
+        let levelStep: CGFloat = 30
+        return byPrefix.values.map { value in
+            let inset = titleStrip + CGFloat(maxDepth - value.depth) * levelStep
+            let rect = value.rect.insetBy(dx: -inset, dy: -inset)
+            return FreeformDiagram.Node(
+                name: value.label,
+                content: .package,
+                positionX: Double(rect.midX),
+                positionY: Double(rect.midY),
+                width: Double(rect.width),
+                height: Double(rect.height),
+                // Shallower (outer) boxes draw furthest back; deeper boxes draw closer to front but
+                // still behind every member node, which stays at the default `drawOrder` of 0.
+                drawOrder: value.depth - (maxDepth + 2)
+            )
+        }
+    }
+
+    /// One entry per path-prefix depth of every member's group key, merging member rects into their
+    /// shared ancestor boxes — mirrors `DiagramLayoutModel.groupingBoxes`'s prefix-merge exactly, but
+    /// keyed against the freeform nodes already emitted above (see `buildFreeformGroupingNodes`'s doc
+    /// comment for why it isn't the same `nodes`/`positions` that type builds from `artifact` itself).
+    private func groupingBoxPrefixes(
+        artifact: CodeArtifact,
+        grouping: ClassDiagramConfiguration.Grouping,
+        memberByNodeID: [String: FreeformDiagram.Node],
+        ids: [String: String]
+    ) -> [String: (label: String, depth: Int, rect: CGRect)] {
+        let languages = artifact.standardLanguageResolver
+        let configuration = classConfiguration ?? .init()
+
+        func groupKey(for type: TypeDeclaration) -> String? {
+            let langConfig = languages.configuration(for: type)
+            let diagramNode = GeneratedDiagramNode(
+                from: type, configuration: configuration,
+                annotationStereotypes: langConfig.annotationStereotypes,
+                collectionTypeNames: langConfig.collectionTypeNames
+            )
+            switch grouping {
+            case .none:
+                return nil
+            case .directory:
+                return diagramNode.directoryPath
+            case .product:
+                return diagramNode.productGroup
+            }
+        }
+
+        var byPrefix: [String: (label: String, depth: Int, rect: CGRect)] = [:]
+        for type in artifact.types {
+            guard let nodeID = ids[type.id], let node = memberByNodeID[nodeID],
+                  let group = groupKey(for: type) else { continue }
+            let size = CGSize(width: node.width ?? 200, height: node.height ?? 100)
+            let rect = CGRect(
+                x: node.positionX - size.width / 2, y: node.positionY - size.height / 2,
+                width: size.width, height: size.height
+            )
+            let components = group.split(separator: "/").map(String.init)
+            for depth in 1...max(components.count, 1) where !components.isEmpty {
+                let key = components.prefix(depth).joined(separator: "/")
+                if let existing = byPrefix[key] {
+                    byPrefix[key] = (existing.label, existing.depth, existing.rect.union(rect))
+                } else {
+                    byPrefix[key] = (components[depth - 1], depth, rect)
+                }
+            }
+        }
+        return byPrefix
     }
 
     private func buildFreeformMember(from member: Member) -> FreeformDiagram.Node.Member {

@@ -287,6 +287,14 @@ extension FreeformDiagramView {
                 // Disable hit testing on the outer frame edges so resize handles
                 // in the layer above can receive hover / drag.
                 .contentShape(Rectangle().inset(by: 6))
+        } else if node.width != nil, node.height != nil {
+            // Not a resizable-by-hand kind, but carries an explicit size (e.g. a class-diagram
+            // node's manual resize, carried over by "Save as Freeform" — see
+            // `GeneratedDiagram.buildFreeformNodes`). The content was already measured at this
+            // size once, so re-applying it here keeps the converted box's dimensions instead of
+            // silently reverting to auto-measured content size.
+            FreeformNodeView(node: node, isSelected: isSelected, size: nil)
+                .frame(width: size.width, height: size.height)
         } else {
             FreeformNodeView(node: node, isSelected: isSelected, size: nil)
                 .measuredNode(id: node.id)

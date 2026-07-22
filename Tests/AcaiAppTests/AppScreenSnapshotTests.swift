@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Testing
+import AcaiCore
 import AcaiRender
 @testable import AcaiApp
 
@@ -43,11 +44,11 @@ struct AppScreenSnapshotTests {
     ]
 
     @MainActor
-    private func render(_ view: some View, theme: Theme) throws -> Data {
+    private func render(_ view: some View, theme: Theme, size: CGSize = Self.nodeSize) throws -> Data {
         let themed = view
             .environment(\.diagramPalette, theme.palette)
             .colorScheme(theme.scheme)
-        return try ViewSnapshotRenderer().png(of: themed, size: Self.nodeSize, colorScheme: theme.scheme)
+        return try ViewSnapshotRenderer().png(of: themed, size: size, colorScheme: theme.scheme)
     }
 
     @Test("Freeform note node", arguments: themes)
@@ -68,5 +69,31 @@ struct AppScreenSnapshotTests {
     @MainActor func useCaseNode(_ theme: Theme) throws {
         let view = UseCaseNodeView(name: "Place Order", isSelected: false)
         try Self.comparator.validate("freeformUseCaseNode\(theme.suffix)") { try render(view, theme: theme) }
+    }
+
+    /// A converted-from-Class-Diagram `.type` node carries its manual resize into `node.width`/
+    /// `.height` (B20's fix — `GeneratedDiagram.buildFreeformNodes`), and
+    /// `FreeformDiagramView.nodeContent`'s middle branch re-applies it as an explicit `.frame`
+    /// instead of letting the box revert to auto-measured content size. This snapshots that exact
+    /// composition (`TypeNodeView` + an explicit outer `.frame`) at a deliberately elongated size
+    /// no auto-measured type box would ever naturally take, so a regression back to auto-sizing
+    /// would visibly change the golden.
+    @Test("Freeform type node honors an explicit stored size", arguments: themes)
+    @MainActor func typeNodeExplicitSize(_ theme: Theme) throws {
+        let explicitSize = CGSize(width: 340, height: 90)
+        let node = FreeformDiagram.Node(
+            name: "WideRecord",
+            content: .type(.init(
+                typeKind: .class,
+                properties: [.init(name: "id", type: "String")],
+                methods: []
+            ))
+        )
+        guard case .type(let content) = node.content else { return }
+        let view = TypeNodeView(node: node, content: content, isSelected: false)
+            .frame(width: explicitSize.width, height: explicitSize.height)
+        try Self.comparator.validate("freeformTypeNodeExplicitSize\(theme.suffix)") {
+            try render(view, theme: theme, size: explicitSize)
+        }
     }
 }

@@ -20,6 +20,7 @@ struct FreeformDiagramView: View {
     @State private var showDeleteConfirmation = false
     @State private var cursorLocation: CGPoint = .zero
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var showCheckpoints = false
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
     /// shortcuts yield to the field's native text undo.
     @State private var isEditingText = false
@@ -57,6 +58,13 @@ struct FreeformDiagramView: View {
                     }
                     .help("Fit the diagram to the visible canvas (⌘0)")
                     .keyboardShortcut("0", modifiers: .command)
+
+                    Button {
+                        showCheckpoints = true
+                    } label: {
+                        Label("Checkpoints", systemImage: "clock.arrow.circlepath")
+                    }
+                    .help("Save or restore a named snapshot of this diagram")
 
                     Button {
                         sidebarTab = .catalog
@@ -123,6 +131,9 @@ struct FreeformDiagramView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("You can undo this action with ⌘Z.")
+            }
+            .sheet(isPresented: $showCheckpoints) {
+                FreeformDiagramCheckpointsView(viewModel: viewModel)
             }
     }
 

@@ -23,4 +23,8 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// The configuration is just a path to a YAML rules file — either one the app manages internally
     /// (UI-authored rules) or an external file the user pointed at.
     var qualityCheck: QualityCheckConfiguration?
+    /// This codebase's file allow/blocklist, applied at indexing time. `nil` means unfiltered —
+    /// every codebase created before this field existed, and any new one until explicitly
+    /// configured, behaves exactly as if this field didn't exist.
+    var fileFilter: FileFilter?
 }

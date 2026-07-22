@@ -14,6 +14,14 @@ public struct AcaiRootScene: Scene {
         }
         .commands {
             DiagramThemeCommands()
+            #if os(macOS)
+            KeyboardShortcutCommands()
+            #endif
         }
+        #if os(macOS)
+        WindowGroup(id: KeyboardShortcutCommands.windowID) {
+            KeyboardShortcutsPanel()
+        }
+        #endif
     }
 }

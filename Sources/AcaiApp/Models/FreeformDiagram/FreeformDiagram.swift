@@ -15,10 +15,50 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
     var createdDate: Date = Date()
     // periphery:ignore
     var lastModified: Date = Date()
+    /// Named, restorable full-state snapshots the user has saved (B27). See `Checkpoint`.
+    var checkpoints: [Checkpoint] = []
 
     /// The fixed icon for every freeform diagram. Freeform diagrams have no type, so the icon
     /// is a constant (mirroring how each generated `DiagramType` has its own fixed icon).
     static let systemImage = "scribble.variable"
+
+    init(
+        id: UUID = UUID(), name: String, nodes: [Node] = [], edges: [Edge] = [],
+        canvasScale: Double = 1.0, canvasOffsetX: Double = 0, canvasOffsetY: Double = 0,
+        createdDate: Date = Date(), lastModified: Date = Date(), checkpoints: [Checkpoint] = []
+    ) {
+        self.id = id
+        self.name = name
+        self.nodes = nodes
+        self.edges = edges
+        self.canvasScale = canvasScale
+        self.canvasOffsetX = canvasOffsetX
+        self.canvasOffsetY = canvasOffsetY
+        self.createdDate = createdDate
+        self.lastModified = lastModified
+        self.checkpoints = checkpoints
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, nodes, edges, canvasScale, canvasOffsetX, canvasOffsetY, createdDate, lastModified
+        case checkpoints
+    }
+
+    /// Diagrams saved before checkpoints existed (B27) have no `checkpoints` key on disk — default
+    /// those to an empty list rather than failing to decode the whole diagram.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        nodes = try container.decode([Node].self, forKey: .nodes)
+        edges = try container.decode([Edge].self, forKey: .edges)
+        canvasScale = try container.decode(Double.self, forKey: .canvasScale)
+        canvasOffsetX = try container.decode(Double.self, forKey: .canvasOffsetX)
+        canvasOffsetY = try container.decode(Double.self, forKey: .canvasOffsetY)
+        createdDate = try container.decode(Date.self, forKey: .createdDate)
+        lastModified = try container.decode(Date.self, forKey: .lastModified)
+        checkpoints = try container.decodeIfPresent([Checkpoint].self, forKey: .checkpoints) ?? []
+    }
 }
 
 extension FreeformDiagram {

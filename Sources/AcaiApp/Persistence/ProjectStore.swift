@@ -25,6 +25,10 @@ final class ProjectStore: ObservableObject {
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
 
+    /// Last-opened diagrams/codebases across every project, plus pins (B54). See its own type doc
+    /// for why nothing writes to this yet.
+    @Published var recentlyViewed = RecentlyViewed()
+
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert). Replaces the
     /// old `print`-and-swallow so a failed write doesn't silently look successful.
     @Published var lastError: StoreError?
@@ -52,6 +56,7 @@ final class ProjectStore: ObservableObject {
     /// Holds the app-managed local folders for GitHub-backed codebases (see `GitHubSource`), one
     /// subdirectory per codebase, named by its id — parallels `artifactsDir`/`rulesDir`.
     var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
+    private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
@@ -84,6 +89,7 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
         load()
+        loadRecentlyViewed()
     }
 
     // MARK: - Load
@@ -284,6 +290,36 @@ final class ProjectStore: ObservableObject {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - Recently Viewed
+
+    func loadRecentlyViewed() {
+        guard let data = try? Data(contentsOf: recentlyViewedURL) else { return }
+        recentlyViewed = (try? JSONDecoder().decode(RecentlyViewed.self, from: data)) ?? RecentlyViewed()
+    }
+
+    func saveRecentlyViewed() {
+        do {
+            try JSONEncoder().encode(recentlyViewed).write(to: recentlyViewedURL, options: .atomic)
+        } catch {
+            report("Failed to save recently viewed: \(error.localizedDescription)")
+        }
+    }
+
+    func recordOpened(_ item: RecentlyViewedItem) {
+        recentlyViewed.recordOpened(item)
+        saveRecentlyViewed()
+    }
+
+    func togglePin(_ item: RecentlyViewedItem) {
+        recentlyViewed.togglePin(item)
+        saveRecentlyViewed()
+    }
+
+    func removeFromRecentlyViewed(_ item: RecentlyViewedItem) {
+        recentlyViewed.remove(item)
+        saveRecentlyViewed()
     }
 
     // MARK: - GitHub clones

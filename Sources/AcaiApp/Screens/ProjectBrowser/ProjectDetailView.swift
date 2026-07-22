@@ -2,9 +2,9 @@ import SwiftUI
 
 struct ProjectDetailView: View {
     let projectID: UUID
-    @EnvironmentObject private var model: ProjectBrowserViewModel
+    @EnvironmentObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var addingCodebase = false
+    @State var addingCodebase = false
     @State private var codebasePendingDeletion: Codebase?
 
     private var project: Project? {
@@ -36,14 +36,7 @@ struct ProjectDetailView: View {
                                 Label("Add Codebase", systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                            Button {
-                                if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
-                                    model.selection = .freeformDiagram(id)
-                                }
-                            } label: {
-                                Label("Add Diagram", systemImage: "rectangle.3.group")
-                            }
-                            .accessibilityIdentifier("projectDetail.addDiagramButton")
+                            addDiagramMenu
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -80,52 +73,57 @@ struct ProjectDetailView: View {
     // MARK: - Regular width (iPad, macOS) — unchanged
 
     private func regularContent(project: Project, index: Int) -> some View {
-        ScrollView {
+        let isProjectEmpty = project.codebases.isEmpty
+            && model.freeformDiagramsForProject(projectID).isEmpty
+        return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Editable project header
-                projectHeader(project: project, index: index)
+                projectHeader(project: project, index: index, showActions: !isProjectEmpty)
 
                 Divider()
-
-                sectionHeader(title: "Codebases")
 
                 let sortedCodebases = project.codebases.sorted(by: {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                 })
-                if sortedCodebases.isEmpty {
-                    Text("No codebases yet. Add one above.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
-                } else {
-                    LazyVStack(spacing: 1) {
-                        ForEach(sortedCodebases) { codebase in
-                            codebaseRow(codebase: codebase)
-                        }
-                    }
-                    .padding(.bottom, 8)
-                }
-
-                Divider()
-
-                sectionHeader(title: "Diagrams")
-
                 let freeformDiagrams = model.freeformDiagramsForProject(projectID)
                     .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-                if freeformDiagrams.isEmpty {
-                    Text("No freeform diagrams yet. Create one above.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
+
+                if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
+                    emptyProjectContentState
                 } else {
-                    LazyVStack(spacing: 1) {
-                        ForEach(freeformDiagrams) { diagram in
-                            freeformDiagramRow(diagram: diagram)
+                    sectionHeader(title: "Codebases")
+                    if sortedCodebases.isEmpty {
+                        Text("No codebases yet. Add one above.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
+                            .padding(.bottom, 12)
+                    } else {
+                        LazyVStack(spacing: 1) {
+                            ForEach(sortedCodebases) { codebase in
+                                codebaseRow(codebase: codebase)
+                            }
                         }
+                        .padding(.bottom, 8)
                     }
-                    .padding(.bottom, 8)
+
+                    Divider()
+
+                    sectionHeader(title: "Diagrams")
+                    if freeformDiagrams.isEmpty {
+                        Text("No freeform diagrams yet. Create one above.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
+                            .padding(.bottom, 12)
+                    } else {
+                        LazyVStack(spacing: 1) {
+                            ForEach(freeformDiagrams) { diagram in
+                                freeformDiagramRow(diagram: diagram)
+                            }
+                        }
+                        .padding(.bottom, 8)
+                    }
                 }
             }
         }
@@ -237,7 +235,10 @@ struct ProjectDetailView: View {
 
     // MARK: - Project Header (Editable)
 
-    private func projectHeader(project: Project, index: Int) -> some View {
+    /// `showActions` is `false` for a project with no codebases and no diagrams yet (B52): in that
+    /// case `emptyProjectContentState` renders the same two actions itself, larger and centered —
+    /// showing them here too would duplicate them "half-heartedly in two places."
+    private func projectHeader(project: Project, index: Int, showActions: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "tray.full")
                 .font(.title)
@@ -247,20 +248,15 @@ struct ProjectDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             projectTitleFields(index: index)
             Spacer()
-            Button {
-                addingCodebase = true
-            } label: {
-                Label("Add codebase", systemImage: "plus")
-            }
-            .accessibilityIdentifier("projectDetail.addCodebaseButton")
-            Button {
-                if let id = model.freeforms.add(to: projectID, name: "New Freeform Diagram") {
-                    model.selection = .freeformDiagram(id)
+            if showActions {
+                Button {
+                    addingCodebase = true
+                } label: {
+                    Label("Add codebase", systemImage: "plus")
                 }
-            } label: {
-                Label("Add Diagram", systemImage: "plus")
+                .accessibilityIdentifier("projectDetail.addCodebaseButton")
+                addDiagramMenu
             }
-            .accessibilityIdentifier("projectDetail.addDiagramButton")
         }
         .padding()
     }
