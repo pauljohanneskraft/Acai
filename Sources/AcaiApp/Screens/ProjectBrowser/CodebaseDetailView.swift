@@ -7,7 +7,7 @@ import AcaiDiagram
 struct CodebaseDetailView: View {
     let codebaseID: UUID
     private let repositoryService: GitHubRepositoryService
-    @EnvironmentObject private var model: ProjectBrowserViewModel
+    @EnvironmentObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isIndexing = false
     /// `true` while a GitHub `Pull` or branch/tag switch is in flight — mirrors `isIndexing`'s
@@ -29,6 +29,9 @@ struct CodebaseDetailView: View {
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
     @State var statCardHeight: CGFloat = 0
     @State private var diagramCardHeight: CGFloat = 0
+    /// Drives the destructive "Delete Codebase…" confirmation (B53) — a second, discoverable path
+    /// to the same confirmed-safe action the sidebar's context menu already offers.
+    @State var showDeleteConfirmation = false
 
     /// Identifies the codebase a pending diagram configuration belongs to.
     private struct ConfigContext: Identifiable {
@@ -85,6 +88,11 @@ struct CodebaseDetailView: View {
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
+
+                    Divider()
+                    deleteCodebaseSection
+                        .padding(.horizontal)
+                        .padding(.vertical, 4)
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
@@ -103,6 +111,17 @@ struct CodebaseDetailView: View {
             }
             .sheet(item: $statisticDetail) { detail in
                 StatisticDetailSheet(codebase: codebase, detail: detail)
+            }
+            .confirmationDialog(
+                "Delete \"\(codebase.name)\"?",
+                isPresented: $showDeleteConfirmation
+            ) {
+                Button("Delete Codebase", role: .destructive) {
+                    model.editing.removeCodebase(codebaseID)
+                }
+                .accessibilityIdentifier("codebaseDetail.codebase.delete.confirmButton")
+            } message: {
+                Text("This deletes its diagrams and cached analysis. This cannot be undone.")
             }
         } else {
             Text("Codebase not found")

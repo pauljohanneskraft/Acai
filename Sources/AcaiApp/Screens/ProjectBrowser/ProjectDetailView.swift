@@ -6,6 +6,9 @@ struct ProjectDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State var addingCodebase = false
     @State private var codebasePendingDeletion: Codebase?
+    /// Drives the destructive "Delete Project…" confirmation (B53) — a second, discoverable path
+    /// to the same confirmed-safe action the sidebar's context menu already offers.
+    @State var showDeleteProjectConfirmation = false
 
     private var project: Project? {
         model.store.projects.first(where: { $0.id == projectID })
@@ -65,6 +68,17 @@ struct ProjectDetailView: View {
             } message: { _ in
                 Text("This deletes its diagrams and cached analysis. This cannot be undone.")
             }
+            .confirmationDialog(
+                "Delete \"\(project.title)\"?",
+                isPresented: $showDeleteProjectConfirmation
+            ) {
+                Button("Delete Project", role: .destructive) {
+                    model.editing.removeProject(project.id)
+                }
+                .accessibilityIdentifier("projectDetail.project.delete.confirmButton")
+            } message: {
+                Text("This deletes all of its codebases and diagrams. This cannot be undone.")
+            }
         } else {
             emptyProjectPlaceholder
         }
@@ -81,50 +95,58 @@ struct ProjectDetailView: View {
                 projectHeader(project: project, index: index, showActions: !isProjectEmpty)
 
                 Divider()
+                regularCodebasesAndDiagramsSection(project: project)
+                Divider()
+                deleteProjectSection
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+            }
+        }
+    }
 
-                let sortedCodebases = project.codebases.sorted(by: {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                })
-                let freeformDiagrams = model.freeformDiagramsForProject(projectID)
-                    .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+    @ViewBuilder
+    private func regularCodebasesAndDiagramsSection(project: Project) -> some View {
+        let sortedCodebases = project.codebases.sorted(by: {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        })
+        let freeformDiagrams = model.freeformDiagramsForProject(projectID)
+            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
 
-                if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
-                    emptyProjectContentState
-                } else {
-                    sectionHeader(title: "Codebases")
-                    if sortedCodebases.isEmpty {
-                        Text("No codebases yet. Add one above.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal)
-                            .padding(.bottom, 12)
-                    } else {
-                        LazyVStack(spacing: 1) {
-                            ForEach(sortedCodebases) { codebase in
-                                codebaseRow(codebase: codebase)
-                            }
-                        }
-                        .padding(.bottom, 8)
-                    }
-
-                    Divider()
-
-                    sectionHeader(title: "Diagrams")
-                    if freeformDiagrams.isEmpty {
-                        Text("No freeform diagrams yet. Create one above.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal)
-                            .padding(.bottom, 12)
-                    } else {
-                        LazyVStack(spacing: 1) {
-                            ForEach(freeformDiagrams) { diagram in
-                                freeformDiagramRow(diagram: diagram)
-                            }
-                        }
-                        .padding(.bottom, 8)
+        if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
+            emptyProjectContentState
+        } else {
+            sectionHeader(title: "Codebases")
+            if sortedCodebases.isEmpty {
+                Text("No codebases yet. Add one above.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
+            } else {
+                LazyVStack(spacing: 1) {
+                    ForEach(sortedCodebases) { codebase in
+                        codebaseRow(codebase: codebase)
                     }
                 }
+                .padding(.bottom, 8)
+            }
+
+            Divider()
+
+            sectionHeader(title: "Diagrams")
+            if freeformDiagrams.isEmpty {
+                Text("No freeform diagrams yet. Create one above.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
+            } else {
+                LazyVStack(spacing: 1) {
+                    ForEach(freeformDiagrams) { diagram in
+                        freeformDiagramRow(diagram: diagram)
+                    }
+                }
+                .padding(.bottom, 8)
             }
         }
     }
@@ -138,6 +160,9 @@ struct ProjectDetailView: View {
             }
             compactCodebasesSection(project: project)
             compactDiagramsSection()
+            Section {
+                deleteProjectSection
+            }
         }
     }
 

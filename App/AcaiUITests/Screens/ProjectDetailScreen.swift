@@ -47,6 +47,13 @@ final class ProjectDetailScreen {
         app.descendants(matching: .any)["projectDetail.codebaseRow.\(id)"]
     }
 
+    /// B53's second, discoverable delete path — a destructive button at the bottom of the screen,
+    /// alongside the existing sidebar context-menu path to the same confirmed-safe action.
+    var deleteProjectButton: XCUIElement { app.buttons["projectDetail.deleteProjectButton"] }
+    var deleteProjectConfirmButton: XCUIElement {
+        app.buttons.matching(identifier: "projectDetail.project.delete.confirmButton").firstMatch
+    }
+
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
     func codebaseRow(named name: String) -> XCUIElement {
