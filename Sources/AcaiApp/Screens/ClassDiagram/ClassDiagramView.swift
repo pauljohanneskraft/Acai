@@ -28,10 +28,9 @@ struct ClassDiagramView: View {
 
     private var isCompactWidth: Bool {
         #if os(iOS)
-        print("DEBUG horizontalSizeClass = \(String(describing: horizontalSizeClass))")
-        return horizontalSizeClass == .compact
+        horizontalSizeClass == .compact
         #else
-        return false
+        false
         #endif
     }
 
@@ -56,19 +55,7 @@ struct ClassDiagramView: View {
     }
 
     var body: some View {
-        canvasContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .inspector(isPresented: $showSidebar) {
-                ClassDiagramSidebar(
-                    viewModel: viewModel,
-                    diagram: diagram,
-                    artifact: artifact,
-                    tab: $sidebarTab,
-                    isPresented: $showSidebar,
-                    isCompactWidth: isCompactWidth
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
-            }
+        sidebarPresentedCanvas
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
                 // The initial auto-fit (`diagramCanvasLifecycle`'s fixed delay) can run before nodes
@@ -134,6 +121,53 @@ struct ClassDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+    }
+
+    /// `.inspector(isPresented:)` collapses to a sheet-like presentation on compact width (iPhone)
+    /// with no navigation-bar chrome of its own — nesting a `NavigationStack` + `.toolbar` inside
+    /// its content to add a close button doesn't work there (confirmed empirically: that inner
+    /// navigation bar simply never renders once `.inspector` has already collapsed). Using a real
+    /// `.sheet(isPresented:)` instead on compact width sidesteps that entirely, since a genuine
+    /// sheet presentation *does* support a nested `NavigationStack` toolbar correctly (the same
+    /// pattern `CompareOverlayButton`'s iOS sheet already relies on). Regular width (iPad/macOS)
+    /// keeps the native `.inspector` sidebar, which needs none of this.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        ClassDiagramSidebar(
+                            viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab
+                        )
+                            .navigationTitle(diagram.name)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        canvasContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
     }
 
     // MARK: - Canvas Content

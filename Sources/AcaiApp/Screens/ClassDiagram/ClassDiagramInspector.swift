@@ -16,38 +16,9 @@ struct ClassDiagramSidebar: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     @Binding var tab: ClassDiagramSidebarTab
-    /// Mirrors the presenting `.inspector(isPresented:)` binding so this view can offer its own
-    /// close affordance — needed on iPhone, where `.inspector` collapses to a plain sheet with no
-    /// built-in dismiss chrome (unlike its native sidebar presentation on macOS/iPad).
-    @Binding var isPresented: Bool
-    /// Passed down explicitly from `ClassDiagramView` rather than read via
-    /// `@Environment(\.horizontalSizeClass)` in this view itself — the environment value isn't
-    /// reliably inherited from the presenting view once content is inside `.inspector(isPresented:)`
-    /// (confirmed empirically: it silently read `.regular` on iPhone, so the compact branch below
-    /// never ran and the Done button never appeared). The presenting screen always knows its real
-    /// size class, so it's the one source of truth.
-    var isCompactWidth: Bool
 
     var body: some View {
-        #if os(iOS)
-        if isCompactWidth {
-            NavigationStack {
-                content
-                    .navigationTitle(diagram.name)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { isPresented = false }
-                                .accessibilityIdentifier("diagram.sidebarDoneButton")
-                        }
-                    }
-            }
-        } else {
-            content
-        }
-        #else
         content
-        #endif
     }
 
     private var content: some View {

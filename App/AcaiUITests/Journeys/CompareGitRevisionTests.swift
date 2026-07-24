@@ -75,7 +75,8 @@ final class CompareGitRevisionTests: XCTestCase {
         XCTAssertFalse(errorExists, errorMessage)
 
         comparator.validate(
-            viewType: "ClassDiagram", state: "deltaComparison", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            viewType: "ClassDiagram", state: "deltaComparison",
+            screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.

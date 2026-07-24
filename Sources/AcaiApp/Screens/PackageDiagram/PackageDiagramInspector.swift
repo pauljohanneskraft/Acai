@@ -8,12 +8,6 @@ import AcaiRender
 struct PackageDiagramInspector: View {
     let diagram: PackageDiagram
     let selectedNodeIDs: Set<String>
-    /// Mirrors the presenting `.inspector(isPresented:)` binding so this view can offer its own
-    /// close affordance on iPhone, matching `ClassDiagramSidebar`'s pattern.
-    @Binding var isPresented: Bool
-    /// Passed down explicitly from `PackageDiagramView` — see `ClassDiagramSidebar.isCompactWidth`'s
-    /// doc comment for why this isn't read via `@Environment(\.horizontalSizeClass)` in this view.
-    var isCompactWidth: Bool
 
     /// Selected modules first (in selection-agnostic name order), then the rest.
     private var orderedNodes: [PackageDiagram.Node] {
@@ -24,25 +18,7 @@ struct PackageDiagramInspector: View {
     }
 
     var body: some View {
-        #if os(iOS)
-        if isCompactWidth {
-            NavigationStack {
-                content
-                    .navigationTitle("Package Diagram")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { isPresented = false }
-                                .accessibilityIdentifier("diagram.sidebarDoneButton")
-                        }
-                    }
-            }
-        } else {
-            content
-        }
-        #else
         content
-        #endif
     }
 
     private var content: some View {

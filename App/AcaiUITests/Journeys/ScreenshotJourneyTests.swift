@@ -32,7 +32,8 @@ final class ScreenshotJourneyTests: XCTestCase {
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
         comparator.validate(
-            viewType: "ProjectDetail", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            viewType: "ProjectDetail", state: "populated",
+            screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
 
         // The compact-width (iPhone) "+" toolbar button only ever opens this Menu — it doesn't
@@ -46,14 +47,15 @@ final class ScreenshotJourneyTests: XCTestCase {
                 viewType: "ProjectDetail", state: "addMenuOpen",
                 screenshot: app.windows.firstMatch.screenshot(), testCase: self
             )
+            // The open menu is covered by a full-screen (invisible outside its own bounds) touch
+            // blocker — confirmed via a debug screenshot showing the row visually unobstructed yet
+            // still reported "not hittable" — so any single coordinate tap dismisses it; bottom
+            // center is safely below both the menu and all real row content.
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
         }
 
-        // `tapUntil`, not a plain `.tap()`: when the menu above was opened, the first tap here only
-        // dismisses it (standard tap-outside-a-menu behavior) rather than also registering on
-        // `codebaseRow` underneath — retrying until the next screen actually appears handles both
-        // that case and the plain "menu was never opened" case identically.
         let codebaseDetail = CodebaseDetailScreen(app: app)
-        codebaseRow.tapUntil(codebaseDetail.reindexButton)
+        codebaseRow.tap()
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
         codebaseDetail.reindexButton.tap()
 
@@ -64,7 +66,8 @@ final class ScreenshotJourneyTests: XCTestCase {
 
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
         comparator.validate(
-            viewType: "ClassDiagram", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            viewType: "ClassDiagram", state: "populated",
+            screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
 
         // Double-tapping a node selects it and switches the sidebar to the Inspector tab in one

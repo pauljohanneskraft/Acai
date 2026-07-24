@@ -72,7 +72,7 @@ private struct CallGraphCanvasView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var showSidebar = true
+    @State private var showSidebar = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -105,22 +105,53 @@ private struct CallGraphCanvasView: View {
     }
 
     var body: some View {
-        canvasContent
-            .overlay(alignment: .top) { coverageBanner }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .inspector(isPresented: $showSidebar) {
-                CallGraphInspector(
-                    graph: viewModel.graph,
-                    selectedNodeIDs: viewModel.selectedNodeIDs,
-                    isPresented: $showSidebar,
-                    isCompactWidth: isCompactWidth
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
-            }
+        sidebarPresentedCanvas
             .toolbar { toolbarContent }
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+    }
+
+    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
+    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            canvasContent
+                .overlay(alignment: .top) { coverageBanner }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                            .navigationTitle("Call Graph")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            canvasContent
+                .overlay(alignment: .top) { coverageBanner }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        canvasContent
+            .overlay(alignment: .top) { coverageBanner }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
     }
 
     // MARK: - Coverage banner

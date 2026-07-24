@@ -23,7 +23,7 @@ struct PackageDiagramView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var showSidebar = true
+    @State private var showSidebar = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -54,21 +54,50 @@ struct PackageDiagramView: View {
     }
 
     var body: some View {
-        canvasContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .inspector(isPresented: $showSidebar) {
-                PackageDiagramInspector(
-                    diagram: viewModel.diagram,
-                    selectedNodeIDs: viewModel.selectedNodeIDs,
-                    isPresented: $showSidebar,
-                    isCompactWidth: isCompactWidth
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
-            }
+        sidebarPresentedCanvas
             .toolbar { toolbarContent }
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+    }
+
+    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
+    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                            .navigationTitle("Package Diagram")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        canvasContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
     }
 
     // MARK: - Canvas
