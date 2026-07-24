@@ -21,17 +21,11 @@ final class CodebaseDetailScreen {
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }
 
-    /// Picks a branch/tag from `refPicker` — see `NewCodebaseSheetScreen.choose` for why this
-    /// matches by literal label/title rather than a per-option identifier (including why both
-    /// `label` and `title` are checked: a macOS popup button's `NSMenuItem` only populates `title`).
+    /// Picks a branch/tag from `refPicker` — see `XCUIElement.choose(_:in:timeout:)` for why this
+    /// matches by literal label/title rather than a per-option identifier.
     @discardableResult
     func chooseRef(_ label: String, timeout: TimeInterval = 10) -> XCUIElement {
-        refPicker.tap()
-        let option = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch
-        _ = option.waitForExistence(timeout: timeout)
-        option.tap()
-        return option
+        refPicker.choose(label, in: app, timeout: timeout)
     }
 
     /// B53's second, discoverable delete path — a destructive button at the bottom of the screen,

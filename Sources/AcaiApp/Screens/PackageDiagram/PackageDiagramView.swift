@@ -145,6 +145,7 @@ struct PackageDiagramView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -172,6 +173,7 @@ struct PackageDiagramView: View {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
             .help("Toggle the sidebar")
+            .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
 

@@ -48,5 +48,17 @@ final class ScreenshotJourneyTests: XCTestCase {
         comparator.validate(
             viewType: "ClassDiagram", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
+
+        // Double-tapping a node selects it and switches the sidebar to the Inspector tab in one
+        // action (`ClassDiagramView`'s `.onTapGesture(count: 2)`). `.firstMatch`: unlike `.tap()`,
+        // `.doubleTap()` requires resolving to a single element, but every row of text inside
+        // `TypeNodeView` carries the same identifier (observed empirically via the accessibility
+        // tree dump on iOS).
+        diagram.typeNode(named: "Base").firstMatch.doubleTap()
+        XCTAssertTrue(diagram.inspectorContent.waitForExistence(timeout: 10))
+        comparator.validate(
+            viewType: "ClassDiagram", state: "inspectorOpen",
+            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+        )
     }
 }

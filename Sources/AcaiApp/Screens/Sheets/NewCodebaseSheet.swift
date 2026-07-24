@@ -47,6 +47,7 @@ struct NewCodebaseSheet: View {
                     ForEach(Source.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier("newCodebase.sourcePicker")
 
                 switch source {
                 case .localFolder:
@@ -86,6 +87,7 @@ struct NewCodebaseSheet: View {
     private var localFolderSection: some View {
         Section {
             TextField("Name", text: $name)
+                .accessibilityIdentifier("newCodebase.localNameField")
             LabeledContent("Directory") {
                 Text(directoryURL?.path ?? "No directory chosen")
                     .lineLimit(1)
@@ -93,6 +95,7 @@ struct NewCodebaseSheet: View {
                     .foregroundStyle(directoryURL == nil ? .secondary : .primary)
             }
             Button("Choose…") { isChoosingDirectory = true }
+                .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
         }
     }
 
@@ -149,7 +152,9 @@ struct NewCodebaseSheet: View {
                         securityScopedBookmark: securityScopedBookmark)
                 }
                 dismiss()
-            }.disabled(name.isEmpty || directoryURL == nil)
+            }
+            .disabled(name.isEmpty || directoryURL == nil)
+            .accessibilityIdentifier("newCodebase.addButton")
         case .gitHub:
             Button("Clone") {
                 guard let repository = selectedRepository, let ref = selectedRef, let account, !isCloning else {

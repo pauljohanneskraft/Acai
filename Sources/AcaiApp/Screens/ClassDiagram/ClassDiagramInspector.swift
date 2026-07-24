@@ -59,8 +59,10 @@ struct ClassDiagramSidebar: View {
             switch tab {
             case .settings:
                 configurationInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.settings")
             case .inspector:
                 selectionInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.inspector")
             }
         }
         .background {

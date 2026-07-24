@@ -10,28 +10,21 @@ final class NewCodebaseSheetScreen {
         self.app = app
     }
 
+    var sourcePicker: XCUIElement { app.descendants(matching: .any)["newCodebase.sourcePicker"] }
+    var localNameField: XCUIElement { app.textFields["newCodebase.localNameField"] }
+    var chooseDirectoryButton: XCUIElement { app.buttons["newCodebase.chooseDirectoryButton"] }
+    /// A plain (non-`.plain`-styled) toolbar button — `app.buttons[...]`, like `cloneButton` below,
+    /// resolves to the single real `Button` element without the wrapping bar-item container's
+    /// duplicate match (`app.descendants(matching: .any)` would hit both).
+    var addButton: XCUIElement { app.buttons["newCodebase.addButton"] }
     var repositoryPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.repositoryPicker"] }
     var refPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.refPicker"] }
     var cloneButton: XCUIElement { app.buttons["newCodebase.cloneButton"] }
 
-    /// Picks a repository/ref from their respective `Picker`s. A SwiftUI `Picker` in a `Form`
-    /// surfaces differently per platform (a popup-button menu on macOS, a pushed list or inline
-    /// menu on iOS) and the option itself has no separate identifier, so this matches by its
-    /// literal text across every plausible element kind — acceptable here since the fixture's
-    /// repository/ref names are fixed and known ahead of time. Matches on `label` **or** `title`:
-    /// confirmed by dumping the accessibility tree that a macOS popup button's `NSMenuItem`
-    /// exposes its text via the `title` attribute with `label` left empty (the opposite of most
-    /// other control types here, which populate `label`) — a plain `label == %@` predicate matched
-    /// nothing on macOS even though the item was genuinely present the whole time. Returns the
-    /// matched option element (already waited-for) so the caller can assert its existence before
-    /// tapping.
+    /// Picks a repository/ref from their respective `Picker`s — see `XCUIElement.choose(_:in:timeout:)`
+    /// for why this matches by literal text rather than a per-option identifier.
     @discardableResult
     func choose(_ label: String, from picker: XCUIElement, timeout: TimeInterval = 10) -> XCUIElement {
-        picker.tap()
-        let option = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch
-        _ = option.waitForExistence(timeout: timeout)
-        option.tap()
-        return option
+        picker.choose(label, in: app, timeout: timeout)
     }
 }

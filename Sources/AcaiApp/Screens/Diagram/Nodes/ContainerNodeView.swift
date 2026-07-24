@@ -88,5 +88,7 @@ struct ContainerNodeView: View {
                     : StrokeStyle(lineWidth: lineWidth))
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
+        // Keyed by name, same rationale/edge case as `TypeNodeView.accessibilityIdentifier`.
+        .accessibilityIdentifier("diagram.containerNode.\(name)")
     }
 }

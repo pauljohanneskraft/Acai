@@ -210,6 +210,7 @@ private struct CallGraphCanvasView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button(action: onConfigure) {
                 Label("Configure Scope", systemImage: "slider.horizontal.3")
             }
@@ -241,6 +242,7 @@ private struct CallGraphCanvasView: View {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
             .help("Toggle the sidebar")
+            .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
 
@@ -296,5 +298,7 @@ private struct CallGraphNodeView: View {
                         style: StrokeStyle(lineWidth: isSelected ? 2 : 1, dash: node.inScope ? [] : [4, 3])
                     )
             )
+            // Keyed by id (`Type.method`), same rationale/edge case as `TypeNodeView.accessibilityIdentifier`.
+            .accessibilityIdentifier("diagram.callGraphNode.\(node.id)")
     }
 }

@@ -68,6 +68,7 @@ struct StateConfigSheet: View {
                                 }
                             }
                             .labelsHidden()
+                            .accessibilityIdentifier("stateConfig.scopePicker")
                             .onChange(of: scope) { _, _ in
                                 if !variableNames.contains(variableName) {
                                     variableName = variableNames.first ?? ""
@@ -85,6 +86,7 @@ struct StateConfigSheet: View {
                             }
                             .labelsHidden()
                             .disabled(scope == nil)
+                            .accessibilityIdentifier("stateConfig.variablePicker")
                         }
                     }
 
@@ -107,6 +109,7 @@ struct StateConfigSheet: View {
                     Button("Create", action: create)
                         .keyboardShortcut(.defaultAction)
                         .disabled(scope == nil || variableName.isEmpty)
+                        .accessibilityIdentifier("stateConfig.createButton")
                 }
             }
         }

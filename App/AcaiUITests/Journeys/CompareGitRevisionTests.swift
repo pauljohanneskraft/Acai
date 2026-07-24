@@ -51,6 +51,7 @@ final class CompareGitRevisionTests: XCTestCase {
         classDiagramButton.tap()
 
         let diagram = ClassDiagramScreen(app: app)
+        diagram.tapFitToView()
         XCTAssertTrue(diagram.typeNode(named: "Added").waitForExistence(timeout: 10),
                       "the uncommitted edit should still be visible on the current (working-tree) side")
 

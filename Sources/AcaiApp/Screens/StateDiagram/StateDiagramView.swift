@@ -120,6 +120,7 @@ struct StateDiagramView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showConfigSheet = true
             } label: {

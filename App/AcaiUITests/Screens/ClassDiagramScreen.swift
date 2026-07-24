@@ -8,4 +8,9 @@ final class ClassDiagramScreen: DiagramScreenBase {
     func typeNode(named name: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
+
+    /// Present once the sidebar is open on the Inspector tab — reached by double-tapping a node
+    /// (`ClassDiagramView`'s `.onTapGesture(count: 2)`), which selects it and switches tabs in one
+    /// action.
+    var inspectorContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.inspector"] }
 }

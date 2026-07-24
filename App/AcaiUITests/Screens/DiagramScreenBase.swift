@@ -21,6 +21,22 @@ class DiagramScreenBase {
     /// The navigation bar's back button, for returning to `CodebaseDetailScreen` from a diagram.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
+    /// A crowded toolbar (e.g. Class Diagram's Undo/Redo/Select/Re-layout/Fit-to-View/Save/Export)
+    /// collapses trailing items into an iOS "More" overflow item on iPhone width, removing
+    /// `fitToViewButton` from the directly-tappable bar entirely until "More" is opened first —
+    /// and, once open, the revealed row only exposes its visible label ("Fit to View"), not the
+    /// accessibility identifier (observed empirically), so the fallback matches by label.
+    func tapFitToView() {
+        if fitToViewButton.waitForExistence(timeout: 1) {
+            fitToViewButton.tap()
+            return
+        }
+        app.buttons["OverflowBarButtonItem"].tap()
+        let overflowItem = app.buttons["Fit to View"]
+        _ = overflowItem.waitForExistence(timeout: 5)
+        overflowItem.tap()
+    }
+
     // MARK: - Compare vs git (`DeltaComparisonBar`, shared by every diagram type)
 
     var compareToggle: XCUIElement { app.descendants(matching: .any)["delta.toggle"] }

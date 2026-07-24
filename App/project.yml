@@ -100,6 +100,12 @@ targets:
         # works. Default off; override per-invocation with `xcodebuild test ...
         # ACAI_RECORD_SNAPSHOTS=1` (a trailing build-setting override, not a leading shell `export`).
         ACAI_RECORD_SNAPSHOTS: "0"
+        # Same latent gap as `Acai-macOSUITests`' identical setting below: signing a bundle needs an
+        # Info.plist, and this target never had one configured. Unnoticed in CI (a fresh runner with
+        # no matching signing certificate takes a more lenient path) but reproduces locally on a
+        # machine that actually holds `DEVELOPMENT_TEAM`'s real certificate, which drives automatic
+        # signing down the strict path that requires this.
+        GENERATE_INFOPLIST_FILE: YES
 
   Acai-macOSUITests:
     type: bundle.ui-testing

@@ -78,9 +78,11 @@ struct SequenceConfigSheet: View {
                         Button("Next", action: advance)
                             .keyboardShortcut(.defaultAction)
                             .disabled(entryMethodName.isEmpty)
+                            .accessibilityIdentifier("sequenceConfig.nextButton")
                     case .resolveInterfaces:
                         Button("Create", action: create)
                             .keyboardShortcut(.defaultAction)
+                            .accessibilityIdentifier("sequenceConfig.createButton")
                     }
                 }
             }
@@ -108,6 +110,7 @@ struct SequenceConfigSheet: View {
                             ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
                         }
                         .labelsHidden()
+                        .accessibilityIdentifier("sequenceConfig.typePicker")
                         .onChange(of: entryTypeName) { _, _ in
                             if !methodNames.contains(entryMethodName) {
                                 entryMethodName = methodNames.first ?? ""
@@ -125,6 +128,7 @@ struct SequenceConfigSheet: View {
                         }
                         .labelsHidden()
                         .disabled(methodNames.isEmpty)
+                        .accessibilityIdentifier("sequenceConfig.methodPicker")
                     }
                 }
 

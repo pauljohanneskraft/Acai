@@ -1,3 +1,7 @@
 public class Derived: Base {
-    public func doWork() {}
+    private let helper = Helper()
+
+    public func doWork() {
+        helper.performTask()
+    }
 }
