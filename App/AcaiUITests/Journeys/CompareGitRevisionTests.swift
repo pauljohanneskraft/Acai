@@ -63,6 +63,8 @@ final class CompareGitRevisionTests: XCTestCase {
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")
         XCTAssertFalse(errorExists, errorMessage)
 
-        comparator.validate("compareAgainstHEAD", screenshot: app.screenshot(), testCase: self)
+        comparator.validate(
+            viewType: "ClassDiagram", state: "deltaComparison", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+        )
     }
 }

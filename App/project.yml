@@ -74,6 +74,14 @@ targets:
       - path: AcaiUITests
         excludes:
           - "Fixtures/**"
+          # `ScreenshotComparator` reads/writes these directly off disk via a `#filePath`-relative
+          # path (both the simulator and the macOS test host can see the source tree directly —
+          # no bundling needed), so they must never be added to "Copy Bundle Resources": Xcode's
+          # default resource copy flattens directory structure, and the new `<platform>/<viewType>/
+          # <state>.png` layout deliberately reuses leaf names (e.g. `populated.png`) across
+          # different view types, which collided in a "Multiple commands produce" build failure
+          # the one time this was tried without the exclude.
+          - "__Snapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
@@ -100,6 +108,14 @@ targets:
       - path: AcaiUITests
         excludes:
           - "Fixtures/**"
+          # `ScreenshotComparator` reads/writes these directly off disk via a `#filePath`-relative
+          # path (both the simulator and the macOS test host can see the source tree directly —
+          # no bundling needed), so they must never be added to "Copy Bundle Resources": Xcode's
+          # default resource copy flattens directory structure, and the new `<platform>/<viewType>/
+          # <state>.png` layout deliberately reuses leaf names (e.g. `populated.png`) across
+          # different view types, which collided in a "Multiple commands produce" build failure
+          # the one time this was tried without the exclude.
+          - "__Snapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
@@ -112,6 +128,11 @@ targets:
         DEVELOPMENT_TEAM: TJSHMGE2VX
         SWIFT_VERSION: "6.0"
         ACAI_RECORD_SNAPSHOTS: "0"
+        # Only mattered once real code signing was in play (`test-macos-ui`'s ad-hoc signing
+        # override, `CODE_SIGN_IDENTITY=-`) — signing a bundle needs an Info.plist, and this
+        # target never had one configured (unnoticed before since `CODE_SIGNING_ALLOWED=NO`
+        # skipped signing, and skipped this check, entirely).
+        GENERATE_INFOPLIST_FILE: YES
 
   Acai-macOS:
     type: application

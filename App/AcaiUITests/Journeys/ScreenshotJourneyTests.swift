@@ -30,7 +30,9 @@ final class ScreenshotJourneyTests: XCTestCase {
         let detail = ProjectDetailScreen(app: app)
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        comparator.validate("populatedProject", screenshot: app.screenshot(), testCase: self)
+        comparator.validate(
+            viewType: "ProjectDetail", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+        )
         codebaseRow.tap()
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
@@ -43,6 +45,8 @@ final class ScreenshotJourneyTests: XCTestCase {
         classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
 
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
-        comparator.validate("classDiagram", screenshot: app.screenshot(), testCase: self)
+        comparator.validate(
+            viewType: "ClassDiagram", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
+        )
     }
 }

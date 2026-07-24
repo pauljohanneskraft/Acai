@@ -9,7 +9,9 @@ final class ProjectBrowserScreen {
         self.app = app
     }
 
-    var newProjectButton: XCUIElement { app.buttons["sidebar.newProjectButton"] }
+    /// Not a `.buttons` query — the button's `.buttonStyle(.plain)` strips native AppKit button
+    /// chrome on macOS, so it no longer exposes as `AXButton`/`XCUIElementType.button` there.
+    var newProjectButton: XCUIElement { app.descendants(matching: .any)["sidebar.newProjectButton"] }
     var deleteProjectConfirmButton: XCUIElement { app.buttons["sidebar.project.delete.confirmButton"] }
     var deleteCodebaseConfirmButton: XCUIElement { app.buttons["sidebar.codebase.delete.confirmButton"] }
 

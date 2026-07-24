@@ -36,6 +36,7 @@ final class AccessibilityAuditTests: XCTestCase {
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
+        XCTAssertTrue(browser.newProjectButton.waitForExistence(timeout: 10))
         assertAccessible(browser.newProjectButton, name: "New Project button")
 
         let projectRow = browser.projectRow(id: Self.projectID)

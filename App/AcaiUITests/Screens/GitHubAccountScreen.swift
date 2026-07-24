@@ -12,10 +12,11 @@ final class GitHubAccountScreen {
 
     /// `NewCodebaseSheet`'s segmented "Source" picker has no accessibility identifier of its own
     /// (no existing segmented-control test in this codebase needed one) — its segments surface as
-    /// buttons labeled by the source's own display text, so this matches on that literal text
-    /// rather than inventing a new identifier scheme for a single call site.
+    /// buttons labeled by the source's own display text on iOS, but as a different element kind
+    /// under macOS's `NSSegmentedControl`, so this matches on that literal text regardless of
+    /// element kind rather than inventing a new identifier scheme for a single call site.
     func selectGitHubSource() {
-        app.buttons["From GitHub"].tap()
+        app.descendants(matching: .any)["From GitHub"].tap()
     }
 
     var patField: XCUIElement { app.secureTextFields["github.patField"] }

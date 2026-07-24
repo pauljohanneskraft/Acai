@@ -12,10 +12,27 @@ import XCTest
 /// through which to import another test target's internal types. Revisit if a fourth consumer
 /// appears — see `TESTING_ARCHITECTURE.md` Layer 1's own note on the same tradeoff.
 struct ScreenshotComparator {
+    /// An iPad journey capturing both device rotations for a state that plausibly lays out
+    /// differently in each. iPhone and macOS goldens never pass this — they get a plain
+    /// `<state>.png`.
+    enum Orientation: String {
+        case portrait
+        case landscape
+    }
+
     let goldenDirectory: URL
     /// Looser than Layer 1's default — simulator rendering/anti-aliasing drift is real for a full
-    /// captured window, not a single flat component.
-    var maxChangedFraction: Double = 2.0e-3
+    /// captured window, not a single flat component. Looser again on macOS specifically: measured
+    /// ~2–2.3% drift between separate real-window launches of the identical state (font
+    /// hinting/anti-aliasing noise a window server introduces that a simulator doesn't) — iOS/iPad
+    /// showed none of this across repeated runs, so only macOS's default is widened, keeping
+    /// iOS/iPad's regression sensitivity tight.
+    var maxChangedFraction: Double
+
+    init(goldenDirectory: URL, maxChangedFraction: Double? = nil) {
+        self.goldenDirectory = goldenDirectory
+        self.maxChangedFraction = maxChangedFraction ?? (SnapshotPlatform().name == "macOS" ? 4.0e-2 : 2.0e-3)
+    }
 
     private let comparisonSide = 256
     private let perCellDelta = 16
@@ -24,6 +41,16 @@ struct ScreenshotComparator {
     /// instead of comparing — same record-mode convention as Layer 1's `SnapshotComparator`.
     private var isRecording: Bool {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
+    }
+
+    /// Fallback recording target, mirroring `goldenDirectory`'s own `<viewType>/<platform>/<state>`
+    /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
+    /// Needed because a real macOS-hosted UI test process (unlike the iOS Simulator, which writes
+    /// directly to `goldenDirectory` fine) has been observed to fail writing into the source tree
+    /// with `EPERM`, for reasons that didn't resolve even after granting Full Disk Access — the
+    /// cause wasn't fully root-caused, so this fallback keeps recording usable regardless of it.
+    private var stagingDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("AcaiUITestSnapshots", isDirectory: true)
     }
 
     private func hasPNGMagic(_ data: Data) -> Bool {
@@ -52,13 +79,22 @@ struct ScreenshotComparator {
         return Double(changed) / Double(a.count)
     }
 
-    /// Validates `screenshot` against `<goldenDirectory>/<name>.png`, and — regardless of
-    /// pass/fail/record — attaches it to `testCase` (`.keepAlways`) so it's reviewable in the test
-    /// report, which is what makes this layer double as a human-reviewable screenshot journey and
-    /// not only an automated regression check.
-    func validate(_ name: String, screenshot: XCUIScreenshot, testCase: XCTestCase) {
+    /// Validates `screenshot` against
+    /// `<goldenDirectory>/<viewType>/<platform>/<state>[_<orientation>].png` (platform resolved at
+    /// runtime via `SnapshotPlatform`, so callers can never forget or misspell it), and —
+    /// regardless of pass/fail/record — attaches it to `testCase` (`.keepAlways`) so it's
+    /// reviewable in the test report, which is what makes this layer double as a
+    /// human-reviewable screenshot journey and not only an automated regression check.
+    func validate(
+        viewType: String, state: String, orientation: Orientation? = nil,
+        screenshot: XCUIScreenshot, testCase: XCTestCase
+    ) {
+        var fileName = state
+        if let orientation { fileName += "_\(orientation.rawValue)" }
+        let name = "\(viewType)/\(SnapshotPlatform().name)/\(fileName)"
+
         let attachment = XCTAttachment(screenshot: screenshot)
-        attachment.name = name
+        attachment.name = name.replacingOccurrences(of: "/", with: "_")
         attachment.lifetime = .keepAlways
         testCase.add(attachment)
 
@@ -66,8 +102,26 @@ struct ScreenshotComparator {
         let rendered = screenshot.pngRepresentation
 
         if isRecording {
-            try? FileManager.default.createDirectory(at: goldenDirectory, withIntermediateDirectories: true)
-            try? rendered.write(to: url)
+            do {
+                try FileManager.default.createDirectory(
+                    at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+                )
+                try rendered.write(to: url)
+            } catch {
+                let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
+                do {
+                    try FileManager.default.createDirectory(
+                        at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true
+                    )
+                    try rendered.write(to: stagedURL)
+                    XCTFail(
+                        "Could not write golden directly (\(error)); staged at \(stagedURL.path) instead — "
+                        + "run Scripts/sync_ui_snapshots.sh to copy staged recordings into __Snapshots__/"
+                    )
+                } catch {
+                    XCTFail("Failed to record golden at \(url.path), and the staging fallback also failed: \(error)")
+                }
+            }
             return
         }
 

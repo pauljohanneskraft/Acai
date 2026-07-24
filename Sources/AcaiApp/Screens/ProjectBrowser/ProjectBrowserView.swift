@@ -7,7 +7,8 @@ public struct ProjectBrowserView: View {
     #if !os(macOS)
     // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
     // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
-    @AppStorage(DiagramThemeSelection.storageKey) private var diagramTheme: DiagramThemeSelection = .system
+    @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
+    private var diagramTheme: DiagramThemeSelection = .system
     #endif
     @State private var newProjectPresented = false
     @State private var collapsedProjects = Set<UUID>()

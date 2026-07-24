@@ -53,9 +53,31 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
 /// libgit2 clone/fetch (via `AcaiGit.GitClone`) against `remoteURL` — a local git repository staged
 /// by the UI test — instead of `https://github.com/...`. This exercises the actual clone/fetch/
 /// checkout code path end to end, deterministically, with no network access or credentials.
-/// Selected only when `UITestFixtureResolver().resolveGitHubRemoteURL() != nil`.
+/// Selected whenever `UITestFixtureResolver().resolveBaseDir() != nil` — **not** gated on
+/// `resolveGitHubRemoteURL()` (a real, empirically-found bug this replaced: a UI test that reaches a
+/// signed-in state without itself needing to clone anything — e.g. `GitHubSignInTests`, which never
+/// sets `-AcaiUITestGitHubRemoteURL` — got `LiveGitHubRepositoryService` instead, so
+/// `NewCodebaseSheet`'s reactive `loadRepositories()` on sign-in made a **real** call to
+/// `api.github.com` with the fixture's fake credential, surfacing a genuine "Bad credentials" 401 in
+/// the UI. Any UI-test-fixture launch must always get the network-free conformance; `remoteURL`
+/// being absent only limits which of *this struct's own methods* are usable, per method below).
 struct FixtureGitHubRepositoryService: GitHubRepositoryService {
-    let remoteURL: URL
+    /// `nil` when no `-AcaiUITestGitHubRemoteURL` was configured for this launch (i.e. the test
+    /// doesn't exercise cloning) — `repositories(credential:)` doesn't need it at all; `refs`/`sync`
+    /// throw a clear, local `Failure` instead of ever falling back to real network.
+    let remoteURL: URL?
+
+    enum Failure: LocalizedError {
+        case noFixtureRemoteConfigured
+
+        var errorDescription: String? {
+            switch self {
+            case .noFixtureRemoteConfigured:
+                "No fixture GitHub remote configured for this UI test launch — pass "
+                + "-AcaiUITestGitHubRemoteURL if this journey needs to list refs or clone."
+            }
+        }
+    }
 
     /// The canned repository every fixture-stubbed picker resolves to. A single hardcoded entry is
     /// enough for the one journey that needs this today — see `FixtureGitHubAccountService.login`
@@ -72,7 +94,8 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     /// hardcoded list, so the picker always reflects whatever branches/tags the UI test's
     /// `GitFixtureRepository` actually created.
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef] {
-        try GitCheckout(directory: remoteURL).refNames().map { name in
+        guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
+        return try GitCheckout(directory: remoteURL).refNames().map { name in
             GitHubRef(name: name, kind: .branch)
         }
     }
@@ -81,19 +104,21 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     func sync(
         credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
     ) async throws -> String {
-        try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: destination)
+        guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
+        return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: destination)
     }
 }
 
 /// Picks between `LiveGitHubRepositoryService` and `FixtureGitHubRepositoryService` — the same
-/// one-signal check `GitHubAccountSection.init` already uses for sign-in, factored out since three
-/// call sites (`NewCodebaseSheet`, `CodebaseDetailView`, `ProjectCodebaseEditor`) need it instead of
-/// just one.
+/// one-signal check `GitHubAccountSection.init`/`GitHubTokenStore`/`DiagramThemeSelection` already
+/// use ("is any UI test fixture active at all"), factored out since three call sites
+/// (`NewCodebaseSheet`, `CodebaseDetailView`, `ProjectCodebaseEditor`) need it instead of just one.
+/// The git-remote URL is a separate, narrower signal — passed through when present, but never used
+/// to decide Fixture-vs-Live itself (see `FixtureGitHubRepositoryService`'s doc comment for the bug
+/// that shape caused).
 struct GitHubRepositoryServiceResolver {
     func resolve() -> GitHubRepositoryService {
-        if let remoteURL = UITestFixtureResolver().resolveGitHubRemoteURL() {
-            return FixtureGitHubRepositoryService(remoteURL: remoteURL)
-        }
-        return LiveGitHubRepositoryService()
+        guard UITestFixtureResolver().resolveBaseDir() != nil else { return LiveGitHubRepositoryService() }
+        return FixtureGitHubRepositoryService(remoteURL: UITestFixtureResolver().resolveGitHubRemoteURL())
     }
 }

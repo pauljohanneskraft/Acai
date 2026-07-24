@@ -22,12 +22,13 @@ final class CodebaseDetailScreen {
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }
 
     /// Picks a branch/tag from `refPicker` — see `NewCodebaseSheetScreen.choose` for why this
-    /// matches by literal label rather than a per-option identifier.
+    /// matches by literal label/title rather than a per-option identifier (including why both
+    /// `label` and `title` are checked: a macOS popup button's `NSMenuItem` only populates `title`).
     @discardableResult
-    func chooseRef(_ label: String, timeout: TimeInterval = 5) -> XCUIElement {
+    func chooseRef(_ label: String, timeout: TimeInterval = 10) -> XCUIElement {
         refPicker.tap()
         let option = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label == %@", label)).firstMatch
+            .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch
         _ = option.waitForExistence(timeout: timeout)
         option.tap()
         return option

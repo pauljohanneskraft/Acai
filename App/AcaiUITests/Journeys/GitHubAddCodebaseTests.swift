@@ -73,7 +73,13 @@ final class GitHubAddCodebaseTests: XCTestCase {
         // diagram's node set should now include `Extra`. `backButton` from the diagram pops all
         // the way to the sidebar (not just one level to `CodebaseDetailScreen`), so re-enter via
         // the sidebar's own codebase row rather than assuming a fixed stack depth.
+        //
+        // macOS's `NavigationSplitView` keeps the sidebar visible and directly tappable alongside
+        // the detail pane at all times — there's no push/pop stack to back out of (no "BackButton"
+        // exists there at all), unlike iOS/iPadOS where the diagram covers the sidebar.
+        #if !os(macOS)
         diagram.backButton.tap()
+        #endif
         let sidebarCodebaseRow = browser.codebaseRow(named: "fixture-repo")
         XCTAssertTrue(sidebarCodebaseRow.waitForExistence(timeout: 10))
         sidebarCodebaseRow.tapUntil(codebaseDetail.refPicker)

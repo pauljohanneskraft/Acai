@@ -30,7 +30,13 @@ final class DeleteConfirmationTests: XCTestCase {
     private func tapDelete(on row: XCUIElement, app: XCUIApplication) {
         #if os(macOS)
         row.rightClick()
-        app.buttons["Delete"].tap()
+        // Not a `.buttons` query — this is a native NSMenu item (from `.contextMenu`) after
+        // right-click on macOS, not an `XCUIElementType.button`. Scoped to the window (not
+        // `app.descendants`) because the system Edit menu's standard "Delete" menu item
+        // (identifier `delete:`) also matches on the unscoped query — our own item (identifier
+        // `trash`, from the `Label(_:systemImage: "trash")`) only lives under the window, not the
+        // app-wide menu bar.
+        app.windows.firstMatch.descendants(matching: .any)["Delete"].tap()
         #else
         row.swipeLeft()
         app.buttons["Delete"].tap()
@@ -42,6 +48,16 @@ final class DeleteConfirmationTests: XCTestCase {
         let codebaseRow = openSeededCodebaseRow(app)
         tapDelete(on: codebaseRow, app: app)
 
+        #if os(macOS)
+        // On macOS, `.confirmationDialog` renders as a real `NSAlert`-style sheet with an actual
+        // "Cancel" button — confirmed by dumping the accessibility tree (`label: 'alert'`,
+        // `identifier: 'action-button-2', title: 'Cancel'`). Scoped to `app.sheets` rather than
+        // `app.buttons`/`app.descendants`: the Touch Bar exposes its own duplicate "Cancel"-titled
+        // button at the same time, which an unscoped query matches ambiguously.
+        let cancelButton = app.sheets.buttons["Cancel"]
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 5))
+        cancelButton.tap()
+        #else
         // At this window size, `.confirmationDialog` renders as a **popover** anchored near the
         // row, not a bottom action sheet — confirmed by dumping the accessibility tree: it has no
         // "Cancel" button at all, only the destructive "Delete Codebase" action and a
@@ -50,6 +66,7 @@ final class DeleteConfirmationTests: XCTestCase {
         let dismissRegion = app.otherElements["PopoverDismissRegion"]
         XCTAssertTrue(dismissRegion.waitForExistence(timeout: 5))
         dismissRegion.tap()
+        #endif
 
         XCTAssertTrue(codebaseRow.exists, "cancelling the confirmation must not delete the codebase")
     }
