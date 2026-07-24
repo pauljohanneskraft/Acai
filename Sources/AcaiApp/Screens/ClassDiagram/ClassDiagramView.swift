@@ -21,6 +21,18 @@ struct ClassDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
     @State private var hasCenteredAfterMeasurement = false
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
@@ -43,17 +55,7 @@ struct ClassDiagramView: View {
     }
 
     var body: some View {
-        canvasContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .inspector(isPresented: $showSidebar) {
-                ClassDiagramSidebar(
-                    viewModel: viewModel,
-                    diagram: diagram,
-                    artifact: artifact,
-                    tab: $sidebarTab
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
-            }
+        sidebarPresentedCanvas
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
                 // The initial auto-fit (`diagramCanvasLifecycle`'s fixed delay) can run before nodes
@@ -67,6 +69,9 @@ struct ClassDiagramView: View {
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+                    #if !os(macOS)
+                    MultiSelectToggleButton(model: viewModel)
+                    #endif
 
                     Button {
                         viewModel.recordUndo()
@@ -76,6 +81,7 @@ struct ClassDiagramView: View {
                         Label("Re-layout", systemImage: "rectangle.3.group")
                     }
                     .help("Re-run automatic layout")
+                    .accessibilityIdentifier("diagram.relayoutButton")
                     Button {
                         centerDiagram()
                     } label: {
@@ -83,6 +89,7 @@ struct ClassDiagramView: View {
                     }
                     .help("Fit the diagram to the visible canvas (⌘0)")
                     .keyboardShortcut("0", modifiers: .command)
+                    .accessibilityIdentifier("diagram.fitToViewButton")
                     Button {
                         model.saveAsFreeformDiagram(
                             id: diagram.id,
@@ -94,23 +101,73 @@ struct ClassDiagramView: View {
                         Label("Save as Freeform", systemImage: "document.on.document")
                     }
                     .help("Save a copy as an editable Freeform diagram")
+                    .accessibilityIdentifier("diagram.saveAsFreeformButton")
                     Button {
                         exportImage()
                     } label: {
                         Label("Export Image", systemImage: "photo")
                     }
                     .help("Export the diagram as an image")
+                    .accessibilityIdentifier("diagram.exportImageButton")
                     Button {
                         showSidebar.toggle()
                     } label: {
                         Label("Sidebar", systemImage: "sidebar.trailing")
                     }
                     .help("Toggle the sidebar")
+                    .accessibilityIdentifier("diagram.sidebarToggleButton")
                 }
             }
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+    }
+
+    /// `.inspector(isPresented:)` collapses to a sheet-like presentation on compact width (iPhone)
+    /// with no navigation-bar chrome of its own — nesting a `NavigationStack` + `.toolbar` inside
+    /// its content to add a close button doesn't work there (confirmed empirically: that inner
+    /// navigation bar simply never renders once `.inspector` has already collapsed). Using a real
+    /// `.sheet(isPresented:)` instead on compact width sidesteps that entirely, since a genuine
+    /// sheet presentation *does* support a nested `NavigationStack` toolbar correctly (the same
+    /// pattern `CompareOverlayButton`'s iOS sheet already relies on). Regular width (iPad/macOS)
+    /// keeps the native `.inspector` sidebar, which needs none of this.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        ClassDiagramSidebar(
+                            viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab
+                        )
+                            .navigationTitle(diagram.name)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            canvasContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        canvasContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
     }
 
     // MARK: - Canvas Content
@@ -121,16 +178,18 @@ struct ClassDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            ZStack {
-                GroupingBoxLayer(viewModel: viewModel)
-                nodeLayer
-                edgeLayer
-                resizeHandleLayer
-                selectionRectangleLayer
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                ZStack {
+                    GroupingBoxLayer(viewModel: viewModel)
+                    nodeLayer
+                    edgeLayer
+                    resizeHandleLayer
+                    selectionRectangleLayer
+                }
             }
-        }
+        )
     }
 
     // MARK: - Edge Layer
@@ -186,7 +245,7 @@ struct ClassDiagramView: View {
                     #if os(macOS)
                     let extending = NSEvent.modifierFlags.contains(.command)
                     #else
-                    let extending = false
+                    let extending = viewModel.isMultiSelectActive
                     #endif
                     viewModel.selectNode(node.id, extending: extending)
                 }
@@ -281,7 +340,8 @@ extension ClassDiagramView {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.nodes.map(\.id),
-            rect: { viewModel.nodeRect(for: $0) }
+            rect: { viewModel.nodeRect(for: $0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

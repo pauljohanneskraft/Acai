@@ -21,8 +21,14 @@ struct CodebaseAnalyzer {
     /// scans on the **same** artifact the CLI (`acai metrics`) and MCP tools do — re-enriching here
     /// would re-append diagnostics and diverge from those. The diagram/detail layer flattens (and
     /// whole-artifact-enriches, via `ClassDiagram`) on demand in ``flattenedForDisplay(_:)``.
-    func enrichedArtifact(at url: URL) throws -> CodeArtifact {
-        try service.analyzeProject(at: url, allowedLanguages: [])
+    /// `fileFilter` — when set — excludes files before they're even parsed (`AnalysisService`'s
+    /// `includingFile` hook), the actual performance win Part 12's file allow/blocklist is about.
+    /// `nil` (the default, and every call site but the live reindex path) parses everything, exactly
+    /// as before this existed.
+    func enrichedArtifact(at url: URL, fileFilter: FileFilter? = nil) throws -> CodeArtifact {
+        try service.analyzeProject(at: url, allowedLanguages: []) { relativePath in
+            fileFilter?.includes(relativePath) ?? true
+        }
     }
 
     /// Flattens a stored semantic artifact into the diagram-ready form the views render from:

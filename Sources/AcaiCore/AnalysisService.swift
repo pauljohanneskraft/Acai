@@ -52,9 +52,17 @@ public struct AnalysisService: Sendable {
     // MARK: - Project Analysis
 
     /// Auto-discovers source directories via `projectDiscovery`, then parses and merges all files.
+    ///
+    /// `includingFile` is an optional caller-supplied predicate over each candidate file's path
+    /// relative to `rootURL`, checked *before* a file is read/parsed — the hook a caller-owned
+    /// allow/blocklist (e.g. `AcaiApp`'s per-codebase file filter) plugs into, so an excluded file
+    /// is never even parsed. Defaults to including everything, unchanged from before this existed.
+    /// Purely a predicate over a path string: this stays language- and feature-agnostic, naming no
+    /// glob/regex vocabulary itself (the "parameter injection" pattern — see `CLAUDE.md`).
     public func analyzeProject(
         at rootURL: URL,
-        allowedLanguages: [CodeArtifact.SourceLanguage]
+        allowedLanguages: [CodeArtifact.SourceLanguage],
+        includingFile: (String) -> Bool = { _ in true }
     ) throws -> CodeArtifact {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
@@ -72,7 +80,7 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            if let artifact = parseSpec(spec, rootURL: rootURL) {
+            if let artifact = parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -89,7 +97,8 @@ public struct AnalysisService: Sendable {
     /// Parses all files for a single language spec and returns the combined artifact.
     private func parseSpec(
         _ spec: SourceSpec,
-        rootURL: URL
+        rootURL: URL,
+        includingFile: (String) -> Bool
     ) -> CodeArtifact? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
@@ -98,7 +107,7 @@ public struct AnalysisService: Sendable {
             print("Warning: No parser registered for language \(spec.language.rawValue); skipping it.")
             return nil
         }
-        let files = collectFiles(for: codeParser, in: spec)
+        let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
         guard !files.isEmpty else { return nil }
 
         let parsed = parseFiles(files, using: codeParser, rootURL: rootURL)
@@ -106,8 +115,12 @@ public struct AnalysisService: Sendable {
     }
 
     /// Collects the spec's source files for `codeParser`, skipping every registered language's
-    /// build-output/dependency directories (plus the universal VCS dir).
-    private func collectFiles(for codeParser: any CodeParser, in spec: SourceSpec) -> [URL] {
+    /// build-output/dependency directories (plus the universal VCS dir), then `includingFile` —
+    /// evaluated against each file's path relative to `rootURL`, matching what callers compute
+    /// their own filters against.
+    private func collectFiles(
+        for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
+    ) -> [URL] {
         let exts = Set(codeParser.fileExtensions)
         let excludedDirectories = registry.excludedDirectories
             .union(AcaiConstants.standard.defaultExcludedSourceDirectories)
@@ -118,6 +131,7 @@ public struct AnalysisService: Sendable {
                 )
             }
             .removingDuplicates { $0 }
+            .filter { includingFile($0.relativePath(from: rootURL)) }
     }
 
     /// Parses every file and groups the results by each file's *own* `metadata.sourceLanguage` rather
@@ -191,13 +205,23 @@ extension URL {
     /// Comparison is on a path-component boundary so a sibling directory sharing a name
     /// prefix (e.g. `/a/foobar` against base `/a/foo`) is treated as unrelated rather than
     /// yielding a corrupted `bar/...` relative path.
+    ///
+    /// Both sides are symlink-resolved before comparing: `FileManager`'s directory enumerator
+    /// (used to collect the files this is called on) canonicalizes the paths it walks, while `base`
+    /// is typically whatever the caller passed to `analyzeProject(at:)` — often not canonicalized
+    /// (e.g. a bare `/var/...` path on a platform where that's a symlink to `/private/var/...`).
+    /// Comparing the raw strings in that case fails the prefix check for every file, silently
+    /// collapsing every path down to a bare filename (and, downstream, every type into one fake
+    /// module — see `ModuleResolver`'s `fallbackGroup`).
     func relativePath(from base: URL) -> String {
-        let basePath = base.path.hasSuffix("/") ? String(base.path.dropLast()) : base.path
-        if path == basePath {
+        let resolvedSelf = resolvingSymlinksInPath().path
+        let resolvedBasePath = base.resolvingSymlinksInPath().path
+        let basePath = resolvedBasePath.hasSuffix("/") ? String(resolvedBasePath.dropLast()) : resolvedBasePath
+        if resolvedSelf == basePath {
             return ""
         }
-        if path.hasPrefix(basePath + "/") {
-            return String(path.dropFirst(basePath.count + 1))
+        if resolvedSelf.hasPrefix(basePath + "/") {
+            return String(resolvedSelf.dropFirst(basePath.count + 1))
         }
         return lastPathComponent
     }

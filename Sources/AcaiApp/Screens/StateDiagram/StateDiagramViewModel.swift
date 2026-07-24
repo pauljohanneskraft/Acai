@@ -18,6 +18,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     /// Per-state centre overrides, keyed by state id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
+    @Published var isMultiSelectActive = false
 
     private(set) var configuration: StateDiagramConfiguration?
 

@@ -19,6 +19,7 @@
     {
       "layers" : [
         {
+          "glass" : false,
           "image-name" : "rectangle.3.group@3x.png",
           "name" : "rectangle.3.group@3x",
           "position" : {

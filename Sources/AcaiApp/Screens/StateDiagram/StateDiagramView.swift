@@ -23,6 +23,7 @@ struct StateDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showConfigSheet = false
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
@@ -75,16 +76,18 @@ struct StateDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            let layout = viewModel.layout
-            ZStack(alignment: .topLeading) {
-                StateEnsembleView(layout: layout)
-                ForEach(layout.nodes) { node in
-                    stateNode(node)
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                let layout = viewModel.layout
+                ZStack(alignment: .topLeading) {
+                    StateEnsembleView(layout: layout)
+                    ForEach(layout.nodes) { node in
+                        stateNode(node)
+                    }
                 }
             }
-        }
+        )
     }
 
     private func stateNode(_ node: StateLayoutModel.NodeFrame) -> some View {
@@ -109,6 +112,9 @@ struct StateDiagramView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+            #if !os(macOS)
+            MultiSelectToggleButton(model: viewModel)
+            #endif
 
             Button {
                 centerDiagram()
@@ -117,12 +123,14 @@ struct StateDiagramView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showConfigSheet = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
             .help("Change the state diagram's tracked variable")
+            .accessibilityIdentifier("diagram.configureButton")
             Button {
                 // Pass every state's live centre (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -141,6 +149,7 @@ struct StateDiagramView: View {
             }
             .help("Save a copy as an editable Freeform diagram")
             .disabled(viewModel.diagram == nil)
+            .accessibilityIdentifier("diagram.saveAsFreeformButton")
             Button {
                 exportImage()
             } label: {
@@ -148,6 +157,7 @@ struct StateDiagramView: View {
             }
             .help("Export the diagram as an image")
             .disabled(viewModel.diagram == nil)
+            .accessibilityIdentifier("diagram.exportImageButton")
         }
     }
 
@@ -204,7 +214,8 @@ struct StateDiagramView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.layout.nodes.map(\.id),
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

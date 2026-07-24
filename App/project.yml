@@ -5,9 +5,20 @@ options:
     iOS: "26.0"
     macOS: "26.0"
   createIntermediateGroups: true
+  fileTypes:
+    "icon":
+      file: true
 packages:
   Acai:
     path: ..
+  # Only `AcaiUITests/Support/GitFixtureRepository.swift` needs this directly — it builds real git
+  # history for the Compare/GitHub-clone journeys at launch time via `Repository.create`/`.commit`/
+  # `.branch.create` rather than shelling out to `/usr/bin/git` (`Process`/`Pipe` don't exist in
+  # iOS's Foundation at all — a real, compile-time platform constraint discovered while building
+  # this, not a style choice). Same version pin as `Package.swift`'s own `SwiftGitX` dependency.
+  SwiftGitX:
+    url: https://github.com/ibrahimcetin/SwiftGitX.git
+    from: 0.4.0
 targets:
   Acai-iOS:
     type: application
@@ -50,6 +61,85 @@ targets:
     scheme:
       gatherCoverageData: false
 
+  # Layer 2 (`TESTING_ARCHITECTURE.md`): journeys, screen objects, and screenshot-comparator
+  # snapshots against the real app process — the thing `AcaiAppTests` (a plain SwiftPM XCTest
+  # target, no running app host) structurally can't do. Both platform UI test targets share one
+  # `AcaiUITests/` source tree; `Fixtures/` is a separate `resources` path so its bundled
+  # `ProjectStore`-shaped JSON/source fixtures are copied into the test bundle rather than
+  # compiled as Swift sources.
+  Acai-iOSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: AcaiUITests
+        excludes:
+          - "Fixtures/**"
+          # `ScreenshotComparator` reads/writes these directly off disk via a `#filePath`-relative
+          # path (both the simulator and the macOS test host can see the source tree directly —
+          # no bundling needed), so they must never be added to "Copy Bundle Resources": Xcode's
+          # default resource copy flattens directory structure, and the new `<platform>/<viewType>/
+          # <state>.png` layout deliberately reuses leaf names (e.g. `populated.png`) across
+          # different view types, which collided in a "Multiple commands produce" build failure
+          # the one time this was tried without the exclude.
+          - "__Snapshots__/**"
+      - path: AcaiUITests/Fixtures
+        buildPhase: resources
+        type: folder
+    dependencies:
+      - target: Acai-iOS
+      - package: SwiftGitX
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
+        DEVELOPMENT_TEAM: TJSHMGE2VX
+        SWIFT_VERSION: "6.0"
+        # Layer 2's record-mode toggle (`ScreenshotComparator`). A plain shell `export` doesn't
+        # reach an Xcode-launched XCTest process (verified empirically — `ProcessInfo.environment`
+        # came back `nil` there despite the invoking shell having it set); routing it through a
+        # build setting, referenced by the scheme's environment variable below, is what actually
+        # works. Default off; override per-invocation with `xcodebuild test ...
+        # ACAI_RECORD_SNAPSHOTS=1` (a trailing build-setting override, not a leading shell `export`).
+        ACAI_RECORD_SNAPSHOTS: "0"
+        # Same latent gap as `Acai-macOSUITests`' identical setting below: signing a bundle needs an
+        # Info.plist, and this target never had one configured. Unnoticed in CI (a fresh runner with
+        # no matching signing certificate takes a more lenient path) but reproduces locally on a
+        # machine that actually holds `DEVELOPMENT_TEAM`'s real certificate, which drives automatic
+        # signing down the strict path that requires this.
+        GENERATE_INFOPLIST_FILE: YES
+
+  Acai-macOSUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: AcaiUITests
+        excludes:
+          - "Fixtures/**"
+          # `ScreenshotComparator` reads/writes these directly off disk via a `#filePath`-relative
+          # path (both the simulator and the macOS test host can see the source tree directly —
+          # no bundling needed), so they must never be added to "Copy Bundle Resources": Xcode's
+          # default resource copy flattens directory structure, and the new `<platform>/<viewType>/
+          # <state>.png` layout deliberately reuses leaf names (e.g. `populated.png`) across
+          # different view types, which collided in a "Multiple commands produce" build failure
+          # the one time this was tried without the exclude.
+          - "__Snapshots__/**"
+      - path: AcaiUITests/Fixtures
+        buildPhase: resources
+        type: folder
+    dependencies:
+      - target: Acai-macOS
+      - package: SwiftGitX
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
+        DEVELOPMENT_TEAM: TJSHMGE2VX
+        SWIFT_VERSION: "6.0"
+        ACAI_RECORD_SNAPSHOTS: "0"
+        # Only mattered once real code signing was in play (`test-macos-ui`'s ad-hoc signing
+        # override, `CODE_SIGN_IDENTITY=-`) — signing a bundle needs an Info.plist, and this
+        # target never had one configured (unnoticed before since `CODE_SIGNING_ALLOWED=NO`
+        # skipped signing, and skipped this check, entirely).
+        GENERATE_INFOPLIST_FILE: YES
+
   Acai-macOS:
     type: application
     platform: macOS
@@ -80,3 +170,35 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
     scheme:
       gatherCoverageData: false
+
+# XcodeGen's per-target `scheme:` shorthand doesn't add a test target as its own scheme's testable
+# (verified empirically — the autogenerated `Acai-iOSUITests` scheme had a `Testables` block but no
+# entries, so `xcodebuild test -scheme Acai-iOSUITests` failed with "not currently configured for
+# the test action"). Declaring the two UI test schemes explicitly, each listing itself as its own
+# testable, is what makes each independently runnable via `-scheme` — matching how the CI job and
+# `TESTING_ARCHITECTURE.md` invoke them.
+schemes:
+  Acai-iOSUITests:
+    build:
+      targets:
+        Acai-iOSUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - Acai-iOSUITests
+      environmentVariables:
+        - variable: ACAI_RECORD_SNAPSHOTS
+          value: "$(ACAI_RECORD_SNAPSHOTS)"
+          isEnabled: true
+  Acai-macOSUITests:
+    build:
+      targets:
+        Acai-macOSUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - Acai-macOSUITests
+      environmentVariables:
+        - variable: ACAI_RECORD_SNAPSHOTS
+          value: "$(ACAI_RECORD_SNAPSHOTS)"
+          isEnabled: true

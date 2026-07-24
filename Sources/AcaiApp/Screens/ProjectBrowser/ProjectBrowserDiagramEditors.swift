@@ -88,6 +88,7 @@ struct GeneratedDiagramEditor {
             store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteGeneratedDiagramFile(diagramID)
+        store.removeFromRecentlyViewed(.generatedDiagram(diagramID))
         persist()
     }
 
@@ -128,18 +129,33 @@ struct ProjectCodebaseEditor {
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
+    /// Real network clone/fetch, swapped for `FixtureGitHubRepositoryService` under a UI test
+    /// fixture — see `GitHubRepositoryService`.
+    var repositoryService: GitHubRepositoryService = GitHubRepositoryServiceResolver().resolve()
 
     // MARK: Projects
 
-    func addProject(title: String, subtitle: String) {
-        store.projects.append(Project(title: title, subtitle: subtitle, codebases: []))
+    @discardableResult
+    func addProject(title: String, subtitle: String) -> UUID {
+        let project = Project(title: title, subtitle: subtitle, codebases: [])
+        store.projects.append(project)
         persist()
+        return project.id
     }
 
     func removeProject(_ projectID: UUID) {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
-        for did in project.generatedDiagramIDs { store.deleteGeneratedDiagramFile(did) }
-        for did in project.freeformDiagramIDs { store.deleteFreeformDiagramFile(did) }
+        for did in project.generatedDiagramIDs {
+            store.deleteGeneratedDiagramFile(did)
+            store.removeFromRecentlyViewed(.generatedDiagram(did))
+        }
+        for did in project.freeformDiagramIDs {
+            store.deleteFreeformDiagramFile(did)
+            store.removeFromRecentlyViewed(.freeformDiagram(did))
+        }
+        for codebase in project.codebases {
+            store.removeFromRecentlyViewed(.codebase(codebase.id))
+        }
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
         persist()
@@ -176,22 +192,112 @@ struct ProjectCodebaseEditor {
             for did in toRemove {
                 store.projects[i].generatedDiagramIDs.removeAll { $0 == did }
                 store.deleteGeneratedDiagramFile(did)
+                store.removeFromRecentlyViewed(.generatedDiagram(did))
             }
         }
         store.deleteArtifactFile(for: codebaseID)
         store.deleteManagedRules(forCodebase: codebaseID)
+        store.deleteGitHubClone(for: codebaseID)
+        store.removeFromRecentlyViewed(.codebase(codebaseID))
         persist()
+    }
+
+    // MARK: GitHub-backed codebases
+
+    /// Clones `owner/repo` at `ref` into a new app-managed folder and adds it as a codebase, then
+    /// indexes it — the GitHub equivalent of `addCodebase`.
+    func addGitHubCodebase(
+        to projectID: UUID, name: String, credential: GitHubCredential, target: GitHubRepositoryRef
+    ) async {
+        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
+        let codebaseID = UUID()
+        let destination = store.githubCloneURL(for: codebaseID)
+        do {
+            let headSHA = try await repositoryService.sync(
+                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref, into: destination)
+            let codebase = Codebase(
+                id: codebaseID,
+                name: name,
+                directoryPath: destination.path,
+                githubSource: GitHubSource(
+                    owner: target.owner, repo: target.repo, ref: target.ref, refKind: target.kind,
+                    lastSyncedCommitSHA: headSHA, lastSyncedAt: Date())
+            )
+            store.projects[index].codebases.append(codebase)
+            persist()
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Clone failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Re-syncs a GitHub-backed codebase against its stored ref, then reindexes if the upstream
+    /// head commit has actually moved. An incremental `fetch` (via `GitHubRepositoryClone`) is
+    /// cheap enough to just always run, rather than pre-checking via a separate REST call.
+    func pull(codebaseID: UUID) async {
+        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
+        guard let account = GitHubTokenStore().load() else {
+            store.report("Sign in to GitHub to pull \(source.owner)/\(source.repo).")
+            return
+        }
+        do {
+            let latestSHA = try await repositoryService.sync(
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
+                into: store.githubCloneURL(for: codebaseID))
+            guard latestSHA != source.lastSyncedCommitSHA else { return }
+            mutateCodebase(codebaseID) {
+                $0.githubSource?.lastSyncedCommitSHA = latestSHA
+                $0.githubSource?.lastSyncedAt = Date()
+            }
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Pull failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Switches a GitHub-backed codebase to a different branch/tag: updates the stored ref and
+    /// forces a resync (bypassing the "unchanged head" short-circuit `pull` uses above, since the
+    /// ref itself just changed). Mirrors `pull`'s ordering above: the stored ref only changes once
+    /// the resync against it has actually succeeded, so a failed switch leaves the codebase on its
+    /// previous (still-valid) ref instead of pointing at a ref its on-disk content doesn't match.
+    func switchGitHubRef(codebaseID: UUID, ref: String, kind: GitHubRef.Kind) async {
+        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
+        guard let account = GitHubTokenStore().load() else {
+            store.report("Sign in to GitHub to switch branches.")
+            return
+        }
+        do {
+            let headSHA = try await repositoryService.sync(
+                credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
+                into: store.githubCloneURL(for: codebaseID))
+            mutateCodebase(codebaseID) {
+                $0.githubSource?.ref = ref
+                $0.githubSource?.refKind = kind
+                $0.githubSource?.lastSyncedCommitSHA = headSHA
+                $0.githubSource?.lastSyncedAt = Date()
+            }
+            await reindex(codebaseID: codebaseID)
+        } catch {
+            store.report("Branch switch failed: \(error.localizedDescription)")
+        }
     }
 
     func reindex(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
+        let fileFilter = codebase.fileFilter
         do {
-            let newArtifact = try await Task.detached(priority: .userInitiated) {
-                try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL { url in
-                    try CodebaseAnalyzer().enrichedArtifact(at: url)
-                }
+            // `refreshedBookmark` is populated (and only read) inside this single detached
+            // closure's own synchronous execution, then handed back through the return value —
+            // never captured mutably across the concurrency boundary.
+            let (newArtifact, refreshedBookmark) = try await Task.detached(priority: .userInitiated) {
+                var refreshedBookmark: SecurityScopedBookmark?
+                let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
+                    onRefresh: { refreshedBookmark = $0 },
+                    { url in try CodebaseAnalyzer().enrichedArtifact(at: url, fileFilter: fileFilter) }
+                )
+                return (artifact, refreshedBookmark)
             }.value
             // Re-resolve indices after the suspension — the user may have mutated the project/codebase
             // list during the (potentially long) analysis, invalidating any pre-`await` indices.
@@ -202,6 +308,9 @@ struct ProjectCodebaseEditor {
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
             store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
+            if let refreshedBookmark {
+                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshedBookmark
+            }
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
         } catch {
@@ -276,9 +385,12 @@ struct FreeformDiagramEditor {
     let persist: () -> Void
     let notify: () -> Void
 
-    func add(to projectID: UUID, name: String) -> UUID? {
+    func add(to projectID: UUID, name: String, template: FreeformDiagramTemplate? = nil) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        let diagram = FreeformDiagram(name: name)
+        var diagram = FreeformDiagram(name: name)
+        if let template {
+            diagram.nodes = template.nodes
+        }
         store.projects[projectIndex].freeformDiagramIDs.append(diagram.id)
         store.saveFreeformDiagram(diagram)
         persist()
@@ -305,6 +417,7 @@ struct FreeformDiagramEditor {
             store.projects[i].freeformDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteFreeformDiagramFile(diagramID)
+        store.removeFromRecentlyViewed(.freeformDiagram(diagramID))
         persist()
     }
 }

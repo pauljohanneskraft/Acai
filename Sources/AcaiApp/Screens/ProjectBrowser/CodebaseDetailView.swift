@@ -6,8 +6,15 @@ import AcaiDiagram
 /// Shows statistics, types, relationships, and diagram generation buttons.
 struct CodebaseDetailView: View {
     let codebaseID: UUID
-    @EnvironmentObject private var model: ProjectBrowserViewModel
+    private let repositoryService: GitHubRepositoryService
+    @EnvironmentObject var model: ProjectBrowserViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isIndexing = false
+    /// `true` while a GitHub `Pull` or branch/tag switch is in flight — mirrors `isIndexing`'s
+    /// role for the local-folder "Reindex" action.
+    @State private var isPulling = false
+    /// Branches + tags for a GitHub-backed codebase's ref picker, loaded once per codebase.
+    @State private var availableRefs: [GitHubRef] = []
     /// Set when the user clicks "Sequence Diagram"; drives the configuration popup.
     @State private var sequenceConfigContext: ConfigContext?
     /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
@@ -22,12 +29,22 @@ struct CodebaseDetailView: View {
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
     @State var statCardHeight: CGFloat = 0
     @State private var diagramCardHeight: CGFloat = 0
+    /// Drives the destructive "Delete Codebase…" confirmation (B53) — a second, discoverable path
+    /// to the same confirmed-safe action the sidebar's context menu already offers.
+    @State var showDeleteConfirmation = false
 
     /// Identifies the codebase a pending diagram configuration belongs to.
     private struct ConfigContext: Identifiable {
         let projectID: UUID
         let codebaseID: UUID
         var id: UUID { codebaseID }
+    }
+
+    /// Defaults to the real network implementation, swapped for `FixtureGitHubRepositoryService`
+    /// under a UI test fixture — see `GitHubRepositoryService`.
+    init(codebaseID: UUID, repositoryService: GitHubRepositoryService? = nil) {
+        self.codebaseID = codebaseID
+        self.repositoryService = repositoryService ?? GitHubRepositoryServiceResolver().resolve()
     }
 
     var codebase: Codebase? {
@@ -71,6 +88,11 @@ struct CodebaseDetailView: View {
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
+
+                    Divider()
+                    deleteCodebaseSection
+                        .padding(.horizontal)
+                        .padding(.vertical, 4)
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
@@ -90,6 +112,17 @@ struct CodebaseDetailView: View {
             .sheet(item: $statisticDetail) { detail in
                 StatisticDetailSheet(codebase: codebase, detail: detail)
             }
+            .confirmationDialog(
+                "Delete \"\(codebase.name)\"?",
+                isPresented: $showDeleteConfirmation
+            ) {
+                Button("Delete Codebase", role: .destructive) {
+                    model.editing.removeCodebase(codebaseID)
+                }
+                .accessibilityIdentifier("codebaseDetail.codebase.delete.confirmButton")
+            } message: {
+                Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+            }
         } else {
             Text("Codebase not found")
                 .foregroundStyle(.secondary)
@@ -99,24 +132,52 @@ struct CodebaseDetailView: View {
 
     // MARK: - Header
 
+    /// A single crowded row works on iPad/macOS, but on iPhone the title (icon + name + subtitle)
+    /// and the actions (index status + branch picker/Pull, or Reindex) don't both fit — so compact
+    /// width gets its own actions row underneath instead of squeezing everything into one line.
     private func headerSection(codebase: Codebase) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "folder")
-                    .font(.title)
-                    .foregroundStyle(.primary)
-                    .frame(width: 44, height: 44)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(alignment: .leading, spacing: 12) {
+                    headerTitleRow(codebase: codebase)
+                    headerActionsRow(codebase: codebase)
+                }
+            } else {
+                HStack {
+                    headerTitleRow(codebase: codebase)
+                    Spacer()
+                    headerActionsRow(codebase: codebase)
+                }
+            }
+        }
+        .padding()
+    }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("Codebase Name", text: Binding(
-                        get: { codebase.name },
-                        set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
-                    ))
-                    .font(.title2.bold())
-                    .textFieldStyle(.plain)
+    private func headerTitleRow(codebase: Codebase) -> some View {
+        HStack {
+            Image(systemName: "folder")
+                .font(.title)
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Codebase Name", text: Binding(
+                    get: { codebase.name },
+                    set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
+                ))
+                .font(.title2.bold())
+                .textFieldStyle(.plain)
+
+                if let source = codebase.githubSource {
+                    Text("\(source.owner)/\(source.repo) @ \(source.ref)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                } else {
                     Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -124,11 +185,19 @@ struct CodebaseDetailView: View {
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                 }
+            }
+        }
+    }
 
+    private func headerActionsRow(codebase: Codebase) -> some View {
+        HStack {
+            indexStatus(codebase: codebase)
+            if horizontalSizeClass == .compact {
                 Spacer()
-
-                indexStatus(codebase: codebase)
-
+            }
+            if let source = codebase.githubSource {
+                githubActions(codebase: codebase, source: source)
+            } else {
                 Button {
                     isIndexing = true
                     Task {
@@ -139,9 +208,57 @@ struct CodebaseDetailView: View {
                     Label("Reindex", systemImage: "arrow.clockwise")
                 }
                 .disabled(isIndexing)
+                .accessibilityIdentifier("codebaseDetail.reindexButton")
             }
         }
-        .padding()
+    }
+
+    /// The "Pull" + branch/tag picker shown instead of "Reindex" for a GitHub-backed codebase.
+    @ViewBuilder
+    private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
+        Picker("Branch/Tag", selection: Binding(
+            get: { GitHubRef(name: source.ref, kind: source.refKind).id },
+            set: { newID in
+                let currentRef = GitHubRef(name: source.ref, kind: source.refKind)
+                guard let selected = (availableRefs + [currentRef]).first(where: { $0.id == newID }) else { return }
+                isPulling = true
+                Task {
+                    await model.editing.switchGitHubRef(
+                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
+                    isPulling = false
+                }
+            }
+        )) {
+            if !availableRefs.contains(where: { $0.name == source.ref && $0.kind == source.refKind }) {
+                Text(source.ref).tag(GitHubRef(name: source.ref, kind: source.refKind).id)
+            }
+            ForEach(availableRefs) { ref in
+                Text(ref.name).tag(ref.id)
+            }
+        }
+        .labelsHidden()
+        .frame(maxWidth: 160)
+        .disabled(isPulling)
+        .accessibilityIdentifier("codebaseDetail.refPicker")
+        .task(id: codebase.id) { await loadAvailableRefs(source: source) }
+
+        Button {
+            isPulling = true
+            Task {
+                await model.editing.pull(codebaseID: codebase.id)
+                isPulling = false
+            }
+        } label: {
+            Label("Pull", systemImage: "arrow.triangle.2.circlepath")
+        }
+        .disabled(isPulling)
+        .accessibilityIdentifier("codebaseDetail.pullButton")
+    }
+
+    private func loadAvailableRefs(source: GitHubSource) async {
+        guard let account = GitHubTokenStore().load() else { return }
+        availableRefs = (try? await repositoryService.refs(
+            credential: account.credential, owner: source.owner, repo: source.repo)) ?? []
     }
 
     private func indexStatus(codebase: Codebase) -> some View {
@@ -277,6 +394,7 @@ extension CodebaseDetailView {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("codebaseDetail.diagramButton.\(type.rawValue)")
     }
 
     // MARK: - Not Indexed

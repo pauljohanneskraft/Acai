@@ -31,6 +31,25 @@ optionalTargets.append(
 cliOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
 
+// MARK: Real git engine (libgit2 via SwiftGitX), `AcaiApp`-only — pure git, no code analysis.
+// Only `AcaiApp` needs this, so it's scoped here like `AcaiRender`, keeping `AcaiCLI`/`AcaiMCP`'s
+// Linux builds (and the cost of compiling libgit2 from source) out of every target that doesn't
+// need it.
+optionalTargets.append(
+    .target(
+        name: "AcaiGit",
+        dependencies: [
+            .product(name: "SwiftGitX", package: "SwiftGitX"),
+        ]
+    )
+)
+optionalTargets.append(
+    .testTarget(
+        name: "AcaiGitTests",
+        dependencies: ["AcaiGit", .product(name: "SwiftGitX", package: "SwiftGitX")]
+    )
+)
+
 // A library (not an executable): the real app entry points live in the XcodeGen-generated
 // project under `App/`, one per platform, each owning its own Info.plist/entitlements/asset
 // catalog and just instantiating `ProjectBrowserView` from this library. See `App/project.yml`.
@@ -47,12 +66,24 @@ optionalTargets.append(
             "AcaiQuality",
             "AcaiLibrary",
             "AcaiRender",
+            "AcaiGit",
             .product(name: "Yams", package: "Yams"),
         ]
     )
 )
 optionalTargets.append(
-    .testTarget(name: "AcaiAppTests", dependencies: ["AcaiApp", "AcaiCore"])
+    .testTarget(
+        name: "AcaiAppTests",
+        // AcaiRender/AcaiDiagram: Layer 1 view-snapshot tests (`ViewSnapshot.swift`) render real
+        // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
+        // `ClassDiagramConfiguration` fixtures directly — see `TESTING_ARCHITECTURE.md`.
+        dependencies: [
+            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram",
+        ],
+        // Layer 1's committed goldens (read by file path, not `Bundle.module` — see
+        // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
+        resources: [.copy("__Snapshots__")]
+    )
 )
 #endif
 
@@ -107,6 +138,13 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
         // The official Swift MCP SDK — the JSON-RPC/stdio transport behind the `AcaiMCP` entry point.
         .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.12.1"),
+        // A real git engine (libgit2) for `AcaiGit` — clone/fetch/checkout/diff, replacing GitHub
+        // zipball downloads and shelling out to `/usr/bin/git`. Not `SwiftGit2` (no working SPM+iOS
+        // story: SPM support is an unmerged PR there, and forks that add it break on iOS because
+        // newer libgit2 needs `libpcre`, which the iOS SDK doesn't ship). SwiftGitX's own libgit2
+        // dependency vendors PCRE/zlib from source and uses SecureTransport/CommonCrypto instead of
+        // OpenSSL/mbedTLS, so it builds cleanly on both macOS and iOS with nothing to fetch/link.
+        .package(url: "https://github.com/ibrahimcetin/SwiftGitX.git", from: "0.4.0"),
     ],
     targets: [
         // MARK: Core models

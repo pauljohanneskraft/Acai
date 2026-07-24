@@ -17,6 +17,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     /// Per-participant centre overrides, keyed by `Participant.id`. Only `x` is honoured.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
+    @Published var isMultiSelectActive = false
 
     private(set) var configuration: SequenceDiagramConfiguration
 

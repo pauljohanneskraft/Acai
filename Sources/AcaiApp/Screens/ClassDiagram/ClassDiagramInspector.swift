@@ -18,6 +18,10 @@ struct ClassDiagramSidebar: View {
     @Binding var tab: ClassDiagramSidebarTab
 
     var body: some View {
+        content
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
                 Text("Settings").tag(ClassDiagramSidebarTab.settings)
@@ -31,8 +35,10 @@ struct ClassDiagramSidebar: View {
             switch tab {
             case .settings:
                 configurationInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.settings")
             case .inspector:
                 selectionInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.inspector")
             }
         }
         .background {
