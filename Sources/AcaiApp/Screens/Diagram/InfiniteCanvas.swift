@@ -31,6 +31,11 @@ struct InfiniteCanvas<Content: View>: View {
     /// The auto-pan controller, owned by the parent view as `@State`.
     var autoPanController: EdgeAutoPanController
 
+    /// Reports the real, measured canvas viewport size whenever it changes, so callers (e.g. a
+    /// "fit to view" action) can frame content against the actual visible area instead of an
+    /// assumed constant.
+    var onViewportSizeChange: ((CGSize) -> Void)?
+
     @State private var selectionStart: CGPoint?
     @State private var selectionCurrent: CGPoint?
     #if !os(macOS)
@@ -50,6 +55,7 @@ struct InfiniteCanvas<Content: View>: View {
         autoPanDragLocation: CGPoint? = nil,
         onAutoPanDelta: ((CGSize) -> Void)? = nil,
         autoPanController: EdgeAutoPanController = EdgeAutoPanController(),
+        onViewportSizeChange: ((CGSize) -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self._scale = scale
@@ -59,6 +65,7 @@ struct InfiniteCanvas<Content: View>: View {
         self.autoPanDragLocation = autoPanDragLocation
         self.onAutoPanDelta = onAutoPanDelta
         self.autoPanController = autoPanController
+        self.onViewportSizeChange = onViewportSizeChange
         self.content = content
     }
 
@@ -97,6 +104,8 @@ struct InfiniteCanvas<Content: View>: View {
             #if os(macOS)
             .overlay(ScrollWheelZoomHandler(scale: $scale, offset: $offset))
             #endif
+            .onAppear { onViewportSizeChange?(geometry.size) }
+            .onChange(of: geometry.size) { _, newSize in onViewportSizeChange?(newSize) }
         }
         .overlay(alignment: .bottomTrailing) { zoomIndicator }
     }

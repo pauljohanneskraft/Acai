@@ -21,6 +21,19 @@ struct ClassDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
     @State private var hasCenteredAfterMeasurement = false
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        print("DEBUG horizontalSizeClass = \(String(describing: horizontalSizeClass))")
+        return horizontalSizeClass == .compact
+        #else
+        return false
+        #endif
+    }
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
@@ -51,7 +64,8 @@ struct ClassDiagramView: View {
                     diagram: diagram,
                     artifact: artifact,
                     tab: $sidebarTab,
-                    isPresented: $showSidebar
+                    isPresented: $showSidebar,
+                    isCompactWidth: isCompactWidth
                 )
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
@@ -80,6 +94,7 @@ struct ClassDiagramView: View {
                         Label("Re-layout", systemImage: "rectangle.3.group")
                     }
                     .help("Re-run automatic layout")
+                    .accessibilityIdentifier("diagram.relayoutButton")
                     Button {
                         centerDiagram()
                     } label: {
@@ -99,12 +114,14 @@ struct ClassDiagramView: View {
                         Label("Save as Freeform", systemImage: "document.on.document")
                     }
                     .help("Save a copy as an editable Freeform diagram")
+                    .accessibilityIdentifier("diagram.saveAsFreeformButton")
                     Button {
                         exportImage()
                     } label: {
                         Label("Export Image", systemImage: "photo")
                     }
                     .help("Export the diagram as an image")
+                    .accessibilityIdentifier("diagram.exportImageButton")
                     Button {
                         showSidebar.toggle()
                     } label: {
@@ -127,16 +144,18 @@ struct ClassDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            ZStack {
-                GroupingBoxLayer(viewModel: viewModel)
-                nodeLayer
-                edgeLayer
-                resizeHandleLayer
-                selectionRectangleLayer
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                ZStack {
+                    GroupingBoxLayer(viewModel: viewModel)
+                    nodeLayer
+                    edgeLayer
+                    resizeHandleLayer
+                    selectionRectangleLayer
+                }
             }
-        }
+        )
     }
 
     // MARK: - Edge Layer
@@ -287,7 +306,8 @@ extension ClassDiagramView {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.nodes.map(\.id),
-            rect: { viewModel.nodeRect(for: $0) }
+            rect: { viewModel.nodeRect(for: $0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

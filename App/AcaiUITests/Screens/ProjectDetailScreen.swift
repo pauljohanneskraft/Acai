@@ -23,6 +23,11 @@ final class ProjectDetailScreen {
         return app.buttons["projectDetail.addDiagramButton"]
     }
 
+    /// The compact-width (iPhone) "+" toolbar button itself — only exists there; regular width
+    /// (iPad/macOS) exposes `addCodebaseButton`/`addDiagramButton` directly instead (see their own
+    /// doc comments), so this button never exists on those platforms.
+    var addMenuButton: XCUIElement { app.buttons["projectDetail.addMenuButton"] }
+
     /// A no-op on regular width (where `addMenuButton` never exists) or once the menu is already
     /// open (checked via `target`'s own existence first, so repeated property access — e.g. a
     /// `waitForExistence` followed later by a `.tap()` — never taps the "+" button twice, which

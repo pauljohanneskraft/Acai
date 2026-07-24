@@ -89,20 +89,23 @@ final class GitHubAddCodebaseTests: XCTestCase {
 
         let classDiagramButtonAfterSwitch = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButtonAfterSwitch.waitForExistence(timeout: 30), "the branch switch never finished")
-        let diagramAfterSwitch = ClassDiagramScreen(app: app)
-        classDiagramButtonAfterSwitch.tapUntil(diagramAfterSwitch.typeNode(named: "Extra"))
+        // Used for the rest of the test — both re-verifying the switch and then running Compare —
+        // so it's named for what it persistently shows (the feature branch), not the one-off event
+        // that produced it.
+        let featureBranchDiagram = ClassDiagramScreen(app: app)
+        classDiagramButtonAfterSwitch.tapUntil(featureBranchDiagram.typeNode(named: "Extra"))
 
-        XCTAssertTrue(diagramAfterSwitch.typeNode(named: "Extra").waitForExistence(timeout: 10),
+        XCTAssertTrue(featureBranchDiagram.typeNode(named: "Extra").waitForExistence(timeout: 10),
                       "switching branches should have fetched feature's new content into the same clone")
 
         // Compare — previously impossible for any GitHub-backed codebase (no `.git` directory
         // existed at all) — now works here too, exactly as it does for a local-folder codebase.
-        XCTAssertTrue(diagramAfterSwitch.compareToggle.waitForExistence(timeout: 10))
-        diagramAfterSwitch.tapCompareToggle()
-        diagramAfterSwitch.compareRefField.clearAndTypeText("main\n")
-        let loaded = diagramAfterSwitch.compareLoadedIndicator.waitForExistence(timeout: 15)
-        let errorExists = diagramAfterSwitch.compareErrorIndicator.exists
-        let errorMessage = errorExists ? diagramAfterSwitch.compareErrorIndicator.label : "(no error shown)"
+        XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
+        featureBranchDiagram.openCompare()
+        featureBranchDiagram.chooseCompareRef("main")
+        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 15)
+        let errorExists = featureBranchDiagram.compareErrorIndicator.exists
+        let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")
         XCTAssertFalse(errorExists, errorMessage)
     }

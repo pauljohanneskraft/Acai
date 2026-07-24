@@ -1,6 +1,6 @@
 import XCTest
 
-/// Proves the Compare/diff engine (`AcaiGit`, wired through `DeltaComparisonBar`) actually works
+/// Proves the Compare/diff engine (`AcaiGit`, wired through `CompareGitPanel`) actually works
 /// end to end, on both platforms, through the real app UI — no manual click-through needed. Before
 /// this slice, this feature was `#if os(macOS)`-gated and shelled out to `git archive`/`tar`; this
 /// journey is what replaces the manual "run the app, add a codebase, toggle Compare" verification
@@ -55,9 +55,19 @@ final class CompareGitRevisionTests: XCTestCase {
         XCTAssertTrue(diagram.typeNode(named: "Added").waitForExistence(timeout: 10),
                       "the uncommitted edit should still be visible on the current (working-tree) side")
 
-        // Toggle Compare vs git (default ref: HEAD) and wait for the "old" snapshot to load.
-        XCTAssertTrue(diagram.compareToggle.waitForExistence(timeout: 10))
-        diagram.tapCompareToggle()
+        // Open the Compare popover/sheet and capture it in its default (off) state before toggling
+        // anything — this is the actual UI surface `CompareOverlayButton` opens, not just the
+        // floating button itself.
+        XCTAssertTrue(diagram.compareButton.waitForExistence(timeout: 10))
+        diagram.openCompare()
+        comparator.validate(
+            viewType: "ClassDiagram", state: "comparePanelOpen",
+            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+        )
+
+        // Pick HEAD directly from the ref picker (no separate on/off toggle) and wait for the "old"
+        // snapshot to load.
+        diagram.chooseCompareRef("HEAD")
         let loaded = diagram.compareLoadedIndicator.waitForExistence(timeout: 15)
         let errorExists = diagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? diagram.compareErrorIndicator.label : "(no error shown)"
@@ -67,5 +77,9 @@ final class CompareGitRevisionTests: XCTestCase {
         comparator.validate(
             viewType: "ClassDiagram", state: "deltaComparison", screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
+
+        // Clear disables the comparison directly — there's no "None" row to pick instead.
+        diagram.compareClearButton.tap()
+        XCTAssertFalse(diagram.compareLoadedIndicator.exists, "Clear should turn the comparison back off")
     }
 }

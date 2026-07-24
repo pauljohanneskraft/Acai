@@ -46,6 +46,18 @@ struct ProjectDetailView: View {
                         .accessibilityLabel("Add")
                         .accessibilityIdentifier("projectDetail.addMenuButton")
                     }
+                } else {
+                    // iPad (regular width): room for both actions directly in the nav bar instead
+                    // of the persistent header row `projectHeader` uses on macOS.
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Button {
+                            addingCodebase = true
+                        } label: {
+                            Label("Add Codebase", systemImage: "folder.badge.plus")
+                        }
+                        .accessibilityIdentifier("projectDetail.addCodebaseButton")
+                        addDiagramMenu
+                    }
                 }
             }
             #endif
@@ -101,6 +113,11 @@ struct ProjectDetailView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 12)
             }
+            // On a wide window, an unconstrained VStack lets `Spacer()`s inside each row stretch
+            // until content (e.g. a codebase row's status icon) sits far from the row it belongs
+            // to — cap the reading width and center it instead of letting it span the full window.
+            .frame(maxWidth: 900)
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -173,7 +190,7 @@ struct ProjectDetailView: View {
         })
         Section("Codebases") {
             if sortedCodebases.isEmpty {
-                Text("No codebases yet.")
+                Text("No codebases yet. Tap **+** to add one.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -212,7 +229,7 @@ struct ProjectDetailView: View {
             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
         Section("Diagrams") {
             if freeformDiagrams.isEmpty {
-                Text("No freeform diagrams yet.")
+                Text("No freeform diagrams yet. Tap **+** to add one.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -262,7 +279,10 @@ struct ProjectDetailView: View {
 
     /// `showActions` is `false` for a project with no codebases and no diagrams yet (B52): in that
     /// case `emptyProjectContentState` renders the same two actions itself, larger and centered —
-    /// showing them here too would duplicate them "half-heartedly in two places."
+    /// showing them here too would duplicate them "half-heartedly in two places." On iPad these
+    /// actions live in the nav bar toolbar instead (room for two real buttons there, unlike
+    /// iPhone's collapsed menu) — macOS keeps them here, matching the Mac pattern of persistent,
+    /// in-content controls rather than a nav-bar-first design.
     private func projectHeader(project: Project, index: Int, showActions: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "tray.full")
@@ -273,15 +293,18 @@ struct ProjectDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             projectTitleFields(index: index)
             Spacer()
+            #if os(macOS)
             if showActions {
                 Button {
                     addingCodebase = true
                 } label: {
                     Label("Add codebase", systemImage: "plus")
                 }
+                .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
                 addDiagramMenu
             }
+            #endif
         }
         .padding()
     }
@@ -319,6 +342,13 @@ extension ProjectDetailView {
             model.selection = .codebase(codebase.id)
         } label: {
             codebaseRowContent(codebase: codebase)
+                // Only the regular-width (`LazyVStack`) call site needs this padding — the compact
+                // `List` row reuses `codebaseRowContent` directly and already gets its own row
+                // insets from `List`, so baking padding into the shared content would double it up
+                // there (the same anti-pattern `deleteProjectSection`'s doc comment already calls
+                // out and avoids).
+                .padding(.horizontal)
+                .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
@@ -350,14 +380,16 @@ extension ProjectDetailView {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.caption)
+                    .accessibilityLabel("Indexed")
+                    .help("Indexed")
             } else {
                 Image(systemName: "circle.dashed")
                     .foregroundStyle(.secondary)
                     .font(.caption)
+                    .accessibilityLabel("Not yet indexed")
+                    .help("Not yet indexed")
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
         .contentShape(Rectangle())
     }
 
@@ -404,8 +436,6 @@ extension ProjectDetailView {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
         .contentShape(Rectangle())
     }
 
@@ -414,6 +444,10 @@ extension ProjectDetailView {
             model.selection = .freeformDiagram(diagram.id)
         } label: {
             freeformDiagramRowContent(diagram: diagram)
+                // See `codebaseRow`'s matching comment: only the regular-width call site needs
+                // this padding, so it's applied here rather than baked into the shared content.
+                .padding(.horizontal)
+                .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
         .contextMenu {

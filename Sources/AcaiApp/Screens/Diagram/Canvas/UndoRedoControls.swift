@@ -89,6 +89,12 @@ extension View {
     ) -> some View {
         undoRedoKeyboardShortcuts(model: model, onChange: onSave)
             .navigationTitle(title)
+            #if !os(macOS)
+            // A large/automatic title on iPad wastes header height on every diagram screen even
+            // when the title is short — these are working canvases, not reading surfaces, so the
+            // compact bar is the right default everywhere this lifecycle is used.
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(1))
                 onCenter()

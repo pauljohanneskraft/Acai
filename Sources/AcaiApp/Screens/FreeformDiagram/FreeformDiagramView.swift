@@ -281,7 +281,8 @@ struct FreeformDiagramView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.allNodeIDs,
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

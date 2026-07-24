@@ -1,7 +1,7 @@
 import XCTest
 
 extension XCUIElement {
-    /// Clears an already-populated text field (e.g. `DeltaComparisonBar`'s ref field, which starts
+    /// Clears an already-populated text field (e.g. `CompareGitPanel`'s ref field, which starts
     /// pre-filled with `"HEAD"`) before typing `text` — `typeText` alone would just append.
     func clearAndTypeText(_ text: String) {
         tap()

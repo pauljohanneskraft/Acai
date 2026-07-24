@@ -73,6 +73,18 @@ private struct CallGraphCanvasView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = true
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
@@ -99,7 +111,9 @@ private struct CallGraphCanvasView: View {
             .inspector(isPresented: $showSidebar) {
                 CallGraphInspector(
                     graph: viewModel.graph,
-                    selectedNodeIDs: viewModel.selectedNodeIDs
+                    selectedNodeIDs: viewModel.selectedNodeIDs,
+                    isPresented: $showSidebar,
+                    isCompactWidth: isCompactWidth
                 )
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
@@ -134,16 +148,18 @@ private struct CallGraphCanvasView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            let layout = viewModel.layout
-            ZStack(alignment: .topLeading) {
-                callEdges(layout)
-                ForEach(layout.nodes) { node in
-                    methodNode(node)
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                let layout = viewModel.layout
+                ZStack(alignment: .topLeading) {
+                    callEdges(layout)
+                    ForEach(layout.nodes) { node in
+                        methodNode(node)
+                    }
                 }
             }
-        }
+        )
     }
 
     private func callEdges(_ layout: CallGraphLayoutModel) -> some View {
@@ -215,6 +231,7 @@ private struct CallGraphCanvasView: View {
                 Label("Configure Scope", systemImage: "slider.horizontal.3")
             }
             .help("Change the call graph's entry point and depth")
+            .accessibilityIdentifier("diagram.configureButton")
             Button {
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -230,12 +247,14 @@ private struct CallGraphCanvasView: View {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             .help("Save a copy as an editable Freeform diagram")
+            .accessibilityIdentifier("diagram.saveAsFreeformButton")
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
             .help("Export the diagram as an image")
+            .accessibilityIdentifier("diagram.exportImageButton")
             Button {
                 showSidebar.toggle()
             } label: {
@@ -264,7 +283,8 @@ private struct CallGraphCanvasView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.layout.nodes.map(\.id),
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

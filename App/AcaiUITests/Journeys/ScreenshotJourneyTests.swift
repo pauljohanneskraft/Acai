@@ -1,3 +1,4 @@
+import CoreGraphics
 import XCTest
 
 /// The Layer 2 screenshot journey (`TESTING_ARCHITECTURE.md`): drives the seeded-project journey
@@ -33,9 +34,26 @@ final class ScreenshotJourneyTests: XCTestCase {
         comparator.validate(
             viewType: "ProjectDetail", state: "populated", screenshot: app.windows.firstMatch.screenshot(), testCase: self
         )
-        codebaseRow.tap()
 
+        // The compact-width (iPhone) "+" toolbar button only ever opens this Menu — it doesn't
+        // navigate anywhere by itself, so this is what pressing it actually shows. Regular width
+        // (iPad/macOS) has no such button (`addCodebaseButton`/`addDiagramButton` sit directly in
+        // the toolbar/header there instead), so this state doesn't exist to capture on those
+        // platforms.
+        if detail.addMenuButton.exists {
+            detail.addMenuButton.tap()
+            comparator.validate(
+                viewType: "ProjectDetail", state: "addMenuOpen",
+                screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            )
+        }
+
+        // `tapUntil`, not a plain `.tap()`: when the menu above was opened, the first tap here only
+        // dismisses it (standard tap-outside-a-menu behavior) rather than also registering on
+        // `codebaseRow` underneath — retrying until the next screen actually appears handles both
+        // that case and the plain "menu was never opened" case identically.
         let codebaseDetail = CodebaseDetailScreen(app: app)
+        codebaseRow.tapUntil(codebaseDetail.reindexButton)
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
         codebaseDetail.reindexButton.tap()
 

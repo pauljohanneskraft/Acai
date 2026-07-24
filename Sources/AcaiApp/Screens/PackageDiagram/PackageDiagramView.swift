@@ -24,6 +24,18 @@ struct PackageDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = true
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
@@ -47,7 +59,9 @@ struct PackageDiagramView: View {
             .inspector(isPresented: $showSidebar) {
                 PackageDiagramInspector(
                     diagram: viewModel.diagram,
-                    selectedNodeIDs: viewModel.selectedNodeIDs
+                    selectedNodeIDs: viewModel.selectedNodeIDs,
+                    isPresented: $showSidebar,
+                    isCompactWidth: isCompactWidth
                 )
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
@@ -65,16 +79,18 @@ struct PackageDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            let layout = viewModel.layout
-            ZStack(alignment: .topLeading) {
-                packageEdges(layout)
-                ForEach(layout.nodes) { node in
-                    moduleNode(node)
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                let layout = viewModel.layout
+                ZStack(alignment: .topLeading) {
+                    packageEdges(layout)
+                    ForEach(layout.nodes) { node in
+                        moduleNode(node)
+                    }
                 }
             }
-        }
+        )
     }
 
     private func packageEdges(_ layout: PackageLayoutModel) -> some View {
@@ -161,12 +177,14 @@ struct PackageDiagramView: View {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             .help("Save a copy as an editable Freeform diagram")
+            .accessibilityIdentifier("diagram.saveAsFreeformButton")
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
             .help("Export the diagram as an image")
+            .accessibilityIdentifier("diagram.exportImageButton")
             Button {
                 showSidebar.toggle()
             } label: {
@@ -195,7 +213,8 @@ struct PackageDiagramView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.layout.nodes.map(\.id),
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

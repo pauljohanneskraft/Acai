@@ -20,13 +20,17 @@ struct ClassDiagramSidebar: View {
     /// close affordance — needed on iPhone, where `.inspector` collapses to a plain sheet with no
     /// built-in dismiss chrome (unlike its native sidebar presentation on macOS/iPad).
     @Binding var isPresented: Bool
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
+    /// Passed down explicitly from `ClassDiagramView` rather than read via
+    /// `@Environment(\.horizontalSizeClass)` in this view itself — the environment value isn't
+    /// reliably inherited from the presenting view once content is inside `.inspector(isPresented:)`
+    /// (confirmed empirically: it silently read `.regular` on iPhone, so the compact branch below
+    /// never ran and the Done button never appeared). The presenting screen always knows its real
+    /// size class, so it's the one source of truth.
+    var isCompactWidth: Bool
 
     var body: some View {
         #if os(iOS)
-        if horizontalSizeClass == .compact {
+        if isCompactWidth {
             NavigationStack {
                 content
                     .navigationTitle(diagram.name)
@@ -34,6 +38,7 @@ struct ClassDiagramSidebar: View {
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { isPresented = false }
+                                .accessibilityIdentifier("diagram.sidebarDoneButton")
                         }
                     }
             }

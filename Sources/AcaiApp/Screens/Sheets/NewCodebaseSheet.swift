@@ -22,6 +22,7 @@ struct NewCodebaseSheet: View {
 
     @State private var source: Source = .localFolder
     @State private var name = ""
+    @FocusState private var isNameFieldFocused: Bool
 
     // Local-folder state
     @State private var directoryURL: URL?
@@ -58,7 +59,10 @@ struct NewCodebaseSheet: View {
             }
             #if os(macOS)
             .frame(maxWidth: 480)
+            #else
+            .presentationDetents([.medium, .large])
             #endif
+            .onAppear { isNameFieldFocused = true }
             .navigationTitle("Add Codebase")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -87,15 +91,17 @@ struct NewCodebaseSheet: View {
     private var localFolderSection: some View {
         Section {
             TextField("Name", text: $name)
+                .focused($isNameFieldFocused)
                 .accessibilityIdentifier("newCodebase.localNameField")
-            LabeledContent("Directory") {
+            HStack {
                 Text(directoryURL?.path ?? "No directory chosen")
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .foregroundStyle(directoryURL == nil ? .secondary : .primary)
+                Spacer()
+                Button("Choose…") { isChoosingDirectory = true }
+                    .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
             }
-            Button("Choose…") { isChoosingDirectory = true }
-                .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
         }
     }
 

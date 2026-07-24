@@ -48,9 +48,22 @@ public struct GitCheckout {
         }
     }
 
-    /// Local branch names merged with remote branch names (their `origin/`-style prefix
-    /// stripped), then tag names — each alphabetical. Mirrors the old `GitRefs.names()` shape.
-    public func refNames() throws -> [String] {
+    /// A branch or tag name paired with which one it is — lets a UI picker show a kind indicator
+    /// next to each ref instead of one undifferentiated flat list.
+    public struct Ref: Identifiable, Hashable, Sendable {
+        public enum Kind: String, Hashable, Sendable {
+            case branch
+            case tag
+        }
+
+        public var name: String
+        public var kind: Kind
+        public var id: String { "\(kind.rawValue)-\(name)" }
+    }
+
+    /// Local branch refs merged with remote branch refs (their `origin/`-style prefix stripped),
+    /// then tag refs — each alphabetical within its kind, branches before tags.
+    public func refs() throws -> [Ref] {
         let localBranches: [Branch]
         let remoteBranches: [Branch]
         let tags: [Tag]
@@ -71,7 +84,13 @@ public struct GitCheckout {
             branchNames.insert(parts.count == 2 ? String(parts[1]) : branch.name)
         }
 
-        return branchNames.sorted() + tags.map(\.name).sorted()
+        return branchNames.sorted().map { Ref(name: $0, kind: .branch) }
+            + tags.map(\.name).sorted().map { Ref(name: $0, kind: .tag) }
+    }
+
+    /// Mirrors the old `GitRefs.names()` shape for callers that only need names, not kinds.
+    public func refNames() throws -> [String] {
+        try refs().map(\.name)
     }
 
     /// The repository's current HEAD commit SHA.

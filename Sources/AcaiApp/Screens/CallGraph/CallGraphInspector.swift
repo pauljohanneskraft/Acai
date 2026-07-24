@@ -7,6 +7,12 @@ import AcaiDiagram
 struct CallGraphInspector: View {
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
+    /// Mirrors the presenting `.inspector(isPresented:)` binding so this view can offer its own
+    /// close affordance on iPhone, matching `ClassDiagramSidebar`'s pattern.
+    @Binding var isPresented: Bool
+    /// Passed down explicitly from `CallGraphView` — see `ClassDiagramSidebar.isCompactWidth`'s doc
+    /// comment for why this isn't read via `@Environment(\.horizontalSizeClass)` in this view.
+    var isCompactWidth: Bool
 
     /// Outgoing / incoming edge counts per node id (weights summed).
     private var callCounts: (out: [String: Int], in: [String: Int]) {
@@ -28,8 +34,30 @@ struct CallGraphInspector: View {
     }
 
     var body: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            NavigationStack {
+                content
+                    .navigationTitle("Call Graph")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { isPresented = false }
+                                .accessibilityIdentifier("diagram.sidebarDoneButton")
+                        }
+                    }
+            }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+
+    private var content: some View {
         let counts = callCounts
-        ScrollView {
+        return ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 coverageCard
                 Text("Methods")

@@ -221,17 +221,24 @@ public struct ProjectBrowserView: View {
         }
     }
 
-    /// Wraps a drawable diagram with the delta-comparison bar, loading the git-revision snapshot on
-    /// demand and rebuilding the diagram once it (or a changed ref) is available.
+    /// Wraps a drawable diagram with the delta-comparison overlay button, loading the git-revision
+    /// snapshot on demand and rebuilding the diagram once it (or a changed ref) is available.
+    ///
+    /// `.id(...)` must stay scoped to `content()` alone, not the whole composed view: chaining
+    /// `.task`/`.overlay` onto `content().id(...)` directly put them inside that identity boundary,
+    /// so picking a new ref tore down and rebuilt `CompareOverlayButton` too — silently resetting
+    /// its own `isPresented` state and dismissing the panel the instant a ref was picked (confirmed
+    /// empirically). Keeping the overlay button as a stable `ZStack` sibling, with `.task` on the
+    /// outer container, keeps its state outside that reset boundary.
     @ViewBuilder
     private func deltaHosted(
         diagram: GeneratedDiagram, @ViewBuilder content: () -> some View
     ) -> some View {
         let loaded = model.comparisonArtifact(for: diagram) != nil
-        VStack(spacing: 0) {
-            DeltaComparisonBar(diagram: diagram)
+        ZStack(alignment: .topTrailing) {
             content()
                 .id("\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(loaded)")
+            CompareOverlayButton(diagram: diagram)
         }
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")") {
             await model.ensureComparisonLoaded(for: diagram)

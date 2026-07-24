@@ -12,8 +12,18 @@ extension ProjectDetailView {
         Button(role: .destructive) {
             showDeleteProjectConfirmation = true
         } label: {
-            Label("Delete Project…", systemImage: "trash")
-                .foregroundStyle(.red)
+            // A plain `Label` sizes its icon to the text's own line height, which is narrower than
+            // the 32×32 icon frame `codebaseRowContent`/`freeformDiagramRowContent` use above it —
+            // matching that frame here is what makes this row's text start at the same leading
+            // position as the rows above it, instead of looking misaligned against them.
+            HStack(spacing: 8) {
+                Image(systemName: "trash")
+                    .font(.title2)
+                    .frame(width: 32, height: 32)
+                Text("Delete Project…")
+            }
+            .foregroundStyle(.red)
+            .accessibilityElement(children: .combine)
         }
         .accessibilityIdentifier("projectDetail.deleteProjectButton")
     }
