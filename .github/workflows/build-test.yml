@@ -1,4 +1,4 @@
-name: Build, Lint and Test
+name: Build & Test
 
 on:
   push:
@@ -6,12 +6,12 @@ on:
   pull_request:
 
 concurrency:
-  group: build-lint-test-${{ github.ref }}
+  group: build-test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-ios:
-    name: Build (iOS Simulator)
+  build-test-ios:
+    name: Unit Test iOS
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -41,8 +41,67 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
-  test-ios-ui:
-    name: Test (iOS UI — Layer 2)
+  build-test-macos:
+    name: Unit Test macOS
+    runs-on: macos-26
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Materialize LFS-tracked PNGs so the Examples/ image regression tests see real bytes.
+          lfs: true
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build -v
+
+      - name: Run tests
+        run: swift test --parallel
+
+      - name: Generate code coverage
+        run: |
+          swift test --enable-code-coverage
+          xcrun llvm-cov export -format="lcov" \
+            .build/debug/AcaiPackageTests.xctest/Contents/MacOS/AcaiPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.lcov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  build-test-linux:
+    name: Unit Test Linux
+    runs-on: ubuntu-latest
+    container:
+      image: swift:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build -v
+
+      - name: Run tests
+        run: swift test --parallel
+
+  ui-test-iphone:
+    name: UI Test iPhone
+    needs: build-test-ios
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -78,8 +137,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
-  test-ios-ui-ipad:
-    name: Test (iPad UI — Layer 2)
+  ui-test-ipad:
+    name: UI Test iPad
+    needs: build-test-ios
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -115,8 +175,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
-  test-macos-ui:
-    name: Test (macOS UI — Layer 2)
+  ui-test-macos:
+    name: UI Test macOS
+    needs: build-test-macos
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -154,101 +215,3 @@ jobs:
             -destination "platform=macOS" \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
-
-  build-macos:
-    name: Build (macOS)
-    runs-on: macos-26
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Build
-        run: swift build -v
-
-  build-linux:
-    name: Build (Linux)
-    runs-on: ubuntu-latest
-    container:
-      image: swift:latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Build
-        run: swift build -v
-
-  lint:
-    name: SwiftLint
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/realm/swiftlint:0.57.1
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run SwiftLint
-        run: swiftlint lint --strict
-
-  test-macos:
-    name: Test (macOS)
-    runs-on: macos-26
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # Materialize LFS-tracked PNGs so the Examples/ image regression tests see real bytes.
-          lfs: true
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Run tests
-        run: swift test --parallel
-
-      - name: Generate code coverage
-        run: |
-          swift test --enable-code-coverage
-          xcrun llvm-cov export -format="lcov" \
-            .build/debug/AcaiPackageTests.xctest/Contents/MacOS/AcaiPackageTests \
-            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          files: coverage.lcov
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-        continue-on-error: true
-
-  test-linux:
-    name: Test (Linux)
-    runs-on: ubuntu-latest
-    container:
-      image: swift:latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Run tests
-        run: swift test --parallel

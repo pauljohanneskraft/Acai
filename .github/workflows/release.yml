@@ -1,8 +1,8 @@
-name: Release Binaries
+name: Release
 
 # Deliberately runs only on a version tag or a manual dispatch — never on branch pushes or PRs — so
-# the expensive `-c release` cross-compile happens only when cutting a release. The per-push gate stays
-# in build-lint-test.yml. Ships prebuilt `acai` and `acai-mcp` binaries so non-Swift users (and the
+# the expensive `-c release` cross-compile happens only when cutting a release. The per-push gates stay
+# in lint.yml/build-test.yml/ui-test.yml. Ships prebuilt `acai` and `acai-mcp` binaries so non-Swift users (and the
 # Claude Code plugin's launcher) never need a toolchain (part of distribution epic #83).
 on:
   push:
