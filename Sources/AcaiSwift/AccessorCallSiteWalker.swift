@@ -13,16 +13,14 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     /// Stored properties seeded up front, plus locals declared in the accessor recorded as they're
     /// visited — so `local.method()` inside a `body` resolves, just as in a function body.
     private var receiverMap: [String: String]
-    /// Every local name declared so far, *whether or not* its type was provable — so a local whose
-    /// type inference failed (an ambiguous overload, a tuple return) isn't mistaken for the enclosing
-    /// type's own property when `receiverMap` has no entry for it (mirrors `DeclarationVisitor`'s
-    /// `callSiteState.knownLocalNames`).
+    /// Every local name declared so far, whether or not its type was provable — so a local whose type
+    /// inference failed isn't mistaken for the enclosing type's own property when `receiverMap` has no
+    /// entry for it (mirrors `DeclarationVisitor`'s `callSiteState.knownLocalNames`).
     private var knownLocalNames: Set<String>
     private let enclosingTypeName: String?
     private let methodReturnTypes: [String: String]
     /// The enclosing type's own method names, so a bare method-reference-as-value (`Button(action:
-    /// chooseFile)`, `.onAppear(perform: loadInitialState)`) resolves the same way it does in a plain
-    /// function body — SwiftUI `body` accessors are exactly where this pattern is most common.
+    /// chooseFile)`) resolves the same way it does in a plain function body.
     private let methodNames: Set<String>
     private let fileName: String
     private(set) var collected: [CallSite] = []
@@ -47,8 +45,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
             guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { continue }
             knownLocalNames.insert(name)
             // Only `.concrete` origins are usable here — this walker has no
-            // `localReceiverOriginMap`-equivalent for a `.deferred` one (accessor bodies don't chain
-            // into further call-site resolution the way a function body's locals do).
+            // `localReceiverOriginMap` equivalent for a `.deferred` one.
             if let local = collector.localBinding(from: binding, methodReturnTypes: methodReturnTypes),
                case .concrete(let type) = local.origin {
                 receiverMap[local.name] = type

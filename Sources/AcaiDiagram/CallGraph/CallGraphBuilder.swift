@@ -13,8 +13,7 @@ import AcaiCore
 /// free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free`
 /// when `methodName` matches a free function. The resolved share is `CallGraph.coverage`.
 ///
-/// A value you instantiate with the scope/title and ask to `build(from:)` — kept off `CodeArtifact`
-/// so the data model does not depend on the diagram layer.
+/// A value you instantiate with the scope/title and ask to `build(from:)`.
 public struct CallGraphBuilder: Sendable {
     public var scope: CallGraphScope
     public var title: String?

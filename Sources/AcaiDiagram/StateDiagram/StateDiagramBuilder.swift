@@ -8,9 +8,8 @@ import AcaiCore
 /// consecutive assignments form a transition chain labeled with that member; each member's first
 /// assignment is also reachable from the initial pseudo-state.
 ///
-/// A value you instantiate with the configuration and ask to `build(from:)` — kept off `CodeArtifact`
-/// so the data model does not depend on the diagram layer. Build from a `resolvingExtensions()`-ed
-/// artifact so members declared in extensions are visible.
+/// A value you instantiate with the configuration and ask to `build(from:)`. Build from a
+/// `resolvingExtensions()`-ed artifact so members declared in extensions are visible.
 ///
 /// Known limitations (documented behaviour, not bugs):
 /// - Branch-insensitive: assignments in different `if`/`switch` arms of the same body appear as one

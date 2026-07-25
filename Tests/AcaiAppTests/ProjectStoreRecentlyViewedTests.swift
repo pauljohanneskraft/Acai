@@ -3,8 +3,7 @@ import Testing
 @testable import AcaiApp
 
 /// `ProjectStore`'s persistence of `RecentlyViewed`, and that deleting the underlying
-/// diagram/codebase/project clears any dangling reference to it — the actual integration point
-/// B54's model plugs into, even though nothing opens diagrams through it yet.
+/// diagram/codebase/project clears any dangling reference to it.
 @Suite("ProjectStore recently viewed")
 @MainActor
 struct ProjectStoreRecentlyViewedTests {

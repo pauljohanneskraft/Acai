@@ -19,7 +19,6 @@ public struct CallGraph: Codable, Hashable, Sendable {
         public var id: String
         /// The owning type's simple name; empty for a free function.
         public var typeName: String
-        /// The method (or function) name.
         public var methodName: String
         /// `true` when the method belongs to the scoped focus (vs. an out-of-scope callee
         /// pulled in as a leaf), so the app can de-emphasise external leaves.

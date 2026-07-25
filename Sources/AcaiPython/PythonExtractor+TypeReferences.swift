@@ -193,7 +193,7 @@ extension PythonExtractor {
     /// Provable local-variable types: an explicit annotation (`x: Foo = …`), a `Foo()` construction of
     /// a declared type (`x = Foo()`), or a same-type method call with an unambiguous return type —
     /// Python requires an explicit receiver for a method call, so this is `x = self.compute()`, via
-    /// `scope.knownMethodReturnTypes` — so `x.method()` resolves to `Foo` (RC4/RC-I). A `self.x = …`
+    /// `scope.knownMethodReturnTypes` — so `x.method()` resolves to `Foo`. A `self.x = …`
     /// assignment has an `attribute` target, not an `identifier`, so it is left to field synthesis.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in

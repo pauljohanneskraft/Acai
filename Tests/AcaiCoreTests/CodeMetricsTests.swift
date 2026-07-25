@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-/// Tests for static-analysis metrics (ENH-1…4).
 @Suite("Core: Code Metrics")
 struct CodeMetricsTests {
 
@@ -115,10 +114,9 @@ struct CodeMetricsTests {
     }
 
     @Test func structuralEdgeUsesMemberDeclaringModule() {
-        // Mirrors the real `CodeArtifact+ClassDiagram` shape: `Base` (Core) gains a property typed
-        // `Widget` via an extension that lives in the *Diagram* module — the same module `Widget` is
-        // declared in. The inferred edge originates in Diagram, so it's an intra-Diagram dependency:
-        // Core must NOT gain a phantom efferent dependency on Diagram (the cross-module-extension bug).
+        // `Base` (Core) gains a property typed `Widget` via an extension declared in the *Diagram*
+        // module, the same module `Widget` lives in. The edge originates in Diagram, so Core must NOT
+        // gain a phantom efferent dependency on Diagram.
         let widget = type("Widget", kind: .struct, accessLevel: .public, module: "Diagram")
         let base = TypeDeclaration(
             id: "Base", name: "Base", qualifiedName: "Base", kind: .struct, accessLevel: .public,
@@ -141,9 +139,8 @@ struct CodeMetricsTests {
     }
 
     @Test func conformanceEdgeFromCrossModuleExtensionUsesExtensionModule() {
-        // `Proto` (Diagram) and `Base` (Core); an extension in *Diagram* conforms `Base` to `Proto`
-        // (the real AcaiDiff↔AcaiDiagram shape). The conformance originates in Diagram, so it must not
-        // make Core depend on Diagram (no phantom edge / module cycle).
+        // `Proto` (Diagram) and `Base` (Core); an extension in *Diagram* conforms `Base` to `Proto`.
+        // The conformance originates in Diagram, so it must not make Core depend on Diagram.
         let proto = type("Proto", kind: .protocol, accessLevel: .public, module: "Diagram")
         let base = type("Base", kind: .struct, accessLevel: .public, module: "Core")
         let ext = TypeDeclaration(
@@ -393,8 +390,7 @@ struct NumberOfPropertiesMetricTests {
 extension CodeMetricsTests {
 
     @Test func methodsSharingAFieldOnlyByReadingAreCohesive() {
-        // Neither method writes `state`; they share it purely by *reading* — still one component. Before
-        // read-capture (issue #111) this reported 2 (an upper bound); now it is the true LCOM4 of 1.
+        // Neither method writes `state`; they share it purely by *reading* — still one component.
         let reader = type("Reader", kind: .class, module: "App", members: [
             Member(name: "state", kind: .property, accessLevel: .private),
             method("show", reads: "state"), method("check", reads: "state")
@@ -407,8 +403,7 @@ extension CodeMetricsTests {
 
     @Test func sameNamedFreeFunctionCallDoesNotLinkToSiblingMethod() {
         // `a` calls a *free function* named `b` that coincides with sibling method `b`. A `.free` call
-        // must not link them the way a self-call would, so the type stays 2 disjoint components — the
-        // nil-receiver-is-self imprecision the enum removes (issue #111).
+        // must not link them the way a self-call would, so the type stays 2 disjoint components.
         let loose = type("Loose", kind: .class, module: "App", members: [
             Member(name: "a", kind: .method, accessLevel: .internal, callSites: [
                 CallSite(receiver: .free, methodName: "b")]),
@@ -421,8 +416,7 @@ extension CodeMetricsTests {
     }
 
     @Test func methodReadingItsOwnFieldsIsNotEnvious() {
-        // `tally` reads its own field `total` twice and calls `Ledger` once → own(2) ≥ foreign(1), not
-        // envious. Without read-capture "own" would be 0 and it would be falsely flagged (issue #111).
+        // `tally` reads its own field `total` twice and calls `Ledger` once → own(2) ≥ foreign(1), not envious.
         let ledger = type("Ledger", kind: .class, accessLevel: .public, module: "App", members: [
             Member(name: "credit", kind: .method, accessLevel: .public)
         ])
@@ -439,8 +433,7 @@ extension CodeMetricsTests {
     }
 
     @Test func freeFunctionCallDoesNotCountAsOwnInterest() {
-        // One foreign call + one `.free` call → foreign(1) > own(0) → envious. If the free call were
-        // wrongly counted as "own" (the old nil-is-self assumption), own(1) would tie and hide it.
+        // One foreign call + one `.free` call → foreign(1) > own(0) → envious.
         let ledger = type("Ledger", kind: .class, accessLevel: .public, module: "App", members: [
             Member(name: "credit", kind: .method, accessLevel: .public)
         ])

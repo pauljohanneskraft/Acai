@@ -2,12 +2,9 @@ import SwiftSyntax
 
 /// The cyclomatic complexity of a Swift function/initializer body: `1 +` its structural decision points
 /// (`if`/`guard`, `for`/`while`/`repeat` loops, `switch` `case`s, `catch` clauses). Each decision counts
-/// once *at any nesting depth* (McCabe complexity is a flat count of branches — a nested `if` adds the
-/// same 1 as a flat one; nesting is not weighted further, that is Cognitive Complexity). Expression-level
-/// branches (ternary `?:`, short-circuit `&&`/`||`) are excluded to stay consistent with the tree-sitter
-/// parsers, whose grammars model those as generic nodes. A value you instantiate over a body; `nil` when
-/// there is no body (e.g. a protocol requirement), so an aggregate can tell "not measured" from "no
-/// branches".
+/// once at any nesting depth (flat McCabe complexity, not weighted Cognitive Complexity).
+/// Expression-level branches (ternary, `&&`/`||`) are excluded to stay consistent with the tree-sitter
+/// parsers. `nil` when there's no body, so an aggregate can tell "not measured" from "no branches".
 struct SwiftCyclomaticComplexity {
     let body: CodeBlockSyntax?
 

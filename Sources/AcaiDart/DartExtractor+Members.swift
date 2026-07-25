@@ -111,7 +111,7 @@ extension DartExtractor {
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
             // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
-            // its static/top-level receivers (RC2).
+            // its static/top-level receivers.
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
                 appendInitializerListCallSites(initializers, to: &members)
             }
@@ -191,7 +191,7 @@ extension DartExtractor {
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
             // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
-            // its static/top-level receivers (RC2).
+            // its static/top-level receivers.
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
                 appendInitializerListCallSites(initializers, to: &members)
             }

@@ -20,7 +20,7 @@ extension PythonExtractor {
         let methodNodes = collectMethodNodes(body)
 
         // A class-body initializer can't reference `self`, so file-level type names are the only
-        // resolvable receivers (RC2).
+        // resolvable receivers.
         var fields = collectClassBodyFields(body, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
         let existing = Set(fields.map(\.name))
         fields.append(contentsOf: synthesizeSelfFields(fromMethods: methodNodes, existing: existing))
@@ -56,8 +56,8 @@ extension PythonExtractor {
 
     /// A `methodName → returnTypeName` map from the class's own method nodes (annotated with an
     /// explicit `-> Type`; Python has no implicit return-type inference to fall back to), so a
-    /// same-type method call — including one declared later in the class — can seed a local's type
-    /// (RC-I). Overloaded names with differing return types are dropped rather than guessed.
+    /// same-type method call — including one declared later in the class — can seed a local's type.
+    /// Overloaded names with differing return types are dropped rather than guessed.
     private func methodReturnTypeMap(
         fromMethodNodes methodNodes: [(node: Node, decorators: [String])]
     ) -> [String: String] {

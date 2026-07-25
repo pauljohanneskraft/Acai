@@ -38,7 +38,7 @@ struct JSCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `const local = new Helper()` now resolves its receiver type (RC4).
+        // A local `const local = new Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -68,8 +68,7 @@ struct JSCallSiteBroadeningTests {
         }
     }
 
-    /// A TypeScript-typed method parameter is a provable call-site receiver, just like a typed field
-    /// (dead-code false positive: RC-G).
+    /// A TypeScript-typed method parameter is a provable call-site receiver, just like a typed field.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -89,8 +88,7 @@ struct JSCallSiteBroadeningTests {
 
     /// A local initialized from a same-type method call (`const x = compute()`) resolves its receiver
     /// type from the method's unambiguous TypeScript return-type annotation, the same way a `new
-    /// Foo()` construction already does — including when the method is declared *after* the caller
-    /// (dead-code false positive: RC-I).
+    /// Foo()` construction already does — including when the method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {
@@ -110,8 +108,7 @@ struct JSCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
     }
 
-    /// JS has no implicit `this`, so a bare `foo()` is a free/imported function — captured as `.free`
-    /// (previously dropped). Also covers freestanding-function bodies now being walked (RC1).
+    /// JS has no implicit `this`, so a bare `foo()` is a free/imported function — captured as `.free`.
     @Test func capturesBareFreeFunctionCall() {
         let source = """
         function entry() { helper(); }
@@ -125,7 +122,7 @@ struct JSCallSiteBroadeningTests {
 
     /// A bare top-level statement (`bootstrap();`) makes a call whose target has nowhere to attach as
     /// a caller — collected separately and given a synthetic reachable member so the callee isn't a
-    /// dead-code false positive (RC-H).
+    /// dead-code false positive.
     @Test func capturesTopLevelBareCall() {
         let source = """
         function bootstrap() {}
@@ -138,7 +135,7 @@ struct JSCallSiteBroadeningTests {
     }
 
     /// A call made only from a class field initializer is recorded so its target isn't false-flagged
-    /// as dead (RC2).
+    /// as dead.
     @Test func capturesFieldInitializerCall() {
         let source = """
         function makeHandler() {}

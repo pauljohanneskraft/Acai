@@ -6,9 +6,8 @@ import AcaiQuality
 import AcaiRender
 @testable import AcaiApp
 
-/// `CodeElementReference.resolutions(in:existingDiagrams:)` (B28): one shared resolution
-/// mechanism every "Open in…" surface eventually calls into. Unit tested, per the resolution-table
-/// unit tests the backlog item itself calls for — no UI, no live app state.
+/// `CodeElementReference.resolutions(in:existingDiagrams:)`: one shared resolution mechanism
+/// every "Open in…" surface calls into.
 @Suite("CodeElementReference resolution")
 struct CodeElementReferenceResolutionTests {
 

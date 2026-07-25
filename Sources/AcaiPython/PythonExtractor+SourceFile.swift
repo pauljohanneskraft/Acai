@@ -30,7 +30,7 @@ extension PythonExtractor {
                 }
             }
             // A bare top-level call (`main()`) has no caller to attach to, so it's collected
-            // separately and given a synthetic reachable member in `walkSourceFile` (RC-H).
+            // separately and given a synthetic reachable member in `walkSourceFile`.
             topLevelCallSites.append(contentsOf: extractCallSites(from: node, scope: moduleScope()))
         case "if_statement":
             // Covers the idiomatic `if __name__ == "__main__": main()` entry point.

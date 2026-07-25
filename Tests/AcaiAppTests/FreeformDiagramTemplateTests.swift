@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `FreeformDiagramTemplate` (B26): the pre-arranged starter node sets offered in "New Freeform
-/// Diagram," and `FreeformDiagramEditor.add(to:name:template:)`'s seeding of them. Unit tested, per
-/// the model half of this item — deliberately modest data, so a straightforward unit test.
+/// `FreeformDiagramTemplate`: the pre-arranged starter node sets offered in "New Freeform Diagram,"
+/// and `FreeformDiagramEditor.add(to:name:template:)`'s seeding of them.
 @Suite("FreeformDiagram Templates")
 struct FreeformDiagramTemplateTests {
 

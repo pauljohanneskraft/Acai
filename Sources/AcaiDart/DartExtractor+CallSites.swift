@@ -14,7 +14,7 @@ extension DartExtractor: CallSiteResolving {
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         // `field = callee(args)` flattens as siblings [field-id, callee-id, selector(argument_part)]
         // inside `field_initializer` or `initialized_identifier`. The guard drops constructions
-        // `Foo()` and non-call initializers (RC2).
+        // `Foo()` and non-call initializers.
         if node.nodeType == "field_initializer" || node.nodeType == "initialized_identifier" {
             let kids = node.namedChildren()
             guard kids.count >= 2,
@@ -98,7 +98,7 @@ extension DartExtractor: CallSiteResolving {
 
     /// A Dart method with no paired body is abstract (a body-less method is only legal as an abstract
     /// requirement); mark it so the dead-code scan treats it as a reachable-by-contract member — the
-    /// analogue of an interface requirement, which Dart expresses with abstract classes (RC3).
+    /// analogue of an interface requirement, which Dart expresses with abstract classes.
     func markBodylessMethodsAbstract(_ members: inout [Member], bodiedIndices: Set<Int>) {
         for index in members.indices
         where members[index].kind == .method
@@ -111,7 +111,7 @@ extension DartExtractor: CallSiteResolving {
     /// Provable local-variable types: an explicit annotation (`Helper h = …`), an inferred
     /// construction (`var h = Helper()`) of a declared type, or a same-type method call with an
     /// unambiguous return type (`var h = compute()`, via `scope.knownMethodReturnTypes`), so
-    /// `h.method()` resolves to `Helper` (RC4/RC-I).
+    /// `h.method()` resolves to `Helper`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "initialized_variable_definition",

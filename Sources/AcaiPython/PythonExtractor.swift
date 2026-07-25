@@ -18,7 +18,7 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     var declaredTypeNames: Set<String> = []
     /// Call sites made by bare top-level statements (a script's `main()` call, or the idiomatic
     /// `if __name__ == "__main__":` block), collected during `walkSourceFile` and attached to a
-    /// synthetic always-reachable freestanding member (RC-H).
+    /// synthetic always-reachable freestanding member.
     var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String) {

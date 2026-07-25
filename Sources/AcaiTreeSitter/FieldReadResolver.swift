@@ -2,14 +2,12 @@ import AcaiCore
 
 /// Captures statically-observable reads of a type's own stored properties from a tree-sitter body
 /// (issue #111 — cohesion/feature-envy accuracy). A value you configure with the grammar's
-/// identifier node types and ask for ``reads(in:knownProperties:)`` — not a protocol mixed into the
-/// extractor, so the walk lives on the value that owns it.
+/// identifier node types and ask for ``reads(in:knownProperties:)``.
 ///
 /// Deliberately best-effort and grammar-light: it records every identifier-like node whose text
-/// matches a known stored-property name as a bare/`self`-qualified read (`receiver` nil). No scope
-/// tracking — a local shadowing a property, or a `foo.prop` member whose name collides with one of
-/// the type's own properties, is recorded under the same name; consumers filter by name and tolerate
-/// that ambiguity, exactly as they do for ``AcaiCore/VariableAssignment``.
+/// matches a known stored-property name as a bare/`self`-qualified read. No scope tracking — a local
+/// shadowing a property is recorded under the same name; consumers filter by name and tolerate that
+/// ambiguity, as they do for ``AcaiCore/VariableAssignment``.
 public struct FieldReadResolver {
     private let context: SourceFileContext
     private let identifierTypes: Set<String>

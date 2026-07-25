@@ -7,13 +7,9 @@ extension JSExtractor {
 
     // MARK: - Call Site Extraction
 
-    /// Matches JS/TS `call_expression { function: member_expression { object, property } }`.
-    ///
-    /// Handles:
-    /// - `receiver.method(args)` — `object` is an `identifier` (a known property or type),
-    /// - `this.receiver.method(args)` — `object` is a `member_expression` whose own `object` is `this`,
-    /// - `this.method(args)` — `object` is a `this` node (a call on the enclosing instance),
-    /// - `TypeName.method(args)` — `object` is a known type (static call).
+    /// Matches JS/TS `call_expression { function: member_expression { object, property } }`:
+    /// `receiver.method(args)` (object is a known property/type), `this.receiver.method(args)`,
+    /// `this.method(args)`, `TypeName.method(args)`.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call_expression",
               let funcNode = node.child(byFieldName: "function")

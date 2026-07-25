@@ -70,7 +70,7 @@ extension CFamilyExtractor: CallSiteResolving {
     /// Provable local-variable types: an explicit declared type (`Foo x;` / `Foo* p = …;`), an
     /// `auto p = new Foo()` construction, or a same-type method call with an unambiguous return type
     /// (`auto x = compute();`, via `scope.knownMethodReturnTypes`), so `x.method()` / `p->method()`
-    /// resolves to `Foo` (RC4/RC-I).
+    /// resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "declaration",

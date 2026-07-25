@@ -8,9 +8,8 @@ import AcaiCore
 /// Edge source attribution is provenance-aware (`ModuleAttribution`), so a cross-module extension is
 /// attributed to the extension's module rather than fabricating a phantom upward edge.
 ///
-/// A value you instantiate with the options and ask to `build(from:)` — kept off `CodeArtifact` so the
-/// data model does not depend on the diagram layer. Build from an `enriched()` artifact so endpoints
-/// are resolved to type ids (as `computeMetrics()` requires).
+/// A value you instantiate and ask to `build(from:)`. Build from an `enriched()` artifact so
+/// endpoints are resolved to type ids (as `computeMetrics()` requires).
 public struct PackageDiagramBuilder: Sendable {
     public var title: String?
 

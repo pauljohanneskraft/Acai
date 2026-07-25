@@ -31,7 +31,7 @@ extension CFamilyExtractor {
             case "function_definition":
                 if var method = functionMember(from: child, ownerName: ownerName, access: access) {
                     // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
-                    // body; walk it so calls made during construction aren't lost (RC2).
+                    // body; walk it so calls made during construction aren't lost.
                     if let initList = child.firstChild(withType: "field_initializer_list") {
                         method.callSites += extractCallSites(
                             from: initList,
@@ -208,7 +208,7 @@ extension CFamilyExtractor {
             type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
             location: loc(node),
             // A default member initializer's calls (`int n = compute();`) are recorded so their targets
-            // aren't false-flagged dead (RC2). File-level type names cover static/`Type::method()` calls.
+            // aren't false-flagged dead. File-level type names cover static/`Type::method()` calls.
             callSites: extractCallSites(
                 from: node.child(byFieldName: "default_value"),
                 scope: CallSiteScope(knownTypeNames: declaredTypeNames)),

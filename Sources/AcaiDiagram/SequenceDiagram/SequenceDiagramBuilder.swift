@@ -6,8 +6,7 @@ import AcaiCore
 /// message. `typeMapping` resolves an abstract receiver (protocol/interface/base class) to the
 /// concrete type whose body should be followed, so dynamic dispatch can still be traced.
 ///
-/// A value you instantiate with the entry point/options and ask to `build(from:)` — kept off
-/// `CodeArtifact` so the data model does not depend on the diagram layer.
+/// A value you instantiate with the entry point/options and ask to `build(from:)`.
 ///
 /// - Note: requires parsers to populate `Member.callSites` (with a `CallReceiver.type` receiver
 ///   for cross-type calls); without it the diagram has an entry participant but no messages.
