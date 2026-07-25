@@ -14,6 +14,13 @@ protocol CanvasInteraction: ObservableObject, DiagramHistoryHosting {
     /// The currently selected node ids.
     var selectedNodeIDs: Set<String> { get set }
 
+    /// True while the touch-only "Select" toolbar mode is active (see `CanvasNodeGestures.swift`):
+    /// on iOS/iPadOS, where there's no Cmd-click to extend a selection, tapping a node while this is
+    /// `true` adds/removes it from `selectedNodeIDs` instead of replacing the selection outright.
+    /// Unused on macOS, which keeps Cmd-click. A protocol requirement (not an extension default)
+    /// because it's `@Published` storage on each conformer, driving the toolbar toggle's own view.
+    var isMultiSelectActive: Bool { get set }
+
     /// Every selectable node's id, in the model's own order. Drives `selectAll` and marquee
     /// selection so those don't need a per-model reimplementation.
     var allNodeIDs: [String] { get }

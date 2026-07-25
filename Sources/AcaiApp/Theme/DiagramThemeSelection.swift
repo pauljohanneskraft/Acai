@@ -13,6 +13,22 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     /// `UserDefaults` key shared by the `@AppStorage` binding and the (non-SwiftUI) export path.
     static let storageKey = "diagramTheme"
 
+    /// The `UserDefaults` domain to read/write — the real shared domain (`.standard`) for actual
+    /// users, but an isolated suite scoped to the active UI test fixture's own disposable
+    /// directory when one is active. `@AppStorage(store:)` defaults to `.standard` when omitted,
+    /// which is the exact same domain (keyed by bundle identifier) a real, separately-installed
+    /// copy of the app uses — without this redirect, an automated UI test toggling the theme
+    /// picker would read or silently overwrite a real user's saved preference. Falls back to a
+    /// still-isolated fixed suite name (never `.standard`) if the derived name is somehow
+    /// rejected, so a fixture launch never silently touches the real domain. Mirrors the same
+    /// guarantee `ProjectStore`/`GitHubTokenStore` already give their own state.
+    static var store: UserDefaults {
+        guard let baseDir = UITestFixtureResolver().resolveBaseDir() else { return .standard }
+        let suiteName = "de.kraftsoftware.Acai.uitest.\(baseDir.lastPathComponent)"
+        return UserDefaults(suiteName: suiteName)
+            ?? UserDefaults(suiteName: "de.kraftsoftware.Acai.uitest.fallback")!
+    }
+
     var label: String {
         switch self {
         case .system:
@@ -64,7 +80,7 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     /// The current selection read straight from defaults, for call sites without a SwiftUI
     /// environment (e.g. the export view model).
     static var current: DiagramThemeSelection {
-        UserDefaults.standard.string(forKey: storageKey).flatMap(DiagramThemeSelection.init) ?? .system
+        store.string(forKey: storageKey).flatMap(DiagramThemeSelection.init) ?? .system
     }
 
     /// The export theme for the current selection (`nil` for `system`).
@@ -77,7 +93,8 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
 /// places it inside macOS's built-in **View** menu (alongside Show Toolbar / Sidebar), so the theme
 /// isn't an always-visible window control.
 struct DiagramThemeCommands: Commands {
-    @AppStorage(DiagramThemeSelection.storageKey) private var selection: DiagramThemeSelection = .system
+    @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
+    private var selection: DiagramThemeSelection = .system
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
@@ -94,7 +111,8 @@ struct DiagramThemeCommands: Commands {
 /// Injects the selected theme's `DiagramPalette` into the environment for every diagram view,
 /// and recolours when the OS appearance changes under the `system` option.
 struct DiagramThemeProvider: ViewModifier {
-    @AppStorage(DiagramThemeSelection.storageKey) private var selection: DiagramThemeSelection = .system
+    @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
+    private var selection: DiagramThemeSelection = .system
     @Environment(\.colorScheme) private var systemScheme
 
     func body(content: Content) -> some View {

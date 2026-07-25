@@ -18,6 +18,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
+    @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 

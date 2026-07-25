@@ -27,28 +27,31 @@ struct StatisticDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(detail.title).font(.title3.bold())
-                Spacer()
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
+        NavigationStack {
+            VStack(spacing: 0) {
+                if !detail.description.isEmpty {
+                    Text(detail.description)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.vertical, 10)
+                    Divider()
+                }
+                content
             }
-            .padding()
-            Divider()
-            if !detail.description.isEmpty {
-                Text(detail.description)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                Divider()
+            #if os(macOS)
+            .frame(maxWidth: 480, minHeight: 420)
+            #endif
+            .navigationTitle(detail.title)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .keyboardShortcut(.defaultAction)
+                }
             }
-            content
         }
-        .frame(maxWidth: 480, minHeight: 420)
     }
 
     @ViewBuilder

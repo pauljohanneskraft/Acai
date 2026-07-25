@@ -10,6 +10,10 @@ struct FreeformDiagramCatalog: View {
     @ObservedObject var viewModel: FreeformDiagramViewModel
     let canvasScale: CGFloat
     let canvasOffset: CGPoint
+    /// The canvas's own visible size, so a tap-to-insert lands in the middle of what's actually on
+    /// screen instead of a fixed point that can fall outside the viewport on a small (or momentarily
+    /// sidebar-covered) screen.
+    var canvasViewportSize: CGSize = CGSize(width: 900, height: 600)
     let onInsertNode: (FreeformDiagramNodeKind, CGPoint) -> Void
 
     var body: some View {
@@ -82,8 +86,8 @@ struct FreeformDiagramCatalog: View {
 
     private func catalogButton(kind: FreeformDiagramNodeKind) -> some View {
         Button {
-            let centerX = (450 - canvasOffset.x) / canvasScale
-            let centerY = (300 - canvasOffset.y) / canvasScale
+            let centerX = (canvasViewportSize.width / 2 - canvasOffset.x) / canvasScale
+            let centerY = (canvasViewportSize.height / 2 - canvasOffset.y) / canvasScale
             onInsertNode(kind, CGPoint(x: centerX, y: centerY))
         } label: {
             HStack {

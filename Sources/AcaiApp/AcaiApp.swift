@@ -11,9 +11,18 @@ public struct AcaiRootScene: Scene {
         WindowGroup {
             ProjectBrowserView()
                 .modifier(DiagramThemeProvider())
+                .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
         }
         .commands {
             DiagramThemeCommands()
+            #if os(macOS)
+            KeyboardShortcutCommands()
+            #endif
         }
+        #if os(macOS)
+        WindowGroup(id: KeyboardShortcutCommands.windowID) {
+            KeyboardShortcutsPanel()
+        }
+        #endif
     }
 }

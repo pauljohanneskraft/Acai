@@ -14,6 +14,7 @@ import Yams
 ///   artifacts/
 ///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
 /// ```
+@MainActor
 final class ProjectStore: ObservableObject {
     @Published var projects: [Project] = []
 
@@ -23,6 +24,10 @@ final class ProjectStore: ObservableObject {
 
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
+
+    /// Last-opened diagrams/codebases across every project, plus pins (B54). See its own type doc
+    /// for why nothing writes to this yet.
+    @Published var recentlyViewed = RecentlyViewed()
 
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert). Replaces the
     /// old `print`-and-swallow so a failed write doesn't silently look successful.
@@ -48,11 +53,18 @@ final class ProjectStore: ObservableObject {
     /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
     /// path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
+    /// Holds the app-managed local folders for GitHub-backed codebases (see `GitHubSource`), one
+    /// subdirectory per codebase, named by its id — parallels `artifactsDir`/`rulesDir`.
+    var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
+    private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
+        } else if let fixtureBaseDir = UITestFixtureResolver().resolveBaseDir() {
+            // A UI test requested deterministic, disposable state — see `UITestFixtureResolver`.
+            self.baseDir = fixtureBaseDir
         } else {
             #if os(macOS)
             let appSupport = try? fileManager.url(
@@ -75,7 +87,9 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
         load()
+        loadRecentlyViewed()
     }
 
     // MARK: - Load
@@ -234,15 +248,24 @@ final class ProjectStore: ObservableObject {
         }
     }
 
+    /// Updates the in-memory artifact immediately (so the UI reflects it right away), then encodes
+    /// and writes it to disk off the main actor — for a large codebase that JSON encode + atomic
+    /// write can take long enough to visibly stall the UI if done inline (this is called at the end
+    /// of every reindex/pull/branch-switch). The nested detached task only touches the plain
+    /// `Sendable` `url`/`stored` values; `self` is only touched again after hopping back to the
+    /// main actor, so no mutable app state crosses the concurrency boundary.
     func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
         artifacts[codebaseID] = artifact
-        let encoder = JSONEncoder()
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        do {
-            let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
-            try encoder.encode(stored).write(to: url, options: .atomic)
-        } catch {
-            report("Failed to save analysis: \(error.localizedDescription)")
+        let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
+        Task {
+            do {
+                try await Task.detached(priority: .utility) {
+                    try JSONEncoder().encode(stored).write(to: url, options: .atomic)
+                }.value
+            } catch {
+                report("Failed to save analysis: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -267,6 +290,49 @@ final class ProjectStore: ObservableObject {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - Recently Viewed
+
+    func loadRecentlyViewed() {
+        guard let data = try? Data(contentsOf: recentlyViewedURL) else { return }
+        recentlyViewed = (try? JSONDecoder().decode(RecentlyViewed.self, from: data)) ?? RecentlyViewed()
+    }
+
+    func saveRecentlyViewed() {
+        do {
+            try JSONEncoder().encode(recentlyViewed).write(to: recentlyViewedURL, options: .atomic)
+        } catch {
+            report("Failed to save recently viewed: \(error.localizedDescription)")
+        }
+    }
+
+    func recordOpened(_ item: RecentlyViewedItem) {
+        recentlyViewed.recordOpened(item)
+        saveRecentlyViewed()
+    }
+
+    func togglePin(_ item: RecentlyViewedItem) {
+        recentlyViewed.togglePin(item)
+        saveRecentlyViewed()
+    }
+
+    func removeFromRecentlyViewed(_ item: RecentlyViewedItem) {
+        recentlyViewed.remove(item)
+        saveRecentlyViewed()
+    }
+
+    // MARK: - GitHub clones
+
+    /// Where a GitHub-backed codebase's synced folder lives (whether or not it exists yet) —
+    /// what `Codebase.directoryPath` points at once `githubSource` is set.
+    func githubCloneURL(for codebaseID: UUID) -> URL {
+        githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
+    }
+
+    /// Removes a GitHub-backed codebase's synced folder, mirroring `deleteArtifactFile`.
+    func deleteGitHubClone(for codebaseID: UUID) {
+        try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
     }
 
     // MARK: - Managed quality-check rules

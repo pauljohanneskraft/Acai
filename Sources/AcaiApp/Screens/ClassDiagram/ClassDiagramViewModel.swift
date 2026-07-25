@@ -25,6 +25,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// User-overridden sizes (from resize handles). These take priority over measured sizes.
     @Published var userNodeSizes: [String: CGSize] = [:]
     @Published var selectedNodeIDs: Set<String> = []
+    @Published var isMultiSelectActive = false
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
 

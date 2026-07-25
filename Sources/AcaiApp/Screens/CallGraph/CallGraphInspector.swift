@@ -28,8 +28,12 @@ struct CallGraphInspector: View {
     }
 
     var body: some View {
+        content
+    }
+
+    private var content: some View {
         let counts = callCounts
-        ScrollView {
+        return ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 coverageCard
                 Text("Methods")

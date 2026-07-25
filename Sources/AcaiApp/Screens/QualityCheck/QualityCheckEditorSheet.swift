@@ -26,43 +26,41 @@ struct QualityCheckEditorSheet: View {
     @State private var isChoosingFile = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            Picker("Rules", selection: $source) {
-                Text("Defined here").tag(Source.definedHere)
-                Text("External YAML file").tag(Source.externalFile)
+        NavigationStack {
+            VStack(spacing: 0) {
+                Picker("Rules", selection: $source) {
+                    Text("Defined here").tag(Source.definedHere)
+                    Text("External YAML file").tag(Source.externalFile)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding()
+                Divider()
+                content
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding()
-            Divider()
-            content
+            #if os(macOS)
+            .frame(maxWidth: 640, maxHeight: 560)
+            #endif
+            .navigationTitle("Code Quality Check")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: save)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(source == .externalFile && externalPath.isEmpty)
+                }
+            }
+            .onAppear(perform: loadInitialState)
+            .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.yaml]) { result in
+                guard let url = try? result.get() else { return }
+                guard url.startAccessingSecurityScopedResource() else { return }
+                defer { url.stopAccessingSecurityScopedResource() }
+                externalPath = url.path
+                externalBookmark = try? SecurityScopedBookmark(resolving: url)
+            }
         }
-        .frame(maxWidth: 640, maxHeight: 560)
-        .onAppear(perform: loadInitialState)
-        .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.yaml]) { result in
-            guard let url = try? result.get() else { return }
-            guard url.startAccessingSecurityScopedResource() else { return }
-            defer { url.stopAccessingSecurityScopedResource() }
-            externalPath = url.path
-            externalBookmark = try? SecurityScopedBookmark(resolving: url)
-        }
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            Label("Code Quality Check", systemImage: "checkmark.shield")
-                .font(.title3.bold())
-            Spacer()
-            Button("Cancel") { dismiss() }
-            Button("Save", action: save)
-                .keyboardShortcut(.defaultAction)
-                .disabled(source == .externalFile && externalPath.isEmpty)
-        }
-        .padding()
     }
 
     // MARK: - Content

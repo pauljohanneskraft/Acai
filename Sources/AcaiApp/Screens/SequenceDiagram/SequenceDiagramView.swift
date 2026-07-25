@@ -21,6 +21,7 @@ struct SequenceDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showConfigSheet = false
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
@@ -72,16 +73,18 @@ struct SequenceDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            let layout = viewModel.layout
-            ZStack(alignment: .topLeading) {
-                SequenceEnsembleView(layout: layout)
-                ForEach(layout.participants) { participant in
-                    participantHeader(participant)
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                let layout = viewModel.layout
+                ZStack(alignment: .topLeading) {
+                    SequenceEnsembleView(layout: layout)
+                    ForEach(layout.participants) { participant in
+                        participantHeader(participant)
+                    }
                 }
             }
-        }
+        )
     }
 
     private func participantHeader(_ participant: SequenceLayoutModel.ParticipantFrame) -> some View {
@@ -106,6 +109,9 @@ struct SequenceDiagramView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+            #if !os(macOS)
+            MultiSelectToggleButton(model: viewModel)
+            #endif
 
             Button {
                 centerDiagram()
@@ -114,12 +120,14 @@ struct SequenceDiagramView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showConfigSheet = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
             .help("Change the sequence diagram's entry point and depth")
+            .accessibilityIdentifier("diagram.configureButton")
             Button {
                 // Pass every participant's live x (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -138,6 +146,7 @@ struct SequenceDiagramView: View {
             }
             .help("Save a copy as an editable Freeform diagram")
             .disabled(viewModel.isEmpty)
+            .accessibilityIdentifier("diagram.saveAsFreeformButton")
             Button {
                 exportImage()
             } label: {
@@ -145,6 +154,7 @@ struct SequenceDiagramView: View {
             }
             .help("Export the diagram as an image")
             .disabled(viewModel.isEmpty)
+            .accessibilityIdentifier("diagram.exportImageButton")
         }
     }
 
@@ -186,7 +196,8 @@ struct SequenceDiagramView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.layout.participants.map(\.id),
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset

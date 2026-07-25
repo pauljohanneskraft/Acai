@@ -44,70 +44,75 @@ struct StateConfigSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("New State Diagram")
-                .font(.title2.bold())
+        NavigationStack {
+            Form {
+                Section {
+                    Text("Pick a variable. Its possible values (\"states\") are inferred from "
+                         + "assignments across the codebase; values that can't be enumerated "
+                         + "statically make the analysis fail with an explanation.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Pick a variable. Its possible values (\"states\") are inferred from "
-                     + "assignments across the codebase; values that can't be enumerated "
-                     + "statically make the analysis fail with an explanation.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                LabeledContent("Scope") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        PickerFilterField(text: $scopeQuery)
-                        Picker("Scope", selection: $scope) {
-                            Text("Select…").tag(Scope?.none)
-                            if !artifact.globalVariables.isEmpty {
-                                Text("Global Variables").tag(Scope?.some(.globals))
+                Section {
+                    LabeledContent("Scope") {
+                        VStack(alignment: .leading, spacing: 4) {
+                            PickerFilterField(text: $scopeQuery)
+                            Picker("Scope", selection: $scope) {
+                                Text("Select…").tag(Scope?.none)
+                                if !artifact.globalVariables.isEmpty {
+                                    Text("Global Variables").tag(Scope?.some(.globals))
+                                }
+                                ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
+                                    Text(name).tag(Scope?.some(.type(name)))
+                                }
                             }
-                            ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
-                                Text(name).tag(Scope?.some(.type(name)))
-                            }
-                        }
-                        .labelsHidden()
-                        .onChange(of: scope) { _, _ in
-                            if !variableNames.contains(variableName) {
-                                variableName = variableNames.first ?? ""
+                            .labelsHidden()
+                            .accessibilityIdentifier("stateConfig.scopePicker")
+                            .onChange(of: scope) { _, _ in
+                                if !variableNames.contains(variableName) {
+                                    variableName = variableNames.first ?? ""
+                                }
                             }
                         }
                     }
-                }
 
-                LabeledContent("Variable") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        PickerFilterField(text: $variableQuery)
-                        Picker("Variable", selection: $variableName) {
-                            Text("Select…").tag("")
-                            ForEach(variableNames.filtered(by: variableQuery), id: \.self) { Text($0).tag($0) }
+                    LabeledContent("Variable") {
+                        VStack(alignment: .leading, spacing: 4) {
+                            PickerFilterField(text: $variableQuery)
+                            Picker("Variable", selection: $variableName) {
+                                Text("Select…").tag("")
+                                ForEach(variableNames.filtered(by: variableQuery), id: \.self) { Text($0).tag($0) }
+                            }
+                            .labelsHidden()
+                            .disabled(scope == nil)
+                            .accessibilityIdentifier("stateConfig.variablePicker")
                         }
-                        .labelsHidden()
-                        .disabled(scope == nil)
                     }
-                }
 
-                LabeledContent("Max states") {
-                    Stepper(value: $maxStates, in: 5...100, step: 5) {
-                        Text("\(maxStates)")
+                    LabeledContent("Max states") {
+                        Stepper(value: $maxStates, in: 5...100, step: 5) {
+                            Text("\(maxStates)")
+                        }
                     }
                 }
             }
-
-            Divider()
-
-            HStack {
-                Spacer()
-                Button("Cancel", role: .cancel, action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Create", action: create)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(scope == nil || variableName.isEmpty)
+            #if os(macOS)
+            .frame(maxWidth: 460)
+            #endif
+            .navigationTitle("New State Diagram")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", role: .cancel, action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create", action: create)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(scope == nil || variableName.isEmpty)
+                        .accessibilityIdentifier("stateConfig.createButton")
+                }
             }
         }
-        .padding(20)
-        .frame(maxWidth: 460)
     }
 
     private func create() {

@@ -39,8 +39,14 @@ struct ScopedResourceAccess {
     }
 
     /// Resolves the URL, brackets `startAccessingSecurityScopedResource`/`stop...` around `body` on
-    /// iOS, and returns its result.
-    func withResolvedURL<T>(_ body: (URL) throws -> T) throws -> T {
+    /// iOS, and returns its result. When the stored bookmark has gone stale, mints a fresh one and
+    /// hands it to `onRefresh` (still inside the access scope) so the caller can persist it — a
+    /// no-op unless the caller passes `onRefresh`, and never invoked on macOS (no bookmark, no
+    /// staleness to track).
+    func withResolvedURL<T>(
+        onRefresh: ((SecurityScopedBookmark) -> Void)? = nil,
+        _ body: (URL) throws -> T
+    ) throws -> T {
         #if os(macOS)
         return try body(URL(fileURLWithPath: path).standardizedFileURL)
         #else
@@ -58,6 +64,9 @@ struct ScopedResourceAccess {
             throw Failure.accessDenied(path)
         }
         defer { url.stopAccessingSecurityScopedResource() }
+        if isStale, let refreshed = try? SecurityScopedBookmark(resolving: url) {
+            onRefresh?(refreshed)
+        }
         return try body(url)
         #endif
     }

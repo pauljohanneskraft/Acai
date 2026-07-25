@@ -16,6 +16,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     /// Per-method centre overrides, keyed by node id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
+    @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 

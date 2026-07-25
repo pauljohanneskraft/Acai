@@ -18,6 +18,10 @@ struct ClassDiagramSidebar: View {
     @Binding var tab: ClassDiagramSidebarTab
 
     var body: some View {
+        content
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
                 Text("Settings").tag(ClassDiagramSidebarTab.settings)
@@ -31,8 +35,10 @@ struct ClassDiagramSidebar: View {
             switch tab {
             case .settings:
                 configurationInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.settings")
             case .inspector:
                 selectionInspector
+                    .accessibilityIdentifier("diagram.sidebarContent.inspector")
             }
         }
         .background {
@@ -221,6 +227,12 @@ struct ClassDiagramSidebar: View {
             let url = URL(filePath: viewModel.codebase.directoryPath).appending(path: filePath)
             if FileManager.default.fileExists(atPath: url.path()) {
                 Button {
+                    // `activateFileViewerSelecting` sends Finder a real Apple Event — no UI test
+                    // asserts on Finder actually opening, so skip the side effect under a UI test.
+                    // See `FinderRevealable`'s identical guard and its note on the (different, now
+                    // fixed) actual source of the launch-time Automation prompt some UI test runs
+                    // used to show.
+                    guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 } label: {
                     Label("Reveal in Finder", systemImage: "finder")

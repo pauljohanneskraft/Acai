@@ -9,6 +9,10 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// sandboxed — `directoryPath` alone is authoritative there) and for codebases added before
     /// this field existed.
     var securityScopedBookmark: SecurityScopedBookmark?
+    /// Set when this codebase was cloned in-app from GitHub rather than pointed at a user-picked
+    /// local folder — see `GitHubSource`. When present, `directoryPath` is the app-managed clone
+    /// folder and `securityScopedBookmark` stays `nil`.
+    var githubSource: GitHubSource?
     var hasArtifact: Bool = false
     var lastIndexed: Date?
     /// `true` when the most recent index encountered files that could not be fully parsed.
@@ -19,4 +23,8 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// The configuration is just a path to a YAML rules file — either one the app manages internally
     /// (UI-authored rules) or an external file the user pointed at.
     var qualityCheck: QualityCheckConfiguration?
+    /// This codebase's file allow/blocklist, applied at indexing time. `nil` means unfiltered —
+    /// every codebase created before this field existed, and any new one until explicitly
+    /// configured, behaves exactly as if this field didn't exist.
+    var fileFilter: FileFilter?
 }

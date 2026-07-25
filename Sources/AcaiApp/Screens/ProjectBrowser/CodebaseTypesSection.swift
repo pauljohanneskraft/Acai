@@ -57,20 +57,7 @@ struct CodebaseTypesSection: View {
                 .background(Color.secondary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 3))
         }
-        #if os(macOS)
-        .onTapGesture {
-            guard let filePath = type.location?.filePath else {
-                print("Unknown location of type: \(type.name)")
-                return
-            }
-            let url = URL(filePath: codebase.directoryPath).appending(path: filePath)
-            guard FileManager.default.fileExists(atPath: url.path()) else {
-                print("File doesn't exist at path: \(url.absoluteString)")
-                return
-            }
-            NSWorkspace.shared.activateFileViewerSelecting([url])
-        }
-        #endif
+        .revealsInFinder(codebase: codebase, relativePath: type.location?.filePath)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }

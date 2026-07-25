@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.get-task-allow</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+	<array>
+		<string>/</string>
+	</array>
+	<!-- Added on top of Xcode's auto-generated UI-test entitlements (captured via `codesign -d
+	--entitlements` and preserved above/below): lets fixture staging (`Launch.swift`'s
+	`launchWithFixture`) write to real, non-container `/private/tmp` instead of this sandboxed
+	runner's own `~/Library/Containers/.../Data/tmp/`. Without this, the app-under-test (itself
+	unsandboxed) ends up reading fixture state out of a *different* app's private sandbox
+	container, which is the leading suspect for a "would like to access data from other apps"
+	prompt observed at launch on every macOS UI test run — see `launchWithFixture`'s own comment. -->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/private/tmp/</string>
+	</array>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.apple.testmanagerd</string>
+		<string>com.apple.dt.testmanagerd.runner</string>
+		<string>com.apple.coresymbolicationd</string>
+		<string>com.apple.coredevice.version</string>
+		<string>com.apple.coredevice.service</string>
+		<string>com.apple.remoted</string>
+	</array>
+	<key>com.apple.security.temporary-exception.mach-lookup.local-name</key>
+	<array>
+		<string>com.apple.axserver</string>
+	</array>
+	<key>com.apple.security.temporary-exception.sbpl</key>
+	<array>
+		<string>(allow hid-control)</string>
+		<string>(allow signal)</string>
+	</array>
+</dict>
+</plist>

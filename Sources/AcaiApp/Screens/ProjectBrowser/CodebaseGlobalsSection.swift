@@ -43,9 +43,7 @@ struct CodebaseGlobalsSection: View {
             }
             tagBadge(global.accessLevel.rawValue)
         }
-        #if os(macOS)
-        .onTapGesture { reveal(global) }
-        #endif
+        .revealsInFinder(codebase: codebase, relativePath: global.location?.filePath)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }
@@ -69,18 +67,4 @@ struct CodebaseGlobalsSection: View {
             .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 
-    #if os(macOS)
-    private func reveal(_ global: Member) {
-        guard let filePath = global.location?.filePath else {
-            print("Unknown location of global: \(global.name)")
-            return
-        }
-        let url = URL(filePath: codebase.directoryPath).appending(path: filePath)
-        guard FileManager.default.fileExists(atPath: url.path()) else {
-            print("File doesn't exist at path: \(url.absoluteString)")
-            return
-        }
-        NSWorkspace.shared.activateFileViewerSelecting([url])
-    }
-    #endif
 }

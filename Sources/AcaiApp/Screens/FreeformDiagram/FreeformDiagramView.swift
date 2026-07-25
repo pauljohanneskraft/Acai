@@ -19,6 +19,8 @@ struct FreeformDiagramView: View {
     @State var activeResizeState: DiagramResizeState?
     @State private var showDeleteConfirmation = false
     @State private var cursorLocation: CGPoint = .zero
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var showCheckpoints = false
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
     /// shortcuts yield to the field's native text undo.
     @State private var isEditingText = false
@@ -31,6 +33,12 @@ struct FreeformDiagramView: View {
         // Main canvas
         canvasArea
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            #if !os(macOS)
+            // Let the canvas draw full-bleed under the floating toolbar and past the home
+            // indicator, like a native drawing/canvas app, instead of stopping at the safe area.
+            .ignoresSafeArea()
+            #endif
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { canvasViewportSize = $0 }
             .inspector(isPresented: $showSidebar) {
                 // Combined Catalog / Inspector sidebar
                 sidebarContent
@@ -39,6 +47,9 @@ struct FreeformDiagramView: View {
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: {})
+                    #if !os(macOS)
+                    MultiSelectToggleButton(model: viewModel)
+                    #endif
 
                     Button {
                         centerDiagram()
@@ -49,6 +60,13 @@ struct FreeformDiagramView: View {
                     .keyboardShortcut("0", modifiers: .command)
 
                     Button {
+                        showCheckpoints = true
+                    } label: {
+                        Label("Checkpoints", systemImage: "clock.arrow.circlepath")
+                    }
+                    .help("Save or restore a named snapshot of this diagram")
+
+                    Button {
                         sidebarTab = .catalog
                         showSidebar.toggle()
                     } label: {
@@ -57,7 +75,14 @@ struct FreeformDiagramView: View {
                     .help("Toggle the Node Catalog / Inspector sidebar")
                 }
             }
+            #if os(macOS)
             .navigationTitle(browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram")
+            #else
+            // A large title would eat vertical space from the canvas for little benefit — the
+            // back button already carries the project context, so the diagram screen goes titleless.
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .onAppear {
                 viewModel.configure(diagramID: diagramID, browserModel: browserModel)
                 if let diagram = browserModel.freeformDiagram(for: diagramID) {
@@ -107,6 +132,9 @@ struct FreeformDiagramView: View {
             } message: {
                 Text("You can undo this action with ⌘Z.")
             }
+            .sheet(isPresented: $showCheckpoints) {
+                FreeformDiagramCheckpointsView(viewModel: viewModel)
+            }
     }
 
     private var deleteAlertTitle: String {
@@ -145,6 +173,16 @@ struct FreeformDiagramView: View {
                 cursorLocation = location
             }
         }
+        #if !os(macOS)
+        // No hover on touch, so `cursorLocation` would otherwise stay at its initial `.zero` —
+        // track the long-press's own touch-down location instead, so the context menu's "add node"
+        // inserts under the finger rather than at a fixed, stale point.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0).onChanged { value in
+                cursorLocation = value.location
+            }
+        )
+        #endif
         .contextMenu {
             canvasContextMenu
         }
@@ -169,13 +207,21 @@ struct FreeformDiagramView: View {
             Text("This canvas is empty")
                 .font(.title3)
                 .foregroundStyle(.secondary)
-            Text("Right-click to add a node, or open the Node Catalog in the sidebar.")
+            Text(emptyCanvasHintText)
                 .font(.callout)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
         }
         .allowsHitTesting(false)
+    }
+
+    private var emptyCanvasHintText: String {
+        #if os(macOS)
+        "Right-click to add a node, or open the Node Catalog in the sidebar."
+        #else
+        "Touch and hold to add a node, or open the Node Catalog in the sidebar."
+        #endif
     }
 
     // MARK: - Canvas Context Menu
@@ -235,7 +281,8 @@ struct FreeformDiagramView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.allNodeIDs,
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset
@@ -286,6 +333,7 @@ struct FreeformDiagramView: View {
                     viewModel: viewModel,
                     canvasScale: canvasScale,
                     canvasOffset: canvasOffset,
+                    canvasViewportSize: canvasViewportSize,
                     onInsertNode: insertNode
                 )
             case .inspector:

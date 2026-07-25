@@ -18,6 +18,10 @@ struct PackageDiagramInspector: View {
     }
 
     var body: some View {
+        content
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Modules")

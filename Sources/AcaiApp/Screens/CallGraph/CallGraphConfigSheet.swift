@@ -60,6 +60,7 @@ struct CallGraphConfigSheet: View {
                             }
                         }
                         .labelsHidden()
+                        .accessibilityIdentifier("callGraphConfig.scopePicker")
                     }
                 }
             }
@@ -72,6 +73,7 @@ struct CallGraphConfigSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Create") { onCreate(scope) }
                     .keyboardShortcut(.defaultAction)
+                    .accessibilityIdentifier("callGraphConfig.createButton")
             }
         }
         .padding(20)

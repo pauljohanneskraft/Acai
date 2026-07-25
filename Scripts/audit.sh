@@ -17,7 +17,7 @@ OUT_DIR="${2:-./audit-report}"
 RULES="${3:-quality.yml}"
 
 # Prefer an installed `acai`; fall back to a debug build of this repo.
-ACAI="$(command -v acai || true)"
+ACAI="$(command -v acai || true)"w
 [ -z "$ACAI" ] && ACAI="$(dirname "$0")/../.build/debug/AcaiCLI"
 
 mkdir -p "$OUT_DIR"

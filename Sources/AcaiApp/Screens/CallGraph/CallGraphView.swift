@@ -11,6 +11,7 @@ struct CallGraphView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let isComparePresented: Binding<Bool>
     let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -18,11 +19,12 @@ struct CallGraphView: View {
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
-        comparisonArtifact: CodeArtifact? = nil
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
+        self.isComparePresented = isComparePresented
         self.comparisonArtifact = comparisonArtifact
     }
 
@@ -36,6 +38,7 @@ struct CallGraphView: View {
             diagram: diagram,
             artifact: artifact,
             scope: scope,
+            isComparePresented: isComparePresented,
             comparisonArtifact: comparisonArtifact,
             onConfigure: { isConfiguring = true }
         )
@@ -62,6 +65,7 @@ private struct CallGraphCanvasView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let scope: CallGraphScope
+    let isComparePresented: Binding<Bool>
     let onConfigure: () -> Void
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -72,15 +76,29 @@ private struct CallGraphCanvasView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var showSidebar = true
+    @State private var showSidebar = false
+    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
-        comparisonArtifact: CodeArtifact? = nil, onConfigure: @escaping () -> Void
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil,
+        onConfigure: @escaping () -> Void
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.scope = scope
+        self.isComparePresented = isComparePresented
         self.onConfigure = onConfigure
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
@@ -93,20 +111,53 @@ private struct CallGraphCanvasView: View {
     }
 
     var body: some View {
-        canvasContent
-            .overlay(alignment: .top) { coverageBanner }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .inspector(isPresented: $showSidebar) {
-                CallGraphInspector(
-                    graph: viewModel.graph,
-                    selectedNodeIDs: viewModel.selectedNodeIDs
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
-            }
+        sidebarPresentedCanvas
             .toolbar { toolbarContent }
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+    }
+
+    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
+    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            canvasContent
+                .overlay(alignment: .top) { coverageBanner }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                            .navigationTitle("Call Graph")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            canvasContent
+                .overlay(alignment: .top) { coverageBanner }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        canvasContent
+            .overlay(alignment: .top) { coverageBanner }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
     }
 
     // MARK: - Coverage banner
@@ -134,15 +185,23 @@ private struct CallGraphCanvasView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
-        ) {
-            let layout = viewModel.layout
-            ZStack(alignment: .topLeading) {
-                callEdges(layout)
-                ForEach(layout.nodes) { node in
-                    methodNode(node)
+            autoPanController: canvasAutoPanController,
+            onViewportSizeChange: { canvasViewportSize = $0 },
+            content: {
+                let layout = viewModel.layout
+                ZStack(alignment: .topLeading) {
+                    callEdges(layout)
+                    ForEach(layout.nodes) { node in
+                        methodNode(node)
+                    }
                 }
             }
+        )
+        // Positioned the same way as `PannableCanvas`'s own zoom-percentage indicator (an overlay
+        // inside the canvas, not a sibling spanning the whole view including the inspector column)
+        // — this is what keeps it from rendering on top of the inspector when it's open.
+        .overlay(alignment: .topTrailing) {
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
     }
 
@@ -199,6 +258,9 @@ private struct CallGraphCanvasView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
+            #if !os(macOS)
+            MultiSelectToggleButton(model: viewModel)
+            #endif
 
             Button {
                 centerDiagram()
@@ -207,10 +269,12 @@ private struct CallGraphCanvasView: View {
             }
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
+            .accessibilityIdentifier("diagram.fitToViewButton")
             Button(action: onConfigure) {
                 Label("Configure Scope", systemImage: "slider.horizontal.3")
             }
             .help("Change the call graph's entry point and depth")
+            .accessibilityIdentifier("diagram.configureButton")
             Button {
                 let layoutPositions = Dictionary(
                     viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -226,18 +290,21 @@ private struct CallGraphCanvasView: View {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             .help("Save a copy as an editable Freeform diagram")
+            .accessibilityIdentifier("diagram.saveAsFreeformButton")
             Button {
                 exportImage()
             } label: {
                 Label("Export Image", systemImage: "photo")
             }
             .help("Export the diagram as an image")
+            .accessibilityIdentifier("diagram.exportImageButton")
             Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
             }
             .help("Toggle the sidebar")
+            .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
 
@@ -259,7 +326,8 @@ private struct CallGraphCanvasView: View {
     private func centerDiagram() {
         guard let fit = FitToView(
             nodeIDs: viewModel.layout.nodes.map(\.id),
-            rect: { viewModel.nodeRect($0) }
+            rect: { viewModel.nodeRect($0) },
+            viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset
@@ -293,5 +361,7 @@ private struct CallGraphNodeView: View {
                         style: StrokeStyle(lineWidth: isSelected ? 2 : 1, dash: node.inScope ? [] : [4, 3])
                     )
             )
+            // Keyed by id (`Type.method`), same rationale/edge case as `TypeNodeView.accessibilityIdentifier`.
+            .accessibilityIdentifier("diagram.callGraphNode.\(node.id)")
     }
 }

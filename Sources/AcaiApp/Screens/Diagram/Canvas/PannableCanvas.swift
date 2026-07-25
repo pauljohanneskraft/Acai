@@ -11,6 +11,9 @@ struct PannableCanvas<Model: CanvasInteraction, Content: View>: View {
     /// trigger edge auto-pan. `nil` when no drag is in progress.
     var activeDragCanvasLocation: CGPoint?
     var autoPanController: EdgeAutoPanController
+    /// Reports the real, measured canvas viewport size whenever it changes — forwarded straight
+    /// through to `InfiniteCanvas`, see its own doc comment for why this exists.
+    var onViewportSizeChange: ((CGSize) -> Void)?
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -31,6 +34,7 @@ struct PannableCanvas<Model: CanvasInteraction, Content: View>: View {
                 }
             },
             autoPanController: autoPanController,
+            onViewportSizeChange: onViewportSizeChange,
             content: content
         )
     }
