@@ -1,7 +1,7 @@
 import XCTest
 
 /// Adds Call Graph-specific accessors (canvas method nodes, the scope-selection config sheet) to
-/// `DiagramScreenBase`'s shared toolbar accessors. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// `DiagramScreenBase`'s shared toolbar accessors.
 final class CallGraphScreen: DiagramScreenBase {
     /// A method's box, by its `CallGraph.Node.id` (`"Type.method"`) — mirrors
     /// `ClassDiagramScreen.typeNode`, same "keyed by name, no stable id" caveat.

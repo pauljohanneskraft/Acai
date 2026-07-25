@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// The actual "applied at indexing time in `CodebaseAnalyzer`" integration the backlog names for
-/// B62: a blocked file is excluded before real Swift parsing runs, exercised end-to-end through
+/// A blocked file is excluded before real Swift parsing runs, exercised end-to-end through
 /// `CodebaseAnalyzer.enrichedArtifact(at:fileFilter:)` — the same call the live reindex path makes.
 @Suite("CodebaseAnalyzer file filter")
 struct CodebaseAnalyzerFileFilterTests {

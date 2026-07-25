@@ -14,8 +14,7 @@ extension KotlinExtractor {
         into typeDecl: inout TypeDeclaration,
         skipEnumEntries: Bool = false
     ) {
-        // Use the parent type's qualified ID as namespace so that nested
-        // types receive correctly-qualified IDs (e.g. `pkg.Outer.Inner`).
+        // Parent type's qualified ID as namespace, so nested types get correctly-qualified IDs.
         let savedNamespace = currentNamespace
         currentNamespace = typeDecl.id
         defer { currentNamespace = savedNamespace }
@@ -37,7 +36,7 @@ extension KotlinExtractor {
         }
 
         // Pre-scan: build methodName → returnType map (unambiguous overloads only), so a same-type
-        // method call — including one declared later in the type — can seed a local's type (RC-I).
+        // method call, including one declared later in the type, can seed a local's type.
         var returnTypesByName: [String: Set<String>] = [:]
         for child in node.namedChildren() where child.nodeType == "function_declaration" {
             guard let nameNode = child.firstChild(withType: "simple_identifier"),
@@ -99,8 +98,8 @@ extension KotlinExtractor {
                 )
             )
         case "anonymous_initializer":
-            // An `init { … }` block — the real constructor body in Kotlin. Its calls belong to
-            // construction, so record them on an `.initializer` member (never a dead-code candidate) (RC2).
+            // An `init { … }` block — Kotlin's real constructor body. Record its calls on an
+            // `.initializer` member so they're never a dead-code false positive.
             context.typeDecl.members.append(extractAnonymousInitializer(child, scope: context.scope))
         case "secondary_constructor":
             context.typeDecl.members.append(
@@ -205,11 +204,9 @@ extension KotlinExtractor {
         )
     }
 
-    /// Extracts the receiver type from a Kotlin extension function declaration.
-    ///
-    /// In `fun String.hello() {}`, `String` is the receiver type. The tree-sitter
-    /// AST places this as a type node child followed by a `"."` anonymous child
-    /// before the function name.
+    /// Extracts the receiver type from a Kotlin extension function declaration. In `fun
+    /// String.hello() {}`, `String` is the receiver type: the AST places it as a type node child
+    /// followed by an anonymous `"."` child before the function name.
     private func extractReceiverType(_ node: Node) -> TypeReference? {
         let children = node.children()
         guard let funIndex = children.firstIndex(where: {
@@ -218,7 +215,7 @@ extension KotlinExtractor {
         var childIndex = children.index(after: funIndex)
         while childIndex < children.endIndex {
             let child = children[childIndex]
-            // Skip type parameters (generics before receiver)
+            // Skip generics before the receiver.
             if child.nodeType == "type_parameters" {
                 childIndex = children.index(after: childIndex)
                 continue
@@ -234,7 +231,7 @@ extension KotlinExtractor {
                     return extractTypeReferenceFromAny(child)
                 }
             }
-            break // Not an extension function
+            break // Not an extension function.
         }
         return nil
     }
@@ -287,16 +284,15 @@ extension KotlinExtractor {
             name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
             typeRef = extractFirstTypeRef(from: node)
         }
-        // No explicit `: Type` annotation — fall back to inferring the type from a direct
-        // construction initializer (`val helper = Helper()`, idiomatic Kotlin), the same heuristic
-        // `localBindings` already applies to locals. Without this, a composed collaborator field
-        // gets no recorded type, so calls through it (`helper.doThing()`) can't resolve.
+        // No explicit `: Type` annotation — infer from a direct construction initializer (`val helper
+        // = Helper()`), same heuristic `localBindings` applies to locals. Without this, calls through
+        // a composed collaborator field (`helper.doThing()`) can't resolve.
         if typeRef == nil, let constructed = constructedTypeRef(from: propertyInitializerNode(of: node)) {
             typeRef = constructed
         }
 
-        // A custom accessor (`get()`/`set()`) nests inside the `property_declaration` as a child; walk
-        // each so accessor-only calls aren't lost, and treat the property as computed (RC2).
+        // A custom accessor (`get()`/`set()`) nests as a child; walk each so accessor-only calls
+        // aren't lost, and treat the property as computed.
         let accessors = node.namedChildren().filter { $0.nodeType == "getter" || $0.nodeType == "setter" }
         var callSites = extractCallSites(from: propertyInitializerNode(of: node), scope: scope)
         for accessor in accessors {
@@ -315,8 +311,8 @@ extension KotlinExtractor {
         )
     }
 
-    /// Records an `init { … }` block's calls on an `.initializer` member (the Kotlin analogue of a
-    /// constructor body), so calls made only during construction aren't lost (RC2).
+    /// Records an `init { … }` block's calls on an `.initializer` member (Kotlin's constructor body),
+    /// so calls made only during construction aren't lost.
     func extractAnonymousInitializer(_ node: Node, scope: CallSiteScope) -> Member {
         Member(
             name: "init", kind: .initializer, accessLevel: .internal,
@@ -338,9 +334,8 @@ extension KotlinExtractor {
         return nil
     }
 
-    /// Classifies the property's initializer expression (the node after the
-    /// anonymous `=` token), when present. The expression may itself be an
-    /// anonymous token (`null`), so namedness is not required.
+    /// Classifies the property's initializer expression (the node after the anonymous `=` token). The
+    /// expression may itself be an anonymous token (`null`), so namedness isn't required.
     private func propertyInitializerValue(of node: Node) -> VariableAssignment.Value? {
         var foundEq = false
         for child in node.children() {
@@ -355,9 +350,8 @@ extension KotlinExtractor {
         return nil
     }
 
-    /// Infers a property's type from a direct construction initializer (`Helper()`, no navigation —
-    /// so `foo.Bar()` isn't mistaken for a construction), when the callee is a same-file declared
-    /// type. Mirrors the construction check `localBindings` already applies to local declarations.
+    /// Infers a property's type from a direct construction initializer (`Helper()`, no navigation so
+    /// `foo.Bar()` isn't mistaken for one), when the callee is a same-file declared type.
     private func constructedTypeRef(from initializerNode: Node?) -> TypeReference? {
         guard let call = initializerNode, call.nodeType == "call_expression",
               call.firstChild(withType: "navigation_expression") == nil,
@@ -393,8 +387,7 @@ extension KotlinExtractor {
         let params = extractFunctionValueParameters(
             node.firstChild(withType: "function_value_parameters")
         )
-        // The constructor body has no `block` wrapper; statements sit inline
-        // under the `secondary_constructor` node (between anonymous braces).
+        // The constructor body has no `block` wrapper; statements sit inline under this node.
         let body = node.firstChild(withType: "block")
             ?? node.firstChild(withType: "statements")
         return Member(

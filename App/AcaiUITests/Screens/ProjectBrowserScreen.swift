@@ -1,7 +1,8 @@
 import XCTest
 
 /// Accessors for the Projects sidebar (`ProjectBrowserView`) — the root screen every journey
-/// starts from. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// starts from.
+@MainActor
 final class ProjectBrowserScreen {
     let app: XCUIApplication
 

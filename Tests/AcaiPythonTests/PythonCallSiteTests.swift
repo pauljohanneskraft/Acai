@@ -55,8 +55,7 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "load" && $0.receiverType == "Config" })
     }
 
-    /// A type-annotated parameter is a provable call-site receiver, just like a typed property
-    /// (dead-code false positive: RC-G).
+    /// A type-annotated parameter is a provable call-site receiver, just like a typed property.
     @Test func callOnTypedParameter() {
         let source = """
         class Engine:
@@ -73,7 +72,7 @@ struct PythonCallSiteTests {
 
     /// A local initialized from a same-type method call (`x = compute()`) resolves its receiver type
     /// from the method's unambiguous `-> Type` annotation, the same way `x = Engine()` already does —
-    /// including when the method is declared *after* the caller (dead-code false positive: RC-I).
+    /// including when the method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget:
@@ -93,7 +92,7 @@ struct PythonCallSiteTests {
     }
 
     /// A call made only from a class-body field initializer is recorded so its target isn't
-    /// false-flagged as dead (RC2).
+    /// false-flagged as dead.
     @Test func capturesClassBodyFieldInitializerCall() {
         let source = """
         def make_handler():
@@ -107,7 +106,7 @@ struct PythonCallSiteTests {
     }
 
     /// A local whose type is provable from construction (`x = Foo()`) or an annotation (`x: Foo = …`)
-    /// resolves the receiver of a later `x.method()` (RC4).
+    /// resolves the receiver of a later `x.method()`.
     @Test func resolvesLocalFromConstructionAndAnnotation() {
         let source = """
         class Engine:
@@ -127,7 +126,7 @@ struct PythonCallSiteTests {
 
     /// The idiomatic `if __name__ == "__main__": main()` entry point makes a call whose target has
     /// nowhere to attach as a caller — collected separately and given a synthetic reachable member so
-    /// `main` isn't a dead-code false positive (RC-H).
+    /// `main` isn't a dead-code false positive.
     @Test func capturesTopLevelMainGuardCall() {
         let source = """
         def main():

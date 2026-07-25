@@ -3,8 +3,7 @@ import AcaiCore
 
 /// A lightweight pointer to one code element — a type, method, module, or relationship — that any
 /// surface already holding a `TypeDeclaration`/`Relationship`/`Violation`/diagram node has enough
-/// information to construct. See `USABILITY_IMPROVEMENTS.md` Part 2, "The fix: one shared
-/// `CodeElementReference`."
+/// information to construct.
 ///
 /// This type carries identity only; `resolutions(in:existingDiagrams:)` (in
 /// `CodeElementReference+Resolution.swift`) is its one capability — resolving into every diagram

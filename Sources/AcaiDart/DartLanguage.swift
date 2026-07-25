@@ -1,8 +1,5 @@
 import AcaiCore
 
-// The Dart language's identity and quirks, including the code-generation filter for the
-// freezed / build_runner / json_serializable ecosystem (`.freezed.dart`, `_$Foo`, …).
-
 extension CodeArtifact.SourceLanguage {
     public static let dart = CodeArtifact.SourceLanguage(rawValue: "dart")
 }
@@ -25,13 +22,12 @@ extension DartCodeParser {
                     ".config.dart", ".chopper.dart", ".mocks.dart", ".mapper.dart"
                 ],
                 typeNamePatterns: [
-                    NamePattern(prefix: "_$"),               // freezed implementation classes
-                    NamePattern(prefix: "$", suffix: "CopyWith")  // freezed copy-with interfaces
+                    NamePattern(prefix: "_$"),                    // freezed implementation classes
+                    NamePattern(prefix: "$", suffix: "CopyWith")   // freezed copy-with interfaces
                 ]
             ),
             excludedDirectories: [".dart_tool", "build"],
-            // Flutter widget lifecycle methods are called by the framework, not by resolvable call
-            // sites; `main` is the app entry point.
+            // Flutter widget lifecycle methods are called by the framework, not resolvable call sites.
             entryPointMarkers: EntryPointMarkers(
                 methodNames: [
                     "main", "build", "createstate", "initstate", "dispose",

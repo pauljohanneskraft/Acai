@@ -4,9 +4,9 @@ import Testing
 @testable import AcaiCLI
 import AcaiQuality
 
-/// Covers `acai quality` — the merged code-quality check + smells: rule/flag parsing, baseline drift,
-/// the pass/fail gate, `--explore` (non-failing) ranking, the built-in default smell budgets when no
-/// rules file is given, and lenient/robust YAML rule-file decoding.
+/// Covers `acai quality`: rule/flag parsing, baseline drift, the pass/fail gate, `--explore`
+/// (non-failing) ranking, the built-in default smell budgets when no rules file is given, and
+/// lenient/robust YAML rule-file decoding.
 @Suite("CLI: quality command")
 struct QualityCommandTests {
 
@@ -158,7 +158,6 @@ struct QualityCommandTests {
                 "--source", src.path, "--language", "swift",
                 "--rules", rulesURL.path, "--explore", "--output", dir.appendingPathComponent("o.txt").path
             ])
-            // --explore reports but does not throw.
             try cmd.run()
         }
     }

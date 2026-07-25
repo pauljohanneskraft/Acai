@@ -96,7 +96,7 @@ struct CodableRoundTripTests {
     }
 
     @Test func memberBodyFactsRoundTrip() throws {
-        // Field reads and every `CallReceiver` case must survive the wire format (issues #111).
+        // Field reads and every `CallReceiver` case must survive the wire format.
         let original = Member(
             name: "run",
             kind: .method,

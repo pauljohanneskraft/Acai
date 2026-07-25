@@ -8,9 +8,8 @@ import AcaiDiff
 
 // Per-diagram-kind PNG rendering shared by the CLI `acai image` command and the MCP `acai_image` tool.
 // Each value carries the output scale + palette and renders one diagram kind — plain and, where it has
-// a two-revision form, a delta with each element tinted by its diff status — via the AcaiRender
-// `*ImageRenderer`s. Promoted here from the CLI. Kinds that enrich (class, package) take the artifact's
-// `LanguageConfiguration` injected, so this target names no language.
+// a two-revision form, a delta with each element tinted by its diff status. Kinds that enrich (class,
+// package) take the artifact's `LanguageConfiguration` injected, so this target names no language.
 
 /// Class-diagram PNG rendering.
 public struct ClassImageExporter: Sendable {

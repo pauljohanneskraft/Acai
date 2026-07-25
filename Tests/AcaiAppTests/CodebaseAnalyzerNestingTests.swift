@@ -3,10 +3,9 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-/// Regression coverage for the "Nesting Depth reads 0" bug: the app used to persist the
-/// display-*flattened* artifact and then compute metrics on it, so `nestingDepth` (which reads the
-/// nested-type tree) collapsed to 0 for every type. The fix stores the un-flattened **semantic**
-/// artifact and flattens only for display via ``CodebaseAnalyzer/flattenedForDisplay(_:)``.
+/// Regression coverage: persisting the display-*flattened* artifact made `nestingDepth` (which
+/// reads the nested-type tree) collapse to 0. Fix stores the un-flattened **semantic** artifact
+/// and flattens only for display via ``CodebaseAnalyzer/flattenedForDisplay(_:)``.
 @Suite("App: Nesting depth survives storage")
 struct CodebaseAnalyzerNestingTests {
 
@@ -26,12 +25,11 @@ struct CodebaseAnalyzerNestingTests {
     @Test func semanticArtifactPreservesNestingWhileDisplayFlattensToZero() {
         let semantic = nestedArtifact()
 
-        // The stored *semantic* artifact keeps the nested-type tree, so metrics see Outer → Inner.
+        // Semantic artifact keeps the nested-type tree, so metrics see Outer → Inner.
         let semanticMax = semantic.computeMetrics().types.map(\.nestingDepth).max() ?? 0
         #expect(semanticMax == 1)
 
-        // The display flatten hoists `Inner` to the top level with a qualified name — this is the
-        // pre-fix stored form, and exactly why nesting used to read 0.
+        // Display flatten hoists `Inner` to the top level — the pre-fix stored form.
         let display = CodebaseAnalyzer().flattenedForDisplay(semantic)
         #expect(display.types.count == 2)
         #expect(display.types.contains { $0.name == "Outer.Inner" })

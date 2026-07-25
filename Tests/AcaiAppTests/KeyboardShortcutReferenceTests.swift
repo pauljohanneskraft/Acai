@@ -1,13 +1,11 @@
 import Testing
 @testable import AcaiApp
 
-/// `KeyboardShortcutReference` (B56): the data backing the "Keyboard Shortcuts" panel. Unit tested —
-/// checks internal consistency (no blank/duplicate entries). It does **not** and cannot verify the
-/// panel's real invariant — that every listed shortcut matches an actual `.keyboardShortcut(...)`
-/// call site and vice versa — since that would mean parsing every view in the app; that cross-check
-/// is manual, done by hand against a `grep -rn ".keyboardShortcut("` whenever this list or a real
-/// shortcut changes. `coversKnownShortcutsAsOfLastManualCheck` below pins the *current* hand-checked
-/// set so an edit here is deliberate, not a silent drift from that manual check.
+/// `KeyboardShortcutReference` backs the "Keyboard Shortcuts" panel. These checks cover internal
+/// consistency (no blank/duplicate entries) — they cannot verify every listed shortcut matches a
+/// real `.keyboardShortcut(...)` call site, since that would mean parsing every view; that
+/// cross-check is manual (`grep -rn ".keyboardShortcut("`) whenever this list or a shortcut changes.
+/// `coversKnownShortcutsAsOfLastManualCheck` pins the hand-checked set so drift here is deliberate.
 @Suite("Keyboard Shortcut Reference")
 struct KeyboardShortcutReferenceTests {
 
@@ -35,10 +33,9 @@ struct KeyboardShortcutReferenceTests {
         #expect(Set(allIDs).count == allIDs.count)
     }
 
-    /// Pins the set hand-verified against `grep -rn ".keyboardShortcut(" Sources/AcaiApp` as of B56
-    /// landing: ⌘0 (fit to view), ⌘Z/⇧⌘Z (undo/redo), ⌘C/X/V/A (freeform selection), ⌫ (freeform
-    /// delete), plus ⌘? (this panel's own Help-menu shortcut, macOS-only). A future edit to either
-    /// side must update this test deliberately — it is a pin, not a live completeness check.
+    /// Pins the set hand-verified against `grep -rn ".keyboardShortcut(" Sources/AcaiApp`: ⌘0 (fit
+    /// to view), ⌘Z/⇧⌘Z (undo/redo), ⌘C/X/V/A (freeform selection), ⌫ (freeform delete), plus ⌘?
+    /// (this panel's own Help-menu shortcut, macOS-only). Not a live completeness check.
     @Test("The hand-verified shortcut set has not silently drifted")
     func coversKnownShortcutsAsOfLastManualCheck() {
         let allSymbols = Set(KeyboardShortcutReference.groups.flatMap { $0.shortcuts.map(\.symbol) })

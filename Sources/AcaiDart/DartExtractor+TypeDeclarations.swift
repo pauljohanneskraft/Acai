@@ -15,7 +15,6 @@ extension DartExtractor {
         let genericParams = extractTypeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
 
-        // Superclass (extends).
         if let superclassNode = node.child(byFieldName: "superclass") {
             for ref in extractSuperclassTypes(superclassNode) {
                 inheritedTypes.append(ref)
@@ -26,7 +25,7 @@ extension DartExtractor {
             }
         }
 
-        // Mixins (with) — may be nested inside the superclass node.
+        // Mixins may be nested inside the superclass node.
         var mixinNodes: [Node] = node.allChildren(withType: "mixins")
         if let superclassNode = node.child(byFieldName: "superclass") {
             mixinNodes += superclassNode.allChildren(withType: "mixins")
@@ -39,7 +38,6 @@ extension DartExtractor {
             }
         }
 
-        // Interfaces (implements).
         if let interfacesNode = node.child(byFieldName: "interfaces") {
             for ref in extractTypeList(interfacesNode) {
                 inheritedTypes.append(ref)
@@ -75,7 +73,6 @@ extension DartExtractor {
         let nodeLoc = loc(node)
         var inheritedTypes: [TypeReference] = []
 
-        // Mixins.
         for child in node.children() where child.nodeType == "mixins" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
@@ -84,7 +81,6 @@ extension DartExtractor {
             }
         }
 
-        // Interfaces.
         for child in node.children() where child.nodeType == "interfaces" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
@@ -155,7 +151,6 @@ extension DartExtractor {
         let genericParams = extractTypeParametersFromChildren(node)
         var inheritedTypes = extractMixinOnConstraints(node, typeId: typeId)
 
-        // Interfaces.
         for child in node.children() where child.nodeType == "interfaces" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)

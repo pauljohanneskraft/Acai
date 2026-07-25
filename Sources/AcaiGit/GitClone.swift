@@ -1,12 +1,10 @@
 import Foundation
 import SwiftGitX
 
-/// Clones (or, if `destination` already holds a checkout of the same remote, incrementally
-/// fetches and switches) a remote repository at `ref` into `destination` — a real `.git` checkout,
-/// replacing a downloaded-and-extracted zipball. `remoteURL` carries any needed credentials
-/// embedded in its userinfo component (e.g. `https://x-access-token:{PAT}@github.com/owner/repo.git`
-/// — libgit2's HTTP transport authenticates from URL-embedded credentials directly, no separate
-/// callback needed); this type has no notion of GitHub or PATs itself.
+/// Clones a remote repository at `ref` into `destination`, or — if already checked out there —
+/// incrementally fetches and switches instead. `remoteURL` carries any credentials embedded in its
+/// userinfo (e.g. `https://x-access-token:{PAT}@github.com/owner/repo.git`); libgit2's HTTP
+/// transport authenticates directly from that, no separate callback needed.
 public struct GitClone {
     public let remoteURL: URL
     public let ref: String

@@ -2,10 +2,8 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-/// Regression tests for the data-class / anemic score after the computed-property fix: computed
-/// properties (a SwiftUI `View`'s `body`, derived getters) are behaviour, not data, so they no longer
-/// inflate ``TypeDeclaration/dataClassScore`` toward the 1.0 false positive that dominated the smell
-/// output. See ``TypeDeclaration/dataClassScore`` and ``Member/isStoredProperty``/``Member/isBehaviour``.
+/// Computed properties (a SwiftUI `View`'s `body`, derived getters) are behaviour, not data, and
+/// must not inflate ``TypeDeclaration/dataClassScore``. See ``Member/isStoredProperty``/``Member/isBehaviour``.
 @Suite("Core: Data-Class Score")
 struct DataClassScoreTests {
 
@@ -24,7 +22,7 @@ struct DataClassScoreTests {
 
     @Test func computedPropertiesCountAsBehaviour() {
         // A SwiftUI-View shape: one stored `let` + a computed `body`. The computed property is
-        // behaviour (its getter is code), so this is 1 stored of 2 → 0.5, not the old 1.0 false positive.
+        // behaviour, so this is 1 stored of 2 → 0.5.
         let view = type("Row", kind: .struct, module: "App", members: [
             Member(name: "title", kind: .property, accessLevel: .internal),
             Member(name: "body", kind: .property, accessLevel: .internal, isComputed: true)
@@ -33,7 +31,7 @@ struct DataClassScoreTests {
     }
 
     @Test func pureDataTransferObjectStaysFullyData() {
-        // Guard against over-correction: a DTO of stored `let`s only must still score 1.0 (pure data).
+        // A DTO of stored `let`s only must still score 1.0 (pure data).
         let dto = type("Point", kind: .struct, module: "App", members: [
             Member(name: "x", kind: .property, accessLevel: .public),
             Member(name: "y", kind: .property, accessLevel: .public),

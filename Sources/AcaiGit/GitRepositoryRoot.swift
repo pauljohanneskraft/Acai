@@ -1,10 +1,8 @@
 import Foundation
 
 /// Walks upward from `directory` to find the git repository it belongs to. `Repository.init(at:)`
-/// (via libgit2's `git_repository_open`) requires an exact match on the repository's working
-/// directory or its `.git` folder — unlike plain `git`, which searches upward from any
-/// subdirectory. This is what lets `GitCheckout`/`GitDiffSnapshot` work when a codebase points at
-/// a subdirectory of a larger repository (e.g. one package of a monorepo).
+/// requires an exact match on the working directory or `.git` folder — unlike plain `git`, which
+/// searches upward from any subdirectory.
 struct GitRepositoryRoot {
     let directory: URL
 

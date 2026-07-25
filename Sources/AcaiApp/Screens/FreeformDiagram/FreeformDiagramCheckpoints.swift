@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sheet listing a freeform diagram's saved checkpoints (B27): save a new one named/timestamped,
+/// Sheet listing a freeform diagram's saved checkpoints: save a new one named/timestamped,
 /// restore one (replacing the canvas's current nodes/edges as one undoable step), or delete one.
 /// Deliberately not version control — no branching or diffing between checkpoints.
 @MainActor

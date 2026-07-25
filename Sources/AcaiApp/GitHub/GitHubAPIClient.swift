@@ -1,16 +1,14 @@
 import Foundation
 
-/// A repository owner's login, as GitHub's API nests it under `Repository.owner`. Kept as a
-/// sibling of `GitHubAPIClient.Repository` rather than nested inside it, so no declared type here
-/// nests more than one level deep.
+/// A repository owner's login. Kept as a sibling of `GitHubAPIClient.Repository` rather than nested,
+/// so no declared type here nests more than one level deep.
 struct GitHubRepositoryOwner: Decodable, Hashable {
     var login: String
 }
 
-/// A branch or tag name, as returned by the branches/tags list endpoints. `kind` is attached by
-/// `GitHubAPIClient.branches`/`.tags` after decoding (the underlying endpoints don't return it) and
-/// folded into `id` so a branch and a tag sharing a name (e.g. both called `v1`) don't collide as
-/// `Identifiable` ids when the two lists are combined into one `ForEach`/`Picker`.
+/// A branch or tag name. `kind` is attached after decoding (the endpoints don't return it) and
+/// folded into `id` so a branch and tag sharing a name don't collide as `Identifiable` ids when
+/// both lists are combined into one `ForEach`/`Picker`.
 struct GitHubRef: Identifiable, Hashable {
     enum Kind: String, Hashable, Codable {
         case branch
@@ -80,13 +78,11 @@ struct GitHubAPIClient {
         try await get("user", as: User.self)
     }
 
-    /// Page size `repositories(page:)` requests — a caller paging through results knows it has
-    /// reached the last page once a response comes back shorter than this.
+    /// Page size for `repositories(page:)` — a response shorter than this is the last page.
     static let repositoriesPerPage = 50
 
-    /// `GET /user/repos` — one page; the picker does client-side substring filtering over
-    /// fetched pages, which is enough for typical account sizes. Callers wanting every repository
-    /// should page through until a response shorter than `repositoriesPerPage` comes back.
+    /// `GET /user/repos` — one page; the picker does client-side substring filtering over fetched
+    /// pages. Callers wanting every repository should page until a shorter response comes back.
     func repositories(page: Int = 1) async throws -> [Repository] {
         try await get(
             "user/repos",

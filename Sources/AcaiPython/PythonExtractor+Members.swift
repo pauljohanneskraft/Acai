@@ -8,7 +8,6 @@ extension PythonExtractor {
     /// Parses a (non-enum) class body: nested classes, methods, class-body fields, and instance
     /// attributes synthesised from `self.x = …` assignments inside the methods.
     mutating func parseClassBody(_ body: Node, into decl: inout TypeDeclaration) {
-        // Nested classes.
         for child in body.namedChildren() {
             if child.nodeType == "class_definition" {
                 decl.nestedTypes.append(extractClass(child, decorators: []))
@@ -20,10 +19,8 @@ extension PythonExtractor {
 
         let methodNodes = collectMethodNodes(body)
 
-        // Fields come from two places, both required for real Python code:
-        // (a) class-body annotated/assigned attributes, (b) `self.x = …` inside methods.
         // A class-body initializer can't reference `self`, so file-level type names are the only
-        // resolvable receivers — enough to record its calls (RC2) without the (not-yet-built) field map.
+        // resolvable receivers.
         var fields = collectClassBodyFields(body, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
         let existing = Set(fields.map(\.name))
         fields.append(contentsOf: synthesizeSelfFields(fromMethods: methodNodes, existing: existing))
@@ -59,8 +56,8 @@ extension PythonExtractor {
 
     /// A `methodName → returnTypeName` map from the class's own method nodes (annotated with an
     /// explicit `-> Type`; Python has no implicit return-type inference to fall back to), so a
-    /// same-type method call — including one declared later in the class — can seed a local's type
-    /// (RC-I). Overloaded names with differing return types are dropped rather than guessed.
+    /// same-type method call — including one declared later in the class — can seed a local's type.
+    /// Overloaded names with differing return types are dropped rather than guessed.
     private func methodReturnTypeMap(
         fromMethodNodes methodNodes: [(node: Node, decorators: [String])]
     ) -> [String: String] {

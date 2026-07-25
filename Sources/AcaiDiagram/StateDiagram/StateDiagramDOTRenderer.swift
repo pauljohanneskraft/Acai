@@ -6,10 +6,9 @@
 public struct StateDiagramDOTRenderer: DOTRenderer {
     public let renderOptions: DiagramRenderOptions
 
-    /// Optional per-transition colour override (a hex like `#2e7d32`). When it returns a non-`nil`
-    /// colour for a transition, that colour wins over `theme.edgeColor`; `nil` (or a `nil` closure)
-    /// leaves colouring unchanged. Used to tint a delta diagram's added/removed transitions.
-    /// Default `nil` keeps existing output byte-for-byte identical.
+    /// Optional per-transition colour override (a hex like `#2e7d32`) that wins over
+    /// `theme.edgeColor` when non-`nil`. Used to tint a delta diagram's added/removed transitions;
+    /// default `nil` keeps existing output byte-for-byte identical.
     public let transitionColor: (@Sendable (StateDiagram.Transition) -> String?)?
 
     public init(

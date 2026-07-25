@@ -6,8 +6,7 @@ extension SourceLocation {
 }
 
 extension Optional where Wrapped == SourceLocation {
-    /// A trailing `  file:line` fragment for a human report row, or empty when the location is
-    /// unknown. Keeps the "append the jump target if we have one" rendering in one place.
+    /// A trailing `  file:line` fragment for a human report row, or empty when unknown.
     var suffix: String {
         map { "  \($0.jumpTarget)" } ?? ""
     }

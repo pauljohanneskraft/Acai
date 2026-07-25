@@ -74,15 +74,12 @@ struct InfiniteCanvas<Content: View>: View {
             // swiftlint:disable:next redundant_discardable_let
             let _ = configureAutoPan(viewportSize: geometry.size)
             ZStack {
-                // Grid background layer.
                 CanvasGridBackground(scale: scale, offset: offset)
 
-                // Transformed content layer.
                 content()
                     .scaleEffect(scale, anchor: .topLeading)
                     .offset(x: offset.x, y: offset.y)
 
-                // Selection rectangle overlay (screen coordinates).
                 selectionRectOverlay
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -91,10 +88,8 @@ struct InfiniteCanvas<Content: View>: View {
             #if os(macOS)
             .gesture(selectionGesture)
             #else
-            // No trackpad-scroll input to pan/zoom with on iOS: one-finger drag pans the canvas and
-            // pinch zooms it instead. Marquee selection-by-drag (the macOS gesture's role) isn't
-            // wired up here — a touch-selection UX (long-press / explicit "Select" mode) is tracked
-            // as a follow-up, the same as Cmd-click multi-select's touch equivalent.
+            // No trackpad-scroll input on iOS: one-finger drag pans and pinch zooms instead.
+            // Marquee selection-by-drag isn't wired up here (no touch equivalent yet).
             .gesture(panGesture)
             .simultaneousGesture(magnificationGesture)
             #endif
@@ -158,7 +153,6 @@ struct InfiniteCanvas<Content: View>: View {
             }
             .onEnded { _ in
                 if let start = selectionStart, let end = selectionCurrent {
-                    // Convert screen coordinates to canvas coordinates.
                     let canvasStart = screenToCanvas(start)
                     let canvasEnd = screenToCanvas(end)
                     let rect = CGRect(

@@ -1,12 +1,9 @@
 import ArgumentParser
 import Foundation
 
-/// A pretty-printed, key-sorted JSON rendering of a value — the single output shape shared by every
-/// JSON-producing command (`analyze`, `metrics`, `cycles`, `check`, `diff`, and the analysis
-/// commands). A value you construct from what you want to emit (`JSONReport(payload).text`), so the
-/// encoder configuration lives in exactly one place instead of being copy-pasted into each command.
+/// A pretty-printed, key-sorted JSON rendering of a value — the shared output shape for every
+/// JSON-producing command.
 struct JSONReport {
-    /// The rendered JSON document.
     let text: String
 
     init(_ value: some Encodable) throws {

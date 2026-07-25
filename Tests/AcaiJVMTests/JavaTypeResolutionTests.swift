@@ -24,7 +24,6 @@ struct JavaTypeResolutionTests {
 
         let inheritance = artifact.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.Dog")
-        // Same-file target must be resolved to the qualified ID.
         #expect(inheritance?.target == "com.example.Animal")
     }
 
@@ -42,7 +41,6 @@ struct JavaTypeResolutionTests {
         """
         let artifact = parser.parse(source: source, fileName: "Entities.java")
         let entity = artifact.types.first { $0.name == "Entity" }!
-        // inheritedTypes should use qualified IDs for same-file types.
         #expect(entity.inheritedTypes.contains { $0.name == "com.example.Identifiable" })
     }
 
@@ -82,7 +80,6 @@ struct JavaTypeResolutionTests {
         let inner = outer.nestedTypes.first { $0.name == "Inner" }!
         let staticNested = outer.nestedTypes.first { $0.name == "StaticNested" }!
 
-        // Nested type IDs must include the parent type.
         #expect(inner.id == "com.example.Outer.Inner")
         #expect(inner.qualifiedName == "com.example.Outer.Inner")
         #expect(staticNested.id == "com.example.Outer.StaticNested")
@@ -132,10 +129,8 @@ struct JavaTypeResolutionTests {
         let artifact = parser.parse(source: source, fileName: "Result.java")
         let rels = artifact.relationships.filter { $0.kind == .inheritance }
         #expect(rels.count == 2)
-        // Sources must be the fully qualified nested type IDs.
         #expect(rels.contains { $0.source == "com.example.Result.Success" })
         #expect(rels.contains { $0.source == "com.example.Result.Failure" })
-        // Targets must point to the parent.
         #expect(rels.allSatisfy { $0.target == "com.example.Result" })
     }
 
@@ -163,7 +158,6 @@ struct JavaTypeResolutionTests {
         """
         let artifact = parser.parse(source: source, fileName: "Domain.java")
 
-        // All relationships in the same file should have qualified source and target.
         for rel in artifact.relationships {
             #expect(
                 rel.source.contains("com.example.domain"),

@@ -289,8 +289,7 @@ struct DartTypeTests {
     }
 
     @Test func nestedClasses() {
-        // Dart does not support nested class definitions.
-        // tree-sitter-dart produces ERROR nodes for this pattern.
+        // Dart doesn't support nested classes; tree-sitter-dart produces ERROR nodes for this.
         let source = """
         class Outer {
             String outerField;

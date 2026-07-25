@@ -6,8 +6,7 @@ import AcaiCore
 
 /// Covers `analyze`, `store`, and `list` at the safe level: validation/parse paths and the
 /// `analyze` run path via `--output`. The `store`/`list` run paths write/read the user's
-/// `~/.config/acai`, so they are only exercised at the parse level (plus `store`'s source-dir guard,
-/// which runs before any storage write).
+/// `~/.config/acai`, so they are only exercised at the parse level.
 @Suite("Analyze / Store / List Commands")
 struct AnalyzeListStoreCommandTests {
 
@@ -59,7 +58,6 @@ struct AnalyzeListStoreCommandTests {
     }
 
     @Test func storeRequiresBothPositionalArguments() {
-        // Only one of the two required positionals supplied.
         #expect {
             _ = try AcaiCommand.parseAsRoot(["store", "only-name"])
         } throws: { error in

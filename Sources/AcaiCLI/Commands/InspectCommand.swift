@@ -5,8 +5,7 @@ import AcaiLibrary
 
 extension AcaiCommand {
     /// Enumerates types and their members, filtered by a type `Selector` + member facets, each row
-    /// carrying `file:line`. The highest-leverage query for an agent: "which public classes in module
-    /// X have a method with 4+ parameters?" answered as JSON jump targets.
+    /// carrying `file:line` — e.g. "which public classes in module X have a method with 4+ parameters?"
     struct Inspect: ParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Enumerate types and members as JSON/human, filtered by a selector"

@@ -12,9 +12,8 @@ struct SwiftFieldReadTests {
     }
 
     @Test func bareAndSelfQualifiedReadsAreCaptured() {
-        // Reads are captured in expression position. (Like call sites, the Swift extractor skips local
-        // `let`/`var` declarations inside a body, so reads in a local's initializer aren't captured —
-        // a pre-existing limitation shared with call-site extraction, not specific to reads.)
+        // Reads are captured in expression position; like call sites, a local's own initializer isn't
+        // walked, since the extractor skips local `let`/`var` declarations inside a body.
         let source = """
         class Counter {
             var total: Int = 0
@@ -26,8 +25,8 @@ struct SwiftFieldReadTests {
         """
         let reads = member("describe", in: source)?.fieldReads ?? []
         let names = Set(reads.map(\.name))
-        #expect(names.contains("total"))   // bare identifier read
-        #expect(names.contains("label"))   // self-qualified read
+        #expect(names.contains("total"))
+        #expect(names.contains("label"))
         #expect(reads.allSatisfy { $0.receiver == nil })
     }
 

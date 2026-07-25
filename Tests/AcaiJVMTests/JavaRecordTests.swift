@@ -14,7 +14,7 @@ struct JavaRecordTests {
         #expect(artifact.types.count == 1)
         let point = artifact.types[0]
         #expect(point.kind == .record)
-        #expect(point.members.count >= 2) // x and y as properties
+        #expect(point.members.count >= 2)
     }
 
     @Test func recordWithGenerics() {

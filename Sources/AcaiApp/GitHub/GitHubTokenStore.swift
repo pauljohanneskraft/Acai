@@ -2,21 +2,18 @@ import Foundation
 import Security
 
 /// Keychain-backed storage for the signed-in GitHub account's credential + display info, shared
-/// verbatim between macOS and iOS — Keychain access to an app's own items doesn't require the
-/// sandbox entitlement on either platform, unlike the filesystem bookmarks `ScopedResourceAccess`
-/// needs. Only one account is ever stored at a time (`account`), matching the single "GitHub
-/// sign-in" the app exposes.
+/// verbatim between macOS and iOS — unlike the filesystem bookmarks `ScopedResourceAccess` needs,
+/// Keychain access to an app's own items requires no sandbox entitlement. Only one account is
+/// ever stored at a time, matching the single "GitHub sign-in" the app exposes.
 struct GitHubTokenStore {
     private let service = "de.kraftsoftware.Acai.github"
     private let account = "default"
 
-    /// XCUITest UI test bundles run with `CODE_SIGNING_ALLOWED=NO`, which leaves them without a
-    /// keychain-access-group entitlement — `SecItemAdd`/`SecItemUpdate` fail there with
-    /// `errSecMissingEntitlement` (-34018), verified empirically. When a UI-test fixture is active,
-    /// storage redirects to a plain JSON file under the fixture's own disposable directory instead
-    /// — the same one signal `ProjectStore.init` already uses to redirect its own storage.
-    /// **Strictly gated**: `UITestFixtureResolver().resolveBaseDir()` is `nil` for every real user
-    /// launch, so a real user's credential can never land in a plain file.
+    /// XCUITest bundles run with `CODE_SIGNING_ALLOWED=NO`, so they lack a keychain-access-group
+    /// entitlement and `SecItemAdd`/`SecItemUpdate` fail with `errSecMissingEntitlement` (-34018).
+    /// When a UI-test fixture is active, storage redirects to a plain JSON file under the
+    /// fixture's disposable directory instead. `resolveBaseDir()` is `nil` for every real user
+    /// launch, so a real credential can never land in a plain file.
     private var fixtureFileURL: URL? {
         UITestFixtureResolver().resolveBaseDir()?.appendingPathComponent("github-token.json")
     }

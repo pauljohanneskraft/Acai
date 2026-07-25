@@ -39,7 +39,6 @@ public struct ClassDiagramDOTRenderer: DOTRenderer {
             )
         }
 
-        // Render external dependency nodes (light gray placeholders).
         if !enriched.externalTypes.isEmpty {
             output += nodeRenderer.renderExternal(types: enriched.externalTypes)
         }

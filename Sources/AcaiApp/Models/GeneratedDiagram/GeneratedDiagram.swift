@@ -14,9 +14,9 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     /// instead of a separate optional property per type.
     var content: Content
     var codebaseID: UUID
-    /// When set, the diagram renders in **delta mode**: the codebase's current working-tree analysis
-    /// (the "new" side) is compared against its source at this git revision (`HEAD`, a branch, a SHA,
-    /// `HEAD~1`, …) and added/removed/changed elements are colour-coded. `nil` renders normally.
+    /// When set, the diagram renders in delta mode: the working-tree analysis is compared against
+    /// its source at this git revision and added/removed/changed elements are colour-coded.
+    /// `nil` renders normally.
     var comparisonGitRef: String?
     var nodePositions: [String: NodePosition] = [:]
     /// User-overridden node sizes (from resize handles).

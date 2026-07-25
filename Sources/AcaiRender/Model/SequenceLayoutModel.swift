@@ -3,15 +3,12 @@ import Foundation
 import AcaiDiagram
 
 /// Pure, headless-friendly layout for a `SequenceDiagram`: turns participants and
-/// time-ordered messages into concrete geometry (header rects, vertical lifelines,
-/// horizontal message arrows and execution-occurrence bars). Shared by the live app canvas,
-/// the freeform-diagram editor and the CLI image export, so all draw identical diagrams —
-/// mirroring how `DiagramLayoutModel` backs the class diagram.
+/// time-ordered messages into concrete geometry (header rects, lifelines, message arrows,
+/// activation bars). Shared by the app canvas, the freeform editor and CLI image export.
 ///
 /// Coordinates originate at `(0, 0)` (top-left of the header row). Participants are placed
-/// left-to-right in their generated order; a caller may override a participant's horizontal
-/// centre (keyed by `Participant.id`) to spread lifelines apart, which is the only layout
-/// editing the generated sequence view allows.
+/// left-to-right in generated order; a caller may override a participant's horizontal centre
+/// (keyed by `Participant.id`), the only layout editing the generated view allows.
 public struct SequenceLayoutModel {
 
     // MARK: - Tunables
@@ -34,8 +31,8 @@ public struct SequenceLayoutModel {
     public static let activationNestOffset: CGFloat = 5
     /// Vertical lead/tail an activation bar extends past its first/last message.
     public static let activationCap: CGFloat = 8
-    /// Extra vertical space inserted before a row that opens a fragment operand, making room
-    /// for the operator tab, guard label and operand separator without overlapping messages.
+    /// Extra vertical space before a row opening a fragment operand, for the operator tab, guard
+    /// label and separator.
     public static let fragmentLeadIn: CGFloat = 36
 
     // MARK: - Geometry
@@ -102,9 +99,8 @@ public struct SequenceLayoutModel {
         /// Guard labels with the y of the operand they belong to (just below its top edge).
         public let guards: [(label: String, y: CGFloat)]
 
-        /// The operator tab in the frame's top-left corner. Width tracks the operator name
-        /// (`critical` is wider than `alt`); shared by the rendering and the hit target so the
-        /// whole tab is always clickable.
+        /// The operator tab in the frame's top-left corner; width tracks the operator name so the
+        /// whole tab stays clickable.
         public var tabRect: CGRect {
             CGRect(
                 x: rect.minX, y: rect.minY,
@@ -130,9 +126,8 @@ public struct SequenceLayoutModel {
         let (yByOrder, rowsBottom) = Self.rowYs(for: ordered, fragments: diagram.fragments, top: messageAreaTop)
         let lifelineBottom = rowsBottom + Self.lifelineTailGap
 
-        // Place headers left-to-right, honouring per-participant width and overrides. Each
-        // participant keeps a stable *default* slot; an override moves only that header, leaving
-        // its neighbours' slots untouched (so dragging one lifeline doesn't drag the rest).
+        // Each participant keeps a stable default slot; an override moves only that header,
+        // leaving neighbours untouched (so dragging one lifeline doesn't drag the rest).
         var frames: [ParticipantFrame] = []
         var frameByID: [String: ParticipantFrame] = [:]
         var defaultRightEdge: CGFloat = 0  // right edge of the previous *default* slot
@@ -158,16 +153,14 @@ public struct SequenceLayoutModel {
         }
         self.participants = frames
 
-        // Lay out messages top-to-bottom while tracking execution occurrences: a call pushes an
-        // activation on the receiver, the matching return pops it. Arrow endpoints sit on the
-        // edges of the active bars so arrows visibly connect activations (UML 2 notation).
-        // Endpoints resolve by participant *id* — the key `Message.from`/`to` reference. For a
-        // type that is its simple name; for a free function it is a namespaced `func:` id distinct
-        // from the display name, so keying by name here would orphan every free-function message.
+        // A call pushes an activation on the receiver; the matching return pops it. Arrow
+        // endpoints sit on the active bars' edges (UML 2 notation). Endpoints resolve by
+        // participant id, not display name — a free function's id is a namespaced `func:` string
+        // distinct from its name.
         var pass = ActivationPass(frameByID: frameByID)
 
-        // The initiating participant gets an implicit root activation: it is "executing" for the
-        // whole interaction even though no message ever activates it.
+        // The initiating participant gets an implicit root activation, even though no message
+        // ever activates it.
         if let first = ordered.first, frameByID[first.from] != nil {
             pass.push(on: first.from, at: (yByOrder[first.order] ?? messageAreaTop) - Self.activationCap)
         }
@@ -181,8 +174,7 @@ public struct SequenceLayoutModel {
         self.messages = pass.messages
         self.activations = pass.bars
 
-        // Combined fragments: frame each one around the rows of the messages it covers. Larger
-        // (outer) fragments first so nested fragments draw on top.
+        // Larger (outer) fragments first so nested fragments draw on top.
         self.fragments = diagram.fragments
             .compactMap { Self.fragmentFrame($0, yByOrder: yByOrder, messages: ordered, frameByID: frameByID) }
             .sorted { $0.rect.width * $0.rect.height > $1.rect.width * $1.rect.height }
@@ -194,10 +186,8 @@ public struct SequenceLayoutModel {
         self.contentSize = CGSize(width: width, height: lifelineBottom)
     }
 
-    /// Assigns each message its row y (top-to-bottom by order), inserting extra lead-in before
-    /// rows that open a fragment operand so the operator tab, guard and separator have their own
-    /// vertical space instead of overlapping message labels. Returns the y per message order and
-    /// the bottom of the last row.
+    /// Assigns each message its row y, inserting extra lead-in before rows that open a fragment
+    /// operand so the tab/guard/separator don't overlap message labels.
     private static func rowYs(
         for ordered: [SequenceDiagram.Message],
         fragments: [SequenceDiagram.Fragment],
@@ -274,8 +264,7 @@ public struct SequenceLayoutModel {
 
     /// Estimated header width for a participant name (no SwiftUI measurement headlessly).
     public static func headerWidth(for name: String) -> CGFloat {
-        // ~8pt per character (13pt semibold monospaced) plus horizontal padding, clamped to a
-        // sensible range.
+        // ~8pt/char (13pt semibold monospaced) plus padding, clamped to a sensible range.
         let estimated = CGFloat(name.count) * 8 + 32
         return min(max(estimated, 96), 300)
     }

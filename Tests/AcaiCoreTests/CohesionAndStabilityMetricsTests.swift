@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-/// Covers the two static-analysis instruments added in the audit follow-up: the LCOM4 *member
-/// partition* (the clusters a low-cohesion type splits into) and Stable-Dependencies-Principle breach
-/// detection (a module depending on a less-stable one).
+/// Covers the LCOM4 *member partition* (the clusters a low-cohesion type splits into) and
+/// Stable-Dependencies-Principle breach detection (a module depending on a less-stable one).
 @Suite("Core: Cohesion partition & stable-dependencies")
 struct CohesionAndStabilityMetricsTests {
 

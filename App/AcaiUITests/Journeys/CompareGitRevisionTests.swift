@@ -4,13 +4,14 @@ import XCTest
 /// end to end, on both platforms, through the real app UI — no manual click-through needed. Before
 /// this slice, this feature was `#if os(macOS)`-gated and shelled out to `git archive`/`tar`; this
 /// journey is what replaces the manual "run the app, add a codebase, toggle Compare" verification
-/// pass `TESTING_ARCHITECTURE.md`'s rationale section now calls out explicitly.
+/// pass.
 ///
 /// The seeded fixture's codebase isn't a git repo by default; `GitFixtureRepository` turns it into
 /// one at launch, commits its current (pre-edit) content as `HEAD`, then this test edits the
 /// working tree afterward (adding `Added.swift`) *without* committing — so comparing the
 /// (reindexed) current side against `HEAD` produces a real, visible delta rather than a vacuous
 /// "compared two identical states" no-op.
+@MainActor
 final class CompareGitRevisionTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"

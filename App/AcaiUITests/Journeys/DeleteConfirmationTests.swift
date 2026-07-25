@@ -3,12 +3,10 @@ import XCTest
 import UIKit
 #endif
 
-/// Verifies the codebase-delete confirmation dialog (`USABILITY_GUARDRAILS.md` §3: cancel/confirm
-/// both actually do what they say, never just closing the sheet without acting or acting without
-/// asking) against the fixture-seeded codebase, via `ProjectDetailView`'s own confirmation flow —
-/// the one reachable from a codebase row on every width. Each test launches its own fresh copy of
-/// the fixture (`XCUIApplication.launchWithFixture(_:)`), so a confirmed deletion in one test
-/// never affects another.
+/// Verifies the codebase-delete confirmation dialog: cancel/confirm both actually do what they say,
+/// never just closing the sheet without acting or acting without asking. Each test launches its own
+/// fresh copy of the fixture, so a confirmed deletion in one test never affects another.
+@MainActor
 final class DeleteConfirmationTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"

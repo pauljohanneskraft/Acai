@@ -172,7 +172,6 @@ struct ExtendedJavaScriptParserTests {
         };
         """
         let artifact = parser.parse(source: source, fileName: "anon.js")
-        // Anonymous class expressions may be captured
         #expect(!artifact.types.isEmpty)
     }
 

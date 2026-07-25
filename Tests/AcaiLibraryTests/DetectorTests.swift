@@ -3,11 +3,9 @@ import Testing
 import AcaiCore
 @testable import AcaiLibrary
 
-/// Unit tests for every bundled build-system detector. ProjectDiscovery's detectors were the
-/// thinnest-tested area (#97); these pin down `isPresent` (indicator-file presence), the
-/// "prefer conventional source dir, fall back to root" rule, the file-existence verification, and
-/// the `requestedLanguages` filter — so the detector-kit refactor (#92) can be proven behavior-
-/// preserving. All bundled detector types are visible through `AcaiLibrary`'s re-exports.
+/// Unit tests for every bundled build-system detector: `isPresent` (indicator-file presence), the
+/// "prefer conventional source dir, fall back to root" rule, file-existence verification, and the
+/// `requestedLanguages` filter. All bundled detector types are visible through `AcaiLibrary`'s re-exports.
 @Suite("Build-system detectors")
 struct DetectorTests {
 

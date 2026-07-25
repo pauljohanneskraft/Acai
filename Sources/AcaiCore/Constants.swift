@@ -1,8 +1,6 @@
 import Foundation
 
-/// Process-wide configuration values. A value you read from `.standard` (the configured instance),
-/// rather than a caseless-enum namespace — so it can be substituted in tests and isn't a bag of
-/// global statics.
+/// Process-wide configuration values, read from `.standard`.
 public struct AcaiConstants: Sendable {
     /// The shared configuration used throughout the tool.
     public static let standard = AcaiConstants()

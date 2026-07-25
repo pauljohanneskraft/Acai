@@ -5,17 +5,15 @@ import AcaiDiagram
 import AcaiDiff
 @testable import AcaiLibrary
 
-// Delta (diff) golden-export regression tests, split out of ExampleExportRegressionTests to keep
-// each file under the length limit. Each suite mirrors a `acai diff --diagram` code path for one
-// diagram type and asserts the regenerated `.delta.dot` / `.delta.mmd` still matches byte-for-byte.
+// Delta (diff) golden-export regression tests. Each suite mirrors a `acai diff --diagram` code path
+// for one diagram type and asserts the regenerated `.delta.dot` / `.delta.mmd` still matches byte-for-byte.
 
 @Suite("Class delta diagram exports", .serialized)
 struct ClassDiagramDeltaExportTests {
 
-    /// (golden stem, language, Before/After source folder). Mirrors the class-diagram coverage
-    /// (JavaScript omitted — no type annotations). Each language's Before/After shows a change
-    /// natural to it: OO languages drop an inheritance and gain a composition; C (no inheritance)
-    /// swaps one composition for another.
+    /// (golden stem, language, Before/After source folder). JavaScript omitted — no type annotations.
+    /// Each language's Before/After shows a change natural to it: OO languages drop an inheritance and
+    /// gain a composition; C (no inheritance) swaps one composition for another.
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage, folder: String)] = [
         ("swift", .swift, "Swift"),
         ("kotlin", .kotlin, "Kotlin"),

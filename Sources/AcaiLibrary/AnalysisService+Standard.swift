@@ -52,17 +52,12 @@ extension AnalysisService {
 }
 
 extension CodeArtifact {
-    /// The single place the app/CLI/MCP turn an artifact into its per-type language quirks before handing
-    /// them to the agnostic engine: a `LanguageConfigurationResolver` over the standard registry that
-    /// classifies **each type** by its own stamped `sourceLanguage`. A mixed Swift+Python codebase is
-    /// therefore styled, enriched and filtered with each language's own rules rather than one dominant
-    /// config, while a single-language codebase is byte-for-byte unchanged.
+    /// Classifies **each type** by its own stamped `sourceLanguage`, so a mixed-language codebase is
+    /// styled/enriched/filtered per-language rather than by one dominant config.
     ///
-    /// Its default (used for a type with no stamped language, or a language not in the standard set —
-    /// neither of which happens for artifacts produced by `AnalysisService.standard`) is the artifact's
-    /// top-level language config, keeping the UI/CLI robust to a hand-loaded artifact rather than crashing.
-    /// There is deliberately no public single-config accessor: resolving one flat config per artifact was
-    /// the polyglot bug this replaced.
+    /// Falls back to the artifact's top-level config for an unstamped or unregistered language,
+    /// keeping the UI/CLI robust to a hand-loaded artifact. Deliberately no public single-config
+    /// accessor — resolving one flat config per artifact was the polyglot bug this replaced.
     public var standardLanguageResolver: LanguageConfigurationResolver {
         let registry = AnalysisService.standard.registry
         let fallback = registry.configuration(for: metadata.sourceLanguage) ?? LanguageConfiguration()

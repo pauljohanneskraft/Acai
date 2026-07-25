@@ -67,12 +67,8 @@ public struct Selector: Codable, Equatable, Sendable {
 
 /// A compiled `*`/`?` glob pattern, anchored to the whole string. A value you instantiate from a
 /// pattern and ask `matches(_:)` — kept in-target (no regex dependency) so a malformed pattern can
-/// never throw at evaluation time.
-/// `*`/`?` wildcard matching over a string. Instantiate with the pattern and call `matches(_:)` —
-/// this is deliberately a value you construct, not a static-function namespace (see the
-/// `Glob("a*").matches(x)` example in the repo's own style guide). Public so any module wanting
-/// the same glob vocabulary (e.g. `AcaiApp`'s file allow/blocklist, Part 12) reuses this instead
-/// of a second, incompatible pattern matcher.
+/// never throw at evaluation time. Public so any module wanting the same glob vocabulary (e.g.
+/// `AcaiApp`'s file allow/blocklist) reuses this instead of a second, incompatible pattern matcher.
 public struct Glob: Sendable {
     private let pattern: [Character]
 

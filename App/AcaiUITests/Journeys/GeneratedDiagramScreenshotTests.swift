@@ -8,7 +8,8 @@ import XCTest
 /// (`run()`'s `"requested" -> "running" -> "finished"` chain, `fail()`'s `"failed"` branch, for
 /// State) — patterned directly on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
-/// content. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// content.
+@MainActor
 final class GeneratedDiagramScreenshotTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
@@ -57,7 +58,9 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         sequence.methodPicker.choose("doWork", in: app)
         sequence.nextButton.tap()
 
-        XCTAssertTrue(sequence.participant(named: "Derived").waitForExistence(timeout: 10))
+        // 30s, not this file's usual 10s — same occasional-slow-render flakiness as
+        // `testCallGraphScreenshot` below, confirmed on CI.
+        XCTAssertTrue(sequence.participant(named: "Derived").waitForExistence(timeout: 30))
         XCTAssertTrue(sequence.participant(named: "Helper").exists)
         XCTAssertTrue(sequence.participant(named: "Worker").exists)
 
@@ -86,7 +89,9 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         // re-editing an existing diagram's configuration, which does call `centerDiagram()`) — with
         // 5 nodes across a branching layout, the initial/failed states can start outside the visible
         // canvas, unlike Class/Sequence's smaller default layouts.
-        XCTAssertTrue(state.fitToViewButton.waitForExistence(timeout: 10))
+        // 30s, not this file's usual 10s — same occasional-slow-render flakiness as
+        // `testCallGraphScreenshot` below, confirmed on CI.
+        XCTAssertTrue(state.fitToViewButton.waitForExistence(timeout: 30))
         state.fitToViewButton.tap()
 
         // `Base.id`'s values are Swift string-literal assignments (`id = "idle"`, etc.), and

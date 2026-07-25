@@ -4,18 +4,14 @@ import AcaiQuality
 import Yams
 
 extension QualityRules {
-    /// Decodes a rules file. The model is `Codable`, so the YAML keys map directly onto the rule
-    /// types (`forbidden`, `cycles`, `budgets`, `from`/`to`, `target`, `metric`, …). Decoding errors
-    /// are wrapped in a `ValidationError` so the CLI surfaces a clean message, not a raw dump.
+    /// Decodes a rules file, wrapping decode errors in a `ValidationError` so the CLI surfaces a
+    /// clean message rather than a raw dump.
     static func load(yaml: String) throws -> QualityRules {
         do {
             return try YAMLDecoder().decode(QualityRules.self, from: yaml)
         } catch let error as DecodingError {
-            // A schema mismatch (wrong type, missing key, …). Surface where and why, not the
-            // multi-line `Context(...)` reflection dump that interpolating the error would emit.
             throw ValidationError("Invalid rules file: \(error.readableDescription)")
         } catch {
-            // A YAML syntax error (Yams describes these with a line/column mark already).
             throw ValidationError("Invalid rules file: \(error)")
         }
     }
@@ -27,9 +23,8 @@ extension QualityRules {
 }
 
 extension DecodingError {
-    /// A concise, cause-preserving one-line description: the decoder's own explanation plus the
-    /// coding path that locates the offending key in the source — without the multi-line
-    /// `Context(...)` reflection that string-interpolating a `DecodingError` produces.
+    /// A concise one-line description: the decoder's explanation plus the coding path to the
+    /// offending key, instead of the multi-line `Context(...)` dump of interpolating the error directly.
     var readableDescription: String {
         switch self {
         case let .typeMismatch(_, context),

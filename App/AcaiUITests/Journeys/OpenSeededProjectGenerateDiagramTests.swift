@@ -1,8 +1,8 @@
 import XCTest
 
-/// The flagship first-slice journey (`TESTING_ARCHITECTURE.md`): open a fixture-seeded project,
-/// index its (un-indexed, by design — `Fixtures/seeded`) local-folder codebase, generate a Class
-/// Diagram, and verify its nodes actually render.
+/// Open a fixture-seeded project, index its (un-indexed, by design) local-folder codebase,
+/// generate a Class Diagram, and verify its nodes actually render.
+@MainActor
 final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"

@@ -2,20 +2,14 @@ import AcaiCore
 
 // MARK: - AssignmentResolving
 
-/// Opt-in protocol for extractors that support assignment extraction.
-///
-/// Mirrors ``CallSiteResolving``: a language extractor implements
-/// ``resolveAssignment(_:)`` for its grammar's assignment node shapes, and the
-/// extension provides the recursive walk infrastructure. Unlike call sites,
-/// assignments are recorded for *any* identifier or `this.<field>` target —
-/// scope tracking is not attempted, so consumers filter by name later.
+/// Opt-in protocol for extractors that support assignment extraction. Mirrors ``CallSiteResolving``:
+/// a language extractor implements ``resolveAssignment(_:)`` for its grammar's assignment node
+/// shapes, and the extension provides the recursive walk. Unlike call sites, assignments are recorded
+/// for any identifier or `this.<field>` target — no scope tracking, consumers filter by name later.
 public protocol AssignmentResolving: TreeSitterExtracting {
 
-    /// Resolves a single AST node to a ``AcaiCore/VariableAssignment`` if it
-    /// represents an assignment or increment/decrement whose target is a plain
-    /// identifier or a `this`-qualified field access.
-    ///
-    /// Return `nil` for nodes that are not relevant assignment expressions.
+    /// Resolves a single AST node to a ``AcaiCore/VariableAssignment`` if it represents an assignment
+    /// or increment/decrement whose target is a plain identifier or a `this`-qualified field access.
     func resolveAssignment(_ node: Node) -> VariableAssignment?
 }
 
@@ -80,13 +74,9 @@ extension AssignmentResolving {
         return String(raw.prefix(77)) + "..."
     }
 
-    /// Parses an assignment target's source text into a simple name plus an
-    /// optional type receiver.
-    ///
-    /// Accepts `x`, `this.x`/`self.x` (receiver stripped), and `Type.x`
-    /// (uppercase-initial receiver kept). Anything else — chained accesses,
-    /// subscripts, lowercase instance receivers — returns `nil` so the
-    /// assignment is skipped.
+    /// Parses an assignment target's source text into a simple name plus an optional type receiver.
+    /// Accepts `x`, `this.x`/`self.x` (receiver stripped), and `Type.x` (receiver kept). Anything else
+    /// (chained accesses, subscripts, lowercase instance receivers) returns `nil`.
     public func parseAssignmentTarget(_ rawText: String) -> (name: String, receiver: String?)? {
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.components(separatedBy: ".")
@@ -108,13 +98,9 @@ extension AssignmentResolving {
         text(node).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Classifies a node as a literal value using the language's `types`, or returns `nil` when the
-    /// node is not a recognised literal — letting the caller apply language-specific fallbacks (bare
-    /// enum constants, text-matched keywords, etc.) and the shared `enumCaseValue` tail.
-    ///
-    /// The node type is matched *before* the source text is extracted, so the common non-literal
-    /// path returns `nil` without paying for `text(node)` (the caller extracts it once for its own
-    /// fallbacks).
+    /// Classifies a node as a literal value using the language's `types`, or `nil` when not a
+    /// recognised literal — letting the caller apply language-specific fallbacks. The node type is
+    /// matched before source text is extracted, so the common non-literal path avoids that cost.
     public func classifyLiteral(_ node: Node, _ types: LiteralNodeTypes) -> VariableAssignment.Value? {
         let nodeType = node.nodeType ?? ""
         if types.boolean.contains(nodeType) {

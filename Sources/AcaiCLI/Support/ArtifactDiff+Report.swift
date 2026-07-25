@@ -2,9 +2,8 @@ import AcaiCore
 import AcaiDiff
 
 extension ArtifactDiff {
-    /// A human-sized changelog of the architectural delta — the precise, reviewable summary that a
-    /// redrawn diagram cannot give. Groups added/removed types, edge changes phrased in prose
-    /// ("`A` now depends on `B`", "`X`→`Y` inheritance removed") and notable metric movement.
+    /// A human-sized changelog of the architectural delta: added/removed types, edge changes
+    /// phrased in prose ("`A` now depends on `B`"), and notable metric movement.
     func humanReport() -> String {
         if isEmpty { return "No structural changes." }
 
@@ -42,8 +41,7 @@ extension ArtifactDiff {
     }
 }
 
-/// One titled, indented block of a `humanReport()`. A value (title + lines) that renders itself,
-/// rather than a free formatting function.
+/// One titled, indented block of a `humanReport()`.
 private struct ReportSection {
     let title: String
     let lines: [String]
@@ -94,8 +92,7 @@ private extension TypeMetricDelta {
 }
 
 private extension Relationship {
-    /// Phrases this relationship as a sentence. `removed` flips the tense so a dropped edge reads
-    /// naturally ("`X`→`Y` inheritance removed").
+    /// Phrases this relationship as a sentence; `removed` flips the tense for a dropped edge.
     func reportPhrase(removed: Bool = false) -> String {
         let source = self.source.lastDottedComponent
         let target = self.target.lastDottedComponent
@@ -128,11 +125,10 @@ private extension String {
 }
 
 private extension Double {
-    /// This value formatted to two decimal places.
     var twoDecimals: String { String(format: "%.2f", self) }
 }
 
 private extension Change where T == Double {
-    /// `before → after`, each to two decimals — the shared spelling for package-metric movement.
+    /// `before → after`, each to two decimals.
     var twoDecimalArrow: String { "\(before.twoDecimals) → \(after.twoDecimals)" }
 }

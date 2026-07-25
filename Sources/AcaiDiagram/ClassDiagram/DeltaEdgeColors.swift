@@ -1,8 +1,7 @@
 /// The colour palette for a delta (architecture-diff) diagram: added edges green, removed red,
-/// changed amber, unchanged untinted. A plain value — like `PackageDiagram`'s distance
-/// tint it names no language and carries no diff logic, so it respects the agnostic boundary. The
-/// caller maps each element's diff status to one of these and feeds it to a renderer's per-element
-/// colour override.
+/// changed amber, unchanged untinted. A plain value, like `PackageDiagram`'s distance tint — it
+/// names no language and carries no diff logic. The caller maps each element's diff status to one
+/// of these and feeds it to a renderer's per-element colour override.
 public struct DeltaEdgeColors: Sendable {
     /// Added in the new revision.
     public let added: String

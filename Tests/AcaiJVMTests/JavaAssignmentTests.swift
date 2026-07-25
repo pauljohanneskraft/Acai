@@ -92,8 +92,8 @@ struct JavaAssignmentTests {
     }
 
     @Test func clashingVariableNameIsAcceptedFalsePositive() {
-        // Documents the accepted limitation: with no scope tracking, a bare identifier matching an
-        // enum-constant name is treated as that case even when it actually refers to a local.
+        // Accepted limitation: with no scope tracking, a bare identifier matching an enum-constant
+        // name is treated as that case even when it actually refers to a local.
         let source = """
         enum State { READY }
         class Loader {

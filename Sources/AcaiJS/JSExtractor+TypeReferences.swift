@@ -7,13 +7,9 @@ extension JSExtractor {
 
     // MARK: - Call Site Extraction
 
-    /// Matches JS/TS `call_expression { function: member_expression { object, property } }`.
-    ///
-    /// Handles:
-    /// - `receiver.method(args)` — `object` is an `identifier` (a known property or type),
-    /// - `this.receiver.method(args)` — `object` is a `member_expression` whose own `object` is `this`,
-    /// - `this.method(args)` — `object` is a `this` node (a call on the enclosing instance),
-    /// - `TypeName.method(args)` — `object` is a known type (static call).
+    /// Matches JS/TS `call_expression { function: member_expression { object, property } }`:
+    /// `receiver.method(args)` (object is a known property/type), `this.receiver.method(args)`,
+    /// `this.method(args)`, `TypeName.method(args)`.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call_expression",
               let funcNode = node.child(byFieldName: "function")
@@ -42,7 +38,7 @@ extension JSExtractor {
 
     /// Provable local-variable types: a TypeScript annotation (`const x: Foo`), a `new Foo()`
     /// construction, or a same-type method call with an unambiguous return type (`const x =
-    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "variable_declarator",

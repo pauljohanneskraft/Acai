@@ -60,9 +60,8 @@ struct ClassDiagramView: View {
         sidebarPresentedCanvas
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
-                // The initial auto-fit (`diagramCanvasLifecycle`'s fixed delay) can run before nodes
-                // report their real measured sizes, landing the camera on a stale, empty-looking fit.
-                // Re-fit once real sizes are in, so a freshly generated diagram opens on its content.
+                // The initial auto-fit can run before nodes report real sizes, landing on a stale
+                // fit; re-fit once real sizes are in.
                 if !hasCenteredAfterMeasurement && viewModel.hasPerformedMeasuredLayout {
                     hasCenteredAfterMeasurement = true
                     centerDiagram()
@@ -125,14 +124,10 @@ struct ClassDiagramView: View {
             )
     }
 
-    /// `.inspector(isPresented:)` collapses to a sheet-like presentation on compact width (iPhone)
-    /// with no navigation-bar chrome of its own — nesting a `NavigationStack` + `.toolbar` inside
-    /// its content to add a close button doesn't work there (confirmed empirically: that inner
-    /// navigation bar simply never renders once `.inspector` has already collapsed). Using a real
-    /// `.sheet(isPresented:)` instead on compact width sidesteps that entirely, since a genuine
-    /// sheet presentation *does* support a nested `NavigationStack` toolbar correctly (the same
-    /// pattern `CompareOverlayButton`'s iOS sheet already relies on). Regular width (iPad/macOS)
-    /// keeps the native `.inspector` sidebar, which needs none of this.
+    /// On compact width (iPhone), `.inspector` collapses to a sheet-like presentation with no
+    /// navigation-bar chrome — a nested `NavigationStack` + `.toolbar` close button never renders
+    /// there. A real `.sheet(isPresented:)` sidesteps this (same pattern as `CompareOverlayButton`'s
+    /// iOS sheet). Regular width (iPad/macOS) uses the native `.inspector` sidebar.
     @ViewBuilder
     private var sidebarPresentedCanvas: some View {
         #if os(iOS)
@@ -192,9 +187,8 @@ struct ClassDiagramView: View {
                 }
             }
         )
-        // Positioned the same way as `PannableCanvas`'s own zoom-percentage indicator (an overlay
-        // inside the canvas, not a sibling spanning the whole view including the inspector column)
-        // — this is what keeps it from rendering on top of the inspector when it's open.
+        // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
+        // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }

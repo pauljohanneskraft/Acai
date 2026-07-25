@@ -55,17 +55,14 @@ public struct SugiyamaLayoutEngine: Sendable {
             .compactMapValues(\.first)
         let nodeSizes = nodeMap.mapValues(\.size)
 
-        // Build bidirectional adjacency from ALL edges.
         var adjacency: [String: Set<String>] = [:]
         for edge in edges {
             adjacency[edge.sourceID, default: []].insert(edge.targetID)
             adjacency[edge.targetID, default: []].insert(edge.sourceID)
         }
 
-        // Find connected components.
         let components = findConnectedComponents(nodeIDs: nodes.map(\.id), adjacency: adjacency)
 
-        // Layout each component separately, then arrange them in a grid.
         var componentLayouts: [(bounds: CGSize, positions: [String: CGPoint], group: String?)] = []
 
         for component in components {
@@ -93,20 +90,17 @@ public struct SugiyamaLayoutEngine: Sendable {
             componentLayouts.append((bounds: bounds, positions: positions, group: primaryGroup))
         }
 
-        // Arrange components in a grid grouped by directory.
         let finalPositions = arrangeComponentsInGrid(componentLayouts, nodeSizes: nodeSizes)
 
         return LayoutResult(positions: finalPositions)
     }
 
-    /// Hierarchically partitions nodes by their `group` key, treated as a `"/"`-separated
-    /// path (e.g. a directory path `Sources/AcaiCore/ClassDiagram`). Each path level is laid
-    /// out as its own block and nested inside its parent, so a box drawn around any prefix
-    /// wraps a contiguous, non-overlapping region. A single-component group (e.g. a product
-    /// name) collapses to one level — equivalent to the old flat per-group layout.
+    /// Hierarchically partitions nodes by their `group` key, treated as a `"/"`-separated path
+    /// (e.g. `Sources/AcaiCore/ClassDiagram`). Each path level lays out as its own block nested
+    /// inside its parent, so a box around any prefix wraps a contiguous, non-overlapping region.
     ///
-    /// `padding` leaves room inside each block for the group box border and its name tab;
-    /// because it is applied at every level, deeper groups nest visibly inside shallower ones.
+    /// `padding` leaves room inside each block for the group box border and name tab; applied at
+    /// every level, so deeper groups nest visibly inside shallower ones.
     public func layoutByGroup(
         nodes: [NodeInput], edges: [EdgeInput], depth: Int = 0, padding: CGFloat = 32
     ) -> LayoutResult {
@@ -201,7 +195,6 @@ public struct SugiyamaLayoutEngine: Sendable {
         nodeSizes: [String: CGSize],
         adjacency: [String: Set<String>]
     ) -> [String: CGPoint] {
-        // Phase 1: Layer assignment.
         let layerMap = LayerAssigner(
             nodeIDs: nodeIDs,
             edges: edges.map { (source: $0.sourceID, target: $0.targetID, kind: $0.kind) }
@@ -217,14 +210,12 @@ public struct SugiyamaLayoutEngine: Sendable {
         let sortedLayerIndices = layerBuckets.keys.sorted()
         var layers = sortedLayerIndices.map { layerBuckets[$0]!.sorted() }
 
-        // Phase 2: Crossing minimization.
         let componentAdj: [String: Set<String>] = adjacency.compactMapValues { neighbors in
             let filtered = neighbors.filter { Set(nodeIDs).contains($0) }
             return filtered.isEmpty ? nil : filtered
         }
         layers = CrossingMinimizer(adjacency: componentAdj).minimize(layers)
 
-        // Phase 3: Coordinate assignment.
         return CoordinateAssigner(
             nodeSizes: nodeSizes,
             horizontalSpacing: horizontalSpacing,
@@ -294,11 +285,9 @@ public struct SugiyamaLayoutEngine: Sendable {
     ) -> [String: CGPoint] {
         guard !groupBlocks.isEmpty else { return [:] }
 
-        // Shelf-pack blocks into rows whose running width stays under a target derived from the
-        // total block area, instead of a fixed `ceil(sqrt(count))` column count. Counting columns
-        // ignores block *shapes*, so a wide block beside a tall one (or many uneven blocks) left
-        // large empty regions; packing to a target width fills the canvas toward a chosen aspect
-        // ratio. Order is preserved (so grouping stays meaningful) and rows never overlap.
+        // Shelf-pack into rows under a target width derived from total block area, rather than a
+        // fixed `ceil(sqrt(count))` column count — column counting ignores block shapes and left
+        // large empty regions with uneven blocks. Order is preserved; rows never overlap.
         let targetWidth = targetRowWidth(groupBlocks)
 
         var finalPositions: [String: CGPoint] = [:]
@@ -308,8 +297,7 @@ public struct SugiyamaLayoutEngine: Sendable {
         var rowCount = 0
 
         for block in groupBlocks {
-            // Wrap to a new row when the block would overflow the target width — but always keep at
-            // least one block per row so a single oversized block can't produce a zero-width row.
+            // Always keep at least one block per row so an oversized block can't force a zero-width row.
             if rowCount > 0, currentX + block.size.width > targetWidth {
                 currentX = 0
                 currentY += rowHeight + groupSpacing

@@ -2,10 +2,9 @@ import CoreGraphics
 import SwiftUI
 import AcaiDiagram
 
-// Grouped parameter objects for the image renderers. Each `renderPNG` used to take the output-tuning
-// knobs (scale/padding/palette) and the optional delta-tint closures as a long positional list; these
-// values collapse them into one argument apiece so the entry points stay narrow (the long-parameter
-// smell). `.default`/`.plain` vend a configured instance — a value, not an empty default.
+// Grouped parameter objects for the image renderers: the output-tuning knobs (scale/padding/palette)
+// and the optional delta-tint closures collapse into one argument apiece so entry points stay narrow.
+// `.default`/`.plain` vend a configured instance — a value, not an empty default.
 
 /// Output tuning shared by every image renderer: the pixel `scale`, the content `padding` inset, and
 /// the light/dark `palette`. `.default` is the standard 2× light configuration.

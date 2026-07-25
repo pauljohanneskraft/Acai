@@ -1,8 +1,7 @@
 import Foundation
 
-/// Identifies a specific ref of a GitHub repository to clone — `owner`/`repo`/`ref` always travel
-/// together, so this exists mainly to keep call sites like `addGitHubCodebase` under the project's
-/// function-parameter-count limit rather than taking the three as separate arguments.
+/// Identifies a specific ref of a GitHub repository to clone — bundles `owner`/`repo`/`ref` so call
+/// sites like `addGitHubCodebase` stay under the project's function-parameter-count limit.
 struct GitHubRepositoryRef: Hashable {
     var owner: String
     var repo: String
@@ -13,16 +12,15 @@ struct GitHubRepositoryRef: Hashable {
 /// Marks a `Codebase` as originating from an in-app GitHub clone rather than a user-picked local
 /// folder. When present, `Codebase.directoryPath` points at the app-managed clone folder (under
 /// `ProjectStore.githubClonesDir`) and `Codebase.securityScopedBookmark` stays `nil` — that folder
-/// lives inside the app's own container, so no bookmark is needed on either platform.
+/// is inside the app's own container, so no bookmark is needed.
 struct GitHubSource: Codable, Hashable {
     var owner: String
     var repo: String
-    /// A branch or tag name. Switching branches/tags is a resync in place: this is updated and
-    /// the clone folder's contents are replaced, rather than modeling multiple refs per codebase
-    /// — a user wanting two branches side by side adds two codebases against the same repo.
+    /// A branch or tag name. Switching branches/tags resyncs in place rather than modeling
+    /// multiple refs per codebase — two branches side by side means two codebases.
     var ref: String
-    /// Whether `ref` names a branch or a tag — for display (the branch/tag picker) and
-    /// `GitHubRef.id`'s disambiguation of a repo where a branch and tag share a name.
+    /// Whether `ref` names a branch or a tag — for display and `GitHubRef.id`'s disambiguation
+    /// when a branch and tag share a name.
     var refKind: GitHubRef.Kind
     var lastSyncedCommitSHA: String?
     var lastSyncedAt: Date?

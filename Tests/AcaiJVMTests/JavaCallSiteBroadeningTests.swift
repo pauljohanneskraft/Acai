@@ -38,12 +38,12 @@ struct JavaCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `Helper local = new Helper()` now resolves its receiver type (RC4).
+        // A local `Helper local = new Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
     /// A bare `foo()` (implicit `this.foo()` or a static import) is captured as `.selfDispatch`
-    /// so the enclosing type's sibling methods aren't false-flagged as dead (RC1).
+    /// so the enclosing type's sibling methods aren't false-flagged as dead.
     @Test func capturesBareImplicitSelfCall() {
         let source = """
         class Worker {
@@ -57,8 +57,7 @@ struct JavaCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
     }
 
-    /// A typed method parameter is a provable call-site receiver, just like a stored property
-    /// (dead-code false positive: RC-G).
+    /// A typed method parameter is a provable call-site receiver, just like a stored property.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -78,8 +77,7 @@ struct JavaCallSiteBroadeningTests {
 
     /// A local initialized from a same-type method call (`var x = compute();`) resolves its receiver
     /// type from the method's unambiguous return type, the same way a `new Foo()` construction
-    /// already does — including when the method is declared *after* the caller (dead-code false
-    /// positive: RC-I).
+    /// already does — including when the method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {
@@ -100,7 +98,7 @@ struct JavaCallSiteBroadeningTests {
     }
 
     /// Calls made only from a field initializer, an instance `{ }` block, or a `static { }` block are
-    /// recorded so their targets aren't false-flagged as dead (RC2).
+    /// recorded so their targets aren't false-flagged as dead.
     @Test func capturesFieldInitializerAndInitBlockCalls() {
         let source = """
         class Worker {

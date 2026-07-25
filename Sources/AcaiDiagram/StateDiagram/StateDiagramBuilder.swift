@@ -8,9 +8,8 @@ import AcaiCore
 /// consecutive assignments form a transition chain labeled with that member; each member's first
 /// assignment is also reachable from the initial pseudo-state.
 ///
-/// A value you instantiate with the configuration and ask to `build(from:)` — kept off `CodeArtifact`
-/// so the data model does not depend on the diagram layer. Build from a `resolvingExtensions()`-ed
-/// artifact so members declared in extensions are visible.
+/// A value you instantiate with the configuration and ask to `build(from:)`. Build from a
+/// `resolvingExtensions()`-ed artifact so members declared in extensions are visible.
 ///
 /// Known limitations (documented behaviour, not bugs):
 /// - Branch-insensitive: assignments in different `if`/`switch` arms of the same body appear as one
@@ -76,11 +75,10 @@ private struct StateAnalysis {
         return nil
     }
 
-    /// Assignments to a property: bare/`self`-qualified targets and `Type.variable` static writes
-    /// naming the declaring type from the type's own members, plus writes from free functions that
-    /// mutate the type by reference (e.g. C's `void run(Download *d) { d->state = …; }`), which name
-    /// the type as the assignment receiver. Keyed on the receiver *type*, so this stays
-    /// language-agnostic and generalises to any by-reference struct mutation.
+    /// Assignments to a property: bare/`self`-qualified and `Type.variable` static writes from the
+    /// type's own members, plus free functions that mutate the type by reference (e.g. C's
+    /// `void run(Download *d) { d->state = …; }`). Keyed on the receiver *type*, so this stays
+    /// language-agnostic.
     private static func collectFromType(
         _ type: TypeDeclaration,
         freeFunctions: [Member],

@@ -8,8 +8,7 @@ struct JSTypeResolutionTests {
 
     /// Inherited-type names resolve to qualified ids via the language-agnostic `enriched()` pass.
     /// A `namespace` makes the canonical id qualified (`Zoo.Animal`) while the `extends Animal`
-    /// reference stays raw, so the rewrite is observable — a genuine regression guard for the
-    /// enrichment path (and for TS namespaced-id qualification).
+    /// reference stays raw, so the rewrite is observable.
     @Test func inheritedTypeNamesResolveToQualifiedIdAfterEnrichment() {
         let source = """
         namespace Zoo {

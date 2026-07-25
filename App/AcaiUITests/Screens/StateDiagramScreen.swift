@@ -1,7 +1,7 @@
 import XCTest
 
 /// Adds State Diagram-specific accessors (canvas state nodes, the variable-selection config sheet)
-/// to `DiagramScreenBase`'s shared toolbar accessors. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// to `DiagramScreenBase`'s shared toolbar accessors.
 final class StateDiagramScreen: DiagramScreenBase {
     /// A state box, by its `StateDiagram.State.name` — mirrors `ClassDiagramScreen.typeNode`, same
     /// "keyed by name, no stable id" caveat.

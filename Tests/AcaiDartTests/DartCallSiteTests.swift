@@ -2,9 +2,7 @@ import Testing
 @testable import AcaiDart
 @testable import AcaiCore
 
-/// Dart previously captured no call sites at all (the extractor did not conform to
-/// `CallSiteResolving`). These cover the now-supported property-receiver, `this.method()`,
-/// and `TypeName.method()` forms.
+/// Covers property-receiver, `this.method()`, and `TypeName.method()` call-site forms.
 @Suite("Dart: Call-Site Resolution")
 struct DartCallSiteTests {
     let parser = DartCodeParser()
@@ -41,7 +39,7 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `var local = Helper()` now resolves its receiver type (RC4).
+        // A local `var local = Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -70,8 +68,7 @@ struct DartCallSiteTests {
         #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
     }
 
-    /// A typed method parameter is a provable call-site receiver, just like a typed field
-    /// (dead-code false positive: RC-G).
+    /// A typed method parameter is a provable call-site receiver, just like a typed field.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -91,8 +88,7 @@ struct DartCallSiteTests {
 
     /// A local initialized from a same-type method call (`var x = compute();`) resolves its receiver
     /// type from the method's unambiguous return type, the same way `var h = Helper();` already
-    /// does — including when the method is declared *after* the caller (dead-code false positive:
-    /// RC-I).
+    /// does — including when the method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {
@@ -113,7 +109,7 @@ struct DartCallSiteTests {
     }
 
     /// A bare `foo()` is an implicit `this.foo()` (or a top-level function) — captured as
-    /// `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
+    /// `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not.
     @Test func capturesBareImplicitSelfCallButNotConstruction() {
         let source = """
         class Helper {
@@ -135,7 +131,7 @@ struct DartCallSiteTests {
     }
 
     /// Calls in a field initializer or a constructor initializer list are recorded so their targets
-    /// aren't false-flagged as dead (RC2).
+    /// aren't false-flagged as dead.
     @Test func capturesFieldAndConstructorInitializerListCalls() {
         let source = """
         class Worker {
@@ -153,9 +149,8 @@ struct DartCallSiteTests {
         #expect(allSites.contains { $0.methodName == "shared" })
     }
 
-    /// A static call on the *enclosing* type must resolve. Previously the current class was
-    /// appended to `types` only after its body was processed, so the type-name set was missing
-    /// it and the call was dropped; the up-front pre-pass fixes this.
+    /// A static call on the *enclosing* type must resolve — the enclosing type needs to be
+    /// registered before its body is processed.
     @Test func resolvesStaticCallOnEnclosingType() {
         let source = """
         class Worker {

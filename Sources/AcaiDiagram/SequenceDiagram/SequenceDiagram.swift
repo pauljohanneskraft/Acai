@@ -8,12 +8,12 @@ public struct SequenceDiagram: Codable, Hashable, Sendable {
     /// A lifeline in the sequence diagram.
     public struct Participant: Codable, Hashable, Sendable {
         public enum Kind: String, Codable, Hashable, Sendable, CaseIterable {
-            case actor       /// Human user
-            case object      /// Plain object / instance
-            case boundary    /// UI boundary object
-            case control     /// Controller / use-case handler
-            case entity      /// Persistent data entity
-            case database    /// Data store
+            case actor
+            case object
+            case boundary
+            case control
+            case entity
+            case database
 
             /// UML stereotype label shown above the participant name (`nil` for plain objects).
             public var stereotype: String? {

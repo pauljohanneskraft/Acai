@@ -22,7 +22,7 @@ struct CodebaseAnalyzer {
     /// would re-append diagnostics and diverge from those. The diagram/detail layer flattens (and
     /// whole-artifact-enriches, via `ClassDiagram`) on demand in ``flattenedForDisplay(_:)``.
     /// `fileFilter` — when set — excludes files before they're even parsed (`AnalysisService`'s
-    /// `includingFile` hook), the actual performance win Part 12's file allow/blocklist is about.
+    /// `includingFile` hook), the actual performance win the file allow/blocklist is about.
     /// `nil` (the default, and every call site but the live reindex path) parses everything, exactly
     /// as before this existed.
     func enrichedArtifact(at url: URL, fileFilter: FileFilter? = nil) throws -> CodeArtifact {

@@ -5,7 +5,7 @@ import Testing
 @Suite("CLI: ArtifactSource")
 struct ArtifactSourceTests {
 
-    /// A stored analysis that can no longer be decoded (schema drift, e.g. the now-required
+    /// A stored analysis that can no longer be decoded (schema drift, e.g. the required
     /// `accessLevel`) is reported as "regenerate it" — the CLI equivalent of treating the codebase
     /// as not indexed — rather than surfacing a raw `DecodingError`.
     @Test func staleStoredAnalysisGivesRegenerateMessage() throws {

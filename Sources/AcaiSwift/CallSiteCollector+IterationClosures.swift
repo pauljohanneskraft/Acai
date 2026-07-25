@@ -12,10 +12,8 @@ extension CallSiteCollector {
     }
 
     /// The receiver expression and trailing closure of an implicit-`$0` iteration call (`.map { "+ " +
-    /// $0.reportPhrase() }`, `.filter { !$0.matches(...) }`) — `nil` for a closure with an explicit
-    /// parameter list (`{ item in ... }`, not provably element-typed the same way) or a method outside
-    /// `iterationMethodNames` (so an unrelated single-closure-argument method with different callback
-    /// semantics is never mistaken for one whose parameter is the receiver's element type).
+    /// $0.reportPhrase() }`) — `nil` for a closure with an explicit parameter list (`{ item in ... }`)
+    /// or a method outside `iterationMethodNames`.
     func iterationClosure(in call: FunctionCallExprSyntax) -> (receiverBase: ExprSyntax, closure: ClosureExprSyntax)? {
         guard let closure = call.trailingClosure, closure.signature == nil,
               let memberAccess = unwrappedCallee(call.calledExpression).as(MemberAccessExprSyntax.self),
@@ -25,13 +23,10 @@ extension CallSiteCollector {
         return (base, closure)
     }
 
-    /// The *element* type of an array-typed receiver expression — resolves a bare `varName` to a
-    /// same-type stored property's array element (`arrayElementPropertyMap`, keyed the same way
-    /// `buildPropertyMap()` keys the scalar map, but reading `genericArguments[0]` instead of the
-    /// property's own container type), or defers to the post-merge pass via `.ownPropertyElement`
-    /// when the property is declared in a sibling extension file this file doesn't see. Used only for
-    /// the iteration-closure `$0` binding (`iterationClosure(in:)`) — an array's element is never a
-    /// valid *direct*-call receiver (`someArray.append(...)` is a call on the array, not its element).
+    /// The element type of an array-typed receiver expression — resolves a bare `varName` to a
+    /// same-type stored property's array element, or defers to the post-merge pass via
+    /// `.ownPropertyElement` when declared in a sibling extension file. Used only for the
+    /// iteration-closure `$0` binding — an array's element is never a valid direct-call receiver.
     func arrayElementReceiverType(
         of expr: ExprSyntax, arrayElementPropertyMap: [String: String], enclosingTypeName: String?,
         knownLocalNames: Set<String>

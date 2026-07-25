@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
-# Copies snapshot-test screenshot goldens staged by ScreenshotComparator's recording fallback
-# (TESTING_ARCHITECTURE.md) into App/AcaiUITests/__Snapshots__/.
+# Copies snapshot-test screenshot goldens staged by ScreenshotComparator's recording fallback into
+# App/AcaiUITests/__Snapshots__/.
 #
-# Needed because the macOS UI test runner is sandboxed by default (confirmed empirically: its
-# process resolves under ~/Library/Containers/de.kraftsoftware.Acai.UITests.xctrunner/, despite no
-# .entitlements file in the project — this is an Xcode/xctrunner default, not something the app
-# opts into) and fails writing into the source tree with EPERM even with Full Disk Access granted.
-# `NSTemporaryDirectory()` inside that sandboxed process resolves to the container's own tmp dir,
-# NOT this shell's plain $TMPDIR — so ScreenshotComparator's staged output has to be located inside
-# the container, not assumed to sit at a fixed top-level path. ScreenshotComparator stages each
-# recorded PNG under .../AcaiUITestSnapshots/<platform>/<viewType>/<state> — the exact same
-# relative layout as __Snapshots__/ itself — so once found, this is a plain recursive copy, no
-# per-file renaming logic needed.
+# The macOS UI test runner is sandboxed by default, so it fails writing into the source tree with
+# EPERM, and `NSTemporaryDirectory()` inside it resolves to the container's own tmp dir, not this
+# shell's plain $TMPDIR — so the staged output has to be located inside the container. It mirrors
+# __Snapshots__/'s own `<platform>/<viewType>/<state>` layout, so once found this is a plain
+# recursive copy, no per-file renaming needed.
 #
 # Usage: Scripts/sync_ui_snapshots.sh
 set -uo pipefail

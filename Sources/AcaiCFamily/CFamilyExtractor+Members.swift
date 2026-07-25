@@ -19,8 +19,7 @@ extension CFamilyExtractor {
         members: inout [Member], nestedTypes: inout [TypeDeclaration]
     ) {
         var access = defaultAccess
-        // (memberIndex, bodyNode) pairs; call sites/assignments are resolved after the loop so the
-        // scope can be built from the type's *complete* property/member set.
+        // Call sites/assignments resolve after the loop so the scope reflects the full member set.
         var pendingBodies: [(index: Int, body: Node)] = []
         for child in body.namedChildren() {
             switch child.nodeType {
@@ -32,8 +31,7 @@ extension CFamilyExtractor {
             case "function_definition":
                 if var method = functionMember(from: child, ownerName: ownerName, access: access) {
                     // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
-                    // body; walk it so calls made during construction aren't lost (RC2). Its receivers
-                    // are static/sibling/free, so file-level type names are enough to resolve them.
+                    // body; walk it so calls made during construction aren't lost.
                     if let initList = child.firstChild(withType: "field_initializer_list") {
                         method.callSites += extractCallSites(
                             from: initList,
@@ -210,7 +208,7 @@ extension CFamilyExtractor {
             type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
             location: loc(node),
             // A default member initializer's calls (`int n = compute();`) are recorded so their targets
-            // aren't false-flagged dead (RC2). File-level type names cover static/`Type::method()` calls.
+            // aren't false-flagged dead. File-level type names cover static/`Type::method()` calls.
             callSites: extractCallSites(
                 from: node.child(byFieldName: "default_value"),
                 scope: CallSiteScope(knownTypeNames: declaredTypeNames)),

@@ -96,20 +96,16 @@ public struct RelationshipEdgeView: View, Equatable {
 
                 linePath.stroke(lineColor, style: style)
 
-                // Arrow head at target
                 switch kind {
                 case .inheritance, .conformance, .extension:
-                    // Empty triangle: stroke only (unfilled)
                     arrowPath.fill(palette.edgeDecorationFill)
                     arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
                 case .association, .dependency, .nesting:
-                    // Open arrow: stroke only
                     arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
                 default:
                     EmptyView()
                 }
 
-                // Diamond at source
                 if kind.hasSourceDecoration {
                     sourcePath.fill(
                         kind.isSourceDecorationFilled
@@ -121,8 +117,7 @@ public struct RelationshipEdgeView: View, Equatable {
             }
 
             if let label {
-                // Explicit ink so the label stays readable in dark mode against
-                // the light canvas (matching SequenceMessageView's labels).
+                // Explicit ink so the label stays readable in dark mode against the light canvas.
                 Text(label)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(palette.edgeLabelInk)

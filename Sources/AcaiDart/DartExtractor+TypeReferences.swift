@@ -98,7 +98,6 @@ extension DartExtractor {
     }
 
     private func extractDefaultFormalParameter(_ node: Node) -> Parameter? {
-        // default_formal_parameter wraps a normal_formal_parameter or formal_parameter with a default value.
         for child in node.children() {
             if child.nodeType == "formal_parameter" || child.nodeType == "normal_formal_parameter" {
                 return extractFormalParameter(child)
@@ -205,12 +204,9 @@ extension DartExtractor {
     // MARK: - Superclass / Type Lists
 
     func extractSuperclassTypes(_ node: Node) -> [TypeReference] {
-        // superclass: 'extends' type optional(mixins) | mixins
-        //
-        // When the grammar emits `type_identifier` and `type_arguments` as
-        // siblings (instead of wrapping them in a `generic_type` node), combine
-        // them into a single TypeReference so we avoid spurious edges to
-        // generic-argument types.
+        // When the grammar emits `type_identifier` and `type_arguments` as siblings (instead of
+        // wrapping them in `generic_type`), combine them into one TypeReference to avoid spurious
+        // edges to generic-argument types.
         var refs: [TypeReference] = []
         var pendingName: String?
 
@@ -219,7 +215,6 @@ extension DartExtractor {
             if nodeType == "mixins" { continue }
 
             if nodeType == "type_identifier" || nodeType == "identifier" {
-                // Flush any previously pending simple name.
                 if let name = pendingName {
                     refs.append(TypeReference(name: name))
                 }
@@ -229,7 +224,6 @@ extension DartExtractor {
                 refs.append(TypeReference(name: name, genericArguments: genericArgs))
                 pendingName = nil
             } else {
-                // Flush pending name, then handle generic_type and other nodes.
                 if let name = pendingName {
                     refs.append(TypeReference(name: name))
                     pendingName = nil
@@ -240,7 +234,6 @@ extension DartExtractor {
             }
         }
 
-        // Flush trailing simple name.
         if let name = pendingName {
             refs.append(TypeReference(name: name))
         }
@@ -283,7 +276,6 @@ extension DartExtractor {
             if nodeType == "abstract" { modifiers.append(.abstract) }
             if nodeType == "sealed" { modifiers.append(.sealed) }
         }
-        // Deduplicate.
         return Array(Set(modifiers))
     }
 
@@ -308,9 +300,7 @@ extension DartExtractor {
         _ annotations: [String], toMembersFrom startIndex: Int, in members: inout [Member]
     ) {
         guard !annotations.isEmpty, startIndex < members.count else { return }
-        // `@override` (idiomatic in Dart on `implements`/`extends` overrides via the `annotate_overrides`
-        // lint) maps to the `.override` modifier, so the dead-code scan exempts the override the same way
-        // it does for other languages (RC3).
+        // `@override` maps to the `.override` modifier, so the dead-code scan exempts it.
         let isOverride = annotations.contains { annotation in
             let name = annotation.hasPrefix("@") ? String(annotation.dropFirst()) : annotation
             return name.lowercased() == "override"

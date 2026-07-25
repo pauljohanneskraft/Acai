@@ -1,8 +1,7 @@
-/// A small, fixed set of pre-arranged starting points for a new freeform diagram (B26) — existing
+/// A small, fixed set of pre-arranged starting points for a new freeform diagram — existing
 /// catalog node kinds pre-positioned for a conventional starting shape, offered alongside a blank
 /// diagram in the "New Freeform Diagram" flow. Deliberately modest: not a template-authoring
-/// system, just removing the blank-page problem for the diagram kinds the catalog already models
-/// structurally.
+/// system, just removing the blank-page problem.
 enum FreeformDiagramTemplate: String, CaseIterable, Identifiable {
     case useCase
     case deployment

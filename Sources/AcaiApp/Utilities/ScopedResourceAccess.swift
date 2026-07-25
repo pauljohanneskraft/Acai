@@ -40,9 +40,7 @@ struct ScopedResourceAccess {
 
     /// Resolves the URL, brackets `startAccessingSecurityScopedResource`/`stop...` around `body` on
     /// iOS, and returns its result. When the stored bookmark has gone stale, mints a fresh one and
-    /// hands it to `onRefresh` (still inside the access scope) so the caller can persist it — a
-    /// no-op unless the caller passes `onRefresh`, and never invoked on macOS (no bookmark, no
-    /// staleness to track).
+    /// hands it to `onRefresh` (still inside the access scope) so the caller can persist it.
     func withResolvedURL<T>(
         onRefresh: ((SecurityScopedBookmark) -> Void)? = nil,
         _ body: (URL) throws -> T

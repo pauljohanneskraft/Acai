@@ -9,10 +9,9 @@
 public struct SequenceDiagramDOTRenderer: DOTRenderer {
     public let renderOptions: DiagramRenderOptions
 
-    /// Optional per-message colour override (a hex like `#2e7d32`). When it returns a non-`nil`
-    /// colour for a message, that colour wins over `theme.edgeColor`; `nil` (or a `nil` closure)
-    /// leaves colouring unchanged. Used to tint a delta diagram's added/removed/changed messages.
-    /// Default `nil` keeps existing output byte-for-byte identical.
+    /// Optional per-message colour override (a hex like `#2e7d32`) that wins over `theme.edgeColor`
+    /// when non-`nil`. Used to tint a delta diagram's added/removed/changed messages; default `nil`
+    /// keeps existing output byte-for-byte identical.
     public let messageColor: (@Sendable (SequenceDiagram.Message) -> String?)?
 
     public init(

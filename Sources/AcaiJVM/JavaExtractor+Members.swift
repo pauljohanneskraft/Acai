@@ -18,11 +18,9 @@ extension JavaExtractor {
         return knownProperties
     }
 
-    /// A `methodName → returnTypeName` map from the type's *direct* method declarations (a one-level
-    /// pre-pass over the raw body, mirroring `buildPropertyMap` above), so a same-type method call
-    /// with an unambiguous return type — including one declared later in the type — can seed a
-    /// local's type (RC-I). Overloaded names with differing return types are dropped rather than
-    /// guessed.
+    /// A `methodName → returnTypeName` map from the type's direct method declarations (a one-level
+    /// pre-pass, mirroring `buildPropertyMap` above), so a same-type method call with an unambiguous
+    /// return type can seed a local's type. Overloaded names with differing return types are dropped.
     private func buildMethodReturnTypeMap(node: Node) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for child in node.children() where child.nodeType == "method_declaration" {
@@ -40,8 +38,7 @@ extension JavaExtractor {
         nodeType: String,
         parentQualifiedName: String
     ) -> TypeDeclaration? {
-        // Temporarily set namespace to the parent type's qualified name
-        // so nested types receive correct IDs (e.g. `pkg.Outer.Inner`).
+        // Parent type's qualified name as namespace, so nested types get correct IDs.
         let savedNamespace = currentNamespace
         currentNamespace = parentQualifiedName
         defer { currentNamespace = savedNamespace }
@@ -171,8 +168,8 @@ extension JavaExtractor {
         case .field:
             context.members.append(contentsOf: extractFieldDeclaration(child, scope: context.scope))
         case .initializerBlock:
-            // A `static { … }` / instance `{ … }` initializer block. Its calls run during class/object
-            // construction, so record them on an `.initializer` member (never a dead-code candidate) (RC2).
+            // A `static { … }` / instance `{ … }` initializer block. Its calls run during
+            // construction, so record them on an `.initializer` member, never a dead-code candidate.
             context.members.append(
                 Member(
                     name: "init", kind: .initializer, accessLevel: .internal, location: loc(child),

@@ -1,17 +1,10 @@
 import Foundation
 import CoreGraphics
 
-/// Timer-driven controller that auto-pans an infinite canvas when a drag
-/// operation reaches near the viewport edges.
-///
-/// **Why a timer?** `DragGesture.onChanged` only fires when the cursor moves.
-/// If you drag to the edge and hold still, the gesture goes quiet — but you
-/// still want continuous scrolling. A 60 Hz timer keeps panning while the
-/// cursor sits at (or beyond) the viewport edge.
-///
-/// Speed increases the further past the edge margin the cursor is, with no
-/// upper cap, similar to how text editors accelerate scrolling when you drag
-/// the selection far outside the viewport.
+/// Timer-driven controller that auto-pans an infinite canvas when a drag reaches near the
+/// viewport edges. A 60 Hz timer is needed because `DragGesture.onChanged` only fires on cursor
+/// movement, so it goes quiet if the drag holds still at the edge. Speed increases the further
+/// past the edge margin the cursor is, uncapped, like text editors accelerating on far drags.
 final class EdgeAutoPanController: @unchecked Sendable {
     private var timer: Timer?
 

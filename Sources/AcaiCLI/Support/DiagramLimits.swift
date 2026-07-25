@@ -1,11 +1,7 @@
 import ArgumentParser
 
-/// The numeric traversal limits shared by the `diagram` and `image` commands.
-///
-/// Both `--max-depth` (sequence call-graph depth) and `--max-states` (state-diagram cap) must be at
-/// least 1 — zero or negative values produce an empty or meaningless diagram — and are capped to keep
-/// a stray huge value from triggering a runaway traversal. A value you instantiate and ask to
-/// `validate(maxDepth:maxStates:)`.
+/// The numeric traversal limits shared by the `diagram` and `image` commands. `--max-depth` and
+/// `--max-states` must be at least 1 and are capped to prevent a runaway traversal.
 struct DiagramLimits {
     var depthRange = 1...100
     var statesRange = 1...1000

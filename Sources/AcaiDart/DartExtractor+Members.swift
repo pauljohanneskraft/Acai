@@ -75,14 +75,11 @@ extension DartExtractor {
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) {
-        // In the Dart grammar a member's `function_body` is a *sibling* of its
-        // signature node within the class body, so bodies are paired with the
-        // member that the immediately preceding child produced.
+        // A member's `function_body` is a *sibling* of its signature node, paired with whichever
+        // member the immediately preceding child produced.
         var previousChildAddedMember = false
-        // (memberIndex, bodyNode) pairs; call sites are resolved after the loop so the
-        // scope can be built from the type's *complete* property/member set.
+        // Call sites are resolved after the loop so the scope reflects the type's full member set.
         var pendingBodies: [(index: Int, body: Node)] = []
-        // Annotations precede the member they decorate as siblings in the body.
         var pendingAnnotations: [String] = []
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -112,9 +109,9 @@ extension DartExtractor {
             assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
-            // A constructor's initializer list (`: x = compute()`) lives inside the `method_signature`,
-            // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
-            // file-level type names are enough to resolve their static/top-level receivers (RC2).
+            // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
+            // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
+            // its static/top-level receivers.
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
                 appendInitializerListCallSites(initializers, to: &members)
             }
@@ -123,11 +120,9 @@ extension DartExtractor {
         markBodylessMethodsAbstract(&members, bodiedIndices: Set(pendingBodies.map(\.index)))
     }
 
-    /// Handles `declaration` nodes inside class bodies.
-    ///
-    /// A `declaration` node typically has the structure:
-    ///   [modifiers] [type] [nullable_type?] (initialized_identifier_list | static_final_declaration_list)
-    /// We extract the type and modifiers first, then propagate them to field extraction.
+    /// Handles `declaration` nodes inside class bodies: `[modifiers] [type] [nullable_type?]
+    /// (initialized_identifier_list | static_final_declaration_list)`. Extracts type/modifiers
+    /// first, then propagates them to field extraction.
     private mutating func extractClassMemberDeclaration(
         _ node: Node,
         members: inout [Member],
@@ -194,9 +189,9 @@ extension DartExtractor {
             assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
-            // A constructor's initializer list (`: x = compute()`) lives inside the `method_signature`,
-            // a sibling of the body; walk it so its calls aren't lost. Init-lists run before `this`, so
-            // file-level type names are enough to resolve their static/top-level receivers (RC2).
+            // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
+            // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
+            // its static/top-level receivers.
             if previousChildAddedMember, let initializers = child.firstChild(withType: "initializers") {
                 appendInitializerListCallSites(initializers, to: &members)
             }
@@ -228,8 +223,7 @@ extension DartExtractor {
         )
     }
 
-    /// Attempts to resolve a child of a `method_signature` into a member
-    /// for signatures that are returned directly (constructor, getter, setter, operator).
+    /// Resolves a `method_signature` child directly (constructor, getter, setter, operator).
     private func resolveMethodSignatureChild(
         _ child: Node, nodeType: String, isStatic: Bool, at node: Node
     ) -> Member? {
@@ -356,7 +350,6 @@ extension DartExtractor {
         var name = parentName
         var parameters: [Parameter] = []
 
-        // Named constructors: ClassName.name
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {

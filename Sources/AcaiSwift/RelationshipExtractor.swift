@@ -7,8 +7,7 @@ struct RelationshipExtractor {
 
     /// Expands a potentially composed type (`A & B & C`) into individual type names.
     private func expandTypeNames(_ typeSyntax: TypeSyntax) -> [String] {
-        // Route through `extractTypeReference` so attributes (`@unchecked`,
-        // `@retroactive`, `@MainActor`) and optional/array sugar are stripped,
+        // Route through `extractTypeReference` so attributes and optional/array sugar are stripped,
         // keeping edge endpoints consistent with `TypeDeclaration.inheritedTypes`.
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
             return composition.elements.map { TypeReferenceExtractor().extractTypeReference(from: $0.type).name }

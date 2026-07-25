@@ -9,11 +9,9 @@ import AcaiLibrary
 import AcaiRender
 
 extension AcaiCommand {
-    /// Renders a class diagram to a PNG image using the same SwiftUI views and layout engine
-    /// as the macOS app (via `AcaiRender`), rather than going through DOT/Graphviz.
-    ///
-    /// macOS-only: image rendering relies on SwiftUI's `ImageRenderer`, which needs a GUI /
-    /// window-server session. On other platforms this subcommand is not registered.
+    /// Renders a class diagram to a PNG using the same SwiftUI views and layout engine as the
+    /// macOS app (via `AcaiRender`), rather than DOT/Graphviz. macOS-only: rendering needs
+    /// SwiftUI's `ImageRenderer`, which requires a GUI / window-server session.
     struct Image: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "image",
@@ -49,7 +47,6 @@ extension AcaiCommand {
         @Option(name: .long, help: "Colour theme for the rendered image: default (light) or dark.")
         var theme: ThemeOption = .default
 
-        /// The render palette for the selected `--theme`.
         private var palette: DiagramPalette {
             theme == .dark ? .dark : .light
         }
@@ -131,7 +128,7 @@ extension AcaiCommand {
             try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
-        /// The "old" side for a delta image, when `--source-old` / `--from-old` is given.
+        /// The old side for a delta image, if `--source-old` / `--from-old` is given.
         private func resolveOldArtifact() throws -> CodeArtifact? {
             guard fromOld != nil || sourceOld != nil else { return nil }
             return try ArtifactSource.resolve(from: fromOld, source: sourceOld, language: artifactSource.language)
@@ -148,8 +145,8 @@ extension AcaiCommand {
             print("Wrote image to \(output)")
         }
 
-        /// Selects the per-kind image exporter for the requested flags and renders the PNG — a delta
-        /// when an OLD revision is given, otherwise the plain diagram.
+        /// Selects the exporter for the requested flags and renders the PNG — a delta when an old
+        /// revision is given, otherwise the plain diagram.
         private func renderData(artifact: CodeArtifact, old: CodeArtifact?) async throws -> Data {
             if let sequenceFrom {
                 let exporter = SequenceImageExporter(
@@ -181,7 +178,7 @@ extension AcaiCommand {
         }
 
         /// The class-diagram configuration derived from the grouping/access/member/focus flags,
-        /// shared by the plain and delta render paths so they honour the same options.
+        /// shared by the plain and delta render paths.
         private func classDiagramConfiguration() -> ClassDiagramConfiguration {
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = grouping
@@ -197,9 +194,8 @@ extension AcaiCommand {
                 relationshipKinds: focusRelationship,
                 includeInterconnections: !noFocusInterconnections
             ).configuration
-            // A focused view is a local neighbourhood around one type; module/directory boxing splits
-            // it into mismatched clusters that waste canvas. Lay it out as a single graph so the root
-            // is prominent and the space is filled.
+            // A focused view is a local neighbourhood around one type; module/directory boxing would
+            // split it into mismatched clusters, so lay it out as a single graph instead.
             if configuration.focus != nil {
                 configuration.grouping = .none
             }

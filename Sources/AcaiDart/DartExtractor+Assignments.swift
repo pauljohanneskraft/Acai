@@ -5,9 +5,8 @@ import AcaiTreeSitter
 
 extension DartExtractor: AssignmentResolving {
 
-    /// Resolves Dart `assignment_expression` nodes (`x = …`, `x += …`) and
-    /// increments (`x++` as `postfix_expression`, `++x` as `unary_expression`,
-    /// both carrying an `increment_operator`).
+    /// Resolves Dart `assignment_expression` nodes (`x = …`, `x += …`) and increments (`x++` as
+    /// `postfix_expression`, `++x` as `unary_expression`, both carrying an `increment_operator`).
     func resolveAssignment(_ node: Node) -> VariableAssignment? {
         switch node.nodeType {
         case "assignment_expression":
@@ -23,18 +22,16 @@ extension DartExtractor: AssignmentResolving {
         guard let left = node.child(byFieldName: "left"),
               let target = parseAssignmentTarget(text(left))
         else { return nil }
-        // The grammar flattens the RHS into the assignment node: `LoadState.loading`
-        // appears as sibling `identifier` + `selector` children after the operator
-        // token (the `right` field covers only the first part). Classify the span
-        // of all children following the operator instead of a single node.
+        // The grammar flattens the RHS into the assignment node: `LoadState.loading` appears as
+        // sibling `identifier` + `selector` children after the operator (`right` covers only the
+        // first part). Classify the whole span after the operator instead of a single node.
         let children = node.children()
         guard let opIndex = children.firstIndex(where: {
             !$0.isNamed && text($0).hasSuffix("=") && $0.range.location > left.range.location
         }) else { return nil }
         let opText = text(children[opIndex])
         let op: VariableAssignment.Operator = opText == "=" ? .assign : .compound
-        // Compound results depend on the previous value: record the whole
-        // statement as a non-enumerable expression.
+        // Compound results depend on the previous value: record as a non-enumerable expression.
         let value: VariableAssignment.Value = op == .compound
             ? .init(kind: .expression, text: expressionSnippet(node))
             : classifyValueSpan(Array(children[(opIndex + 1)...]))

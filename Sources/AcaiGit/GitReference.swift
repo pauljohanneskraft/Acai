@@ -4,10 +4,9 @@ import SwiftGitX
 /// Resolves a revision string — `HEAD`, `HEAD~N`/`HEAD^` chains, a branch or tag name, or a full
 /// 40-character commit SHA — to a commit in a repository.
 ///
-/// `SwiftGitX` doesn't expose libgit2's general `git_revparse_single` (the C API backing `git
-/// rev-parse`'s full grammar — ranges, `@{upstream}`, etc.), only typed lookups (`repository.show`,
-/// `repository.branch`, `repository.tag`). This covers the subset Acai's own ref picker
-/// (`GitRefs`/`DeltaComparisonBar`) and default "HEAD" actually produce, not arbitrary revspecs.
+/// `SwiftGitX` only exposes typed lookups (`repository.show`, `.branch`, `.tag`), not libgit2's
+/// general `git rev-parse` grammar, so this covers the subset Acai actually produces rather than
+/// arbitrary revspecs.
 struct GitReference {
     let name: String
 

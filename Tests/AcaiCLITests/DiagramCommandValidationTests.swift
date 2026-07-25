@@ -84,7 +84,6 @@ struct DiagramCommandValidationTests {
     }
 
     @Test func acceptsInRangeBounds() throws {
-        // A well-formed invocation parses and validates without throwing.
         let cmd = try CLITestSupport.parseDiagram(
             ["--source", "/tmp/x", "--max-depth", "100", "--max-states", "1000"]
         )

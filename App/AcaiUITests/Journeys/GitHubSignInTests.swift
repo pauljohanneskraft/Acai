@@ -2,13 +2,14 @@ import XCTest
 
 /// Verifies GitHub sign-in/out through `GitHubAccountSection`'s personal-access-token path (no
 /// device-flow polling to simulate — deterministic by construction) using
-/// `FixtureGitHubAccountService`'s canned identity, proving the seam described in
-/// `TESTING_ARCHITECTURE.md`'s snapshot tests actually works end to end, not just that it compiles.
+/// `FixtureGitHubAccountService`'s canned identity, proving the seam actually works end to end,
+/// not just that it compiles.
 ///
 /// `GitHubTokenStore` is Keychain-backed and not fixture-redirected, so a successful stubbed
 /// sign-in still writes to the real keychain item under `de.kraftsoftware.Acai.github` — this test
 /// always signs back out via `defer`, even if an assertion above it fails, so it never leaves a
 /// stale entry for the next run on a reused simulator/host.
+@MainActor
 final class GitHubSignInTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     /// Must match `FixtureGitHubAccountService.login` (`Sources/AcaiApp/GitHub/GitHubAccountService.swift`)

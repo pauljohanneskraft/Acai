@@ -7,7 +7,7 @@ struct DartModifierTests {
     let parser = DartCodeParser()
 
     /// `@override` maps to the `.override` modifier and a body-less method is marked `.abstract`, so the
-    /// dead-code scan exempts both the requirement and its override as reachable-by-contract (RC3).
+    /// dead-code scan exempts both the requirement and its override as reachable-by-contract.
     @Test func overrideAnnotationAndBodylessAbstractMapToModifiers() {
         let source = """
         abstract class Base {

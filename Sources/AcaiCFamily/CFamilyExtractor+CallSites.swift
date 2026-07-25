@@ -23,11 +23,10 @@ extension CFamilyExtractor: CallSiteResolving {
         case "qualified_identifier":
             return qualifiedCallSite(function, scope: scope, location: loc(node))
         case "identifier":
-            // Bare `foo(args)` — a C free function, or (C++) an implicit `this->foo()` sibling-method
-            // call. Tagged `.selfDispatch`: the call-graph builder resolves it against the enclosing
-            // type first, then falls back to a free function (a freestanding C caller has an empty
-            // caller type, so it resolves straight through the free fallback). The `declaredFunctionNames`
-            // guard keeps stdlib calls (`printf`, …) out of the coverage denominator.
+            // Bare `foo(args)` — a C free function, or (C++) an implicit `this->foo()` sibling call.
+            // Tagged `.selfDispatch`: the call-graph builder tries the enclosing type first, then
+            // falls back to a free function. `declaredFunctionNames` keeps stdlib calls (`printf`, …)
+            // out of the coverage denominator.
             let name = text(function)
             guard declaredFunctionNames.contains(name) else { return nil }
             return CallSite(receiver: .selfDispatch, methodName: name, location: loc(node))
@@ -71,7 +70,7 @@ extension CFamilyExtractor: CallSiteResolving {
     /// Provable local-variable types: an explicit declared type (`Foo x;` / `Foo* p = …;`), an
     /// `auto p = new Foo()` construction, or a same-type method call with an unambiguous return type
     /// (`auto x = compute();`, via `scope.knownMethodReturnTypes`), so `x.method()` / `p->method()`
-    /// resolves to `Foo` (RC4/RC-I).
+    /// resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "declaration",

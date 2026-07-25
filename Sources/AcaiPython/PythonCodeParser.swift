@@ -23,7 +23,6 @@ public struct PythonCodeParser: CodeParser {
         }
         var extractor = PythonExtractor(source: source, fileName: fileName)
         var artifact = extractor.extract(from: root)
-        // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
         if root.hasError {
             artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
         }

@@ -4,8 +4,8 @@ import Testing
 @Suite("AccessLevel")
 struct AccessLevelTests {
 
-    /// Pins the single total visibility order shared by CLI, app, and renderers so a future edit
-    /// can't silently reshuffle the contested middle tiers (packagePrivate / internal / protected).
+    /// Pins the single total visibility order shared by CLI, app, and renderers, including the
+    /// contested middle tiers (packagePrivate / internal / protected).
     @Test func visibilityRankIsStrictlyDescending() {
         let mostToLeastVisible: [AccessLevel] = [
             .open, .public, .packagePrivate, .internal, .protected, .filePrivate, .private

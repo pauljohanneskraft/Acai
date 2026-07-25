@@ -5,7 +5,8 @@ import XCTest
 /// distinct from the GitHub tab already exercised by `GitHubSignInTests`/`GitHubAddCodebaseTests`).
 /// The local tab's "Choose…" button opens a real system file picker (`NSOpenPanel`/document
 /// picker), which XCUITest can't drive without further plumbing — this only captures the tab's
-/// empty state, not a "directory chosen" state. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// empty state, not a "directory chosen" state.
+@MainActor
 final class NewSheetsScreenshotTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 

@@ -13,15 +13,11 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     /// `UserDefaults` key shared by the `@AppStorage` binding and the (non-SwiftUI) export path.
     static let storageKey = "diagramTheme"
 
-    /// The `UserDefaults` domain to read/write — the real shared domain (`.standard`) for actual
-    /// users, but an isolated suite scoped to the active UI test fixture's own disposable
-    /// directory when one is active. `@AppStorage(store:)` defaults to `.standard` when omitted,
-    /// which is the exact same domain (keyed by bundle identifier) a real, separately-installed
-    /// copy of the app uses — without this redirect, an automated UI test toggling the theme
-    /// picker would read or silently overwrite a real user's saved preference. Falls back to a
-    /// still-isolated fixed suite name (never `.standard`) if the derived name is somehow
-    /// rejected, so a fixture launch never silently touches the real domain. Mirrors the same
-    /// guarantee `ProjectStore`/`GitHubTokenStore` already give their own state.
+    /// The `UserDefaults` domain to read/write — `.standard` for real users, but an isolated suite
+    /// scoped to the active UI test fixture's directory when one is active, so an automated test
+    /// toggling the theme picker never reads or overwrites a real user's saved preference. Falls
+    /// back to a still-isolated fixed suite name (never `.standard`) if the derived name is
+    /// somehow rejected.
     static var store: UserDefaults {
         guard let baseDir = UITestFixtureResolver().resolveBaseDir() else { return .standard }
         let suiteName = "de.kraftsoftware.Acai.uitest.\(baseDir.lastPathComponent)"

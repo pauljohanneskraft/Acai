@@ -6,7 +6,7 @@ extension String {
         "\"" + replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
-    /// Escapes backslashes, double-quotes and newlines for use inside a DOT quoted string.
+    /// For use inside a DOT quoted string.
     var dotEscaped: String {
         self
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -14,7 +14,7 @@ extension String {
             .replacingOccurrences(of: "\n", with: "\\n")
     }
 
-    /// Escapes `&`, `<` and `>` for use inside a DOT HTML label.
+    /// For use inside a DOT HTML label.
     var dotHTMLEscaped: String {
         self
             .replacingOccurrences(of: "&", with: "&amp;")

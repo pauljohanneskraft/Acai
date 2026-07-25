@@ -1,12 +1,9 @@
 import Foundation
 
 /// The sign-in operations `GitHubAccountSection` needs — split out from `GitHubAPIClient`/
-/// `GitHubDeviceAuthFlow` so a UI test process (which can't share in-memory state with the app
-/// process the way `@testable import` + a `URLProtocol` mock can for in-process unit tests) can
-/// swap in a deterministic, network-free conformance instead. Deliberately scoped to sign-in only —
-/// the repository/branch/tag/clone calls elsewhere (`NewCodebaseSheet`, `ProjectBrowserDiagramEditors`,
-/// `CodebaseDetailView`) aren't part of any gated journey yet, so they stay direct
-/// `GitHubAPIClient(credential:)` calls until that changes. See `TESTING_ARCHITECTURE.md`'s snapshot tests.
+/// `GitHubDeviceAuthFlow` so a UI test process can swap in a deterministic, network-free
+/// conformance instead of a `URLProtocol` mock. Scoped to sign-in only; other GitHub calls stay
+/// direct `GitHubAPIClient(credential:)` calls until they need the same treatment.
 protocol GitHubAccountService: Sendable {
     func authenticatedUser(credential: GitHubCredential) async throws -> GitHubAPIClient.User
     func requestDeviceCode(clientID: String) async throws -> GitHubDeviceAuthFlow.DeviceCode
@@ -32,13 +29,10 @@ struct LiveGitHubAccountService: GitHubAccountService {
     }
 }
 
-/// Deterministic canned responses for the snapshot tests' XCUITest journeys — no network access at all.
-/// Selected only when `UITestFixtureResolver().resolveBaseDir() != nil`, mirroring the same check
-/// `ProjectStore.init` already uses to redirect its own storage.
+/// Deterministic canned responses for the snapshot tests' XCUITest journeys — no network access.
+/// Selected only when `UITestFixtureResolver().resolveBaseDir() != nil`.
 struct FixtureGitHubAccountService: GitHubAccountService {
-    /// The canned identity every fixture-stubbed sign-in resolves to. A single hardcoded identity
-    /// is enough for the one journey that needs this today; move to fixture-specific JSON (like
-    /// `ProjectStore`'s `projects/*.json`) if a second journey ever needs a different one.
+    /// The canned identity every fixture-stubbed sign-in resolves to.
     static let login = "octocat"
 
     func authenticatedUser(credential: GitHubCredential) async throws -> GitHubAPIClient.User {

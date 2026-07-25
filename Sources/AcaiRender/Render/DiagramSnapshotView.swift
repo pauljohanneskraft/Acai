@@ -60,14 +60,12 @@ public struct DiagramSnapshotView: View {
 
     public var body: some View {
         ZStack {
-            // Grouping boxes sit behind everything.
             ForEach(groupingBoxes) { box in
                 GroupingBoxView(label: box.label)
                     .frame(width: box.rect.width, height: box.rect.height)
                     .position(x: box.rect.midX, y: box.rect.midY)
             }
 
-            // Relationship edges.
             ForEach(edges.removingDuplicates(by: \.id)) { edge in
                 if let sourceRect = rect(for: edge.sourceID),
                    let targetRect = rect(for: edge.targetID) {
@@ -79,7 +77,6 @@ public struct DiagramSnapshotView: View {
                 }
             }
 
-            // Type nodes on top.
             ForEach(nodes.removingDuplicates(by: \.id)) { node in
                 if let pos = positions[node.id] {
                     let size = size(for: node.id)

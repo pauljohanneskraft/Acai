@@ -1,9 +1,8 @@
 import MCP
 import AcaiLibrary
 
-/// One read-only analysis tool. Every tool is an instantiable value conforming to this — its `name`,
-/// its trigger-shaped `description` (the autonomous surface an agent reads when deciding to reach for
-/// it), its JSON input schema, and a `run` that returns the report already encoded as a `Value`. The
+/// One read-only analysis tool: a `name`, a trigger-shaped `description` (what an agent reads when
+/// deciding to reach for it), a JSON input schema, and a `run` returning the report as a `Value`. The
 /// shared helpers below (`resolveArtifact`, schema fragments, selector mapping) keep each tool tiny.
 protocol AnalysisTool: Sendable {
     var name: String { get }

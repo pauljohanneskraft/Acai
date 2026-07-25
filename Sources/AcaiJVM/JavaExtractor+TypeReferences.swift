@@ -5,13 +5,8 @@ import AcaiTreeSitter
 
 extension JavaExtractor {
 
-    /// Matches Java `method_invocation` nodes.
-    ///
-    /// Handles:
-    /// - `receiver.method(args)` — `object` field is an `identifier` (a known property or type),
-    /// - `this.receiver.method(args)` — `object` is a `field_access` whose own `object` is `this`,
-    /// - `this.method(args)` — `object` field is `this` (a call on the enclosing instance),
-    /// - `TypeName.method(args)` — `object` is a known type (static call).
+    /// Matches Java `method_invocation` nodes: `receiver.method(args)` (object is a known property or
+    /// type), `this.receiver.method(args)`, `this.method(args)`, `TypeName.method(args)`.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "method_invocation",
               let nameNode = node.child(byFieldName: "name")
@@ -36,7 +31,7 @@ extension JavaExtractor {
 
     /// Provable local-variable types: an explicit annotation (`Foo x = …`), a `new Foo()` construction
     /// (`var x = new Foo()`), or a same-type method call with an unambiguous return type (`var x =
-    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "local_variable_declaration",

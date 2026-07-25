@@ -5,8 +5,6 @@ import AcaiQuality
 /// codebase root, applied at indexing time (`CodebaseAnalyzer`) so an excluded file is never even
 /// parsed. `nil` on `Codebase.fileFilter` — and an empty `rules` list — both mean "no filtering,"
 /// identical to every codebase's behavior before this existed.
-///
-/// See `USABILITY_IMPROVEMENTS.md` Part 12, "File-level allow/blocklist."
 struct FileFilter: Codable, Hashable, Sendable {
     var rules: [Rule] = []
 
@@ -52,12 +50,10 @@ extension FileFilter {
         }
 
         /// A ceiling on the path length a regex rule is evaluated against. Real file paths are a
-        /// few hundred characters at most; bounding the input size forecloses the worst
-        /// catastrophic-backtracking blowups tied to input length — user-supplied regex against a
-        /// large file tree is exactly the risk `USABILITY_GUARDRAILS.md` §5 calls out. This isn't
-        /// a full guarantee (a pathological pattern can still be slow on a short string), but it
-        /// removes the "attacker controls both pattern and a huge input" half of the risk, since
-        /// the input here is always one path, never file contents.
+        /// few hundred characters at most; bounding the input size forecloses catastrophic-
+        /// backtracking blowups tied to input length. Not a full guarantee (a pathological pattern
+        /// can still be slow on a short string), but the input here is always one path, never file
+        /// contents.
         private static let maxRegexInputLength = 4096
 
         /// Whether this rule matches `relativePath`. A malformed regex, or a path longer than

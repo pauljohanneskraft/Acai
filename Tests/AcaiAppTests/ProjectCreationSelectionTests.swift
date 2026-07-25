@@ -2,10 +2,9 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `ProjectCodebaseEditor.addProject` (B52): creating a project should land the user in it
-/// immediately, rather than leaving the prior selection in place. The underlying model
-/// change (`addProject` returning the new id) is unit-testable even though the full "sheet
-/// dismissal navigates to the new project" journey is a snapshot test.
+/// Creating a project should land the user in it immediately rather than leaving the prior
+/// selection in place. `addProject` returning the new id is unit-testable even though the full
+/// "sheet dismissal navigates to the new project" journey is a snapshot test.
 @Suite("Project creation selection")
 @MainActor
 struct ProjectCreationSelectionTests {

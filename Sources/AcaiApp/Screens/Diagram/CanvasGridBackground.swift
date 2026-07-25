@@ -13,11 +13,9 @@ struct CanvasGridBackground: View {
         Canvas { context, size in
             let effectiveSpacing = dotSpacing * scale
 
-            // Don't draw grid if too zoomed out (dots would be too dense)
-            // or too zoomed in (dots would be too sparse).
+            // Skip when too zoomed out for dots to stay legible.
             guard effectiveSpacing > 6 else { return }
 
-            // Compute the offset of the first dot in screen space.
             let startX = offset.x.truncatingRemainder(dividingBy: effectiveSpacing)
             let startY = offset.y.truncatingRemainder(dividingBy: effectiveSpacing)
 

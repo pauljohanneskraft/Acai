@@ -3,18 +3,9 @@ import AcaiCore
 
 // MARK: - TreeSitterExtracting
 
-/// Protocol for tree-sitter-based language extractors.
-///
-/// Every language extractor (Kotlin, Java, JS/TS, Dart) conforms to this
-/// protocol and **must** implement ``walkSourceFile(_:)`` — the compiler
-/// enforces this at build time, so there is no risk of accidentally
-/// inheriting a no-op default.
-///
-/// The protocol extension provides:
-/// - **Convenience helpers** – `text(_:)`, `loc(_:)`, `qualifiedName(_:)`.
-/// - **Artifact assembly** – `buildArtifact(language:)`.
-/// - **Relationship resolution** – `resolveRelationshipNames()`.
-/// - **Property-map builder** – `buildPropertyMap(from:)`.
+/// Protocol for tree-sitter-based language extractors (Kotlin, Java, JS/TS, Dart). Conformers must
+/// implement ``walkSourceFile(_:)``; the extension supplies convenience helpers, artifact assembly,
+/// relationship resolution, and the property-map builder.
 public protocol TreeSitterExtracting {
 
     // MARK: - Required State
@@ -25,10 +16,9 @@ public protocol TreeSitterExtracting {
     /// Accumulated type declarations discovered during extraction.
     var types: [TypeDeclaration] { get set }
 
-    /// Simple names of every type declared in the file, collected in one pre-pass over the
-    /// AST before bodies are extracted (so call-site resolution sees the *complete* set —
-    /// including the enclosing type, nested types, and forward-declared siblings — rather
-    /// than only types appended so far). Populate via ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
+    /// Simple names of every type declared in the file, collected in one pre-pass before bodies are
+    /// extracted so call-site resolution sees the complete set, including forward-declared siblings.
+    /// Populate via ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
     var declaredTypeNames: Set<String> { get set }
 
     /// Accumulated inter-type relationships discovered during extraction.
@@ -43,10 +33,8 @@ public protocol TreeSitterExtracting {
 
     // MARK: - Required Methods
 
-    /// Walks the root AST node to extract top-level declarations.
-    ///
-    /// Each language module **must** implement this with its own
-    /// AST traversal logic.
+    /// Walks the root AST node to extract top-level declarations. Each language module implements
+    /// this with its own AST traversal logic.
     mutating func walkSourceFile(_ node: Node)
 }
 
@@ -82,8 +70,7 @@ extension TreeSitterExtracting {
         currentNamespace.map { "\($0).\(name)" } ?? name
     }
 
-    /// Whether the node has an anonymous (keyword) child with the
-    /// given text.
+    /// Whether the node has an anonymous (keyword) child with the given text.
     public func hasAnonymousKeyword(
         _ keyword: String,
         in node: Node
@@ -101,7 +88,7 @@ extension TreeSitterExtracting {
 
     // MARK: Artifact Assembly
 
-    /// Assembles the accumulated state into a ``AcaiCore/CodeArtifact``.
+    /// Assembles accumulated state into a ``AcaiCore/CodeArtifact``.
     public func buildArtifact(
         language: CodeArtifact.SourceLanguage
     ) -> CodeArtifact {
@@ -125,11 +112,9 @@ extension TreeSitterExtracting {
 
     // MARK: Supertype Relationships
 
-    /// Records an inheritance/conformance edge from `owner` (a type's id or qualified name) to each
-    /// of `supertypes`, in order. Deduplicates the per-language "loop the supertypes and append a
-    /// `Relationship`" step; the caller keeps ownership of its `inheritedTypes` list. The edges'
-    /// `target` is each supertype's simple name — `resolveRelationshipNames()` later maps it to a
-    /// qualified id.
+    /// Records an inheritance/conformance edge from `owner` (a type's id or qualified name) to each of
+    /// `supertypes`. The edges' `target` is each supertype's simple name; `resolveRelationshipNames()`
+    /// later maps it to a qualified id.
     public mutating func recordSupertypeRelationships(
         from owner: String,
         to supertypes: [TypeReference],
@@ -142,17 +127,12 @@ extension TreeSitterExtracting {
 
     // MARK: Relationship Resolution
 
-    /// Resolves relationship source / target strings against
-    /// the types already collected in ``types``.
-    ///
-    /// During extraction, supertype names are taken verbatim from
-    /// source text (e.g. `Animal`), while type IDs are fully
-    /// qualified (e.g. `com.example.Animal`). This post-processing
-    /// step maps short names to qualified IDs so that relationships
-    /// are immediately matchable without downstream resolution.
+    /// Resolves relationship source/target strings against the types already collected in ``types``.
+    /// Supertype names are taken verbatim from source text (e.g. `Animal`) while type IDs are fully
+    /// qualified (e.g. `com.example.Animal`); this maps short names to qualified IDs.
     public mutating func resolveRelationshipNames() {
-        // Delegates to the single identity authority (`TypeIdentityResolver`) so per-file resolution
-        // here uses the same name→id mapping and ambiguity rule as the agnostic enrichment pass.
+        // Delegates to `TypeIdentityResolver` so per-file resolution uses the same name→id mapping
+        // and ambiguity rule as the agnostic enrichment pass.
         let resolver = TypeIdentityResolver(types: types)
 
         relationships = relationships.map { rel in
@@ -162,8 +142,7 @@ extension TreeSitterExtracting {
             return resolved
         }
 
-        // Also resolve inherited-type names so the codebase detail
-        // view shows consistent naming (qualified IDs where possible).
+        // Also resolve inherited-type names for consistent naming in the codebase detail view.
         func resolveInheritedTypes(in types: inout [TypeDeclaration]) {
             for index in types.indices {
                 for refIndex in types[index].inheritedTypes.indices {
@@ -178,10 +157,7 @@ extension TreeSitterExtracting {
 
     // MARK: Property Map
 
-    /// Builds a `[propertyName: typeName]` map from
-    /// already-extracted members.
-    ///
-    /// Useful as input to call-site extraction.
+    /// Builds a `[propertyName: typeName]` map from already-extracted members, for call-site extraction.
     public func buildPropertyMap(
         from members: [Member]
     ) -> [String: String] {
@@ -195,11 +171,10 @@ extension TreeSitterExtracting {
     }
 
     /// Builds a `[methodName: returnTypeName]` map from already-extracted members (unambiguous
-    /// overloads only), so a same-type method call can seed a local's type the same way a direct
-    /// construction already does (RC-I). Only usable by extractors that collect a type's full member
-    /// set *before* resolving any body (CFamily, Dart) — one that resolves bodies inline as members
-    /// are encountered needs its own per-type raw-syntax pre-pass instead, since a forward-declared
-    /// method wouldn't yet be in `members` here.
+    /// overloads only), so a same-type method call can seed a local's type like a direct construction
+    /// does. Only usable by extractors that collect a type's full member set before resolving any body
+    /// (CFamily, Dart) — one that resolves bodies inline needs its own per-type pre-pass instead, since
+    /// a forward-declared method wouldn't yet be in `members` here.
     public func methodReturnTypeMap(from members: [Member]) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for member in members where member.kind == .method {
@@ -211,9 +186,8 @@ extension TreeSitterExtracting {
     }
 
     /// One pre-pass over the raw AST collecting the simple name of every type declaration
-    /// (recursively, including nested types), so the full set is known before any body is
-    /// resolved. `name` extracts the declaration node's simple name (declarations whose name
-    /// can't be read — e.g. anonymous extensions — are skipped).
+    /// (recursively), so the full set is known before any body is resolved. `name` extracts the
+    /// declaration node's simple name; declarations whose name can't be read are skipped.
     public func collectDeclaredTypeNames(
         from root: Node,
         declarationNodeTypes: Set<String>,
@@ -232,11 +206,10 @@ extension TreeSitterExtracting {
         return names
     }
 
-    /// Type-like identifier names referenced anywhere inside a member's body/initializer subtree —
-    /// the construction/body dependencies the coupling metrics consume (e.g. `Foo()` constructions,
-    /// `Foo.bar` static access, type annotations). Walks **iteratively** (an explicit stack, not
-    /// recursion) so a deeply nested body can't overflow the stack. Over-captures every identifier
-    /// token by design; the engine keeps only names that resolve to a known type, so noise is dropped.
+    /// Type-like identifier names referenced anywhere inside a member's body/initializer subtree — the
+    /// dependencies the coupling metrics consume. Walks iteratively (explicit stack) so a deeply
+    /// nested body can't overflow the stack. Over-captures every identifier by design; the engine
+    /// keeps only names that resolve to a known type.
     public func referencedTypeNames(in body: Node?) -> [String] {
         guard let body else { return [] }
         var names: Set<String> = []
@@ -253,10 +226,8 @@ extension TreeSitterExtracting {
     }
 
     /// The cyclomatic complexity of a method `body`: `1 +` the count of decision-point nodes whose
-    /// tree-sitter type is in `branchKinds` (the grammar's `if`/`for`/`while`/`case`/`catch`/`&&`/`||`/
-    /// ternary node types — supplied by the language plugin, so this helper names no language). Returns
-    /// `nil` when there is no body, so an aggregate metric distinguishes "not measured" from "no
-    /// branches". Walks iteratively so a deeply nested body can't overflow the stack.
+    /// tree-sitter type is in `branchKinds` (supplied by the language plugin, so this helper names no
+    /// language). Returns `nil` when there's no body, distinguishing "not measured" from "no branches".
     public func cyclomaticComplexity(in body: Node?, branchKinds: Set<String>) -> Int? {
         guard let body else { return nil }
         var complexity = 1
@@ -272,9 +243,8 @@ extension TreeSitterExtracting {
         return complexity
     }
 
-    /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes (the parser
-    /// could not make sense of the input) and `missing` nodes (a required token the source
-    /// omitted, inserted during recovery). Walks *all* children, not just named ones, since
+    /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes and `missing` nodes
+    /// (a required token the source omitted). Walks all children, not just named ones, since
     /// error/missing nodes are frequently unnamed. Call only when `root.hasError`.
     public func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
         var diagnostics: [ParseDiagnostic] = []

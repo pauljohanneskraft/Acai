@@ -1,13 +1,9 @@
 import SwiftTreeSitter
 
-/// A table-driven dispatcher over a node's direct children: it maps each child's grammar `nodeType`
-/// to a caller-defined `Action` and vends the children that matched, in source order. This factors out
-/// the "walk the children, look up each `nodeType` in a `[String: Action]` table, act on the hits"
-/// loop that several Tree-sitter extractors repeat — the extractor keeps its own `Action` enum, its own
-/// table, and its own mutation; only the walk lives here.
-///
-/// A concrete value you instantiate with the table (`NodeDispatch(table)`), not a protocol whose sole
-/// requirement is a static table — the walk is behaviour on the value that owns the table.
+/// A table-driven dispatcher over a node's direct children: maps each child's grammar `nodeType` to a
+/// caller-defined `Action` and vends the children that matched, in source order. Factors out the
+/// "walk children, look up nodeType in a table, act on hits" loop several extractors repeat — the
+/// extractor keeps its own `Action` enum, table, and mutation; only the walk lives here.
 public struct NodeDispatch<Action> {
     /// Grammar `nodeType` → the action to take for a child of that type. Types absent from the table
     /// are skipped.

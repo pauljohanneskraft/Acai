@@ -3,8 +3,8 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `FreeformDiagramViewModel`'s checkpoint methods (B27): that save/restore/delete round-trip
-/// through the real `ProjectStore`, and that restoring is a single undoable step.
+/// `FreeformDiagramViewModel`'s checkpoint methods: save/restore/delete round-trip through the
+/// real `ProjectStore`, and restoring is a single undoable step.
 @Suite("Freeform Diagram Checkpoints (view model)")
 @MainActor
 struct FreeformDiagramViewModelCheckpointTests {

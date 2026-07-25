@@ -1,9 +1,8 @@
 import MCP
 
-/// A thin, typed reader over an MCP tool call's `arguments` object. A value you wrap around the raw
-/// `[String: Value]` (`ToolArguments(params.arguments)`) and pull typed facets off — so each tool
-/// reads its inputs the same way instead of hand-unwrapping `Value` cases. Missing optional keys
-/// return `nil`; a missing *required* key throws `invalidParams` with the offending name.
+/// A thin, typed reader over an MCP tool call's `arguments` object, so each tool reads its inputs the
+/// same way instead of hand-unwrapping `Value` cases. Missing optional keys return `nil`; a missing
+/// *required* key throws `invalidParams` naming it.
 struct ToolArguments: Sendable {
     private let values: [String: Value]
 

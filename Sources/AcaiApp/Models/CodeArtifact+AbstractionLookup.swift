@@ -2,11 +2,11 @@ import AcaiCore
 
 // MARK: - Abstraction Lookup (interface resolution)
 //
-// Sequence-diagram participants are named after *declared receiver types*, which for Swift
-// existentials include the `any ` / `some ` prefix (e.g. `any BuildSystemDetector`). These
-// lookups canonicalize such names back to the underlying protocol/interface declaration so the
-// config sheet can offer concrete-type mappings — while `typeMapping` keys stay the raw
-// participant name, because the generator substitutes declared receiver strings verbatim.
+// Sequence-diagram participants are named after declared receiver types, which for Swift
+// existentials include the `any `/`some ` prefix (e.g. `any BuildSystemDetector`). These lookups
+// canonicalize such names back to the underlying protocol/interface declaration so the config
+// sheet can offer concrete-type mappings; `typeMapping` keys stay the raw participant name since
+// the generator substitutes declared receiver strings verbatim.
 
 extension CodeArtifact {
 

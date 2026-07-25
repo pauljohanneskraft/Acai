@@ -56,7 +56,7 @@ struct DeadCodeScanTests {
     }
 
     /// A bare `foo()` reaches the scan as a `.selfDispatch` call site; the private method it targets
-    /// must be marked used, not reported dead. Locks in the extraction fix at the scan level.
+    /// must be marked used, not reported dead.
     @Test func bareSelfCallMarksPrivateMethodUsed() {
         let service = TypeDeclaration(
             id: "Service", name: "Service", qualifiedName: "Service", kind: .class, accessLevel: .public,
@@ -72,7 +72,7 @@ struct DeadCodeScanTests {
     }
 
     /// An abstract method is a body-less contract implemented by subtypes and reached polymorphically,
-    /// so it is never a dead-code candidate even when non-public and uncalled (RC3).
+    /// so it is never a dead-code candidate even when non-public and uncalled.
     @Test func abstractMethodIsNotACandidate() {
         let base = TypeDeclaration(
             id: "Base", name: "Base", qualifiedName: "Base", kind: .class, accessLevel: .internal,

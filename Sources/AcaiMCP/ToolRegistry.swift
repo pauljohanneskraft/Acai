@@ -3,8 +3,7 @@ import MCP
 
 /// The set of analysis tools the server exposes, and the dispatch behind `tools/list` and
 /// `tools/call`. Holds the shared snapshot cache so every tool call over one project reuses a single
-/// parse. A value you instantiate (`ToolRegistry.standard`); `registerHandlers` wires it into a
-/// `Server`.
+/// parse. `registerHandlers` wires an instance into a `Server`.
 struct ToolRegistry: Sendable {
     let tools: [any AnalysisTool]
     private let cache: AnalysisSnapshotCache

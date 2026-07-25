@@ -27,11 +27,9 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func persistChanges() {
         store.save()
-        // `withAnimation` here isn't cosmetic: without an active transaction, removing a row from
-        // the sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind
-        // (a SwiftUI/AppKit outline-diffing quirk) until an unrelated selection change forces a full
-        // reload. Wrapping the notify in a transaction makes the outline view compute a proper
-        // insert/remove diff instead.
+        // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
+        // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
+        // an unrelated selection change forces a full reload.
         withAnimation {
             pruneDanglingSelection()
             objectWillChange.send()

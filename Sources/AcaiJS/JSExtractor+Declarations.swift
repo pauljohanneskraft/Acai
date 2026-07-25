@@ -41,7 +41,7 @@ extension JSExtractor {
         } else if nodeType == "expression_statement" {
             // A bare top-level statement (`bootstrap();`) — its call's target has nowhere to attach
             // as a caller, so it's collected separately and given a synthetic reachable member in
-            // `walkSourceFile` (RC-H).
+            // `walkSourceFile`.
             topLevelCallSites.append(contentsOf: extractCallSites(
                 from: node, scope: CallSiteScope(knownTypeNames: declaredTypeNames)))
         } else {

@@ -139,10 +139,6 @@ struct TypeScriptParserTests {
         let foo = artifact.types[0]
         let properties = foo.members.filter { $0.kind == .property }
         #expect(properties.count == 2)
-        // #expect(properties[0].name == "name")
-        // #expect(properties[0].accessLevel == .public)
-        // #expect(properties[1].name == "age")
-        // #expect(properties[1].accessLevel == .private)
     }
 
     @Test func namespace() {
@@ -198,7 +194,6 @@ struct ExtendedTypeScriptParserTests {
         let artifact = parser.parse(source: source, fileName: "nested.ts")
         let outer = artifact.types.first { $0.name == "Outer" }
         #expect(outer != nil)
-        // Note: nested classes may be extracted as separate types or as nestedTypes
         #expect(artifact.types.count >= 1)
     }
 
@@ -314,7 +309,6 @@ struct ExtendedTypeScriptParserTests {
         }
         """
         let artifact = parser.parse(source: source, fileName: "declare.ts")
-        // The declare keyword is typically used for ambient declarations
         let lib = artifact.types.first { $0.name == "ExternalLib" }
         #expect(lib != nil)
     }

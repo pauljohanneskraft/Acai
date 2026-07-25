@@ -1,13 +1,12 @@
 import SwiftUI
 
 /// Split out of `ProjectDetailView` to keep that type's body under SwiftLint's `type_body_length`
-/// limit — this is the "create a new freeform diagram" concern (B26's template menu, B52's unified
-/// empty-project state that offers the same actions).
+/// limit — the "create a new freeform diagram" concern (template menu, unified empty-project state).
 extension ProjectDetailView {
     /// Shown instead of the header's action buttons + two empty sections when a project has
-    /// neither codebases nor diagrams yet (B52) — reuses `FreeformDiagramView.emptyCanvasHint`'s
-    /// visual language rather than inventing a new one, and renders the same two actions the
-    /// (now-hidden) header buttons would have, once, large, and centered.
+    /// neither codebases nor diagrams yet — reuses `FreeformDiagramView.emptyCanvasHint`'s visual
+    /// language and renders the same two actions the (now-hidden) header buttons would have, once,
+    /// large, and centered.
     var emptyProjectContentState: some View {
         VStack(spacing: 16) {
             Image(systemName: "tray.full")
@@ -32,7 +31,7 @@ extension ProjectDetailView {
     }
 
     /// Offered wherever a new freeform diagram can be created: a blank canvas, or one of the
-    /// starter templates (B26) pre-arranged with a handful of the catalog's own node kinds.
+    /// starter templates pre-arranged with a handful of the catalog's own node kinds.
     var addDiagramMenu: some View {
         Menu {
             Button {

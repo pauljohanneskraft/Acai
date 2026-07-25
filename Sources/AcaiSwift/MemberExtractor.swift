@@ -143,10 +143,8 @@ struct MemberExtractor {
     }
 
     /// Infers a stored property's type from a direct construction initializer (`= TypeName()`) when
-    /// there's no explicit annotation — the sibling of `CallSiteCollector.constructedTypeName` for
-    /// locals, extended to stored properties. Without this, a composed collaborator declared the
-    /// idiomatic way (`private let helper = Helper()`) gets no recorded type, so `buildPropertyMap()`
-    /// never learns it and calls through it (`helper.doThing()`) can't resolve.
+    /// there's no explicit annotation. Without this, a composed collaborator declared the idiomatic
+    /// way (`private let helper = Helper()`) gets no recorded type, so calls through it can't resolve.
     private func constructedType(from value: ExprSyntax?) -> TypeReference? {
         guard let call = value?.as(FunctionCallExprSyntax.self),
               let declRef = unwrappedCallee(call.calledExpression).as(DeclReferenceExprSyntax.self)

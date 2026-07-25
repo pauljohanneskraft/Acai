@@ -1,9 +1,8 @@
 import Foundation
 
 extension FreeformDiagram {
-    /// A named, timestamped snapshot of one freeform diagram's full node/edge state (B27).
-    /// Deliberately not version control — no branching or diffing between checkpoints, just
-    /// save/restore/delete of whole snapshots.
+    /// A named, timestamped snapshot of one freeform diagram's full node/edge state. Deliberately
+    /// not version control — no branching or diffing, just save/restore/delete of whole snapshots.
     struct Checkpoint: Identifiable, Codable, Hashable, Sendable {
         var id: UUID = UUID()
         var name: String

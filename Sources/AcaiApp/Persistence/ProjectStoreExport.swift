@@ -2,17 +2,14 @@ import Foundation
 import AcaiQuality
 
 /// A portable snapshot of the whole `ProjectStore`, for the manual "Export All Data" / "Import"
-/// pair (`USABILITY_IMPROVEMENTS.md` Part 8, "Manual export/import of the whole project store" —
-/// the bridge for "no iCloud sync"). Carries projects, diagram layouts, and quality-rule
+/// pair (the bridge for "no iCloud sync"). Carries projects, diagram layouts, and quality-rule
 /// configurations — deliberately **not** indexed `CodeArtifact` snapshots or cloned repository
 /// contents: both are regenerable (reindex / re-fetch from remote) and can be large, so bundling
-/// them would turn "export my setup" into "export my whole codebase cache," which isn't the point
-/// (mirrors the doc's own call-out that cloned repository contents are excluded for the same
-/// reason).
+/// them would turn "export my setup" into "export my whole codebase cache."
 struct ProjectStoreExport: Codable {
     /// Bumped whenever this format's shape changes, so an older app version can tell "I don't
-    /// understand this file" from "this file is corrupt" (`USABILITY_GUARDRAILS.md` §4) instead of
-    /// silently misinterpreting a newer file.
+    /// understand this file" from "this file is corrupt" instead of silently misinterpreting a
+    /// newer file.
     var formatVersion: Int
     var projects: [Project]
     var generatedDiagrams: [GeneratedDiagram]

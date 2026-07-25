@@ -16,10 +16,9 @@ public struct TypeID: Hashable, Sendable, Codable, CustomStringConvertible {
 
 /// The outcome of resolving a referenced type name against an artifact's declared types.
 ///
-/// Distinguishing these three cases is the point of #88: a reference that *matched several types*
-/// (ambiguous) is a likely-actionable defect, whereas one that *matched nothing* (external) is the
-/// normal case for stdlib/third-party supertypes. Both degrade transparently — ``canonicalName``
-/// carries the original string through — but only the ambiguous case warrants a diagnostic.
+/// A reference matching several types (ambiguous) is a likely-actionable defect; one matching
+/// nothing (external) is the normal case for stdlib/third-party supertypes. Both degrade
+/// transparently via ``canonicalName``, but only the ambiguous case warrants a diagnostic.
 public enum ResolvedTypeIdentity: Hashable, Sendable {
     /// The name matched a declared type (by id, qualified name, or a globally-unambiguous simple name).
     case resolved(TypeID)
@@ -44,12 +43,11 @@ public enum ResolvedTypeIdentity: Hashable, Sendable {
 
 /// The single authority for resolving a type reference's name to a canonical type id.
 ///
-/// Type identity flows through the engine as bare `String`s in three interchangeable formats — a
-/// declared type's `id` / `qualifiedName` (fully qualified) and its simple `name`. This resolver
-/// centralises the name→id mapping and its ambiguity rule (a simple name resolves only when it is
-/// globally unique across all declared types, nested included) that was previously duplicated across
-/// enrichment and the tree-sitter extractors, so every layer resolves identity the same way. Build
-/// it once from an artifact's `types`, then resolve names against it.
+/// Type identity flows through the engine as bare `String`s in two formats — a declared type's
+/// fully-qualified `id`/`qualifiedName` and its simple `name`. This resolver centralises the
+/// name→id mapping and its ambiguity rule (a simple name resolves only when globally unique across
+/// all declared types, nested included) so every layer resolves identity the same way. Build once
+/// from an artifact's `types`, then resolve names against it.
 public struct TypeIdentityResolver: Sendable {
     private let idByName: [String: String]
     private let ambiguousSimpleNames: Set<String>

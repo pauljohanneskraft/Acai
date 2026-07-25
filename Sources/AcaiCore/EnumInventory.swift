@@ -1,8 +1,6 @@
 /// The enum-case inventory of a codebase: every enum-like type with its cases, raw values and
-/// associated-value shapes, each carrying its `SourceLocation` for a precise jump target. A value you
-/// instantiate over an artifact (`EnumInventory(artifact:).entries`) — the read-only view the CLI's
-/// `enums` command and downstream tooling render. Agnostic: it reads the parsed model and names no
-/// language.
+/// associated-value shapes, each carrying its `SourceLocation` for a precise jump target. The
+/// read-only view the CLI's `enums` command and downstream tooling render.
 public struct EnumInventory: Sendable {
     /// One enum-like type and its declared cases.
     public struct Entry: Codable, Equatable, Sendable {

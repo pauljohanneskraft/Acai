@@ -1,11 +1,8 @@
 /// Resolves the `LanguageConfiguration` for an individual type from its own `sourceLanguage`, so a
-/// *polyglot* artifact (a base directory mixing e.g. Swift and Python, discovered and enriched
-/// per-language but then merged into one `CodeArtifact`) is classified per type at consume time rather
-/// than under a single artifact-wide language.
+/// polyglot artifact is classified per type rather than under a single artifact-wide language.
 ///
-/// It carries a **required default** — there is no empty-configuration fallback silently imposed. A
-/// type with no stamped language, or a language the backing registry doesn't know, resolves to that
-/// default. Agnostic by construction: it is pure data (a registry + a default) and names no language.
+/// Carries a required default — no empty-configuration fallback is silently imposed. A type with no
+/// stamped language, or a language the backing registry doesn't know, resolves to that default.
 public struct LanguageConfigurationResolver: Sendable {
     private let registry: LanguageRegistry
     /// The configuration used for a type whose language is unknown to `registry` (or unstamped).
@@ -19,8 +16,7 @@ public struct LanguageConfigurationResolver: Sendable {
     }
 
     /// The single-language shortcut: a resolver that returns `configuration` for every type. Used by
-    /// callers that analysed one language, or by a test fixture — the exact former behaviour of passing
-    /// one flat `LanguageConfiguration`.
+    /// callers that analysed one language, or by a test fixture.
     public init(single configuration: LanguageConfiguration) {
         self.init(registry: LanguageRegistry(parsers: []), default: configuration)
     }

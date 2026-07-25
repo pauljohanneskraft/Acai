@@ -1,9 +1,7 @@
 import AcaiLibrary
 
 /// Maps the `--language` names a user types (`swift`, `kotlin`, `typescript`, …) onto the engine's
-/// `SourceLanguage` constants. A value you instantiate (`SourceLanguageResolver().resolve(names:)`);
-/// the constants themselves live in the language plugins and reach here via `AcaiLibrary`'s re-exports,
-/// so this entry point still names no language of its own beyond the user-facing spelling table.
+/// `SourceLanguage` constants, which reach here via `AcaiLibrary`'s re-exports.
 struct SourceLanguageResolver: Sendable {
     private let byName: [String: CodeArtifact.SourceLanguage] = [
         "swift": .swift,

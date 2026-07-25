@@ -2,9 +2,8 @@ import Foundation
 import Testing
 import AcaiCore
 
-/// `AnalysisService.analyzeProject`'s `includingFile` hook (B62): a caller-supplied predicate over
-/// each candidate file's path, checked *before* the file is read — a caller-owned allow/blocklist
-/// (e.g. `AcaiApp`'s per-codebase `FileFilter`) plugs in here so an excluded file is never parsed,
+/// `AnalysisService.analyzeProject`'s `includingFile` hook: a caller-supplied predicate over each
+/// candidate file's path, checked *before* the file is read, so an excluded file is never parsed,
 /// not merely hidden from the result afterward.
 private struct SingleFileParser: CodeParser {
     var language: CodeArtifact.SourceLanguage { .init(rawValue: "fixture") }

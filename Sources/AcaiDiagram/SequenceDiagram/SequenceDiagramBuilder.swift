@@ -6,11 +6,10 @@ import AcaiCore
 /// message. `typeMapping` resolves an abstract receiver (protocol/interface/base class) to the
 /// concrete type whose body should be followed, so dynamic dispatch can still be traced.
 ///
-/// A value you instantiate with the entry point/options and ask to `build(from:)` — kept off
-/// `CodeArtifact` so the data model does not depend on the diagram layer.
+/// A value you instantiate with the entry point/options and ask to `build(from:)`.
 ///
-/// - Note: requires parsers to populate `Member.callSites` (with a `CallReceiver.type` receiver for
-///   cross-type calls); without it the diagram has the entry participant but no messages.
+/// - Note: requires parsers to populate `Member.callSites` (with a `CallReceiver.type` receiver
+///   for cross-type calls); without it the diagram has an entry participant but no messages.
 public struct SequenceDiagramBuilder: Sendable {
     public var entryPoint: (typeName: String, methodName: String)
     public var title: String?
@@ -48,8 +47,7 @@ public struct SequenceDiagramBuilder: Sendable {
             guard let function = lookups.freeFunctionsByName[entryPoint.methodName] else {
                 return SequenceDiagram(title: diagramTitle)
             }
-            // Free functions share the participant keyspace with types, so namespace their ids to
-            // avoid colliding with a same-named type; the bare name stays the display label.
+            // Namespaced so a free function's id can't collide with a same-named type.
             entryId = SequenceTraversal.freeFunctionID(entryPoint.methodName)
             entryName = entryPoint.methodName
             entryDecl = nil
@@ -152,8 +150,7 @@ private struct SequenceTraversal {
         self.participantKind = participantKind
     }
 
-    /// Participant id for a free (top-level) function. Namespaced so it can't collide with a type
-    /// of the same name in the shared participant keyspace; the bare name remains the display label.
+    /// Participant id for a free function, namespaced so it can't collide with a same-named type.
     static func freeFunctionID(_ name: String) -> String { "func:\(name)" }
 
     mutating func run(
@@ -167,10 +164,8 @@ private struct SequenceTraversal {
     private mutating func addParticipant(id: String, name: String, decl: TypeDeclaration?, isFreeFunction: Bool) {
         guard participantMap[id] == nil else { return }
         participantOrder.append(id)
-        // The `id` keys message `from`/`to` (a type's simple name, or a namespaced free-function id);
-        // `name` is the user-facing label. Using a declaration's qualified id here would diverge from
-        // the messages for namespaced languages (Kotlin/Java), leaving messages orphaned. A free
-        // function gets a `.control` lifeline to set it apart.
+        // `id` keys message `from`/`to` (a type's simple name or namespaced free-function id);
+        // `name` is the user-facing label. A free function gets a `.control` lifeline.
         participantMap[id] = SequenceDiagram.Participant(
             id: id,
             name: name,
@@ -184,9 +179,8 @@ private struct SequenceTraversal {
         visited.insert(key)
 
         for site in member.callSites {
-            // An implicit-receiver call that matches no method and no free function (a builtin, a
-            // local variable's method, …) can't be drawn as a meaningful message — drop it rather
-            // than emit a mislabeled self-call.
+            // A call matching neither a method nor a free function (builtin, local variable
+            // method, …) can't be drawn meaningfully — drop it rather than fake a self-call.
             guard let target = resolveTarget(site: site, callerId: callerId) else { continue }
             addParticipant(id: target.id, name: target.name, decl: target.decl, isFreeFunction: target.isFreeFunction)
 
@@ -211,17 +205,15 @@ private struct SequenceTraversal {
     /// Resolves a call site to its participant id, callee body (if any), and whether the target is a
     /// free function, keyed on the call's ``CallReceiver``:
     ///
-    /// - A **`.type`** receiver always yields a participant (the named type), even when its body isn't
-    ///   in the artifact — the message still shows the call, just without expansion.
-    /// - A **`.selfDispatch`** resolves to a same-type method, falling back to a free function of that
-    ///   name (a bare `foo()` is recorded as `.selfDispatch`); if it matches neither (e.g. the method
-    ///   lives only on a base class), the call is dropped rather than drawing a dead-end self-message.
-    /// - A **`.free`** call resolves to a top-level function on its own lifeline.
-    /// - **`.unknown`** (an unresolved receiver), and any deferred-resolution case
-    ///   (**`.unresolvedTypeName`**/**`.propertyChain`**/**`.ownProperty`**/**`.ownPropertyElement`**)
-    ///   still unresolved by the time this runs, are dropped — `CodeArtifact.resolvingCallSiteReceivers()`
-    ///   already promoted whatever it could to `.type`, so anything left is genuinely unresolvable, not
-    ///   merely not-yet-tried.
+    /// - **`.type`** always yields a participant, even when its body isn't in the artifact — the
+    ///   message still shows the call, just without expansion.
+    /// - **`.selfDispatch`** resolves to a same-type method, falling back to a free function of that
+    ///   name (a bare `foo()` is recorded as `.selfDispatch`); matching neither (e.g. a method that
+    ///   lives only on a base class) drops the call rather than drawing a dead-end self-message.
+    /// - **`.free`** resolves to a top-level function on its own lifeline.
+    /// - **`.unknown`** and any still-unresolved deferred case (**`.unresolvedTypeName`**,
+    ///   **`.propertyChain`**, **`.ownProperty`**, **`.ownPropertyElement`**) are dropped —
+    ///   `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to `.type`.
     private func resolveTarget(site: CallSite, callerId: String) -> ResolvedTarget? {
         switch site.receiver {
         case .type(let receiver):
@@ -240,8 +232,7 @@ private struct SequenceTraversal {
                     decl: lookups.typesByName[concreteCaller], isFreeFunction: false
                 )
             }
-            // A bare `foo()` recorded as `.selfDispatch` may be a free function rather than a
-            // same-type method; fall back to a free-function lifeline before dropping it.
+            // A bare `foo()` may be a free function rather than a same-type method.
             guard let function = lookups.freeFunctionsByName[site.methodName] else { return nil }
             return ResolvedTarget(
                 id: SequenceTraversal.freeFunctionID(site.methodName), name: site.methodName,

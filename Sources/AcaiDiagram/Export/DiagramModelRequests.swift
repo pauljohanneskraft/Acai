@@ -1,9 +1,8 @@
 import AcaiCore
 
-// Shared diagram-model construction for every front end (the `diagram`/`image`/`diff` CLI commands and
-// the MCP's diagram/image tools). Each request value owns the builder call, scope/entry-point parsing,
-// and emptiness validation once — so the rules can't drift between consumers. Promoted here from the
-// CLI (which used to inline them); front ends map `DiagramRequestError` onto their own error surface.
+// Shared diagram-model construction for every front end (the `diagram`/`image`/`diff` CLI commands
+// and the MCP's diagram/image tools). Each request value owns the builder call, scope/entry-point
+// parsing, and emptiness validation once, so the rules can't drift between consumers.
 
 /// A call-graph scope (`"type:Name"` / `"module:Name"`), parsed on demand.
 public struct CallGraphScopeOption: Sendable {

@@ -1,8 +1,5 @@
 import AcaiCore
 
-// The Python language's identity and quirks. Python has no single dominant code generator, so no
-// generated-code filter is configured (mirroring the Java/Kotlin/JS plugins).
-
 extension CodeArtifact.SourceLanguage {
     public static let python = CodeArtifact.SourceLanguage(rawValue: "python")
 }
@@ -23,7 +20,7 @@ extension PythonCodeParser {
             annotationStereotypes: [
                 "dataclass": "dataclass"
             ],
-            generatedCodeFilter: nil,
+            generatedCodeFilter: nil,  // no single dominant Python code generator to filter
             excludedDirectories: [
                 "__pycache__", ".venv", "venv", "env", ".tox", ".mypy_cache",
                 ".pytest_cache", ".eggs", "build", "dist", "site-packages", ".git"

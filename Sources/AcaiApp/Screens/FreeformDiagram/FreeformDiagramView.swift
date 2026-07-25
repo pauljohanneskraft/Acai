@@ -30,7 +30,6 @@ struct FreeformDiagramView: View {
     @State var sidebarTab: SidebarTab = .catalog
 
     var body: some View {
-        // Main canvas
         canvasArea
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             #if !os(macOS)
@@ -40,7 +39,6 @@ struct FreeformDiagramView: View {
             #endif
             .onGeometryChange(for: CGSize.self) { $0.size } action: { canvasViewportSize = $0 }
             .inspector(isPresented: $showSidebar) {
-                // Combined Catalog / Inspector sidebar
                 sidebarContent
                     .inspectorColumnWidth(min: 240, ideal: 280, max: 360)
             }
