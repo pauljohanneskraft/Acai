@@ -60,7 +60,11 @@ struct NewCodebaseSheet: View {
             #if os(macOS)
             .frame(maxWidth: 480)
             #else
-            .presentationDetents([.medium, .large])
+            // A single `.large` detent, not `[.medium, .large]`: the GitHub tab's content (source
+            // picker + account section + name/search fields + repository/ref pickers) is taller
+            // than `.medium` fits, and starting collapsed at `.medium` left the repository picker
+            // genuinely absent from the accessibility tree below the fold — not just scrolled past.
+            .presentationDetents([.large])
             #endif
             .onAppear { isNameFieldFocused = true }
             .navigationTitle("Add Codebase")

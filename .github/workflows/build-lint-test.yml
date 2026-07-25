@@ -66,6 +66,9 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
+      - name: Prepare Simulator
+        run: Scripts/simulator_prepare.sh "iPhone 17"
+
       - name: Run UI tests
         run: |
           xcodebuild test \
@@ -99,6 +102,9 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml
         working-directory: App
+
+      - name: Prepare Simulator
+        run: Scripts/simulator_prepare.sh "iPad (A16)"
 
       - name: Run UI tests
         run: |

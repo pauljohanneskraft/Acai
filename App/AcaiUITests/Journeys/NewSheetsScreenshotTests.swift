@@ -18,6 +18,7 @@ final class NewSheetsScreenshotTests: XCTestCase {
 
     func testNewProjectSheetScreenshot() throws {
         let app = XCUIApplication()
+        app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
@@ -34,6 +35,7 @@ final class NewSheetsScreenshotTests: XCTestCase {
 
     func testNewCodebaseSheetLocalTabScreenshot() throws {
         let app = XCUIApplication()
+        app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

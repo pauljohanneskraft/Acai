@@ -9,6 +9,7 @@ final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
 
     func testGenerateClassDiagramFromSeededCodebase() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

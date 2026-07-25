@@ -8,6 +8,7 @@ struct ClassDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let isComparePresented: Binding<Bool>
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: ClassDiagramViewModel
@@ -36,11 +37,12 @@ struct ClassDiagramView: View {
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
-        comparisonArtifact: CodeArtifact? = nil
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
+        self.isComparePresented = isComparePresented
         let restoredSizes = diagram.nodeSizes.mapValues { $0.cgSize }
         self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(
             codebase: codebase,
@@ -190,6 +192,12 @@ struct ClassDiagramView: View {
                 }
             }
         )
+        // Positioned the same way as `PannableCanvas`'s own zoom-percentage indicator (an overlay
+        // inside the canvas, not a sibling spanning the whole view including the inspector column)
+        // — this is what keeps it from rendering on top of the inspector when it's open.
+        .overlay(alignment: .topTrailing) {
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
+        }
     }
 
     // MARK: - Edge Layer

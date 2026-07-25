@@ -27,7 +27,10 @@ LOG_PATH="/tmp/acai-snapshots-record-$LAYER.log"
 # Scoped to the tests that actually call ScreenshotComparator.validate — this script records
 # goldens, it isn't a general-purpose "run the UI suite" entry point. Add a test class here in the
 # same change that gives it its first comparator.validate call.
-SCREENSHOT_TESTS=(ScreenshotJourneyTests CompareGitRevisionTests)
+SCREENSHOT_TESTS=(
+    ScreenshotJourneyTests CompareGitRevisionTests
+    NewSheetsScreenshotTests GeneratedDiagramScreenshotTests
+)
 
 case "$LAYER" in
     layer1)
@@ -36,6 +39,7 @@ case "$LAYER" in
         STATUS=$?
         ;;
     ios)
+        "$SCRIPT_DIR/simulator_prepare.sh" "$DEVICE"
         cd "$SCRIPT_DIR/../App" || exit 1
         echo "▸ xcodegen generate"
         xcodegen generate --spec project.yml > "$LOG_PATH" 2>&1

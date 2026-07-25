@@ -23,6 +23,7 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     /// Launches the seeded fixture and reindexes it, returning `CodebaseDetailScreen` once every
     /// `codebaseDetail.diagramButton.*` is available — shared preamble for all four tests below.
     private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
+        app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

@@ -18,6 +18,7 @@ final class ScreenshotJourneyTests: XCTestCase {
 
     func testSeededJourneyScreenshots() throws {
         let app = XCUIApplication()
+        app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

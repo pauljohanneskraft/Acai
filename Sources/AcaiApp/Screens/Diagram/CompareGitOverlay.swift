@@ -17,8 +17,14 @@ import AcaiRender
 /// this button's on-canvas frame) doesn't have the same failure mode.
 struct CompareOverlayButton: View {
     let diagram: GeneratedDiagram
+    /// Owned by a stable ancestor above the diagram's own `.id(...)` boundary (`ProjectBrowserView`'s
+    /// `DeltaHostedDiagramView`), not by this view itself — this button renders *inside* the diagram's
+    /// canvas (so it's positioned like the zoom-percentage indicator, never over the inspector column),
+    /// which means its own view identity resets whenever the comparison ref changes. Because the
+    /// boolean's storage lives outside that reset, the value itself survives even though this view
+    /// doesn't — see `DeltaHostedDiagramView`'s doc comment for the full picture.
+    @Binding var isPresented: Bool
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var isPresented = false
 
     private var isOn: Bool { diagram.comparisonGitRef != nil }
 
@@ -86,6 +92,34 @@ struct CompareOverlayButton: View {
             .disabled(diagram.comparisonGitRef == nil)
             .accessibilityIdentifier("delta.clearButton")
         }
+    }
+}
+
+/// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
+/// diagram's own `.id(...)` boundary, and hands it down as a `Binding` for the diagram view to
+/// place `CompareOverlayButton` wherever makes sense on its own canvas (the same way the
+/// zoom-percentage indicator is placed, not as an outer overlay spanning the inspector column too).
+///
+/// `content`'s `.id(...)` must stay scoped to the diagram view itself, not this wrapper: an earlier
+/// design chained `.task`/`.overlay` directly onto `content().id(...)`, which put `CompareOverlayButton`
+/// inside that identity boundary while it still owned its own `@State private var isPresented` —
+/// picking a new ref changed the id, tore the button down, and silently reset that state, dismissing
+/// the panel the instant a ref was picked (confirmed empirically). Now the boolean's storage lives
+/// here, outside the boundary, so even though the button's own view identity still resets on a ref
+/// change (it renders inside `content`, which is `.id()`'d), the value it binds to does not.
+struct DeltaHostedDiagramView<Content: View>: View {
+    let diagram: GeneratedDiagram
+    @ViewBuilder var content: (Binding<Bool>) -> Content
+    @EnvironmentObject private var model: ProjectBrowserViewModel
+    @State private var isComparePresented = false
+
+    var body: some View {
+        let loaded = model.comparisonArtifact(for: diagram) != nil
+        content($isComparePresented)
+            .id("\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(loaded)")
+            .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")") {
+                await model.ensureComparisonLoaded(for: diagram)
+            }
     }
 }
 

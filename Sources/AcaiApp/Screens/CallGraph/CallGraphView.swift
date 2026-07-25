@@ -11,6 +11,7 @@ struct CallGraphView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let isComparePresented: Binding<Bool>
     let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -18,11 +19,12 @@ struct CallGraphView: View {
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
-        comparisonArtifact: CodeArtifact? = nil
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
+        self.isComparePresented = isComparePresented
         self.comparisonArtifact = comparisonArtifact
     }
 
@@ -36,6 +38,7 @@ struct CallGraphView: View {
             diagram: diagram,
             artifact: artifact,
             scope: scope,
+            isComparePresented: isComparePresented,
             comparisonArtifact: comparisonArtifact,
             onConfigure: { isConfiguring = true }
         )
@@ -62,6 +65,7 @@ private struct CallGraphCanvasView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let scope: CallGraphScope
+    let isComparePresented: Binding<Bool>
     let onConfigure: () -> Void
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -88,11 +92,13 @@ private struct CallGraphCanvasView: View {
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
-        comparisonArtifact: CodeArtifact? = nil, onConfigure: @escaping () -> Void
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil,
+        onConfigure: @escaping () -> Void
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.scope = scope
+        self.isComparePresented = isComparePresented
         self.onConfigure = onConfigure
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
@@ -191,6 +197,12 @@ private struct CallGraphCanvasView: View {
                 }
             }
         )
+        // Positioned the same way as `PannableCanvas`'s own zoom-percentage indicator (an overlay
+        // inside the canvas, not a sibling spanning the whole view including the inspector column)
+        // — this is what keeps it from rendering on top of the inspector when it's open.
+        .overlay(alignment: .topTrailing) {
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
+        }
     }
 
     private func callEdges(_ layout: CallGraphLayoutModel) -> some View {

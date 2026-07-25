@@ -138,6 +138,13 @@ struct ScreenshotComparator {
             return
         }
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
+        // Logged unconditionally (pass or fail) so `maxChangedFraction` can be tightened from real
+        // measured noise floors across a run instead of trial-and-error — grep the console/activity
+        // log for "drift:" after a run to see every state's actual fraction.
+        XCTContext.runActivity(named: String(
+            format: "drift: %@ = %.4f%% (%d/%d cells, threshold %.4f%%)",
+            name, changed * 100, changedCells, comparisonSide * comparisonSide, maxChangedFraction * 100
+        )) { _ in }
         XCTAssertLessThanOrEqual(
             changed, maxChangedFraction, "\(name).png content drifted (\(changedCells) cells)"
         )

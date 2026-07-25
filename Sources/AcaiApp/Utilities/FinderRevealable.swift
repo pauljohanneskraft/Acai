@@ -26,6 +26,15 @@ struct FinderRevealable: ViewModifier {
     #if os(macOS)
     private func reveal() {
         guard let codebase, let relativePath else { return }
+        // `activateFileViewerSelecting` sends Finder a real Apple Event — a UI test asserts nothing
+        // on Finder actually opening, so skip the side effect entirely under a UI test
+        // (`UITestFixtureResolver().resolveBaseDir() != nil`, the same test-only gate
+        // `GitHubTokenStore`/`ProjectStore` already use). Note: this is *not* what causes the
+        // Automation permission prompt some UI test runs show at launch — that prompt reproduces
+        // even for tests that never reach this button, and an exhaustive search found no other
+        // Apple-Event-triggering call anywhere in this package, so it's presumed to originate in
+        // XCTest's own harness attaching to the app, not in this call site.
+        guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
         let url = URL(filePath: codebase.directoryPath).appending(path: relativePath)
         guard FileManager.default.fileExists(atPath: url.path()) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])

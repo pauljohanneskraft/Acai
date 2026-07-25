@@ -1,10 +1,41 @@
 import XCTest
+#if os(iOS)
+import UIKit
+#endif
 
 /// An anchor purely so `Bundle(for:)` can resolve the UI test bundle — an Xcode-project target has
 /// no SwiftPM `Bundle.module`, unlike `Tests/AcaiAppTests`.
 private final class FixtureBundleAnchor {}
 
 extension XCUIApplication {
+    /// Rotates the simulator to landscape before a screenshot-golden test launches, iPad only — the
+    /// wider canvas suits diagram/canvas content better there than portrait; iPhone and macOS
+    /// goldens are unaffected. Call before `launchWithFixture` (not after) so the app launches
+    /// already rotated, rather than racing an in-flight async rotation mid-test.
+    func rotateToLandscapeOnIPad() {
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCUIDevice.shared.orientation = .landscapeLeft
+        }
+        #endif
+    }
+
+    /// Ensures portrait before a test that assumes it (e.g. iPad's narrower, stack-based push/pop
+    /// navigation with a `BackButton`) launches, iPad only. Device orientation is simulator-wide
+    /// state, not scoped to one test's app launch — a test can't assume it starts in whatever
+    /// orientation the *previous* test happened to leave the simulator in (confirmed empirically: a
+    /// landscape rotation left over from a screenshot-golden test broke `GitHubAddCodebaseTests`'
+    /// iPad `BackButton` expectation). Every non-landscape test declares this precondition itself,
+    /// rather than relying on the landscape tests to clean up after themselves — that keeps each
+    /// test correct regardless of run order.
+    func rotateToPortraitOnIPad() {
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCUIDevice.shared.orientation = .portrait
+        }
+        #endif
+    }
+
     /// Launches the app pointed at a fresh, disposable copy of the named fixture
     /// (`Fixtures/<name>` in this UI test bundle) instead of the real user's persisted state.
     ///

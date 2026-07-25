@@ -1,4 +1,7 @@
 import XCTest
+#if os(iOS)
+import UIKit
+#endif
 
 /// Verifies the codebase-delete confirmation dialog (`USABILITY_GUARDRAILS.md` §3: cancel/confirm
 /// both actually do what they say, never just closing the sheet without acting or acting without
@@ -11,6 +14,7 @@ final class DeleteConfirmationTests: XCTestCase {
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     private func openSeededCodebaseRow(_ app: XCUIApplication) -> XCUIElement {
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
@@ -25,8 +29,12 @@ final class DeleteConfirmationTests: XCTestCase {
     }
 
     /// Reveals the row's "Delete" action and taps it, starting the confirmation flow.
-    /// `.swipeActions` (compact width) is a more reliable XCUITest target than a long-press context
-    /// menu — right-click's the macOS equivalent, since `.swipeActions` is iOS/iPadOS-only.
+    /// `.swipeActions` (iPhone's compact width) is a more reliable XCUITest target than a
+    /// long-press context menu where it's available — right-click's the macOS equivalent. iPad's
+    /// regular width has neither: `ProjectDetailView` renders its rows in a `LazyVStack` there
+    /// (`regularCodebasesAndDiagramsSection`), not a native `List`, so `.swipeActions` never
+    /// existed — the row's `.contextMenu` (the same one macOS's row carries) is the actual reveal
+    /// path there too, just triggered by a long press instead of a right-click.
     private func tapDelete(on row: XCUIElement, app: XCUIApplication) {
         #if os(macOS)
         row.rightClick()
@@ -38,7 +46,11 @@ final class DeleteConfirmationTests: XCTestCase {
         // app-wide menu bar.
         app.windows.firstMatch.descendants(matching: .any)["Delete"].tap()
         #else
-        row.swipeLeft()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            row.press(forDuration: 1.0)
+        } else {
+            row.swipeLeft()
+        }
         app.buttons["Delete"].tap()
         #endif
     }

@@ -1,4 +1,7 @@
 import XCTest
+#if os(iOS)
+import UIKit
+#endif
 
 /// Proves the headline change of the real-git-engine slice end to end, through the real app UI:
 /// adding a GitHub-backed codebase now does a real `libgit2` clone (not a zipball download), and
@@ -17,6 +20,7 @@ final class GitHubAddCodebaseTests: XCTestCase {
 
     func testAddingSwitchingBranchAndComparingAGitHubCodebaseAllWorkAgainstARealLocalClone() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded") { app, destination in
             let remoteDir = destination.appendingPathComponent("GitHubRemote")
             try GitFixtureRepository(directory: remoteDir).makeRemote()
@@ -74,11 +78,15 @@ final class GitHubAddCodebaseTests: XCTestCase {
         // the way to the sidebar (not just one level to `CodebaseDetailScreen`), so re-enter via
         // the sidebar's own codebase row rather than assuming a fixed stack depth.
         //
-        // macOS's `NavigationSplitView` keeps the sidebar visible and directly tappable alongside
-        // the detail pane at all times — there's no push/pop stack to back out of (no "BackButton"
-        // exists there at all), unlike iOS/iPadOS where the diagram covers the sidebar.
-        #if !os(macOS)
-        diagram.backButton.tap()
+        // Both macOS's and iPad's (regular width) `NavigationSplitView` keep the sidebar visible
+        // and directly tappable alongside the detail pane at all times — there's no push/pop stack
+        // to back out of (no "BackButton" exists on either, confirmed empirically on iPad: it
+        // still shows "Hide Sidebar" in the accessibility dump, meaning the sidebar was never
+        // covered). Only iPhone's compact width covers the sidebar with a push/pop stack.
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            diagram.backButton.tap()
+        }
         #endif
         let sidebarCodebaseRow = browser.codebaseRow(named: "fixture-repo")
         XCTAssertTrue(sidebarCodebaseRow.waitForExistence(timeout: 10))

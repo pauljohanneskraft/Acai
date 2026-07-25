@@ -24,6 +24,7 @@ final class CompareGitRevisionTests: XCTestCase {
 
     func testComparingAgainstHEADShowsAnAddedTypeAfterAnUncommittedEdit() throws {
         let app = XCUIApplication()
+        app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded") { _, destination in
             let codebaseDir = destination.appendingPathComponent("SampleSwiftPackage")
             try GitFixtureRepository(directory: codebaseDir).commitInitialRevision(paths: ["Package.swift", "Sources"])

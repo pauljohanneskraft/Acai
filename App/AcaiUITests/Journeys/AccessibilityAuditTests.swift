@@ -33,6 +33,7 @@ final class AccessibilityAuditTests: XCTestCase {
 
     func testSeededJourneyScreensAreAccessible() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

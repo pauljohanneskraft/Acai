@@ -19,6 +19,7 @@ final class GitHubSignInTests: XCTestCase {
 
     func testSigningInWithATokenShowsTheAccountRowThenSigningOutRemovesIt() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)

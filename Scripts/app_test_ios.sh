@@ -11,11 +11,14 @@
 #                 Acai-iOSUITests/GitHubAddCodebaseTests   (default: run everything)
 set -o pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEVICE="${1:-iPhone 17}"
 ONLY_TESTING="${2:-}"
 LOG_PATH="/tmp/acai-app-test-ios.log"
 
-cd "$(dirname "$0")/../App" || exit 1
+"$SCRIPT_DIR/simulator_prepare.sh" "$DEVICE"
+
+cd "$SCRIPT_DIR/../App" || exit 1
 
 echo "▸ xcodegen generate"
 xcodegen generate --spec project.yml > "$LOG_PATH" 2>&1

@@ -11,6 +11,7 @@ final class DiscoverableDeletePathTests: XCTestCase {
 
     func testDeleteCodebaseButtonOnItsOwnDetailScreenRemovesIt() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
@@ -38,6 +39,7 @@ final class DiscoverableDeletePathTests: XCTestCase {
 
     func testDeleteProjectButtonOnItsOwnDetailScreenRemovesIt() throws {
         let app = XCUIApplication()
+        app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
