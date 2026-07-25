@@ -63,7 +63,7 @@ final class CompareGitRevisionTests: XCTestCase {
         diagram.openCompare()
         comparator.validate(
             viewType: "ClassDiagram", state: "comparePanelOpen",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
         // Pick HEAD directly from the ref picker (no separate on/off toggle) and wait for the "old"
@@ -81,7 +81,7 @@ final class CompareGitRevisionTests: XCTestCase {
 
         comparator.validate(
             viewType: "ClassDiagram", state: "deltaComparison",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.

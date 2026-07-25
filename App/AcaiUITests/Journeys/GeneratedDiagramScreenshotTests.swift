@@ -66,7 +66,7 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         sequence.fitToViewButton.tap()
         comparator.validate(
             viewType: "SequenceDiagram", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 
@@ -97,7 +97,7 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         XCTAssertTrue(state.stateNode(named: "\"failed\"").exists)
         comparator.validate(
             viewType: "StateDiagram", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 
@@ -116,7 +116,7 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         package.fitToViewButton.tap()
         comparator.validate(
             viewType: "PackageDiagram", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 
@@ -146,7 +146,7 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         callGraph.fitToViewButton.tap()
         comparator.validate(
             viewType: "CallGraph", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 }

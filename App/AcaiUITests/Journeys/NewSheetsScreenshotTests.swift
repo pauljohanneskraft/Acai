@@ -29,7 +29,7 @@ final class NewSheetsScreenshotTests: XCTestCase {
         XCTAssertTrue(sheet.titleField.waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "NewProjectSheet", state: "empty",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 
@@ -52,7 +52,7 @@ final class NewSheetsScreenshotTests: XCTestCase {
         XCTAssertTrue(sheet.localNameField.waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "NewCodebaseSheet", state: "localTabEmpty",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 }

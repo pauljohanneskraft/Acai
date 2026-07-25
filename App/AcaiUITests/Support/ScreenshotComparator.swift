@@ -85,9 +85,14 @@ struct ScreenshotComparator {
     /// regardless of pass/fail/record — attaches it to `testCase` (`.keepAlways`) so it's
     /// reviewable in the test report, which is what makes this layer double as a
     /// human-reviewable screenshot journey and not only an automated regression check.
+    /// `maxChangedFraction` override: per-call, not per-instance, since a single comparator is
+    /// typically reused across a whole journey test's states and only one or two specific states
+    /// need a looser bound — see `ScreenshotJourneyTests`' `addMenuOpen` capture for the measured
+    /// rationale (a `Menu`'s translucent material doesn't render byte-identically across separate
+    /// app launches, even once everything else on screen has settled).
     func validate(
         viewType: String, state: String, orientation: Orientation? = nil,
-        screenshot: XCUIScreenshot, testCase: XCTestCase
+        screenshot: XCUIScreenshot, testCase: XCTestCase, maxChangedFraction overrideMaxChangedFraction: Double? = nil
     ) {
         var fileName = state
         if let orientation { fileName += "_\(orientation.rawValue)" }
@@ -102,26 +107,7 @@ struct ScreenshotComparator {
         let rendered = screenshot.pngRepresentation
 
         if isRecording {
-            do {
-                try FileManager.default.createDirectory(
-                    at: url.deletingLastPathComponent(), withIntermediateDirectories: true
-                )
-                try rendered.write(to: url)
-            } catch {
-                let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
-                do {
-                    try FileManager.default.createDirectory(
-                        at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true
-                    )
-                    try rendered.write(to: stagedURL)
-                    XCTFail(
-                        "Could not write golden directly (\(error)); staged at \(stagedURL.path) instead — "
-                        + "run Scripts/sync_ui_snapshots.sh to copy staged recordings into __Snapshots__/"
-                    )
-                } catch {
-                    XCTFail("Failed to record golden at \(url.path), and the staging fallback also failed: \(error)")
-                }
-            }
+            record(rendered, name: name, to: url)
             return
         }
 
@@ -138,15 +124,41 @@ struct ScreenshotComparator {
             return
         }
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
+        let threshold = overrideMaxChangedFraction ?? maxChangedFraction
         // Logged unconditionally (pass or fail) so `maxChangedFraction` can be tightened from real
         // measured noise floors across a run instead of trial-and-error — grep the console/activity
         // log for "drift:" after a run to see every state's actual fraction.
         XCTContext.runActivity(named: String(
             format: "drift: %@ = %.4f%% (%d/%d cells, threshold %.4f%%)",
-            name, changed * 100, changedCells, comparisonSide * comparisonSide, maxChangedFraction * 100
+            name, changed * 100, changedCells, comparisonSide * comparisonSide, threshold * 100
         )) { _ in }
         XCTAssertLessThanOrEqual(
-            changed, maxChangedFraction, "\(name).png content drifted (\(changedCells) cells)"
+            changed, threshold, "\(name).png content drifted (\(changedCells) cells)"
         )
+    }
+
+    /// The `ACAI_RECORD_SNAPSHOTS=1` half of `validate` — writes `rendered` to `url`, falling back
+    /// to `stagingDirectory` (see its own doc comment) if the source tree write fails.
+    private func record(_ rendered: Data, name: String, to url: URL) {
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
+            try rendered.write(to: url)
+        } catch {
+            let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
+            do {
+                try FileManager.default.createDirectory(
+                    at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true
+                )
+                try rendered.write(to: stagedURL)
+                XCTFail(
+                    "Could not write golden directly (\(error)); staged at \(stagedURL.path) instead — "
+                    + "run Scripts/sync_ui_snapshots.sh to copy staged recordings into __Snapshots__/"
+                )
+            } catch {
+                XCTFail("Failed to record golden at \(url.path), and the staging fallback also failed: \(error)")
+            }
+        }
     }
 }

@@ -34,19 +34,26 @@ final class ScreenshotJourneyTests: XCTestCase {
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "ProjectDetail", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
         // The compact-width (iPhone) "+" toolbar button only ever opens this Menu — it doesn't
-        // navigate anywhere by itself, so this is what pressing it actually shows. Regular width
-        // (iPad/macOS) has no such button (`addCodebaseButton`/`addDiagramButton` sit directly in
-        // the toolbar/header there instead), so this state doesn't exist to capture on those
-        // platforms.
+        // navigate anywhere by itself. Regular width (iPad/macOS) has no such button
+        // (`addCodebaseButton`/`addDiagramButton` sit directly in the toolbar/header there
+        // instead), so this state doesn't exist to capture on those platforms.
         if detail.addMenuButton.exists {
             detail.addMenuButton.tap()
+            // Looser than the file's shared default (measured, not guessed): a `Menu`'s
+            // presentation on iOS renders through a translucent material, and two recordings of
+            // this exact state — confirmed fresh installs each time, `screenshotAfterAnimationsIdle`
+            // confirming the rest of the frame had stopped changing — still differed by ~0.35% in
+            // the blurred region behind the menu. `ProjectDetail/iPhone/populated.png` (same screen,
+            // same run, no menu open) was pixel-identical across the same passes, so the source
+            // isn't this screen's layout, it's the `Menu` material not converging to the same bytes
+            // twice — the same class of noise the macOS default already accounts for, just smaller.
             comparator.validate(
                 viewType: "ProjectDetail", state: "addMenuOpen",
-                screenshot: app.windows.firstMatch.screenshot(), testCase: self
+                screenshot: app.screenshotAfterAnimationsIdle(), testCase: self, maxChangedFraction: 7.0e-3
             )
             // The open menu is covered by a full-screen (invisible outside its own bounds) touch
             // blocker — confirmed via a debug screenshot showing the row visually unobstructed yet
@@ -68,7 +75,7 @@ final class ScreenshotJourneyTests: XCTestCase {
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "ClassDiagram", state: "populated",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
         // Double-tapping a node selects it and switches the sidebar to the Inspector tab in one
@@ -80,7 +87,7 @@ final class ScreenshotJourneyTests: XCTestCase {
         XCTAssertTrue(diagram.inspectorContent.waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "ClassDiagram", state: "inspectorOpen",
-            screenshot: app.windows.firstMatch.screenshot(), testCase: self
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
     }
 }
