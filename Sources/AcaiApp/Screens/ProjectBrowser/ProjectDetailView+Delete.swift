@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Split out of `ProjectDetailView` to keep that type's body under SwiftLint's `type_body_length`
-/// limit — the "discoverable delete path" concern (B53): a destructive button at the bottom of the
-/// screen, alongside the existing sidebar context-menu path to the same confirmed-safe action.
+/// limit: a destructive button at the bottom of the screen, alongside the existing sidebar
+/// context-menu path to the same action.
 extension ProjectDetailView {
     /// A plain destructive row/button — no padding baked in, so it composes correctly in both call
     /// sites: a native `List` row in `compactContent` (which already applies its own insets — extra

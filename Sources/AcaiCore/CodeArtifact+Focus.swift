@@ -1,9 +1,5 @@
-// Single-class focus: reduce a class diagram to the subgraph around one type.
-//
-// `focusedSubset` is a pure graph operation over an already-resolved type/relationship
-// set. It is the class-diagram counterpart of `SequenceDiagramConfiguration` — instead of
-// tracing a call graph from an entry method, it walks the relationship graph from a root
-// type and keeps only the reachable neighbourhood.
+// Single-class focus: reduce a class diagram to the subgraph around one type, by walking the
+// relationship graph from a root type and keeping only the reachable neighbourhood.
 
 /// Restricts a class diagram to one type and the slice of the relationship graph around it.
 ///
@@ -48,10 +44,8 @@ public struct FocusConfiguration: Codable, Hashable, Sendable {
     }
 }
 
-/// Restricts a type/relationship set to one type and the slice of the relationship graph around it —
-/// the class-diagram counterpart of tracing a call graph from an entry method. A value you instantiate
-/// with the graph and a ``FocusConfiguration``, then ask for its ``subset`` (behaviour on a value, not
-/// a `static func` namespace on `CodeArtifact`).
+/// Restricts a type/relationship set to one type and the slice of the relationship graph around it.
+/// Instantiate with the graph and a ``FocusConfiguration``, then read ``subset``.
 public struct FocusedSubsetBuilder {
     let types: [TypeDeclaration]
     let relationships: [Relationship]

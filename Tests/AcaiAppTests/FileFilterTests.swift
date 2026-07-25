@@ -2,9 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `FileFilter` (B62): a per-codebase ordered glob/regex allow/blocklist. Unit tested, per the
-/// backlog's own "filter-excludes-file-from-parse" + `USABILITY_GUARDRAILS.md` §5's bounded-regex
-/// requirement.
+/// `FileFilter`: a per-codebase ordered glob/regex allow/blocklist.
 @Suite("FileFilter")
 struct FileFilterTests {
 
@@ -71,8 +69,8 @@ struct FileFilterTests {
 
     @Test("A regex rule never evaluates against a pathologically long path")
     func regexRuleBoundsInputLength() {
-        // Not a claim this specific pattern is catastrophic — just proof the length cap short-circuits
-        // before `NSRegularExpression` ever sees an oversized input, per USABILITY_GUARDRAILS.md §5.
+        // Not a claim this specific pattern is catastrophic — just proof the length cap
+        // short-circuits before `NSRegularExpression` ever sees an oversized input.
         let hugePath = String(repeating: "a/", count: 10_000) + "file.swift"
         let filter = FileFilter(rules: [rule("^(a/)+file\\.swift$", .regex, .block)])
         #expect(filter.includes(hugePath))

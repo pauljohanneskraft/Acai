@@ -43,9 +43,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         /// Public/open members across the module's types — the module's outward API surface.
         public var publicMemberCount: Int
         /// Stable-Dependencies-Principle breaches: modules this one depends on that are *less* stable
-        /// than it (higher instability) — a dependency on something likelier to change than you, so an
-        /// edit there ripples up into this stabler module. Not a cycle, so cycle detection misses it.
-        /// Sorted for stable output; empty when the module only depends on equally- or more-stable ones.
+        /// (higher instability) — not a cycle, so cycle detection misses it. Sorted; empty when the
+        /// module only depends on equally- or more-stable ones.
         public var stableDependencyViolations: [String]
     }
 
@@ -53,8 +52,7 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
     public struct TypeMetric: Codable, Equatable, Sendable {
         public var id: String
         public var name: String
-        /// The build module the type is declared in (resolved from its file path) — lets per-type
-        /// metrics be grouped or disambiguated by module (type ids are not module-qualified).
+        /// The build module the type is declared in (type ids are not module-qualified).
         public var module: String
         /// Depth of inheritance tree (longest in-codebase inheritance/conformance chain).
         public var depthOfInheritance: Int
@@ -62,8 +60,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var numberOfChildren: Int
         /// Weighted methods per class (method count).
         public var weightedMethods: Int
-        /// The highest cyclomatic complexity of any single method (0 when none was measured) — surfaces
-        /// the one gnarly method that the method-count `weightedMethods` hides.
+        /// Highest cyclomatic complexity of any single method (0 when none measured) — surfaces the one
+        /// gnarly method `weightedMethods` hides.
         public var maxCyclomaticComplexity: Int
         /// Stored/computed property count — the data half of the anemic-vs-behaviour balance.
         public var numberOfProperties: Int
@@ -95,9 +93,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         /// ``FeatureEnvy``.
         public var featureEnvyMethods: Int
 
-        /// Deep-and-wide inheritance shape (`DIT × NOC`): a type that is both deeply derived and widely
-        /// subclassed sits at a fragile hierarchy hub. Stored (not computed) so it serializes alongside
-        /// every other metric — filled from `depthOfInheritance × numberOfChildren` in `computeTypeMetrics`.
+        /// Deep-and-wide inheritance shape (`DIT × NOC`): deeply derived and widely subclassed marks a
+        /// fragile hierarchy hub. Filled from `depthOfInheritance × numberOfChildren` in `computeTypeMetrics`.
         public var deepAndWide: Int
     }
 }
@@ -108,8 +105,6 @@ extension CodeArtifact {
     /// relationship endpoints are resolved to type ids.
     public func computeMetrics() -> CodeMetrics {
         let flat = Self.allTypes(types)
-        // Resolves a body-referenced type name to its canonical id (only known types resolve), shared
-        // by the coupling and per-type fan metrics so construction/body dependencies are counted.
         let identity = TypeIdentityResolver(types: types)
         return CodeMetrics(
             counts: computeCounts(flat: flat),
@@ -177,10 +172,8 @@ extension CodeArtifact {
         }
 
         let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
-        // Nesting depth reads a type's `nestedTypes`, which `allTypes(_:)` clears on the flattened
-        // copies — so measure it over the original (un-flattened) tree, keyed by id.
+        // Measured over the original (un-flattened) tree since `allTypes(_:)` clears `nestedTypes`.
         let nesting = nestingDepths(types)
-        // `depth(of:)` is memoised, so reading it twice (DIT and the derived deep-and-wide) is cheap.
         return flat.map { type in
             CodeMetrics.TypeMetric(
                 id: type.id,
@@ -209,8 +202,7 @@ extension CodeArtifact {
         }
     }
 
-    /// Subtree nesting depth per type id, walked over the original (un-flattened) `types` tree where
-    /// `nestedTypes` is still populated (``CodeArtifact/allTypes(_:)`` clears it on flattened copies).
+    /// Subtree nesting depth per type id, over the original (un-flattened) `types` tree.
     private func nestingDepths(_ roots: [TypeDeclaration]) -> [String: Int] {
         var result: [String: Int] = [:]
         for type in roots {
@@ -221,8 +213,7 @@ extension CodeArtifact {
     }
 
     /// Per-type fan-in/fan-out sets: signature edges (dependency/composition/aggregation/association)
-    /// plus construction/body dependencies (a member referencing a known type couples its owning type
-    /// to that type — not visible in signatures, e.g. a factory that constructs the type).
+    /// plus construction/body dependencies not visible in signatures (e.g. a factory constructing the type).
     private func fanMetrics(
         flat: [TypeDeclaration], identity: TypeIdentityResolver
     ) -> (fanIn: [String: Set<String>], fanOut: [String: Set<String>]) {
@@ -256,8 +247,8 @@ extension CodeArtifact {
             idToModule[type.id] = module
             moduleTypes[module, default: []].append(type)
         }
-        // Attribute each edge's source to where it was *declared* (honouring `origin` provenance),
-        // so a cross-module extension counts toward the extension's module, not the extended type's.
+        // Attributes each edge's source to its declaring module, so a cross-module extension counts
+        // toward the extension's module, not the extended type's.
         let attribution = ModuleAttribution(resolver: resolver, idToModule: idToModule)
         var sets = ModuleCouplingSets()
         for edge in relationships {
@@ -273,9 +264,9 @@ extension CodeArtifact {
         return moduleCouplings(moduleTypes: moduleTypes, sets: sets)
     }
 
-    /// Construction/body dependencies between modules. The source module is the *member's* declaring
-    /// file (so an extension on a foreign type counts toward the extension's module, not the type's),
-    /// the target is the referenced type's module. Mutates the shared efferent/afferent sets.
+    /// Construction/body dependencies between modules. Source is the member's declaring file (so an
+    /// extension on a foreign type counts toward the extension's module), target is the referenced
+    /// type's module.
     private func addBodyReferenceCoupling(
         flat: [TypeDeclaration], identity: TypeIdentityResolver, idToModule: [String: String],
         into sets: inout ModuleCouplingSets
@@ -311,9 +302,8 @@ extension CodeArtifact {
             let moduleTypeList = moduleTypes[name] ?? []
             let efferentCount = efferent[name]?.count ?? 0
             let afferentCount = afferent[name]?.count ?? 0
-            // Abstract types per Martin's metric = interfaces/protocols *and* abstract classes.
-            // The `.abstract` modifier covers languages (e.g. Dart) whose abstraction idiom is an
-            // `abstract class` rather than a dedicated interface/protocol kind.
+            // Abstract types per Martin's metric = interfaces/protocols and abstract classes
+            // (the `.abstract` modifier covers languages like Dart with no dedicated protocol kind).
             let abstractCount = moduleTypeList.filter {
                 $0.kind == .protocol || $0.kind == .interface || $0.modifiers.contains(.abstract)
             }.count
@@ -336,9 +326,8 @@ extension CodeArtifact {
     }
 }
 
-/// The mutable coupling sets accumulated while walking the artifact's edges: per-module efferent and
-/// afferent type ids (Martin's Ce/Ca) plus the module→modules adjacency the Stable-Dependencies check
-/// reads. A value that records edges onto itself, keeping the metric walk's parameter lists small.
+/// Mutable coupling sets accumulated while walking the artifact's edges: per-module efferent/afferent
+/// type ids (Martin's Ce/Ca) plus the module adjacency the Stable-Dependencies check reads.
 private struct ModuleCouplingSets {
     var efferent: [String: Set<String>] = [:]
     var afferent: [String: Set<String>] = [:]

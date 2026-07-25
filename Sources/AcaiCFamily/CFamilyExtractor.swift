@@ -109,8 +109,7 @@ struct CFamilyExtractor: TreeSitterExtracting {
     }
 
     /// A top-level `declaration` may define a record/enum (via its `type`), declare global
-    /// variables, or declare function prototypes — possibly several at once
-    /// (e.g. `struct Point { … } origin;`).
+    /// variables, or declare function prototypes — possibly several at once (`struct Point{…} origin;`).
     private mutating func visitTopLevelDeclaration(_ node: Node) {
         if let typeNode = node.child(byFieldName: "type") {
             switch typeNode.nodeType {

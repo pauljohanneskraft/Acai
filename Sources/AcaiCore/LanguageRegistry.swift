@@ -1,12 +1,9 @@
-/// Maps each known `SourceLanguage` to its `LanguageConfiguration`.
-///
-/// This is the value that carries per-language quirks to the downstream stages (diagram
-/// enrichment, rendering, export) which only have a `CodeArtifact` and its `metadata.sourceLanguage`.
-/// It is assembled where the parsers are assembled (the composition root / `AnalysisService`) and
-/// injected from there, so the agnostic targets never name a language themselves.
+/// Maps each known `SourceLanguage` to its `LanguageConfiguration`, carrying per-language quirks to
+/// downstream stages that only have a `CodeArtifact` and its `metadata.sourceLanguage`. Assembled
+/// where the parsers are assembled and injected from there, so agnostic targets never name a language.
 ///
 /// `configuration(for:)` returns `nil` for an unregistered language so a caller can tell "unknown"
-/// apart from "known but empty" and choose its own fallback rather than have one silently imposed.
+/// apart from "known but empty" and choose its own fallback.
 public struct LanguageRegistry: Sendable {
     private let configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration]
 

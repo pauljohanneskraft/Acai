@@ -1,7 +1,5 @@
 /// Collapses a relationship list to its canonical edges: drops exact duplicates, then drops weaker
-/// inferred edges where a stronger explicit relationship already covers the same ordered pair. Behaviour
-/// lifted off `CodeArtifact` (it was a pair of `static func`s — a namespace in disguise) onto a value
-/// you instantiate and ask for the ``reduced(_:)`` list.
+/// inferred edges where a stronger explicit relationship already covers the same ordered pair.
 struct RelationshipDeduplicator {
 
     /// Redundant-edge removal followed by exact-duplicate removal — the order the enrichment pipeline

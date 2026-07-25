@@ -106,7 +106,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         nodes = model.nodes
         edges = model.edges
 
-        // Estimate sizes and run initial layout.
         for node in nodes {
             nodeSizes[node.id] = DiagramLayoutModel.estimateSize(for: node)
         }

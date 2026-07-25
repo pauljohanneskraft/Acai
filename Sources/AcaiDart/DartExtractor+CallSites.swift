@@ -5,23 +5,16 @@ import AcaiTreeSitter
 
 extension DartExtractor: CallSiteResolving {
 
-    /// Resolves statically-determinable Dart call patterns.
+    /// Resolves statically-determinable Dart call patterns: `receiver.method(args)` where
+    /// `receiver` is a known property, `this.method(args)`, or `TypeName.method(args)` (static call).
     ///
-    /// The Dart grammar flattens a call like `receiver.method(args)` into a sequence of
-    /// siblings: `receiver` (an `identifier` or `this`), a `selector` carrying the method
-    /// name (`unconditional_assignable_selector → identifier`), and a trailing `selector`
-    /// carrying the `argument_part`. Only the simple three-part shape is matched — chains
-    /// such as `a.b.c()` have an extra selector and are skipped, keeping resolution certain.
-    ///
-    /// Handles:
-    /// - `receiver.method(args)` where `receiver` is a known property,
-    /// - `this.method(args)` — a call on the enclosing instance,
-    /// - `TypeName.method(args)` where `TypeName` is a known type (static call).
+    /// The Dart grammar flattens `receiver.method(args)` into siblings — `receiver`, a `selector`
+    /// carrying the method name, a trailing `selector` carrying `argument_part`. Only that
+    /// three-part shape is matched; chains like `a.b.c()` have an extra selector and are skipped.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
-        // A field or constructor-init initializer `field = callee(args)` flattens as siblings
-        // [field-id, callee-id, selector(argument_part)] inside `field_initializer` (constructor init
-        // list) or `initialized_identifier` (field declaration). Capture the callee as a bare call; the
-        // guard drops constructions `Foo()` and initializers that aren't a call (RC2).
+        // `field = callee(args)` flattens as siblings [field-id, callee-id, selector(argument_part)]
+        // inside `field_initializer` or `initialized_identifier`. The guard drops constructions
+        // `Foo()` and non-call initializers (RC2).
         if node.nodeType == "field_initializer" || node.nodeType == "initialized_identifier" {
             let kids = node.namedChildren()
             guard kids.count >= 2,
@@ -34,10 +27,9 @@ extension DartExtractor: CallSiteResolving {
 
         let named = node.namedChildren()
 
-        // Bare `foo(args)` — an `identifier` callee and a single `selector` carrying the `argument_part`
-        // (no separate receiver node). An implicit `this.foo()` or a top-level function; tagged
-        // `.selfDispatch` so the call-graph builder can fall back to a free function. The `knownTypeNames`
-        // guard in `bareCall` drops constructor calls `Foo()`, which share this shape.
+        // Bare `foo(args)`: implicit `this.foo()` or a top-level function, tagged `.selfDispatch` so
+        // the call-graph builder can fall back to a free function. `bareCall`'s `knownTypeNames`
+        // guard drops constructor calls `Foo()`, which share this shape.
         if named.count == 2,
            named[0].nodeType == "identifier",
            named[1].nodeType == "selector",
@@ -74,7 +66,7 @@ extension DartExtractor: CallSiteResolving {
     }
 
     /// Appends a constructor initializer-list's call sites (`: x = compute()`) to the just-appended
-    /// member, with that member's own parameters available as receivers (RC2 + RC-G).
+    /// member, with that member's own parameters available as receivers.
     func appendInitializerListCallSites(_ initializers: Node, to members: inout [Member]) {
         let lastIndex = members.count - 1
         members[lastIndex].callSites += extractCallSites(
@@ -94,7 +86,7 @@ extension DartExtractor: CallSiteResolving {
             knownMethodReturnTypes: methodReturnTypeMap(from: members)
         )
         for pending in pendingBodies where pending.index < members.count {
-            // `+=`: a constructor may already carry initializer-list call sites set during the body walk.
+            // `+=`: a constructor may already carry initializer-list call sites from the body walk.
             members[pending.index].callSites += extractCallSites(
                 from: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
             members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)

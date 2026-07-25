@@ -1,14 +1,13 @@
 import AcaiCore
 
-/// A codebase-wide aggregate of one numeric metric over a collection of elements (types or modules):
-/// the average and maximum, plus the element achieving the maximum (the card's exemplar). Built by
-/// reducing e.g. `computeMetrics().types` or `.modules` over a value extractor, so each statistic card
-/// is one `MetricSummary`.
+/// A codebase-wide aggregate of one numeric metric over a collection of elements (types or
+/// modules): the average and maximum, plus the element(s) achieving the maximum (the card's
+/// exemplar).
 struct MetricSummary<Element> {
     let average: Double
     let maximum: Double
-    /// Every element achieving `maximum` (so ties are all named on the card). Empty for an empty
-    /// collection. Order follows the input order.
+    /// Every element achieving `maximum`, so ties are all named on the card. Empty if the
+    /// collection is empty; order follows input order.
     let exemplars: [Element]
 
     init(_ elements: [Element], value: (Element) -> Double) {

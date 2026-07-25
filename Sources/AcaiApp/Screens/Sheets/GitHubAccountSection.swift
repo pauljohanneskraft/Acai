@@ -47,9 +47,8 @@ struct GitHubAccountSection: View {
         }
         .onDisappear { pollTask?.cancel() }
         #if os(iOS)
-        // Attach the sheet to a background view. This hides the presentation
-        // anchor from the root of the hierarchy, preventing conflicts with
-        // the host 'NewCodebaseSheet' that is already presented.
+        // Attaching the sheet to a background view hides the presentation anchor from the root of
+        // the hierarchy, avoiding conflicts with the host `NewCodebaseSheet` already presented.
         .background {
             Color.clear
                 .sheet(isPresented: $isPresentingVerificationPage) {

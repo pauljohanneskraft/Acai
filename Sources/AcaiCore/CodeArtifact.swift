@@ -49,9 +49,8 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
     ///
     /// Deliberately a `RawRepresentable` struct rather than an enum: the built-in constants
     /// (`.swift`, `.dart`, …) are defined in their respective language targets, never here, so an
-    /// agnostic target cannot name a specific language (it won't compile) and an external consumer
-    /// can introduce a brand-new language with `SourceLanguage(rawValue:)`. Single-value `Codable`
-    /// over `rawValue` keeps the JSON wire format identical to the former `String`-backed enum.
+    /// agnostic target cannot name a specific language and an external consumer can introduce a new
+    /// one with `SourceLanguage(rawValue:)`.
     public struct SourceLanguage: RawRepresentable, Codable, Equatable, Hashable, Sendable {
         public let rawValue: String
 
@@ -106,14 +105,12 @@ extension CodeArtifact {
             guard let targetName = ext.extensionOf,
                   let targetId = Self.mergeExtension(ext, targetName: targetName, into: &resolvedTypes)
             else {
-                // Extension of an external type (e.g. `extension Array`, `extension UUID`):
-                // dropped entirely — neither node nor conformance edge is kept.
+                // Extension of an external type (e.g. `extension Array`): dropped entirely.
                 continue
             }
             for inherited in ext.inheritedTypes {
-                // Provenance: the conformance is declared by the *extension*, so a cross-module
-                // extension (e.g. AcaiDiff conforming a AcaiDiagram type to a AcaiDiff protocol) is
-                // attributed to the extension's module — not the extended type's — for coupling/cycles.
+                // Attributed to the extension's module (not the extended type's) for coupling/cycles,
+                // since the conformance is declared by the extension.
                 resolvedRelationships.append(
                     Relationship(
                         kind: .conformance, source: targetId, target: inherited.name,
@@ -135,10 +132,9 @@ extension CodeArtifact {
 
     /// Returns a new artifact with each language's generated types (and their relationships) removed.
     ///
-    /// The `resolver` supplies each type's `GeneratedCodeFilter` from *its own* language, so a polyglot
-    /// artifact filters each language's generated files (e.g. Dart's `.freezed.dart`, Python's stubs)
-    /// under that language's rules rather than one dominant filter. Stays language-agnostic: the engine
-    /// applies filters it is handed and never knows which language produced them.
+    /// `resolver` supplies each type's `GeneratedCodeFilter` from its own language, so a polyglot
+    /// artifact filters each language's generated files under that language's rules rather than one
+    /// dominant filter.
     public func filteringGeneratedTypes(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
         let removedIDs: Set<String> = Set(
             types.filter { type in

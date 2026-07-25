@@ -6,8 +6,8 @@ struct ProjectDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State var addingCodebase = false
     @State private var codebasePendingDeletion: Codebase?
-    /// Drives the destructive "Delete Project…" confirmation (B53) — a second, discoverable path
-    /// to the same confirmed-safe action the sidebar's context menu already offers.
+    /// Drives the destructive "Delete Project…" confirmation — a second, discoverable path
+    /// to the same action the sidebar's context menu already offers.
     @State var showDeleteProjectConfirmation = false
 
     private var project: Project? {
@@ -103,7 +103,6 @@ struct ProjectDetailView: View {
             && model.freeformDiagramsForProject(projectID).isEmpty
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Editable project header
                 projectHeader(project: project, index: index, showActions: !isProjectEmpty)
 
                 Divider()
@@ -277,12 +276,10 @@ struct ProjectDetailView: View {
 
     // MARK: - Project Header (Editable)
 
-    /// `showActions` is `false` for a project with no codebases and no diagrams yet (B52): in that
-    /// case `emptyProjectContentState` renders the same two actions itself, larger and centered —
-    /// showing them here too would duplicate them "half-heartedly in two places." On iPad these
-    /// actions live in the nav bar toolbar instead (room for two real buttons there, unlike
-    /// iPhone's collapsed menu) — macOS keeps them here, matching the Mac pattern of persistent,
-    /// in-content controls rather than a nav-bar-first design.
+    /// `showActions` is `false` for a project with no codebases and no diagrams yet: in that case
+    /// `emptyProjectContentState` renders the same two actions itself, larger and centered, so
+    /// showing them here too would duplicate them. On iPad these actions live in the nav bar
+    /// toolbar instead; macOS keeps them here, matching its persistent in-content controls pattern.
     private func projectHeader(project: Project, index: Int, showActions: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "tray.full")
@@ -343,10 +340,8 @@ extension ProjectDetailView {
         } label: {
             codebaseRowContent(codebase: codebase)
                 // Only the regular-width (`LazyVStack`) call site needs this padding — the compact
-                // `List` row reuses `codebaseRowContent` directly and already gets its own row
-                // insets from `List`, so baking padding into the shared content would double it up
-                // there (the same anti-pattern `deleteProjectSection`'s doc comment already calls
-                // out and avoids).
+                // `List` row already gets its own row insets, so baking padding into the shared
+                // content would double it up there.
                 .padding(.horizontal)
                 .padding(.vertical, 6)
         }
@@ -460,14 +455,13 @@ extension ProjectDetailView {
     }
 }
 
-// Safe subscript for array bounds checking.
 extension Array {
     subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
     }
 }
 
-// Make UUID conform to Identifiable for sheet(item:).
+/// So `UUID` can drive `sheet(item:)`.
 extension UUID: @retroactive Identifiable {
     public var id: UUID { self }
 }

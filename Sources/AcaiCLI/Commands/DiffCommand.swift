@@ -122,9 +122,8 @@ extension AcaiCommand {
             }
         }
 
-        /// Dispatches to the requested diagram type's delta exporter. Each builds the type's diagram
-        /// model from both revisions, diffs the two models, and renders the union with added=green/
-        /// removed=red/changed=amber via the gated per-element colour overrides.
+        /// Dispatches to the requested diagram type's delta exporter, which diffs both revisions and
+        /// renders the union with added=green/removed=red/changed=amber.
         private func deltaDiagram(old: CodeArtifact, new: CodeArtifact, format: FormatOption) throws -> String {
             let diagramFormat = format.diagramFormat
             if let sequenceFrom {

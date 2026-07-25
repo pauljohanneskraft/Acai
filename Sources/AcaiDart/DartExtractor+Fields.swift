@@ -62,8 +62,7 @@ extension DartExtractor {
         return info
     }
 
-    /// Extracts field members from an `initialized_identifier_list` node
-    /// using the given declaration-level info.
+    /// Extracts field members from an `initialized_identifier_list` node.
     func extractFieldsFromIdentifierList(
         _ node: Node, info: DeclarationInfo
     ) -> [Member] {
@@ -82,8 +81,7 @@ extension DartExtractor {
         }
     }
 
-    /// Extracts field members from a `static_final_declaration_list` node
-    /// using the given declaration-level info.
+    /// Extracts field members from a `static_final_declaration_list` node.
     func extractStaticFinalFields(
         _ node: Node, info: DeclarationInfo
     ) -> [Member] {
@@ -102,12 +100,9 @@ extension DartExtractor {
         }
     }
 
-    /// Infers a field's type from a direct construction initializer (`helper = Helper();`) when
-    /// there's no explicit annotation — the idiomatic Dart form for a composed collaborator.
-    /// The grammar flattens this the same way `resolveCallSite` matches a bare call inside an
-    /// `initialized_identifier` (`[…, callee-id, selector(argument_part)]`), so a known-type
-    /// callee is what distinguishes a construction from an actual call — the same check
-    /// `localBindings` already applies to locals.
+    /// Infers a field's type from a direct construction initializer (`helper = Helper();`) with no
+    /// explicit annotation. Flattened the same way `resolveCallSite` matches a bare call, so a
+    /// known-type callee distinguishes a construction from an actual call (same check as `localBindings`).
     private func constructedFieldType(from node: Node) -> TypeReference? {
         let kids = node.namedChildren()
         guard kids.count >= 2,
@@ -148,7 +143,7 @@ extension DartExtractor {
             accessLevel: accessLevel(for: name),
             modifiers: attributes.modifiers, type: type, location: location,
             // A field initializer can't reference `this`, so file-level type names are the only
-            // resolvable receivers — enough to record its calls (RC2) without the type's field map.
+            // resolvable receivers (RC2).
             callSites: extractCallSites(from: node, scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
             initialValue: initialValue,
             referencedTypeNames: referencedTypeNames(in: node)
@@ -231,7 +226,6 @@ extension DartExtractor {
         return members
     }
 
-    /// Attempt to extract fields from arbitrary child nodes of a declaration.
     func extractFieldFromDeclarationChild(_ child: Node) -> [Member]? {
         guard let nodeType = child.nodeType else { return nil }
         switch nodeType {

@@ -4,10 +4,9 @@ import AcaiDiagram
 import AcaiDiff
 import AcaiLibrary
 
-// Per-diagram-kind delta text rendering for `acai diff --diagram`. Each type builds the diagram model
-// from both revisions (via the shared requests), diffs the two models, and renders the union with
-// added=green/removed=red/changed=amber colour overrides. Extracted from `AcaiCommand.Diff` so the
-// command delegates to small exporters instead of referencing every diff type and renderer directly.
+// Per-diagram-kind delta text rendering for `acai diff --diagram`. Each type builds the diagram
+// model from both revisions, diffs them, and renders the union with added=green/removed=red/
+// changed=amber colour overrides.
 
 /// Class-diagram delta: the union artifact with each type/edge tinted by its diff status.
 struct ClassDeltaExporter {

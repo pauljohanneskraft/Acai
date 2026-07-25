@@ -20,9 +20,8 @@ public enum DiagramImageRenderError: Error {
 ///
 /// The per-diagram-kind renderers (``ClassImageRenderer``, ``SequenceImageRenderer``,
 /// ``StateImageRenderer``, ``PackageImageRenderer``, ``CallGraphImageRenderer``) each build their
-/// own layout + snapshot view and hand it here, so this type stays free of any diagram-model
-/// knowledge. All use SwiftUI's `ImageRenderer`, which needs a macOS GUI/window-server session
-/// (not a headless-CI path).
+/// own layout + snapshot view and hand it here, so this type stays free of diagram-model
+/// knowledge. Uses SwiftUI's `ImageRenderer`, which needs a macOS GUI/window-server session.
 @MainActor
 public struct DiagramImageRenderer {
 
@@ -38,9 +37,8 @@ public struct DiagramImageRenderer {
     public static let maxPixelDimension: CGFloat = 16384
 
     /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, clamping the scale so
-    /// neither output dimension exceeds ``maxPixelDimension``. The scale is floored to a small
-    /// positive value first (guarding a zero/negative `--scale`), then ceilinged so the result can
-    /// never exceed the max even when the max itself drops below the floor for very large diagrams.
+    /// neither output dimension exceeds ``maxPixelDimension``. Floored first to guard a
+    /// zero/negative `--scale`, then ceilinged so oversized diagrams stay within the max.
     public func render(
         _ view: some View,
         contentSize: CGSize,

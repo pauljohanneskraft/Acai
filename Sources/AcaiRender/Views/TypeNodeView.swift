@@ -95,10 +95,8 @@ public struct TypeNodeView: View {
                     lineWidth: borderOverride != nil ? 3 : (isSelected ? 2 : 1))
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
-        // Keyed by name, not a stable id — `TypeNodeView` has no id of its own (see the
-        // initializer's doc comment on why `name` is what's available). Good enough for a UI-test
-        // hook; a name collision within one diagram is the same known edge case
-        // `USABILITY_IMPROVEMENTS.md` Part 10 already documents for freeform-conversion identity.
+        // Keyed by name, not a stable id — `TypeNodeView` has no id of its own. Good enough for a
+        // UI-test hook; a name collision within one diagram is a known edge case.
         .accessibilityIdentifier("diagram.typeNode.\(name)")
     }
 

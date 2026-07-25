@@ -9,10 +9,9 @@ import AcaiCore
 /// stay visible; the scope only bounds which methods are *callers*.
 ///
 /// A call site resolves by its `CallReceiver`: a `.type` receiver when `receiverType.methodName`
-/// matches a member, a `.selfDispatch` when `callerType.methodName` matches a member (falling back to
-/// a free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free` when
-/// `methodName` matches a free function.
-/// The share of in-scope call sites that resolve is reported as `CallGraph.coverage`.
+/// matches a member, a `.selfDispatch` when `callerType.methodName` matches (falling back to a
+/// free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free`
+/// when `methodName` matches a free function. The resolved share is `CallGraph.coverage`.
 ///
 /// A value you instantiate with the scope/title and ask to `build(from:)` — kept off `CodeArtifact`
 /// so the data model does not depend on the diagram layer.
@@ -120,8 +119,7 @@ private struct CallGraphAccumulator {
             if !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") {
                 return (callerType, site.methodName, inScopeNames.contains(callerType))
             }
-            // A bare `foo()` the parser optimistically tagged `.selfDispatch` may actually be a free
-            // function; fall back to a free-function match before giving up.
+            // A bare `foo()` tagged `.selfDispatch` may actually be a free function.
             guard freeFunctionNames.contains(site.methodName) else { return nil }
             return ("", site.methodName, false)
         case .free:
@@ -129,8 +127,7 @@ private struct CallGraphAccumulator {
             return ("", site.methodName, false)
         case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             // `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
-            // `.type` before the graph is built; anything still in any deferred-resolution case
-            // is genuinely unresolvable, not merely not-yet-tried — same as `.unknown`.
+            // `.type`; anything still deferred here is genuinely unresolvable.
             return nil
         }
     }

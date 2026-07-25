@@ -12,8 +12,8 @@ public protocol CodeParser: Sendable {
 
     /// Parse a single source file and return its type model.
     ///
-    /// **Producer contract** (the implicit invariants enrichment and rendering depend on — enforced by
-    /// the parser-conformance suite, issue #89, and centralised in ``TypeIdentityResolver``):
+    /// **Producer contract** (the invariants enrichment and rendering depend on, centralised in
+    /// ``TypeIdentityResolver``):
     /// - Each ``TypeDeclaration`` has ``TypeDeclaration/id`` == ``TypeDeclaration/qualifiedName``
     ///   (namespace-qualified), while ``TypeDeclaration/name`` is the **simple** name.
     /// - A nested type's id/qualified name is **hierarchically prefixed** by its parent's.

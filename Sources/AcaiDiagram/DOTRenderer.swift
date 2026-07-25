@@ -1,6 +1,5 @@
 /// Cosmetic rendering knobs shared by every diagram renderer: the optional colour
-/// `theme` plus the Graphviz `fontName`/`fontSize`. Replaces the loose
-/// `(theme:fontName:fontSize:)` parameter trio the individual renderers used to carry.
+/// `theme` plus the Graphviz `fontName`/`fontSize`.
 public struct DiagramRenderOptions: Sendable {
     /// The colour palette. `nil` emits structural output (no background/fill/border/font
     /// colours) so the consumer themes it at render time.
@@ -21,9 +20,7 @@ public struct DiagramRenderOptions: Sendable {
 
 /// Shared behaviour for the Graphviz-DOT renderers. Conformers expose their
 /// `DiagramRenderOptions`; in return they get the font/theme accessors and a single
-/// `graphAttributes(rankdir:compound:nodeDefaults:)` helper, replacing the near-identical
-/// `graphAttributes()` each renderer used to re-declare (they differed only in `rankdir`,
-/// an optional `compound=true;` line, and the node-default prefix).
+/// `graphAttributes(rankdir:compound:nodeDefaults:)` helper.
 public protocol DOTRenderer: Sendable {
     var renderOptions: DiagramRenderOptions { get }
 }

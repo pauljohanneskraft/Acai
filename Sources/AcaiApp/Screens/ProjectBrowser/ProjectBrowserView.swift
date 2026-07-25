@@ -299,14 +299,11 @@ extension ProjectBrowserView {
                 .contextMenu { projectContextMenu(project: project) }
         }
         #else
-        // DisclosureGroup's label swallows every tap for expand/collapse on iOS — unlike
-        // macOS's sidebar list style, there's no separate hit-target for the triangle — so a
-        // tap here never reaches `List(selection:)` and the project can never be selected.
-        // Rendering the project as a real Section (its title as the header) instead of a plain
-        // row also gives its codebases/diagrams a visible group boundary — most noticeable right
-        // after adding a codebase, which now clearly nests under the project it belongs to.
-        // Section headers aren't selectable List rows, so both header actions are plain Buttons
-        // with explicit, imperative effects rather than relying on `.tag()`-based row selection.
+        // DisclosureGroup's label swallows every tap on iOS (no separate hit-target for the
+        // triangle), so `List(selection:)` never sees the tap and the project can't be selected.
+        // A real Section (title as header) sidesteps that and gives codebases/diagrams a visible
+        // group boundary. Section headers aren't selectable rows, so header actions are plain
+        // Buttons instead of `.tag()`-based selection.
         Section {
             if !collapsedProjects.contains(project.id) {
                 codebaseRows(project: project)

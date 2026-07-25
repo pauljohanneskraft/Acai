@@ -64,10 +64,8 @@ extension GeneratedDiagram {
         let languages = artifact.standardLanguageResolver
 
         for (index, type) in artifact.types.enumerated() {
-            // Distinct types can share an id when a language doesn't qualify by module (e.g. two
-            // top-level Python classes of the same name in different files) — mirror the rendered
-            // diagram's `removingDuplicates { $0.id }` first-wins rule so a later same-id
-            // declaration maps onto the already-emitted node instead of creating a duplicate.
+            // Distinct types can share an id when a language doesn't qualify by module — mirror the
+            // rendered diagram's `removingDuplicates { $0.id }` first-wins rule.
             guard ids[type.id] == nil else { continue }
             let nodeID = UUID().uuidString
             ids[type.id] = nodeID
@@ -105,17 +103,14 @@ extension GeneratedDiagram {
         return nodes
     }
 
-    /// One `.package` freeform container node per active-grouping box (`ClassDiagramConfiguration
-    /// .grouping`'s `.directory`/`.product` boxes, the same nested-prefix boxes
-    /// `GroupingBoxLayer`/`DiagramLayoutModel.groupingBoxes` draw behind the live Class Diagram),
-    /// sized to enclose the already-converted member nodes it contains. `.none` produces nothing.
+    /// One `.package` freeform container node per active-grouping box (the same nested-prefix
+    /// boxes `DiagramLayoutModel.groupingBoxes` draws behind the live Class Diagram), sized to
+    /// enclose the already-converted member nodes it contains. `.none` produces nothing.
     ///
-    /// Deliberately re-derives the box geometry here (paralleling
-    /// `DiagramLayoutModel.groupingBoxes`'s prefix-merge algorithm) rather than calling it directly:
-    /// that type rebuilds its own `nodes` from `artifact` under the class diagram's access-level/
-    /// generated-code/focus filters, which can be a *different* type set than `buildFreeformNodes`
-    /// actually emitted above — recomputing from the emitted freeform nodes keeps every box's
-    /// members consistent with what's really in `memberNodes`.
+    /// Re-derives the box geometry here rather than calling `DiagramLayoutModel.groupingBoxes`
+    /// directly: that type rebuilds its own `nodes` from `artifact` under the class diagram's
+    /// filters, which can differ from what `buildFreeformNodes` actually emitted above —
+    /// recomputing from the emitted nodes keeps every box's members consistent with `memberNodes`.
     private func buildFreeformGroupingNodes(
         from artifact: CodeArtifact,
         memberNodes: [FreeformDiagram.Node],
@@ -144,16 +139,15 @@ extension GeneratedDiagram {
                 width: Double(rect.width),
                 height: Double(rect.height),
                 // Shallower (outer) boxes draw furthest back; deeper boxes draw closer to front but
-                // still behind every member node, which stays at the default `drawOrder` of 0.
+                // still behind every member node (default `drawOrder` 0).
                 drawOrder: value.depth - (maxDepth + 2)
             )
         }
     }
 
     /// One entry per path-prefix depth of every member's group key, merging member rects into their
-    /// shared ancestor boxes — mirrors `DiagramLayoutModel.groupingBoxes`'s prefix-merge exactly, but
-    /// keyed against the freeform nodes already emitted above (see `buildFreeformGroupingNodes`'s doc
-    /// comment for why it isn't the same `nodes`/`positions` that type builds from `artifact` itself).
+    /// shared ancestor boxes — mirrors `DiagramLayoutModel.groupingBoxes`'s prefix-merge, but keyed
+    /// against the freeform nodes already emitted above.
     private func groupingBoxPrefixes(
         artifact: CodeArtifact,
         grouping: ClassDiagramConfiguration.Grouping,
@@ -232,11 +226,8 @@ extension GeneratedDiagram {
             typeMapping: configuration.typeMapping
         ).build(from: artifact)
 
-        // One lifeline node per participant, at the exact x its lifeline had in the generated
-        // view (the caller passes the live layout positions; the stride is only a fallback).
-        // Keyed by participant *id* (what messages reference), not name: distinct participants can
-        // share a name (a type and a free function), so a name-keyed map would merge them and drop
-        // edges.
+        // Keyed by participant id (what messages reference), not name: distinct participants can
+        // share a name (a type and a free function), so a name-keyed map would merge them.
         var nodeIDByParticipantID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []
         for (index, participant) in sequence.participants.enumerated() {

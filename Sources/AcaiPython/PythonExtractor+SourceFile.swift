@@ -29,13 +29,11 @@ extension PythonExtractor {
                     globalVariables.append(member)
                 }
             }
-            // A bare top-level call (`main()`), not an assignment — its target has nowhere to attach
-            // as a caller, so it's collected separately and given a synthetic reachable member in
-            // `walkSourceFile` (RC-H).
+            // A bare top-level call (`main()`) has no caller to attach to, so it's collected
+            // separately and given a synthetic reachable member in `walkSourceFile` (RC-H).
             topLevelCallSites.append(contentsOf: extractCallSites(from: node, scope: moduleScope()))
         case "if_statement":
-            // The idiomatic `if __name__ == "__main__": main()` entry point — its consequent block's
-            // calls are the same kind of otherwise-unreachable top-level call as a bare statement.
+            // Covers the idiomatic `if __name__ == "__main__": main()` entry point.
             topLevelCallSites.append(contentsOf: extractCallSites(from: node, scope: moduleScope()))
         default:
             break

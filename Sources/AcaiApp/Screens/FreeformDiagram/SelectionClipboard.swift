@@ -72,7 +72,6 @@ final class SelectionClipboard {
 
         context.recordUndo(coalescingKey: nil)
 
-        // Build mapping from old IDs to new IDs.
         var idMapping: [String: String] = [:]
         for node in payload.nodes {
             idMapping[node.id] = UUID().uuidString

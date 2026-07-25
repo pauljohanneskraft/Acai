@@ -18,10 +18,9 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     public var showProperties: Bool = true
     public var showMethods: Bool = true
     public var showEnumCases: Bool = true
-    /// Per-type overrides for property visibility, keyed by `TypeDeclaration.id`. A type's
-    /// effective visibility is `propertyVisibility[id] ?? showProperties`, so a type can be
-    /// shown or hidden independently of the global default. Flipping the global toggle clears
-    /// this map, resetting every type to the new default. App-only; the CLI leaves it empty.
+    /// Per-type overrides for property visibility, keyed by `TypeDeclaration.id`: effective
+    /// visibility is `propertyVisibility[id] ?? showProperties`. Flipping the global toggle
+    /// clears this map. App-only; the CLI leaves it empty.
     public var propertyVisibility: [String: Bool] = [:]
     /// Per-type overrides for method visibility. See `propertyVisibility`.
     public var methodVisibility: [String: Bool] = [:]

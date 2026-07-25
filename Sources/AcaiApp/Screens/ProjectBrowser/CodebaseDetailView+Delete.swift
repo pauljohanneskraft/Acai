@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Split out of `CodebaseDetailView` to keep that type's body under SwiftLint's `type_body_length`
-/// limit — the "discoverable delete path" concern (B53): a destructive button at the bottom of the
-/// screen, alongside the existing sidebar context-menu path to the same confirmed-safe action.
+/// limit: a destructive button at the bottom of the screen, alongside the existing sidebar
+/// context-menu path to the same action.
 extension CodebaseDetailView {
     /// A plain destructive row/button — deliberately not a centered card, so it reads as one more
     /// action in the flow rather than a one-off design, matching the rest of the screen's left

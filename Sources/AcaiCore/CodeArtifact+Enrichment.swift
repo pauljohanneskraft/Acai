@@ -1,19 +1,13 @@
-// Generalizable, language-agnostic enrichment passes over a merged `CodeArtifact`.
-//
-// These run after per-file parsing + merging (see `AnalysisService`) so the emitted
-// artifact already carries resolved, deduplicated and inferred relationships. Each pass
-// is pure and order-tolerant; `enriched()` chains them in the intended order.
+// Enrichment passes over a merged `CodeArtifact`, run after per-file parsing + merging (see
+// `AnalysisService`). Each pass is pure and order-tolerant; `enriched()` chains them in order.
 
 extension CodeArtifact {
 
     /// Runs the full enrichment pipeline in order.
     ///
-    /// `resolver` supplies each type's language classification (primitives/collections) used when
-    /// inferring structural edges, resolved *per type* from its stamped `sourceLanguage` — so a polyglot
-    /// artifact infers each language's edges with that language's rules rather than one dominant config.
-    /// It is injected (never hard-coded) so the engine stays language-agnostic, and it is *required*: the
-    /// resolver carries a mandatory default, so there is no empty configuration to fall into. Because the
-    /// pipeline is idempotent, a re-run with the same resolver stays a no-op.
+    /// `resolver` supplies each type's language classification, resolved *per type* from its `sourceLanguage`
+    /// so a polyglot artifact applies each language's own rules rather than one dominant config. Injected
+    /// rather than hard-coded to stay language-agnostic; required, with no empty default. Idempotent.
     public func enriched(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
         resolvingExtensions()
             .resolvingRelationshipNames()
@@ -22,20 +16,17 @@ extension CodeArtifact {
             .deduplicatingRelationships()
     }
 
-    /// Single-language convenience: enriches every type under one `configuration`. Correct for a
-    /// single-language artifact (a parser's own config, a test fixture); polyglot callers use
-    /// `enriched(using:)` with a real per-type resolver instead.
+    /// Single-language convenience, for a parser's own config or a test fixture. Polyglot callers should
+    /// use `enriched(using:)` with a real per-type resolver instead.
     public func enriched(configuration: LanguageConfiguration) -> CodeArtifact {
         enriched(using: LanguageConfigurationResolver(single: configuration))
     }
 
-    // MARK: - Relationship name → id resolution (BUG-12 / GAP-7)
+    // MARK: - Relationship name → id resolution
 
-    /// Rewrites relationship `source`/`target` and `inheritedTypes` names from raw names to
-    /// canonical type ids, recursing into `nestedTypes` so edges and supertype references to
-    /// nested types resolve. Running this in the language-agnostic pipeline means every
-    /// language (not just the tree-sitter extractors that opt in) gets consistent qualified
-    /// inherited-type names in inspector/detail views.
+    /// Rewrites relationship `source`/`target` and `inheritedTypes` names to canonical type ids, recursing
+    /// into `nestedTypes`. Runs in the language-agnostic pipeline so every language gets consistent
+    /// qualified names, not just tree-sitter extractors that opt in.
     public func resolvingRelationshipNames() -> CodeArtifact {
         let resolver = TypeIdentityResolver(types: types)
         var copy = self
@@ -47,9 +38,8 @@ extension CodeArtifact {
             let target = resolver.resolve(rel.target)
             resolved.source = source.canonicalName
             resolved.target = target.canonicalName
-            // Surface only the silent-drop case the issue calls out: a simple name shared by several
-            // declared types, left unresolved so it becomes a phantom external node. Genuinely
-            // external references (`.external`) are the normal case and are not flagged.
+            // Only ambiguous names (shared by several declared types, left unresolved) are flagged;
+            // genuinely external references (`.external`) are the normal case.
             for (endpoint, kind) in [(source, "source"), (target, "target")] {
                 if case .ambiguous(let name) = endpoint {
                     diagnostics.append(ParseDiagnostic(
@@ -84,7 +74,7 @@ extension CodeArtifact {
         }
     }
 
-    // MARK: - Inheritance vs conformance (BUG-3, in-codebase only)
+    // MARK: - Inheritance vs conformance (in-codebase only)
 
     /// Reclassifies an `.inheritance` edge to `.conformance` when its target resolves
     /// to a `protocol`/`interface` declared in this codebase. External first-parents are
@@ -105,7 +95,7 @@ extension CodeArtifact {
         return copy
     }
 
-    // MARK: - Inferred structural edges (GAP-8 / GAP-9)
+    // MARK: - Inferred structural edges
 
     /// Adds composition/aggregation edges from property types, dependency edges from
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
@@ -127,7 +117,7 @@ extension CodeArtifact {
         return copy
     }
 
-    // MARK: - Dedup + redundancy removal (BUG-2)
+    // MARK: - Dedup + redundancy removal
 
     /// Removes exact-duplicate edges and weaker inferred edges where a stronger explicit
     /// relationship already covers the same pair.
@@ -139,18 +129,13 @@ extension CodeArtifact {
 
     // MARK: - Deferred call-site receiver resolution (cross-file + multi-hop)
 
-    /// Resolves deferred call-site receivers — `.unresolvedTypeName` (a capitalised receiver not
-    /// declared in its own file, possibly declared elsewhere in the project) and `.propertyChain` (a
-    /// multi-hop property access, e.g. `model.diagrams.add()`, whose middle hop wasn't resolvable
-    /// in-file) — against the *fully-merged* project type graph, promoting either to `.type` when it
-    /// resolves unambiguously.
+    /// Resolves deferred call-site receivers — `.unresolvedTypeName` (a capitalised receiver not found
+    /// in-file) and `.propertyChain` (a multi-hop property access whose middle hop wasn't resolvable
+    /// in-file) — against the fully-merged project type graph, promoting either to `.type` when unambiguous.
     ///
-    /// Unlike the rest of `enriched(using:)` (which runs per-language-group inside
-    /// `AnalysisService.enrichPerLanguage`, before the final cross-spec merge), this pass needs to see
-    /// *every* file project-wide, so `AnalysisService.analyzeProject` calls it once at the very end,
-    /// after all specs are merged — additive, not a restructuring of the existing per-language passes.
-    /// Idempotent: re-running over an already-resolved artifact changes nothing, since no new
-    /// information appears the second time.
+    /// Unlike the rest of `enriched(using:)` (run per-language-group before the final merge), this needs
+    /// every file project-wide, so `AnalysisService.analyzeProject` calls it once after all specs are
+    /// merged. Idempotent.
     public func resolvingCallSiteReceivers() -> CodeArtifact {
         let flat = Self.allTypes(types)
         let resolver = CallSiteReceiverResolver(
@@ -183,14 +168,12 @@ extension CodeArtifact {
 
         var copy = self
         copy.types = resolvingTypes(types)
-        // No enclosing type for a freestanding function, so `.ownProperty` (which resolves against
-        // the call site's *own* type) can never apply here — matches `CallSiteCollector` only ever
-        // producing that case when it has an enclosing type name to defer against.
+        // Freestanding functions have no enclosing type, so `.ownProperty` never applies here.
         copy.freestandingFunctions = resolvingMembers(freestandingFunctions, owningTypeID: nil)
         return copy
     }
 
-    // MARK: - Flattening (GAP-7)
+    // MARK: - Flattening
 
     /// A flat list of every type incl. nested ones (nested copies have `nestedTypes`
     /// cleared). Ids are already fully qualified, so they remain unique.
@@ -227,15 +210,11 @@ extension CodeArtifact {
 
     /// Resolves the id of the single type `name` should merge into.
     ///
-    /// An exact `qualifiedName`/`id` match is unambiguous by construction (this project's id scheme
-    /// carries no module prefix, so a collision there would mean two identically-named *top-level*
-    /// types — a separate, unaddressed edge case, not the one this resolves) and wins outright.
-    /// Otherwise falls back to a bare simple-name match, scoped to the extension's own module (via
-    /// ``ModuleResolver``): a bare name shared with an unrelated type in another module — e.g. an
-    /// extension of an *external* type (`extension Node` on `SwiftTreeSitter.Node`) that happens to
-    /// share a name with an unrelated in-project nested type (`FreeformDiagram.Node`) — must not
-    /// silently merge into it, so the fallback only accepts the match when it is the *sole*
-    /// same-module candidate.
+    /// An exact `qualifiedName`/`id` match wins outright. Otherwise falls back to a bare simple-name
+    /// match scoped to the extension's own module (via ``ModuleResolver``): a bare name shared with an
+    /// unrelated type in another module (e.g. an extension of external `SwiftTreeSitter.Node` colliding
+    /// with in-project `FreeformDiagram.Node`) must not silently merge into it, so the fallback only
+    /// accepts a sole same-module candidate.
     private static func extensionTargetID(
         _ ext: TypeDeclaration, name: String, in types: [TypeDeclaration]
     ) -> String? {
@@ -261,10 +240,8 @@ extension CodeArtifact {
             if types[index].id == id {
                 types[index].members.append(contentsOf: ext.members)
                 types[index].nestedTypes.append(contentsOf: ext.nestedTypes)
-                // An extension's own conformance (`extension X: SomeProtocol { ... }`) is often
-                // where a type picks up a protocol it satisfies — dropping it here would hide the
-                // conformance from anything that reads `inheritedTypes` (e.g. protocol-witness
-                // dead-code exemption), so it must be merged alongside members/nestedTypes.
+                // Extension conformances must merge too — dropping them would hide protocol conformance
+                // from anything reading `inheritedTypes` (e.g. protocol-witness dead-code exemption).
                 let existingNames = Set(types[index].inheritedTypes.map(\.name))
                 types[index].inheritedTypes.append(
                     contentsOf: ext.inheritedTypes.filter { !existingNames.contains($0.name) })
@@ -284,17 +261,14 @@ extension CodeArtifact {
 }
 
 /// Resolves a call site's deferred receiver (`.unresolvedTypeName`/`.propertyChain`) against the
-/// fully-merged project type graph — the whole-project context neither is provable at parse time.
-/// A value you instantiate once per `resolvingCallSiteReceivers()` call and ask to resolve each site.
+/// fully-merged project type graph. Instantiated once per `resolvingCallSiteReceivers()` call.
 private struct CallSiteReceiverResolver {
     let identity: TypeIdentityResolver
     let typesByID: [String: TypeDeclaration]
 
-    /// The receiver unchanged, or promoted to `.type` when a deferred case now resolves
-    /// unambiguously against the full project; never guesses across an ambiguous or absent match.
-    /// `owningTypeID` is the fully-merged type the call site's own member belongs to — needed only
-    /// to resolve `.ownProperty`, which looks a property up on that exact type (`nil` for a
-    /// freestanding function, which has no enclosing type to check).
+    /// The receiver unchanged, or promoted to `.type` when it now resolves unambiguously against the
+    /// full project; never guesses across an ambiguous or absent match. `owningTypeID` is needed only
+    /// to resolve `.ownProperty` against the call site's own type (`nil` for a freestanding function).
     func resolved(_ receiver: CallReceiver, owningTypeID: String?) -> CallReceiver {
         switch receiver {
         case .unresolvedTypeName(let name):
@@ -315,10 +289,9 @@ private struct CallSiteReceiverResolver {
         }
     }
 
-    /// `name` may be a simple name (the common case) or a dotted qualified-path (a fully-qualified
-    /// nested-type receiver, e.g. `Outer.Inner.method()`) — either way, `.type`'s producer contract
-    /// requires the *simple* name, so the resolved declaration's own `.name` is used rather than
-    /// echoing `name` back unchanged.
+    /// `name` may be simple or a dotted qualified path (e.g. `Outer.Inner.method()`); either way `.type`
+    /// requires the simple name, so the resolved declaration's own `.name` is used instead of echoing
+    /// `name` back unchanged.
     private func resolvedUnresolvedTypeName(_ name: String, orElse receiver: CallReceiver) -> CallReceiver {
         guard case .resolved(let id) = identity.resolve(name), let type = typesByID[id.value] else {
             return receiver
@@ -359,10 +332,9 @@ private struct CallSiteReceiverResolver {
         return .type(finalTypeName)
     }
 
-    /// Walks `hops` from `headTypeName`'s declared properties, one hop at a time, resolving each
-    /// hop's declared property type through the full project type graph. Returns the final hop's
-    /// type name only when every hop — including the last — resolves to a single, unambiguous,
-    /// declared type; drops (returns `nil`) at the first unknown/ambiguous hop rather than guessing.
+    /// Walks `hops` from `headTypeName`'s declared properties, resolving each hop's property type
+    /// through the project type graph. Returns the final type name only if every hop resolves
+    /// unambiguously; otherwise returns `nil` rather than guessing.
     private func walkChain(headTypeName: String, hops: [String]) -> String? {
         var currentTypeName = headTypeName
         for hop in hops {

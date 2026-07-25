@@ -17,10 +17,9 @@ public struct EnrichmentOptions: Sendable {
     /// When set, restricts the result to one type and its surrounding subgraph.
     public var focus: FocusConfiguration?
 
-    /// Resolves each type's classification from its own language, injected so enrichment +
-    /// external-type detection stay agnostic and a polyglot artifact infers each language's edges with
-    /// its own rules. Must be consistent with the analysis pipeline's configuration for the same
-    /// artifact, since `enriched(using:)` is only idempotent under a consistent resolver.
+    /// Resolves each type's classification from its own language, so enrichment and external-type
+    /// detection stay agnostic across a polyglot artifact. Must match the analysis pipeline's
+    /// resolver for the same artifact — `enriched(using:)` is only idempotent under a consistent one.
     public var languages: LanguageConfigurationResolver
 
     public init(
@@ -39,9 +38,7 @@ public struct EnrichmentOptions: Sendable {
 }
 
 /// The built class-diagram model — enriched types, resolved relationships, external placeholders
-/// and directory groups, ready to hand to a renderer. Named to match the `SequenceDiagram` /
-/// `StateDiagram` / `PackageDiagram` models so every diagram type follows the same
-/// "build a model, render the model" shape.
+/// and directory groups, ready to hand to a renderer.
 ///
 /// Constructing one from a `CodeArtifact` post-processes it:
 /// - Flattens nested types, giving them display names that include nesting context
@@ -75,14 +72,10 @@ public struct ClassDiagram: Sendable {
 
     /// Builds the class-diagram model from `artifact` using `options`.
     public init(artifact: CodeArtifact, options: EnrichmentOptions) {
-        // All structural enrichment (extension resolution, name→id resolution,
-        // inheritance/conformance reclassification, inferred composition/aggregation/
-        // dependency edges, dedup) is owned by AcaiCore and runs exactly once here.
-        // It is idempotent, so an already-enriched artifact (e.g. from AnalysisService)
-        // is unaffected.
+        // Structural enrichment is owned by AcaiCore and runs exactly once here; it's idempotent,
+        // so an already-enriched artifact (e.g. from AnalysisService) is unaffected.
         let base = artifact.enriched(using: options.languages)
 
-        // Flatten nested types, giving them display names that include nesting context.
         let flatTypes = Self.flattenTypes(base.types)
         let resolver = TypeResolver(types: flatTypes)
         var relationships = base.relationships.map { resolver.resolve($0) }
@@ -95,8 +88,8 @@ public struct ClassDiagram: Sendable {
             relationships.removeAll { $0.kind == .dependency }
         }
 
-        // External types: parser-produced edges (inheritance/conformance/…) are always
-        // kept; inferred edges to external targets only when `showExternalTypes` is set.
+        // Parser-produced edges are always kept; inferred edges to external targets only
+        // when `showExternalTypes` is set.
         let knownIds = Set(flatTypes.map(\.id))
         let inferredKinds: Set<Relationship.Kind> = [.composition, .aggregation, .dependency]
         if !options.showExternalTypes {
@@ -106,8 +99,7 @@ public struct ClassDiagram: Sendable {
             }
         }
 
-        // Single-class focus: prune to the subgraph around one type. Applied last so
-        // externals and directory groups reflect the focused set.
+        // Applied last so externals and directory groups reflect the focused set.
         var resultTypes = flatTypes
         if let focus = options.focus {
             let subset = FocusedSubsetBuilder(
@@ -138,19 +130,16 @@ public struct ClassDiagram: Sendable {
     ) -> [TypeDeclaration] {
         var result: [TypeDeclaration] = []
         for var type in types {
-            // Update display name for nested types to include parent context.
             if let parent = parentDisplayName {
                 type.name = "\(parent).\(type.name)"
             }
 
-            // Ensure the ID includes the parent scope for nested types
-            // so it's unique across the codebase.
+            // Include the parent scope so the ID stays unique across the codebase.
             if let pid = parentId, !type.id.hasPrefix(pid) {
                 type.id = "\(pid).\(type.id.components(separatedBy: ".").last ?? type.id)"
                 type.qualifiedName = type.id
             }
 
-            // Recursively flatten nested types.
             let nested = flattenTypes(
                 type.nestedTypes,
                 parentDisplayName: type.name,
@@ -174,32 +163,25 @@ public struct ClassDiagram: Sendable {
         init(types: [TypeDeclaration]) {
             var map: [String: String] = [:]
             var ids = Set<String>()
-            // Track how many types share the same simple name so we can detect ambiguity.
             var simpleNameCount: [String: Int] = [:]
 
             for type in types {
                 ids.insert(type.id)
-
-                // Exact matches: id and qualifiedName always map to their own id.
                 map[type.id] = type.id
                 map[type.qualifiedName] = type.id
-
-                // Display name (may contain nesting context).
                 map[type.name] = type.id
 
-                // Count simple-name occurrences.
                 let simpleName = type.name.components(separatedBy: ".").last ?? type.name
                 simpleNameCount[simpleName, default: 0] += 1
             }
 
-            // Map simple names only when unambiguous.
+            // Map simple names only when unambiguous; an ambiguous name still gets some mapping
+            // as a fallback rather than none.
             for type in types {
                 let simpleName = type.name.components(separatedBy: ".").last ?? type.name
                 if simpleNameCount[simpleName] == 1 {
                     map[simpleName] = type.id
                 }
-                // Even when ambiguous, still allow prefix-based lookup later;
-                // for now just add the mapping if it doesn't exist yet.
                 if map[simpleName] == nil {
                     map[simpleName] = type.id
                 }

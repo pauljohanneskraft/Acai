@@ -1,7 +1,6 @@
-// Code-smell folds over a type's already-parsed members, exposed as behaviour on the type they
-// describe (never a free function / static namespace). Each is a pure, raw-valued fold — no
-// thresholds and no language configuration — mirroring the existing coupling/OO metrics. The metrics
-// engine (``CodeArtifact/computeMetrics()``) reads these into ``CodeMetrics/TypeMetric``.
+// Code-smell folds over a type's already-parsed members. Each is a pure, raw-valued fold — no
+// thresholds, no language configuration. Read by ``CodeArtifact/computeMetrics()`` into
+// ``CodeMetrics/TypeMetric``.
 extension TypeDeclaration {
 
     /// Members at least as visible as `public` (public/open) — the type's outward API surface.

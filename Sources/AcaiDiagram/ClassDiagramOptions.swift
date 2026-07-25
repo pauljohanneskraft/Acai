@@ -1,12 +1,9 @@
 import AcaiCore
 
-// Design note — this is a deliberate *options bag*, not a long-parameter-list smell. Every field is an
-// independently-defaulted toggle, and the `var`s exist so callers build it with a couple of labelled
-// arguments (`ClassDiagramOptions(theme: .dark)`) and mutate the rest after the fact (the CLI does
-// `options.theme = …` / `classFlags.apply(to: &options)`). No call site passes a long positional list,
-// so grouping the initializer into sub-objects would only break ~30 construction + ~55 reader sites and
-// worsen the common case for no real gain. The `maxParameters` metric measures this correctly; the
-// judgement (per the audit's "tool measures, human judges" principle) is that the bag is the right shape.
+// Deliberate options bag, not a long-parameter-list smell: every field is an independently-defaulted
+// toggle, and the `var`s let callers build with a couple of labelled args and mutate the rest after
+// (`options.theme = …`). No call site passes a long positional list, so splitting into sub-objects
+// would only break call sites for no real gain.
 public struct ClassDiagramOptions: Sendable {
     public var layoutDirection: LayoutDirection
     public var showMembers: Bool
@@ -18,9 +15,8 @@ public struct ClassDiagramOptions: Sendable {
     public var showGenericParameters: Bool
     public var fontName: String
     public var fontSize: Int
-    /// The cosmetic colour palette. `nil` emits structural output (no background, fill, border or
-    /// font colours) so the consumer themes it at render time; set it for self-contained colours.
-    /// Semantic colours (e.g. inferred edge labels) are unaffected.
+    /// The cosmetic colour palette. `nil` emits structural output (no background/fill/border/font
+    /// colours) so the consumer themes it at render time. Semantic colours are unaffected.
     public var theme: DiagramTheme?
 
     // MARK: - Class-diagram enrichment options
@@ -51,24 +47,18 @@ public struct ClassDiagramOptions: Sendable {
     /// whole codebase.
     public var focus: FocusConfiguration?
 
-    /// Resolves each type's language quirks (type-name classification + annotation stereotypes) from
-    /// its own `sourceLanguage`, so a polyglot codebase is styled per type rather than under one
-    /// artifact-wide language. Injected by the caller (`artifact.standardLanguageResolver`, or
-    /// `LanguageConfigurationResolver(single:)` for a single-language render). Required — the diagram
-    /// layer stays agnostic by receiving this rather than knowing any language, and the resolver's
-    /// required default means there is no empty configuration to silently mis-classify into.
+    /// Resolves each type's language quirks (classification + annotation stereotypes) from its own
+    /// `sourceLanguage`, so a polyglot codebase is styled per type. Injected by the caller
+    /// (`artifact.standardLanguageResolver`, or `LanguageConfigurationResolver(single:)`); required
+    /// so the diagram layer stays agnostic rather than knowing any language.
     public var languages: LanguageConfigurationResolver
 
-    /// An optional per-edge colour override (a hex like `#2e7d32`). When it returns a non-`nil`
-    /// colour for a relationship, that colour wins over `theme.edgeColor`; when it returns `nil`,
-    /// or is itself `nil`, edge colouring is unchanged. Used to tint a delta diagram's added/
-    /// removed/changed edges. Default `nil` keeps every existing diagram byte-for-byte identical.
+    /// An optional per-edge colour override (a hex like `#2e7d32`) that wins over `theme.edgeColor`
+    /// when non-`nil`. Used to tint a delta diagram's added/removed/changed edges; default `nil`
+    /// keeps every existing diagram byte-for-byte identical.
     public var edgeColorOverride: (@Sendable (Relationship) -> String?)?
 
-    /// An optional per-node fill override (a hex), the node counterpart of `edgeColorOverride`.
-    /// When it returns a colour for a type, that fill wins over the theme; `nil` (or a `nil`
-    /// closure) leaves the node unchanged. Used to tint a delta diagram's added/removed/changed
-    /// type nodes.
+    /// The node counterpart of `edgeColorOverride`, for tinting a delta diagram's type nodes.
     public var nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)?
 
     public init(
@@ -126,7 +116,6 @@ public struct ClassDiagramOptions: Sendable {
         case none
         case byFile
         case byNamespace
-        /// Groups types by the directory of their source file.
         case byDirectory
     }
 }
@@ -168,9 +157,8 @@ public struct DiagramTheme: Sendable {
         edgeColor: "#999999"
     )
 
-    /// A Mermaid init directive applying this palette through Mermaid's customizable `base`
-    /// theme. Prepended as the first line of the diagram; a host that doesn't override it picks
-    /// up these colours, while consumers that theme Mermaid themselves can drop the line.
+    /// A Mermaid init directive applying this palette via Mermaid's `base` theme. Prepended as
+    /// the diagram's first line; consumers that theme Mermaid themselves can drop it.
     public func mermaidInit() -> String {
         "%%{init: {'theme':'base','themeVariables':{"
             + "'primaryColor':'\(nodeFillColor)',"

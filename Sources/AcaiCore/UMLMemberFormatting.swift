@@ -1,9 +1,5 @@
-// UML text formatting for diagram members, as methods on the values being formatted.
-//
-// Lives in AcaiCore (rather than a rendering target) so every consumer — the DOT and Mermaid
-// renderers in AcaiDiagram and the SwiftUI canvas in AcaiRender — shares one definition of how a
-// type reference and a member line are spelled, instead of each re-implementing the recursive
-// `Name<Args>?[]` rule and drifting apart.
+// UML text formatting for diagram members. Lives in AcaiCore so every renderer (DOT, Mermaid,
+// the SwiftUI canvas) shares one definition of how a type reference and member line are spelled.
 
 extension Member {
     /// The UML access symbol for this member.

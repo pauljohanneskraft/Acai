@@ -1,24 +1,23 @@
 /// One declared member of a type: a property, method, initializer, deinitializer, or subscript
 /// (see `kind`). Carries the signature the diagram layer renders (name/type/parameters/modifiers)
 /// plus optional body-derived analysis (`callSites`, `assignments`, `referencedTypeNames`) used by
-/// sequence/call-graph/state diagrams and the coupling metrics. Parsers populate as much as their
-/// language and analysis depth allow; downstream treats absent body data as "not analysed", never as
-/// "none present".
+/// sequence/call-graph/state diagrams and the coupling metrics. Downstream treats absent body data
+/// as "not analysed", never as "none present".
 public struct Member: Codable, Equatable, Hashable, Sendable {
     /// The member's source name (without any type qualifier).
     public var name: String
     /// What kind of member this is — selects the diagram compartment (see `isProperty`/`isMethod`).
     public var kind: MemberKind
-    /// The member's visibility. Always set: each language parser resolves the language's default
-    /// when the source has no explicit modifier, so the engine never has to guess downstream.
+    /// The member's visibility. Always set: each parser resolves the language default when the
+    /// source has no explicit modifier.
     public var accessLevel: AccessLevel
-    /// The access level of the setter, when narrower than the getter
-    /// (e.g. `private(set)`). `nil` when the setter matches `accessLevel`.
+    /// The setter's access level, when narrower than the getter (e.g. `private(set)`). `nil` when
+    /// the setter matches `accessLevel`.
     public var setAccessLevel: AccessLevel?
     /// Declaration modifiers (`static`, `final`, `override`, …) in source order.
     public var modifiers: [Modifier]
     /// The member's type: a property's value type, or a method/initializer's return type. `nil` when
-    /// the source declares none — note structural edges are only inferred when this is non-nil.
+    /// the source declares none; structural edges are only inferred when this is non-nil.
     public var type: TypeReference?
     /// The formal parameters, for methods/initializers/subscripts; empty for properties.
     public var parameters: [Parameter]
@@ -28,44 +27,29 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     public var isComputed: Bool
     /// Raw annotation/attribute markers on the declaration (e.g. `@Published`, `@Override`).
     public var annotations: [String]
-    /// Where the member is declared. Drives provenance-aware module attribution for edges this
-    /// member produces (so a cross-module extension's members are attributed to the extension's file).
+    /// Where the member is declared. Drives provenance-aware module attribution (a cross-module
+    /// extension's members attribute to the extension's file).
     public var location: SourceLocation?
-    /// Statically-observable calls made inside this member's body.
-    ///
-    /// Populated by parsers when the call target can be determined from source.
-    /// Empty for members whose bodies are not analysed (e.g. protocol requirements,
-    /// abstract declarations) or when the parser does not yet emit call-site data.
+    /// Statically-observable calls made inside this member's body. Empty for members whose bodies
+    /// aren't analysed (protocol requirements, abstract declarations) or the parser doesn't emit yet.
     public var callSites: [CallSite]
-    /// Statically-observable writes inside this member's body, in source order
-    /// (the array position is the order of appearance; there is no index field).
-    ///
-    /// Populated by parsers for assignments whose target is a plain identifier or
-    /// an explicit `self`/`this` member access. Empty for members whose bodies are
-    /// not analysed or when the parser does not yet emit assignment data.
+    /// Statically-observable writes inside this member's body, in source order. Populated for
+    /// assignments whose target is a plain identifier or explicit `self`/`this` member access.
     public var assignments: [VariableAssignment]
-    /// Statically-observable reads of stored properties inside this member's body.
-    ///
-    /// Populated by parsers for reads whose target is a bare identifier or an explicit
-    /// `self`/`this` member access matching a known stored property (`receiver == nil`), plus
-    /// `Type.field` static reads (`receiver` = the type name). Best-effort and language-dependent;
-    /// consumed by the cohesion/feature-envy metrics (``LcomAnalysis``, ``FeatureEnvy``). Empty for
-    /// members whose bodies are not analysed.
+    /// Statically-observable reads of stored properties inside this member's body: a bare identifier
+    /// or explicit `self`/`this` access to a known stored property (`receiver == nil`), plus
+    /// `Type.field` static reads. Best-effort; feeds ``LcomAnalysis``/``FeatureEnvy``.
     public var fieldReads: [FieldAccess] = []
-    /// For stored properties: the declaration initializer's classified value,
-    /// when an initializer is present and the parser captures it.
+    /// For stored properties: the declaration initializer's classified value, when captured.
     public var initialValue: VariableAssignment.Value?
     /// Bare type names referenced inside this member's body or initializer — constructions
-    /// (`Foo()`), static/enum access (`Foo.bar`), casts/metatypes. Best-effort and language-dependent;
-    /// consumed by the coupling metrics (``CodeArtifact/computeMetrics()``) to count construction/body
-    /// dependencies that aren't visible in signatures. Not added to the relationship graph, so diagrams
-    /// are unaffected.
+    /// (`Foo()`), static/enum access (`Foo.bar`), casts/metatypes. Feeds the coupling metrics
+    /// (``CodeArtifact/computeMetrics()``) for construction/body dependencies invisible in signatures.
+    /// Not added to the relationship graph, so diagrams are unaffected.
     public var referencedTypeNames: [String] = []
-    /// This method's cyclomatic complexity — `1 +` the number of decision points (branches, loops,
-    /// `case`s, `catch`es, short-circuit `&&`/`||`, ternaries) in its body. Set by parsers for methods
-    /// whose bodies are analysed; `nil` for members without a body or a parser that doesn't compute it
-    /// (so an aggregate metric can tell "no branches" from "not measured"). Surfaces the single gnarly
-    /// method that an aggregate method-count (WMC) hides.
+    /// This method's cyclomatic complexity: `1 +` the number of decision points (branches, loops,
+    /// `case`s, `catch`es, short-circuit `&&`/`||`, ternaries). `nil` when not computed, so an
+    /// aggregate metric can tell "no branches" from "not measured".
     public var cyclomaticComplexity: Int?
 
     public init(

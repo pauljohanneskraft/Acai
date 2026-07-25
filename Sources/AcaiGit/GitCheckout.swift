@@ -2,8 +2,7 @@ import Foundation
 import SwiftGitX
 
 /// Operates on an already-cloned repository directory: fetch, list refs, switch to a ref, read
-/// HEAD — the cross-platform replacement for `GitCommand`/`GitRefs` (which shelled out to
-/// `/usr/bin/git` and were `#if os(macOS)`-only).
+/// HEAD. Cross-platform replacement for shelling out to `/usr/bin/git`.
 public struct GitCheckout {
     public let directory: URL
     private let repository: Repository
@@ -39,7 +38,7 @@ public struct GitCheckout {
         self.repository = repository
     }
 
-    /// Fetches the `origin` remote's objects and refs — incremental, not a full re-download.
+    /// Incremental fetch of the `origin` remote — not a full re-download.
     public func fetch() async throws {
         do {
             try await repository.fetch()
@@ -48,8 +47,7 @@ public struct GitCheckout {
         }
     }
 
-    /// A branch or tag name paired with which one it is — lets a UI picker show a kind indicator
-    /// next to each ref instead of one undifferentiated flat list.
+    /// A branch or tag name paired with its kind.
     public struct Ref: Identifiable, Hashable, Sendable {
         public enum Kind: String, Hashable, Sendable {
             case branch
@@ -61,8 +59,8 @@ public struct GitCheckout {
         public var id: String { "\(kind.rawValue)-\(name)" }
     }
 
-    /// Local branch refs merged with remote branch refs (their `origin/`-style prefix stripped),
-    /// then tag refs — each alphabetical within its kind, branches before tags.
+    /// Local and remote branch refs merged (remote's `origin/`-style prefix stripped), then tags —
+    /// each alphabetical within its kind.
     public func refs() throws -> [Ref] {
         let localBranches: [Branch]
         let remoteBranches: [Branch]
@@ -88,12 +86,11 @@ public struct GitCheckout {
             + tags.map(\.name).sorted().map { Ref(name: $0, kind: .tag) }
     }
 
-    /// Mirrors the old `GitRefs.names()` shape for callers that only need names, not kinds.
+    /// Names only, for callers that don't need kinds.
     public func refNames() throws -> [String] {
         try refs().map(\.name)
     }
 
-    /// The repository's current HEAD commit SHA.
     public var headCommitSHA: String {
         get throws {
             guard let commit = try repository.HEAD.target as? Commit else {
@@ -103,10 +100,9 @@ public struct GitCheckout {
         }
     }
 
-    /// Switches the working directory to `ref`. Prefers an actual branch or tag switch (which
-    /// attaches HEAD to that branch/tag, so a later `fetch` still knows what to track); falls back
-    /// to `GitReference`'s resolver — and a detached HEAD — for an arbitrary revision (a SHA,
-    /// `HEAD~3`, …).
+    /// Switches to `ref`. Prefers a branch/tag switch (attaches HEAD so a later `fetch` still knows
+    /// what to track); falls back to `GitReference`'s resolver with a detached HEAD for an
+    /// arbitrary revision (a SHA, `HEAD~3`, …).
     public func switchTo(ref: String) throws {
         do {
             if let branch = repository.branch["origin/\(ref)", type: .remote] ?? repository.branch[ref, type: .local] {

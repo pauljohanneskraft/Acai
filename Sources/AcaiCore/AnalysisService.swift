@@ -54,11 +54,9 @@ public struct AnalysisService: Sendable {
     /// Auto-discovers source directories via `projectDiscovery`, then parses and merges all files.
     ///
     /// `includingFile` is an optional caller-supplied predicate over each candidate file's path
-    /// relative to `rootURL`, checked *before* a file is read/parsed — the hook a caller-owned
-    /// allow/blocklist (e.g. `AcaiApp`'s per-codebase file filter) plugs into, so an excluded file
-    /// is never even parsed. Defaults to including everything, unchanged from before this existed.
-    /// Purely a predicate over a path string: this stays language- and feature-agnostic, naming no
-    /// glob/regex vocabulary itself (the "parameter injection" pattern — see `CLAUDE.md`).
+    /// (relative to `rootURL`), checked before a file is read/parsed — the hook a caller-owned
+    /// allow/blocklist (e.g. `AcaiApp`'s per-codebase file filter) plugs into. Defaults to including
+    /// everything. Kept as a plain path-string predicate so this stays language-agnostic.
     public func analyzeProject(
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
@@ -88,9 +86,8 @@ public struct AnalysisService: Sendable {
         guard let result = combinedArtifact else {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
-        // Runs on the *final* cross-spec-merged artifact — the rest of `enriched(using:)` runs
-        // per-language-group inside `parseSpec`/`enrichPerLanguage`, before specs are merged, so it
-        // can't see calls whose receiver's declaring type lives in a different spec/source directory.
+        // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
+        // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         return result.resolvingCallSiteReceivers()
     }
 
@@ -115,9 +112,7 @@ public struct AnalysisService: Sendable {
     }
 
     /// Collects the spec's source files for `codeParser`, skipping every registered language's
-    /// build-output/dependency directories (plus the universal VCS dir), then `includingFile` —
-    /// evaluated against each file's path relative to `rootURL`, matching what callers compute
-    /// their own filters against.
+    /// build-output/dependency directories (plus the universal VCS dir), then `includingFile`.
     private func collectFiles(
         for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
     ) -> [URL] {
@@ -134,10 +129,9 @@ public struct AnalysisService: Sendable {
             .filter { includingFile($0.relativePath(from: rootURL)) }
     }
 
-    /// Parses every file and groups the results by each file's *own* `metadata.sourceLanguage` rather
-    /// than the spec's nominal language. A parser may legitimately classify a file as a different
-    /// language than the one whose extensions discovered it — e.g. the C parser owns `.h`, but a
-    /// header containing C++ constructs is parsed as, and reports, C++. The returned `order` preserves
+    /// Parses every file and groups results by each file's *own* `metadata.sourceLanguage` rather than
+    /// the spec's nominal language — a parser may classify a file differently than the extension that
+    /// discovered it (e.g. the C parser owns `.h` but reports C++ for a C++ header). `order` preserves
     /// first-seen order so the merged artifact's top-level language is stable.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
@@ -163,12 +157,9 @@ public struct AnalysisService: Sendable {
         return (byLanguage, order)
     }
 
-    /// Runs the generalizable enrichment pipeline (extension resolution, name→id resolution,
-    /// inheritance/conformance reclassification, inferred structural edges, dedup) once per detected
-    /// language, each with *that* language's configuration (resolved from the registry, keyed on the
-    /// artifact's own `metadata.sourceLanguage` — never hard-coded here; `fallback` covers a language
-    /// the registry doesn't know). The spec's nominal language is emitted first so the merged
-    /// artifact's top-level `sourceLanguage` matches the spec when that language is present.
+    /// Runs the enrichment pipeline once per detected language, each with that language's configuration
+    /// (resolved from the registry; `fallback` covers a language the registry doesn't know). The spec's
+    /// nominal language is emitted first so the merged artifact's top-level `sourceLanguage` matches it.
     private func enrichPerLanguage(
         _ parsed: (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]),
         spec: SourceSpec,
@@ -185,9 +176,8 @@ public struct AnalysisService: Sendable {
         for language in order {
             guard let group = parsed.byLanguage[language] else { continue }
             let configuration = registry.configuration(for: language) ?? fallback
-            // Stamp each type with its own language *before* enrichment so the provenance survives into
-            // the merged artifact and a later `LanguageConfigurationResolver` can classify per type. Each
-            // group is single-language, so the single-config `enriched` convenience is exact here.
+            // Stamp each type with its language before enrichment so provenance survives into the
+            // merged artifact for later per-type classification.
             let enriched = group.stampingSourceLanguage(language).enriched(configuration: configuration)
             result = result.map { $0.merging(with: enriched) } ?? enriched
         }
@@ -202,17 +192,14 @@ public struct AnalysisService: Sendable {
 
 extension URL {
     /// Returns a path relative to `base`, or the last path component if unrelated.
-    /// Comparison is on a path-component boundary so a sibling directory sharing a name
-    /// prefix (e.g. `/a/foobar` against base `/a/foo`) is treated as unrelated rather than
-    /// yielding a corrupted `bar/...` relative path.
+    /// Comparison is on a path-component boundary so a sibling directory sharing a name prefix
+    /// (e.g. `/a/foobar` vs. base `/a/foo`) is treated as unrelated rather than yielding a corrupted
+    /// `bar/...` relative path.
     ///
-    /// Both sides are symlink-resolved before comparing: `FileManager`'s directory enumerator
-    /// (used to collect the files this is called on) canonicalizes the paths it walks, while `base`
-    /// is typically whatever the caller passed to `analyzeProject(at:)` — often not canonicalized
-    /// (e.g. a bare `/var/...` path on a platform where that's a symlink to `/private/var/...`).
-    /// Comparing the raw strings in that case fails the prefix check for every file, silently
-    /// collapsing every path down to a bare filename (and, downstream, every type into one fake
-    /// module — see `ModuleResolver`'s `fallbackGroup`).
+    /// Both sides are symlink-resolved before comparing: the directory enumerator canonicalizes paths
+    /// it walks, while `base` (as passed to `analyzeProject(at:)`) often isn't (e.g. `/var/...` on a
+    /// platform where it's a symlink to `/private/var/...`). Comparing raw strings there would fail
+    /// the prefix check for every file, collapsing every path to a bare filename.
     func relativePath(from base: URL) -> String {
         let resolvedSelf = resolvingSymlinksInPath().path
         let resolvedBasePath = base.resolvingSymlinksInPath().path

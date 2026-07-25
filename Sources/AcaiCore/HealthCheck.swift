@@ -1,10 +1,6 @@
 /// A trust/health report over an artifact's parse diagnostics: how much of the codebase parsed
-/// cleanly, and where it didn't. A low score means the parser stumbled (unresolved references, ERROR
-/// nodes, missing tokens), so the *rest* of any audit built on this artifact is correspondingly
-/// untrustworthy — surface it before interpreting cycles/metrics/dead-code.
-///
-/// A value you instantiate over an artifact (`HealthCheck(artifact:).report`). Agnostic: it reads
-/// `metadata.parseDiagnostics` and names no language.
+/// cleanly, and where it didn't. A low score means the parser stumbled, so any audit built on this
+/// artifact is correspondingly untrustworthy — surface it before interpreting cycles/metrics/dead-code.
 public struct HealthCheck: Sendable {
     /// The rendered health verdict.
     public struct Report: Codable, Equatable, Sendable {

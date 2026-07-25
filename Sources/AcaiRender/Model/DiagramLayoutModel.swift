@@ -46,8 +46,8 @@ public struct DiagramLayoutModel: Sendable {
             resolved = resolved.filteringGeneratedTypes(using: languages)
         }
 
-        // Single-class focus: prune to the subgraph around one type before any
-        // visibility filtering, so access/relationship toggles apply to the focused set.
+        // Prune to the focused subgraph before visibility filtering, so access/relationship
+        // toggles apply to the focused set.
         if let focus = configuration.focus {
             let subset = FocusedSubsetBuilder(
                 types: resolved.types, relationships: resolved.relationships, configuration: focus
@@ -59,11 +59,9 @@ public struct DiagramLayoutModel: Sendable {
         let visibleTypes = resolved.types.filter {
             GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
         }
-        // Collapse nodes that share an id: distinct types can carry the same id when a language
-        // doesn't qualify by module (e.g. two top-level Python classes of the same name in
-        // different files). A diagram node set keyed by id must be unique — otherwise downstream
-        // `Dictionary(uniqueKeysWithValues:)` layout maps trap. First declaration wins, matching
-        // the view layer, which already renders `nodes.removingDuplicates { $0.id }`.
+        // Distinct types can share an id when a language doesn't qualify by module (e.g. two
+        // top-level Python classes of the same name in different files); node ids must be unique
+        // or downstream `Dictionary(uniqueKeysWithValues:)` layout maps trap. First wins.
         self.nodes = visibleTypes.map { type in
             let config = languages.configuration(for: type)
             return GeneratedDiagramNode(
@@ -125,8 +123,8 @@ public struct DiagramLayoutModel: Sendable {
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.sourceID, targetID: $0.targetID, kind: $0.kind)
         }
-        // Any grouping mode partitions the graph per group so each group box is a
-        // contiguous, non-overlapping block; ungrouped uses the component-based layout.
+        // Grouping partitions the graph per group so each group box is contiguous and
+        // non-overlapping; ungrouped uses the component-based layout.
         let result = configuration.grouping == .none
             ? engine.layout(nodes: inputs, edges: edgeInputs)
             : engine.layoutByGroup(nodes: inputs, edges: edgeInputs)

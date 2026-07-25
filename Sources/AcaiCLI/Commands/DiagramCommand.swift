@@ -23,7 +23,6 @@ extension AcaiCommand {
         @Option(name: .long, help: "Color theme: default, dark.")
         var theme: ThemeOption?
 
-        /// Class-diagram display flags (direction, grouping, member visibility, inference toggles).
         @OptionGroup var classFlags: ClassDiagramFlags
 
         @Option(name: .long, help: ArgumentHelp(
@@ -150,7 +149,6 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "diagram")
         }
 
-        /// Builds the class-diagram options from the flags/config/theme/focus inputs.
         private func classDiagramOptions(for artifact: CodeArtifact) throws -> ClassDiagramOptions {
             var options = ClassDiagramOptions(languages: artifact.standardLanguageResolver)
 
@@ -170,8 +168,8 @@ extension AcaiCommand {
                 includeInterconnections: !noFocusInterconnections
             ).configuration {
                 options.focus = focusConfig
-                // A focused view is a local neighbourhood; grouping splits it into mismatched clusters
-                // that waste space, so lay it out as a single graph with the root prominent.
+                // A focused view is a local neighbourhood; grouping would split it into mismatched
+                // clusters, so lay it out as a single graph.
                 options.groupBy = .none
             }
             return options

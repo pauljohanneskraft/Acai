@@ -1,9 +1,8 @@
 import MCP
 
-// The Açaí MCP server: a third entry point over `AcaiLibrary` (like the CLI and the app), exposing the
-// read-only analysis engine to an MCP client over JSON-RPC/stdio. Everything runs in-process — there
-// is no `acai` binary to find on `PATH` and no subprocess. The tool set is intentionally small so an
-// always-on server adds little to each session's context.
+// The Açaí MCP server: a third entry point over `AcaiLibrary` (like the CLI and the app), exposing
+// the read-only analysis engine to an MCP client over JSON-RPC/stdio, in-process (no `acai` binary,
+// no subprocess).
 let registry = ToolRegistry.standard
 
 let server = Server(

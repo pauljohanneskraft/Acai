@@ -1,7 +1,6 @@
-// AcaiLibrary is the batteries-included composition root. It re-exports the agnostic engine
-// (`AcaiCore`) and the diagram generator (`AcaiDiagram`), plus every built-in language module so
-// their `SourceLanguage` constants (`.swift`, `.dart`, …) and parsers are visible to consumers
-// (`AcaiCLI`, `AcaiApp`) through a single `import AcaiLibrary`.
+// Batteries-included composition root: re-exports the agnostic engine, diagram generator, and
+// every built-in language module so their `SourceLanguage` constants and parsers are visible
+// through a single `import AcaiLibrary`.
 @_exported import AcaiCore
 @_exported import AcaiDiagram
 @_exported import AcaiDiff

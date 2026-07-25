@@ -30,11 +30,9 @@ extension DeclarationVisitor {
         }
     }
 
-    /// Builds a `methodName → returnTypeName` map from a type's *direct* member list in one pre-pass
-    /// over the raw syntax (not the progressively-accumulated `Member`s), so a forward-declared
-    /// method's return type is seen regardless of source order — same rationale as `knownTypeNames`.
-    /// Keeps only names with a single, unambiguous return type across all overloads (an overloaded
-    /// name with differing return types is dropped rather than guessed).
+    /// Builds a `methodName → returnTypeName` map from a type's direct member list in one pre-pass
+    /// over the raw syntax, so a forward-declared method's return type is seen regardless of source
+    /// order. Keeps only names with a single, unambiguous return type across overloads.
     func returnTypeMap(from memberBlock: MemberBlockSyntax) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for item in memberBlock.members {
@@ -47,12 +45,10 @@ extension DeclarationVisitor {
         return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
-    /// Method names with more than one *distinct* return type among this type's own overloads, from
-    /// the same raw pre-pass as `returnTypeMap` — `returnTypeMap` silently drops these (an ambiguous
-    /// overload has no single inferrable return type), which is indistinguishable from "not declared
-    /// in this file at all" unless tracked separately. Consulted so a same-type call whose return type
-    /// is genuinely ambiguous (not just cross-file) stays dropped rather than deferred to the
-    /// post-merge pass, which resolves per-*type*, not per-overload, and would otherwise guess.
+    /// Method names with more than one distinct return type among this type's own overloads, from the
+    /// same raw pre-pass as `returnTypeMap` — which silently drops these, indistinguishable from "not
+    /// declared here" unless tracked separately. Keeps a genuinely ambiguous overload dropped rather
+    /// than deferred to the post-merge pass, which resolves per-type and would otherwise guess.
     func ambiguousReturnTypeMethodNames(from memberBlock: MemberBlockSyntax) -> Set<String> {
         var typesByName: [String: Set<String>] = [:]
         for item in memberBlock.members {
@@ -72,14 +68,12 @@ extension DeclarationVisitor {
         Set(memberBlock.members.compactMap { $0.decl.as(FunctionDeclSyntax.self)?.name.text })
     }
 
-    /// Builds a `varName → typeName` map from the stored properties already
-    /// extracted for the current type.  Called just before descending into a
-    /// function body so we know which receiver names can be resolved.
+    /// Builds a `varName → typeName` map from the stored properties already extracted for the current
+    /// type, called just before descending into a function body.
     ///
     /// When the current type is a protocol extension, also seeds the extended protocol's own
-    /// requirement properties (`var x: T { get }`) — the extension's own member list never carries
-    /// them (they're declared on the protocol, not the extension), so a default implementation
-    /// calling through one (`history.undo()`) would otherwise be unresolvable.
+    /// requirement properties — the extension's own member list never carries them, so a default
+    /// implementation calling through one (`history.undo()`) would otherwise be unresolvable.
     func buildPropertyMap() -> [String: String] {
         guard let currentType = typeStack.last else { return [:] }
         var map: [String: String] = [:]
@@ -95,9 +89,8 @@ extension DeclarationVisitor {
         return map
     }
 
-    /// Stored-property array-element types for the current type (`varName → elementTypeName` for
-    /// every `[X]`-typed property) — the array-element counterpart to `buildPropertyMap()`, feeding
-    /// `CallSiteCollector.arrayElementReceiverType`.
+    /// Stored-property array-element types for the current type — the array-element counterpart to
+    /// `buildPropertyMap()`, feeding `CallSiteCollector.arrayElementReceiverType`.
     func buildArrayElementPropertyMap() -> [String: String] {
         guard let currentType = typeStack.last else { return [:] }
         var map: [String: String] = [:]
@@ -110,9 +103,7 @@ extension DeclarationVisitor {
     }
 
     /// Resets `callSiteState` to a fresh instance seeded with the property/parameter maps for a new
-    /// top-of-body function/initializer about to be walked — shared by `visit(_ node:
-    /// FunctionDeclSyntax)` and `visit(_ node: InitializerDeclSyntax)`, which otherwise resolve the
-    /// same maps.
+    /// top-of-body function/initializer, shared by the function-decl and initializer-decl visitors.
     func resetCallSiteState(parameterClause: FunctionParameterClauseSyntax) {
         callSiteState = CallSiteAccumulator(
             propertyMap: buildPropertyMap(),
@@ -123,8 +114,7 @@ extension DeclarationVisitor {
     }
 
     /// Builds a `paramName → typeName` map from a function/initializer's parameter list, so a
-    /// `param.method()` call inside the body resolves. Only parameters with a provable simple type
-    /// name are included (mirrors `buildPropertyMap`'s "typed only" bar).
+    /// `param.method()` call inside the body resolves. Only provably-typed parameters are included.
     func parameterMap(from parameterClause: FunctionParameterClauseSyntax) -> [String: String] {
         var map: [String: String] = [:]
         for parameter in signatures.extractParameters(from: parameterClause) {
@@ -144,10 +134,10 @@ extension DeclarationVisitor {
         )
     }
 
-    /// Attaches every binding's *initializer* type references (e.g. `= Foo()`) to `members` — the
+    /// Attaches every binding's initializer type references (e.g. `= Foo()`) to `members` — the
     /// signature misses these, so this surfaces construction dependencies for the coupling metrics.
-    /// Deliberately skips accessor bodies (computed getters): walking a deeply nested `var body: some
-    /// View { … }` would recurse far enough to overflow the stack.
+    /// Skips accessor bodies (computed getters): a deeply nested `var body: some View { … }` could
+    /// recurse far enough to overflow the stack.
     func attachingInitializerReferencedTypes(to members: [Member], from node: VariableDeclSyntax) -> [Member] {
         var referencedSet = Set<String>()
         for binding in node.bindings {
@@ -164,10 +154,9 @@ extension DeclarationVisitor {
         }
     }
 
-    /// Folds a top-level `let`/`var` binding's deferred origin (`Type.staticMember`, e.g. `let
-    /// registry = ToolRegistry.standard`) into `topLevelGlobalReceiverOriginMap`, so a later
-    /// `registry.method()` call in top-level code resolves — `extractVariable`'s own `Member.type`
-    /// (fed into `topLevelGlobalPropertyMap`) stays concrete-only.
+    /// Folds a top-level `let`/`var` binding's deferred origin (e.g. `let registry =
+    /// ToolRegistry.standard`) into `topLevelGlobalReceiverOriginMap`, so a later `registry.method()`
+    /// call in top-level code resolves.
     func recordingTopLevelGlobalReceiverOrigins(from bindings: PatternBindingListSyntax) {
         for binding in bindings {
             guard let local = callSites.localBinding(from: binding), case .deferred(let receiver) = local.origin
@@ -176,16 +165,15 @@ extension DeclarationVisitor {
         }
     }
 
-    /// Every parameter's internal name, typed or not — unlike `parameterMap`, which only keeps the
-    /// typed ones. Seeds `callSiteState.knownLocalNames` so an untyped parameter still counts as
-    /// "known," keeping it from being mistaken for an unresolved own-property receiver.
+    /// Every parameter's internal name, typed or not — unlike `parameterMap`. Seeds
+    /// `callSiteState.knownLocalNames` so an untyped parameter isn't mistaken for an unresolved
+    /// own-property receiver.
     func knownParameterNames(from parameterClause: FunctionParameterClauseSyntax) -> Set<String> {
         Set(signatures.extractParameters(from: parameterClause).map(\.internalName))
     }
 
     /// Merges a nested local function's own parameters into `callSiteState.parameterMap`/
-    /// `callSiteState.knownLocalNames` for the remainder of the enclosing function's body — so a call
-    /// through one of them (`param.method()`) inside the nested function still resolves.
+    /// `callSiteState.knownLocalNames`, so a call through one of them resolves inside the nested function.
     func mergeNestedFunctionParameters(from parameterClause: FunctionParameterClauseSyntax) {
         for parameter in signatures.extractParameters(from: parameterClause) {
             callSiteState.knownLocalNames.insert(parameter.internalName)
@@ -195,10 +183,9 @@ extension DeclarationVisitor {
         }
     }
 
-    /// Records every binding's name into `callSiteState.knownLocalNames` immediately (unlike the
-    /// deferred type resolution in `pendingLocalBindingsStack`, recording the *name* has no
-    /// self-shadowing hazard), and returns the bindings whose origin could also be resolved (concrete
-    /// or deferred), for the caller to defer.
+    /// Records every binding's name into `callSiteState.knownLocalNames` immediately — recording just
+    /// the name has no self-shadowing hazard, unlike the deferred type resolution in
+    /// `pendingLocalBindingsStack` — and returns the bindings whose origin could also be resolved.
     func recordingKnownLocalNames(
         from bindings: PatternBindingListSyntax
     ) -> [(name: String, origin: LocalBindingOrigin)] {
@@ -217,10 +204,9 @@ extension DeclarationVisitor {
         return newLocals
     }
 
-    /// The `guard let x = …` / `if let x = …` analogue of `recordingKnownLocalNames`: records the
-    /// name into `callSiteState.knownLocalNames` immediately, and returns the resolved origin (if
-    /// provable) for the caller to defer into `callSiteState.localMap`/`localReceiverOriginMap` until
-    /// after the initializer has been visited.
+    /// The `guard let x = …` / `if let x = …` analogue of `recordingKnownLocalNames`: records the name
+    /// immediately and returns the resolved origin (if provable) for the caller to defer until after
+    /// the initializer has been visited.
     func resolvingConditionBinding(
         from node: OptionalBindingConditionSyntax
     ) -> (name: String, origin: LocalBindingOrigin)? {
@@ -233,9 +219,8 @@ extension DeclarationVisitor {
     }
 
     /// Folds a resolved local-binding origin into `callSiteState`: a concrete type name into
-    /// `localMap` (as before), or a deferred `CallReceiver` into `localReceiverOriginMap` — the
-    /// binding's later use as a receiver (`CallSiteCollector.deferredCallSite`) consults whichever one
-    /// has an entry.
+    /// `localMap`, or a deferred `CallReceiver` into `localReceiverOriginMap` — the binding's later use
+    /// as a receiver consults whichever one has an entry.
     func recordLocalBindingOrigin(_ local: (name: String, origin: LocalBindingOrigin)) {
         switch local.origin {
         case .concrete(let type):
@@ -265,11 +250,10 @@ extension DeclarationVisitor {
         return sites
     }
 
-    /// Call sites made inside a *stored* property's initializer expression (`static let light =
+    /// Call sites made inside a stored property's initializer expression (`static let light =
     /// make(isDark: false)`) — the initializer-expression analogue of `collectAccessorCallSites`,
-    /// which only ever walks computed accessor bodies. Without this, a call made only from a stored
-    /// property's initializer is invisible to the call graph (confirmed false-positive: `DiagramPalette
-    /// .make`, reached solely via `static let light = make(isDark: false)`).
+    /// which only walks computed accessor bodies. Without this, a call made only from a stored
+    /// property's initializer is invisible to the call graph.
     func collectInitializerCallSites(from node: VariableDeclSyntax) -> [CallSite] {
         guard !typeStack.isEmpty else { return [] }
         let propertyMap = buildPropertyMap()
@@ -287,14 +271,11 @@ extension DeclarationVisitor {
         return sites
     }
 
-    /// Binds an implicit-`$0` iteration closure's parameter to the iterated array property's
-    /// *element* type (`addedRelationships.map { $0.reportPhrase() }`) and records the resulting
-    /// call sites into `callSiteState.pendingCallSites`. A no-op when `node` isn't such a closure
-    /// (`CallSiteCollector.iterationClosure(in:)`) or its receiver isn't a resolvable array property
-    /// (`arrayElementReceiverType`). Called from `visit(_ node: FunctionCallExprSyntax)`, which still
-    /// lets the default child traversal descend into the closure afterwards — that redundant visit
-    /// re-encounters `$0.method()` and simply fails to resolve `$0` (no binding in scope there), so
-    /// nothing is double-counted.
+    /// Binds an implicit-`$0` iteration closure's parameter to the iterated array property's element
+    /// type (`addedRelationships.map { $0.reportPhrase() }`) and records the resulting call sites. A
+    /// no-op when `node` isn't such a closure or its receiver isn't a resolvable array property. The
+    /// default child traversal still descends into the closure afterwards, redundantly but
+    /// harmlessly — `$0` has no binding there, so nothing is double-counted.
     func recordingIterationClosureCallSites(in node: FunctionCallExprSyntax) {
         guard let (receiverBase, closure) = callSites.iterationClosure(in: node),
               let elementReceiver = callSites.arrayElementReceiverType(

@@ -49,7 +49,6 @@ struct DOTNodeRenderer {
         let fontSize = options.fontSize
         var html = tableOpenTag(for: type)
 
-        // Header: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
         if let stereotype = stereotypeString(for: type, config: config) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>"
@@ -70,7 +69,6 @@ struct DOTNodeRenderer {
 
         let (properties, methods) = type.partitionedMembers(visibleAtLeast: options.minimumAccessLevel)
 
-        // Properties compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"
         if properties.isEmpty {
             html += "\(fontOpen(font)) \(fontClose(font))"
@@ -80,7 +78,6 @@ struct DOTNodeRenderer {
         }
         html += "</TD></TR>"
 
-        // Methods compartment
         html += "<HR/><TR><TD ALIGN=\"LEFT\">"
         if methods.isEmpty {
             html += "\(fontOpen(font)) \(fontClose(font))"
@@ -90,7 +87,6 @@ struct DOTNodeRenderer {
         }
         html += "</TD></TR>"
 
-        // Enum cases
         if !type.enumCases.isEmpty {
             html += "<HR/><TR><TD ALIGN=\"LEFT\">"
             html += type.enumCases.map { renderEnumCase($0) }.joined(separator: "<BR ALIGN=\"LEFT\"/>")
@@ -112,7 +108,6 @@ struct DOTNodeRenderer {
         var html = "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" "
         html += "BGCOLOR=\"\(fill)\" COLOR=\"\(border)\">"
 
-        // Header only: stereotype + name
         html += "<TR><TD ALIGN=\"CENTER\">"
         if let stereotype = stereotypeString(for: type, config: config) {
             html += "<FONT POINT-SIZE=\"\(fontSize - 2)\" COLOR=\"\(font)\">"

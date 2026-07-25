@@ -1,8 +1,7 @@
 /// LCOM4-style lack-of-cohesion for a type: the number of connected components among its methods,
 /// where two methods are connected when they touch a common stored property or one calls the other.
 /// A result of `1` means the type is cohesive (one responsibility); higher counts mark a type doing
-/// several unrelated jobs and a candidate for splitting. A value you instantiate and ask for
-/// ``componentCount``.
+/// several unrelated jobs.
 ///
 /// Two methods are linked when they share access to a stored property by **read or write**
 /// (``Member/fieldReads`` and ``Member/assignments``) or when one self-dispatches a call to the other.
@@ -74,7 +73,7 @@ public struct LcomAnalysis {
     }
 
     /// Whether a call is dispatched on the type itself: a `self`-dispatch or an explicit receiver of
-    /// the type's own name. Free-function and unresolved calls are *not* self (issue #111).
+    /// the type's own name. Free-function and unresolved calls are not self.
     private func callsSelf(_ call: CallSite) -> Bool {
         switch call.receiver {
         case .selfDispatch:
@@ -87,8 +86,7 @@ public struct LcomAnalysis {
     }
 }
 
-/// Union-find (disjoint-set) over integer nodes, with path compression. A small value with behaviour —
-/// the sanctioned way to carry graph logic without a static-function namespace.
+/// Union-find (disjoint-set) over integer nodes, with path compression.
 private struct DisjointSet {
     private var parent: [Int]
 

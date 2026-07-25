@@ -95,7 +95,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
                         y: offset.y + event.scrollingDeltaY
                     )
                     self.setState?(scale, newOffset)
-                    return nil // Consume the event.
+                    return nil
                 }
 
                 // Mouse scroll wheel → zoom.
@@ -105,7 +105,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
                     return event
                 }
                 self.handleZoom(delta: delta, location: flipped)
-                return nil // Consume the event.
+                return nil
             }
 
             magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) { [weak self] event in
@@ -114,7 +114,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
                     return event
                 }
                 self.handleMagnify(magnification: event.magnification, location: flipped)
-                return nil // Consume the event.
+                return nil
             }
         }
 
@@ -194,7 +194,7 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
         weak var coordinator: Coordinator?
 
         override func hitTest(_ point: NSPoint) -> NSView? {
-            nil // Completely invisible to hit testing.
+            nil
         }
 
         override func viewDidMoveToWindow() {

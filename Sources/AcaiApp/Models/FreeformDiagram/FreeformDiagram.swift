@@ -15,7 +15,7 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
     var createdDate: Date = Date()
     // periphery:ignore
     var lastModified: Date = Date()
-    /// Named, restorable full-state snapshots the user has saved (B27). See `Checkpoint`.
+    /// Named, restorable full-state snapshots the user has saved. See `Checkpoint`.
     var checkpoints: [Checkpoint] = []
 
     /// The fixed icon for every freeform diagram. Freeform diagrams have no type, so the icon
@@ -44,8 +44,8 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
         case checkpoints
     }
 
-    /// Diagrams saved before checkpoints existed (B27) have no `checkpoints` key on disk — default
-    /// those to an empty list rather than failing to decode the whole diagram.
+    /// Diagrams saved before checkpoints existed have no `checkpoints` key on disk — default to
+    /// an empty list rather than failing to decode the whole diagram.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -65,25 +65,21 @@ extension FreeformDiagram {
     /// One placed item on a freeform canvas: an identity, a display name, the `Content` that selects
     /// how it is drawn, and a manual position (plus optional size for container kinds).
     struct Node: Identifiable, Codable, Hashable, Sendable {
-        /// String id (generated from a UUID, so still collision-free). Shared `String` node
-        /// identity lets the class/sequence/freeform views use one `CanvasInteraction` protocol.
+        /// String id (from a UUID) so class/sequence/freeform views share one `CanvasInteraction`
+        /// protocol on node identity.
         var id: String = UUID().uuidString
-        /// The node's display label.
         var name: String
         /// What the node represents and how it is rendered (type box, actor, package, …).
         var content: Content
-        /// Manual x position of the node's top-left corner, in canvas points.
+        /// Top-left corner position, in canvas points.
         var positionX: Double = 0
-        /// Manual y position of the node's top-left corner, in canvas points.
         var positionY: Double = 0
-        /// User-defined width (used by resizable container nodes: package, boundary, subsystem).
+        /// User-defined size (used by resizable container nodes: package, boundary, subsystem).
         var width: Double?
-        /// User-defined height (used by resizable container nodes: package, boundary, subsystem).
         var height: Double?
         /// Draw order within its z-layer. Higher values render on top.
         var drawOrder: Int = 0
 
-        /// Whether this node should display resize handles.
         var isResizable: Bool {
             switch content {
             case .package, .boundary, .subsystem:
@@ -100,19 +96,15 @@ extension FreeformDiagram {
     /// `kind`; carries optional `messageOrder`/`messageKind` (sequence message) or `transition`
     /// (state machine) when it represents one of those instead.
     struct Edge: Identifiable, Codable, Hashable, Sendable {
-        /// Stable edge identity (UUID-derived string).
         var id: String = UUID().uuidString
-        /// `id` of the `Node` the edge starts at.
+        /// `id` of the `Node` the edge starts/ends at.
         var sourceNodeID: String
-        /// `id` of the `Node` the edge ends at.
         var targetNodeID: String
         /// The relationship kind drawn for an ordinary edge (ignored for sequence messages).
         var kind: Relationship.Kind
-        /// Optional text label shown on the edge.
         var label: String?
-        /// Top-to-bottom order when this edge is a sequence-diagram message. `nil` for ordinary
-        /// relationship edges, which renders the edge as a relationship line instead of a
-        /// time-ordered message arrow.
+        /// Top-to-bottom order when this edge is a sequence-diagram message. `nil` renders it as
+        /// an ordinary relationship line instead of a time-ordered message arrow.
         var messageOrder: Int?
         /// The message kind (sync/async/return/…) when `messageOrder` is set.
         var messageKind: SequenceDiagram.Message.Kind?
@@ -289,9 +281,10 @@ extension FreeformDiagram.Node {
         var accessLevel: AccessLevel = .internal
         var isStatic: Bool = false
         var isAbstract: Bool = false
-        var parameters: String = "" // For methods: "(param: Type, ...)"
+        /// For methods: `"(param: Type, ...)"`.
+        var parameters: String = ""
 
-        /// A single-line display string for the member, e.g. "name: String" or "doWork(input: Int): String".
+        /// A single-line display string, e.g. `"name: String"` or `"doWork(input: Int): String"`.
         var displayString: String {
             var result = name
             if !parameters.isEmpty {

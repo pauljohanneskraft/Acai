@@ -4,9 +4,7 @@ import AcaiCore
 import AcaiLibrary
 
 /// The shared `--from` / `--source` / `--language` inputs that select the `CodeArtifact` a command
-/// operates on, plus the loading and validation logic. `@OptionGroup`-ed into each command so the
-/// flags, their mutual-exclusion rule, the stored-vs-analyze dispatch, and parse-warning surfacing
-/// live in one place.
+/// operates on, plus the loading and validation logic. `@OptionGroup`-ed into each command.
 struct ArtifactSource: ParsableArguments {
     @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
     var from: String?
@@ -22,7 +20,7 @@ struct ArtifactSource: ParsableArguments {
     var language: [LanguageOption] = []
 
     /// Validates that exactly one of `--from` / `--source` is provided. Call from the command's
-    /// `validate()` (ArgumentParser only invokes `validate()` on the root command, not on groups).
+    /// `validate()` — ArgumentParser doesn't invoke `validate()` on option groups.
     func validate() throws {
         if from == nil && source == nil {
             throw ValidationError("Either --from or --source must be specified.")
@@ -32,16 +30,14 @@ struct ArtifactSource: ParsableArguments {
         }
     }
 
-    /// Loads the selected artifact: a stored analysis (`--from`, a `.json` path or a stored name) or
-    /// a freshly analyzed source directory (`--source`). Parse warnings are surfaced to stderr in
-    /// both cases so a partial diagram is never mistaken for a complete one.
+    /// Loads the selected artifact: a stored analysis (`--from`) or a freshly analyzed source
+    /// directory (`--source`). Parse warnings are surfaced to stderr either way.
     func resolve() throws -> CodeArtifact {
         try Self.resolve(from: from, source: source, language: language)
     }
 
-    /// The shared `--from` / `--source` resolution used by `resolve()` and by commands that need to
-    /// load more than one artifact (e.g. `diff`, which loads an old and a new side). Parse warnings
-    /// are surfaced to stderr so a partial artifact is never mistaken for a complete one.
+    /// Shared `--from` / `--source` resolution, also used by commands loading more than one
+    /// artifact (e.g. `diff`'s old/new sides).
     static func resolve(from: String?, source: String?, language: [LanguageOption]) throws -> CodeArtifact {
         let artifact: CodeArtifact
         if let from {
@@ -61,10 +57,9 @@ struct ArtifactSource: ParsableArguments {
         return artifact
     }
 
-    /// Loads a stored artifact: a `.json` file path, or the name of a stored analysis. A file
-    /// produced by `analyze`/`store` is already enriched. A `DecodingError` means the stored file
-    /// predates a schema change (e.g. the now-required `accessLevel`); it is reported as "regenerate
-    /// it", the CLI equivalent of treating the codebase as not indexed, rather than a raw decode dump.
+    /// Loads a stored artifact: a `.json` file path, or the name of a stored analysis. A
+    /// `DecodingError` means the file predates a schema change, so it's reported as "regenerate it"
+    /// rather than a raw decode dump.
     static func loadStored(_ value: String) throws -> CodeArtifact {
         let directURL = URL(fileURLWithPath: value)
         let url: URL

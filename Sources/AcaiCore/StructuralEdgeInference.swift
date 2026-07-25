@@ -1,7 +1,5 @@
-/// Infers a type's structural relationship edges from its declared members — the behaviour that used
-/// to live as `static func`s on `CodeArtifact` (reaching into `TypeDeclaration`/`Member`/`TypeReference`
-/// is envy the model shouldn't carry). A value you instantiate with the language's type-name
-/// classification and an id resolver, then ask for a type's ``edges(for:)``:
+/// Infers a type's structural relationship edges from its declared members. Instantiate with the
+/// language's type-name classification and an id resolver, then ask for a type's ``edges(for:)``:
 ///
 /// - properties/subscripts → composition (scalar) or aggregation (collection),
 /// - method/initializer parameter & return types → dependency (deduped per type),

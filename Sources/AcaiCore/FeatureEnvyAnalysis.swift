@@ -1,8 +1,6 @@
 /// Feature-envy detection for a type: how many of its methods talk to *another* declared type more
 /// than to the type they belong to (Fowler's "a method more interested in another class than its
-/// own"). A high count marks logic living in the wrong place — behaviour that wants to move to the
-/// type it envies. A value you instantiate (it needs the artifact's ``TypeIdentityResolver`` to bind
-/// receiver names to declared types) and ask for ``enviousMethodCount``.
+/// own"). A high count marks logic living in the wrong place.
 struct FeatureEnvy {
     let type: TypeDeclaration
     let identity: TypeIdentityResolver
@@ -34,7 +32,7 @@ struct FeatureEnvy {
                 continue
             }
         }
-        // Reads of the method's own stored properties count toward "own" (issue #111).
+        // Reads of the method's own stored properties count toward "own".
         for read in method.fieldReads where read.receiver == nil && ownProperties.contains(read.name) {
             own += 1
         }
@@ -53,8 +51,7 @@ struct FeatureEnvy {
     }
 
     /// Classifies a call's dispatch: `self` and calls on the type's own name are `.own`; a call on
-    /// another declared type is `.foreign`; free-function and unresolved calls are `.unknown` (issue
-    /// #111 — a nil receiver is no longer assumed to be `self`).
+    /// another declared type is `.foreign`; free-function and unresolved calls are `.unknown`.
     private func classify(_ receiver: CallReceiver) -> Target {
         switch receiver {
         case .selfDispatch:

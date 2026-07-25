@@ -101,11 +101,10 @@ struct NewCodebaseSheet: View {
     private var localFolderSection: some View {
         Section {
             #if os(macOS)
-            // Not a bare `TextField("Name", text:)`: confirmed empirically that on macOS, inside a
-            // `Form`, a `TextField`'s own title renders as an extra leading label rather than an
-            // internal placeholder, leaving the field's box looking empty and misaligned against
-            // an explicit `LabeledContent` row like this one — see `NewProjectSheet`'s identical fix
-            // for the full explanation. `prompt:` is unambiguously internal placeholder text.
+            // Not a bare `TextField("Name", text:)`: inside a macOS `Form`, a `TextField`'s own title
+            // renders as an extra leading label rather than an internal placeholder, misaligning it
+            // against an explicit `LabeledContent` row like this one. `prompt:` is unambiguously
+            // internal placeholder text.
             LabeledContent("Name") {
                 TextField("", text: $name, prompt: Text("e.g. MyLibrary"))
                     .multilineTextAlignment(.trailing)

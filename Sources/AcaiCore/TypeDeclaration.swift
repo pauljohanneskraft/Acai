@@ -19,9 +19,9 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var qualifiedName: String
     /// The kind of type — selects the class-box stereotype and some edge semantics.
     public var kind: TypeKind
-    /// The declaration's visibility. Always set: each language parser resolves the language's
-    /// default when the source has no explicit modifier (Swift `internal`, Java `package-private`,
-    /// Kotlin/Dart/Python/C-family `public`, …), so the engine never has to guess downstream.
+    /// The declaration's visibility. Always set: each parser resolves the language's default
+    /// (Swift `internal`, Java `package-private`, Kotlin/Dart/Python/C-family `public`, …) when
+    /// the source has no explicit modifier.
     public var accessLevel: AccessLevel
     /// Declaration modifiers (`final`, `abstract`, `static`, …) in source order.
     public var modifiers: [Modifier]
@@ -48,11 +48,10 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var namespace: String?
     /// Where the type is declared (drives provenance-aware module attribution).
     public var location: SourceLocation?
-    /// The language this type was parsed from, stamped during enrichment so a *polyglot* artifact
-    /// (a base directory mixing e.g. Swift and Python) can resolve each type's own
-    /// `LanguageConfiguration` at consume time instead of a single artifact-wide one. `nil` for a
-    /// type produced outside the enrichment pipeline (e.g. a synthesised external placeholder or a
-    /// hand-built fixture); a `LanguageConfigurationResolver` maps that to its required default.
+    /// The language this type was parsed from, stamped during enrichment so a polyglot artifact can
+    /// resolve each type's own `LanguageConfiguration` rather than a single artifact-wide one. `nil`
+    /// for a type produced outside the enrichment pipeline (synthesised placeholder, hand-built
+    /// fixture); a `LanguageConfigurationResolver` maps that to its required default.
     public var sourceLanguage: CodeArtifact.SourceLanguage?
 
     public init(

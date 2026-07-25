@@ -82,7 +82,7 @@ extension JSExtractor {
             } else if childType == "method_definition", isTypeScript,
                       child.child(byFieldName: "name").map({ text($0) }) == "constructor",
                       let paramsNode = child.child(byFieldName: "parameters") {
-                // TypeScript constructor parameter properties (public/private/protected/readonly)
+                // TypeScript constructor parameter properties (public/private/protected/readonly).
                 for param in paramsNode.children() {
                     guard let pType = param.nodeType,
                           pType == "required_parameter" || pType == "optional_parameter"
@@ -100,11 +100,10 @@ extension JSExtractor {
         return map
     }
 
-    /// A `methodName → returnTypeName` map from the class body's *direct* `method_definition`
-    /// children (TypeScript only — JS has no return-type annotations), so a same-type method call
-    /// with an unambiguous return type — including one declared later in the type — can seed a
-    /// local's type (RC-I). Overloaded names with differing return types are dropped rather than
-    /// guessed.
+    /// A `methodName → returnTypeName` map from the class body's direct `method_definition` children
+    /// (TypeScript only — JS has no return-type annotations), so a same-type method call with an
+    /// unambiguous return type can seed a local's type. Overloaded names with differing return types
+    /// are dropped rather than guessed.
     private func buildMethodReturnTypeMapFromBody(_ bodyNode: Node) -> [String: String] {
         guard isTypeScript else { return [:] }
         var typesByName: [String: Set<String>] = [:]

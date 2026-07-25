@@ -1,8 +1,6 @@
 /// The blast radius of a type: every type that (transitively) depends on it — the reverse-reachability
 /// slice of the relationship graph. Answers "what could break if I change this?" as a count plus the
-/// list of dependents with `file:line`. A value you instantiate over an artifact
-/// (`ImpactAnalysis(artifact:rootType:).report`), wrapping `FocusedSubsetBuilder` with
-/// `direction: .dependents`.
+/// list of dependents with `file:line`. Wraps `FocusedSubsetBuilder` with `direction: .dependents`.
 public struct ImpactAnalysis: Sendable {
     /// One type that depends on the root.
     public struct Dependent: Codable, Equatable, Sendable {

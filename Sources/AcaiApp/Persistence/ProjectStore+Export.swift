@@ -55,13 +55,10 @@ extension ProjectStore {
             saveRecentlyViewed()
         }
 
-        // Codebases carry indexing state (`hasArtifact`/`lastIndexed`/parse-diagnostic counts)
-        // pointing at an artifact file that `exportAllData()` deliberately never bundled. Importing
-        // that state verbatim would leave `hasArtifact == true` with no `codebase_<id>.json` on
-        // disk — `load()`'s next `loadArtifact` call hits a missing file, which isn't a
-        // `DecodingError`, so it skips the "mark not indexed" recovery and instead surfaces a
-        // spurious error alert. Landing every imported codebase as "not indexed" (reindex re-derives
-        // it) is the only state that's actually true on the receiving device.
+        // Codebases carry indexing state pointing at an artifact file `exportAllData()`
+        // deliberately never bundled. Importing that state verbatim would leave `hasArtifact ==
+        // true` with no artifact file on disk, surfacing a spurious error alert on next load.
+        // Landing every imported codebase as "not indexed" is the only state that's actually true.
         var addedCodebaseIDs: Set<UUID> = []
         let existingProjectIDs = Set(projects.map(\.id))
         for var project in export.projects where mode == .replaceAll || !existingProjectIDs.contains(project.id) {

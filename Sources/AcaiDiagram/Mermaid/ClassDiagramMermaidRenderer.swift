@@ -39,10 +39,9 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         }
         lines.append(contentsOf: nodeStyles)
 
-        // Mermaid's `classDiagram` has no per-link colouring — `linkStyle` is a flowchart-only
-        // directive and is rejected inside a `classDiagram` block — so a delta `edgeColorOverride`
-        // cannot be honoured here and relationships render uncolored. Node tinting via the `style`
-        // directive above is supported and retained.
+        // Mermaid's `classDiagram` has no per-link colouring (`linkStyle` is flowchart-only and
+        // rejected here), so a delta `edgeColorOverride` can't be honoured; relationships render
+        // uncolored. Node tinting via `style` above is unaffected.
         for rel in enriched.relationships where options.includedRelationshipKinds.contains(rel.kind) {
             guard let line = renderRelationship(rel, idMap: idMap) else { continue }
             lines.append(line)

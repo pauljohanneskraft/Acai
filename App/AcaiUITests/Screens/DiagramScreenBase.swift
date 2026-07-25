@@ -1,12 +1,10 @@
 import CoreGraphics
 import XCTest
 
-/// Accessors for the chrome that's actually common across every diagram type's toolbar today
-/// (`UndoRedoToolbarButtons`, Fit to View, the sidebar toggle) — see `TESTING_ARCHITECTURE.md`'s
-/// snapshot tests for why this deliberately stays narrow rather than a full unified sidebar-tab base
-/// class: `USABILITY_IMPROVEMENTS.md` Part 6 documents that today's diagram types have three
-/// genuinely different sidebar architectures, so a shared Settings/Inspector/Compare accessor set
-/// would encode a unification that hasn't shipped yet.
+/// Accessors for the chrome common across every diagram type's toolbar today (`UndoRedoToolbarButtons`,
+/// Fit to View, the sidebar toggle). Stays narrow rather than a unified sidebar-tab base class: the
+/// diagram types have genuinely different sidebar architectures, so a shared Settings/Inspector/
+/// Compare accessor set would encode a unification that hasn't shipped.
 @MainActor
 class DiagramScreenBase {
     let app: XCUIApplication
@@ -31,11 +29,9 @@ class DiagramScreenBase {
     /// The navigation bar's back button, for returning to `CodebaseDetailScreen` from a diagram.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// A crowded toolbar (e.g. Class Diagram's Undo/Redo/Select/Re-layout/Fit-to-View/Save/Export)
-    /// collapses trailing items into an iOS "More" overflow item on iPhone width, removing
-    /// `fitToViewButton` from the directly-tappable bar entirely until "More" is opened first —
-    /// and, once open, the revealed row only exposes its visible label ("Fit to View"), not the
-    /// accessibility identifier (observed empirically), so the fallback matches by label.
+    /// A crowded toolbar collapses trailing items into an iOS "More" overflow item on iPhone width,
+    /// removing `fitToViewButton` from the directly-tappable bar until "More" is opened; the revealed
+    /// row only exposes its visible label ("Fit to View"), not the accessibility identifier.
     func tapFitToView() {
         if fitToViewButton.waitForExistence(timeout: 1) {
             fitToViewButton.tap()
@@ -56,10 +52,9 @@ class DiagramScreenBase {
     /// `compareClearButton` is what turns it back off. `name` matches `CompareGitPanel.RefRow.id`
     /// (e.g. `"HEAD"`, a branch/tag name, or `"custom"`).
     func compareRefRow(_ name: String) -> XCUIElement { app.buttons["delta.ref.\(name)"] }
-    /// Nav-bar toolbar button; disables comparison directly (there's no "None" row to pick instead
-    /// — see `CompareOverlayButton`'s own doc comment). Narrowed to `.buttons`, not the broad `.any`
-    /// matcher the other accessors below use — a toolbar `Button`'s identifier matched more than
-    /// one descendant node with `.any` (observed empirically), which `.buttons` disambiguates.
+    /// Nav-bar toolbar button; disables comparison directly. Narrowed to `.buttons`, not the broad
+    /// `.any` matcher the other accessors use — a toolbar `Button`'s identifier matches more than one
+    /// descendant node under `.any`.
     var compareClearButton: XCUIElement { app.buttons["delta.clearButton"] }
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
     var compareLoadedIndicator: XCUIElement { app.descendants(matching: .any)["delta.loaded"] }

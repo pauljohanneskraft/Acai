@@ -197,9 +197,8 @@ private struct CallGraphCanvasView: View {
                 }
             }
         )
-        // Positioned the same way as `PannableCanvas`'s own zoom-percentage indicator (an overlay
-        // inside the canvas, not a sibling spanning the whole view including the inspector column)
-        // — this is what keeps it from rendering on top of the inspector when it's open.
+        // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
+        // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }

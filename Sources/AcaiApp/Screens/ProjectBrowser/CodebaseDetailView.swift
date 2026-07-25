@@ -29,8 +29,8 @@ struct CodebaseDetailView: View {
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
     @State var statCardHeight: CGFloat = 0
     @State private var diagramCardHeight: CGFloat = 0
-    /// Drives the destructive "Delete Codebase…" confirmation (B53) — a second, discoverable path
-    /// to the same confirmed-safe action the sidebar's context menu already offers.
+    /// Drives the destructive "Delete Codebase…" confirmation — a second, discoverable path
+    /// to the same action the sidebar's context menu already offers.
     @State var showDeleteConfirmation = false
 
     /// Identifies the codebase a pending diagram configuration belongs to.

@@ -25,8 +25,8 @@ final class ProjectStore: ObservableObject {
     /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
 
-    /// Last-opened diagrams/codebases across every project, plus pins (B54). See its own type doc
-    /// for why nothing writes to this yet.
+    /// Last-opened diagrams/codebases across every project, plus pins. See its own type doc for
+    /// why nothing writes to this yet.
     @Published var recentlyViewed = RecentlyViewed()
 
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert). Replaces the
@@ -63,7 +63,6 @@ final class ProjectStore: ObservableObject {
         if let baseDir {
             self.baseDir = baseDir
         } else if let fixtureBaseDir = UITestFixtureResolver().resolveBaseDir() {
-            // A UI test requested deterministic, disposable state — see `UITestFixtureResolver`.
             self.baseDir = fixtureBaseDir
         } else {
             #if os(macOS)
@@ -146,17 +145,16 @@ final class ProjectStore: ObservableObject {
     }
 
     /// Versioned envelope around a persisted `CodeArtifact`. Bumping ``currentArtifactFormat`` makes
-    /// `loadArtifact` treat older stored analyses as stale so the UI offers Reindex — this is how a
-    /// change in *what* the artifact stores is migrated. v2 persists the **semantic** (un-flattened)
-    /// artifact so nesting-depth and other tree-shaped metrics are computed correctly; v1 (the
-    /// pre-envelope bare `CodeArtifact`) stored the display-flattened form and read nesting as 0.
+    /// `loadArtifact` treat older stored analyses as stale so the UI offers Reindex. v2 persists the
+    /// semantic (un-flattened) artifact so nesting-depth metrics are correct; v1 stored the
+    /// display-flattened form and read nesting as 0.
     private struct StoredArtifact: Codable {
         var formatVersion: Int
         var artifact: CodeArtifact
     }
 
-    /// Current on-disk artifact format. A file with a lower version — or a pre-envelope bare
-    /// `CodeArtifact` (which fails to decode as ``StoredArtifact``) — is dropped back to "not indexed".
+    /// Current on-disk artifact format. A lower version — or a pre-envelope bare `CodeArtifact`
+    /// (fails to decode as ``StoredArtifact``) — is dropped back to "not indexed".
     private static let currentArtifactFormat = 2
 
     func loadArtifact(for codebaseID: UUID) {
@@ -166,15 +164,13 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             let stored = try JSONDecoder().decode(StoredArtifact.self, from: data)
             guard stored.formatVersion >= Self.currentArtifactFormat else {
-                // An older format (e.g. the pre-fix display-flattened artifact) — reindex to regenerate.
                 markCodebaseNotIndexed(codebaseID)
                 return
             }
             artifacts[codebaseID] = stored.artifact
         } catch is DecodingError {
-            // Predates the versioned envelope (bare `CodeArtifact`) or a schema change (e.g. the
-            // now-required `accessLevel`). Treat the codebase as never indexed so the UI offers
-            // Reindex, rather than surfacing a decode error the user can't act on.
+            // Predates the versioned envelope, or a schema change — treat as never indexed so the
+            // UI offers Reindex rather than a decode error the user can't act on.
             markCodebaseNotIndexed(codebaseID)
         } catch {
             report("Failed to load a stored analysis: \(error.localizedDescription)")
@@ -248,12 +244,9 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    /// Updates the in-memory artifact immediately (so the UI reflects it right away), then encodes
-    /// and writes it to disk off the main actor — for a large codebase that JSON encode + atomic
-    /// write can take long enough to visibly stall the UI if done inline (this is called at the end
-    /// of every reindex/pull/branch-switch). The nested detached task only touches the plain
-    /// `Sendable` `url`/`stored` values; `self` is only touched again after hopping back to the
-    /// main actor, so no mutable app state crosses the concurrency boundary.
+    /// Updates the in-memory artifact immediately, then encodes and writes it to disk off the main
+    /// actor — for a large codebase, JSON encode + atomic write can visibly stall the UI if done
+    /// inline. The detached task only touches the plain `Sendable` `url`/`stored` values.
     func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
         artifacts[codebaseID] = artifact
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")

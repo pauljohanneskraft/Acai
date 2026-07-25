@@ -3,11 +3,10 @@ import AcaiDiagram
 
 /// A static rendering of a `SequenceDiagram` from a pre-computed `SequenceLayoutModel`:
 /// participant headers, dashed lifelines and time-ordered message arrows. Shared by the live
-/// app canvas (which overlays gestures on top) and the CLI image export — mirroring how
-/// `DiagramSnapshotView` backs the class diagram.
+/// app canvas (which overlays gestures on top) and the CLI image export.
 ///
-/// Coordinates come straight from the layout model (top-left at the origin); the view sizes
-/// itself to `layout.contentSize` plus a uniform `padding`.
+/// Coordinates come straight from the layout model; the view sizes itself to
+/// `layout.contentSize` plus a uniform `padding`.
 public struct SequenceDiagramSnapshotView: View {
     let layout: SequenceLayoutModel
     let padding: CGFloat
@@ -33,7 +32,6 @@ public struct SequenceDiagramSnapshotView: View {
         ZStack(alignment: .topLeading) {
             SequenceEnsembleView(layout: layout, messageColor: messageColor)
 
-            // Participant headers on top.
             ForEach(layout.participants) { participant in
                 SequenceParticipantHeader(
                     participant: participant,
@@ -52,10 +50,9 @@ public struct SequenceDiagramSnapshotView: View {
 
 // MARK: - Ensemble (lifelines + activations + messages)
 
-/// The non-interactive body of a sequence diagram — dashed lifelines, execution-occurrence bars
-/// and message arrows — without the participant headers. Shared by the static snapshot, the
-/// generated-diagram canvas and the freeform-diagram editor so all three look identical; callers
-/// draw their own (interactive or plain) headers on top.
+/// The non-interactive body of a sequence diagram — lifelines, activation bars and message
+/// arrows — without participant headers. Shared by the static snapshot, generated-diagram canvas
+/// and freeform editor; callers draw their own headers on top.
 public struct SequenceEnsembleView: View {
     let layout: SequenceLayoutModel
     /// Optional per-message delta tint, keyed on the message's layout id. `nil` leaves all
@@ -110,13 +107,11 @@ public struct SequenceFragmentView: View {
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
-            // Frame.
             Rectangle()
                 .strokeBorder(borderColor, lineWidth: isSelected ? 2 : 1)
                 .frame(width: fragment.rect.width, height: fragment.rect.height)
                 .position(x: fragment.rect.midX, y: fragment.rect.midY)
 
-            // Operand separators.
             ForEach(Array(fragment.separatorYs.enumerated()), id: \.offset) { _, y in
                 Path { path in
                     path.move(to: CGPoint(x: fragment.rect.minX, y: y))
@@ -125,10 +120,8 @@ public struct SequenceFragmentView: View {
                 .stroke(borderColor, style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
             }
 
-            // Operator tab (pentagon).
             tab
 
-            // Guards.
             ForEach(Array(fragment.guards.enumerated()), id: \.offset) { _, guardInfo in
                 Text(guardInfo.label)
                     .font(.system(size: 10, design: .monospaced))
@@ -234,9 +227,8 @@ public struct SequenceParticipantHeader: View {
 /// A standalone participant header (name + role stereotype), reused by the sequence snapshot and
 /// the freeform-diagram lifeline node so both look identical.
 ///
-/// Styled in the same visual language as `TypeNodeView` (fixed light fills with explicit ink
-/// text, monospaced fonts, kind-tinted border) so sequence diagrams match the rest of the app —
-/// and stay readable in dark mode, where dynamic colors would invert against the light canvas.
+/// Styled like `TypeNodeView` (fixed light fills, explicit ink text, kind-tinted border) so it
+/// stays readable in dark mode, where dynamic colors would invert against the light canvas.
 public struct ParticipantHeaderView: View {
     let name: String
     let kind: SequenceDiagram.Participant.Kind
@@ -274,7 +266,7 @@ public struct ParticipantHeaderView: View {
                 )
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
-        // Keyed by name, same rationale/edge case as `TypeNodeView.accessibilityIdentifier`.
+        // UI-test hook; a name collision within one diagram is a known edge case.
         .accessibilityIdentifier("diagram.sequenceParticipant.\(name)")
     }
 }
@@ -304,8 +296,6 @@ public struct SequenceMessageView: View {
                 straightArrow
             }
             if let label = message.label {
-                // Explicit ink (matching TypeNodeView's member rows) so the label stays
-                // readable against the canvas in both light and dark themes.
                 Text(label)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(palette.secondaryInk)
@@ -354,10 +344,8 @@ public struct SequenceMessageView: View {
     private func arrowHead(at point: CGPoint, angle: CGFloat) -> some View {
         switch message.kind {
         case .synchronous, .create, .destroy:
-            // Filled (solid) arrowhead.
             Path.emptyTriangle(at: point, angle: angle, size: 10).fill(color)
         case .asynchronous, .return:
-            // Open arrowhead.
             Path.openArrow(at: point, angle: angle, size: 9).stroke(color, lineWidth: 1.5)
         }
     }

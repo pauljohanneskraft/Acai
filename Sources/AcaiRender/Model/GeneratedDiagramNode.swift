@@ -68,8 +68,6 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
             self.enumCases = []
         }
 
-        // Extract the full directory path (all components except the file name) for
-        // hierarchical grouping, plus the compiled product for product grouping.
         if let filePath = type.location?.filePath {
             let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
             self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
@@ -80,10 +78,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         }
     }
 
-    /// Returns true if the given access level is at or above the minimum. Used both for
-    /// member visibility and for hiding whole types below the minimum access level. Uses the single
-    /// `AccessLevel.visibilityRank` ordering shared with the DOT/Mermaid renderers. A `nil` `minimum`
-    /// keeps everything.
+    /// Whether `access` is at or above `minimum`, using the `AccessLevel.visibilityRank` ordering
+    /// shared with the DOT/Mermaid renderers. A `nil` minimum keeps everything.
     public static func passesAccessFilter(_ access: AccessLevel, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
         return access.visibilityRank >= minimum.visibilityRank

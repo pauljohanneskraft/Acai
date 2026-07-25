@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// "Keyboard Shortcuts" reference panel (B56): every shortcut the app currently wires up, grouped
-/// by context. macOS: opened from the Help menu (⌘⇧/, i.e. ⌘?). iPad/iPhone: opened from the
+/// "Keyboard Shortcuts" reference panel, grouped by context. macOS: Help menu (⌘⇧/). iPad/iPhone:
 /// sidebar toolbar's overflow menu.
 struct KeyboardShortcutsPanel: View {
     @Environment(\.dismiss) private var dismiss

@@ -2,9 +2,8 @@ import Foundation
 import SwiftGitX
 
 /// A user-facing wrapper for every failure `AcaiGit` throws. `SwiftGitX`'s own `SwiftGitXError`
-/// doesn't conform to `LocalizedError`, so callers relying on `error.localizedDescription`
-/// (`USABILITY_GUARDRAILS.md` §3: every thrown error needs a specific, actionable
-/// `errorDescription`) would otherwise see a generic message instead of the real one.
+/// doesn't conform to `LocalizedError`, so callers relying on `error.localizedDescription` would
+/// otherwise see a generic message instead of the real one.
 struct GitFailure: LocalizedError {
     let message: String
 

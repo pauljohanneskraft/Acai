@@ -2,13 +2,10 @@ import Foundation
 import MCP
 import AcaiLibrary
 
-/// A cheap change-signature for a source tree: the newest file modification time, the file count, and an
-/// order-independent digest folding each file's `(relativePath, mtime, size)`, over everything under a
-/// root except build/VCS output. Two signatures compare equal when nothing an analysis would read has
-/// changed, so the snapshot cache can reuse a parse across a whole task and still notice an edit. The
-/// digest is what makes a rename/move or content-swap visible — those preserve the newest-mtime and the
-/// file count, so an mtime+count signature alone would serve a stale parse. A value computed from the
-/// tree (`SourceTreeSignature(root:)`).
+/// A cheap change-signature for a source tree: newest modification time, file count, and an
+/// order-independent digest folding each file's `(relativePath, mtime, size)` (skipping build/VCS
+/// output). Two signatures compare equal when nothing an analysis would read has changed. The
+/// digest is what catches a rename/move or content-swap — those preserve mtime and count alone.
 struct SourceTreeSignature: Equatable, Sendable {
     let latestModification: TimeInterval
     let fileCount: Int
@@ -66,8 +63,8 @@ struct SourceTreeSignature: Equatable, Sendable {
     }
 }
 
-/// One file's identity — its path, modification time and size — reduced to a stable hash the signature
-/// folds together. A value with the hashing behaviour on it (not a static helper).
+/// One file's identity — path, modification time, size — reduced to a stable hash the signature
+/// folds together.
 private struct FileFingerprint {
     let relativePath: String
     let mtime: TimeInterval
@@ -85,9 +82,8 @@ private struct FileFingerprint {
 }
 
 /// The in-process parse cache behind every tool: one enriched `CodeArtifact` per project path, reused
-/// across a task until the tree changes (or a tool passes `refresh`). This is what makes an always-on
-/// MCP cheap — a fleet of tool calls over one codebase parses it once. An `actor`, so concurrent tool
-/// calls serialize safely on the cache; a real instance, not a static namespace.
+/// across a task until the tree changes (or a tool passes `refresh`). An `actor` so concurrent tool
+/// calls serialize safely on the cache.
 actor AnalysisSnapshotCache {
     private struct Entry {
         let signature: SourceTreeSignature

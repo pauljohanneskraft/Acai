@@ -1,16 +1,9 @@
 name: Record Snapshots
 
-# Manual only: re-records the snapshot-test screenshot goldens (`TESTING_ARCHITECTURE.md`) and
-# uploads each platform's own `App/AcaiUITests/__Snapshots__/<platform>/` subtree as a
-# downloadable artifact, so a human can pull one down and drop it straight on top of the local
-# `__Snapshots__/<platform>/` folder instead of re-recording locally or having to merge a full-tree
-# download by hand. This depends on the golden layout being `<platform>/<viewType>/<state>.png`
-# (platform first — see `ScreenshotComparator.validate`'s doc comment) specifically so each
-# platform's goldens live under one self-contained folder; the previous `<viewType>/<platform>/…`
-# layout would have bundled all three platforms' PNGs into every artifact regardless of which one
-# actually got re-recorded. Recording never asserts (`ScreenshotComparator.validate` just writes in
-# record mode), so the resulting PNGs still need human review before committing — this workflow
-# only removes the "run it locally" step, not the review step.
+# Manual only: re-records the snapshot-test screenshot goldens and uploads each platform's own
+# `App/AcaiUITests/__Snapshots__/<platform>/` subtree as a downloadable artifact, so a human can
+# drop it straight on top of the local folder instead of re-recording locally. Recording never
+# asserts, so the resulting PNGs still need human review before committing.
 on:
   workflow_dispatch:
 
@@ -131,13 +124,11 @@ jobs:
 
       - name: Record UI test screenshots
         run: |
-          # A sandboxed macOS UI test runner can't write goldens directly into the source tree
-          # (EPERM) — ScreenshotComparator stages those recordings instead (which the sync step
-          # below copies into place) but still reports the direct-write failure as an XCTFail, so
-          # xcodebuild's exit code is nonzero even on a fully successful recording. Rather than
-          # blanket-ignoring this step's exit code (which would just as happily swallow a genuine
-          # crash or a real assertion failure), capture the log and only tolerate a nonzero exit
-          # when *every* failure in it matches that one known, benign signature.
+          # The sandboxed macOS UI test runner can't write goldens directly into the source tree
+          # (EPERM); ScreenshotComparator stages them instead (synced below) but still reports the
+          # direct-write failure as an XCTFail, so xcodebuild exits nonzero even on success. Rather
+          # than blanket-ignoring the exit code, only tolerate it when every failure in the log
+          # matches that one known, benign signature.
           set +e
           xcodebuild test \
             -project Acai.xcodeproj \

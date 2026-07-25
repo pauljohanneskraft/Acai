@@ -5,10 +5,9 @@ import SwiftUI
 import Testing
 import AcaiRender
 
-/// Rasterizes a SwiftUI view to PNG for the render snapshot tests (`TESTING_ARCHITECTURE.md`), at a
-/// fixed size/color scheme. A thin wrapper around `AcaiRender`'s own `DiagramImageRenderer`, so
-/// app screens are rasterized through the exact same path diagram image exports already use,
-/// rather than a second, parallel `ImageRenderer` setup.
+/// Rasterizes a SwiftUI view to PNG for the render snapshot tests, at a fixed size/color scheme.
+/// A thin wrapper around `AcaiRender`'s own `DiagramImageRenderer`, so app screens are rasterized
+/// through the exact same path diagram image exports already use.
 @MainActor
 struct ViewSnapshotRenderer {
     var scale: CGFloat = 2
@@ -30,7 +29,7 @@ struct ViewSnapshotRenderer {
 ///
 /// Duplicated from `ExamplePNGs`' comparison math in trimmed form rather than shared across test
 /// targets: it's ~40 lines of pure math and the two test targets aren't set up to share code today.
-/// Revisit factoring it out if a third consumer appears (see `TESTING_ARCHITECTURE.md`'s render snapshot tests).
+/// Revisit factoring it out if a third consumer appears.
 struct SnapshotComparator {
     let goldenDirectory: URL
     var maxChangedFraction: Double = 5.0e-5

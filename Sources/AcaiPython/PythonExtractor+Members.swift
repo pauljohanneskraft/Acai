@@ -8,7 +8,6 @@ extension PythonExtractor {
     /// Parses a (non-enum) class body: nested classes, methods, class-body fields, and instance
     /// attributes synthesised from `self.x = …` assignments inside the methods.
     mutating func parseClassBody(_ body: Node, into decl: inout TypeDeclaration) {
-        // Nested classes.
         for child in body.namedChildren() {
             if child.nodeType == "class_definition" {
                 decl.nestedTypes.append(extractClass(child, decorators: []))
@@ -20,10 +19,8 @@ extension PythonExtractor {
 
         let methodNodes = collectMethodNodes(body)
 
-        // Fields come from two places, both required for real Python code:
-        // (a) class-body annotated/assigned attributes, (b) `self.x = …` inside methods.
         // A class-body initializer can't reference `self`, so file-level type names are the only
-        // resolvable receivers — enough to record its calls (RC2) without the (not-yet-built) field map.
+        // resolvable receivers (RC2).
         var fields = collectClassBodyFields(body, scope: CallSiteScope(knownTypeNames: declaredTypeNames))
         let existing = Set(fields.map(\.name))
         fields.append(contentsOf: synthesizeSelfFields(fromMethods: methodNodes, existing: existing))

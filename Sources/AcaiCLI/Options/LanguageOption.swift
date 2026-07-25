@@ -12,8 +12,7 @@ enum LanguageOption: String, ExpressibleByArgument, CaseIterable {
     case c
     case cpp
 
-    /// Comma-separated list of every accepted value, for `--language` help text. Derived from the
-    /// cases so a newly-added language can't silently drift out of the documented set.
+    /// Comma-separated list of every accepted value, for `--language` help text.
     static var allValuesList: String {
         allCases.map(\.rawValue).joined(separator: ", ")
     }

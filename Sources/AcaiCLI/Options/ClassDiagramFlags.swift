@@ -2,9 +2,8 @@ import ArgumentParser
 import AcaiCore
 import AcaiDiagram
 
-/// Class-diagram display flags for the `diagram` command, grouped so the command body stays small
-/// and the same surface can be reused. `@OptionGroup` flattens these into the command's own flags,
-/// so `--direction`, `--min-access`, … parse exactly as before.
+/// Class-diagram display flags, shared via `@OptionGroup` so `--direction`, `--min-access`, …
+/// parse as the command's own flags.
 struct ClassDiagramFlags: ParsableArguments {
     @Option(name: .long, help: "Graph layout direction: TB, LR, BT, RL.")
     var direction: DirectionOption?
@@ -33,8 +32,8 @@ struct ClassDiagramFlags: ParsableArguments {
     @Flag(name: .long, help: "Do not infer dependency edges from method parameter/return types.")
     var noInferDependency: Bool = false
 
-    /// Applies the set flags onto `options`. Unset flags leave the option's existing value (which may
-    /// itself have come from a `--config` file applied earlier).
+    /// Applies the set flags onto `options`; unset flags leave the existing value (e.g. from
+    /// `--config` applied earlier).
     func apply(to options: inout ClassDiagramOptions) {
         if let direction { options.layoutDirection = direction.layoutDirection }
         if let groupBy { options.groupBy = groupBy.groupingStrategy }
@@ -47,6 +46,5 @@ struct ClassDiagramFlags: ParsableArguments {
     }
 }
 
-// Lives here (not in the macOS-only `ImageCommand`) so the always-compiled `--min-access` option
-// resolves the conformance on every platform, including Linux.
+// Lives here, not in the macOS-only `ImageCommand`, so it resolves on every platform.
 extension AccessLevel: ExpressibleByArgument {}

@@ -10,13 +10,11 @@ enum RecentlyViewedItem: Codable, Hashable, Sendable {
 }
 
 /// Tracks the last ~10 things opened across every project, most-recent-first, plus per-item
-/// pinning that keeps a favorite listed regardless of recency. See `USABILITY_IMPROVEMENTS.md`
-/// Part 8, "Recently viewed and pinned."
+/// pinning that keeps a favorite listed regardless of recency.
 ///
-/// Model-only: nothing in the app calls `recordOpened(_:)` yet (that's wiring into
+/// Model-only: nothing in the app calls `recordOpened(_:)` yet — that's wiring into
 /// `ProjectBrowserViewModel`'s navigation, deferred alongside the actual "Recently Viewed" sidebar
-/// UI and Quick Open itself, B35) — this stays inert (both lists start and remain empty) until
-/// that lands, exactly the "data shape, not the finished UI" scope B54 calls for.
+/// UI and Quick Open itself. This stays inert (both lists start and remain empty) until that lands.
 struct RecentlyViewed: Codable, Hashable, Sendable {
     private(set) var recents: [RecentlyViewedItem] = []
     private(set) var pinned: [RecentlyViewedItem] = []

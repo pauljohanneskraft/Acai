@@ -39,11 +39,10 @@ public enum ContainerTint: Sendable {
 /// The single source of truth for every diagram node/edge colour, replacing the per-view
 /// hardcoded literals.
 ///
-/// `DiagramPalette` is an open value type: the bundled ``light`` / ``dark`` are static instances,
-/// and third parties can add their own themes the same way the standard library extends `Color`
-/// or `Font` — `extension DiagramPalette { static let solarized = DiagramPalette(...) }` — or by
-/// copying a bundled palette and tweaking its `var` properties. The per-kind families are
-/// resolved through `@Sendable` closures, so a custom theme controls them too.
+/// `DiagramPalette` is an open value type: ``light`` / ``dark`` are just static instances, and
+/// third parties can add their own the same way stdlib extends `Color` or `Font` —
+/// `extension DiagramPalette { static let solarized = DiagramPalette(...) }`. Per-kind families
+/// are resolved through `@Sendable` closures, so a custom theme controls them too.
 ///
 /// Views read it from the environment (``EnvironmentValues/diagramPalette``); off-screen snapshot
 /// views take it as a parameter. ``exportTheme`` bridges it to the DOT/Mermaid ``DiagramTheme`` so

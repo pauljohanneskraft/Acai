@@ -5,22 +5,16 @@ import AcaiCore
 import AcaiRender
 @testable import AcaiApp
 
-/// Render snapshot tests (`TESTING_ARCHITECTURE.md`): perceptually diff a real `AcaiApp` view
-/// against a committed golden, light and dark.
+/// Render snapshot tests: perceptually diff a real `AcaiApp` view against a committed golden,
+/// light and dark.
 ///
 /// **Scoped to flat, self-contained freeform node views only** — not full interactive screens.
-/// An earlier version of this suite snapshotted `ProjectDetailView`/`NewProjectSheet`/
-/// `ClassDiagramView` directly and produced garbage (blank canvases, AppKit's diagnostic
-/// yellow/red "unavailable" glyph in place of `TextField`/material backgrounds) — `ImageRenderer`'s
-/// single off-screen pass has no real window server, so it can't resolve AppKit-backed controls,
-/// vibrancy/material effects, or (for `ClassDiagramView` specifically) the live
-/// measurement→layout feedback loop (`onPreferenceChange`/`GeometryReader`) those screens depend
-/// on. `AcaiRender`'s own diagram views (`TypeNodeView`, `StateNodeView`, tested in
-/// `Tests/AcaiRenderTests`) render cleanly because they're purpose-built as flat, pre-laid-out,
-/// materials-free snapshot content — and so are `AcaiApp`'s own freeform node views below, which
-/// `AcaiRenderTests` doesn't cover (it only exercises the generated-diagram node views). Real
-/// interactive screens are covered by the snapshot tests (XCUITest) instead — see
-/// `TESTING_ARCHITECTURE.md`.
+/// `ImageRenderer`'s single off-screen pass has no real window server, so it can't resolve
+/// AppKit-backed controls, vibrancy/material effects, or a live measurement→layout feedback loop
+/// (`onPreferenceChange`/`GeometryReader`) — it renders blank canvases or diagnostic "unavailable"
+/// glyphs for anything that depends on those. `AcaiApp`'s freeform node views below are flat,
+/// pre-laid-out, materials-free content, so they render cleanly; real interactive screens are
+/// covered by the snapshot tests (XCUITest) instead.
 @Suite("App screen snapshots")
 struct AppScreenSnapshotTests {
 
@@ -36,8 +30,7 @@ struct AppScreenSnapshotTests {
     /// Both `DiagramPalette`s a golden is checked against — `diagramPalette`'s environment default
     /// is always `.light` (`DiagramPalette+Environment.swift`), so dark must be injected
     /// explicitly, the same way `ExamplePNGs.themes` feeds `RenderingContext(palette:)` explicitly
-    /// rather than relying on `.colorScheme()` alone. Guardrails §9's "verified dark-appearance
-    /// value" rule.
+    /// rather than relying on `.colorScheme()` alone.
     private static let themes: [Theme] = [
         ("", .light, .light),
         (".dark", .dark, .dark)

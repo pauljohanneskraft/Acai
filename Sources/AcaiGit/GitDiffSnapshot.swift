@@ -1,13 +1,10 @@
 import Foundation
 import SwiftGitX
 
-/// Produces a codebase's tree as it was at a git revision, in a fresh temporary directory — the
-/// **read-only** replacement for `git archive <ref> [<subpath>] | tar -x`: the working tree,
-/// index, and HEAD of the repository `directory` belongs to are never touched. `directory` may be
-/// the repository root or any subdirectory of it (a codebase pointed at a subdirectory of a larger
-/// repo) — only that subtree is extracted, matching the old shell-based behavior. Caller is
-/// responsible for analyzing (this module has no notion of code analysis — see `CLAUDE.md`'s
-/// module boundary) and removing the returned directory afterward.
+/// Produces a codebase's tree as it was at a git revision, in a fresh temporary directory.
+/// **Read-only**: the working tree, index, and HEAD of the repository `directory` belongs to are
+/// never touched. `directory` may be the repository root or any subdirectory of it — only that
+/// subtree is extracted. Caller is responsible for removing the returned directory afterward.
 public struct GitDiffSnapshot {
     public let directory: URL
     public let reference: String
@@ -68,9 +65,8 @@ public struct GitDiffSnapshot {
         return destination
     }
 
-    /// Descends from `commit`'s root tree down to the subtree corresponding to `directory`'s
-    /// position relative to the repository's working directory — a no-op descent when `directory`
-    /// already is the repository root.
+    /// Descends from `commit`'s root tree to the subtree at `directory`'s position relative to the
+    /// repository's working directory.
     private func subtree(of commit: Commit, in repository: Repository) throws -> Tree {
         let root = try commit.tree
         let standardizedDirectory = directory.standardizedFileURL.path

@@ -4,8 +4,7 @@ import SwiftUI
 import AcaiDiagram
 
 // Per-diagram-kind PNG renderers. Each builds its own layout model + snapshot view (the same views
-// the app canvas draws) and hands it to the shared `DiagramImageRenderer` engine. Split out of the
-// former monolithic renderer so each kind is a single-responsibility type and the engine stays
+// the app canvas draws) and hands it to the shared `DiagramImageRenderer` engine, which stays
 // model-agnostic.
 
 /// Renders a `SequenceDiagram` to PNG. `positionOverrides` (participant-id → horizontal centre)

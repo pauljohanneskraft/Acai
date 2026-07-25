@@ -64,7 +64,7 @@ final class ScreenshotJourneyTests: XCTestCase {
         }
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
-        codebaseRow.tap()
+        codebaseRow.tapUntil(codebaseDetail.reindexButton)
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
         codebaseDetail.reindexButton.tap()
 

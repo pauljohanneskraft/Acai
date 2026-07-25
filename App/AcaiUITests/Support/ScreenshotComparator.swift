@@ -11,21 +11,18 @@ import XCTest
 /// to import another test target's internal types through.
 @MainActor
 struct ScreenshotComparator {
-    /// An iPad journey capturing both device rotations for a state that plausibly lays out
-    /// differently in each. iPhone and macOS goldens never pass this — they get a plain
-    /// `<state>.png`.
+    /// iPad journeys capture both device rotations for states that plausibly lay out differently in
+    /// each; iPhone and macOS goldens are always a plain `<state>.png`.
     enum Orientation: String {
         case portrait
         case landscape
     }
 
     let goldenDirectory: URL
-    /// Looser than the render snapshot tests' default — simulator rendering/anti-aliasing drift is real for a full
-    /// captured window, not a single flat component. Looser again on macOS specifically: measured
-    /// ~2–2.3% drift between separate real-window launches of the identical state (font
-    /// hinting/anti-aliasing noise a window server introduces that a simulator doesn't) — iOS/iPad
-    /// showed none of this across repeated runs, so only macOS's default is widened, keeping
-    /// iOS/iPad's regression sensitivity tight.
+    /// Looser than the render snapshot tests' default — a full captured window has real
+    /// rendering/anti-aliasing drift. macOS is widened further still: ~2–2.3% drift measured between
+    /// separate real-window launches of the same state (window-server font hinting noise a simulator
+    /// doesn't have); iOS/iPad showed none of it, so their tighter default stays.
     var maxChangedFraction: Double
 
     init(goldenDirectory: URL, maxChangedFraction: Double? = nil) {
@@ -42,12 +39,10 @@ struct ScreenshotComparator {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
     }
 
-    /// Fallback recording target, mirroring `goldenDirectory`'s own `<platform>/<viewType>/<state>`
-    /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
-    /// Needed because a real macOS-hosted UI test process (unlike the iOS Simulator, which writes
-    /// directly to `goldenDirectory` fine) has been observed to fail writing into the source tree
-    /// with `EPERM`, for reasons that didn't resolve even after granting Full Disk Access — the
-    /// cause wasn't fully root-caused, so this fallback keeps recording usable regardless of it.
+    /// Fallback recording target for macOS, where the UI test process can fail writing into the
+    /// source tree with `EPERM` (the iOS Simulator doesn't have this problem). Mirrors
+    /// `goldenDirectory`'s own `<platform>/<viewType>/<state>` layout so `Scripts/sync_ui_snapshots.sh`
+    /// can copy it into place with no per-file renaming.
     private var stagingDirectory: URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("AcaiUITestSnapshots", isDirectory: true)
     }
@@ -78,20 +73,14 @@ struct ScreenshotComparator {
         return Double(changed) / Double(a.count)
     }
 
-    /// Validates `screenshot` against
-    /// `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png` (platform resolved at
-    /// runtime via `SnapshotPlatform`, so callers can never forget or misspell it — and comes
-    /// first in the path specifically so a CI recording job can upload just its own platform's
-    /// subtree as a self-contained artifact, without dragging the other two platforms' untouched
-    /// PNGs along for the ride), and —
-    /// regardless of pass/fail/record — attaches it to `testCase` (`.keepAlways`) so it's
-    /// reviewable in the test report, which is what makes this layer double as a
-    /// human-reviewable screenshot journey and not only an automated regression check.
-    /// `maxChangedFraction` override: per-call, not per-instance, since a single comparator is
-    /// typically reused across a whole journey test's states and only one or two specific states
-    /// need a looser bound — see `ScreenshotJourneyTests`' `addMenuOpen` capture for the measured
-    /// rationale (a `Menu`'s translucent material doesn't render byte-identically across separate
-    /// app launches, even once everything else on screen has settled).
+    /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png`.
+    /// Platform comes first in the path so a CI recording job can upload just its own platform's
+    /// subtree as a self-contained artifact. Regardless of pass/fail/record, attaches the screenshot
+    /// to `testCase` (`.keepAlways`) so it's reviewable in the test report — this layer doubles as a
+    /// human-reviewable screenshot journey, not only an automated regression check.
+    /// `maxChangedFraction` is a per-call override (not per-instance) since one comparator is
+    /// typically reused across a whole journey and only a state or two needs a looser bound (e.g. a
+    /// `Menu`'s translucent material doesn't render byte-identically across separate app launches).
     func validate(
         viewType: String, state: String, orientation: Orientation? = nil,
         screenshot: XCUIScreenshot, testCase: XCTestCase, maxChangedFraction overrideMaxChangedFraction: Double? = nil

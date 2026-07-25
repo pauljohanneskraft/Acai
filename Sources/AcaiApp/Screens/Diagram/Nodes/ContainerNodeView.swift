@@ -57,7 +57,6 @@ struct ContainerNodeView: View {
         let lineWidth: CGFloat = isSelected ? 2 : 1
 
         VStack(alignment: .leading, spacing: 0) {
-            // Header with stereotype + name
             VStack(spacing: 1) {
                 Text("<<\(stereotype)>>")
                     .font(.system(size: 9, design: .monospaced))
@@ -70,12 +69,10 @@ struct ContainerNodeView: View {
             .padding(.vertical, 5)
             .background(palette.containerHeader(style.tint))
 
-            // Divider
             Rectangle()
                 .fill(border)
                 .frame(height: lineWidth)
 
-            // Open body area
             Spacer()
         }
         .frame(width: width, height: height)

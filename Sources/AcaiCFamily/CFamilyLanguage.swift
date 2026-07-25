@@ -10,9 +10,9 @@ extension CodeArtifact.SourceLanguage {
     public static let cpp = CodeArtifact.SourceLanguage(rawValue: "cpp")
 }
 
-// The `configuration` requirement of `CodeParser` lives here (a AcaiCore-only file) rather than in the
-// parser files: those import `AcaiTreeSitter`, which re-exports `SwiftTreeSitter`'s own
-// `LanguageConfiguration`, so naming the type there is ambiguous.
+// `configuration` lives here (AcaiCore-only) rather than in the parser files: those import
+// `AcaiTreeSitter`, which re-exports `SwiftTreeSitter`'s own `LanguageConfiguration`, making the
+// type name ambiguous there.
 extension CCodeParser {
     public var configuration: LanguageConfiguration { CFamilyDialect.c.configuration }
 }

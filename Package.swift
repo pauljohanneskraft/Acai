@@ -76,7 +76,7 @@ optionalTargets.append(
         name: "AcaiAppTests",
         // AcaiRender/AcaiDiagram: the render snapshot tests (`ViewSnapshot.swift`) render real
         // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
-        // `ClassDiagramConfiguration` fixtures directly — see `TESTING_ARCHITECTURE.md`.
+        // `ClassDiagramConfiguration` fixtures directly.
         dependencies: [
             "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram",
         ],

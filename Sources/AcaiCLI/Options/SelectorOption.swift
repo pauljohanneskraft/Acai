@@ -7,10 +7,7 @@ extension MemberKind: ExpressibleByArgument {}
 // `AccessLevel: ExpressibleByArgument` is already declared in ClassDiagramFlags.swift.
 
 /// The shared type-selector flags (`--module`, `--type`, `--kind`, …) that narrow which types a
-/// query-style command reports on. `@OptionGroup`-ed into `inspect` and `smells` so the flag set and
-/// its mapping onto the engine's `Selector` live in one place. Every facet is optional and
-/// AND-combined by `Selector.matches`; naming no language, it resolves `stereotype`/`annotation`
-/// against the artifact's injected `LanguageConfiguration`.
+/// query-style command reports on. Every facet is optional and AND-combined by `Selector.matches`.
 struct SelectorOption: ParsableArguments {
     @Option(name: .long, help: "Only types whose module/target matches this name or glob (*, ?).")
     var module: String?

@@ -76,11 +76,10 @@ private struct StateAnalysis {
         return nil
     }
 
-    /// Assignments to a property: bare/`self`-qualified targets and `Type.variable` static writes
-    /// naming the declaring type from the type's own members, plus writes from free functions that
-    /// mutate the type by reference (e.g. C's `void run(Download *d) { d->state = …; }`), which name
-    /// the type as the assignment receiver. Keyed on the receiver *type*, so this stays
-    /// language-agnostic and generalises to any by-reference struct mutation.
+    /// Assignments to a property: bare/`self`-qualified and `Type.variable` static writes from the
+    /// type's own members, plus free functions that mutate the type by reference (e.g. C's
+    /// `void run(Download *d) { d->state = …; }`). Keyed on the receiver *type*, so this stays
+    /// language-agnostic.
     private static func collectFromType(
         _ type: TypeDeclaration,
         freeFunctions: [Member],

@@ -90,12 +90,9 @@ struct GitHubDeviceAuthFlow {
         )
     }
 
-    /// Polls `POST /login/oauth/access_token` at `deviceCode.interval` until the user authorizes
-    /// the code (or it expires/is denied/the calling `Task` is cancelled), returning the resulting
-    /// credential. Retries through any error that isn't one of GitHub's own definitive outcomes
-    /// (`Failure`) or cancellation — a network-layer hiccup (e.g. the host app briefly losing
-    /// connectivity while the user is off authorizing in a browser) shouldn't abandon an
-    /// otherwise-still-valid sign-in attempt.
+    /// Polls `POST /login/oauth/access_token` until the user authorizes (or it expires/is denied/
+    /// the `Task` is cancelled). Retries through any error that isn't a definitive GitHub outcome
+    /// (`Failure`) or cancellation — a transient network hiccup shouldn't abandon the sign-in.
     func pollForCredential(_ deviceCode: DeviceCode) async throws -> GitHubCredential {
         var interval = deviceCode.interval
         while Date() < deviceCode.expiresAt {

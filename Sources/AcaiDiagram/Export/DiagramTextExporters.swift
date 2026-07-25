@@ -2,7 +2,7 @@ import AcaiCore
 
 // Per-diagram-kind value types that each build one diagram model and pair its DOT + Mermaid renderers
 // into a `DiagramExport`. Shared by every text front end (the CLI `diagram` command, the MCP
-// `acai_diagram` tool) so the builder→renderer wiring lives once. Promoted here from the CLI.
+// `acai_diagram` tool) so the builder→renderer wiring lives once.
 
 /// Builds the class diagram and pairs both text renderers.
 public struct ClassDiagramTextExporter: Sendable {
@@ -83,9 +83,8 @@ public struct PackageDiagramTextExporter: Sendable {
     }
 }
 
-/// Builds a static call graph (optionally scoped) and pairs both text renderers. Unlike the CLI's
-/// former copy it emits no coverage note — a caller that wants it reads `graph.coverage` off the
-/// built graph.
+/// Builds a static call graph (optionally scoped) and pairs both text renderers. Emits no coverage
+/// note — a caller that wants it reads `graph.coverage` off the built graph.
 public struct CallGraphTextExporter: Sendable {
     public let request: CallGraphRequest
     public let theme: DiagramTheme?

@@ -1,26 +1,23 @@
 #!/usr/bin/env bash
-# Re-records committed snapshot goldens for one test suite (TESTING_ARCHITECTURE.md).
+# Re-records committed snapshot goldens for one test suite.
 #
-# Encodes the ACAI_RECORD_SNAPSHOTS propagation gotcha found while building the testing system:
-# the render snapshot tests (SwiftPM) read it as a normal env var; the snapshot tests (XCUITest)
-# only see it as a *trailing* xcodebuild build-setting override, never a leading shell `export` —
-# a plain shell export never reaches the Xcode-launched test process.
+# ACAI_RECORD_SNAPSHOTS: the render snapshot tests (SwiftPM) read it as a normal env var; the
+# snapshot tests (XCUITest) only see it as a trailing xcodebuild build-setting override — a plain
+# shell export never reaches the Xcode-launched test process.
 #
 # Recording silently overwrites goldens — review `git status`/the diffed PNGs before committing.
 #
-# Full xcodebuild/swift test output goes to LOG_PATH; stdout stays to a concise summary — no ad hoc
-# `> file` redirection needed at the call site.
+# Full xcodebuild/swift test output goes to LOG_PATH; stdout stays to a concise summary.
 #
-# Usage: Scripts/snapshots_record.sh <layer1|ios|macos> [DEVICE]
+# Usage: Scripts/snapshots_record.sh <render|ios|macos> [DEVICE]
 #   DEVICE  simulator name for the ios layer's -destination   (default: iPhone 17)
 set -uo pipefail
 
-# Captured before any `cd` below — a path built from a bare `$0` breaks the moment the working
-# directory changes, which is exactly what silently swallowed the call to sync_ui_snapshots.sh
-# the one time this was tried without it (it resolved relative to App/, not Scripts/).
+# Captured before any `cd` below — a path built from a bare `$0` breaks once the working directory
+# changes.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-LAYER="${1:?usage: Scripts/snapshots_record.sh <layer1|ios|macos> [DEVICE]}"
+LAYER="${1:?usage: Scripts/snapshots_record.sh <render|ios|macos> [DEVICE]}"
 DEVICE="${2:-iPhone 17}"
 LOG_PATH="/tmp/acai-snapshots-record-$LAYER.log"
 
@@ -33,7 +30,7 @@ SCREENSHOT_TESTS=(
 )
 
 case "$LAYER" in
-    layer1)
+    render)
         echo "▸ ACAI_RECORD_SNAPSHOTS=1 swift test --parallel --filter AppScreenSnapshotTests (log: $LOG_PATH)"
         ACAI_RECORD_SNAPSHOTS=1 swift test --parallel --filter AppScreenSnapshotTests > "$LOG_PATH" 2>&1
         STATUS=$?
@@ -83,7 +80,7 @@ case "$LAYER" in
         "$SCRIPT_DIR/sync_ui_snapshots.sh"
         ;;
     *)
-        echo "unknown layer: $LAYER (expected layer1, ios, or macos)" >&2
+        echo "unknown layer: $LAYER (expected render, ios, or macos)" >&2
         exit 1
         ;;
 esac

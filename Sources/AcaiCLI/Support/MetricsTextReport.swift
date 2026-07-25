@@ -20,8 +20,8 @@ enum MetricsSortKey: String, CaseIterable {
     case lackOfCohesion
     case featureEnvyMethods
 
-    // `Double` so ratio/mean/score metrics sort alongside the integer ones through one path. A lookup
-    // table rather than a 15-case switch keeps the accessor within the cyclomatic-complexity budget.
+    // `Double` so ratio/mean/score metrics sort alongside integer ones. A lookup table keeps this
+    // within the cyclomatic-complexity budget instead of a 15-case switch.
     fileprivate func value(_ metric: CodeMetrics.TypeMetric) -> Double {
         Self.accessors[self]?(metric) ?? 0
     }
@@ -48,8 +48,7 @@ enum MetricsSortKey: String, CaseIterable {
 }
 
 /// Renders `CodeMetrics` as a human-readable report: a counts summary, a module table sorted by
-/// distance from the main sequence, and a per-type table ranked by a chosen metric. A value you
-/// instantiate with the data and ask to `render()`.
+/// distance from the main sequence, and a per-type table ranked by a chosen metric.
 struct MetricsTextReport {
     let metrics: CodeMetrics
     let sort: MetricsSortKey
@@ -84,8 +83,7 @@ struct MetricsTextReport {
         return (["Modules (by distance from main sequence):", header] + rows).joined(separator: "\n")
     }
 
-    /// Types sorted by the chosen metric (descending), limited to `top` when set. Shared by both
-    /// per-type tables so they present the same rows in the same order.
+    /// Types sorted by the chosen metric (descending), limited to `top` when set.
     private var rankedTypes: [CodeMetrics.TypeMetric] {
         let ranked = metrics.types.sorted { sort.value($0) > sort.value($1) }
         return top.map { Array(ranked.prefix($0)) } ?? ranked
@@ -107,9 +105,7 @@ struct MetricsTextReport {
         return (["Types (by \(sort.rawValue), top \(limited.count)):", header] + rows).joined(separator: "\n")
     }
 
-    /// Code-smell metrics per type, kept in a second table so neither exceeds the 120-column budget:
-    /// RFC, public API surface (count + %), mutable public state, widest signature, data-class score,
-    /// nesting depth, override count, lack of cohesion (LCOM), and feature-envy method count.
+    /// Code-smell metrics per type, kept in a second table so neither exceeds the 120-column budget.
     private func smellTable() -> String {
         let header = "TYPE".paddedTrailing(to: 34) + "MODULE".paddedTrailing(to: 16)
             + "rfc".paddedLeading(to: 5) + "pub".paddedLeading(to: 5) + "pub%".paddedLeading(to: 6)
