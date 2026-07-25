@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copies Layer 2 screenshot goldens staged by ScreenshotComparator's recording fallback
+# Copies snapshot-test screenshot goldens staged by ScreenshotComparator's recording fallback
 # (TESTING_ARCHITECTURE.md) into App/AcaiUITests/__Snapshots__/.
 #
 # Needed because the macOS UI test runner is sandboxed by default (confirmed empirically: its

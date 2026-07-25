@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `FileFilter` (B62): a per-codebase ordered glob/regex allow/blocklist. Layer 0, per the
+/// `FileFilter` (B62): a per-codebase ordered glob/regex allow/blocklist. Unit tested, per the
 /// backlog's own "filter-excludes-file-from-parse" + `USABILITY_GUARDRAILS.md` §5's bounded-regex
 /// requirement.
 @Suite("FileFilter")

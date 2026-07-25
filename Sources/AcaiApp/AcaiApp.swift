@@ -11,6 +11,7 @@ public struct AcaiRootScene: Scene {
         WindowGroup {
             ProjectBrowserView()
                 .modifier(DiagramThemeProvider())
+                .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
         }
         .commands {
             DiagramThemeCommands()

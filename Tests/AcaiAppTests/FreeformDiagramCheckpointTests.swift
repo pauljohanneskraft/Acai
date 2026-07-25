@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 
 /// `FreeformDiagram.Checkpoint` (B27): save/restore/delete of a named full node/edge snapshot.
-/// Layer 0, per the backlog's own "checkpoint persistence + restore tests" verification.
+/// Unit tested, per the backlog's own "checkpoint persistence + restore tests" verification.
 @Suite("FreeformDiagram Checkpoints")
 struct FreeformDiagramCheckpointTests {
 

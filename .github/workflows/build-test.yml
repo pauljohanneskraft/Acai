@@ -35,7 +35,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.5"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -128,7 +128,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.5"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -149,6 +149,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresult-iphone
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn
+
   ui-test-ipad:
     name: UI Test iPad
     needs: [lint, build-test-ios]
@@ -166,7 +174,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.5"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -187,6 +195,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresult-ipad
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn
+
   ui-test-macos:
     name: UI Test macOS
     needs: [lint, build-test-macos]
@@ -204,7 +220,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.5"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -227,3 +243,11 @@ jobs:
             -destination "platform=macOS" \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresult-macos
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn

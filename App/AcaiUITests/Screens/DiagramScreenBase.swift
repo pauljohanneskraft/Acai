@@ -2,8 +2,8 @@ import CoreGraphics
 import XCTest
 
 /// Accessors for the chrome that's actually common across every diagram type's toolbar today
-/// (`UndoRedoToolbarButtons`, Fit to View, the sidebar toggle) — see `TESTING_ARCHITECTURE.md`
-/// Layer 2 for why this deliberately stays narrow rather than a full unified sidebar-tab base
+/// (`UndoRedoToolbarButtons`, Fit to View, the sidebar toggle) — see `TESTING_ARCHITECTURE.md`'s
+/// snapshot tests for why this deliberately stays narrow rather than a full unified sidebar-tab base
 /// class: `USABILITY_IMPROVEMENTS.md` Part 6 documents that today's diagram types have three
 /// genuinely different sidebar architectures, so a shared Settings/Inspector/Compare accessor set
 /// would encode a unification that hasn't shipped yet.

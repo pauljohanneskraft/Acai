@@ -1,0 +1,160 @@
+name: Record Snapshots
+
+# Manual only: re-records the snapshot-test screenshot goldens (`TESTING_ARCHITECTURE.md`) and
+# uploads the resulting `App/AcaiUITests/__Snapshots__/` tree as a downloadable artifact per
+# platform, so a human can pull it down and drop it straight on top of the local copy instead of
+# re-recording locally. Each job only overwrites its own platform's PNGs — the rest of the uploaded
+# tree is whatever was already checked out, so dropping it in is a no-op for every file except the
+# platform actually re-recorded. Recording never asserts (`ScreenshotComparator.validate` just
+# writes in record mode), so the resulting PNGs still need human review before committing — this
+# workflow only removes the "run it locally" step, not the review step.
+on:
+  workflow_dispatch:
+
+jobs:
+  record-iphone:
+    name: Record iPhone
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Prepare Simulator
+        run: Scripts/simulator_prepare.sh "iPhone 17"
+
+      - name: Record UI test screenshots
+        continue-on-error: true
+        run: |
+          xcodebuild test \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOSUITests \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -only-testing:Acai-iOSUITests/ScreenshotJourneyTests \
+            -only-testing:Acai-iOSUITests/CompareGitRevisionTests \
+            -only-testing:Acai-iOSUITests/NewSheetsScreenshotTests \
+            -only-testing:Acai-iOSUITests/GeneratedDiagramScreenshotTests \
+            CODE_SIGNING_ALLOWED=NO ACAI_RECORD_SNAPSHOTS=1
+        working-directory: App
+
+      - name: Upload recorded snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots-iphone
+          path: App/AcaiUITests/__Snapshots__/
+          if-no-files-found: error
+
+  record-ipad:
+    name: Record iPad
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Prepare Simulator
+        run: Scripts/simulator_prepare.sh "iPad (A16)"
+
+      - name: Record UI test screenshots
+        continue-on-error: true
+        run: |
+          xcodebuild test \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOSUITests \
+            -destination "platform=iOS Simulator,name=iPad (A16)" \
+            -only-testing:Acai-iOSUITests/ScreenshotJourneyTests \
+            -only-testing:Acai-iOSUITests/CompareGitRevisionTests \
+            -only-testing:Acai-iOSUITests/NewSheetsScreenshotTests \
+            -only-testing:Acai-iOSUITests/GeneratedDiagramScreenshotTests \
+            CODE_SIGNING_ALLOWED=NO ACAI_RECORD_SNAPSHOTS=1
+        working-directory: App
+
+      - name: Upload recorded snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots-ipad
+          path: App/AcaiUITests/__Snapshots__/
+          if-no-files-found: error
+
+  record-macos:
+    name: Record macOS
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Record UI test screenshots
+        continue-on-error: true
+        run: |
+          # A sandboxed macOS UI test runner can't write goldens directly into the source tree
+          # (EPERM) — ScreenshotComparator stages those recordings instead, which the sync step
+          # below copies into place. That means this step reporting a non-zero exit is the
+          # expected outcome of a fully successful recording, not a sign anything went wrong.
+          xcodebuild test \
+            -project Acai.xcodeproj \
+            -scheme Acai-macOSUITests \
+            -destination "platform=macOS" \
+            -only-testing:Acai-macOSUITests/ScreenshotJourneyTests \
+            -only-testing:Acai-macOSUITests/CompareGitRevisionTests \
+            -only-testing:Acai-macOSUITests/NewSheetsScreenshotTests \
+            -only-testing:Acai-macOSUITests/GeneratedDiagramScreenshotTests \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM="" \
+            ACAI_RECORD_SNAPSHOTS=1
+        working-directory: App
+
+      - name: Sync staged snapshots
+        if: always()
+        run: Scripts/sync_ui_snapshots.sh
+
+      - name: Upload recorded snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots-macos
+          path: App/AcaiUITests/__Snapshots__/
+          if-no-files-found: error

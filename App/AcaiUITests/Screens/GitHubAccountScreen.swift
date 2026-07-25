@@ -1,7 +1,7 @@
 import XCTest
 
 /// Accessors for `GitHubAccountSection` — embedded in `NewCodebaseSheet`'s "From GitHub" tab, the
-/// only place it's reachable today (see `TESTING_ARCHITECTURE.md` Layer 2's note on `USABILITY_
+/// only place it's reachable today (see `TESTING_ARCHITECTURE.md`'s snapshot tests' note on `USABILITY_
 /// IMPROVEMENTS.md` Part 4 not having landed a standalone Settings surface yet).
 final class GitHubAccountScreen {
     let app: XCUIApplication

@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 
 /// `RecentlyViewed` (B54): recency-ordering + pin-persistence, the model half of "Recently Viewed
-/// + pinning" — Layer 0, per the backlog's own verification and its "data shape, not the finished
+/// + pinning" — Unit tested, per the backlog's own verification and its "data shape, not the finished
 /// UI" scope note.
 @Suite("RecentlyViewed")
 struct RecentlyViewedTests {

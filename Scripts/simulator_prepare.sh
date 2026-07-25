@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Boots the given iOS Simulator (if needed) and gets it into a clean, reproducible state before a
 # UI test run — currently just pinning its status bar (time, battery, signal) to fixed values, so
-# Layer 2 screenshot goldens (TESTING_ARCHITECTURE.md) don't churn on the wall-clock digits alone
+# snapshot-test screenshot goldens (TESTING_ARCHITECTURE.md) don't churn on the wall-clock digits alone
 # across re-recordings or CI runs. Named for "prepare the simulator" generally, not
 # `simulator_pin_status_bar.sh`, since more such preparation may land here later.
 #

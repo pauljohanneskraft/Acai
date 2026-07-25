@@ -7,7 +7,7 @@ import AcaiGit
 /// so a deterministic, network-free conformance needs its own seam rather than an in-process
 /// `URLProtocol` mock. Unlike sign-in, this seam was deliberately deferred when `GitHubAccountService`
 /// was built (see that file's doc comment) until a "New Codebase from GitHub" journey was actually
-/// prioritized — see `TESTING_ARCHITECTURE.md` Layer 2's GitHub journeys.
+/// prioritized — see `TESTING_ARCHITECTURE.md`'s snapshot tests' GitHub journeys.
 protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
@@ -48,7 +48,7 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
     }
 }
 
-/// Deterministic, network-free conformance for Layer 2 XCUITest journeys: `repositories`/`refs`
+/// Deterministic, network-free conformance for the snapshot tests' XCUITest journeys: `repositories`/`refs`
 /// return canned data describing the one local fixture repository, and `sync` performs a **real**
 /// libgit2 clone/fetch (via `AcaiGit.GitClone`) against `remoteURL` — a local git repository staged
 /// by the UI test — instead of `https://github.com/...`. This exercises the actual clone/fetch/

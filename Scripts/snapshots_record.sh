@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Re-records committed snapshot goldens for one testing layer (TESTING_ARCHITECTURE.md).
+# Re-records committed snapshot goldens for one test suite (TESTING_ARCHITECTURE.md).
 #
 # Encodes the ACAI_RECORD_SNAPSHOTS propagation gotcha found while building the testing system:
-# Layer 1 (SwiftPM) reads it as a normal env var; Layer 2 (XCUITest) only sees it as a *trailing*
-# xcodebuild build-setting override, never a leading shell `export` — a plain shell export never
-# reaches the Xcode-launched test process.
+# the render snapshot tests (SwiftPM) read it as a normal env var; the snapshot tests (XCUITest)
+# only see it as a *trailing* xcodebuild build-setting override, never a leading shell `export` —
+# a plain shell export never reaches the Xcode-launched test process.
 #
 # Recording silently overwrites goldens — review `git status`/the diffed PNGs before committing.
 #

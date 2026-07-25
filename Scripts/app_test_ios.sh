@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the Xcode project and runs the iOS UI test target (Layer 2, TESTING_ARCHITECTURE.md),
+# Regenerates the Xcode project and runs the iOS UI test target (the snapshot tests, TESTING_ARCHITECTURE.md),
 # mirroring the CI `test-ios-ui` job. Full xcodebuild output goes to LOG_PATH (huge and noisy);
 # stdout stays to a concise pass/fail summary, so this script alone (no ad hoc `> file` redirection
 # at the call site) is enough to both run and triage — avoiding a fresh permission prompt per

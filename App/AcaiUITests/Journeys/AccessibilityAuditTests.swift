@@ -1,6 +1,6 @@
 import XCTest
 
-/// Layer 3 (`TESTING_ARCHITECTURE.md`): walks the seeded-project journey's own screens and asserts
+/// A guardrail test (`TESTING_ARCHITECTURE.md`): walks the seeded-project journey's own screens and asserts
 /// every interactive element it touches has a real accessibility label (not just an identifier —
 /// `USABILITY_GUARDRAILS.md` §7's "no element more informative visually than to VoiceOver" rule).
 ///

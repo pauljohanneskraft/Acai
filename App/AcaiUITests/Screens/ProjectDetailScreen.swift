@@ -1,7 +1,7 @@
 import XCTest
 
-/// Accessors for a project's detail pane (`ProjectDetailView`). See `TESTING_ARCHITECTURE.md`
-/// Layer 2.
+/// Accessors for a project's detail pane (`ProjectDetailView`). See the snapshot tests in
+/// `TESTING_ARCHITECTURE.md`.
 final class ProjectDetailScreen {
     let app: XCUIApplication
 

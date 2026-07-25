@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the Xcode project and builds the macOS UI test target (Layer 2,
+# Regenerates the Xcode project and builds the macOS UI test target (the snapshot tests,
 # TESTING_ARCHITECTURE.md). Defaults to build-for-testing only: unlike the iOS simulator, there's
 # no simulator for macOS, so an actual `xcodebuild test` run drives real windows/mouse/keyboard on
 # this Mac. Pass --run to opt into that explicitly.

@@ -74,13 +74,13 @@ optionalTargets.append(
 optionalTargets.append(
     .testTarget(
         name: "AcaiAppTests",
-        // AcaiRender/AcaiDiagram: Layer 1 view-snapshot tests (`ViewSnapshot.swift`) render real
+        // AcaiRender/AcaiDiagram: the render snapshot tests (`ViewSnapshot.swift`) render real
         // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
         // `ClassDiagramConfiguration` fixtures directly — see `TESTING_ARCHITECTURE.md`.
         dependencies: [
             "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram",
         ],
-        // Layer 1's committed goldens (read by file path, not `Bundle.module` — see
+        // The render snapshot tests' committed goldens (read by file path, not `Bundle.module` — see
         // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
         resources: [.copy("__Snapshots__")]
     )

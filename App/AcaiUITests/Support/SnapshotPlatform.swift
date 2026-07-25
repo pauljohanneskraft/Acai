@@ -4,7 +4,7 @@ import UIKit
 #endif
 
 /// The platform-name path segment of the `<platform>/<ViewType>/<state>.png` golden layout
-/// (`TESTING_ARCHITECTURE.md` Layer 2) — computed once at runtime so the single shared
+/// (`TESTING_ARCHITECTURE.md`'s snapshot tests) — computed once at runtime so the single shared
 /// `Acai-iOSUITests` binary produces the right segment whether it's launched on an iPhone or iPad
 /// destination, and the separate `Acai-macOSUITests` binary produces its own. A real instantiated
 /// value (`SnapshotPlatform().name`), never a static-function namespace, per `CLAUDE.md`'s style

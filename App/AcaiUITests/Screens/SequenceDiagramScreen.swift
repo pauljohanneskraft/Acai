@@ -1,7 +1,7 @@
 import XCTest
 
 /// Adds Sequence Diagram-specific accessors (canvas participants, the entry-point config sheet) to
-/// `DiagramScreenBase`'s shared toolbar accessors. See `TESTING_ARCHITECTURE.md` Layer 2.
+/// `DiagramScreenBase`'s shared toolbar accessors. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
 final class SequenceDiagramScreen: DiagramScreenBase {
     /// A participant's lifeline header, by its `SequenceDiagram.Participant.name` — mirrors
     /// `ClassDiagramScreen.typeNode`, same "keyed by name, no stable id" caveat.

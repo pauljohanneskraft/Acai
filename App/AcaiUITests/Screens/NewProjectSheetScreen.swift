@@ -1,7 +1,7 @@
 import XCTest
 
 /// Accessors for `NewProjectSheet`, reached via `ProjectBrowserScreen.newProjectButton`.
-/// See `TESTING_ARCHITECTURE.md` Layer 2.
+/// See the snapshot tests in `TESTING_ARCHITECTURE.md`.
 final class NewProjectSheetScreen {
     let app: XCUIApplication
 

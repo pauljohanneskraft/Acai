@@ -5,7 +5,7 @@ import AcaiCore
 import AcaiRender
 @testable import AcaiApp
 
-/// Layer 1 view snapshots (`TESTING_ARCHITECTURE.md`): perceptually diff a real `AcaiApp` view
+/// Render snapshot tests (`TESTING_ARCHITECTURE.md`): perceptually diff a real `AcaiApp` view
 /// against a committed golden, light and dark.
 ///
 /// **Scoped to flat, self-contained freeform node views only** — not full interactive screens.
@@ -19,7 +19,7 @@ import AcaiRender
 /// `Tests/AcaiRenderTests`) render cleanly because they're purpose-built as flat, pre-laid-out,
 /// materials-free snapshot content — and so are `AcaiApp`'s own freeform node views below, which
 /// `AcaiRenderTests` doesn't cover (it only exercises the generated-diagram node views). Real
-/// interactive screens are covered by Layer 2 (XCUITest) screenshots instead — see
+/// interactive screens are covered by the snapshot tests (XCUITest) instead — see
 /// `TESTING_ARCHITECTURE.md`.
 @Suite("App screen snapshots")
 struct AppScreenSnapshotTests {

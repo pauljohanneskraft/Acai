@@ -61,7 +61,7 @@ targets:
     scheme:
       gatherCoverageData: false
 
-  # Layer 2 (`TESTING_ARCHITECTURE.md`): journeys, screen objects, and screenshot-comparator
+  # The snapshot tests (`TESTING_ARCHITECTURE.md`): journeys, screen objects, and screenshot-comparator
   # snapshots against the real app process — the thing `AcaiAppTests` (a plain SwiftPM XCTest
   # target, no running app host) structurally can't do. Both platform UI test targets share one
   # `AcaiUITests/` source tree; `Fixtures/` is a separate `resources` path so its bundled
@@ -93,7 +93,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
         DEVELOPMENT_TEAM: TJSHMGE2VX
         SWIFT_VERSION: "6.0"
-        # Layer 2's record-mode toggle (`ScreenshotComparator`). A plain shell `export` doesn't
+        # The snapshot tests' record-mode toggle (`ScreenshotComparator`). A plain shell `export` doesn't
         # reach an Xcode-launched XCTest process (verified empirically — `ProcessInfo.environment`
         # came back `nil` there despite the invoking shell having it set); routing it through a
         # build setting, referenced by the scheme's environment variable below, is what actually

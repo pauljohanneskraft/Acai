@@ -46,7 +46,7 @@ extension XCUIApplication {
     ///
     /// **The launch-argument name here must match `UITestFixtureResolver.launchArgument`**
     /// (`Sources/AcaiApp/UITestSupport.swift`) — the two can't share a constant across the SwiftPM
-    /// package / Xcode-project boundary. See `TESTING_ARCHITECTURE.md` Layer 2.
+    /// package / Xcode-project boundary. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
     ///
     /// `configure`, if given, runs after staging (so it can edit the staged fixture in place — e.g.
     /// turn a plain directory into a real git repo, or build a standalone "remote" repo alongside
@@ -93,8 +93,26 @@ extension XCUIApplication {
             return
         }
 
-        launchArguments += ["-AcaiUITestFixtureBaseDir", destination.path]
+        launchArguments += [
+            "-AcaiUITestFixtureBaseDir", destination.path,
+            "-AcaiUITestColorScheme", defaultUITestColorScheme,
+        ]
         launch()
+    }
+
+    /// The color scheme every UI test launch forces via `-AcaiUITestColorScheme`, so a screenshot
+    /// golden's appearance never depends on the runner's or developer's own system default (see
+    /// `UITestFixtureResolver.resolveColorScheme()`'s doc comment for the CI drift this fixes).
+    /// Split across platforms rather than forcing one scheme everywhere, so both appearances get
+    /// real screenshot coverage instead of only ever exercising one: macOS and iPhone run dark,
+    /// iPad runs light. `Acai-iOSUITests` is one shared binary for both iPhone and iPad
+    /// destinations, so the split is a runtime idiom check, not a per-target build setting.
+    private var defaultUITestColorScheme: String {
+        #if os(macOS)
+        return "dark"
+        #else
+        return UIDevice.current.userInterfaceIdiom == .pad ? "light" : "dark"
+        #endif
     }
 
     /// Replaces every `$FIXTURE_ROOT` occurrence in every file under `root` with `root`'s own

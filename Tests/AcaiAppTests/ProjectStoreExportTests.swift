@@ -4,7 +4,7 @@ import AcaiQuality
 @testable import AcaiApp
 
 /// `ProjectStore.exportAllData()`/`importAllData(_:mode:)` (B55): the manual "Export All Data" /
-/// "Import" bridge for "no iCloud sync." Layer 0, per the backlog's own "export→import round-trip"
+/// "Import" bridge for "no iCloud sync." Unit tested, per the backlog's own "export→import round-trip"
 /// verification and `USABILITY_GUARDRAILS.md` §4's version-marker requirement.
 @Suite("ProjectStore export/import")
 @MainActor

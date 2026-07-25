@@ -8,7 +8,7 @@ import XCTest
 /// (`run()`'s `"requested" -> "running" -> "finished"` chain, `fail()`'s `"failed"` branch, for
 /// State) — patterned directly on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
-/// content. See `TESTING_ARCHITECTURE.md` Layer 2.
+/// content. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
 final class GeneratedDiagramScreenshotTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"

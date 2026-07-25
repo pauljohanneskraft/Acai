@@ -1,7 +1,7 @@
 import Testing
 @testable import AcaiApp
 
-/// `KeyboardShortcutReference` (B56): the data backing the "Keyboard Shortcuts" panel. Layer 0 —
+/// `KeyboardShortcutReference` (B56): the data backing the "Keyboard Shortcuts" panel. Unit tested —
 /// checks internal consistency (no blank/duplicate entries). It does **not** and cannot verify the
 /// panel's real invariant — that every listed shortcut matches an actual `.keyboardShortcut(...)`
 /// call site and vice versa — since that would mean parsing every view in the app; that cross-check

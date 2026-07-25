@@ -3,14 +3,14 @@ import Foundation
 import ImageIO
 import XCTest
 
-/// The Layer 2 screenshot regression mechanism (`TESTING_ARCHITECTURE.md`): perceptually diffs an
+/// The snapshot-test screenshot regression mechanism (`TESTING_ARCHITECTURE.md`): perceptually diffs an
 /// `XCUIScreenshot` against a golden committed under `App/AcaiUITests/__Snapshots__/`.
 ///
 /// Duplicated from `Tests/AcaiAppTests/ViewSnapshot.swift`'s `SnapshotComparator` (itself
 /// duplicated from `Tests/AcaiRenderTests`' `ExamplePNGs`) rather than shared: this is a
 /// standalone Xcode-project UI test target, not a SwiftPM target, so there's no product boundary
 /// through which to import another test target's internal types. Revisit if a fourth consumer
-/// appears — see `TESTING_ARCHITECTURE.md` Layer 1's own note on the same tradeoff.
+/// appears — see `TESTING_ARCHITECTURE.md`'s render snapshot tests' own note on the same tradeoff.
 struct ScreenshotComparator {
     /// An iPad journey capturing both device rotations for a state that plausibly lays out
     /// differently in each. iPhone and macOS goldens never pass this — they get a plain
@@ -21,7 +21,7 @@ struct ScreenshotComparator {
     }
 
     let goldenDirectory: URL
-    /// Looser than Layer 1's default — simulator rendering/anti-aliasing drift is real for a full
+    /// Looser than the render snapshot tests' default — simulator rendering/anti-aliasing drift is real for a full
     /// captured window, not a single flat component. Looser again on macOS specifically: measured
     /// ~2–2.3% drift between separate real-window launches of the identical state (font
     /// hinting/anti-aliasing noise a window server introduces that a simulator doesn't) — iOS/iPad
@@ -38,7 +38,7 @@ struct ScreenshotComparator {
     private let perCellDelta = 16
 
     /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes the capture to the golden path
-    /// instead of comparing — same record-mode convention as Layer 1's `SnapshotComparator`.
+    /// instead of comparing — same record-mode convention as the render snapshot tests' `SnapshotComparator`.
     private var isRecording: Bool {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
     }
