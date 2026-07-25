@@ -1,18 +1,19 @@
 import XCTest
 
-/// A guardrail test (`TESTING_ARCHITECTURE.md`): walks the seeded-project journey's own screens and asserts
+/// A guardrail test: walks the seeded-project journey's own screens and asserts
 /// every interactive element it touches has a real accessibility label (not just an identifier —
-/// `USABILITY_GUARDRAILS.md` §7's "no element more informative visually than to VoiceOver" rule).
+/// the "no element more informative visually than to VoiceOver" rule).
 ///
 /// **Tap-target size is checked but not asserted as a hard failure yet.** Running this against the
 /// real app on first build surfaced genuine, pre-existing gaps below Apple HIG's 44×44pt minimum —
 /// the compact-width "New project" toolbar button (~37×36pt), the Reindex button (~21pt tall), and
 /// the diagram toolbar's Undo/Redo buttons (~40×36pt) all measured under the bar. That's exactly
 /// what this layer exists to catch, but retrofitting every pre-existing toolbar button's tap area
-/// is a separate, real `USABILITY_GUARDRAILS.md` §7 fix, not something to force through as a side
+/// is separate, real guardrail-compliance work, not something to force through as a side
 /// effect of building the testing system itself. `logIfBelowMinimumTapTarget` reports every miss
 /// to the test log (so it stays visible, not silently swallowed) without failing the run; flip it
 /// to a hard `XCTAssertGreaterThanOrEqual` once the underlying buttons are actually fixed.
+@MainActor
 final class AccessibilityAuditTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
@@ -65,8 +66,8 @@ final class AccessibilityAuditTests: XCTestCase {
         classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
 
         // `fitToViewButton`/`sidebarToggleButton` aren't audited on compact width either: the
-        // diagram toolbar carries up to seven items (`USABILITY_IMPROVEMENTS.md` Part 6's own
-        // documented "seven icons competing for one navigation bar" complaint), so iOS collapses
+        // diagram toolbar carries up to seven items ("seven icons competing for one navigation
+        // bar"), so iOS collapses
         // the overflow behind a "More" button this first slice's screen objects don't open yet.
         // Undo/Redo happen to survive the collapse today; that's an iOS toolbar-ordering detail,
         // not a guarantee.

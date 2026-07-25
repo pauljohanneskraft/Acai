@@ -2,7 +2,8 @@ import XCTest
 
 /// Accessors for `NewCodebaseSheet`'s GitHub tab — the repository/branch pickers and the Clone
 /// action. Kept separate from `GitHubAccountScreen` (embedded inside this same sheet), which stays
-/// scoped to the sign-in section it wraps. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// scoped to the sign-in section it wraps.
+@MainActor
 final class NewCodebaseSheetScreen {
     let app: XCUIApplication
 

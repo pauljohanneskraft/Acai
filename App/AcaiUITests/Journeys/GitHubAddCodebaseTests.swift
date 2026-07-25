@@ -15,6 +15,7 @@ import UIKit
 /// further ahead (`Extra`) — instead of github.com. Sign-in still goes through
 /// `FixtureGitHubAccountService`'s canned PAT path (`GitHubSignInTests`), since the credential
 /// value itself is never actually used to reach a real server on this path.
+@MainActor
 final class GitHubAddCodebaseTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 

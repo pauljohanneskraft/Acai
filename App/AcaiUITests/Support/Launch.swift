@@ -7,6 +7,7 @@ import UIKit
 /// no SwiftPM `Bundle.module`, unlike `Tests/AcaiAppTests`.
 private final class FixtureBundleAnchor {}
 
+@MainActor
 extension XCUIApplication {
     /// Rotates the simulator to landscape before a screenshot-golden test launches, iPad only — the
     /// wider canvas suits diagram/canvas content better there than portrait; iPhone and macOS
@@ -46,7 +47,7 @@ extension XCUIApplication {
     ///
     /// **The launch-argument name here must match `UITestFixtureResolver.launchArgument`**
     /// (`Sources/AcaiApp/UITestSupport.swift`) — the two can't share a constant across the SwiftPM
-    /// package / Xcode-project boundary. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+    /// package / Xcode-project boundary.
     ///
     /// `configure`, if given, runs after staging (so it can edit the staged fixture in place — e.g.
     /// turn a plain directory into a real git repo, or build a standalone "remote" repo alongside

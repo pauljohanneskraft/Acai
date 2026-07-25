@@ -1,7 +1,8 @@
 import XCTest
 
 /// Accessors for a codebase's detail pane (`CodebaseDetailView`) — the reindex action and the
-/// per-`DiagramType` generation buttons. See the snapshot tests in `TESTING_ARCHITECTURE.md`.
+/// per-`DiagramType` generation buttons.
+@MainActor
 final class CodebaseDetailScreen {
     let app: XCUIApplication
 

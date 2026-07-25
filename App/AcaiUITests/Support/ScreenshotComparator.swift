@@ -3,14 +3,13 @@ import Foundation
 import ImageIO
 import XCTest
 
-/// The snapshot-test screenshot regression mechanism (`TESTING_ARCHITECTURE.md`): perceptually diffs an
-/// `XCUIScreenshot` against a golden committed under `App/AcaiUITests/__Snapshots__/`.
+/// Perceptually diffs an `XCUIScreenshot` against a golden committed under
+/// `App/AcaiUITests/__Snapshots__/`.
 ///
-/// Duplicated from `Tests/AcaiAppTests/ViewSnapshot.swift`'s `SnapshotComparator` (itself
-/// duplicated from `Tests/AcaiRenderTests`' `ExamplePNGs`) rather than shared: this is a
-/// standalone Xcode-project UI test target, not a SwiftPM target, so there's no product boundary
-/// through which to import another test target's internal types. Revisit if a fourth consumer
-/// appears — see `TESTING_ARCHITECTURE.md`'s render snapshot tests' own note on the same tradeoff.
+/// Duplicated from `Tests/AcaiAppTests/ViewSnapshot.swift`'s `SnapshotComparator` rather than
+/// shared: this is a standalone Xcode-project target, not SwiftPM, so there's no product boundary
+/// to import another test target's internal types through.
+@MainActor
 struct ScreenshotComparator {
     /// An iPad journey capturing both device rotations for a state that plausibly lays out
     /// differently in each. iPhone and macOS goldens never pass this — they get a plain

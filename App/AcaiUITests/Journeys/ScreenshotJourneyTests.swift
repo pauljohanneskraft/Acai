@@ -1,10 +1,11 @@
 import CoreGraphics
 import XCTest
 
-/// The snapshot-test screenshot journey (`TESTING_ARCHITECTURE.md`): drives the seeded-project journey
-/// and, at each named milestone, both attaches a screenshot for human review and diffs it via
-/// `ScreenshotComparator` — this is the real screen-level visual regression mechanism, since
-/// the render snapshot tests' `ImageRenderer`-based harness structurally can't render full interactive screens.
+/// Drives the seeded-project journey and, at each named milestone, both attaches a screenshot for
+/// human review and diffs it via `ScreenshotComparator` — this is the real screen-level visual
+/// regression mechanism, since `ImageRenderer`-based rendering structurally can't render full
+/// interactive screens.
+@MainActor
 final class ScreenshotJourneyTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"

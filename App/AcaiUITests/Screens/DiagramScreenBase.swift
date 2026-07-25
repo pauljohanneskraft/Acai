@@ -7,6 +7,7 @@ import XCTest
 /// class: `USABILITY_IMPROVEMENTS.md` Part 6 documents that today's diagram types have three
 /// genuinely different sidebar architectures, so a shared Settings/Inspector/Compare accessor set
 /// would encode a unification that hasn't shipped yet.
+@MainActor
 class DiagramScreenBase {
     let app: XCUIApplication
 

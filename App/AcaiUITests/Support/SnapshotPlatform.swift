@@ -13,6 +13,7 @@ import UIKit
 /// iPhone vs. iPad must be a runtime check (`UIDevice.current.userInterfaceIdiom`) rather than a
 /// compile-time `#if`: the same iOS UI test binary runs against both destinations, only the
 /// macOS/iOS split is known at compile time.
+@MainActor
 struct SnapshotPlatform {
     let name: String
 
