@@ -10,6 +10,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:0.57.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict
+
   build-test-ios:
     name: Unit Test iOS
     runs-on: macos-26
@@ -101,7 +113,7 @@ jobs:
 
   ui-test-iphone:
     name: UI Test iPhone
-    needs: build-test-ios
+    needs: [lint, build-test-ios]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -139,7 +151,7 @@ jobs:
 
   ui-test-ipad:
     name: UI Test iPad
-    needs: build-test-ios
+    needs: [lint, build-test-ios]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -177,7 +189,7 @@ jobs:
 
   ui-test-macos:
     name: UI Test macOS
-    needs: build-test-macos
+    needs: [lint, build-test-macos]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
