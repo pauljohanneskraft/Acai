@@ -9,7 +9,7 @@
 # `NSTemporaryDirectory()` inside that sandboxed process resolves to the container's own tmp dir,
 # NOT this shell's plain $TMPDIR — so ScreenshotComparator's staged output has to be located inside
 # the container, not assumed to sit at a fixed top-level path. ScreenshotComparator stages each
-# recorded PNG under .../AcaiUITestSnapshots/<viewType>/<platform>/<state> — the exact same
+# recorded PNG under .../AcaiUITestSnapshots/<platform>/<viewType>/<state> — the exact same
 # relative layout as __Snapshots__/ itself — so once found, this is a plain recursive copy, no
 # per-file renaming logic needed.
 #

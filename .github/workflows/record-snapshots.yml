@@ -1,13 +1,16 @@
 name: Record Snapshots
 
 # Manual only: re-records the snapshot-test screenshot goldens (`TESTING_ARCHITECTURE.md`) and
-# uploads the resulting `App/AcaiUITests/__Snapshots__/` tree as a downloadable artifact per
-# platform, so a human can pull it down and drop it straight on top of the local copy instead of
-# re-recording locally. Each job only overwrites its own platform's PNGs — the rest of the uploaded
-# tree is whatever was already checked out, so dropping it in is a no-op for every file except the
-# platform actually re-recorded. Recording never asserts (`ScreenshotComparator.validate` just
-# writes in record mode), so the resulting PNGs still need human review before committing — this
-# workflow only removes the "run it locally" step, not the review step.
+# uploads each platform's own `App/AcaiUITests/__Snapshots__/<platform>/` subtree as a
+# downloadable artifact, so a human can pull one down and drop it straight on top of the local
+# `__Snapshots__/<platform>/` folder instead of re-recording locally or having to merge a full-tree
+# download by hand. This depends on the golden layout being `<platform>/<viewType>/<state>.png`
+# (platform first — see `ScreenshotComparator.validate`'s doc comment) specifically so each
+# platform's goldens live under one self-contained folder; the previous `<viewType>/<platform>/…`
+# layout would have bundled all three platforms' PNGs into every artifact regardless of which one
+# actually got re-recorded. Recording never asserts (`ScreenshotComparator.validate` just writes in
+# record mode), so the resulting PNGs still need human review before committing — this workflow
+# only removes the "run it locally" step, not the review step.
 on:
   workflow_dispatch:
 
@@ -38,7 +41,6 @@ jobs:
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
       - name: Record UI test screenshots
-        continue-on-error: true
         run: |
           xcodebuild test \
             -project Acai.xcodeproj \
@@ -56,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: snapshots-iphone
-          path: App/AcaiUITests/__Snapshots__/
+          path: App/AcaiUITests/__Snapshots__/iPhone/
           if-no-files-found: error
 
   record-ipad:
@@ -85,7 +87,6 @@ jobs:
         run: Scripts/simulator_prepare.sh "iPad (A16)"
 
       - name: Record UI test screenshots
-        continue-on-error: true
         run: |
           xcodebuild test \
             -project Acai.xcodeproj \
@@ -103,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: snapshots-ipad
-          path: App/AcaiUITests/__Snapshots__/
+          path: App/AcaiUITests/__Snapshots__/iPad/
           if-no-files-found: error
 
   record-macos:
@@ -129,12 +130,15 @@ jobs:
         working-directory: App
 
       - name: Record UI test screenshots
-        continue-on-error: true
         run: |
           # A sandboxed macOS UI test runner can't write goldens directly into the source tree
-          # (EPERM) — ScreenshotComparator stages those recordings instead, which the sync step
-          # below copies into place. That means this step reporting a non-zero exit is the
-          # expected outcome of a fully successful recording, not a sign anything went wrong.
+          # (EPERM) — ScreenshotComparator stages those recordings instead (which the sync step
+          # below copies into place) but still reports the direct-write failure as an XCTFail, so
+          # xcodebuild's exit code is nonzero even on a fully successful recording. Rather than
+          # blanket-ignoring this step's exit code (which would just as happily swallow a genuine
+          # crash or a real assertion failure), capture the log and only tolerate a nonzero exit
+          # when *every* failure in it matches that one known, benign signature.
+          set +e
           xcodebuild test \
             -project Acai.xcodeproj \
             -scheme Acai-macOSUITests \
@@ -144,7 +148,23 @@ jobs:
             -only-testing:Acai-macOSUITests/NewSheetsScreenshotTests \
             -only-testing:Acai-macOSUITests/GeneratedDiagramScreenshotTests \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM="" \
-            ACAI_RECORD_SNAPSHOTS=1
+            ACAI_RECORD_SNAPSHOTS=1 2>&1 | tee /tmp/record-macos.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Recording succeeded outright."
+            exit 0
+          fi
+
+          unexpected=$(grep -E ": error:" /tmp/record-macos.log | grep -v "Could not write golden directly" || true)
+          if [ -n "$unexpected" ]; then
+            echo "Recording failed for a reason other than the known macOS sandbox staging fallback:"
+            echo "$unexpected"
+            exit "$status"
+          fi
+
+          echo "Nonzero exit, but every failure matches the known macOS sandbox staging fallback — treating as a successful recording."
         working-directory: App
 
       - name: Sync staged snapshots
@@ -156,5 +176,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: snapshots-macos
-          path: App/AcaiUITests/__Snapshots__/
+          path: App/AcaiUITests/__Snapshots__/macOS/
           if-no-files-found: error
