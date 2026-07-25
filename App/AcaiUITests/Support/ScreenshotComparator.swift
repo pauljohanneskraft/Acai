@@ -43,7 +43,7 @@ struct ScreenshotComparator {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
     }
 
-    /// Fallback recording target, mirroring `goldenDirectory`'s own `<viewType>/<platform>/<state>`
+    /// Fallback recording target, mirroring `goldenDirectory`'s own `<platform>/<viewType>/<state>`
     /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
     /// Needed because a real macOS-hosted UI test process (unlike the iOS Simulator, which writes
     /// directly to `goldenDirectory` fine) has been observed to fail writing into the source tree
@@ -80,8 +80,11 @@ struct ScreenshotComparator {
     }
 
     /// Validates `screenshot` against
-    /// `<goldenDirectory>/<viewType>/<platform>/<state>[_<orientation>].png` (platform resolved at
-    /// runtime via `SnapshotPlatform`, so callers can never forget or misspell it), and —
+    /// `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png` (platform resolved at
+    /// runtime via `SnapshotPlatform`, so callers can never forget or misspell it — and comes
+    /// first in the path specifically so a CI recording job can upload just its own platform's
+    /// subtree as a self-contained artifact, without dragging the other two platforms' untouched
+    /// PNGs along for the ride), and —
     /// regardless of pass/fail/record — attaches it to `testCase` (`.keepAlways`) so it's
     /// reviewable in the test report, which is what makes this layer double as a
     /// human-reviewable screenshot journey and not only an automated regression check.
@@ -96,7 +99,7 @@ struct ScreenshotComparator {
     ) {
         var fileName = state
         if let orientation { fileName += "_\(orientation.rawValue)" }
-        let name = "\(viewType)/\(SnapshotPlatform().name)/\(fileName)"
+        let name = "\(SnapshotPlatform().name)/\(viewType)/\(fileName)"
 
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = name.replacingOccurrences(of: "/", with: "_")
