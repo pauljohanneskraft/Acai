@@ -3,12 +3,9 @@ import Testing
 import AcaiCore
 import AcaiLibrary
 
-/// Regression coverage for a reported bug: analyzing a real multi-target Swift package produced
-/// per-module statistics ("Instability", "Abstractness", …) that collapsed every type into a single
-/// fake `"root"` module instead of the package's real targets. `ModuleResolver.productName` only
-/// falls back to `"root"` when a type's `location.filePath` has one path component or fewer — so
-/// this pins down whether `AnalysisService.standard.analyzeProject`, run end-to-end through the real
-/// Swift parser and `ProjectDiscovery`, still resolves each target's files to a proper module name.
+/// A real multi-target Swift package must resolve each target to its own module, not collapse into
+/// a fallback `"root"` — exercised end-to-end through `AnalysisService.standard.analyzeProject`, the
+/// real Swift parser, and `ProjectDiscovery`.
 @Suite("Module metrics regression")
 struct ModuleMetricsRegressionTests {
 
@@ -42,11 +39,9 @@ struct ModuleMetricsRegressionTests {
         }
     }
 
-    /// Exercises the same layout through a base directory that round-trips through the `/private`
-    /// symlink macOS temp/sandbox paths commonly go through (`NSTemporaryDirectory()` is itself such
-    /// a symlink) — both as the un-resolved value the app typically stores/reconstructs and as the
-    /// fully-resolved value `URL(resolvingBookmarkData:...)`-style APIs typically return — to check
-    /// `AnalysisService`'s path handling doesn't depend on both sides agreeing on which form is used.
+    /// Same layout, but through a resolved root URL — `NSTemporaryDirectory()` is itself a `/private`
+    /// symlink on macOS, so this checks module resolution doesn't depend on resolved vs. unresolved
+    /// path forms agreeing.
     @Test("module resolution survives a resolved-vs-unresolved root URL mismatch")
     func multiTargetLayoutResolvesWithSymlinkedRoot() throws {
         try withTempDir { unresolvedRoot in

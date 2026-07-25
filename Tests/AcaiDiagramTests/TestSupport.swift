@@ -2,12 +2,10 @@ import AcaiCore
 @testable import AcaiDiagram
 
 // Diagram unit tests build synthetic artifacts and exercise the agnostic diagram layer directly,
-// without the language registry that production resolves configuration from. This file restores
-// the pre-refactor ergonomics for tests only: language constants for building artifacts, a
-// representative `LanguageConfiguration` fixture (the union of the built-in languages' classification
-// + framework stereotypes, matching the engine's former global behaviour), and convenience
-// initializers that inject that fixture so existing call sites keep compiling. Production stays
-// strict — it never has an empty or implicit language configuration.
+// without the language registry production resolves configuration from. This file supplies language
+// constants, a representative `LanguageConfiguration` fixture (a broad union of the built-in
+// languages' classification + framework stereotypes), and convenience initializers that inject it.
+// Production stays strict — it never has an empty or implicit language configuration.
 
 extension CodeArtifact.SourceLanguage {
     static let swift = CodeArtifact.SourceLanguage(rawValue: "swift")

@@ -40,7 +40,7 @@ struct KotlinCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `val local = Helper()` now resolves its receiver type (RC4).
+        // A local `val local = Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -68,8 +68,7 @@ struct KotlinCallSiteBroadeningTests {
         #expect(runMethod?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
     }
 
-    /// A typed function parameter is a provable call-site receiver, just like a stored property
-    /// (dead-code false positive: RC-G).
+    /// A typed function parameter is a provable call-site receiver, just like a stored property.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -89,7 +88,7 @@ struct KotlinCallSiteBroadeningTests {
 
     /// A local initialized from a same-type method call (`val x = compute()`) resolves its receiver
     /// type from the method's unambiguous return type, the same way `val x = Helper()` already does —
-    /// including when the method is declared *after* the caller (dead-code false positive: RC-I).
+    /// including when the method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {
@@ -110,7 +109,7 @@ struct KotlinCallSiteBroadeningTests {
     }
 
     /// A bare `foo()` (an implicit-receiver call to a sibling method or top-level function) is
-    /// captured as `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not (RC1).
+    /// captured as `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not.
     @Test func capturesBareImplicitSelfCallButNotConstruction() {
         let source = """
         class Helper {
@@ -132,7 +131,7 @@ struct KotlinCallSiteBroadeningTests {
     }
 
     /// Calls made only from a property initializer, an `init { }` block, or a custom accessor are
-    /// recorded so their targets aren't false-flagged as dead (RC2).
+    /// recorded so their targets aren't false-flagged as dead.
     @Test func capturesInitializerInitBlockAndAccessorCalls() {
         let source = """
         class Worker {

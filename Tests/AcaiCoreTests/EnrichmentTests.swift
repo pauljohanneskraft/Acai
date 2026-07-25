@@ -2,8 +2,7 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Regression tests for the AcaiCore enrichment passes
-/// (BUG-1/2/3/6/7/11/12 and GAP-7/8/9).
+/// Regression tests for the AcaiCore enrichment passes.
 @Suite("Core: Enrichment Passes")
 struct EnrichmentTests {
 
@@ -107,10 +106,9 @@ struct EnrichmentTests {
         #expect(resolved.relationships.allSatisfy { $0.kind != .extension })
     }
 
-    /// A protocol conformance declared on an `extension` (not the base declaration) must survive
-    /// onto the merged type's own `inheritedTypes` — not just as a derived `Relationship` edge —
-    /// so consumers that read `TypeDeclaration.inheritedTypes` directly (e.g. `DeadCodeScan`'s
-    /// protocol-witness exemption) see it too.
+    /// A protocol conformance declared on an `extension` (not the base declaration) must survive onto
+    /// the merged type's own `inheritedTypes`, not just as a derived `Relationship` edge, so consumers
+    /// that read `TypeDeclaration.inheritedTypes` directly (e.g. `DeadCodeScan`) see it too.
     @Test func extensionConformanceSurvivesOntoMergedTypeInheritedTypes() {
         let base = type("Foo", kind: .struct, accessLevel: .public, inherited: ["Baseline"])
         var ext = type("Foo", extensionOf: "Foo")
@@ -169,11 +167,10 @@ struct EnrichmentTests {
 
     // MARK: RC-F — bare-name extension-target fallback is module-scoped
 
-    /// `extension Node { ... }` on an *external* type (e.g. `SwiftTreeSitter.Node`) must not
-    /// silently merge into an unrelated in-project nested type that happens to share the bare name
-    /// (`FreeformDiagram.Node`) just because it's the only declared `Node` — the extension's own
-    /// module (`AcaiTreeSitter`) doesn't match the nested type's module (`AcaiApp`), so the fallback
-    /// must refuse to guess and drop the extension like any other external-type extension.
+    /// `extension Node { ... }` on an *external* type must not silently merge into an unrelated
+    /// in-project nested type that happens to share the bare name just because it's the only declared
+    /// `Node` — the extension's own module must match the nested type's module, or the fallback drops
+    /// the extension like any other external-type extension.
     @Test func bareNameExtensionDoesNotMergeAcrossModules() {
         var nestedNode = type(
             "Node", kind: .struct, accessLevel: .public,
@@ -198,8 +195,8 @@ struct EnrichmentTests {
         #expect(resolved.types.filter { $0.kind == .extension }.isEmpty)
     }
 
-    /// The bare-name fallback still works when the extension and its nested target genuinely share
-    /// a module — module-scoping must not break the legitimate case.
+    /// The bare-name fallback still works when the extension and its nested target genuinely share a
+    /// module.
     @Test func bareNameExtensionMergesIntoSameModuleNestedType() {
         var nestedNode = type(
             "Node", kind: .struct, accessLevel: .public,
@@ -222,7 +219,7 @@ struct EnrichmentTests {
         #expect(mergedNode?.members.contains { $0.name == "helper" } == true)
     }
 
-    // MARK: WS6 — deferred call-site receiver resolution (cross-file + multi-hop)
+    // MARK: - Deferred call-site receiver resolution (cross-file + multi-hop)
 
     private func method(_ name: String, callSites: [CallSite] = []) -> Member {
         Member(name: name, kind: .method, accessLevel: .internal, callSites: callSites)

@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai metrics`: its `--from`/`--source` validation and the on-the-fly analysis →
-/// JSON-metrics output path.
 @Suite("Metrics Command")
 struct MetricsCommandTests {
 
@@ -42,7 +40,6 @@ struct MetricsCommandTests {
             )
             try cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
-            // Valid JSON object carrying the metrics sections.
             #expect(contents.hasPrefix("{"))
             #expect(contents.contains("counts"))
             #expect(contents.contains("totalTypes"))

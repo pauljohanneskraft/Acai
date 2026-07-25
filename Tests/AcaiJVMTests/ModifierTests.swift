@@ -24,7 +24,7 @@ struct JavaModifierTests {
         #expect(concreteMethod?.modifiers.contains(.abstract) == false)
     }
 
-    /// `@Override` maps to the `.override` modifier so the dead-code scan exempts the override (RC3).
+    /// `@Override` maps to the `.override` modifier so the dead-code scan exempts the override.
     @Test func annotationOverrideMapsToModifier() {
         let source = """
         class Impl extends Base {

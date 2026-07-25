@@ -4,11 +4,10 @@ import Testing
 @Suite("Core: Feature-Envy Delegation (#111)")
 struct FeatureEnvyDelegationTests {
 
-    /// ACCEPTED PRECISION TRADEOFF (issue #111): an own-field read counts toward "own" — including the
-    /// receiver identifier of a delegated call, since `ledger.credit()` records a bare read of the
-    /// `ledger` field. So a method that only delegates through its own field scores own == foreign and
-    /// is *not* flagged envious. Pinned deliberately; ``LcomAnalysis`` relies on the same read capture,
-    /// where linking the two methods by the shared `ledger` field is correct.
+    /// Accepted precision tradeoff: an own-field read counts toward "own" — including the receiver
+    /// identifier of a delegated call, since `ledger.credit()` records a bare read of the `ledger`
+    /// field. So a method that only delegates through its own field scores own == foreign and is
+    /// *not* flagged envious. Pinned deliberately; ``LcomAnalysis`` relies on the same read capture.
     @Test func delegatingThroughAnOwnFieldCountsAsOwnInterest() {
         let ledger = TypeDeclaration(
             id: "Ledger", name: "Ledger", qualifiedName: "Ledger", kind: .class, accessLevel: .public,

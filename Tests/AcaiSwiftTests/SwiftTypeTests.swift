@@ -26,7 +26,7 @@ struct SwiftTypeTests {
         #expect(animal.name == "Animal")
         #expect(animal.kind == .class)
         #expect(animal.accessLevel == .public)
-        #expect(animal.members.count == 4) // 2 props + init + method
+        #expect(animal.members.count == 4)
     }
 
     @Test func implicitTypeAccessDefaultsToInternal() {
@@ -44,8 +44,7 @@ struct SwiftTypeTests {
     }
 
     @Test func protocolMembersInheritProtocolAccess() {
-        // Protocol requirements have no access modifier of their own; they take the
-        // protocol's. A public protocol's members are public; an implicit (internal) one's are internal.
+        // Protocol requirements have no access modifier of their own; they take the protocol's.
         let source = """
         public protocol Service {
             var id: Int { get }
@@ -110,7 +109,7 @@ struct SwiftTypeTests {
         let repo = artifact.types[0]
         #expect(repo.kind == .protocol)
         #expect(repo.accessLevel == .public)
-        #expect(repo.members.count == 2) // findAll + save
+        #expect(repo.members.count == 2)
     }
 
     @Test func extensionDeclaration() {
@@ -194,7 +193,7 @@ struct SwiftTypeTests {
         #expect(artifact.types.count == 1)
         #expect(artifact.types[0].name == "DataStore")
         #expect(artifact.types[0].kind == .actor)
-        #expect(artifact.types[0].members.count == 2) // items + add
+        #expect(artifact.types[0].members.count == 2)
     }
 
     @Test func enumWithAssociatedValues() {
@@ -254,13 +253,12 @@ struct SwiftTypeTests {
         let container = artifact.types[0]
         let valueMember = container.members.first { $0.name == "value" }
         #expect(valueMember != nil)
-        // The generic type should have exactly 2 arguments, not 3.
-        // `String & CustomStringConvertible` is a single composition type, not two separate types.
+        // `String & CustomStringConvertible` is one composition type, not two separate arguments.
         let typeRef = valueMember?.type
         #expect(typeRef?.genericArguments.count == 2)
         #expect(typeRef?.genericArguments[0].name == "String & CustomStringConvertible")
-        // The composition's components are stored as nested genericArguments
-        // so the enricher can discover them for relationship inference.
+        // The composition's components are stored as nested genericArguments so the enricher can
+        // discover them for relationship inference.
         #expect(typeRef?.genericArguments[0].genericArguments.count == 2)
         #expect(typeRef?.genericArguments[0].genericArguments[0].name == "String")
         #expect(typeRef?.genericArguments[0].genericArguments[1].name == "CustomStringConvertible")

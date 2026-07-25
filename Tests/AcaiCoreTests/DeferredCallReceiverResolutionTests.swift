@@ -1,11 +1,10 @@
 import Testing
 @testable import AcaiCore
 
-/// Post-merge resolution of the deferred `CallReceiver` cases added alongside a dead-code
-/// false-positive pass: `.unresolvedTypeName` with a dotted qualified path (fully-qualified
-/// nested-type receivers), `.ownPropertyElement` (closure-`$0` array-element receivers), and
-/// `.ownMethodReturn` (cross-file same-type method-return locals). See `EnrichmentTests` for the
-/// original `.unresolvedTypeName`/`.propertyChain`/`.ownProperty` coverage this extends.
+/// Post-merge resolution of deferred `CallReceiver` cases: `.unresolvedTypeName` with a dotted
+/// qualified path (fully-qualified nested-type receivers), `.ownPropertyElement` (closure-`$0`
+/// array-element receivers), and `.ownMethodReturn` (cross-file same-type method-return locals).
+/// See `EnrichmentTests` for the original `.unresolvedTypeName`/`.propertyChain`/`.ownProperty` coverage.
 @Suite("Core: Deferred Call-Receiver Resolution")
 struct DeferredCallReceiverResolutionTests {
 
@@ -33,11 +32,10 @@ struct DeferredCallReceiverResolutionTests {
         CodeArtifact(metadata: .init(sourceLanguage: .swift), types: types)
     }
 
-    /// `.unresolvedTypeName` accepts a dotted qualified-path (`Outer.Inner`), not just a simple name —
-    /// the fully-qualified nested-type receiver case (`Outer.Inner.method()`). An exact `qualifiedName`
-    /// match resolves even when the *simple* name alone is ambiguous project-wide (two unrelated
-    /// nested types both named `Payload`), and the promoted `.type` carries the resolved declaration's
-    /// own simple name, never the dotted path (the producer contract `.type` requires).
+    /// `.unresolvedTypeName` accepts a dotted qualified-path (`Outer.Inner.method()`), not just a
+    /// simple name. An exact `qualifiedName` match resolves even when the simple name alone is
+    /// ambiguous project-wide, and the promoted `.type` carries the resolved declaration's own simple
+    /// name, never the dotted path.
     @Test func unresolvedTypeNameResolvesQualifiedPathDespiteAmbiguousSimpleName() {
         let innerA = TypeDeclaration(
             id: "OuterA.Payload", name: "Payload", qualifiedName: "OuterA.Payload", kind: .struct,
@@ -66,10 +64,8 @@ struct DeferredCallReceiverResolutionTests {
     }
 
     /// `.ownPropertyElement` promotes to the *element* type of an array-typed stored property on the
-    /// call site's own (fully-merged) enclosing type — the closure-`$0` receiver case
-    /// (`items.map { $0.method() }` when `items` is declared in a sibling extension file). A
-    /// non-array property (or an absent one) must not resolve — only an array's element is ever a
-    /// valid receiver here.
+    /// call site's own (fully-merged) enclosing type — the closure-`$0` receiver case. A non-array
+    /// property (or an absent one) must not resolve.
     @Test func ownPropertyElementResolvesArrayPropertyElementType() {
         let item = type("Item", members: [method("describe")])
         let owner = type("Owner", members: [
@@ -98,8 +94,7 @@ struct DeferredCallReceiverResolutionTests {
     }
 
     /// `.ownMethodReturn` promotes to a same-type method's declared return type — the cross-file
-    /// same-type method-return-local case (`let x = compute(); x.method()` when `compute()` is
-    /// declared in a sibling extension file this call site's own file doesn't see).
+    /// same-type method-return-local case (`let x = compute(); x.method()`).
     @Test func ownMethodReturnResolvesMethodReturnType() {
         let widget = type("Widget", members: [method("use")])
         let worker = type("Worker", members: [

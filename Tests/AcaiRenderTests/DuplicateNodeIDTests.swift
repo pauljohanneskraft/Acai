@@ -4,10 +4,9 @@ import Testing
 import AcaiCore
 
 /// Two distinct types can carry the same `id` when a language doesn't qualify by module — e.g.
-/// two top-level Python classes of the same name in different files. The diagram layout maps
-/// type ids with `Dictionary(uniqueKeysWithValues:)`, which traps on duplicate keys (the crash
-/// reported on a real Python codebase). `DiagramLayoutModel` must collapse such nodes to a
-/// unique-by-id set.
+/// two top-level Python classes of the same name in different files. The diagram layout maps type
+/// ids with `Dictionary(uniqueKeysWithValues:)`, which traps on duplicate keys, so
+/// `DiagramLayoutModel` must collapse such nodes to a unique-by-id set.
 @Suite("Duplicate node-id handling")
 struct DuplicateNodeIDTests {
 

@@ -14,20 +14,16 @@ enum CLITestSupport {
 
     // MARK: - Parsing
 
-    /// Parses `diagram`-subcommand `arguments` into the concrete `Diagram` command, failing the
-    /// test if the root resolves to anything else.
     static func parseDiagram(_ arguments: [String]) throws -> AcaiCommand.Diagram {
         let root = try AcaiCommand.parseAsRoot(["diagram"] + arguments)
         return try #require(root as? AcaiCommand.Diagram)
     }
 
-    /// Parses `analyze`-subcommand `arguments` into the concrete `Analyze` command.
     static func parseAnalyze(_ arguments: [String]) throws -> AcaiCommand.Analyze {
         let root = try AcaiCommand.parseAsRoot(["analyze"] + arguments)
         return try #require(root as? AcaiCommand.Analyze)
     }
 
-    /// Parses `metrics`-subcommand `arguments` into the concrete `Metrics` command.
     static func parseMetrics(_ arguments: [String]) throws -> AcaiCommand.Metrics {
         let root = try AcaiCommand.parseAsRoot(["metrics"] + arguments)
         return try #require(root as? AcaiCommand.Metrics)
@@ -42,42 +38,35 @@ enum CLITestSupport {
     }
     #endif
 
-    /// Parses `rules init`-subcommand `arguments` into the concrete nested `Rules.Init` command.
     static func parseRulesInit(_ arguments: [String]) throws -> AcaiCommand.Rules.Init {
         let root = try AcaiCommand.parseAsRoot(["rules", "init"] + arguments)
         return try #require(root as? AcaiCommand.Rules.Init)
     }
 
-    /// Parses `inspect`-subcommand `arguments` into the concrete `Inspect` command.
     static func parseInspect(_ arguments: [String]) throws -> AcaiCommand.Inspect {
         let root = try AcaiCommand.parseAsRoot(["inspect"] + arguments)
         return try #require(root as? AcaiCommand.Inspect)
     }
 
-    /// Parses `quality`-subcommand `arguments` into the concrete `Quality` command.
     static func parseQuality(_ arguments: [String]) throws -> AcaiCommand.Quality {
         let root = try AcaiCommand.parseAsRoot(["quality"] + arguments)
         return try #require(root as? AcaiCommand.Quality)
     }
 
-    /// Parses `callgraph`-subcommand `arguments` into the concrete `CallGraph` command.
     static func parseCallGraph(_ arguments: [String]) throws -> AcaiCommand.CallGraph {
         let root = try AcaiCommand.parseAsRoot(["callgraph"] + arguments)
         return try #require(root as? AcaiCommand.CallGraph)
     }
 
-    /// Parses `impact`-subcommand `arguments` into the concrete `Impact` command.
     static func parseImpact(_ arguments: [String]) throws -> AcaiCommand.Impact {
         let root = try AcaiCommand.parseAsRoot(["impact"] + arguments)
         return try #require(root as? AcaiCommand.Impact)
     }
 
-    /// The human-readable message ArgumentParser would print for `error`.
     static func message(for error: Error) -> String {
         AcaiCommand.message(for: error)
     }
 
-    /// The process exit code ArgumentParser would use for `error`.
     static func exitCode(for error: Error) -> ExitCode {
         AcaiCommand.exitCode(for: error)
     }

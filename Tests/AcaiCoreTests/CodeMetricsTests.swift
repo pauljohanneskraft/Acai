@@ -22,7 +22,7 @@ struct CodeMetricsTests {
     }
 
     /// A method whose body only *reads* the stored property `field` (via `self`) — for cohesion and
-    /// feature-envy tests exercising read-capture (issue #111).
+    /// feature-envy tests exercising read-capture.
     private func method(_ name: String, reads field: String) -> Member {
         Member(name: name, kind: .method, accessLevel: .internal, fieldReads: [FieldAccess(name: field)])
     }

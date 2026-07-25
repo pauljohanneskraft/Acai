@@ -56,10 +56,8 @@ struct PolyglotConfigResolutionTests {
     }
 
     @Test func perTypeReEnrichmentIsIdempotentOnAPolyglotArtifact() throws {
-        // The artifact is already enriched per-language by `AnalysisService`. Re-enriching it through
-        // the per-type resolver must be a no-op — proving structural-edge inference classifies each
-        // language's types with its own config. (Re-enriching with a single dominant config would
-        // re-infer the non-dominant language's edges and change the relationship set.)
+        // Re-enriching the already-enriched artifact through the per-type resolver must be a no-op —
+        // a single dominant config would re-infer the non-dominant language's edges and change the set.
         let artifact = try analyzePolyglotFixture()
         let reEnriched = artifact.enriched(using: artifact.standardLanguageResolver)
         let key: (Relationship) -> String = { "\($0.source)→\($0.target):\($0.kind.rawValue)" }

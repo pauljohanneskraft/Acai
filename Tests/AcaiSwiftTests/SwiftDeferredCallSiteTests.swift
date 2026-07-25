@@ -114,8 +114,7 @@ struct SwiftDeferredCallSiteTests {
 
     /// The top-level (module-scope) analogue of `deferStaticMemberLocalWhenTypeIsCrossFile` — a
     /// `main.swift`-style global bound from `Type.staticMember` still resolves a later top-level call
-    /// through it (RC-H's static-member gap: `let registry = ToolRegistry.standard` /
-    /// `registry.registerHandlers()`).
+    /// through it.
     @Test func capturesTopLevelCallOnStaticMemberGlobal() {
         let source = """
         let registry = ToolRegistry.standard

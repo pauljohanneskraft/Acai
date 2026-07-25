@@ -37,7 +37,6 @@ enum MCPTestSupport {
         return fileURL
     }
 
-    /// The arguments object for a tool call over `directory`, merged with any extras.
     static func arguments(path: URL, _ extra: [String: Value] = [:]) -> [String: Value] {
         var values: [String: Value] = ["path": .string(path.path)]
         for (key, value) in extra {

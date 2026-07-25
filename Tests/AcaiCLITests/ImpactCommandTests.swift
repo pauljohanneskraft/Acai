@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai impact`: `--from`/`--source` validation and the blast-radius JSON for a known type.
 @Suite("Impact Command")
 struct ImpactCommandTests {
 

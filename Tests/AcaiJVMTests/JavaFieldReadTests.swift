@@ -24,8 +24,8 @@ struct JavaFieldReadTests {
         """
         let reads = member("describe", in: source)?.fieldReads ?? []
         let names = Set(reads.map(\.name))
-        #expect(names.contains("total"))   // bare identifier read
-        #expect(names.contains("label"))   // this-qualified read
+        #expect(names.contains("total"))
+        #expect(names.contains("label"))
         #expect(reads.allSatisfy { $0.receiver == nil })
     }
 

@@ -2,7 +2,7 @@ import Testing
 @testable import AcaiCLI
 import AcaiDiagram
 
-/// Unit tests for the pure state-variable parser (promoted to AcaiDiagram/Export/StateVariableSpec.swift).
+/// Unit tests for the pure state-variable parser (AcaiDiagram/Export/StateVariableSpec.swift).
 @Suite("State Variable Spec")
 struct StateVariableSpecTests {
 

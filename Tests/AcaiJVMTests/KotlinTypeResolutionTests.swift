@@ -41,7 +41,6 @@ struct KotlinTypeResolutionTests {
         """
         let artifact = parser.parse(source: source, fileName: "Animals.kt")
         let dog = artifact.types.first { $0.name == "Dog" }!
-        // inheritedTypes names should use qualified IDs for same-file types.
         #expect(dog.inheritedTypes.contains { $0.name == "com.example.Animal" })
         #expect(dog.inheritedTypes.contains { $0.name == "com.example.Identifiable" })
 
@@ -65,7 +64,6 @@ struct KotlinTypeResolutionTests {
         let success = result.nestedTypes.first { $0.name == "Success" }!
         let failure = result.nestedTypes.first { $0.name == "Failure" }!
 
-        // Nested types must include the parent in their qualified ID.
         #expect(success.id == "com.example.Result.Success")
         #expect(success.qualifiedName == "com.example.Result.Success")
         #expect(failure.id == "com.example.Result.Failure")
@@ -84,10 +82,8 @@ struct KotlinTypeResolutionTests {
         let artifact = parser.parse(source: source, fileName: "Result.kt")
         let rels = artifact.relationships.filter { $0.kind == .inheritance }
         #expect(rels.count == 2)
-        // Sources must be the fully-qualified nested type IDs.
         #expect(rels.contains { $0.source == "com.example.Result.Success" })
         #expect(rels.contains { $0.source == "com.example.Result.Failure" })
-        // Targets must point to the parent's qualified ID.
         #expect(rels.allSatisfy { $0.target == "com.example.Result" })
     }
 
@@ -128,7 +124,6 @@ struct KotlinTypeResolutionTests {
         let artifact = parser.parse(source: source, fileName: "Outer.kt")
         let outer = artifact.types.first { $0.name == "Outer" }!
         let childProp = outer.members.first { $0.name == "child" }
-        // The type reference for "Inner" should be present.
         #expect(childProp?.type?.name == "Inner")
     }
 
@@ -156,13 +151,11 @@ struct KotlinTypeResolutionTests {
         """
         let artifact = parser.parse(source: source, fileName: "Domain.kt")
 
-        // All relationships in the same file should have qualified source and target.
         for rel in artifact.relationships {
             #expect(
                 rel.source.contains("com.example.domain"),
                 "source '\(rel.source)' should be qualified"
             )
-            // Targets should also be qualified for same-file types.
             #expect(
                 rel.target.contains("com.example.domain"),
                 "target '\(rel.target)' should be qualified"
@@ -171,8 +164,8 @@ struct KotlinTypeResolutionTests {
     }
 
     @Test func crossFileRelationshipTargetsUseSimpleNames() {
-        // When parsing a single file, references to types NOT in the same file
-        // remain as simple names (resolution happens later in the enricher).
+        // Single-file parsing leaves references to types outside the file as simple names;
+        // resolution happens later in the enricher.
         let source = """
         package com.example.app
 
@@ -227,13 +220,11 @@ struct KotlinTypeResolutionTests {
     // MARK: - Multi-File Simulation
 
     @Test func multiFileInheritanceProducesResolvableRelationship() {
-        // File 1: defines Animal
         let source1 = """
         package com.example
 
         open class Animal(val name: String)
         """
-        // File 2: defines Dog extending Animal
         let source2 = """
         package com.example
 
@@ -243,13 +234,11 @@ struct KotlinTypeResolutionTests {
         let artifact2 = parser.parse(source: source2, fileName: "Dog.kt")
         let merged = artifact1.merging(with: artifact2)
 
-        // Relationship must exist with qualified source and simple target.
         let inheritance = merged.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.Dog")
         // Target is just "Animal" because it's not defined in Dog.kt.
         #expect(inheritance?.target == "Animal")
 
-        // Both types must be in the merged artifact.
         #expect(merged.types.contains { $0.id == "com.example.Animal" })
         #expect(merged.types.contains { $0.id == "com.example.Dog" })
     }

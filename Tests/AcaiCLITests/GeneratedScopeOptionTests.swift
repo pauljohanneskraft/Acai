@@ -2,8 +2,6 @@ import ArgumentParser
 import Testing
 @testable import AcaiCLI
 
-/// The `--include-generated` flag shared by the analysis commands: absent means generated types are
-/// excluded (the default), present means they're included.
 @Suite("Generated scope option")
 struct GeneratedScopeOptionTests {
 

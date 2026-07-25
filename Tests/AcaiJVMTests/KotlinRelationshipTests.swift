@@ -33,8 +33,7 @@ struct KotlinRelationshipTests {
         #expect(animal.id == "com.example.domain.Animal")
         #expect(dog.id == "com.example.domain.Dog")
 
-        // Relationship source and target must use qualified IDs matching type.id,
-        // so that matching works without relying on downstream name resolution.
+        // Relationship source/target must use qualified IDs matching type.id.
         let inheritance = artifact.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.domain.Dog")
         #expect(inheritance?.target == "com.example.domain.Animal")
@@ -119,7 +118,6 @@ struct KotlinRelationshipTests {
         let artifact = parser.parse(source: source, fileName: "Result.kt")
         let rels = artifact.relationships.filter { $0.kind == .inheritance }
         #expect(rels.count == 2)
-        // Targets must use the qualified ID, not the short name.
         #expect(rels.allSatisfy { $0.target == "com.example.Result" })
     }
 

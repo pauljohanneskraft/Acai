@@ -224,10 +224,9 @@ struct SequenceDiagramTests {
     }
 
     @Test func unresolvedImplicitReceiverCallIsDropped() {
-        // An implicit-receiver call that matches neither a same-type method nor a free function —
-        // a builtin, a local's method, or an inherited `self.x()` whose body isn't in the artifact —
-        // is dropped rather than drawn as a dead-end self-message. (Behavior change: such calls
-        // previously rendered as a `Caller → Caller` self-message; this matches the call graph.)
+        // An implicit-receiver call that matches neither a same-type method nor a free function
+        // (a builtin, a local's method, an inherited `self.x()` not in the artifact) is dropped
+        // rather than drawn as a dead-end self-message, matching the call graph.
         let art = artifact(
             types: [type("Worker", kind: .class, accessLevel: .public, members: [
                 method("run", calls: [CallSite(receiver: .selfDispatch, methodName: "inheritedSetup")])

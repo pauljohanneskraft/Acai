@@ -124,7 +124,6 @@ struct PythonTypeTests {
         #expect(topLevelInner?.id == "Inner")
         #expect(nestedInner?.id == "Outer.Inner")
         #expect(nestedInner?.qualifiedName == "Outer.Inner")
-        // The two distinct `Inner` types must not share an id.
         #expect(topLevelInner?.id != nestedInner?.id)
     }
 

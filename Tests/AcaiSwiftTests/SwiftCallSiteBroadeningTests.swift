@@ -140,7 +140,7 @@ struct SwiftCallSiteBroadeningTests {
     }
 
     /// A typed function parameter is a provable call-site receiver, just like a stored property —
-    /// `param.method()` inside the body must resolve (dead-code false positive: RC-G).
+    /// `param.method()` inside the body must resolve.
     @Test func resolvesCallOnTypedParameter() {
         let sites = callSites(in: """
         class Helper { func process() {} }
@@ -171,7 +171,7 @@ struct SwiftCallSiteBroadeningTests {
 
     /// A local initialized from a same-type method call (`let x = compute()` / `let x =
     /// self.compute()`) resolves its receiver type from the method's unambiguous return type, the
-    /// same way a direct construction already does (dead-code false positive: RC-I).
+    /// same way a direct construction already does.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let sites = callSites(in: """
         class Widget { func use() {} }
@@ -191,7 +191,7 @@ struct SwiftCallSiteBroadeningTests {
 
     /// A bare top-level statement (a `main.swift`-style script) makes a call whose target has nowhere
     /// to attach as a caller — collected separately and given a synthetic reachable member so the
-    /// callee isn't a dead-code false positive (RC-H).
+    /// callee isn't a dead-code false positive.
     @Test func capturesTopLevelBareCall() {
         let source = """
         func boot() {}
@@ -205,7 +205,7 @@ struct SwiftCallSiteBroadeningTests {
 
     /// A top-level call resolves on a global whose type is provable (an explicit annotation or a
     /// direct construction), declared earlier in the file — the top-level analogue of a stored
-    /// property receiver (RC-H).
+    /// property receiver.
     @Test func capturesTopLevelCallOnTypedGlobal() {
         let source = """
         class Registry { func registerHandlers() {} }
@@ -222,7 +222,7 @@ struct SwiftCallSiteBroadeningTests {
     /// A protocol extension's default implementation calling through a requirement property
     /// (`history.undo()`, where `history` is declared on the protocol, not the extension) must
     /// resolve — the extension's own member list never carries the protocol's requirement
-    /// properties, so this was previously dropped (dead-code false positive: WS7).
+    /// properties, so this was previously dropped (dead-code false positive).
     @Test func resolvesCallThroughProtocolRequirementPropertyInExtension() {
         let source = """
         class History { func undo() {} }

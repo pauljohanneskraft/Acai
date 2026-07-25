@@ -23,7 +23,6 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // Should have a composition edge from Car to Engine
         #expect(dot.contains("\"Car\" -> \"Engine\""))
         #expect(dot.contains("arrowtail=diamond"))
     }
@@ -45,7 +44,6 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // Should have an aggregation edge from Car to Wheel
         #expect(dot.contains("\"Car\" -> \"Wheel\""))
         #expect(dot.contains("arrowtail=odiamond"))
     }
@@ -86,7 +84,6 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
-        // External type should be rendered as a gray placeholder
         #expect(dot.contains("ExternalBase"))
         #expect(dot.contains("#E8E8E8")) // external node gray fill
     }
@@ -110,11 +107,9 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // Inheritance edge to ExternalBase is KEPT (parser-produced).
+        // Inheritance to ExternalBase is kept (parser-produced); composition to ExternalCollar is
+        // filtered (inferred, external target) — no separate node or edge for it.
         #expect(dot.contains("ExternalBase"))
-        // Composition edge to ExternalCollar is FILTERED (inferred, external target).
-        // The type name may still appear in the property label inside the Dog node,
-        // but there must be no separate node or edge for it.
         #expect(!dot.contains("\"ExternalCollar\""))
     }
 
@@ -140,9 +135,8 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // Should have inheritance edge
         #expect(dot.contains("arrowhead=empty"))
-        // Should NOT have composition edge (redundant with inheritance)
+        // No composition edge — redundant with inheritance.
         #expect(!dot.contains("arrowtail=diamond"))
     }
 
@@ -199,14 +193,12 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // The enricher should resolve "Child" → "com.example.Child" and "Base" → "com.example.Base"
         #expect(dot.contains("\"com.example.Child\" -> \"com.example.Base\""))
     }
 
     @Test func compositionTypeInPropertyProducesIndividualEdges() {
-        // A property typed `Drawable & Printable` should create edges to both types.
-        // The parser stores composition components as genericArguments on the TypeReference,
-        // so the enricher finds them via its existing recursive traversal.
+        // A property typed `Drawable & Printable` creates edges to both types: the parser stores
+        // composition components as genericArguments on the TypeReference.
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
@@ -261,10 +253,8 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func crossFileRelationshipsResolvedByEnricher() {
-        // Simulates two Kotlin files parsed separately and merged:
-        // File 1 defines Animal, File 2 defines Dog extending Animal.
-        // After merging, the relationship target "Animal" (simple name from source text)
-        // must be resolved to "com.example.Animal" (qualified ID) by the enricher.
+        // Two Kotlin files parsed separately and merged: after merging, the relationship target
+        // "Animal" (simple name from source text) must resolve to "com.example.Animal" (qualified ID).
         let file1 = CodeArtifact(
             metadata: .init(sourceLanguage: .kotlin, filePaths: ["Animal.kt"]),
             types: [
@@ -296,19 +286,17 @@ struct ClassDiagramEnricherTests {
         let merged = file1.merging(with: file2)
         let result = ClassDiagram(merged)
 
-        // Enricher must resolve "Animal" to "com.example.Animal".
         let inheritance = result.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.Dog")
         #expect(inheritance?.target == "com.example.Animal")
 
-        // Both endpoints must be in the known types.
         let ids = Set(result.types.map(\.id))
         #expect(ids.contains("com.example.Dog"))
         #expect(ids.contains("com.example.Animal"))
     }
 
     @Test func multiFilePropertyEdgesResolved() {
-        // Simulates a property type reference to a type from a different file.
+        // A property type reference to a type from a different file.
         let file1 = CodeArtifact(
             metadata: .init(sourceLanguage: .java, filePaths: ["Engine.java"]),
             types: [
@@ -340,7 +328,6 @@ struct ClassDiagramEnricherTests {
         let merged = file1.merging(with: file2)
         let result = ClassDiagram(merged)
 
-        // Enricher should infer a composition edge from Car to Engine.
         let compositions = result.relationships.filter {
             $0.kind == .composition && $0.source == "com.example.Car"
         }

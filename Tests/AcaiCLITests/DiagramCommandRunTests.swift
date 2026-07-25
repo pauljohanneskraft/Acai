@@ -29,8 +29,8 @@ struct DiagramCommandRunTests {
     @Test func malformedSequenceEntryPointThrows() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
-            // A leading/trailing dot is malformed; a bare name (no dot) is now a valid form — it
-            // denotes a top-level function entry point.
+            // A leading/trailing dot is malformed; a bare name (no dot) denotes a top-level
+            // function entry point.
             for bad in [".method", "Type."] {
                 try expectRunError(
                     ["--source", dir.path, "--sequence-from", bad],
@@ -120,8 +120,8 @@ struct DiagramCommandRunTests {
 
     @Test func minAccessFiltersMiddleTiers() throws {
         try CLITestSupport.withTempDirectory { dir in
-            // Exercises the contested package/internal boundary: `package` outranks `internal`, so
-            // `--min-access packagePrivate` keeps the package member and drops the internal one.
+            // `package` outranks `internal`, so `--min-access packagePrivate` keeps the package
+            // member and drops the internal one.
             let source = """
             public class Widget {
                 public func shown() {}
