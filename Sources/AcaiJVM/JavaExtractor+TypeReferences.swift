@@ -36,7 +36,7 @@ extension JavaExtractor {
 
     /// Provable local-variable types: an explicit annotation (`Foo x = …`), a `new Foo()` construction
     /// (`var x = new Foo()`), or a same-type method call with an unambiguous return type (`var x =
-    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "local_variable_declaration",

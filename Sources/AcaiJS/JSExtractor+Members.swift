@@ -214,10 +214,9 @@ extension JSExtractor {
         }
 
         var propType = isTypeScript ? extractTypeAnnotation(node) : nil
-        // No (or no TypeScript) annotation — fall back to inferring the type from a direct
-        // construction initializer (`private cache = new ImageCache();`), the same heuristic
-        // `localBindings` already applies to locals. Without this, a composed collaborator field
-        // gets no recorded type, so calls through it (`this.cache.process()`) can't resolve.
+        // No (or no TypeScript) annotation — infer from a direct construction initializer (`private
+        // cache = new ImageCache();`), same heuristic `localBindings` applies to locals. Without
+        // this, calls through a composed collaborator field (`this.cache.process()`) can't resolve.
         if propType == nil {
             propType = constructedType(fromFieldValue: node.child(byFieldName: "value"))
         }

@@ -42,7 +42,7 @@ extension JSExtractor {
 
     /// Provable local-variable types: a TypeScript annotation (`const x: Foo`), a `new Foo()`
     /// construction, or a same-type method call with an unambiguous return type (`const x =
-    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo` (RC4/RC-I).
+    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "variable_declarator",

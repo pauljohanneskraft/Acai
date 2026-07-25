@@ -10,12 +10,10 @@ struct DeclarationSignatureExtractor {
 
     // MARK: - Access Level
 
-    /// Access level of a Swift declaration. When no explicit modifier is present,
-    /// returns Swift's implicit default of `internal` (this is language-specific —
-    /// e.g. Kotlin defaults to `public` — which is why the default lives in `AcaiSwift`).
+    /// Access level of a Swift declaration; defaults to `internal` when no explicit modifier is
+    /// present (language-specific — e.g. Kotlin defaults to `public` — hence living in `AcaiSwift`).
     func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel {
-        // Skip setter-scoped modifiers (`private(set)` etc.) — those describe the
-        // setter, not the declaration's (getter) access. See `extractSetAccessLevel`.
+        // Skip setter-scoped modifiers (`private(set)` etc.) — see `extractSetAccessLevel`.
         for modifier in modifiers where modifier.detail == nil {
             if let level = accessLevel(for: modifier.name.tokenKind) {
                 return level

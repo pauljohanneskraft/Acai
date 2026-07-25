@@ -4,12 +4,10 @@ import AcaiCore
 /// Collects the resolvable call sites made inside a computed property's accessor bodies
 /// (`var body: some View { … }`, explicit `get`/`set`).
 ///
-/// Runs as a dedicated walk rather than having the main `DeclarationVisitor` descend into the
-/// accessor: member extraction for a `var` stays a single `.skipChildren` step, and — unlike the
-/// coupling metrics' `TypeReferenceCollector`, which is deliberately *not* run over accessor bodies
-/// to avoid overflowing the stack on deep view trees — this only walks the body once, gathering call
-/// sites via the shared `CallSiteCollector`. Unresolvable receivers (SwiftUI modifier chains like
-/// `Text(…).padding()`) are dropped by the collector, so only real, resolvable calls are recorded.
+/// Runs as a dedicated walk rather than having `DeclarationVisitor` descend into the accessor, so
+/// member extraction for a `var` stays a single `.skipChildren` step. Unresolvable receivers (SwiftUI
+/// modifier chains like `Text(…).padding()`) are dropped by the collector, so only real, resolvable
+/// calls are recorded.
 final class AccessorCallSiteWalker: SyntaxVisitor {
     private let collector: CallSiteCollector
     /// Stored properties seeded up front, plus locals declared in the accessor recorded as they're

@@ -146,8 +146,7 @@ extension KotlinExtractor {
 
     /// Provable local-variable types: an explicit annotation (`val x: Foo`), a `Foo()` construction of
     /// a declared type (`val x = Foo()`), or a same-type method call with an unambiguous return type
-    /// (`val x = compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`
-    /// (RC4/RC-I).
+    /// (`val x = compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
         collectLocalBindings(in: body) { node in
             guard node.nodeType == "property_declaration",

@@ -21,7 +21,7 @@ public struct CallSiteScope: Sendable {
     public var knownPropertyNames: Set<String>
     /// `methodName: returnTypeName` for the enclosing type's own methods (unambiguous overloads
     /// only), so a local initialized from a same-type method call (`let x = compute()`) can have its
-    /// type inferred the same way a direct construction already does (RC-I).
+    /// type inferred the same way a direct construction already does.
     public var knownMethodReturnTypes: [String: String]
 
     public init(

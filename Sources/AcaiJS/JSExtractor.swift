@@ -19,7 +19,7 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
     var currentNamespace: String?
     var declaredTypeNames: Set<String> = []
     /// Call sites made by bare top-level statements (`bootstrap();`), collected during
-    /// `walkSourceFile` and attached to a synthetic always-reachable freestanding member (RC-H).
+    /// `walkSourceFile` and attached to a synthetic always-reachable freestanding member.
     var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String, isTypeScript: Bool) {
