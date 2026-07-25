@@ -58,6 +58,12 @@ struct NewCodebaseSheet: View {
                 }
             }
             #if os(macOS)
+            // The default (`.automatic`) form style on macOS renders rows flush against each other
+            // with no card background or breathing room between sections — `.grouped` is what gives
+            // this the same visually-separated, padded section look `NewProjectSheet`'s single
+            // section already gets "for free" (a lone `Section` needs no grouping to look fine; this
+            // sheet's multiple sections do).
+            .formStyle(.grouped)
             .frame(maxWidth: 480)
             #else
             // A single `.large` detent, not `[.medium, .large]`: the GitHub tab's content (source
@@ -94,6 +100,29 @@ struct NewCodebaseSheet: View {
 
     private var localFolderSection: some View {
         Section {
+            #if os(macOS)
+            // Not a bare `TextField("Name", text:)`: confirmed empirically that on macOS, inside a
+            // `Form`, a `TextField`'s own title renders as an extra leading label rather than an
+            // internal placeholder, leaving the field's box looking empty and misaligned against
+            // an explicit `LabeledContent` row like this one — see `NewProjectSheet`'s identical fix
+            // for the full explanation. `prompt:` is unambiguously internal placeholder text.
+            LabeledContent("Name") {
+                TextField("", text: $name, prompt: Text("e.g. MyLibrary"))
+                    .multilineTextAlignment(.trailing)
+                    .focused($isNameFieldFocused)
+                    .accessibilityIdentifier("newCodebase.localNameField")
+            }
+            LabeledContent("Directory") {
+                HStack {
+                    Text(directoryURL?.path ?? "No directory chosen")
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundStyle(directoryURL == nil ? .secondary : .primary)
+                    Button("Choose…") { isChoosingDirectory = true }
+                        .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
+                }
+            }
+            #else
             TextField("Name", text: $name)
                 .focused($isNameFieldFocused)
                 .accessibilityIdentifier("newCodebase.localNameField")
@@ -106,6 +135,7 @@ struct NewCodebaseSheet: View {
                 Button("Choose…") { isChoosingDirectory = true }
                     .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
             }
+            #endif
         }
     }
 
@@ -116,9 +146,22 @@ struct NewCodebaseSheet: View {
         }
         if account != nil {
             Section {
+                #if os(macOS)
+                // Same `prompt:` fix as `localFolderSection` — see its comment.
+                LabeledContent("Name") {
+                    TextField("", text: $name, prompt: Text("Optional"))
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("newCodebase.nameField")
+                }
+                LabeledContent("Search") {
+                    TextField("", text: $repositorySearch, prompt: Text("Search repositories"))
+                        .multilineTextAlignment(.trailing)
+                }
+                #else
                 TextField("Name (optional)", text: $name)
                     .accessibilityIdentifier("newCodebase.nameField")
                 TextField("Search repositories", text: $repositorySearch)
+                #endif
                 if isLoadingRepositories {
                     ProgressView()
                 } else {

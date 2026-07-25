@@ -65,7 +65,24 @@ extension XCUIApplication {
             return
         }
 
-        let destination = FileManager.default.temporaryDirectory
+        #if os(macOS)
+        // Not `FileManager.default.temporaryDirectory`: the macOS UI test runner is sandboxed (its
+        // own `~/Library/Containers/de.kraftsoftware.Acai.UITests.xctrunner/Data/tmp/`), so that
+        // call resolves *inside* the runner's private container — confirmed by inspecting the
+        // actual path on disk. Handing that path to the unsandboxed app-under-test then has it read
+        // fixture state out of a *different* app's sandbox container, which was confirmed (not just
+        // suspected) to be the cause of a macOS UI test run prompting for an "access data from other
+        // apps" permission at launch on every test function, regardless of code-signing identity:
+        // switching to this plain, non-container path made the prompt disappear entirely across a
+        // full 16-test run. The runner can't write to `/private/tmp` under its default sandbox
+        // entitlements either — `App/AcaiUITests-macOS.entitlements` (wired via project.yml's
+        // `CODE_SIGN_ENTITLEMENTS`) adds the one exception (`temporary-exception.files.absolute-
+        // path.read-write` for `/private/tmp/`) needed to permit that.
+        let tempRoot = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
+        #else
+        let tempRoot = FileManager.default.temporaryDirectory
+        #endif
+        let destination = tempRoot
             .appendingPathComponent("AcaiUITestFixture-\(UUID().uuidString)", isDirectory: true)
         do {
             try FileManager.default.copyItem(at: fixtureURL, to: destination)

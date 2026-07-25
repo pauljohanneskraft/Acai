@@ -25,6 +25,10 @@ extension ProjectDetailView {
             .foregroundStyle(.red)
             .accessibilityElement(children: .combine)
         }
+        // Without this, the platform default button chrome (a bordered/padded push button on
+        // macOS) both grows the row taller than the ones above and shifts its content inward,
+        // breaking the icon-frame alignment this view's own doc comment above describes.
+        .buttonStyle(.plain)
         .accessibilityIdentifier("projectDetail.deleteProjectButton")
     }
 }

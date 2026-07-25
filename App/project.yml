@@ -139,6 +139,12 @@ targets:
         # target never had one configured (unnoticed before since `CODE_SIGNING_ALLOWED=NO`
         # skipped signing, and skipped this check, entirely).
         GENERATE_INFOPLIST_FILE: YES
+        # Xcode auto-generates this UI-testing bundle's sandbox entitlements with no way to add to
+        # them from project.yml directly — `AcaiUITests-macOS.entitlements` starts from exactly
+        # those (captured via `codesign -d --entitlements`) plus one addition: write access to real
+        # `/private/tmp`, so `Launch.swift`'s `launchWithFixture` can stage fixtures there instead
+        # of this sandboxed runner's own container-scoped temp directory. See that file's comment.
+        CODE_SIGN_ENTITLEMENTS: AcaiUITests-macOS.entitlements
 
   Acai-macOS:
     type: application

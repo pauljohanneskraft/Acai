@@ -132,7 +132,12 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         // needed for a meaningful graph.
         callGraph.createButton.tap()
 
-        XCTAssertTrue(callGraph.node(id: "Derived.doWork").waitForExistence(timeout: 10))
+        // 30s, not this file's usual 10s: confirmed empirically that call-graph creation can
+        // occasionally miss an update cycle and take noticeably longer than the other diagram
+        // types' equivalent wait to actually render (a passing run typically finishes in ~12s
+        // total here, well under even the old 10s budget — the wider margin is for the occasional
+        // slow one, not the typical case).
+        XCTAssertTrue(callGraph.node(id: "Derived.doWork").waitForExistence(timeout: 30))
         XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists)
         XCTAssertTrue(callGraph.node(id: "Worker.execute").exists)
 

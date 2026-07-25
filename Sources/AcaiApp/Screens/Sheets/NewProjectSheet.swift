@@ -13,14 +13,21 @@ struct NewProjectSheet: View {
         NavigationStack {
             Form {
                 Section {
+                    // `TextField(_:text:)`'s first parameter isn't purely an internal placeholder
+                    // on macOS inside a `LabeledContent` row — confirmed empirically it renders as a
+                    // second, external label ahead of the field's own box, so "e.g. My Project"
+                    // (longer than "Optional") pushed the Title field's box to a different leading
+                    // position/width than Subtitle's. The `prompt:` parameter is unambiguously
+                    // internal placeholder text, keeping both rows' label to just "Title"/
+                    // "Subtitle" and both field boxes the same width.
                     LabeledContent("Title") {
-                        TextField("e.g. My Project", text: $title)
+                        TextField("", text: $title, prompt: Text("e.g. My Project"))
                             .multilineTextAlignment(.trailing)
                             .focused($focusedField, equals: .title)
                             .accessibilityIdentifier("newProjectSheet.titleField")
                     }
                     LabeledContent("Subtitle") {
-                        TextField("Optional", text: $subtitle)
+                        TextField("", text: $subtitle, prompt: Text("Optional"))
                             .multilineTextAlignment(.trailing)
                             .focused($focusedField, equals: .subtitle)
                             .accessibilityIdentifier("newProjectSheet.subtitleField")

@@ -52,10 +52,21 @@ struct CompareOverlayButton: View {
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
         .popover(isPresented: $isPresented) {
-            NavigationStack {
+            // Not `NavigationStack { ... .toolbar { clearButton } }`: confirmed empirically that on
+            // macOS, a `.toolbar` inside a `NavigationStack` presented in a `.popover` renders its
+            // items in the *presenting window's own toolbar* instead of inside the popover — the
+            // popover itself ended up with no visible way to clear the comparison at all, alongside
+            // a second, orphaned "Compare vs git" title in the window toolbar. A plain header row
+            // built directly into the popover's own content sidesteps that entirely.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Compare vs git").font(.headline)
+                    Spacer()
+                    clearButton
+                }
+                .padding()
+                Divider()
                 CompareGitPanel(diagram: diagram)
-                    .navigationTitle("Compare vs git")
-                    .toolbar { clearToolbarItem }
             }
         }
         #else
@@ -63,13 +74,14 @@ struct CompareOverlayButton: View {
             // A sheet, unlike a popover, has no tap-outside-to-dismiss affordance and no built-in
             // close chrome of its own — an explicit Done button is the discoverable, VoiceOver-
             // reachable dismiss path (relying on swipe-to-dismiss alone would be as bad as the
-            // inspector's iPhone close-button gap this pass already fixed elsewhere).
+            // inspector's iPhone close-button gap this pass already fixed elsewhere). Unlike macOS,
+            // a `.sheet`'s `NavigationStack` toolbar renders correctly inside the sheet itself.
             NavigationStack {
                 CompareGitPanel(diagram: diagram)
                     .navigationTitle("Compare vs git")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        clearToolbarItem
+                        ToolbarItem(placement: .cancellationAction) { clearButton }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { isPresented = false }
                                 .accessibilityIdentifier("delta.doneButton")
@@ -81,17 +93,16 @@ struct CompareOverlayButton: View {
         #endif
     }
 
-    /// A real nav-bar button, not a row inside the panel's own content — "Clear" is the counterpart
-    /// to picking a ref from the list, not one more list item, so it lives in the same chrome
-    /// "Done" does rather than at the top of the scrollable content underneath.
-    private var clearToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            Button("Clear") {
-                model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
-            }
-            .disabled(diagram.comparisonGitRef == nil)
-            .accessibilityIdentifier("delta.clearButton")
+    /// "Clear" is the counterpart to picking a ref from the list, not one more list item, so it
+    /// lives in the panel's header chrome rather than at the top of the scrollable content
+    /// underneath — a real button shared verbatim between macOS's inline header row and iOS's
+    /// nav-bar toolbar item.
+    private var clearButton: some View {
+        Button("Clear") {
+            model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
         }
+        .disabled(diagram.comparisonGitRef == nil)
+        .accessibilityIdentifier("delta.clearButton")
     }
 }
 
@@ -107,6 +118,15 @@ struct CompareOverlayButton: View {
 /// the panel the instant a ref was picked (confirmed empirically). Now the boolean's storage lives
 /// here, outside the boundary, so even though the button's own view identity still resets on a ref
 /// change (it renders inside `content`, which is `.id()`'d), the value it binds to does not.
+///
+/// That alone still wasn't sufficient, though (confirmed empirically via a screenshot capturing the
+/// popover fully closed right after picking a ref, despite the diagram canvas correctly showing the
+/// comparison as active): `.popover(isPresented:)`/`.sheet(isPresented:)` react to the binding
+/// *changing*, not to a freshly mounted view simply observing an already-`true` value — and a ref
+/// change tears down and recreates the button (it lives inside `content`, which just got a new
+/// `.id()`), so the new button mounts already "on" with nothing to transition from. Forcing a real
+/// `false` → `true` transition right after the id changes is what actually re-triggers presentation
+/// on the new button instance.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
@@ -119,6 +139,11 @@ struct DeltaHostedDiagramView<Content: View>: View {
             .id("\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(loaded)")
             .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")") {
                 await model.ensureComparisonLoaded(for: diagram)
+            }
+            .onChange(of: diagram.comparisonGitRef) { _, _ in
+                guard isComparePresented else { return }
+                isComparePresented = false
+                DispatchQueue.main.async { isComparePresented = true }
             }
     }
 }

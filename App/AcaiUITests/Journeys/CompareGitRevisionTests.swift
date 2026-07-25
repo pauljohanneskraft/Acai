@@ -67,9 +67,13 @@ final class CompareGitRevisionTests: XCTestCase {
         )
 
         // Pick HEAD directly from the ref picker (no separate on/off toggle) and wait for the "old"
-        // snapshot to load.
+        // snapshot to load. 30s, not this file's more typical ~10s: the "old" side is a real
+        // `git` tree extraction + full re-analysis (`GitRevisionSnapshot`), not a cached lookup —
+        // confirmed empirically that this can occasionally take noticeably longer than a quick
+        // structural diagram build, the same class of occasional-slow-update seen and fixed for
+        // call-graph creation (`GeneratedDiagramScreenshotTests`).
         diagram.chooseCompareRef("HEAD")
-        let loaded = diagram.compareLoadedIndicator.waitForExistence(timeout: 15)
+        let loaded = diagram.compareLoadedIndicator.waitForExistence(timeout: 30)
         let errorExists = diagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? diagram.compareErrorIndicator.label : "(no error shown)"
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")
