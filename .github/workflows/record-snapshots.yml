@@ -4,6 +4,13 @@ name: Record Snapshots
 # `App/AcaiUITests/__Snapshots__/<platform>/` subtree as a downloadable artifact, so a human can
 # drop it straight on top of the local folder instead of re-recording locally. Recording never
 # asserts, so the resulting PNGs still need human review before committing.
+#
+# Each job deletes its platform's existing snapshot files before recording (see "Clear existing
+# snapshots" below) — a PNG surviving in the checkout only because its own test never got a chance
+# to overwrite it (a build error, a crash partway through the suite, a timeout) would otherwise be
+# indistinguishable in the uploaded artifact from one freshly regenerated this run. With the clear
+# step, a state that's missing from the downloaded zip means exactly that: it did not get
+# regenerated this run — go check the job log, don't assume the zip is merely "unchanged".
 on:
   workflow_dispatch:
 
@@ -32,6 +39,9 @@ jobs:
 
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
+
+      - name: Clear existing snapshots
+        run: rm -rf App/AcaiUITests/__Snapshots__/iPhone
 
       - name: Record UI test screenshots
         run: |
@@ -79,6 +89,9 @@ jobs:
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPad (A16)"
 
+      - name: Clear existing snapshots
+        run: rm -rf App/AcaiUITests/__Snapshots__/iPad
+
       - name: Record UI test screenshots
         run: |
           xcodebuild test \
@@ -121,6 +134,9 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml
         working-directory: App
+
+      - name: Clear existing snapshots
+        run: rm -rf App/AcaiUITests/__Snapshots__/macOS
 
       - name: Record UI test screenshots
         run: |
