@@ -79,7 +79,7 @@ struct GitWorktreeSyncTests {
         try await sync.attachWorktree(named: "codebase-1", at: worktree)
         #expect(FileManager.default.fileExists(atPath: worktree.path))
 
-        try sync.removeWorktree(named: "codebase-1")
+        try await sync.removeWorktree(named: "codebase-1")
 
         #expect(!FileManager.default.fileExists(atPath: worktree.path))
         #expect(sync.hub.isCloned)

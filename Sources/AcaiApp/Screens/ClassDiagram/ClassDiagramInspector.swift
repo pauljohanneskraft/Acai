@@ -221,16 +221,14 @@ struct ClassDiagramSidebar: View {
     private func revealInFinderButton(node: GeneratedDiagramNode) -> some View {
         #if os(macOS)
         if let type = artifact.types.first(where: { $0.id == node.id }),
-           let filePath = type.location?.filePath {
-            let url = URL(filePath: viewModel.codebase.directoryPath).appending(path: filePath)
-            if FileManager.default.fileExists(atPath: url.path()) {
-                Button {
-                    // Sends a real Apple Event to Finder — skip under UI tests.
-                    guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
-                } label: {
-                    Label("Reveal in Finder", systemImage: "finder")
-                }
+           let filePath = type.location?.filePath,
+           let url = try? viewModel.codebase.resolvedFileURL(relativePath: filePath) {
+            Button {
+                // Sends a real Apple Event to Finder — skip under UI tests.
+                guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } label: {
+                Label("Reveal in Finder", systemImage: "finder")
             }
         }
         #endif

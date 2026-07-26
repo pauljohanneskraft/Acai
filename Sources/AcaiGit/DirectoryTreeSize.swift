@@ -37,7 +37,8 @@ struct DirectoryTreeSize {
 
         var total: Int64 = 0
         for case let url as URL in enumerator {
-            let values = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey])
+            guard let values = try? url.resourceValues(
+                forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey]) else { continue }
             guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
             total += Int64(values.fileSize ?? 0)
         }

@@ -29,12 +29,13 @@ struct GitWorktreeSync {
     @discardableResult
     func attachWorktree(named worktreeName: String, at worktreeDirectory: URL) async throws -> String {
         let hub = hub
-        try await locks.run(for: hub) {
+        return try await locks.run(for: hub) {
             try await hub.sync(ref: ref)
+            try GitWorktree(repositoryDirectory: hub.localPath).add(name: worktreeName, at: worktreeDirectory)
+            let checkout = try GitCheckout(directory: worktreeDirectory)
+            try checkout.switchToDetached(ref: ref)
+            return try checkout.headCommitSHA
         }
-        try GitWorktree(repositoryDirectory: hub.localPath).add(name: worktreeName, at: worktreeDirectory)
-        try GitCheckout(directory: worktreeDirectory).switchToDetached(ref: ref)
-        return try GitCheckout(directory: worktreeDirectory).headCommitSHA
     }
 
     /// Re-syncs the shared hub clone (an incremental fetch once already cloned) to `ref` and moves
@@ -44,18 +45,22 @@ struct GitWorktreeSync {
     @discardableResult
     func resyncWorktree(at worktreeDirectory: URL) async throws -> String {
         let hub = hub
-        try await locks.run(for: hub) {
+        return try await locks.run(for: hub) {
             try await hub.sync(ref: ref)
+            let checkout = try GitCheckout(directory: worktreeDirectory)
+            try checkout.switchToDetached(ref: ref)
+            return try checkout.headCommitSHA
         }
-        try GitCheckout(directory: worktreeDirectory).switchToDetached(ref: ref)
-        return try GitCheckout(directory: worktreeDirectory).headCommitSHA
     }
 
     /// Deregisters `worktreeName` and deletes its working directory, without touching the shared
     /// hub clone itself — other codebases may still reference it. Removing the hub clone entirely
     /// is a separate, explicit action (B05's Repositories UI "Remove" action), gated on no codebase
     /// referencing it any longer.
-    func removeWorktree(named worktreeName: String) throws {
-        try GitWorktree(repositoryDirectory: hub.localPath).remove(name: worktreeName)
+    func removeWorktree(named worktreeName: String) async throws {
+        let hub = hub
+        try await locks.run(for: hub) {
+            try GitWorktree(repositoryDirectory: hub.localPath).remove(name: worktreeName)
+        }
     }
 }

@@ -12,6 +12,7 @@ struct RepositoryDetailView: View {
     @State private var lastFetchedAt: Date?
     @State private var worktreeNames: [String] = []
     @State private var isFetching = false
+    @State private var isRemoving = false
     @State private var isLoadingDetails = false
     @State private var removalBlockedMessage: String?
     @State private var showRemoveConfirmation = false
@@ -26,6 +27,7 @@ struct RepositoryDetailView: View {
     }
 
     var body: some View {
+        let referencingCodebases = referencingCodebases
         Form {
             Section("Repository") {
                 LabeledContent("Remote", value: remoteURL.absoluteString)
@@ -81,15 +83,16 @@ struct RepositoryDetailView: View {
                 } label: {
                     Label("Fetch Now", systemImage: "arrow.clockwise")
                 }
-                .disabled(isFetching)
+                .disabled(isFetching || isRemoving)
                 .accessibilityIdentifier("repository.fetchNowButton")
             }
             ToolbarItem {
                 Button(role: .destructive) {
-                    attemptRemove()
+                    attemptRemove(referencingCodebases)
                 } label: {
                     Label("Remove", systemImage: "trash")
                 }
+                .disabled(isFetching || isRemoving)
                 .accessibilityIdentifier("repository.removeButton")
             }
         }
@@ -97,7 +100,7 @@ struct RepositoryDetailView: View {
             "Remove this repository?",
             isPresented: $showRemoveConfirmation
         ) {
-            Button("Remove", role: .destructive) { remove() }
+            Button("Remove", role: .destructive) { Task { await remove() } }
                 .accessibilityIdentifier("repository.remove.confirmButton")
         } message: {
             Text("This deletes its shared clone from disk. This cannot be undone.")
@@ -111,7 +114,7 @@ struct RepositoryDetailView: View {
             Text(removalBlockedMessage ?? "")
         }
         .alert(
-            "Fetch Failed",
+            "Operation Failed",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
         ) {
             Button("OK") {}
@@ -149,7 +152,7 @@ struct RepositoryDetailView: View {
         }
     }
 
-    private func attemptRemove() {
+    private func attemptRemove(_ referencingCodebases: [Codebase]) {
         guard referencingCodebases.isEmpty else {
             let names = referencingCodebases.map(\.name).sorted().joined(separator: ", ")
             removalBlockedMessage =
@@ -160,9 +163,20 @@ struct RepositoryDetailView: View {
         showRemoveConfirmation = true
     }
 
-    private func remove() {
-        try? FileManager.default.removeItem(at: hub.localPath)
-        model.selection = nil
+    private func remove() async {
+        guard !isRemoving else { return }
+        isRemoving = true
+        defer { isRemoving = false }
+        let hub = hub
+        let locks = model.store.gitRepositoryLocks
+        do {
+            try await locks.run(for: hub) {
+                try FileManager.default.removeItem(at: hub.localPath)
+            }
+            model.selection = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private static let byteCountFormatter: ByteCountFormatter = {

@@ -223,8 +223,11 @@ struct ProjectCodebaseEditor {
     /// other codebase's worktree of it) untouched.
     private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) {
         guard let repository else { return }
-        let hub = GitRepository(remoteURL: repository.remoteURL, storeDirectory: store.gitRepositoriesDir)
-        try? GitWorktree(repositoryDirectory: hub.localPath).remove(name: store.gitWorktreeName(for: codebaseID))
+        let sync = GitWorktreeSync(
+            transportURL: repository.remoteURL, ref: repository.ref,
+            hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
+        let worktreeName = store.gitWorktreeName(for: codebaseID)
+        Task { try? await sync.removeWorktree(named: worktreeName) }
     }
 
     // MARK: GitHub-backed codebases
