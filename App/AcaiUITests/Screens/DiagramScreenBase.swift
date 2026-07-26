@@ -30,17 +30,21 @@ class DiagramScreenBase {
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
     /// A crowded toolbar collapses trailing items into an iOS "More" overflow item on iPhone width,
-    /// removing `fitToViewButton` from the directly-tappable bar until "More" is opened; the revealed
-    /// row only exposes its visible label ("Fit to View"), not the accessibility identifier.
-    func tapFitToView() {
-        if fitToViewButton.waitForExistence(timeout: 1) {
-            fitToViewButton.tap()
+    /// removing a button from the directly-tappable bar until "More" is opened; the revealed row
+    /// only exposes its visible `label`, not the accessibility identifier.
+    func tapToolbarButton(_ button: XCUIElement, label: String) {
+        if button.waitForExistence(timeout: 1) {
+            button.tap()
             return
         }
         app.buttons["OverflowBarButtonItem"].tap()
-        let overflowItem = app.buttons["Fit to View"]
+        let overflowItem = app.buttons[label]
         _ = overflowItem.waitForExistence(timeout: 5)
         overflowItem.tap()
+    }
+
+    func tapFitToView() {
+        tapToolbarButton(fitToViewButton, label: "Fit to View")
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)

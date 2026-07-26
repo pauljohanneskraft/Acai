@@ -119,6 +119,64 @@ struct FreeformDiagramCanvasTests {
         #expect(updated.messageKind == .synchronous)
     }
 
+    @Test("beginPlacement sets pendingPlacement; commitPlacement inserts the node there and clears it")
+    func placementCommitInsertsNodeAtPoint() {
+        let vm = FreeformDiagramViewModel()
+        #expect(vm.pendingPlacement == nil)
+
+        vm.beginPlacement(kind: .type(.class))
+        #expect(vm.pendingPlacement == .type(.class))
+        #expect(vm.nodes.isEmpty)
+
+        let committed = vm.commitPlacement(at: CGPoint(x: 42, y: 24))
+        #expect(committed == true)
+        #expect(vm.pendingPlacement == nil)
+        #expect(vm.nodes.count == 1)
+        #expect(vm.nodes[0].name == "NewClass")
+        #expect(vm.nodePosition(vm.nodes[0].id) == CGPoint(x: 42, y: 24))
+    }
+
+    @Test("cancelPlacement clears pendingPlacement without inserting a node")
+    func placementCancelDoesNotInsert() {
+        let vm = FreeformDiagramViewModel()
+        vm.beginPlacement(kind: .note)
+        vm.cancelPlacement()
+
+        #expect(vm.pendingPlacement == nil)
+        #expect(vm.nodes.isEmpty)
+    }
+
+    @Test("commitPlacement with nothing pending is a no-op")
+    func commitPlacementNoOpWhenNothingPending() {
+        let vm = FreeformDiagramViewModel()
+        let committed = vm.commitPlacement(at: .zero)
+
+        #expect(committed == false)
+        #expect(vm.nodes.isEmpty)
+    }
+
+    @Test("beginPlacement replaces an already-pending placement")
+    func beginPlacementReplacesPending() {
+        let vm = FreeformDiagramViewModel()
+        vm.beginPlacement(kind: .note)
+        vm.beginPlacement(kind: .type(.enum))
+        #expect(vm.pendingPlacement == .type(.enum))
+
+        vm.commitPlacement(at: .zero)
+        #expect(vm.nodes.map(\.name) == ["NewEnum"])
+    }
+
+    @Test("Committing a placement records an undo checkpoint, same as any other insertion")
+    func commitPlacementIsUndoable() {
+        let vm = FreeformDiagramViewModel()
+        vm.beginPlacement(kind: .type(.class))
+        vm.commitPlacement(at: .zero)
+
+        #expect(vm.canUndo == true)
+        vm.undo()
+        #expect(vm.nodes.isEmpty)
+    }
+
     @Test("Replacing the node selection clears a selected edge, but extending does not")
     func selectionReplacementClearsSelectedEdge() {
         let vm = model(withNodesAt: [.zero, CGPoint(x: 100, y: 0)])

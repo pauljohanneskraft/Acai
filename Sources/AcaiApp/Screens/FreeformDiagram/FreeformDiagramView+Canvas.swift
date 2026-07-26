@@ -7,6 +7,58 @@ import AcaiRender
 
 extension FreeformDiagramView {
 
+    // MARK: - Canvas Context Menu
+
+    @ViewBuilder
+    var canvasContextMenu: some View {
+        // Touch-reachable equivalents of the hidden keyboard-shortcut buttons above — delete/copy/
+        // cut require a selection; paste and select-all are always offered.
+        if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            Button {
+                viewModel.clipboard.copySelection()
+            } label: {
+                Label("Copy", systemImage: "doc.on.doc")
+            }
+            Button {
+                viewModel.clipboard.cutSelection()
+            } label: {
+                Label("Cut", systemImage: "scissors")
+            }
+            Divider()
+        }
+        Button {
+            viewModel.clipboard.paste()
+        } label: {
+            Label("Paste", systemImage: "doc.on.clipboard")
+        }
+        Button {
+            viewModel.selectAll()
+        } label: {
+            Label("Select All", systemImage: "checklist")
+        }
+        Divider()
+        ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
+            Menu(group.rawValue) {
+                ForEach(FreeformDiagramNodeKind.cases(in: group)) { kind in
+                    Button {
+                        let canvasPoint = CGPoint(
+                            x: (cursorLocation.x - canvasOffset.x) / canvasScale,
+                            y: (cursorLocation.y - canvasOffset.y) / canvasScale
+                        )
+                        insertNode(kind: kind, at: canvasPoint)
+                    } label: {
+                        Label(kind.displayName, systemImage: kind.systemImage)
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Edge Layer
 
     var edgeLayer: some View {

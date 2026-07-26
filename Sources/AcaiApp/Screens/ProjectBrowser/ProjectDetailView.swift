@@ -239,6 +239,7 @@ struct ProjectDetailView: View {
                         freeformDiagramRowContent(diagram: diagram)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
@@ -445,6 +446,7 @@ extension ProjectDetailView {
                 .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
         .contextMenu {
             Button(role: .destructive) {
                 model.freeforms.remove(diagram.id)

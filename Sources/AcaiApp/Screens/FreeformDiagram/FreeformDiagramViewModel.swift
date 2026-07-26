@@ -228,6 +228,34 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         save()
     }
 
+    // MARK: - Point-and-Place Insertion
+
+    /// Set when the user has picked a catalog entry and is placing it: the view renders a ghost
+    /// preview following the cursor/touch, and the next canvas tap commits the node there (see
+    /// `commitPlacement(at:)`). `nil` when no placement is in progress.
+    @Published private(set) var pendingPlacement: FreeformDiagramNodeKind?
+
+    /// Enters placement mode for `kind`, replacing any placement already pending.
+    func beginPlacement(kind: FreeformDiagramNodeKind) {
+        pendingPlacement = kind
+    }
+
+    /// Leaves placement mode without inserting a node.
+    func cancelPlacement() {
+        pendingPlacement = nil
+    }
+
+    /// Commits the pending placement at `position` (canvas coordinates) and leaves placement mode.
+    /// Routes through `addNode(kind:name:at:)` — the same choke point drag-drop and the context menu
+    /// use — so undo keeps working identically. No-op (returns `false`) if nothing is pending.
+    @discardableResult
+    func commitPlacement(at position: CGPoint) -> Bool {
+        guard let kind = pendingPlacement else { return false }
+        pendingPlacement = nil
+        addNode(kind: kind, name: kind.defaultNodeName, at: position)
+        return true
+    }
+
     // MARK: - Selection
 
     /// Drives the shared `selectAll` / marquee defaults on `CanvasInteraction`.
