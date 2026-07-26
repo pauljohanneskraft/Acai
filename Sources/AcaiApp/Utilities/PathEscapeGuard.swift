@@ -1,0 +1,61 @@
+import Foundation
+
+/// Validates that a relative path — as stored in `SourceLocation.filePath` or any other
+/// codebase-relative path sourced from parsed/analyzed content rather than typed by the user —
+/// resolves to a real location inside a given root directory, rejecting anything that would
+/// escape it. Per `USABILITY_GUARDRAILS.md` §5, any path resolved from external input (a
+/// GitHub-sourced codebase's tree is not fully user-controlled, but also not code the app wrote)
+/// must be validated before use. There is no existing example of this check left in the codebase
+/// to copy (`GitHubRepositoryClone.validateNoPathEscapes` was superseded when zipball extraction
+/// was replaced by `AcaiGit`) — this is a fresh implementation of the same rule.
+struct PathEscapeGuard {
+    let root: URL
+
+    enum Failure: LocalizedError {
+        case absolutePath(String)
+        case escapesRoot(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .absolutePath(let path):
+                "\"\(path)\" is an absolute path; only paths relative to the codebase root are allowed."
+            case .escapesRoot(let path):
+                "\"\(path)\" resolves outside the codebase's directory and was rejected."
+            }
+        }
+    }
+
+    /// Resolves `relativePath` against `root`, rejecting it if it's given as an absolute path or if
+    /// (after standardizing and resolving symlinks on both sides) the result falls outside `root`.
+    /// Both the candidate and `root` are symlink-resolved before comparison — on macOS `root` itself
+    /// is frequently a symlink (e.g. `/var` → `/private/var`), so resolving only one side would make
+    /// a legitimately in-bounds path fail this check.
+    func resolvedURL(forRelativePath relativePath: String) throws -> URL {
+        // Reject absolute paths up front: `URL.appendingPathComponent` treats a leading "/" as a
+        // plain path component, not as replacing the base, so a naive join-then-compare would
+        // silently accept "/etc/passwd" as "root/etc/passwd" — which never escapes root and would
+        // pass a prefix check. An absolute path must be rejected before it's ever joined.
+        guard !relativePath.isEmpty, !relativePath.hasPrefix("/") else {
+            throw Failure.absolutePath(relativePath)
+        }
+
+        let standardizedRoot = root.resolvingSymlinksInPath().standardizedFileURL
+        let candidate = root
+            .appendingPathComponent(relativePath)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+
+        // Compare path components rather than string prefixes: a plain `hasPrefix` on `.path` would
+        // accept a sibling directory that merely shares the root's path as a string prefix (e.g.
+        // "/root-evil/x" against root "/root").
+        let rootComponents = standardizedRoot.pathComponents
+        let candidateComponents = candidate.pathComponents
+        guard candidateComponents.count >= rootComponents.count,
+              Array(candidateComponents.prefix(rootComponents.count)) == rootComponents
+        else {
+            throw Failure.escapesRoot(relativePath)
+        }
+
+        return candidate
+    }
+}
