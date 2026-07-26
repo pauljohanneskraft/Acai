@@ -1,16 +1,18 @@
 name: Record Snapshots
 
-# Manual only: re-records the snapshot-test screenshot goldens and uploads each platform's own
-# `App/AcaiUITests/__Snapshots__/<platform>/` subtree as a downloadable artifact, so a human can
-# drop it straight on top of the local folder instead of re-recording locally. Recording never
-# asserts, so the resulting PNGs still need human review before committing.
+# Manual only: re-records the snapshot-test screenshots and uploads each platform's own output as a
+# downloadable artifact, so a human can copy the ones that actually changed over the committed
+# `App/AcaiUITests/__Snapshots__/<platform>/` goldens instead of re-recording locally. Recording
+# never asserts, so the resulting PNGs still need human review before committing.
 #
-# Each job deletes its platform's existing snapshot files before recording (see "Clear existing
-# snapshots" below) — a PNG surviving in the checkout only because its own test never got a chance
-# to overwrite it (a build error, a crash partway through the suite, a timeout) would otherwise be
-# indistinguishable in the uploaded artifact from one freshly regenerated this run. With the clear
-# step, a state that's missing from the downloaded zip means exactly that: it did not get
-# regenerated this run — go check the job log, don't assume the zip is merely "unchanged".
+# Recording never touches `__Snapshots__/` itself — it's only ever read (`ScreenshotComparator`
+# compares each fresh capture against it) and written to a separate output location
+# (`ScreenshotComparator.outputDirectory`: a fixed `/private/tmp` path on macOS, required by its
+# sandbox entitlements; a plain sibling directory on iOS/iPad, which has no such restriction). A
+# state that still matches its committed golden closely enough gets that golden's own bytes copied
+# into the output, not a fresh, byte-different-by-rendering-noise capture — so a human can drop the
+# whole output on top of `__Snapshots__/<platform>/` and only genuinely-changed states show up in
+# `git status`, with no per-state judgment call needed about what to keep.
 on:
   workflow_dispatch:
 
@@ -40,9 +42,6 @@ jobs:
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
-      - name: Clear existing snapshots
-        run: rm -rf App/AcaiUITests/__Snapshots__/iPhone
-
       - name: Record UI test screenshots
         run: |
           xcodebuild test \
@@ -61,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: iPhone
-          path: App/AcaiUITests/__Snapshots__/iPhone/
+          path: App/AcaiUITests/__RecordedSnapshots__/iPhone/
           if-no-files-found: error
 
   record-ipad:
@@ -89,9 +88,6 @@ jobs:
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPad (A16)"
 
-      - name: Clear existing snapshots
-        run: rm -rf App/AcaiUITests/__Snapshots__/iPad
-
       - name: Record UI test screenshots
         run: |
           xcodebuild test \
@@ -110,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: iPad
-          path: App/AcaiUITests/__Snapshots__/iPad/
+          path: App/AcaiUITests/__RecordedSnapshots__/iPad/
           if-no-files-found: error
 
   record-macos:
@@ -135,16 +131,14 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
-      - name: Clear existing snapshots
-        run: rm -rf App/AcaiUITests/__Snapshots__/macOS
-
       - name: Record UI test screenshots
         run: |
-          # The sandboxed macOS UI test runner can't write goldens directly into the source tree
-          # (EPERM); ScreenshotComparator stages them instead (synced below) but still reports the
-          # direct-write failure as an XCTFail, so xcodebuild exits nonzero even on success. Rather
-          # than blanket-ignoring the exit code, only tolerate it when every failure in the log
-          # matches that one known, benign signature.
+          # ScreenshotComparator writes recordings directly to /private/tmp/AcaiUITestSnapshots on
+          # macOS (an entitled, non-container path — see its own `outputDirectory` doc comment), so
+          # this should just succeed. It still stages to a container tmp dir as a last-resort
+          # fallback if that direct write ever unexpectedly fails, reporting it as an XCTFail (so
+          # xcodebuild exits nonzero even though recording itself still completed) — tolerate that
+          # one known, benign signature specifically, not any nonzero exit blanket.
           set +e
           xcodebuild test \
             -project Acai.xcodeproj \
@@ -164,7 +158,7 @@ jobs:
             exit 0
           fi
 
-          unexpected=$(grep -E ": error:" /tmp/record-macos.log | grep -v "Could not write golden directly" || true)
+          unexpected=$(grep -E ": error:" /tmp/record-macos.log | grep -v "Could not write recorded snapshot" || true)
           if [ -n "$unexpected" ]; then
             echo "Recording failed for a reason other than the known macOS sandbox staging fallback:"
             echo "$unexpected"
@@ -183,5 +177,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macOS
-          path: App/AcaiUITests/__Snapshots__/macOS/
+          path: /private/tmp/AcaiUITestSnapshots/macOS/
           if-no-files-found: error

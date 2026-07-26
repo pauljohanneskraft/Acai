@@ -46,6 +46,11 @@ extension XCUIElement {
     /// (already waited-for) so the caller can assert its existence before tapping.
     @discardableResult
     func choose(_ label: String, in app: XCUIApplication, timeout: TimeInterval = 10) -> XCUIElement {
+        // A caller typically only confirmed `self` existed via an earlier, separate wait (e.g.
+        // `tapUntil`) — by the time control reaches here, a still-settling sheet/config screen can
+        // have re-rendered it under a stale reference. One more short wait right before the tap
+        // gives it a chance to resolve again instead of failing outright.
+        _ = waitForExistence(timeout: 5)
         tap()
         let option = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch

@@ -62,6 +62,13 @@ class DiagramScreenBase {
     /// removing a button from the directly-tappable bar until "More" is opened; the revealed row
     /// only exposes its visible `label`, not the accessibility identifier.
     func tapToolbarButton(_ button: XCUIElement, label: String) {
+        #if os(macOS)
+        // macOS's NSToolbar never collapses into an overflow item the way iOS's UINavigationBar
+        // does — `OverflowBarButtonItem` doesn't exist here, so a not-yet-rendered button has no
+        // fallback target; just wait longer for the real one instead of tapping a dead end.
+        _ = button.waitForExistence(timeout: 10)
+        button.tap()
+        #else
         if button.waitForExistence(timeout: 1) {
             button.tap()
             return
@@ -70,6 +77,7 @@ class DiagramScreenBase {
         let overflowItem = app.buttons[label]
         _ = overflowItem.waitForExistence(timeout: 5)
         overflowItem.tap()
+        #endif
     }
 
     func tapFitToView() {

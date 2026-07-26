@@ -68,6 +68,8 @@ targets:
           - "Fixtures/**"
           # Read directly off disk by `ScreenshotComparator`, not bundled (leaf-name collisions otherwise).
           - "__Snapshots__/**"
+          # `ScreenshotComparator`'s recording output (never committed; see its own doc comment).
+          - "__RecordedSnapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
@@ -93,6 +95,8 @@ targets:
           - "Fixtures/**"
           # Read directly off disk by `ScreenshotComparator`, not bundled (leaf-name collisions otherwise).
           - "__Snapshots__/**"
+          # `ScreenshotComparator`'s recording output (never committed; see its own doc comment).
+          - "__RecordedSnapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
