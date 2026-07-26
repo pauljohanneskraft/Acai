@@ -68,4 +68,35 @@ struct ScopedResourceAccess {
         return try body(url)
         #endif
     }
+
+    /// Holds this resource's security scope open for as long as the instance is alive, for callers
+    /// that need continued file access across an extended, non-synchronous span (e.g. handing a URL
+    /// to Quick Look, which reads the file lazily while its viewer stays presented) rather than a
+    /// single bracketed closure like `withResolvedURL` above. Tied to object lifetime rather than a
+    /// `close()` contract a caller could forget to invoke — keep this alive (e.g. as `@State` in the
+    /// presenting view) for exactly as long as the resolved URL needs to stay readable, then let it
+    /// deinit to release the scope.
+    ///
+    /// Only meaningful on iOS with a bookmarked (user-picked) local folder: macOS is an unsandboxed
+    /// passthrough, and app-managed codebases (e.g. a GitHub clone, which lives inside the app's own
+    /// container) never carry a bookmark — both of those cases take the no-op path below.
+    @MainActor
+    final class LongLivedAccess {
+        private var scopedURL: URL?
+
+        init(_ access: ScopedResourceAccess) {
+            #if os(iOS)
+            guard let bookmark = access.bookmark else { return }
+            var isStale = false
+            guard let url = try? URL(
+                resolvingBookmarkData: bookmark.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale
+            ), url.startAccessingSecurityScopedResource() else { return }
+            scopedURL = url
+            #endif
+        }
+
+        deinit {
+            scopedURL?.stopAccessingSecurityScopedResource()
+        }
+    }
 }
