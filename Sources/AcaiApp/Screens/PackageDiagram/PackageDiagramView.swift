@@ -26,6 +26,8 @@ struct PackageDiagramView: View {
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var showSaveAsFreeformOptions = false
+    @State private var includeMetricsNoteOnSave = false
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -199,21 +201,17 @@ struct PackageDiagramView: View {
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
-                let layoutPositions = Dictionary(
-                    viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
-                    uniquingKeysWith: { first, _ in first }
-                )
-                model.saveAsFreeformDiagram(
-                    id: diagram.id,
-                    positions: layoutPositions,
-                    scale: canvasScale,
-                    offset: canvasOffset
-                )
+                showSaveAsFreeformOptions = true
             } label: {
                 Label("Save as Freeform", systemImage: "document.on.document")
             }
             .help("Save a copy as an editable Freeform diagram")
             .accessibilityIdentifier("diagram.saveAsFreeformButton")
+            .saveAsFreeformOptions(
+                isPresented: $showSaveAsFreeformOptions,
+                includeMetricsNote: $includeMetricsNoteOnSave,
+                onConfirm: confirmSaveAsFreeform
+            )
             Button {
                 exportImage()
             } label: {
@@ -233,6 +231,26 @@ struct PackageDiagramView: View {
 
     private func exportImage() {
         model.exportImage(named: diagram.name, using: viewModel)
+    }
+
+    // MARK: - Save as Freeform (B22: opt-in metric carryover)
+
+    /// Confirms the "Save as Freeform" action with one opt-in: whether to carry over the module
+    /// coupling figures already computed for this diagram as a read-only note (B22). Reflects the
+    /// current, non-diff artifact even when `Compare vs git` is active — the converted copy is
+    /// always built from the plain current tree, same as the rest of this conversion.
+    private func confirmSaveAsFreeform() {
+        let layoutPositions = Dictionary(
+            viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        model.saveAsFreeformDiagram(
+            id: diagram.id,
+            positions: layoutPositions,
+            scale: canvasScale,
+            offset: canvasOffset,
+            includeMetricsNote: includeMetricsNoteOnSave
+        )
     }
 
     // MARK: - Persistence & layout

@@ -29,6 +29,35 @@ class DiagramScreenBase {
     /// The navigation bar's back button, for returning to `CodebaseDetailScreen` from a diagram.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
+    /// B22: on Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a
+    /// popover (macOS) or sheet (iOS/iPadOS) with this checkbox ("Include current coupling/coverage
+    /// figures as read-only notes") instead of saving immediately. Class/Sequence/State have no
+    /// equivalent metric and still save on tap. `SwiftUI.Toggle` surfaces as a checkbox on macOS but
+    /// a switch on iOS, so this is looked up via the broad `.any` matcher rather than `.switches`/
+    /// `.checkBoxes`, mirroring `compareCustomRefField`'s same cross-platform caveat above.
+    var saveAsFreeformIncludeMetricsToggle: XCUIElement {
+        app.descendants(matching: .any)["diagram.saveAsFreeform.includeMetricsToggle"]
+    }
+    /// Confirms the popover/sheet opened by `saveAsFreeformButton` on Package Diagram/Call Graph screens.
+    var saveAsFreeformConfirmButton: XCUIElement { app.buttons["diagram.saveAsFreeform.confirmButton"] }
+    /// Cancels the popover/sheet opened by `saveAsFreeformButton` without saving. Only present on
+    /// iOS/iPadOS's `.sheet` presentation and macOS's popover (both wire this up); the popover can
+    /// also be dismissed by clicking away on macOS.
+    var saveAsFreeformCancelButton: XCUIElement { app.buttons["diagram.saveAsFreeform.cancelButton"] }
+
+    /// Drives the Package Diagram/Call Graph "Save as Freeform" flow end-to-end: open the popover/
+    /// sheet, set the metrics-carryover checkbox, confirm. Class/Sequence/State screens don't have
+    /// this step — call `saveAsFreeformButton.tap()` directly there instead.
+    func saveAsFreeform(includeMetricsNote: Bool) {
+        saveAsFreeformButton.tap()
+        _ = saveAsFreeformIncludeMetricsToggle.waitForExistence(timeout: 5)
+        // The toggle only needs tapping when its current state doesn't already match the request.
+        if let isOn = saveAsFreeformIncludeMetricsToggle.value as? String, (isOn == "1") != includeMetricsNote {
+            saveAsFreeformIncludeMetricsToggle.tap()
+        }
+        saveAsFreeformConfirmButton.tap()
+    }
+
     /// A crowded toolbar collapses trailing items into an iOS "More" overflow item on iPhone width,
     /// removing `fitToViewButton` from the directly-tappable bar until "More" is opened; the revealed
     /// row only exposes its visible label ("Fit to View"), not the accessibility identifier.

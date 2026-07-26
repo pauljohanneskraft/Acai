@@ -131,11 +131,16 @@ extension ProjectBrowserViewModel {
     // MARK: Save as Freeform Diagram
 
     /// Convert a stored diagram to a freeform diagram.
+    ///
+    /// - Parameter includeMetricsNote: B22's opt-in — Package/Call Graph screens thread the user's
+    ///   checkbox choice through here; every other diagram type calls this with the default `false`
+    ///   since they have no comparable metric to carry over.
     func saveAsFreeformDiagram(
         id diagramId: UUID,
         positions: [String: CGPoint],
         scale: CGFloat,
-        offset: CGPoint
+        offset: CGPoint,
+        includeMetricsNote: Bool = false
     ) {
         guard let diagram = generatedDiagram(for: diagramId),
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
@@ -154,7 +159,8 @@ extension ProjectBrowserViewModel {
             artifact: artifact,
             positions: positions,
             scale: scale,
-            offset: offset
+            offset: offset,
+            includeMetricsNote: includeMetricsNote
         )
         store.projects[pIdx].freeformDiagramIDs.append(freeformDiagram.id)
         store.saveFreeformDiagram(freeformDiagram)
