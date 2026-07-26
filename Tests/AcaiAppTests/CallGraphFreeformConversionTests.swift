@@ -68,4 +68,55 @@ struct CallGraphFreeformConversionTests {
         #expect(content.kind == .callGraphMethod)
         if case .method = content {} else { Issue.record("expected .method content") }
     }
+
+    // MARK: - B22: opt-in coverage metric carryover
+
+    private func noteNodes(_ freeform: FreeformDiagram) -> [FreeformDiagram.Node] {
+        freeform.nodes.filter { if case .note = $0.content { true } else { false } }
+    }
+
+    @Test("Default conversion drops the coverage note (today's unchanged behavior)")
+    func defaultConversionHasNoMetricsNote() {
+        let freeform = callGraphDiagram().convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero
+        )
+        #expect(noteNodes(freeform).isEmpty)
+    }
+
+    @Test("includeMetricsNote: true appends one read-only note reporting resolved/total coverage")
+    func includeMetricsNoteAppendsCoverageSummary() throws {
+        let freeform = callGraphDiagram().convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
+        )
+        // Two method nodes plus the appended coverage note.
+        #expect(freeform.nodes.count == 3)
+        let notes = noteNodes(freeform)
+        #expect(notes.count == 1)
+        let note = try #require(notes.first)
+        #expect(note.name.lowercased().contains("read-only"))
+        guard case .note(let text) = note.content else {
+            Issue.record("expected .note content")
+            return
+        }
+        // The one call site in `artifact()` (`A.run` → `B.work`) resolves cleanly: 1/1.
+        #expect(text.contains("1"))
+        #expect(text.lowercased().contains("resolved"))
+    }
+
+    @Test("includeMetricsNote: false explicitly still drops the note")
+    func explicitFalseHasNoMetricsNote() {
+        let freeform = callGraphDiagram().convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: false
+        )
+        #expect(noteNodes(freeform).isEmpty)
+    }
+
+    @Test("An empty call graph appends no note even when includeMetricsNote is set")
+    func emptyCallGraphAppendsNoNote() {
+        let emptyArtifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []))
+        let freeform = callGraphDiagram().convertToFreeform(
+            artifact: emptyArtifact, positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
+        )
+        #expect(freeform.nodes.isEmpty)
+    }
 }
