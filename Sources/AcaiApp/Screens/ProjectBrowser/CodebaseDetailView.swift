@@ -435,14 +435,18 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { stateConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.diagrams.add(
+                    let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .stateDiagram(config)
-                    ) {
-                        model.selection = .generatedDiagram(id)
-                    }
+                    )
                     stateConfigContext = nil
+                    // Deferred: selecting in the same synchronous closure as this sheet's own
+                    // dismissal (a separate window on macOS) has been observed to occasionally drop
+                    // the parent NavigationSplitView's detail-column update entirely.
+                    if let id {
+                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                    }
                 }
             )
         }
@@ -456,14 +460,16 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { callGraphConfigContext = nil },
                 onCreate: { scope in
-                    if let id = model.diagrams.add(
+                    let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .callGraph(scope)
-                    ) {
-                        model.selection = .generatedDiagram(id)
-                    }
+                    )
                     callGraphConfigContext = nil
+                    // Deferred — see `stateConfigSheet`'s `onCreate`.
+                    if let id {
+                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                    }
                 }
             )
         }
@@ -477,14 +483,16 @@ extension CodebaseDetailView {
                 artifact: artifact,
                 onCancel: { sequenceConfigContext = nil },
                 onCreate: { config in
-                    if let id = model.diagrams.add(
+                    let id = model.diagrams.add(
                         to: context.projectID,
                         codebaseID: context.codebaseID,
                         content: .sequenceDiagram(config)
-                    ) {
-                        model.selection = .generatedDiagram(id)
-                    }
+                    )
                     sequenceConfigContext = nil
+                    // Deferred — see `stateConfigSheet`'s `onCreate`.
+                    if let id {
+                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                    }
                 }
             )
         }
