@@ -31,10 +31,7 @@ extension ProjectDetailView {
     }
 
     /// Offered wherever a new freeform diagram can be created: creates a blank canvas directly, no
-    /// submenu or template choice. A prior revision offered one-tap starter templates ("Use Case",
-    /// "Deployment") pre-populated with catalog node kinds; that quick-create shortcut was
-    /// deliberately removed (see `BACKLOG.md`'s B26 entry) while keeping the underlying node kinds
-    /// fully available for manual placement from the catalog.
+    /// submenu or template choice.
     var addDiagramButton: some View {
         Button {
             createDiagram(name: "New Freeform Diagram")

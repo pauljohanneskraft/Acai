@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Resolves `relativePath` against `codebase` off the main actor (`USABILITY_GUARDRAILS.md` §1 —
-/// this touches the filesystem) and presents it in a read-only `SourceViewerSheet` (Quick Look) on
+/// Resolves `relativePath` against `codebase` off the main actor (it touches the filesystem) and
+/// presents it in a read-only `SourceViewerSheet` (Quick Look) on
 /// success, or a specific, actionable alert on failure (a missing file, or a rejected path-escape/
-/// symlink-escape attempt from `Codebase.resolvedFileURL`). The one end-to-end "View Source" call
-/// site for `BACKLOG.md` B30 — wired into `ViolationRowView`; every other row that could use the
-/// same action (dead-code/health rows, stat-detail rows) is B29's follow-on work.
+/// symlink-escape attempt from `Codebase.resolvedFileURL`). Currently wired into `ViolationRowView`
+/// only; other rows that could use the same action (dead-code/health rows, stat-detail rows) don't
+/// yet.
 struct ViewSourceButton: View {
     let codebase: Codebase
     let relativePath: String
@@ -33,8 +33,7 @@ struct ViewSourceButton: View {
         .disabled(isResolving)
         .accessibilityIdentifier("violation.viewSourceButton")
         .contextMenu {
-            // Mirrors the button's own action — `USABILITY_GUARDRAILS.md` §8 makes a context-menu
-            // entry the universal baseline discovery path alongside the always-visible button.
+            // Mirrors the button's own action as a secondary discovery path.
             Button {
                 resolve()
             } label: {

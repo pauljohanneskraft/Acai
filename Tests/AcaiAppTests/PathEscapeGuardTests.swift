@@ -2,10 +2,10 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// Path-escape/symlink-escape validation for `PathEscapeGuard`, the fresh implementation backing
-/// `Codebase.resolvedFileURL(relativePath:)` (`BACKLOG.md` B30). Required by
-/// `USABILITY_GUARDRAILS.md` §5: any path resolved from external input (a parsed `SourceLocation`,
-/// ultimately traceable to a GitHub-sourced codebase's tree) must be validated before use.
+/// Path-escape/symlink-escape validation for `PathEscapeGuard`, the implementation backing
+/// `Codebase.resolvedFileURL(relativePath:)`. Any path resolved from external input (a parsed
+/// `SourceLocation`, ultimately traceable to a GitHub-sourced codebase's tree) must be validated
+/// before use.
 @Suite("PathEscapeGuard")
 struct PathEscapeGuardTests {
 

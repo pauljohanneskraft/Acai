@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 
 /// `Codebase.resolvedFileURL(relativePath:)` — the one accessor `ViolationRowView`'s "View Source"
-/// button (`BACKLOG.md` B30) resolves a `SourceLocation.filePath` through. These exercise the same
+/// button resolves a `SourceLocation.filePath` through. These exercise the same
 /// path-escape guarantees as `PathEscapeGuardTests`, but through the actual public entry point
 /// (macOS is the passthrough `ScopedResourceAccess` branch — no bookmark involved here) plus the
 /// file-existence check `resolvedFileURL` adds on top of `PathEscapeGuard`.

@@ -7,8 +7,7 @@ import AcaiLibrary
 /// A single finding row — a rule-kind capsule, subject, message and a selectable `file:line`. Shared
 /// by the quality-check report views so every finding renders identically. Clickable to reveal its
 /// file in Finder when `codebase` is supplied; also offers a "View Source" (Quick Look) action when
-/// both `codebase` and a source location are available — the `BACKLOG.md` B30 proof-of-concept call
-/// site.
+/// both `codebase` and a source location are available.
 struct ViolationRowView: View {
     let violation: Violation
     var tint: Color = .red

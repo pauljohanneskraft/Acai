@@ -3,11 +3,8 @@ import Foundation
 /// Validates that a relative path — as stored in `SourceLocation.filePath` or any other
 /// codebase-relative path sourced from parsed/analyzed content rather than typed by the user —
 /// resolves to a real location inside a given root directory, rejecting anything that would
-/// escape it. Per `USABILITY_GUARDRAILS.md` §5, any path resolved from external input (a
-/// GitHub-sourced codebase's tree is not fully user-controlled, but also not code the app wrote)
-/// must be validated before use. There is no existing example of this check left in the codebase
-/// to copy (`GitHubRepositoryClone.validateNoPathEscapes` was superseded when zipball extraction
-/// was replaced by `AcaiGit`) — this is a fresh implementation of the same rule.
+/// escape it. Any path resolved from external input (a GitHub-sourced codebase's tree is not fully
+/// user-controlled, but also not code the app wrote) must be validated before use.
 struct PathEscapeGuard {
     let root: URL
 
