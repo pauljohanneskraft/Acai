@@ -44,12 +44,20 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
       - name: Build for iOS Simulator
         run: |
           xcodebuild build \
             -project Acai.xcodeproj \
             -scheme Acai-iOS \
             -destination "generic/platform=iOS Simulator" \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -66,6 +74,15 @@ jobs:
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build/checkouts
+            .build/repositories
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
       - name: Show Swift version
         run: swift --version
 
@@ -73,11 +90,10 @@ jobs:
         run: swift build -v
 
       - name: Run tests
-        run: swift test --parallel
+        run: swift test --parallel --enable-code-coverage
 
       - name: Generate code coverage
         run: |
-          swift test --enable-code-coverage
           xcrun llvm-cov export -format="lcov" \
             .build/debug/AcaiPackageTests.xctest/Contents/MacOS/AcaiPackageTests \
             -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
@@ -101,6 +117,15 @@ jobs:
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build/checkouts
+            .build/repositories
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
 
       - name: Show Swift version
         run: swift --version
@@ -137,6 +162,13 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
@@ -146,6 +178,7 @@ jobs:
             -project Acai.xcodeproj \
             -scheme Acai-iOSUITests \
             -destination "platform=iOS Simulator,name=iPhone 17" \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -183,6 +216,13 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPad (A16)"
 
@@ -192,6 +232,7 @@ jobs:
             -project Acai.xcodeproj \
             -scheme Acai-iOSUITests \
             -destination "platform=iOS Simulator,name=iPad (A16)" \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -229,6 +270,13 @@ jobs:
         run: xcodegen generate --spec project.yml
         working-directory: App
 
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
       - name: Run UI tests
         run: |
           # Unlike the iOS Simulator jobs above, a real macOS binary needs at least an ad-hoc
@@ -241,6 +289,7 @@ jobs:
             -project Acai.xcodeproj \
             -scheme Acai-macOSUITests \
             -destination "platform=macOS" \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 

@@ -50,7 +50,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snapshots-iphone
+          name: iPhone
           path: App/AcaiUITests/__Snapshots__/iPhone/
           if-no-files-found: error
 
@@ -96,7 +96,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snapshots-ipad
+          name: iPad
           path: App/AcaiUITests/__Snapshots__/iPad/
           if-no-files-found: error
 
@@ -166,6 +166,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snapshots-macos
+          name: macOS
           path: App/AcaiUITests/__Snapshots__/macOS/
           if-no-files-found: error
