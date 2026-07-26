@@ -14,6 +14,10 @@ struct PannableCanvas<Model: CanvasInteraction, Content: View>: View {
     /// Reports the real, measured canvas viewport size whenever it changes — forwarded straight
     /// through to `InfiniteCanvas`, see its own doc comment for why this exists.
     var onViewportSizeChange: ((CGSize) -> Void)?
+    /// Overrides the default background-tap behavior (`model.clearSelection()`) — e.g. Freeform's
+    /// point-and-place insertion, where a tap should commit a pending placement instead of clearing
+    /// the selection while one is in progress. `nil` (every other diagram type) keeps today's default.
+    var onBackgroundTap: (() -> Void)?
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -24,7 +28,11 @@ struct PannableCanvas<Model: CanvasInteraction, Content: View>: View {
                 model.selectNodes(in: rect)
             },
             onBackgroundTap: {
-                model.clearSelection()
+                if let onBackgroundTap {
+                    onBackgroundTap()
+                } else {
+                    model.clearSelection()
+                }
             },
             autoPanDragLocation: activeDragCanvasLocation,
             onAutoPanDelta: { delta in

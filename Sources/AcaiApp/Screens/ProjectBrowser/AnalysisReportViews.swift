@@ -6,13 +6,31 @@ import AcaiLibrary
 
 /// A single finding row — a rule-kind capsule, subject, message and a selectable `file:line`. Shared
 /// by the quality-check report views so every finding renders identically. Clickable to reveal its
-/// file in Finder when `codebase` is supplied.
+/// file in Finder when `codebase` is supplied; also offers a "View Source" (Quick Look) action when
+/// both `codebase` and a source location are available.
 struct ViolationRowView: View {
     let violation: Violation
     var tint: Color = .red
     var codebase: Codebase?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // `revealsInFinder` wraps its content in a `Button` on macOS — kept scoped to just this
+            // block (not the whole row) so the "View Source" button below is a sibling control, not
+            // nested inside another button, which SwiftUI doesn't reliably route taps through.
+            findingSummary
+                .revealsInFinder(codebase: codebase, relativePath: violation.source?.filePath)
+            if let codebase, let source = violation.source {
+                ViewSourceButton(codebase: codebase, relativePath: source.filePath)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var findingSummary: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Text(violation.ruleKind)
@@ -31,10 +49,6 @@ struct ViolationRowView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .revealsInFinder(codebase: codebase, relativePath: violation.source?.filePath)
     }
 }
 

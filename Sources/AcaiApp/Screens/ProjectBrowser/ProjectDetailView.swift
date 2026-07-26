@@ -39,7 +39,7 @@ struct ProjectDetailView: View {
                                 Label("Add Codebase", systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                            addDiagramMenu
+                            addDiagramButton
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -56,7 +56,7 @@ struct ProjectDetailView: View {
                             Label("Add Codebase", systemImage: "folder.badge.plus")
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                        addDiagramMenu
+                        addDiagramButton
                     }
                 }
             }
@@ -239,6 +239,7 @@ struct ProjectDetailView: View {
                         freeformDiagramRowContent(diagram: diagram)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
@@ -299,7 +300,7 @@ struct ProjectDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramMenu
+                addDiagramButton
             }
             #endif
         }
@@ -445,6 +446,7 @@ extension ProjectDetailView {
                 .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
         .contextMenu {
             Button(role: .destructive) {
                 model.freeforms.remove(diagram.id)

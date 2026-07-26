@@ -5,7 +5,10 @@
 # snapshot tests (XCUITest) only see it as a trailing xcodebuild build-setting override — a plain
 # shell export never reaches the Xcode-launched test process.
 #
-# Recording silently overwrites goldens — review `git status`/the diffed PNGs before committing.
+# The `render` layer's SnapshotComparator writes straight into the committed goldens — review
+# `git status`/the diffed PNGs before committing. The `ios`/`macos` layers never touch the
+# committed goldens directly; they write to a separate output path (printed below on success) for
+# manual copy-over instead — see `AcaiUITests/Support/ScreenshotComparator.swift`'s `outputDirectory`.
 #
 # Full xcodebuild/swift test output goes to LOG_PATH; stdout stays to a concise summary.
 #
@@ -34,6 +37,10 @@ case "$LAYER" in
         echo "▸ ACAI_RECORD_SNAPSHOTS=1 swift test --parallel --filter AppScreenSnapshotTests (log: $LOG_PATH)"
         ACAI_RECORD_SNAPSHOTS=1 swift test --parallel --filter AppScreenSnapshotTests > "$LOG_PATH" 2>&1
         STATUS=$?
+        # This layer's own SnapshotComparator (Tests/AcaiAppTests/ViewSnapshot.swift, unrelated to
+        # AcaiUITests/Support/ScreenshotComparator.swift) writes straight into the committed goldens
+        # — always was, unaffected by the XCUITest layers' recording-output redirection below.
+        OUTPUT_PATH=""
         ;;
     ios)
         "$SCRIPT_DIR/simulator_prepare.sh" "$DEVICE"
@@ -51,6 +58,10 @@ case "$LAYER" in
             CODE_SIGNING_ALLOWED=NO ACAI_RECORD_SNAPSHOTS=1 \
             > "$LOG_PATH" 2>&1
         STATUS=$?
+        # ScreenshotComparator never writes into __Snapshots__/ itself — recordings land in a
+        # sibling __RecordedSnapshots__/ directory (see its own `outputDirectory` doc comment);
+        # copy over just the states that actually changed.
+        OUTPUT_PATH="$SCRIPT_DIR/../App/AcaiUITests/__RecordedSnapshots__"
         ;;
     macos)
         cd "$SCRIPT_DIR/../App" || exit 1
@@ -73,11 +84,12 @@ case "$LAYER" in
             ACAI_RECORD_SNAPSHOTS=1 \
             > "$LOG_PATH" 2>&1
         STATUS=$?
-        # The macOS UI test runner is sandboxed by default (its own ~/Library/Containers/...
-        # container) and has been observed to refuse writing goldens directly into the source
-        # tree (EPERM) even with Full Disk Access granted — ScreenshotComparator stages those
-        # inside its container's tmp dir instead, so sync them in regardless of $STATUS.
-        "$SCRIPT_DIR/sync_ui_snapshots.sh"
+        # ScreenshotComparator writes recordings directly to /private/tmp/AcaiUITestSnapshots on
+        # macOS (an entitled, non-container path — see its own `outputDirectory` doc comment), so
+        # this should just work with no sync step. If that direct write ever unexpectedly fails
+        # (staged inside the sandboxed runner's own container instead, reported as a failure in
+        # $LOG_PATH), run Scripts/sync_ui_snapshots.sh manually to recover it.
+        OUTPUT_PATH="/private/tmp/AcaiUITestSnapshots"
         ;;
     *)
         echo "unknown layer: $LAYER (expected render, ios, or macos)" >&2
@@ -89,7 +101,12 @@ echo "── Result summary ──"
 grep -E "Test Suite '.*' (passed|failed)|error:|Executed .* tests?, with .* failures?" "$LOG_PATH" | tail -60
 
 if [ "$STATUS" -eq 0 ]; then
-    echo "✓ recorded. Review git status and the diffed PNGs before committing new goldens. (full log: $LOG_PATH)"
+    if [ -n "$OUTPUT_PATH" ]; then
+        echo "✓ recorded to $OUTPUT_PATH — copy the changed files over the matching"
+        echo "  App/AcaiUITests/__Snapshots__/<platform>/ folder, then review git status/the diffed PNGs before committing."
+    else
+        echo "✓ recorded. Review git status and the diffed PNGs before committing new goldens. (full log: $LOG_PATH)"
+    fi
 else
     echo "✗ recording run failed (full log: $LOG_PATH)"
 fi

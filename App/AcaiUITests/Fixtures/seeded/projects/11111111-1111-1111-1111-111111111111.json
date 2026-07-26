@@ -9,9 +9,12 @@
       "directoryPath": "$FIXTURE_ROOT/SampleSwiftPackage",
       "hasArtifact": false,
       "hasParseErrors": false,
-      "parseDiagnosticCount": 0
+      "parseDiagnosticCount": 0,
+      "qualityCheck": {
+        "rulesPath": "$FIXTURE_ROOT/quality.yml"
+      }
     }
   ],
   "generatedDiagramIDs": [],
-  "freeformDiagramIDs": []
+  "freeformDiagramIDs": ["33333333-3333-3333-3333-333333333333"]
 }

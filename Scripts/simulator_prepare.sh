@@ -40,6 +40,13 @@ echo "▸ Booting $DEVICE ($UDID) if needed and pinning its status bar"
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
+# The keyboard's one-time "Slide to Type" tutorial overlay (real device and simulator alike) only
+# renders the *first* time any keyboard appears on it — whichever run happens to be that first use
+# gets it baked into its screenshot goldens, and no later run can reproduce it on demand. Suppressing
+# it here, before any test touches a text field, keeps every recording deterministic.
+xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences \
+    DidShowContinuousPathIntroduction -bool true
+
 # Two-step local→epoch→UTC conversion: passing `-u` alongside `-j -f` would make BSD `date` treat
 # the *input* string as UTC too, silently skipping the timezone conversion. Routing through an
 # epoch (timezone-agnostic by construction) avoids that.

@@ -84,7 +84,12 @@ final class ScreenshotJourneyTests: XCTestCase {
         // `.doubleTap()` requires resolving to a single element, but every row of text inside
         // `TypeNodeView` carries the same identifier (observed empirically via the accessibility
         // tree dump on iOS).
-        diagram.typeNode(named: "Base").firstMatch.doubleTap()
+        // Re-checked immediately before acting, not just via the existence check above — the
+        // screenshot capture in between takes real wall-clock time, and the canvas can still be
+        // settling/re-laying-out during it.
+        let base = diagram.typeNode(named: "Base").firstMatch
+        XCTAssertTrue(base.waitForExistence(timeout: 10))
+        base.doubleTap()
         XCTAssertTrue(diagram.inspectorContent.waitForExistence(timeout: 10))
         comparator.validate(
             viewType: "ClassDiagram", state: "inspectorOpen",

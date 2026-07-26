@@ -32,17 +32,48 @@ struct ScreenshotComparator {
 
     private let comparisonSide = 256
     private let perCellDelta = 16
+    /// Top rows of the 256×256 grid to always treat as matching, on iOS/iPad only — measured
+    /// empirically against a real CI failure (`ClassDiagram/populated` and `inspectorOpen` both
+    /// dropped from ~150 changed cells to exactly 0 once this band was excluded; a third state's
+    /// residual cells were a separate, smaller keyboard-warmup artifact, not this). `simulator_prepare.sh`
+    /// pins the status bar via `simctl status_bar override` specifically so goldens don't churn on
+    /// the wall clock/battery, but that override has been observed to not land on whichever
+    /// simulator instance a given CI run actually tests against — masking the band makes that
+    /// intermittent miss harmless instead of chasing its root cause. macOS has no status bar, so it
+    /// stays unmasked there.
+    private let statusBarMaskRows = 12
 
-    /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes the capture to the golden path
+    /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes the capture to `outputDirectory`
     /// instead of comparing — same record-mode convention as the render snapshot tests' `SnapshotComparator`.
     private var isRecording: Bool {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
     }
 
-    /// Fallback recording target for macOS, where the UI test process can fail writing into the
-    /// source tree with `EPERM` (the iOS Simulator doesn't have this problem). Mirrors
-    /// `goldenDirectory`'s own `<platform>/<viewType>/<state>` layout so `Scripts/sync_ui_snapshots.sh`
-    /// can copy it into place with no per-file renaming.
+    /// Where recording writes results — never `goldenDirectory` itself, which stays read-only
+    /// throughout a recording run (`record` only ever reads it, to decide whether a state can be
+    /// copied forward unchanged). Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>`
+    /// layout, so a human can review/copy the output over the committed goldens with no per-file
+    /// renaming — same convention `record-snapshots.yml`'s uploaded artifact already used.
+    ///
+    /// Not `FileManager.default.temporaryDirectory` on macOS: the UI test runner is sandboxed, so
+    /// that resolves inside the runner's own container (an opaque, per-run path) rather than a
+    /// fixed one a workflow/human can point at directly — see `Launch.swift`'s identical reasoning
+    /// for fixture staging. `/private/tmp` avoids that; `AcaiUITests-macOS.entitlements` already
+    /// grants write access to it. iOS's simulator has no such restriction (writing directly into
+    /// the checked-out source tree already worked before this existed), so it uses a plain sibling
+    /// of `goldenDirectory` instead — easier to find than a temp path, and `project.yml` already
+    /// excludes it from the test bundle's own sources.
+    private var outputDirectory: URL {
+        #if os(macOS)
+        URL(fileURLWithPath: "/private/tmp/AcaiUITestSnapshots", isDirectory: true)
+        #else
+        goldenDirectory.deletingLastPathComponent().appendingPathComponent("__RecordedSnapshots__", isDirectory: true)
+        #endif
+    }
+
+    /// Fallback recording target for macOS, in case even `outputDirectory`'s entitled `/private/tmp`
+    /// write unexpectedly fails. Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>`
+    /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
     private var stagingDirectory: URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("AcaiUITestSnapshots", isDirectory: true)
     }
@@ -69,7 +100,12 @@ struct ScreenshotComparator {
 
     private func changedCellFraction(_ lhs: Data, _ rhs: Data) -> Double? {
         guard let a = luminanceGrid(lhs), let b = luminanceGrid(rhs) else { return nil }
-        let changed = zip(a, b).reduce(0) { abs(Int($1.0) - Int($1.1)) > perCellDelta ? $0 + 1 : $0 }
+        let maskedRows = SnapshotPlatform().name == "macOS" ? 0 : statusBarMaskRows
+        let changed = zip(a, b).enumerated().reduce(0) { count, indexed in
+            let (index, pair) = indexed
+            guard index / comparisonSide >= maskedRows else { return count }
+            return abs(Int(pair.0) - Int(pair.1)) > perCellDelta ? count + 1 : count
+        }
         return Double(changed) / Double(a.count)
     }
 
@@ -88,6 +124,7 @@ struct ScreenshotComparator {
         var fileName = state
         if let orientation { fileName += "_\(orientation.rawValue)" }
         let name = "\(SnapshotPlatform().name)/\(viewType)/\(fileName)"
+        let threshold = overrideMaxChangedFraction ?? maxChangedFraction
 
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = name.replacingOccurrences(of: "/", with: "_")
@@ -98,7 +135,7 @@ struct ScreenshotComparator {
         let rendered = screenshot.pngRepresentation
 
         if isRecording {
-            record(rendered, name: name, to: url)
+            record(rendered, name: name, goldenURL: url, threshold: threshold)
             return
         }
 
@@ -115,7 +152,6 @@ struct ScreenshotComparator {
             return
         }
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
-        let threshold = overrideMaxChangedFraction ?? maxChangedFraction
         // Logged unconditionally (pass or fail) so `maxChangedFraction` can be tightened from real
         // measured noise floors across a run instead of trial-and-error — grep the console/activity
         // log for "drift:" after a run to see every state's actual fraction.
@@ -128,27 +164,42 @@ struct ScreenshotComparator {
         )
     }
 
-    /// The `ACAI_RECORD_SNAPSHOTS=1` half of `validate` — writes `rendered` to `url`, falling back
-    /// to `stagingDirectory` (see its own doc comment) if the source tree write fails.
-    private func record(_ rendered: Data, name: String, to url: URL) {
+    /// The `ACAI_RECORD_SNAPSHOTS=1` half of `validate` — writes to `outputDirectory`, falling back
+    /// to `stagingDirectory` (see its own doc comment) if that write unexpectedly fails.
+    ///
+    /// Writes `rendered` itself only when there's no golden at `goldenURL` yet, or it drifted beyond
+    /// `threshold` (a real change worth recording). When the committed golden still matches closely
+    /// enough, writes *its* bytes instead — byte-identical to what's already committed, so
+    /// re-recording an unchanged state produces no diff for a human reviewing the output, rather
+    /// than churn from this capture's own rendering noise (the same noise `threshold` exists to
+    /// tolerate in the first place). `goldenURL` itself is only ever read here, never written.
+    private func record(_ rendered: Data, name: String, goldenURL: URL, threshold: Double) {
+        var toWrite = rendered
+        if let existing = try? Data(contentsOf: goldenURL), hasPNGMagic(existing),
+           let changed = changedCellFraction(existing, rendered), changed <= threshold {
+            toWrite = existing
+        }
+
+        let url = outputDirectory.appendingPathComponent("\(name).png")
         do {
             try FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true
             )
-            try rendered.write(to: url)
+            try toWrite.write(to: url)
         } catch {
             let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
             do {
                 try FileManager.default.createDirectory(
                     at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true
                 )
-                try rendered.write(to: stagedURL)
+                try toWrite.write(to: stagedURL)
                 XCTFail(
-                    "Could not write golden directly (\(error)); staged at \(stagedURL.path) instead — "
-                    + "run Scripts/sync_ui_snapshots.sh to copy staged recordings into __Snapshots__/"
+                    "Could not write recorded snapshot to \(url.path) (\(error)); staged at "
+                    + "\(stagedURL.path) instead — run Scripts/sync_ui_snapshots.sh to copy staged "
+                    + "recordings into \(outputDirectory.path)/"
                 )
             } catch {
-                XCTFail("Failed to record golden at \(url.path), and the staging fallback also failed: \(error)")
+                XCTFail("Failed to record snapshot at \(url.path), and the staging fallback also failed: \(error)")
             }
         }
     }

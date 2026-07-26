@@ -2,7 +2,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ProjectBrowserView: View {
-    @StateObject private var model = ProjectBrowserViewModel()
+    // Not `private`: `ProjectBrowserView+Repositories.swift`'s extension (a separate file, kept
+    // there only to stay under this file's own line-count limit) needs to read it too.
+    @StateObject var model = ProjectBrowserViewModel()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #if !os(macOS)
     // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
@@ -133,6 +135,8 @@ public struct ProjectBrowserView: View {
                 ForEach(projects) { project in
                     projectRow(project: project)
                 }
+
+                repositoriesSection
             }
 
             // On compact width (iPhone) this action lives in the toolbar instead — a footer button
@@ -171,6 +175,10 @@ public struct ProjectBrowserView: View {
             generatedDiagramDetail(diagramID: diagramID)
         case .freeformDiagram(let diagramID):
             freeformDiagramDetail(diagramID: diagramID)
+        case .repository(let remoteURL):
+            RepositoryDetailView(remoteURL: remoteURL)
+                .id(remoteURL)
+                .environmentObject(model)
         case .none:
             emptyState
                 .navigationTitle("")

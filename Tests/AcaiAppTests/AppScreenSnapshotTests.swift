@@ -65,7 +65,7 @@ struct AppScreenSnapshotTests {
     }
 
     /// A converted-from-Class-Diagram `.type` node carries its manual resize into `node.width`/
-    /// `.height` (B20's fix — `GeneratedDiagram.buildFreeformNodes`), and
+    /// `.height` (B20's fix — `ClassFreeformConversion.makeNode`), and
     /// `FreeformDiagramView.nodeContent`'s middle branch re-applies it as an explicit `.frame`
     /// instead of letting the box revert to auto-measured content size. This snapshots that exact
     /// composition (`TypeNodeView` + an explicit outer `.frame`) at a deliberately elongated size

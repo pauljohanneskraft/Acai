@@ -11,14 +11,17 @@ struct FreeformDiagramView: View {
     @EnvironmentObject private var browserModel: ProjectBrowserViewModel
     @StateObject var viewModel = FreeformDiagramViewModel()
 
-    @State private var canvasScale: CGFloat = 1.0
-    @State private var canvasOffset: CGPoint = .zero
+    // Not `private`: `FreeformDiagramView+Placement.swift` (a same-type extension in another file)
+    // reads these to compute the placement ghost position and the commit-tap's canvas point.
+    @State var canvasScale: CGFloat = 1.0
+    @State var canvasOffset: CGPoint = .zero
     @State var dragStartPositions: [String: CGPoint] = [:]
     @State var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State var activeResizeState: DiagramResizeState?
-    @State private var showDeleteConfirmation = false
-    @State private var cursorLocation: CGPoint = .zero
+    // Not `private`: `FreeformDiagramView+Canvas.swift`'s `canvasContextMenu` sets this too.
+    @State var showDeleteConfirmation = false
+    @State var cursorLocation: CGPoint = .zero
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var showCheckpoints = false
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
@@ -28,6 +31,10 @@ struct FreeformDiagramView: View {
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
     @State var sidebarTab: SidebarTab = .catalog
+    // Not `private`: `FreeformDiagramView+Placement.swift` reads this via `isCompactWidth`.
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    #endif
 
     var body: some View {
         canvasArea
@@ -41,6 +48,9 @@ struct FreeformDiagramView: View {
             .inspector(isPresented: $showSidebar) {
                 sidebarContent
                     .inspectorColumnWidth(min: 240, ideal: 280, max: 360)
+            }
+            .onChange(of: viewModel.pendingPlacement) { _, newValue in
+                beginningPlacementClosesCompactSidebar(newValue)
             }
             .toolbar {
                 ToolbarItemGroup {
@@ -56,6 +66,7 @@ struct FreeformDiagramView: View {
                     }
                     .help("Fit the diagram to the visible canvas (⌘0)")
                     .keyboardShortcut("0", modifiers: .command)
+                    .accessibilityIdentifier("diagram.fitToViewButton")
 
                     Button {
                         showCheckpoints = true
@@ -63,6 +74,7 @@ struct FreeformDiagramView: View {
                         Label("Checkpoints", systemImage: "clock.arrow.circlepath")
                     }
                     .help("Save or restore a named snapshot of this diagram")
+                    .accessibilityIdentifier("diagram.checkpointsButton")
 
                     Button {
                         sidebarTab = .catalog
@@ -71,6 +83,7 @@ struct FreeformDiagramView: View {
                         Label("Sidebar", systemImage: "sidebar.trailing")
                     }
                     .help("Toggle the Node Catalog / Inspector sidebar")
+                    .accessibilityIdentifier("diagram.sidebarToggleButton")
                 }
             }
             #if os(macOS)
@@ -151,7 +164,8 @@ struct FreeformDiagramView: View {
             scale: $canvasScale,
             offset: $canvasOffset,
             activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController
+            autoPanController: canvasAutoPanController,
+            onBackgroundTap: handleBackgroundTap
         ) {
             ZStack {
                 containerNodeLayer
@@ -160,6 +174,10 @@ struct FreeformDiagramView: View {
                 edgeLayer
                 resizeHandleLayer
             }
+            // While a catalog placement is pending, nodes stop intercepting taps so *any* tap on the
+            // canvas — background or over an existing node — reaches `handleBackgroundTap` and
+            // commits the placement there, instead of selecting/dragging whatever's underneath.
+            .allowsHitTesting(viewModel.pendingPlacement == nil)
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
@@ -188,9 +206,22 @@ struct FreeformDiagramView: View {
             handleCatalogDrop(providers: providers, screenLocation: location)
         }
         .overlay {
-            if viewModel.nodes.isEmpty {
+            if viewModel.nodes.isEmpty && viewModel.pendingPlacement == nil {
                 emptyCanvasHint
             }
+        }
+        .overlay {
+            placementGhostOverlay
+        }
+        .overlay(alignment: .topTrailing) {
+            placementCancelButton
+        }
+        .background {
+            // Hidden button so Escape (macOS, external keyboard on iPad) backs out of placement
+            // mode — the explicit "or Escape key" cancel affordance alongside `placementCancelButton`.
+            Button("") { viewModel.cancelPlacement() }
+                .keyboardShortcut(.cancelAction)
+                .hidden()
         }
     }
 
@@ -222,58 +253,6 @@ struct FreeformDiagramView: View {
         #endif
     }
 
-    // MARK: - Canvas Context Menu
-
-    @ViewBuilder
-    private var canvasContextMenu: some View {
-        // Touch-reachable equivalents of the hidden keyboard-shortcut buttons above — delete/copy/
-        // cut require a selection; paste and select-all are always offered.
-        if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
-            Button {
-                showDeleteConfirmation = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            Button {
-                viewModel.clipboard.copySelection()
-            } label: {
-                Label("Copy", systemImage: "doc.on.doc")
-            }
-            Button {
-                viewModel.clipboard.cutSelection()
-            } label: {
-                Label("Cut", systemImage: "scissors")
-            }
-            Divider()
-        }
-        Button {
-            viewModel.clipboard.paste()
-        } label: {
-            Label("Paste", systemImage: "doc.on.clipboard")
-        }
-        Button {
-            viewModel.selectAll()
-        } label: {
-            Label("Select All", systemImage: "checklist")
-        }
-        Divider()
-        ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
-            Menu(group.rawValue) {
-                ForEach(FreeformDiagramNodeKind.cases(in: group)) { kind in
-                    Button {
-                        let canvasPoint = CGPoint(
-                            x: (cursorLocation.x - canvasOffset.x) / canvasScale,
-                            y: (cursorLocation.y - canvasOffset.y) / canvasScale
-                        )
-                        insertNode(kind: kind, at: canvasPoint)
-                    } label: {
-                        Label(kind.displayName, systemImage: kind.systemImage)
-                    }
-                }
-            }
-        }
-    }
-
     // MARK: - Canvas Fit
 
     private func centerDiagram() {
@@ -289,11 +268,9 @@ struct FreeformDiagramView: View {
 
     // MARK: - Insertion Helpers
 
-    private func insertNode(kind: FreeformDiagramNodeKind, at canvasPoint: CGPoint) {
-        let name = "New" + kind.displayName
-            .replacingOccurrences(of: " / ", with: "")
-            .replacingOccurrences(of: " ", with: "")
-        viewModel.addNode(kind: kind, name: name, at: canvasPoint)
+    // Not `private`: `FreeformDiagramView+Canvas.swift`'s `canvasContextMenu` calls this too.
+    func insertNode(kind: FreeformDiagramNodeKind, at canvasPoint: CGPoint) {
+        viewModel.addNode(kind: kind, name: kind.defaultNodeName, at: canvasPoint)
     }
 
     private func handleCatalogDrop(providers: [NSItemProvider], screenLocation: CGPoint) -> Bool {
@@ -327,13 +304,7 @@ struct FreeformDiagramView: View {
 
             switch sidebarTab {
             case .catalog:
-                FreeformDiagramCatalog(
-                    viewModel: viewModel,
-                    canvasScale: canvasScale,
-                    canvasOffset: canvasOffset,
-                    canvasViewportSize: canvasViewportSize,
-                    onInsertNode: insertNode
-                )
+                FreeformDiagramCatalog(viewModel: viewModel)
             case .inspector:
                 FreeformDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
             }

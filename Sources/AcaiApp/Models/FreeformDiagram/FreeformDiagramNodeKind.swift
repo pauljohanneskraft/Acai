@@ -1,3 +1,4 @@
+import Foundation
 import AcaiCore
 import AcaiDiagram
 
@@ -247,6 +248,15 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
                 "capsule"
             }
         }
+    }
+
+    /// A default name for a freshly inserted node of this kind, e.g. `"NewClass"` for `.type(.class)`
+    /// or `"NewNote"` for `.note` — shared by every insertion path (drag-drop, context menu,
+    /// point-and-place) so they all name a new node identically.
+    var defaultNodeName: String {
+        "New" + displayName
+            .replacingOccurrences(of: " / ", with: "")
+            .replacingOccurrences(of: " ", with: "")
     }
 
     // MARK: - Catalog Grouping

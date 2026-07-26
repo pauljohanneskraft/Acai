@@ -68,6 +68,8 @@ targets:
           - "Fixtures/**"
           # Read directly off disk by `ScreenshotComparator`, not bundled (leaf-name collisions otherwise).
           - "__Snapshots__/**"
+          # `ScreenshotComparator`'s recording output (never committed; see its own doc comment).
+          - "__RecordedSnapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
@@ -93,6 +95,8 @@ targets:
           - "Fixtures/**"
           # Read directly off disk by `ScreenshotComparator`, not bundled (leaf-name collisions otherwise).
           - "__Snapshots__/**"
+          # `ScreenshotComparator`'s recording output (never committed; see its own doc comment).
+          - "__RecordedSnapshots__/**"
       - path: AcaiUITests/Fixtures
         buildPhase: resources
         type: folder
@@ -138,6 +142,9 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
+        # App Sandbox (B06): the shipping app, unlike the UI-test runner (which already had its
+        # own entitlements file), had none until now.
+        CODE_SIGN_ENTITLEMENTS: Acai-macOS.entitlements
     scheme:
       gatherCoverageData: false
 

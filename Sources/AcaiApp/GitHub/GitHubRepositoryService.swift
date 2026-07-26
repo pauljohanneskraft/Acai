@@ -1,6 +1,24 @@
 import Foundation
 import AcaiGit
 
+/// Where a repository-backed codebase's worktree should live and how its fetch/checkout against
+/// the shared hub clone should be serialized — bundled (like `GitHubRepositoryRef`) to keep
+/// `GitHubRepositoryService.attachWorktree`/`resyncWorktree` under the function-parameter-count
+/// limit.
+struct GitWorktreeDestination: Sendable {
+    /// Where every shared hub clone lives, one subdirectory per remote — see
+    /// `ProjectStore.gitRepositoriesDir`.
+    var hubStoreDirectory: URL
+    /// The libgit2 worktree name to register — see `ProjectStore.gitWorktreeName(for:)`. Unused by
+    /// `resyncWorktree`, which moves an already-registered worktree rather than creating one.
+    var worktreeName: String
+    /// Where this codebase's linked worktree checkout lives — see `ProjectStore.gitWorktreeURL(for:)`.
+    var worktreeDirectory: URL
+    /// Serializes fetch-vs-checkout against the shared hub clone across every codebase referencing
+    /// it — see `ProjectStore.gitRepositoryLocks`.
+    var locks: GitRepositoryLocks
+}
+
 /// The repository/branch/tag/clone operations `NewCodebaseSheet`, `CodebaseDetailView`, and
 /// `ProjectCodebaseEditor` need against a GitHub-backed codebase — split out (like
 /// `GitHubAccountService`) so a UI test process can swap in a deterministic, network-free
@@ -8,9 +26,28 @@ import AcaiGit
 protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
+    /// The old one-independent-clone-per-codebase sync, kept only for pre-B03 codebases that were
+    /// created against `ProjectStore.githubCloneURL(for:)` and still resolve their files there.
     @discardableResult
     func sync(
         credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
+    ) async throws -> String
+
+    /// B03: ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
+    /// codebase ever to reference it) and registers a brand-new linked worktree for one codebase.
+    /// Returns the resolved commit SHA and the credential-free remote URL to persist in
+    /// `CodebaseRepositoryReference`.
+    @discardableResult
+    func attachWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+    ) async throws -> (headSHA: String, remoteURL: URL)
+
+    /// B03: re-syncs the shared hub clone (a fetch, not a clone) to `ref` and moves an
+    /// already-registered worktree along with it — used by `pull`/`switchGitHubRef` once a
+    /// codebase already has a worktree from `attachWorktree` above.
+    @discardableResult
+    func resyncWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
     ) async throws -> String
 }
 
@@ -42,6 +79,29 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
     ) async throws -> String {
         try await GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
             .sync(into: destination)
+    }
+
+    @discardableResult
+    func attachWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+    ) async throws -> (headSHA: String, remoteURL: URL) {
+        let clone = GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
+        let headSHA = try await GitWorktreeSync(
+            transportURL: clone.authenticatedRemoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            locks: destination.locks
+        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory)
+        return (headSHA, clone.plainRemoteURL)
+    }
+
+    @discardableResult
+    func resyncWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+    ) async throws -> String {
+        let clone = GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
+        return try await GitWorktreeSync(
+            transportURL: clone.authenticatedRemoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            locks: destination.locks
+        ).resyncWorktree(at: destination.worktreeDirectory)
     }
 }
 
@@ -94,6 +154,29 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     ) async throws -> String {
         guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
         return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: destination)
+    }
+
+    @discardableResult
+    func attachWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+    ) async throws -> (headSHA: String, remoteURL: URL) {
+        guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
+        let headSHA = try await GitWorktreeSync(
+            transportURL: remoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            locks: destination.locks
+        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory)
+        return (headSHA, remoteURL)
+    }
+
+    @discardableResult
+    func resyncWorktree(
+        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+    ) async throws -> String {
+        guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
+        return try await GitWorktreeSync(
+            transportURL: remoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            locks: destination.locks
+        ).resyncWorktree(at: destination.worktreeDirectory)
     }
 }
 

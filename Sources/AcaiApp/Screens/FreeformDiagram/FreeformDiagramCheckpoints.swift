@@ -36,6 +36,7 @@ struct FreeformDiagramCheckpointsView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
+                        .accessibilityIdentifier("checkpoints.doneButton")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -44,15 +45,18 @@ struct FreeformDiagramCheckpointsView: View {
                     } label: {
                         Label("Save Checkpoint", systemImage: "plus")
                     }
+                    .accessibilityIdentifier("checkpoints.saveButton")
                 }
             }
             .alert("Save Checkpoint", isPresented: $showSaveAlert) {
                 TextField("Name", text: $newCheckpointName)
+                    .accessibilityIdentifier("checkpoints.nameField")
                 Button("Save") {
                     let name = newCheckpointName.trimmingCharacters(in: .whitespaces)
                     guard !name.isEmpty else { return }
                     viewModel.saveCheckpoint(named: name)
                 }
+                .accessibilityIdentifier("checkpoints.confirmSaveButton")
                 Button("Cancel", role: .cancel) {}
             }
         }
@@ -73,13 +77,16 @@ struct FreeformDiagramCheckpointsView: View {
                 dismiss()
             }
             .buttonStyle(.bordered)
+            .accessibilityIdentifier("checkpoints.restoreButton.\(checkpoint.name)")
         }
+        .accessibilityIdentifier("checkpoints.row.\(checkpoint.name)")
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 viewModel.deleteCheckpoint(checkpoint.id)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .accessibilityIdentifier("checkpoints.deleteButton.\(checkpoint.name)")
         }
         .contextMenu {
             Button(role: .destructive) {

@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import AcaiCore
 import AcaiDiagram
+import AcaiGit
 import AcaiLibrary
 import AcaiRender
 
@@ -163,13 +164,18 @@ struct ProjectCodebaseEditor {
 
     // MARK: Codebases
 
+    /// `repository` is set when `NewCodebaseSheet`'s local-folder picker detected the picked
+    /// folder is already a git working directory with an `origin` remote (B04's transparent
+    /// upgrade, via `LocalGitRepositoryDetector`) — `nil` for a plain folder, which behaves exactly
+    /// as before.
     func addCodebase(
         to projectID: UUID, name: String, directoryURL: URL,
-        securityScopedBookmark: SecurityScopedBookmark? = nil
+        securityScopedBookmark: SecurityScopedBookmark? = nil, repository: CodebaseRepositoryReference? = nil
     ) {
         guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
         store.projects[index].codebases.append(Codebase(
-            name: name, directoryPath: directoryURL.path, securityScopedBookmark: securityScopedBookmark))
+            name: name, directoryPath: directoryURL.path, securityScopedBookmark: securityScopedBookmark,
+            repository: repository))
         persist()
     }
 
@@ -184,6 +190,7 @@ struct ProjectCodebaseEditor {
     }
 
     func removeCodebase(_ codebaseID: UUID) {
+        let removedCodebase = codebase(for: codebaseID)
         for i in store.projects.indices {
             store.projects[i].codebases.removeAll { $0.id == codebaseID }
             let toRemove = store.projects[i].generatedDiagramIDs.filter { did in
@@ -197,31 +204,60 @@ struct ProjectCodebaseEditor {
         }
         store.deleteArtifactFile(for: codebaseID)
         store.deleteManagedRules(forCodebase: codebaseID)
-        store.deleteGitHubClone(for: codebaseID)
+        // A codebase created since B03 (has both `githubSource` and `repository`) has a linked
+        // worktree, not an independent clone under `githubClonesDir` — remove that instead. Only
+        // the worktree goes: the shared hub clone itself stays, since other codebases may still
+        // reference it (removing that is a separate, explicit Repositories UI action, B05).
+        // Pre-B03 codebases (`githubSource` set, `repository` nil — never touched by this pass)
+        // keep using `deleteGitHubClone`, which is a harmless no-op for every other codebase shape.
+        if removedCodebase?.githubSource != nil, removedCodebase?.repository != nil {
+            removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
+        } else {
+            store.deleteGitHubClone(for: codebaseID)
+        }
         store.removeFromRecentlyViewed(.codebase(codebaseID))
         persist()
     }
 
+    /// Deregisters and deletes a codebase's linked worktree, leaving the shared hub clone (and any
+    /// other codebase's worktree of it) untouched.
+    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) {
+        guard let repository else { return }
+        let sync = GitWorktreeSync(
+            transportURL: repository.remoteURL, ref: repository.ref,
+            hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
+        let worktreeName = store.gitWorktreeName(for: codebaseID)
+        Task { try? await sync.removeWorktree(named: worktreeName) }
+    }
+
     // MARK: GitHub-backed codebases
 
-    /// Clones `owner/repo` at `ref` into a new app-managed folder and adds it as a codebase, then
-    /// indexes it — the GitHub equivalent of `addCodebase`.
+    /// Clones `owner/repo` at `ref` into a shared, app-managed "hub" clone (reused by every
+    /// codebase that references the same remote — B03) and attaches a fresh linked worktree for
+    /// this codebase, then indexes it — the GitHub equivalent of `addCodebase`. Two codebases
+    /// pointing at the same remote share one on-disk object store and can sit at different commits
+    /// simultaneously, each in its own worktree — this is true uniformly, whether this is the
+    /// first codebase ever to reference this remote or the fifth.
     func addGitHubCodebase(
         to projectID: UUID, name: String, credential: GitHubCredential, target: GitHubRepositoryRef
     ) async {
         guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
         let codebaseID = UUID()
-        let destination = store.githubCloneURL(for: codebaseID)
+        let destination = GitWorktreeDestination(
+            hubStoreDirectory: store.gitRepositoriesDir, worktreeName: store.gitWorktreeName(for: codebaseID),
+            worktreeDirectory: store.gitWorktreeURL(for: codebaseID), locks: store.gitRepositoryLocks)
         do {
-            let headSHA = try await repositoryService.sync(
-                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref, into: destination)
+            let (headSHA, remoteURL) = try await repositoryService.attachWorktree(
+                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref,
+                destination: destination)
             let codebase = Codebase(
                 id: codebaseID,
                 name: name,
-                directoryPath: destination.path,
+                directoryPath: destination.worktreeDirectory.path,
                 githubSource: GitHubSource(
                     owner: target.owner, repo: target.repo, ref: target.ref, refKind: target.kind,
-                    lastSyncedCommitSHA: headSHA, lastSyncedAt: Date())
+                    lastSyncedCommitSHA: headSHA, lastSyncedAt: Date()),
+                repository: CodebaseRepositoryReference(remoteURL: remoteURL, ref: target.ref)
             )
             store.projects[index].codebases.append(codebase)
             persist()
@@ -232,8 +268,8 @@ struct ProjectCodebaseEditor {
     }
 
     /// Re-syncs a GitHub-backed codebase against its stored ref, then reindexes if the upstream
-    /// head commit has actually moved. An incremental `fetch` (via `GitHubRepositoryClone`) is
-    /// cheap enough to just always run, rather than pre-checking via a separate REST call.
+    /// head commit has actually moved. An incremental fetch is cheap enough to just always run,
+    /// rather than pre-checking via a separate REST call.
     func pull(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
@@ -241,9 +277,19 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let latestSHA = try await repositoryService.sync(
-                credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
-                into: store.githubCloneURL(for: codebaseID))
+            let latestSHA: String
+            if codebase.repository != nil {
+                // Created since B03: fetch the shared hub clone and move this codebase's own
+                // worktree along with it.
+                latestSHA = try await repositoryService.resyncWorktree(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
+                    destination: worktreeDestination(codebaseID: codebaseID))
+            } else {
+                // Pre-B03 codebase: still an independent clone under `githubClonesDir`.
+                latestSHA = try await repositoryService.sync(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
+                    into: store.githubCloneURL(for: codebaseID))
+            }
             guard latestSHA != source.lastSyncedCommitSHA else { return }
             mutateCodebase(codebaseID) {
                 $0.githubSource?.lastSyncedCommitSHA = latestSHA
@@ -267,19 +313,36 @@ struct ProjectCodebaseEditor {
             return
         }
         do {
-            let headSHA = try await repositoryService.sync(
-                credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
-                into: store.githubCloneURL(for: codebaseID))
+            let headSHA: String
+            if codebase.repository != nil {
+                headSHA = try await repositoryService.resyncWorktree(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
+                    destination: worktreeDestination(codebaseID: codebaseID))
+            } else {
+                headSHA = try await repositoryService.sync(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
+                    into: store.githubCloneURL(for: codebaseID))
+            }
             mutateCodebase(codebaseID) {
                 $0.githubSource?.ref = ref
                 $0.githubSource?.refKind = kind
                 $0.githubSource?.lastSyncedCommitSHA = headSHA
                 $0.githubSource?.lastSyncedAt = Date()
+                $0.repository?.ref = ref
             }
             await reindex(codebaseID: codebaseID)
         } catch {
             store.report("Branch switch failed: \(error.localizedDescription)")
         }
+    }
+
+    /// Bundles `codebaseID`'s worktree location + the shared locks for a `resyncWorktree` call. The
+    /// credentialed transport URL to actually fetch/checkout over is built separately, inside
+    /// `GitHubRepositoryService`, from the caller's own `owner`/`repo`/`credential`.
+    private func worktreeDestination(codebaseID: UUID) -> GitWorktreeDestination {
+        GitWorktreeDestination(
+            hubStoreDirectory: store.gitRepositoriesDir, worktreeName: store.gitWorktreeName(for: codebaseID),
+            worktreeDirectory: store.gitWorktreeURL(for: codebaseID), locks: store.gitRepositoryLocks)
     }
 
     func reindex(codebaseID: UUID) async {
@@ -385,12 +448,9 @@ struct FreeformDiagramEditor {
     let persist: () -> Void
     let notify: () -> Void
 
-    func add(to projectID: UUID, name: String, template: FreeformDiagramTemplate? = nil) -> UUID? {
+    func add(to projectID: UUID, name: String) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        var diagram = FreeformDiagram(name: name)
-        if let template {
-            diagram.nodes = template.nodes
-        }
+        let diagram = FreeformDiagram(name: name)
         store.projects[projectIndex].freeformDiagramIDs.append(diagram.id)
         store.saveFreeformDiagram(diagram)
         persist()

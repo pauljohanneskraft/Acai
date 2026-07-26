@@ -30,4 +30,15 @@ struct GitHubRepositoryClone {
         components.path = "/\(owner)/\(repo).git"
         return components.url!
     }
+
+    /// `https://github.com/{owner}/{repo}.git`, with no embedded credential — what's actually safe
+    /// to persist in `CodebaseRepositoryReference.remoteURL` (B02/B03), unlike
+    /// `authenticatedRemoteURL` above, which must never be written to disk.
+    var plainRemoteURL: URL {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "github.com"
+        components.path = "/\(owner)/\(repo).git"
+        return components.url!
+    }
 }

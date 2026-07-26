@@ -4,6 +4,10 @@
 
 App/Acai.xcodeproj
 
+# ScreenshotComparator's recording output (App/AcaiUITests/Support/ScreenshotComparator.swift) —
+# never committed; the committed goldens stay under App/AcaiUITests/__Snapshots__/.
+App/AcaiUITests/__RecordedSnapshots__/
+
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
@@ -36,6 +40,7 @@ playground.xcworkspace
 .swiftpm
 
 .build/
+App/.spm-cache
 
 # CocoaPods
 #

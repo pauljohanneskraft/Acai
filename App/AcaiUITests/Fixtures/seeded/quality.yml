@@ -1,0 +1,9 @@
+# Deliberately permissive-looking but always-tripping budget, staged only for UI tests (this file
+# lives under App/AcaiUITests/Fixtures/seeded/, not the app's own quality.yml at the repo root).
+# Guarantees the seeded "SampleSwiftPackage" codebase always shows at least one Quality Check
+# finding, so a journey can exercise ViolationRowView's "View Source" action without needing a
+# bespoke, non-seeded fixture just to trip a real violation.
+budgets:
+  - metric: weightedMethods
+    max: 0
+    message: "Fixture rule: any method at all trips this budget — guarantees a finding to test against."

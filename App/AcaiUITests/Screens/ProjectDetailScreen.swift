@@ -26,10 +26,16 @@ final class ProjectDetailScreen {
 
     /// A no-op on regular width, or once the menu is already open — checked via `target`'s own
     /// existence first, so repeated calls never tap "+" twice and toggle the menu shut again.
+    ///
+    /// `menuButton` needs a real wait, not a plain `.exists`: a caller reading this accessor right
+    /// after navigating to `ProjectDetailScreen` can race the screen's own initial render, where
+    /// `addMenuButton` doesn't exist *yet* either — a one-shot `.exists` check would silently skip
+    /// tapping "+", and the caller's own `waitForExistence` on `target` then polls forever for a
+    /// menu that never got opened.
     private func openAddMenuIfNeeded(target: String) {
         guard !app.buttons[target].exists else { return }
         let menuButton = app.buttons["projectDetail.addMenuButton"]
-        guard menuButton.exists else { return }
+        guard menuButton.waitForExistence(timeout: 10) else { return }
         menuButton.tap()
     }
 
@@ -41,6 +47,10 @@ final class ProjectDetailScreen {
 
     func codebaseRow(id: String) -> XCUIElement {
         app.descendants(matching: .any)["projectDetail.codebaseRow.\(id)"]
+    }
+
+    func freeformDiagramRow(id: String) -> XCUIElement {
+        app.descendants(matching: .any)["projectDetail.freeformDiagramRow.\(id)"]
     }
 
     /// A second, discoverable delete path — a destructive button at the bottom of the screen,

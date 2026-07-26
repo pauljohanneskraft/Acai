@@ -1,3 +1,4 @@
+import AcaiGit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -28,6 +29,10 @@ struct NewCodebaseSheet: View {
     @State private var directoryURL: URL?
     @State private var securityScopedBookmark: SecurityScopedBookmark?
     @State private var isChoosingDirectory = false
+    /// Set when the picked folder turns out to already be a git working directory with an
+    /// `origin` remote — B04's transparent local-folder upgrade. `nil` for a plain folder, which
+    /// keeps today's behavior unchanged.
+    @State private var repositoryReference: CodebaseRepositoryReference?
 
     // GitHub state
     @State private var account = GitHubTokenStore().load()
@@ -88,6 +93,9 @@ struct NewCodebaseSheet: View {
                 defer { url.stopAccessingSecurityScopedResource() }
                 directoryURL = url
                 securityScopedBookmark = try? SecurityScopedBookmark(resolving: url)
+                // Detecting a `.git` root reads the repository's config/HEAD, so it must happen
+                // inside this same security-scoped access window.
+                repositoryReference = LocalGitRepositoryDetector(directory: url).detect()
             }
             .onChange(of: account) { _, newValue in
                 if newValue != nil { Task { await loadRepositories() } }
@@ -184,6 +192,17 @@ struct NewCodebaseSheet: View {
                         .accessibilityIdentifier("newCodebase.refPicker")
                     }
                 }
+                // B05: this remote already has a shared hub clone on disk (from an earlier
+                // codebase referencing it) — adding this one attaches a new worktree to it
+                // instead of a fresh network clone, so it's fast regardless of repository size.
+                if isSelectedRepositoryAlreadyCloned {
+                    Label(
+                        "Already cloned locally — adding this codebase will be fast.",
+                        systemImage: "checkmark.icloud"
+                    )
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("newCodebase.alreadyClonedHint")
+                }
             }
         }
         if let gitHubErrorMessage {
@@ -201,14 +220,16 @@ struct NewCodebaseSheet: View {
                 if let dir = directoryURL {
                     model.editing.addCodebase(
                         to: projectID, name: name, directoryURL: dir,
-                        securityScopedBookmark: securityScopedBookmark)
+                        securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
                 }
                 dismiss()
             }
             .disabled(name.isEmpty || directoryURL == nil)
             .accessibilityIdentifier("newCodebase.addButton")
         case .gitHub:
-            Button("Clone") {
+            // "Add" once the repository already has a local hub clone (this will attach a
+            // worktree, not start a fresh network clone) — "Clone" the first time.
+            Button(isSelectedRepositoryAlreadyCloned ? "Add" : "Clone") {
                 guard let repository = selectedRepository, let ref = selectedRef, let account, !isCloning else {
                     return
                 }
@@ -228,6 +249,20 @@ struct NewCodebaseSheet: View {
             .disabled(selectedRepository == nil || selectedRef == nil || account == nil || isCloning)
             .accessibilityIdentifier("newCodebase.cloneButton")
         }
+    }
+
+    /// Whether the selected GitHub repository already has a shared hub clone on disk (B03/B05) —
+    /// drives the "Already cloned locally" hint and the confirm button's label above. Checked
+    /// against the plain (credential-free) remote URL `GitHubRepositoryClone` would build for this
+    /// repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
+    private var isSelectedRepositoryAlreadyCloned: Bool {
+        guard let repository = selectedRepository, account != nil else { return false }
+        var plainRemoteURLComponents = URLComponents()
+        plainRemoteURLComponents.scheme = "https"
+        plainRemoteURLComponents.host = "github.com"
+        plainRemoteURLComponents.path = "/\(repository.owner.login)/\(repository.name).git"
+        guard let plainRemoteURL = plainRemoteURLComponents.url else { return false }
+        return GitRepository(remoteURL: plainRemoteURL, storeDirectory: model.store.gitRepositoriesDir).isCloned
     }
 
     private var filteredRepositories: [GitHubAPIClient.Repository] {

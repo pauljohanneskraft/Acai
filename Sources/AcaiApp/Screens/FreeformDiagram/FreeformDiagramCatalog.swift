@@ -8,13 +8,6 @@ import AcaiDiagram
 /// for the freeform diagram editor.
 struct FreeformDiagramCatalog: View {
     @ObservedObject var viewModel: FreeformDiagramViewModel
-    let canvasScale: CGFloat
-    let canvasOffset: CGPoint
-    /// The canvas's own visible size, so a tap-to-insert lands in the middle of what's actually on
-    /// screen instead of a fixed point that can fall outside the viewport on a small (or momentarily
-    /// sidebar-covered) screen.
-    var canvasViewportSize: CGSize = CGSize(width: 900, height: 600)
-    let onInsertNode: (FreeformDiagramNodeKind, CGPoint) -> Void
 
     var body: some View {
         ScrollView {
@@ -84,11 +77,15 @@ struct FreeformDiagramCatalog: View {
         }
     }
 
+    /// Tapping a catalog entry no longer inserts immediately — it enters placement mode
+    /// (`FreeformDiagramViewModel.beginPlacement(kind:)`): a ghost preview follows the cursor/touch
+    /// and the next canvas tap commits the node there (see `FreeformDiagramView`'s ghost overlay and
+    /// `commitPlacement(at:)`). Dragging the button straight onto the canvas still inserts directly
+    /// via `.onDrag`/`handleCatalogDrop`, unchanged.
     private func catalogButton(kind: FreeformDiagramNodeKind) -> some View {
-        Button {
-            let centerX = (canvasViewportSize.width / 2 - canvasOffset.x) / canvasScale
-            let centerY = (canvasViewportSize.height / 2 - canvasOffset.y) / canvasScale
-            onInsertNode(kind, CGPoint(x: centerX, y: centerY))
+        let isPending = viewModel.pendingPlacement == kind
+        return Button {
+            viewModel.beginPlacement(kind: kind)
         } label: {
             HStack {
                 Image(systemName: kind.systemImage)
@@ -98,8 +95,10 @@ struct FreeformDiagramCatalog: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 6)
+            .background(isPending ? Color.accentColor.opacity(0.15) : Color.clear)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("catalog.nodeButton.\(kind.id)")
         .onDrag {
             NSItemProvider(object: kind.id as NSString)
         }

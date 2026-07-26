@@ -29,8 +29,7 @@ struct FinderRevealable: ViewModifier {
         // (same test-only gate `GitHubTokenStore`/`ProjectStore` use), since no test asserts on
         // Finder actually opening.
         guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
-        let url = URL(filePath: codebase.directoryPath).appending(path: relativePath)
-        guard FileManager.default.fileExists(atPath: url.path()) else { return }
+        guard let url = try? codebase.resolvedFileURL(relativePath: relativePath) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
     #endif

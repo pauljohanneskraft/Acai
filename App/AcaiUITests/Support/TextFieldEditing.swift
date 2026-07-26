@@ -3,11 +3,20 @@ import XCTest
 @MainActor
 extension XCUIElement {
     /// Clears an already-populated text field (e.g. `CompareGitPanel`'s ref field, which starts
-    /// pre-filled with `"HEAD"`) before typing `text` — `typeText` alone would just append.
+    /// pre-filled with `"HEAD"`, or `FreeformDiagramCheckpointsView`'s save-checkpoint field,
+    /// pre-filled with a timestamp) before typing `text` — `typeText` alone would just append.
     func clearAndTypeText(_ text: String) {
         tap()
         if let currentValue = value as? String, !currentValue.isEmpty {
-            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count))
+            // A plain `tap()` on a field with existing text can leave the cursor mid-string (it taps
+            // the field's center), so backspacing from wherever that lands can leave a tail fragment
+            // of the old value un-deleted — confirmed empirically (a saved checkpoint named
+            // "Baseline" over a prefilled timestamp came out as "Baseline08:42", the tail of the
+            // timestamp the initial backspacing never reached). Tap near the field's trailing edge
+            // first to move the cursor to (or past) the end, then backspace comfortably more than
+            // the text's length so cursor-position drift can't leave anything behind.
+            coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count + 10))
         }
         typeText(text)
     }
@@ -37,6 +46,11 @@ extension XCUIElement {
     /// (already waited-for) so the caller can assert its existence before tapping.
     @discardableResult
     func choose(_ label: String, in app: XCUIApplication, timeout: TimeInterval = 10) -> XCUIElement {
+        // A caller typically only confirmed `self` existed via an earlier, separate wait (e.g.
+        // `tapUntil`) — by the time control reaches here, a still-settling sheet/config screen can
+        // have re-rendered it under a stale reference. One more short wait right before the tap
+        // gives it a chance to resolve again instead of failing outright.
+        _ = waitForExistence(timeout: 5)
         tap()
         let option = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch
