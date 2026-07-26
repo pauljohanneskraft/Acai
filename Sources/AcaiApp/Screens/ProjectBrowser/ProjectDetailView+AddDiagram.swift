@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Split out of `ProjectDetailView` to keep that type's body under SwiftLint's `type_body_length`
-/// limit — the "create a new freeform diagram" concern (template menu, unified empty-project state).
+/// limit — the "create a new freeform diagram" concern (unified empty-project state).
 extension ProjectDetailView {
     /// Shown instead of the header's action buttons + two empty sections when a project has
     /// neither codebases nor diagrams yet — reuses `FreeformDiagramView.emptyCanvasHint`'s visual
@@ -22,7 +22,7 @@ extension ProjectDetailView {
                     Label("Add codebase", systemImage: "plus")
                 }
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramMenu
+                addDiagramButton
             }
             .controlSize(.large)
         }
@@ -30,33 +30,22 @@ extension ProjectDetailView {
         .padding(.vertical, 48)
     }
 
-    /// Offered wherever a new freeform diagram can be created: a blank canvas, or one of the
-    /// starter templates pre-arranged with a handful of the catalog's own node kinds.
-    var addDiagramMenu: some View {
-        Menu {
-            Button {
-                createDiagram(name: "New Freeform Diagram", template: nil)
-            } label: {
-                Label("Blank Diagram", systemImage: "rectangle.dashed")
-            }
-            .accessibilityIdentifier("projectDetail.addDiagramButton.blank")
-            Divider()
-            ForEach(FreeformDiagramTemplate.allCases) { template in
-                Button {
-                    createDiagram(name: template.displayName, template: template)
-                } label: {
-                    Label(template.displayName, systemImage: template.systemImage)
-                }
-                .accessibilityIdentifier("projectDetail.addDiagramButton.template.\(template.id)")
-            }
+    /// Offered wherever a new freeform diagram can be created: creates a blank canvas directly, no
+    /// submenu or template choice. A prior revision offered one-tap starter templates ("Use Case",
+    /// "Deployment") pre-populated with catalog node kinds; that quick-create shortcut was
+    /// deliberately removed (see `BACKLOG.md`'s B26 entry) while keeping the underlying node kinds
+    /// fully available for manual placement from the catalog.
+    var addDiagramButton: some View {
+        Button {
+            createDiagram(name: "New Freeform Diagram")
         } label: {
             Label("Add Diagram", systemImage: "rectangle.3.group")
         }
         .accessibilityIdentifier("projectDetail.addDiagramButton")
     }
 
-    func createDiagram(name: String, template: FreeformDiagramTemplate?) {
-        if let id = model.freeforms.add(to: projectID, name: name, template: template) {
+    func createDiagram(name: String) {
+        if let id = model.freeforms.add(to: projectID, name: name) {
             model.selection = .freeformDiagram(id)
         }
     }

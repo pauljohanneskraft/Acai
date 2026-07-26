@@ -39,7 +39,7 @@ struct ProjectDetailView: View {
                                 Label("Add Codebase", systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                            addDiagramMenu
+                            addDiagramButton
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -56,7 +56,7 @@ struct ProjectDetailView: View {
                             Label("Add Codebase", systemImage: "folder.badge.plus")
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                        addDiagramMenu
+                        addDiagramButton
                     }
                 }
             }
@@ -299,7 +299,7 @@ struct ProjectDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramMenu
+                addDiagramButton
             }
             #endif
         }
