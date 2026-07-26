@@ -1,4 +1,5 @@
 import Foundation
+import AcaiGit
 import AcaiQuality
 import AcaiCore
 import Yams
@@ -53,9 +54,25 @@ final class ProjectStore: ObservableObject {
     /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
     /// path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
-    /// Holds the app-managed local folders for GitHub-backed codebases (see `GitHubSource`), one
-    /// subdirectory per codebase, named by its id — parallels `artifactsDir`/`rulesDir`.
+    /// Holds the app-managed local folders for GitHub-backed codebases created before B03 (see
+    /// `GitHubSource`), one subdirectory per codebase, named by its id — parallels
+    /// `artifactsDir`/`rulesDir`. Codebases created since B03 use `gitRepositoriesDir`/
+    /// `gitWorktreesDir` instead (see below); this stays only so those older, still-persisted
+    /// codebases keep resolving correctly.
     var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
+    /// Holds one shared "hub" clone per distinct remote URL (see `AcaiGit.GitRepository`), keyed by
+    /// its own credential-stripped, normalized-URL hash — B03's shared object store, reused by every
+    /// codebase that references the same remote instead of each getting an independent full clone.
+    var gitRepositoriesDir: URL { baseDir.appendingPathComponent("git-repositories", isDirectory: true) }
+    /// Holds one linked-worktree checkout per repository-backed codebase (see `AcaiGit.GitWorktree`),
+    /// named by the codebase's id — parallels `githubClonesDir`'s old one-clone-per-codebase layout,
+    /// except each subdirectory here is a worktree of a shared `gitRepositoriesDir` clone rather than
+    /// an independent clone of its own.
+    var gitWorktreesDir: URL { baseDir.appendingPathComponent("git-worktrees", isDirectory: true) }
+    /// Serializes fetch-vs-checkout per shared repository (not per codebase) across every codebase
+    /// that references it — see `AcaiGit.GitRepositoryLocks`. One instance for this store's entire
+    /// lifetime; a fresh instance would provide no exclusion against this one.
+    let gitRepositoryLocks = GitRepositoryLocks()
     private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {
@@ -87,6 +104,8 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
         load()
         loadRecentlyViewed()
     }
@@ -315,10 +334,11 @@ final class ProjectStore: ObservableObject {
         saveRecentlyViewed()
     }
 
-    // MARK: - GitHub clones
+    // MARK: - GitHub clones (pre-B03 codebases only — see `githubClonesDir`)
 
     /// Where a GitHub-backed codebase's synced folder lives (whether or not it exists yet) —
-    /// what `Codebase.directoryPath` points at once `githubSource` is set.
+    /// what `Codebase.directoryPath` points at once `githubSource` is set, for codebases created
+    /// before B03. New codebases use `gitWorktreeURL(for:)` instead.
     func githubCloneURL(for codebaseID: UUID) -> URL {
         githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }
@@ -326,6 +346,20 @@ final class ProjectStore: ObservableObject {
     /// Removes a GitHub-backed codebase's synced folder, mirroring `deleteArtifactFile`.
     func deleteGitHubClone(for codebaseID: UUID) {
         try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
+    }
+
+    // MARK: - Git worktrees (B03)
+
+    /// The libgit2 worktree name registered for a codebase — stable and unique per codebase, so it
+    /// can't collide with a branch/worktree name a user might otherwise pick.
+    func gitWorktreeName(for codebaseID: UUID) -> String {
+        "codebase-\(codebaseID.uuidString)"
+    }
+
+    /// Where a repository-backed codebase's linked worktree checkout lives (whether or not it
+    /// exists yet) — what `Codebase.directoryPath` points at for codebases created since B03.
+    func gitWorktreeURL(for codebaseID: UUID) -> URL {
+        gitWorktreesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }
 
     // MARK: - Managed quality-check rules

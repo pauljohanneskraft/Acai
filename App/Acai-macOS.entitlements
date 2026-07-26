@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- GitHub API calls (`GitHubAPIClient`) and libgit2's HTTPS transport (`AcaiGit`'s
+	clone/fetch, wrapped by `GitHubRepositoryClone`/`GitRepository`) both need outbound network
+	access. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- `NewCodebaseSheet`'s local-folder `.fileImporter` picker: the sandbox only grants
+	continued access to a user-picked file/folder across launches via a security-scoped
+	bookmark (`SecurityScopedBookmark`), which itself requires this entitlement. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+</dict>
+</plist>
