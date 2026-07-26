@@ -100,9 +100,43 @@ public struct GitCheckout {
         }
     }
 
+    /// The `origin` remote's URL, or `nil` if this repository has no such remote configured (e.g.
+    /// a purely local repository with no remote at all).
+    public var originRemoteURL: URL? {
+        repository.remote["origin"]?.url
+    }
+
+    /// The current ref in whatever form best identifies it for a later `switchTo(ref:)`/
+    /// `GitRepository.sync(ref:)` call: the branch name if HEAD is attached to one, otherwise the
+    /// current commit's full SHA (a SHA round-trips through `GitReference` just as well as a tag
+    /// name, so a detached-at-a-tag HEAD doesn't need special-casing here).
+    public var currentRef: String {
+        get throws {
+            do {
+                if repository.isHEADDetached {
+                    guard let commit = try repository.HEAD.target as? Commit else {
+                        throw Failure.notAGitRepository(directory.path)
+                    }
+                    return commit.id.hex
+                }
+                return try repository.HEAD.name
+            } catch let error as SwiftGitXError {
+                throw error.asFailure("Couldn't determine the current ref")
+            } catch {
+                throw error
+            }
+        }
+    }
+
     /// Switches to `ref`. Prefers a branch/tag switch (attaches HEAD so a later `fetch` still knows
     /// what to track); falls back to `GitReference`'s resolver with a detached HEAD for an
     /// arbitrary revision (a SHA, `HEAD~3`, …).
+    ///
+    /// Only safe for a repository's sole checkout. A given branch can only be attached as HEAD in
+    /// one checkout at a time (libgit2 rejects a second attempt with "already checked out") — this
+    /// is exactly the case for a `GitWorktree`, where the shared clone's own working directory and
+    /// every other linked worktree are all separate checkouts of the same repository. Worktree
+    /// callers must use `switchToDetached(ref:)` instead.
     public func switchTo(ref: String) throws {
         do {
             if let branch = repository.branch["origin/\(ref)", type: .remote] ?? repository.branch[ref, type: .local] {
@@ -113,6 +147,22 @@ public struct GitCheckout {
                 let commit = try GitReference(name: ref).resolve(in: repository)
                 try repository.switch(to: commit)
             }
+        } catch let error as SwiftGitXError {
+            throw error.asFailure("Couldn't switch to \"\(ref)\"")
+        } catch {
+            throw error
+        }
+    }
+
+    /// Switches to `ref`'s resolved commit with an always-detached HEAD, whether `ref` names a
+    /// branch, a tag, or an arbitrary revision. Unlike `switchTo(ref:)`, this never attaches to a
+    /// branch ref, so it never conflicts with that same branch being checked out anywhere else —
+    /// the property a `GitWorktree` checkout needs, since its shared repository's own working
+    /// directory (and any other linked worktree) may already have that branch attached.
+    public func switchToDetached(ref: String) throws {
+        do {
+            let commit = try GitReference(name: ref).resolve(in: repository)
+            try repository.switch(to: commit)
         } catch let error as SwiftGitXError {
             throw error.asFailure("Couldn't switch to \"\(ref)\"")
         } catch {

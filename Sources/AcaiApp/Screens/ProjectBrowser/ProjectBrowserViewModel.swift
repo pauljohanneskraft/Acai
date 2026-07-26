@@ -19,6 +19,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         case codebase(UUID)
         case generatedDiagram(UUID)
         case freeformDiagram(UUID)
+        /// A shared `AcaiGit.GitRepository`, identified by its credential-free remote URL — B05's
+        /// Repositories sidebar section.
+        case repository(URL)
     }
 
     init(store: ProjectStore = ProjectStore()) {
@@ -36,21 +39,26 @@ final class ProjectBrowserViewModel: ObservableObject {
         }
     }
 
-    /// Clears `selection` when it points at a project/codebase/diagram that no longer exists (e.g.
-    /// after a delete), so the detail pane falls back to the empty state instead of a dead-end
-    /// "not found" message.
+    /// Clears `selection` when it points at a project/codebase/diagram/repository that no longer
+    /// exists (e.g. after a delete), so the detail pane falls back to the empty state instead of a
+    /// dead-end "not found" message.
     private func pruneDanglingSelection() {
+        guard let selection, !selectionStillExists(selection) else { return }
+        self.selection = nil
+    }
+
+    private func selectionStillExists(_ selection: Selection) -> Bool {
         switch selection {
         case .project(let id):
-            if !store.projects.contains(where: { $0.id == id }) { selection = nil }
+            store.projects.contains { $0.id == id }
         case .codebase(let id):
-            if codebase(for: id) == nil { selection = nil }
+            codebase(for: id) != nil
         case .generatedDiagram(let id):
-            if store.generatedDiagrams[id] == nil { selection = nil }
+            store.generatedDiagrams[id] != nil
         case .freeformDiagram(let id):
-            if store.freeformDiagrams[id] == nil { selection = nil }
-        case .none:
-            break
+            store.freeformDiagrams[id] != nil
+        case .repository(let remoteURL):
+            repositoryIndex().contains { $0.remoteURL == remoteURL }
         }
     }
 
@@ -239,6 +247,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         store.projects.first { project in
             project.codebases.contains { $0.id == codebaseID }
         }?.id
+    }
+
+    /// The repository → codebases reverse index (B05), built fresh from the current project list —
+    /// see `RepositoryIndex`.
+    func repositoryIndex() -> [RepositoryIndexEntry] {
+        RepositoryIndex(projects: store.projects).entries()
     }
 
     func codebase(for codebaseID: UUID) -> Codebase? {
