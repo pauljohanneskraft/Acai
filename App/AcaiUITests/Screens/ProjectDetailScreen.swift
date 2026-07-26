@@ -49,6 +49,10 @@ final class ProjectDetailScreen {
         app.descendants(matching: .any)["projectDetail.codebaseRow.\(id)"]
     }
 
+    func freeformDiagramRow(id: String) -> XCUIElement {
+        app.descendants(matching: .any)["projectDetail.freeformDiagramRow.\(id)"]
+    }
+
     /// A second, discoverable delete path — a destructive button at the bottom of the screen,
     /// alongside the sidebar context-menu path to the same action.
     var deleteProjectButton: XCUIElement { app.buttons["projectDetail.deleteProjectButton"] }
