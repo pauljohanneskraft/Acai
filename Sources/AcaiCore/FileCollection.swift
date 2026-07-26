@@ -12,12 +12,16 @@ extension FileManager {
         var result: [URL] = []
         guard let enumerator = enumerator(
             at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .nameKey],
             options: [.skipsHiddenFiles]
         ) else { return result }
 
         for case let fileURL as URL in enumerator {
-            if let isDir = try? fileURL.resourceValues(forKeys: [.isDirectoryKey]).isDirectory, isDir {
+            let values = try? fileURL.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            if values?.isSymbolicLink == true {
+                continue
+            }
+            if values?.isDirectory == true {
                 if excludedDirectories.contains(fileURL.lastPathComponent) {
                     enumerator.skipDescendants()
                 }

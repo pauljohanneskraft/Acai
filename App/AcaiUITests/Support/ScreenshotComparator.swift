@@ -32,6 +32,16 @@ struct ScreenshotComparator {
 
     private let comparisonSide = 256
     private let perCellDelta = 16
+    /// Top rows of the 256×256 grid to always treat as matching, on iOS/iPad only — measured
+    /// empirically against a real CI failure (`ClassDiagram/populated` and `inspectorOpen` both
+    /// dropped from ~150 changed cells to exactly 0 once this band was excluded; a third state's
+    /// residual cells were a separate, smaller keyboard-warmup artifact, not this). `simulator_prepare.sh`
+    /// pins the status bar via `simctl status_bar override` specifically so goldens don't churn on
+    /// the wall clock/battery, but that override has been observed to not land on whichever
+    /// simulator instance a given CI run actually tests against — masking the band makes that
+    /// intermittent miss harmless instead of chasing its root cause. macOS has no status bar, so it
+    /// stays unmasked there.
+    private let statusBarMaskRows = 12
 
     /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes the capture to the golden path
     /// instead of comparing — same record-mode convention as the render snapshot tests' `SnapshotComparator`.
@@ -69,7 +79,12 @@ struct ScreenshotComparator {
 
     private func changedCellFraction(_ lhs: Data, _ rhs: Data) -> Double? {
         guard let a = luminanceGrid(lhs), let b = luminanceGrid(rhs) else { return nil }
-        let changed = zip(a, b).reduce(0) { abs(Int($1.0) - Int($1.1)) > perCellDelta ? $0 + 1 : $0 }
+        let maskedRows = SnapshotPlatform().name == "macOS" ? 0 : statusBarMaskRows
+        let changed = zip(a, b).enumerated().reduce(0) { count, indexed in
+            let (index, pair) = indexed
+            guard index / comparisonSide >= maskedRows else { return count }
+            return abs(Int(pair.0) - Int(pair.1)) > perCellDelta ? count + 1 : count
+        }
         return Double(changed) / Double(a.count)
     }
 
