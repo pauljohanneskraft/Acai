@@ -385,12 +385,9 @@ struct FreeformDiagramEditor {
     let persist: () -> Void
     let notify: () -> Void
 
-    func add(to projectID: UUID, name: String, template: FreeformDiagramTemplate? = nil) -> UUID? {
+    func add(to projectID: UUID, name: String) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
-        var diagram = FreeformDiagram(name: name)
-        if let template {
-            diagram.nodes = template.nodes
-        }
+        let diagram = FreeformDiagram(name: name)
         store.projects[projectIndex].freeformDiagramIDs.append(diagram.id)
         store.saveFreeformDiagram(diagram)
         persist()
