@@ -139,9 +139,16 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        # App Sandbox: the shipping app, unlike the UI-test runner (which already had its
-        # own entitlements file), had none until now.
-        CODE_SIGN_ENTITLEMENTS: Acai-macOS.entitlements
+      # App Sandbox: the shipping app, unlike the UI-test runner (which already had its own
+      # entitlements file), had none until now. Split per config: Debug additionally grants
+      # `/private/tmp` write access so the sandboxed app-under-test can persist into an
+      # XCUITest fixture directory (see `Acai-macOS-Debug.entitlements`'s own comment) —
+      # Release keeps the tighter `Acai-macOS.entitlements` with no such exception.
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Acai-macOS-Debug.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: Acai-macOS.entitlements
     scheme:
       gatherCoverageData: false
 

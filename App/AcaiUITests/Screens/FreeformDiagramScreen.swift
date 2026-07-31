@@ -36,18 +36,29 @@ final class FreeformDiagramScreen: DiagramScreenBase {
 
     /// Taps the canvas at its center to commit a pending placement (or clear the selection, if
     /// nothing is pending) — the same coordinate `handleBackgroundTap` reads via `cursorLocation`.
+    /// Anchored to `app.windows.firstMatch`, not `app` itself: `XCUIApplication.coordinate` derives
+    /// its origin from the app element's own frame, which can still be unresolved
+    /// (`CGRect.infinite`, tripping `point.x != INFINITY`) this soon after a navigation, while the
+    /// frontmost window's frame is already settled by the time it exists in the tree.
     func tapCanvasCenter() {
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
-    /// Full point-and-place flow for a journey test: opens the sidebar, taps `kindID`'s catalog
-    /// entry (entering placement mode), then taps the canvas to commit it. No explicit sidebar-close
-    /// step is needed: on compact width (iPhone) `FreeformDiagramView` closes the sidebar itself the
-    /// moment placement begins (its own sheet presentation would otherwise cover the canvas); on
-    /// regular width (iPad/macOS) the sidebar is a persistent column that never covers the canvas, so
-    /// it's fine left open.
+    /// Full point-and-place flow for a journey test: opens the sidebar (if not already open), taps
+    /// `kindID`'s catalog entry (entering placement mode), then taps the canvas to commit it. No
+    /// explicit sidebar-close step is needed: on compact width (iPhone) `FreeformDiagramView` closes
+    /// the sidebar itself the moment placement begins (its own sheet presentation would otherwise
+    /// cover the canvas); on regular width (iPad/macOS) the sidebar is a persistent column that never
+    /// covers the canvas, so it's fine left open. That same asymmetry is why the toggle below is
+    /// conditional, not unconditional: on iPad/macOS a second call in the same test (e.g. placing a
+    /// second node) finds the sidebar still open from the first, so toggling unconditionally would
+    /// *close* it instead of opening it, hiding the catalog `kindID` is about to be looked up from.
+    /// `"type.class"` — always the catalog's first entry — stands in for "is the catalog showing at
+    /// all" regardless of which `kindID` this particular call wants.
     func placeNodeViaCatalog(kindID: String) {
-        tapSidebarToggle()
+        if !catalogNodeButton("type.class").exists {
+            tapSidebarToggle()
+        }
         let button = catalogNodeButton(kindID)
         XCTAssertTrue(button.waitForExistence(timeout: 10), "catalog entry '\(kindID)' never appeared")
         button.tap()
@@ -70,7 +81,21 @@ final class FreeformDiagramScreen: DiagramScreenBase {
     /// `.alert` never reaches the native `UIAlertController`-backed text field XCUITest sees, unlike
     /// the alert's own `Button`s, whose identifiers do come through. There is only ever one text
     /// field in this alert, so matching by kind alone is unambiguous.
-    var checkpointsNameField: XCUIElement { app.alerts["Save Checkpoint"].textFields.firstMatch }
+    ///
+    /// Platform-scoped for the same reason `DeleteConfirmationTests` scopes its own dialog query:
+    /// on iOS, SwiftUI's `.alert` renders as `XCUIElementType.Alert`, matched by `app.alerts[title]`.
+    /// On macOS it instead renders as a nested `XCUIElementType.Sheet` (confirmed empirically —
+    /// `Sheet, ..., label: 'alert', ...` — nested inside the Checkpoints sheet itself), so
+    /// `app.alerts[...]` never matches there at all. Only one text field is ever showing across
+    /// every sheet this app presents, so the unscoped-by-title `app.sheets.textFields.firstMatch` is
+    /// still unambiguous.
+    var checkpointsNameField: XCUIElement {
+        #if os(macOS)
+        app.sheets.textFields.firstMatch
+        #else
+        app.alerts["Save Checkpoint"].textFields.firstMatch
+        #endif
+    }
     var checkpointsConfirmSaveButton: XCUIElement {
         app.buttons.matching(identifier: "checkpoints.confirmSaveButton").firstMatch
     }

@@ -51,7 +51,7 @@ final class FreeformCheckpointJourneyTests: XCTestCase {
         screen.tapCheckpoints()
         let restoreButton = screen.checkpointRestoreButton(named: "Baseline")
         XCTAssertTrue(restoreButton.waitForExistence(timeout: 10))
-        restoreButton.tap()
+        restoreButton.tapWhenHittable()
 
         XCTAssertTrue(newClass.waitForExistence(timeout: 10), "the baseline node should be back after restoring")
         XCTAssertFalse(newEnum.exists, "the node added after the checkpoint should be gone after restoring")
