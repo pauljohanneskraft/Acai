@@ -140,7 +140,7 @@ jobs:
     name: UI Test iPhone
     needs: [lint, build-test-ios]
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -191,25 +191,11 @@ jobs:
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
           if-no-files-found: warn
 
-      # Re-runs just the screenshot-comparing classes in record mode (never asserts — see
-      # ScreenshotComparator.record's doc comment) so a golden mismatch/miss that failed the run
-      # above produces the same drop-in-ready PNG folder record-snapshots.yml used to, without a
-      # separate manual workflow run. The simulator from the run above is already booted.
-      - name: Record UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
-        run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
-            -only-testing:Acai-iOSUITests/ScreenshotJourneyTests \
-            -only-testing:Acai-iOSUITests/CompareGitRevisionTests \
-            -only-testing:Acai-iOSUITests/NewSheetsScreenshotTests \
-            -only-testing:Acai-iOSUITests/GeneratedDiagramScreenshotTests \
-            CODE_SIGNING_ALLOWED=NO ACAI_RECORD_SNAPSHOTS=1
-        working-directory: App
-
-      - name: Upload recorded snapshots
+      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
+      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
+      # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
+      # second xcodebuild invocation needed.
+      - name: Upload UI test screenshots
         if: steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
@@ -221,7 +207,7 @@ jobs:
     name: UI Test iPad
     needs: [lint, build-test-ios]
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -272,25 +258,11 @@ jobs:
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
           if-no-files-found: warn
 
-      # Re-runs just the screenshot-comparing classes in record mode (never asserts — see
-      # ScreenshotComparator.record's doc comment) so a golden mismatch/miss that failed the run
-      # above produces the same drop-in-ready PNG folder record-snapshots.yml used to, without a
-      # separate manual workflow run. The simulator from the run above is already booted.
-      - name: Record UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
-        run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "platform=iOS Simulator,name=iPad (A16)" \
-            -only-testing:Acai-iOSUITests/ScreenshotJourneyTests \
-            -only-testing:Acai-iOSUITests/CompareGitRevisionTests \
-            -only-testing:Acai-iOSUITests/NewSheetsScreenshotTests \
-            -only-testing:Acai-iOSUITests/GeneratedDiagramScreenshotTests \
-            CODE_SIGNING_ALLOWED=NO ACAI_RECORD_SNAPSHOTS=1
-        working-directory: App
-
-      - name: Upload recorded snapshots
+      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
+      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
+      # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
+      # second xcodebuild invocation needed.
+      - name: Upload UI test screenshots
         if: steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
@@ -302,7 +274,7 @@ jobs:
     name: UI Test macOS
     needs: [lint, build-test-macos]
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -356,53 +328,17 @@ jobs:
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
           if-no-files-found: warn
 
-      # Re-runs just the screenshot-comparing classes in record mode (never asserts — see
-      # ScreenshotComparator.record's doc comment) so a golden mismatch/miss that failed the run
-      # above produces the same drop-in-ready PNG folder record-snapshots.yml used to, without a
-      # separate manual workflow run.
-      - name: Record UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
-        run: |
-          # ScreenshotComparator writes recordings directly to /private/tmp/AcaiUITestSnapshots on
-          # macOS (an entitled, non-container path — see its own `outputDirectory` doc comment), so
-          # this should just succeed. It still stages to a container tmp dir as a last-resort
-          # fallback if that direct write ever unexpectedly fails, reporting it as an XCTFail (so
-          # xcodebuild exits nonzero even though recording itself still completed) — tolerate that
-          # one known, benign signature specifically, not any nonzero exit blanket.
-          set +e
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-macOSUITests \
-            -destination "platform=macOS" \
-            -only-testing:Acai-macOSUITests/ScreenshotJourneyTests \
-            -only-testing:Acai-macOSUITests/CompareGitRevisionTests \
-            -only-testing:Acai-macOSUITests/NewSheetsScreenshotTests \
-            -only-testing:Acai-macOSUITests/GeneratedDiagramScreenshotTests \
-            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM="" \
-            ACAI_RECORD_SNAPSHOTS=1 2>&1 | tee /tmp/record-macos.log
-          status=${PIPESTATUS[0]}
-          set -e
-
-          if [ "$status" -eq 0 ]; then
-            echo "Recording succeeded outright."
-            exit 0
-          fi
-
-          unexpected=$(grep -E ": error:" /tmp/record-macos.log | grep -v "Could not write recorded snapshot" || true)
-          if [ -n "$unexpected" ]; then
-            echo "Recording failed for a reason other than the known macOS sandbox staging fallback:"
-            echo "$unexpected"
-            exit "$status"
-          fi
-
-          echo "Nonzero exit, but every failure matches the known macOS sandbox staging fallback — treating as a successful recording."
-        working-directory: App
-
+      # ScreenshotComparator writes every capture to /private/tmp/AcaiUITestSnapshots as a side
+      # effect of the normal (asserting) run above — not only in record mode — so a golden
+      # mismatch/miss there already leaves this ready to upload, with no second xcodebuild
+      # invocation needed. Sync first in case the direct entitled write unexpectedly fell back to
+      # the sandboxed runner's own container (see ScreenshotComparator.write's doc comment) — a
+      # no-op the rest of the time.
       - name: Sync staged snapshots
         if: steps.run-tests.outcome == 'failure'
         run: Scripts/sync_ui_snapshots.sh
 
-      - name: Upload recorded snapshots
+      - name: Upload UI test screenshots
         if: steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:

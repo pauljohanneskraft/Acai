@@ -43,17 +43,21 @@ struct ScreenshotComparator {
     /// stays unmasked there.
     private let statusBarMaskRows = 12
 
-    /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes the capture to `outputDirectory`
-    /// instead of comparing — same record-mode convention as the render snapshot tests' `SnapshotComparator`.
+    /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` skips the pass/fail assertion (and doesn't
+    /// fail on a missing golden) — same record-mode convention as the render snapshot tests'
+    /// `SnapshotComparator`. Every call still writes its capture to `outputDirectory` regardless of
+    /// this flag (see `write`): CI's `Build & Test` UI jobs never set it, and rely on exactly that
+    /// to have a reviewable/droppable folder ready from a single, normal (asserting) run whenever
+    /// one fails — no separate recording invocation needed.
     private var isRecording: Bool {
         ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
     }
 
-    /// Where recording writes results — never `goldenDirectory` itself, which stays read-only
-    /// throughout a recording run (`record` only ever reads it, to decide whether a state can be
-    /// copied forward unchanged). Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>`
-    /// layout, so a human can review/copy the output over the committed goldens with no per-file
-    /// renaming — same convention `record-snapshots.yml`'s uploaded artifact already used.
+    /// Where every `validate` call writes its capture — never `goldenDirectory` itself, which stays
+    /// read-only (`validate` only ever reads it, to decide whether a state can be copied forward
+    /// unchanged). Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>` layout, so a
+    /// human can review/copy the output over the committed goldens with no per-file renaming — same
+    /// convention `build-test.yml`'s "Upload UI test screenshots" step uses for its artifact.
     ///
     /// Not `FileManager.default.temporaryDirectory` on macOS: the UI test runner is sandboxed, so
     /// that resolves inside the runner's own container (an opaque, per-run path) rather than a
@@ -71,7 +75,7 @@ struct ScreenshotComparator {
         #endif
     }
 
-    /// Fallback recording target for macOS, in case even `outputDirectory`'s entitled `/private/tmp`
+    /// Fallback write target for macOS, in case even `outputDirectory`'s entitled `/private/tmp`
     /// write unexpectedly fails. Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>`
     /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
     private var stagingDirectory: URL {
@@ -110,10 +114,13 @@ struct ScreenshotComparator {
     }
 
     /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png`.
-    /// Platform comes first in the path so a CI recording job can upload just its own platform's
-    /// subtree as a self-contained artifact. Regardless of pass/fail/record, attaches the screenshot
-    /// to `testCase` (`.keepAlways`) so it's reviewable in the test report — this layer doubles as a
-    /// human-reviewable screenshot journey, not only an automated regression check.
+    /// Platform comes first in the path so a CI job can upload just its own platform's subtree as a
+    /// self-contained artifact. Regardless of pass/fail/record, attaches the screenshot to
+    /// `testCase` (`.keepAlways`) so it's reviewable in the test report — this layer doubles as a
+    /// human-reviewable screenshot journey, not only an automated regression check. Every call also
+    /// writes its capture to `outputDirectory` via `write` (see its own doc comment) — not only in
+    /// record mode — so a normal, asserting CI run already leaves behind a droppable folder if it
+    /// fails; no separate recording invocation is needed to get one.
     /// `maxChangedFraction` is a per-call override (not per-instance) since one comparator is
     /// typically reused across a whole journey and only a state or two needs a looser bound (e.g. a
     /// `Menu`'s translucent material doesn't render byte-identically across separate app launches).
@@ -134,23 +141,34 @@ struct ScreenshotComparator {
         let url = goldenDirectory.appendingPathComponent("\(name).png")
         let rendered = screenshot.pngRepresentation
 
-        if isRecording {
-            record(rendered, name: name, goldenURL: url, threshold: threshold)
+        // No golden yet — write the fresh capture as-is (there's nothing to compare against or
+        // keep byte-identical to) so it's still in the uploaded folder for a genuinely new state,
+        // even outside record mode; only fail the assertion when not explicitly recording.
+        guard let committed = try? Data(contentsOf: url), hasPNGMagic(committed) else {
+            write(rendered, name: name)
+            if !isRecording {
+                XCTFail("Missing golden \(name).png — run once with ACAI_RECORD_SNAPSHOTS=1 to record it")
+            }
             return
         }
-
-        guard let committed = try? Data(contentsOf: url) else {
-            XCTFail("Missing golden \(name).png — run once with ACAI_RECORD_SNAPSHOTS=1 to record it")
-            return
-        }
-        guard hasPNGMagic(committed), hasPNGMagic(rendered) else {
-            XCTFail("\(name).png golden or fresh capture is not a valid PNG")
+        guard hasPNGMagic(rendered) else {
+            XCTFail("\(name).png fresh capture is not a valid PNG")
             return
         }
         guard let changed = changedCellFraction(committed, rendered) else {
             XCTFail("Could not compute perceptual diff for \(name).png")
             return
         }
+
+        // Writes `rendered` itself only when it drifted beyond `threshold` (a real change worth
+        // surfacing); otherwise writes the committed golden's own bytes — byte-identical to what's
+        // already committed, so an unchanged state produces no diff for a human dropping the output
+        // over `__Snapshots__/`, rather than churn from this capture's own rendering noise (the same
+        // noise `threshold` exists to tolerate in the first place).
+        write(changed <= threshold ? committed : rendered, name: name)
+
+        guard !isRecording else { return }
+
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
         // Logged unconditionally (pass or fail) so `maxChangedFraction` can be tightened from real
         // measured noise floors across a run instead of trial-and-error — grep the console/activity
@@ -164,42 +182,43 @@ struct ScreenshotComparator {
         )
     }
 
-    /// The `ACAI_RECORD_SNAPSHOTS=1` half of `validate` — writes to `outputDirectory`, falling back
-    /// to `stagingDirectory` (see its own doc comment) if that write unexpectedly fails.
+    /// Writes `data` to `outputDirectory`, falling back to `stagingDirectory` (see its own doc
+    /// comment) if that write unexpectedly fails. Runs on every `validate` call, recording or not —
+    /// see `outputDirectory`'s doc comment for why.
     ///
-    /// Writes `rendered` itself only when there's no golden at `goldenURL` yet, or it drifted beyond
-    /// `threshold` (a real change worth recording). When the committed golden still matches closely
-    /// enough, writes *its* bytes instead — byte-identical to what's already committed, so
-    /// re-recording an unchanged state produces no diff for a human reviewing the output, rather
-    /// than churn from this capture's own rendering noise (the same noise `threshold` exists to
-    /// tolerate in the first place). `goldenURL` itself is only ever read here, never written.
-    private func record(_ rendered: Data, name: String, goldenURL: URL, threshold: Double) {
-        var toWrite = rendered
-        if let existing = try? Data(contentsOf: goldenURL), hasPNGMagic(existing),
-           let changed = changedCellFraction(existing, rendered), changed <= threshold {
-            toWrite = existing
-        }
-
+    /// A write failure only fails the test in record mode, where producing `outputDirectory`'s
+    /// contents *is* the point of the run; on a normal (asserting) run it's merely a best-effort
+    /// extra, so it's logged instead — an unrelated write hiccup shouldn't obscure a real drift
+    /// assertion or turn a passing run red.
+    private func write(_ data: Data, name: String) {
         let url = outputDirectory.appendingPathComponent("\(name).png")
         do {
             try FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true
             )
-            try toWrite.write(to: url)
+            try data.write(to: url)
         } catch {
             let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
             do {
                 try FileManager.default.createDirectory(
                     at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true
                 )
-                try toWrite.write(to: stagedURL)
-                XCTFail(
-                    "Could not write recorded snapshot to \(url.path) (\(error)); staged at "
+                try data.write(to: stagedURL)
+                let message = "Could not write snapshot to \(url.path) (\(error)); staged at "
                     + "\(stagedURL.path) instead — run Scripts/sync_ui_snapshots.sh to copy staged "
-                    + "recordings into \(outputDirectory.path)/"
-                )
+                    + "snapshots into \(outputDirectory.path)/"
+                if isRecording {
+                    XCTFail(message)
+                } else {
+                    XCTContext.runActivity(named: message) { _ in }
+                }
             } catch {
-                XCTFail("Failed to record snapshot at \(url.path), and the staging fallback also failed: \(error)")
+                let message = "Failed to write snapshot at \(url.path), and the staging fallback also failed: \(error)"
+                if isRecording {
+                    XCTFail(message)
+                } else {
+                    XCTContext.runActivity(named: message) { _ in }
+                }
             }
         }
     }
