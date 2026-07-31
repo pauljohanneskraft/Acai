@@ -81,8 +81,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
         DEVELOPMENT_TEAM: TJSHMGE2VX
         SWIFT_VERSION: "6.0"
-        # Record-mode toggle for `ScreenshotComparator`; a shell `export` doesn't reach XCTest.
-        ACAI_RECORD_SNAPSHOTS: "0"
         # Signing needs an Info.plist this target lacked.
         GENERATE_INFOPLIST_FILE: YES
 
@@ -108,7 +106,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.UITests
         DEVELOPMENT_TEAM: TJSHMGE2VX
         SWIFT_VERSION: "6.0"
-        ACAI_RECORD_SNAPSHOTS: "0"
         # Signing needs an Info.plist this target lacked.
         GENERATE_INFOPLIST_FILE: YES
         # Extends Xcode's auto-generated entitlements with `/private/tmp` write access for fixture staging.
@@ -158,10 +155,6 @@ schemes:
       config: Debug
       targets:
         - Acai-iOSUITests
-      environmentVariables:
-        - variable: ACAI_RECORD_SNAPSHOTS
-          value: "$(ACAI_RECORD_SNAPSHOTS)"
-          isEnabled: true
   Acai-macOSUITests:
     build:
       targets:
@@ -170,7 +163,3 @@ schemes:
       config: Debug
       targets:
         - Acai-macOSUITests
-      environmentVariables:
-        - variable: ACAI_RECORD_SNAPSHOTS
-          value: "$(ACAI_RECORD_SNAPSHOTS)"
-          isEnabled: true

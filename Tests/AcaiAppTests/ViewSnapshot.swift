@@ -69,28 +69,14 @@ struct SnapshotComparator {
         return Double(changed) / Double(a.count)
     }
 
-    /// When set (`ACAI_RECORD_SNAPSHOTS=1`), `validate` writes `render()`'s output to the golden
-    /// path instead of comparing against it — the deliberate record-mode escape hatch: run once
-    /// locally to create/update goldens, review the diff like any other committed file, then run
-    /// again without the variable to confirm the comparison itself passes.
-    private var isRecording: Bool {
-        ProcessInfo.processInfo.environment["ACAI_RECORD_SNAPSHOTS"] == "1"
-    }
-
     /// Validates `render()`'s output against `<goldenDirectory>/<name>.png`. `name` should already
-    /// include any color-scheme suffix (e.g. `"newProjectSheet.dark"`).
+    /// include any color-scheme suffix (e.g. `"newProjectSheet.dark"`). There is no local recording
+    /// mode: create or update a golden by writing `render()`'s PNG output to `url` directly (e.g.
+    /// from a scratch script or debugger expression), then review the diff like any other committed
+    /// file before running this again to confirm the comparison itself passes.
     @MainActor
     func validate(_ name: String, render: () throws -> Data) throws {
         let url = goldenDirectory.appendingPathComponent("\(name).png")
-
-        if isRecording {
-            let rendered = try render()
-            try FileManager.default.createDirectory(
-                at: goldenDirectory, withIntermediateDirectories: true
-            )
-            try rendered.write(to: url)
-            return
-        }
 
         let committed = try Data(contentsOf: url)
         #expect(!committed.isEmpty, "\(name).png is empty")
