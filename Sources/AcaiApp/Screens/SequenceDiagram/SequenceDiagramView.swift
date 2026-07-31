@@ -20,8 +20,20 @@ struct SequenceDiagramView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var showConfigSheet = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var showSidebar = false
+    @State private var sidebarTab: SequenceDiagramSidebarTab = .settings
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
@@ -39,29 +51,87 @@ struct SequenceDiagramView: View {
     }
 
     var body: some View {
+        sidebarPresentedCanvas
+            .toolbar { toolbarContent }
+            .diagramCanvasLifecycle(
+                title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+            )
+    }
+
+    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
+    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            diagramContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        sidebar
+                            .navigationTitle(diagram.name)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            diagramContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    sidebar
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        diagramContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                sidebar
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
+    }
+
+    /// The config-sheet fields fold into the Settings tab (live draft + Apply, not a modal);
+    /// Save as Freeform/Export Image move here from the toolbar.
+    private var sidebar: SequenceDiagramSidebar {
+        SequenceDiagramSidebar(
+            viewModel: viewModel, artifact: artifact, tab: $sidebarTab,
+            onApply: { config in
+                viewModel.applyConfiguration(config)
+                model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
+                centerDiagram()
+            },
+            onSaveAsFreeform: {
+                // Pass every participant's live x (not just dragged overrides) so the freeform
+                // copy reproduces the current layout exactly.
+                let layoutPositions = Dictionary(
+                    viewModel.layout.participants.map { ($0.id, CGPoint(x: $0.lifelineX, y: 0)) },
+                    uniquingKeysWith: { first, _ in first }
+                )
+                model.saveAsFreeformDiagram(
+                    id: diagram.id,
+                    positions: layoutPositions,
+                    scale: canvasScale,
+                    offset: canvasOffset
+                )
+            },
+            onExportImage: exportImage
+        )
+    }
+
+    private var diagramContent: some View {
         Group {
             if viewModel.isEmpty {
                 emptyState
             } else {
                 canvasContent
             }
-        }
-        .toolbar { toolbarContent }
-        .diagramCanvasLifecycle(
-            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
-        )
-        .sheet(isPresented: $showConfigSheet) {
-            SequenceConfigSheet(
-                artifact: artifact,
-                initial: viewModel.configuration,
-                onCancel: { showConfigSheet = false },
-                onCreate: { config in
-                    viewModel.applyConfiguration(config)
-                    model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
-                    showConfigSheet = false
-                    centerDiagram()
-                }
-            )
         }
     }
 
@@ -82,6 +152,9 @@ struct SequenceDiagramView: View {
                     ForEach(layout.participants) { participant in
                         participantHeader(participant)
                     }
+                    ForEach(layout.messages) { message in
+                        messageTapTarget(message)
+                    }
                 }
             }
         )
@@ -94,6 +167,11 @@ struct SequenceDiagramView: View {
         )
         .frame(width: participant.headerRect.width, height: participant.headerRect.height)
         .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
+        .onTapGesture(count: 2) {
+            viewModel.selectNode(participant.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        }
         .diagramNodeInteraction(
             id: participant.id,
             model: viewModel,
@@ -101,6 +179,45 @@ struct SequenceDiagramView: View {
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: savePositions
         )
+    }
+
+    /// An invisible tap strip over a message arrow, selecting it for the Inspector tab — mirrors
+    /// `FreeformDiagramView+Canvas.swift`'s `messageTapTarget`, but sized to a full 44pt tall hit area
+    /// (Freeform's 30pt strip is a tap-target shortfall this doesn't repeat).
+    private func messageTapTarget(_ message: SequenceLayoutModel.MessageLayout) -> some View {
+        let width = max(abs(message.toX - message.fromX), 44)
+        let midX = (message.fromX + message.toX) / 2
+        let isSelected = viewModel.selectedMessageID == message.id
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            #if os(macOS)
+            .cursorOnHover(.pointingHand)
+            #endif
+            .frame(width: width + 16, height: 44)
+            .position(x: midX, y: message.y)
+            .accessibilityElement()
+            .accessibilityLabel(messageAccessibilityLabel(message))
+            .accessibilityAddTraits(.isButton)
+            .onTapGesture(count: 2) {
+                viewModel.clearSelection()
+                viewModel.selectedMessageID = message.id
+                sidebarTab = .inspector
+                showSidebar = true
+            }
+            .onTapGesture(count: 1) {
+                let newSelection = (viewModel.selectedMessageID == message.id) ? nil : message.id
+                viewModel.clearSelection()
+                viewModel.selectedMessageID = newSelection
+            }
+    }
+
+    private func messageAccessibilityLabel(_ message: SequenceLayoutModel.MessageLayout) -> String {
+        "Message" + (message.label.map { ": \($0)" } ?? "")
     }
 
     // MARK: - Toolbar
@@ -122,39 +239,12 @@ struct SequenceDiagramView: View {
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
-                showConfigSheet = true
+                showSidebar.toggle()
             } label: {
-                Label("Edit Configuration", systemImage: "slider.horizontal.3")
+                Label("Sidebar", systemImage: "sidebar.trailing")
             }
-            .help("Change the sequence diagram's entry point and depth")
-            .accessibilityIdentifier("diagram.configureButton")
-            Button {
-                // Pass every participant's live x (not just dragged overrides) so the freeform
-                // copy reproduces the current layout exactly.
-                let layoutPositions = Dictionary(
-                    viewModel.layout.participants.map { ($0.id, CGPoint(x: $0.lifelineX, y: 0)) },
-                    uniquingKeysWith: { first, _ in first }
-                )
-                model.saveAsFreeformDiagram(
-                    id: diagram.id,
-                    positions: layoutPositions,
-                    scale: canvasScale,
-                    offset: canvasOffset
-                )
-            } label: {
-                Label("Save as Freeform", systemImage: "document.on.document")
-            }
-            .help("Save a copy as an editable Freeform diagram")
-            .disabled(viewModel.isEmpty)
-            .accessibilityIdentifier("diagram.saveAsFreeformButton")
-            Button {
-                exportImage()
-            } label: {
-                Label("Export Image", systemImage: "photo")
-            }
-            .help("Export the diagram as an image")
-            .disabled(viewModel.isEmpty)
-            .accessibilityIdentifier("diagram.exportImageButton")
+            .help("Toggle the sidebar")
+            .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
 
@@ -174,7 +264,8 @@ struct SequenceDiagramView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
             Button {
-                showConfigSheet = true
+                sidebarTab = .settings
+                showSidebar = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
@@ -193,10 +284,26 @@ struct SequenceDiagramView: View {
         )
     }
 
+    /// Fits the viewport to the diagram's full rendered extent, not just the participant headers.
+    /// `FitToView` unions whatever rects it's handed — feeding it only the header rects (as this
+    /// once did) frames a ~44pt-tall strip, so the fit centers *that* strip in the viewport and
+    /// pushes everything below it (messages, activation bars, fragments, the lifeline tails) down
+    /// past vertical center. Unioning in `layout.contentSize` (the layout's own full-extent
+    /// computation, anchored at the same (0, 0) origin `SequenceEnsembleView` renders from) fixes
+    /// the vertical extent; keeping the header rects in the union (rather than relying on
+    /// `contentSize` alone) preserves correct framing when a dragged participant header sits left
+    /// of the layout's default origin, which `contentSize`'s own width doesn't account for.
     private func centerDiagram() {
+        let layout = viewModel.layout
+        let headerIDs = layout.participants.map(\.id)
+        guard let headerUnion = headerIDs
+            .compactMap({ viewModel.nodeRect($0) })
+            .reduce(into: CGRect?.none, { $0 = $0?.union($1) ?? $1 })
+        else { return }
+        let fullExtent = headerUnion.union(CGRect(origin: .zero, size: layout.contentSize))
         guard let fit = FitToView(
-            nodeIDs: viewModel.layout.participants.map(\.id),
-            rect: { viewModel.nodeRect($0) },
+            nodeIDs: ["sequenceDiagram.fullExtent"],
+            rect: { _ in fullExtent },
             viewport: canvasViewportSize
         ).transform else { return }
         canvasScale = fit.scale

@@ -33,4 +33,26 @@ final class ProjectBrowserScreen {
     func codebaseRow(named name: String) -> XCUIElement {
         app.staticTexts[name].firstMatch
     }
+
+    // MARK: - Quick Open
+
+    /// iPhone's dedicated search button (compact width only).
+    var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
+    /// iPad's pinned search-field proxy atop the sidebar `List` (regular width only) — tapping it
+    /// opens the same Quick Open sheet `quickOpenButton`/⌘K do.
+    var quickOpenFieldProxy: XCUIElement { app.descendants(matching: .any)["sidebar.quickOpenField"] }
+
+    // MARK: - Settings
+
+    /// iPad/iPhone's gear icon — a standalone secondaryAction toolbar item (not nested inside the
+    /// Diagram Theme `Menu`; see `ProjectBrowserView`'s own comment for why).
+    var settingsButton: XCUIElement { app.buttons["sidebar.settingsButton"] }
+
+    // MARK: - Activity indicator
+
+    var activityIndicatorButton: XCUIElement { app.descendants(matching: .any)["activity.indicatorButton"] }
+    func activityRow(id: String) -> XCUIElement { app.descendants(matching: .any)["activity.row.\(id)"] }
+    func activityCancelButton(id: String) -> XCUIElement { app.buttons["activity.cancelButton.\(id)"] }
+    var activityEmptyState: XCUIElement { app.descendants(matching: .any)["activity.emptyState"] }
+    var activityDoneButton: XCUIElement { app.buttons["activity.doneButton"] }
 }

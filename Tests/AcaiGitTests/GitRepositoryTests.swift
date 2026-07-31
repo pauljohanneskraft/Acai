@@ -136,6 +136,44 @@ struct GitRepositoryTests {
         #expect(history.count == 1)
     }
 
+    @Test("churnByFile aggregates per-file touch counts across first-parent history")
+    func churnByFileAggregatesTouchCounts() async throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithRepeatedTouches()
+
+        let store = root.appendingPathComponent("store", isDirectory: true)
+        let repository = GitRepository(remoteURL: source, storeDirectory: store)
+        try await repository.sync(ref: "main")
+
+        let churn = try repository.churnByFile(ref: "main", limit: 10)
+
+        // The root "add readme" commit contributes no touches (diffing a parentless commit against
+        // itself is empty — see `GitChurn`'s doc comment), so README.md's count is 2, not 3.
+        #expect(churn["README.md"] == 2)
+        #expect(churn["Other.swift"] == 1)
+    }
+
+    @Test("churnByFile respects the limit parameter")
+    func churnByFileRespectsLimit() async throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithRepeatedTouches()
+
+        let store = root.appendingPathComponent("store", isDirectory: true)
+        let repository = GitRepository(remoteURL: source, storeDirectory: store)
+        try await repository.sync(ref: "main")
+
+        // Only the most recent commit ("edit readme twice") is walked.
+        let churn = try repository.churnByFile(ref: "main", limit: 1)
+        #expect(churn["README.md"] == 1)
+        #expect(churn["Other.swift"] == nil)
+    }
+
     @Test("isCloned/onDiskSize/lastFetchedAt reflect an uncloned repository")
     func metadataBeforeCloning() throws {
         let root = try scratchDirectory()

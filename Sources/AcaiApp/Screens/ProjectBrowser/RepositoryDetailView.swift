@@ -1,7 +1,7 @@
 import AcaiGit
 import SwiftUI
 
-/// B05's Repositories detail pane: one shared `AcaiGit.GitRepository`'s remote URL, on-disk size,
+/// The Repositories detail pane: one shared `AcaiGit.GitRepository`'s remote URL, on-disk size,
 /// last-fetched time, and every codebase (across every project) referencing it — plus Fetch
 /// now/Manage worktrees/Remove actions.
 struct RepositoryDetailView: View {
@@ -142,9 +142,17 @@ struct RepositoryDetailView: View {
         defer { isFetching = false }
         let hub = hub
         let locks = model.store.gitRepositoryLocks
+        let remoteURL = remoteURL
         do {
-            try await locks.run(for: hub) {
-                try await hub.fetch()
+            // Registered with `activityCenter` — shows up in the global Activity indicator and
+            // flips this repository's row (in the sidebar's Repositories section) to a spinner,
+            // the same as a codebase's reindex/fetch does.
+            _ = try await model.store.activityCenter.run(
+                title: "Fetching \(remoteURL.lastPathComponent)…", kind: .gitFetch, subject: .repository(remoteURL)
+            ) {
+                try await locks.run(for: hub) {
+                    try await hub.fetch()
+                }
             }
             await loadDetails()
         } catch {

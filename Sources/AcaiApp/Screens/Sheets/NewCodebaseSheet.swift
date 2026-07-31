@@ -12,7 +12,15 @@ struct NewCodebaseSheet: View {
     let projectID: UUID
     private let repositoryService: GitHubRepositoryService
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    // Reads signed-in state from the shared store instead of loading its own copy — signing
+    // in/out in Settings is reflected here immediately, and this sheet no longer embeds its own
+    // sign-in UI when signed out (it points at Settings instead — see `gitHubSection` below).
+    @EnvironmentObject private var accountStore: GitHubAccountStore
+    @EnvironmentObject private var settingsPresenter: SettingsPresenter
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
 
     /// Defaults to the real network implementation, swapped for `FixtureGitHubRepositoryService`
     /// under a UI test fixture — see `GitHubRepositoryService`.
@@ -30,12 +38,11 @@ struct NewCodebaseSheet: View {
     @State private var securityScopedBookmark: SecurityScopedBookmark?
     @State private var isChoosingDirectory = false
     /// Set when the picked folder turns out to already be a git working directory with an
-    /// `origin` remote — B04's transparent local-folder upgrade. `nil` for a plain folder, which
+    /// `origin` remote — the transparent local-folder upgrade. `nil` for a plain folder, which
     /// keeps today's behavior unchanged.
     @State private var repositoryReference: CodebaseRepositoryReference?
 
     // GitHub state
-    @State private var account = GitHubTokenStore().load()
     @State private var repositories: [GitHubAPIClient.Repository] = []
     @State private var repositorySearch = ""
     @State private var selectedRepository: GitHubAPIClient.Repository?
@@ -45,6 +52,8 @@ struct NewCodebaseSheet: View {
     @State private var isLoadingRefs = false
     @State private var isCloning = false
     @State private var gitHubErrorMessage: String?
+
+    private var account: GitHubTokenStore.StoredAccount? { accountStore.account }
 
     var body: some View {
         NavigationStack {
@@ -97,8 +106,15 @@ struct NewCodebaseSheet: View {
                 // inside this same security-scoped access window.
                 repositoryReference = LocalGitRepositoryDetector(directory: url).detect()
             }
-            .onChange(of: account) { _, newValue in
-                if newValue != nil { Task { await loadRepositories() } }
+            // `.task(id:)`, not `.onChange(of:)`: now that sign-in moved to Settings, `account` is
+            // typically already non-nil the *first* time this sheet appears (signed in earlier,
+            // in a different sheet) rather than transitioning from nil→non-nil while this view is
+            // on-screen — `.onChange` only fires on a later transition, so it would never fire for
+            // the now-common "already signed in" case. `.task(id:)` runs for the current value
+            // immediately on appear *and* re-runs on change, covering both cases.
+            .task(id: account?.login) {
+                guard account != nil else { return }
+                await loadRepositories()
             }
             .onChange(of: selectedRepository) { _, newValue in
                 if let newValue { Task { await loadRefs(for: newValue) } }
@@ -149,7 +165,23 @@ struct NewCodebaseSheet: View {
     @ViewBuilder
     private var gitHubSection: some View {
         Section {
-            GitHubAccountSection(account: $account)
+            if let account {
+                // Read-only summary here — the full sign-in/scopes/expiry UI lives in Settings now;
+                // this just confirms who's signed in and lets you jump there for anything more
+                // (sign out, re-authorize, check scopes).
+                HStack {
+                    Text("Signed in as \(account.login)")
+                        .accessibilityIdentifier("newCodebase.signedInAsLabel")
+                    Spacer()
+                    settingsLinkButton
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Sign in to GitHub in Settings")
+                        .foregroundStyle(.secondary)
+                    settingsLinkButton
+                }
+            }
         }
         if account != nil {
             Section {
@@ -192,9 +224,9 @@ struct NewCodebaseSheet: View {
                         .accessibilityIdentifier("newCodebase.refPicker")
                     }
                 }
-                // B05: this remote already has a shared hub clone on disk (from an earlier
-                // codebase referencing it) — adding this one attaches a new worktree to it
-                // instead of a fresh network clone, so it's fast regardless of repository size.
+                // This remote already has a shared hub clone on disk (from an earlier codebase
+                // referencing it) — adding this one attaches a new worktree to it instead of a
+                // fresh network clone, so it's fast regardless of repository size.
                 if isSelectedRepositoryAlreadyCloned {
                     Label(
                         "Already cloned locally — adding this codebase will be fast.",
@@ -210,6 +242,23 @@ struct NewCodebaseSheet: View {
                 Text(gitHubErrorMessage).foregroundStyle(.red)
             }
         }
+    }
+
+    /// Jumps straight to the Settings surface that now owns sign-in — macOS opens the real
+    /// `Settings` scene via `\.openSettings`; iPad/iPhone dismiss this sheet and present the
+    /// Settings sheet instead, since a sheet can't stack on top of another sheet's own presentation
+    /// cleanly on those platforms.
+    private var settingsLinkButton: some View {
+        Button("Open Settings") {
+            #if os(macOS)
+            openSettings()
+            #else
+            dismiss()
+            settingsPresenter.isPresented = true
+            #endif
+        }
+        .buttonStyle(.borderless)
+        .accessibilityIdentifier("newCodebase.openSettingsButton")
     }
 
     @ViewBuilder
@@ -251,8 +300,8 @@ struct NewCodebaseSheet: View {
         }
     }
 
-    /// Whether the selected GitHub repository already has a shared hub clone on disk (B03/B05) —
-    /// drives the "Already cloned locally" hint and the confirm button's label above. Checked
+    /// Whether the selected GitHub repository already has a shared hub clone on disk — drives the
+    /// "Already cloned locally" hint and the confirm button's label above. Checked
     /// against the plain (credential-free) remote URL `GitHubRepositoryClone` would build for this
     /// repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
     private var isSelectedRepositoryAlreadyCloned: Bool {

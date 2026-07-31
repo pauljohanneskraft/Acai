@@ -54,14 +54,14 @@ final class ProjectStore: ObservableObject {
     /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
     /// path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
-    /// Holds the app-managed local folders for GitHub-backed codebases created before B03 (see
-    /// `GitHubSource`), one subdirectory per codebase, named by its id — parallels
-    /// `artifactsDir`/`rulesDir`. Codebases created since B03 use `gitRepositoriesDir`/
+    /// Holds the app-managed local folders for GitHub-backed codebases created before worktree
+    /// support existed (see `GitHubSource`), one subdirectory per codebase, named by its id —
+    /// parallels `artifactsDir`/`rulesDir`. Newer codebases use `gitRepositoriesDir`/
     /// `gitWorktreesDir` instead (see below); this stays only so those older, still-persisted
     /// codebases keep resolving correctly.
     var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
     /// Holds one shared "hub" clone per distinct remote URL (see `AcaiGit.GitRepository`), keyed by
-    /// its own credential-stripped, normalized-URL hash — B03's shared object store, reused by every
+    /// its own credential-stripped, normalized-URL hash — the shared object store, reused by every
     /// codebase that references the same remote instead of each getting an independent full clone.
     var gitRepositoriesDir: URL { baseDir.appendingPathComponent("git-repositories", isDirectory: true) }
     /// Holds one linked-worktree checkout per repository-backed codebase (see `AcaiGit.GitWorktree`),
@@ -73,6 +73,9 @@ final class ProjectStore: ObservableObject {
     /// that references it — see `AcaiGit.GitRepositoryLocks`. One instance for this store's entire
     /// lifetime; a fresh instance would provide no exclusion against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
+    /// The in-flight-operation registry every reindex/fetch/clone reports into — one
+    /// instance for this store's entire lifetime, matching `gitRepositoryLocks` above.
+    let activityCenter = ActivityCenter()
     private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {
@@ -334,11 +337,11 @@ final class ProjectStore: ObservableObject {
         saveRecentlyViewed()
     }
 
-    // MARK: - GitHub clones (pre-B03 codebases only — see `githubClonesDir`)
+    // MARK: - GitHub clones (older codebases only — see `githubClonesDir`)
 
     /// Where a GitHub-backed codebase's synced folder lives (whether or not it exists yet) —
     /// what `Codebase.directoryPath` points at once `githubSource` is set, for codebases created
-    /// before B03. New codebases use `gitWorktreeURL(for:)` instead.
+    /// before worktree support existed. New codebases use `gitWorktreeURL(for:)` instead.
     func githubCloneURL(for codebaseID: UUID) -> URL {
         githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }
@@ -348,7 +351,7 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
     }
 
-    // MARK: - Git worktrees (B03)
+    // MARK: - Git worktrees
 
     /// The libgit2 worktree name registered for a codebase — stable and unique per codebase, so it
     /// can't collide with a branch/worktree name a user might otherwise pick.
@@ -357,7 +360,8 @@ final class ProjectStore: ObservableObject {
     }
 
     /// Where a repository-backed codebase's linked worktree checkout lives (whether or not it
-    /// exists yet) — what `Codebase.directoryPath` points at for codebases created since B03.
+    /// exists yet) — what `Codebase.directoryPath` points at for codebases created since worktree
+    /// support was added.
     func gitWorktreeURL(for codebaseID: UUID) -> URL {
         gitWorktreesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }

@@ -19,6 +19,10 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
+    /// The selected transition, keyed by its position in `diagram.transitions` (also
+    /// `StateLayoutModel.EdgeLayout.id`) — the Inspector tab. Positional, not a stable identity;
+    /// safe because `applyConfiguration` always clears this alongside the node selection.
+    @Published var selectedTransitionID: Int?
 
     private(set) var configuration: StateDiagramConfiguration?
 
@@ -62,7 +66,20 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         result = Self.generate(artifact: artifact, configuration: newConfiguration)
         positionOverrides = [:]
         selectedNodeIDs = []
+        selectedTransitionID = nil
         history.clear()
+    }
+
+    /// Clears the selected transition whenever the state selection is replaced (a secondary
+    /// selection, same rationale as `FreeformDiagramViewModel.selectedEdgeID`).
+    func selectionWillReplace() {
+        selectedTransitionID = nil
+    }
+
+    /// A state's display name, or `nil` if it no longer exists (stale selection after a
+    /// configuration change, which always clears the selection anyway).
+    func stateName(_ id: String) -> String? {
+        diagram?.states.first { $0.id == id }?.name
     }
 
     /// The generated diagram, when the analysis succeeded.

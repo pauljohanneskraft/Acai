@@ -1,6 +1,6 @@
 import XCTest
 
-/// B53: a destructive "Delete Project…"/"Delete Codebase…" button at the bottom of
+/// A destructive "Delete Project…"/"Delete Codebase…" button at the bottom of
 /// `ProjectDetailView`/`CodebaseDetailView` — a second, discoverable path to the same
 /// confirmed-safe action `DeleteConfirmationTests` already covers via the sidebar/row context
 /// menu. Each test launches its own fresh copy of the fixture, so a confirmed deletion in one

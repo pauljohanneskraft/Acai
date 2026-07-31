@@ -19,9 +19,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         case codebase(UUID)
         case generatedDiagram(UUID)
         case freeformDiagram(UUID)
-        /// A shared `AcaiGit.GitRepository`, identified by its credential-free remote URL — B05's
+        /// A shared `AcaiGit.GitRepository`, identified by its credential-free remote URL — the
         /// Repositories sidebar section.
         case repository(URL)
+        /// A project's aggregated Findings view — every quality violation, dead-code
+        /// candidate, and parse diagnostic across every codebase in the project, in one list.
+        case findings(UUID)
     }
 
     init(store: ProjectStore = ProjectStore()) {
@@ -59,6 +62,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             store.freeformDiagrams[id] != nil
         case .repository(let remoteURL):
             repositoryIndex().contains { $0.remoteURL == remoteURL }
+        case .findings(let projectID):
+            store.projects.contains { $0.id == projectID }
         }
     }
 
@@ -249,7 +254,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         }?.id
     }
 
-    /// The repository → codebases reverse index (B05), built fresh from the current project list —
+    /// The repository → codebases reverse index, built fresh from the current project list —
     /// see `RepositoryIndex`.
     func repositoryIndex() -> [RepositoryIndexEntry] {
         RepositoryIndex(projects: store.projects).entries()

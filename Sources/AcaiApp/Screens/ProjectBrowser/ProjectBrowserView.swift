@@ -2,10 +2,19 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ProjectBrowserView: View {
-    // Not `private`: `ProjectBrowserView+Repositories.swift`'s extension (a separate file, kept
-    // there only to stay under this file's own line-count limit) needs to read it too.
+    // Not `private`: `ProjectBrowserView+Repositories.swift`'s and `ProjectBrowserView
+    // +SidebarRows.swift`'s extensions (separate files, kept there only to stay under this file's
+    // own line-count limit) need to read these too.
     @StateObject var model = ProjectBrowserViewModel()
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
+    // doc comment for why this can't just be local `@State` on this view. Not `private`:
+    // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
+    @EnvironmentObject var quickOpenPresenter: QuickOpenPresenter
+    // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
+    // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
+    // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
+    @EnvironmentObject private var settingsPresenter: SettingsPresenter
     #if !os(macOS)
     // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
     // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
@@ -13,11 +22,11 @@ public struct ProjectBrowserView: View {
     private var diagramTheme: DiagramThemeSelection = .system
     #endif
     @State private var newProjectPresented = false
-    @State private var collapsedProjects = Set<UUID>()
-    @State private var renamingDiagramID: UUID?
-    @State private var renamingText: String = ""
-    @State private var projectPendingDeletion: Project?
-    @State private var codebasePendingDeletion: Codebase?
+    @State var collapsedProjects = Set<UUID>()
+    @State var renamingDiagramID: UUID?
+    @State var renamingText: String = ""
+    @State var projectPendingDeletion: Project?
+    @State var codebasePendingDeletion: Codebase?
     #if !os(macOS)
     @State private var showKeyboardShortcuts = false
     #endif
@@ -40,8 +49,26 @@ public struct ProjectBrowserView: View {
                             }
                             .accessibilityIdentifier("sidebar.newProjectButton")
                         }
+                        // iPhone's dedicated search tab/button — iPad instead gets a pinned field
+                        // atop the sidebar `List` (see `sidebarContent`), so this only needs to
+                        // exist at compact width.
+                        ToolbarItem(placement: .primaryAction) {
+                            Button {
+                                quickOpenPresenter.isPresented = true
+                            } label: {
+                                Label("Quick Open", systemImage: "magnifyingglass")
+                            }
+                            .accessibilityIdentifier("sidebar.quickOpenButton")
+                        }
                     }
-                    ToolbarItem(placement: .secondaryAction) {
+                    // `.topBarTrailing`, not `.secondaryAction`, for these three — verified against
+                    // a real XCUITest run that with more than one `.secondaryAction` sibling item,
+                    // iOS collapses all of them into a single system overflow control with no
+                    // individually-tappable accessibility element for any one of them (matches
+                    // Apple's own documented "may show inside an overflow menu" behavior for that
+                    // placement). `.topBarTrailing` renders each as its own reliably-tappable bar
+                    // button instead.
+                    ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Picker("Diagram Theme", selection: $diagramTheme) {
                                 ForEach(DiagramThemeSelection.allCases) { option in
@@ -58,6 +85,21 @@ public struct ProjectBrowserView: View {
                             Label("Diagram Theme", systemImage: "paintbrush")
                         }
                     }
+                    // Visible on every platform this toolbar exists on, right next to the menu
+                    // above that already holds the Diagram Theme picker + Keyboard Shortcuts button.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ActivityIndicatorView(activityCenter: model.store.activityCenter)
+                    }
+                    // A standalone icon (not nested inside the Diagram Theme `Menu` above) — more
+                    // reliably discoverable/tappable than burying it another level deep.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            settingsPresenter.isPresented = true
+                        } label: {
+                            Label("Settings", systemImage: "gear")
+                        }
+                        .accessibilityIdentifier("sidebar.settingsButton")
+                    }
                 }
                 #endif
         } detail: {
@@ -66,15 +108,34 @@ public struct ProjectBrowserView: View {
                 .containerBackground(.windowBackground, for: .window)
                 #endif
         }
+        // macOS has no sidebar-toolbar `Menu` today (the Diagram Theme picker lives in the menu
+        // bar via `DiagramThemeCommands` instead — there's no menu bar on iOS, which is why that
+        // iOS-only `Menu` above exists at all) — so this is a small dedicated toolbar of its own,
+        // rather than inventing a `MenuBarExtra` scene for one icon.
+        #if os(macOS)
+        .toolbar {
+            ToolbarItem {
+                ActivityIndicatorView(activityCenter: model.store.activityCenter)
+            }
+        }
+        #endif
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
                 let id = model.editing.addProject(title: title, subtitle: subtitle)
                 model.selection = .project(id)
             }
         }
+        .sheet(isPresented: $quickOpenPresenter.isPresented) {
+            QuickOpenSheetHost()
+                .environmentObject(model)
+        }
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()
+        }
+        .sheet(isPresented: $settingsPresenter.isPresented) {
+            SettingsSheet()
+                .environmentObject(model)
         }
         #endif
         .fileExporter(
@@ -128,6 +189,16 @@ public struct ProjectBrowserView: View {
 
     private var sidebarContent: some View {
         VStack(spacing: 0) {
+            #if !os(macOS)
+            // iPad's pinned search field atop the Projects sidebar's List — new code, sits directly
+            // above the `List` (not inside the toolbar). iPhone gets a dedicated toolbar button
+            // instead (see the compact-width `ToolbarItem` above), so this only needs to render at
+            // regular width.
+            if horizontalSizeClass != .compact {
+                quickOpenSearchFieldProxy
+                Divider()
+            }
+            #endif
             List(selection: $model.selection) {
                 let projects = model.store.projects.sorted(by: {
                     $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
@@ -179,6 +250,10 @@ public struct ProjectBrowserView: View {
             RepositoryDetailView(remoteURL: remoteURL)
                 .id(remoteURL)
                 .environmentObject(model)
+        case .findings(let projectID):
+            FindingsView(projectID: projectID)
+                .id(projectID)
+                .environmentObject(model)
         case .none:
             emptyState
                 .navigationTitle("")
@@ -213,6 +288,12 @@ public struct ProjectBrowserView: View {
                         isComparePresented: isComparePresented,
                         comparisonArtifact: model.comparisonArtifact(for: diagram))
                 }
+            case .moduleCoupling, .hotspot, .cycleDiagram:
+                // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file, own three-way
+                // switch) purely to keep this function's body under SwiftLint's line limit.
+                analysisDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
+                    .id(diagramID)
+                    .environmentObject(model)
             default:
                 deltaHosted(diagram: diagram) { isComparePresented in
                     ClassDiagramView(
@@ -262,214 +343,6 @@ public struct ProjectBrowserView: View {
             Text("Select a project or diagram")
                 .font(.title3)
                 .foregroundStyle(.secondary)
-        }
-    }
-}
-
-// MARK: - Sidebar Rows
-
-extension ProjectBrowserView {
-    private func projectExpansionBinding(for project: Project) -> Binding<Bool> {
-        Binding(
-            get: { !collapsedProjects.contains(project.id) },
-            set: { newValue in
-                if newValue {
-                    collapsedProjects.remove(project.id)
-                } else {
-                    collapsedProjects.insert(project.id)
-                }
-            }
-        )
-    }
-
-    @ViewBuilder
-    fileprivate func projectContextMenu(project: Project) -> some View {
-        Button(role: .destructive) {
-            projectPendingDeletion = project
-        } label: {
-            Label("Delete Project", systemImage: "trash")
-        }
-    }
-
-    @ViewBuilder
-    fileprivate func projectRow(project: Project) -> some View {
-        #if os(macOS)
-        DisclosureGroup(isExpanded: projectExpansionBinding(for: project)) {
-            codebaseRows(project: project)
-            generatedDiagramRows(project: project)
-            freeformDiagramRows(project: project)
-        } label: {
-            Label(project.title, systemImage: "tray.full")
-                .font(.headline)
-                .tag(ProjectBrowserViewModel.Selection.project(project.id))
-                .help(project.title)
-                .accessibilityIdentifier("sidebar.project.\(project.id)")
-                .contextMenu { projectContextMenu(project: project) }
-        }
-        #else
-        // DisclosureGroup's label swallows every tap on iOS (no separate hit-target for the
-        // triangle), so `List(selection:)` never sees the tap and the project can't be selected.
-        // A real Section (title as header) sidesteps that and gives codebases/diagrams a visible
-        // group boundary. Section headers aren't selectable rows, so header actions are plain
-        // Buttons instead of `.tag()`-based selection.
-        Section {
-            if !collapsedProjects.contains(project.id) {
-                codebaseRows(project: project)
-                generatedDiagramRows(project: project)
-                freeformDiagramRows(project: project)
-            }
-        } header: {
-            HStack {
-                Button {
-                    model.selection = .project(project.id)
-                } label: {
-                    Label(project.title, systemImage: "tray.full")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("sidebar.project.\(project.id)")
-                Spacer()
-                Button {
-                    projectExpansionBinding(for: project).wrappedValue.toggle()
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .rotationEffect(.degrees(collapsedProjects.contains(project.id) ? 0 : 90))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            .contextMenu { projectContextMenu(project: project) }
-        }
-        #endif
-    }
-
-    @ViewBuilder
-    fileprivate func codebaseRows(project: Project) -> some View {
-        let sortedCodebases = project.codebases.sorted(by: {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        })
-        ForEach(sortedCodebases) { codebase in
-            Label(codebase.name, systemImage: "folder")
-                .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
-                .help(codebase.name)
-                .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
-                .contextMenu {
-                    Button {
-                        Task { await model.editing.reindex(codebaseID: codebase.id) }
-                    } label: {
-                        Label("Reindex", systemImage: "arrow.clockwise")
-                    }
-                    Divider()
-                    Button(role: .destructive) {
-                        codebasePendingDeletion = codebase
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-                .swipeActions(edge: .leading) {
-                    if horizontalSizeClass == .compact {
-                        Button {
-                            Task { await model.editing.reindex(codebaseID: codebase.id) }
-                        } label: {
-                            Label("Reindex", systemImage: "arrow.clockwise")
-                        }
-                        .tint(.blue)
-                    }
-                }
-                .swipeActions(edge: .trailing) {
-                    if horizontalSizeClass == .compact {
-                        Button(role: .destructive) {
-                            codebasePendingDeletion = codebase
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                }
-        }
-    }
-
-    @ViewBuilder
-    fileprivate func generatedDiagramRows(project: Project) -> some View {
-        let generatedDiagrams = model.generatedDiagramsForProject(project.id)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-        ForEach(generatedDiagrams) { diagram in
-            if renamingDiagramID == diagram.id {
-                TextField("Name", text: $renamingText, onCommit: {
-                    model.diagrams.rename(diagram.id, name: renamingText)
-                    renamingDiagramID = nil
-                })
-                .textFieldStyle(.roundedBorder)
-                .font(.callout)
-            } else {
-                Label(diagram.name, systemImage: diagram.type.systemImage)
-                    .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
-                    .help(diagram.name)
-                    .contextMenu {
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label("Rename", systemImage: "pencil")
-                        }
-                        Button(role: .destructive) {
-                            model.diagrams.remove(diagram.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if horizontalSizeClass == .compact {
-                            Button(role: .destructive) {
-                                model.diagrams.remove(diagram.id)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-            }
-        }
-    }
-
-    @ViewBuilder
-    fileprivate func freeformDiagramRows(project: Project) -> some View {
-        let freeformDiagrams = model.freeformDiagramsForProject(project.id)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-        ForEach(freeformDiagrams) { diagram in
-            if renamingDiagramID == diagram.id {
-                TextField("Name", text: $renamingText, onCommit: {
-                    model.freeforms.rename(diagram.id, name: renamingText)
-                    renamingDiagramID = nil
-                })
-                .textFieldStyle(.roundedBorder)
-                .font(.callout)
-            } else {
-                Label(diagram.name, systemImage: FreeformDiagram.systemImage)
-                    .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
-                    .help(diagram.name)
-                    .contextMenu {
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label("Rename", systemImage: "pencil")
-                        }
-                        Button(role: .destructive) {
-                            model.freeforms.remove(diagram.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if horizontalSizeClass == .compact {
-                            Button(role: .destructive) {
-                                model.freeforms.remove(diagram.id)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-            }
         }
     }
 }

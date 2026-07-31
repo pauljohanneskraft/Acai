@@ -1,9 +1,9 @@
 import XCTest
 
-/// Accessors for the Freeform Diagram editor (`FreeformDiagramView`) — covers both B24's
+/// Accessors for the Freeform Diagram editor (`FreeformDiagramView`) — covers both
 /// point-and-place insertion (catalog buttons, the placement ghost/cancel overlay, canvas taps) and
-/// B27's checkpoints sheet (`FreeformDiagramCheckpointsView`). One screen object for both halves of
-/// the merged ticket, since this is the first (and only) screen object either needs.
+/// the checkpoints sheet (`FreeformDiagramCheckpointsView`). One screen object for both halves,
+/// since this is the first (and only) screen object either needs.
 @MainActor
 final class FreeformDiagramScreen: DiagramScreenBase {
     var checkpointsButton: XCUIElement { app.buttons["diagram.checkpointsButton"] }
@@ -20,7 +20,7 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         tapToolbarButton(sidebarToggleButton, label: "Sidebar")
     }
 
-    // MARK: - Point-and-Place Catalog (B24)
+    // MARK: - Point-and-Place Catalog
 
     /// A catalog entry, by its `FreeformDiagramNodeKind.id` (e.g. `"type.class"`, `"note"`) —
     /// tapping it enters placement mode rather than inserting immediately.
@@ -61,7 +61,7 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
-    // MARK: - Checkpoints (B27)
+    // MARK: - Checkpoints
 
     var checkpointsDoneButton: XCUIElement { app.buttons["checkpoints.doneButton"] }
     var checkpointsSaveButton: XCUIElement { app.buttons["checkpoints.saveButton"] }

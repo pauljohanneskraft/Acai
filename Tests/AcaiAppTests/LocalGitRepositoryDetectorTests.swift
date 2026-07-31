@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Local-folder git detection (B04)")
+@Suite("Local-folder git detection")
 struct LocalGitRepositoryDetectorTests {
     @Test func plainNonGitFolderDetectsNothing() throws {
         let dir = try makeTempDirectory()

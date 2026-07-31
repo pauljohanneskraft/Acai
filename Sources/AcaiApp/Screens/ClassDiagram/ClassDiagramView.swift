@@ -75,15 +75,6 @@ struct ClassDiagramView: View {
                     #endif
 
                     Button {
-                        viewModel.recordUndo()
-                        viewModel.performLayout()
-                        centerDiagram()
-                    } label: {
-                        Label("Re-layout", systemImage: "rectangle.3.group")
-                    }
-                    .help("Re-run automatic layout")
-                    .accessibilityIdentifier("diagram.relayoutButton")
-                    Button {
                         centerDiagram()
                     } label: {
                         Label("Fit to View", systemImage: "rectangle.dashed")
@@ -91,25 +82,6 @@ struct ClassDiagramView: View {
                     .help("Fit the diagram to the visible canvas (⌘0)")
                     .keyboardShortcut("0", modifiers: .command)
                     .accessibilityIdentifier("diagram.fitToViewButton")
-                    Button {
-                        model.saveAsFreeformDiagram(
-                            id: diagram.id,
-                            positions: viewModel.nodePositions,
-                            scale: canvasScale,
-                            offset: canvasOffset
-                        )
-                    } label: {
-                        Label("Save as Freeform", systemImage: "document.on.document")
-                    }
-                    .help("Save a copy as an editable Freeform diagram")
-                    .accessibilityIdentifier("diagram.saveAsFreeformButton")
-                    Button {
-                        exportImage()
-                    } label: {
-                        Label("Export Image", systemImage: "photo")
-                    }
-                    .help("Export the diagram as an image")
-                    .accessibilityIdentifier("diagram.exportImageButton")
                     Button {
                         showSidebar.toggle()
                     } label: {
@@ -136,9 +108,7 @@ struct ClassDiagramView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
-                        ClassDiagramSidebar(
-                            viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab
-                        )
+                        sidebar
                             .navigationTitle(diagram.name)
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
@@ -153,7 +123,7 @@ struct ClassDiagramView: View {
             canvasContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .inspector(isPresented: $showSidebar) {
-                    ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                    sidebar
                         .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
                 }
         }
@@ -161,10 +131,32 @@ struct ClassDiagramView: View {
         canvasContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .inspector(isPresented: $showSidebar) {
-                ClassDiagramSidebar(viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab)
+                sidebar
                     .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
         #endif
+    }
+
+    /// The Settings tab hosts the re-layout/export actions the toolbar no longer carries; the
+    /// sidebar itself has no canvas state, so those closures stay owned here.
+    private var sidebar: ClassDiagramSidebar {
+        ClassDiagramSidebar(
+            viewModel: viewModel, diagram: diagram, artifact: artifact, tab: $sidebarTab,
+            onRelayout: {
+                viewModel.recordUndo()
+                viewModel.performLayout()
+                centerDiagram()
+            },
+            onSaveAsFreeform: {
+                model.saveAsFreeformDiagram(
+                    id: diagram.id,
+                    positions: viewModel.nodePositions,
+                    scale: canvasScale,
+                    offset: canvasOffset
+                )
+            },
+            onExportImage: exportImage
+        )
     }
 
     // MARK: - Canvas Content

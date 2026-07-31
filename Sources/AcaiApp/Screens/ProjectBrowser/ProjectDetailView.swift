@@ -40,6 +40,8 @@ struct ProjectDetailView: View {
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
                             addDiagramButton
+                            Divider()
+                            findingsButton
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -57,6 +59,7 @@ struct ProjectDetailView: View {
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
                         addDiagramButton
+                        findingsButton
                     }
                 }
             }
@@ -302,6 +305,8 @@ struct ProjectDetailView: View {
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
                 addDiagramButton
             }
+            findingsButton
+                .buttonStyle(.bordered)
             #endif
         }
         .padding()
@@ -372,19 +377,7 @@ extension ProjectDetailView {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            if codebase.hasArtifact {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.caption)
-                    .accessibilityLabel("Indexed")
-                    .help("Indexed")
-            } else {
-                Image(systemName: "circle.dashed")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                    .accessibilityLabel("Not yet indexed")
-                    .help("Not yet indexed")
-            }
+            CodebaseIndexStatusBadge(activityCenter: model.store.activityCenter, codebase: codebase)
         }
         .contentShape(Rectangle())
     }

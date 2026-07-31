@@ -20,8 +20,50 @@ class DiagramScreenBase {
     /// The inspector/sidebar's own "Done" button, shown only on compact width (iPhone), where
     /// `.inspector(isPresented:)` collapses to a plain sheet with no built-in dismiss chrome.
     var sidebarDoneButton: XCUIElement { app.buttons["diagram.sidebarDoneButton"] }
-    /// Re-layout (Class Diagram only) / Configure (Call Graph, Sequence, State) — the type-specific
-    /// configuration action each diagram toolbar has under a different label.
+
+    // MARK: - Sidebar tabs (every generated diagram type now has this Settings/Inspector split)
+
+    /// The segmented control's own tab items — a plain `Picker(selection:)` with `.pickerStyle(.segmented)`
+    /// surfaces its `Text` case labels as buttons, not a custom identifier.
+    var settingsTabButton: XCUIElement { app.buttons["Settings"] }
+    var inspectorTabButton: XCUIElement { app.buttons["Inspector"] }
+    /// The Settings tab's `Form` content — every diagram type's sidebar tags it identically
+    /// (`ClassDiagramSidebar` originated the scheme; Sequence/State/Package/Call Graph's new
+    /// sidebars match it).
+    var settingsContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.settings"] }
+    var inspectorContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.inspector"] }
+
+    /// Opens the sidebar (if not already open) and selects its Settings tab, waiting for the tab's
+    /// `Form` content to appear — the precondition for reaching `relayoutButton`/`configureButton`/
+    /// `saveAsFreeformButton`/`exportImageButton`/any type-specific Settings control, all of which
+    /// moved off the toolbar into this tab.
+    func openSettingsTab() {
+        if !settingsContent.exists && !inspectorContent.exists {
+            sidebarToggleButton.tap()
+        }
+        if !settingsContent.exists {
+            settingsTabButton.tap()
+        }
+        _ = settingsContent.waitForExistence(timeout: 5)
+    }
+
+    /// Opens the sidebar (if not already open) and selects its Inspector tab. Most journeys reach
+    /// the Inspector by double-tapping a canvas element instead (every diagram type's node/edge tap
+    /// targets switch tabs as part of the same gesture), so this is for the cases that need it
+    /// without an element to double-tap yet.
+    func openInspectorTab() {
+        if !settingsContent.exists && !inspectorContent.exists {
+            sidebarToggleButton.tap()
+        }
+        if !inspectorContent.exists {
+            inspectorTabButton.tap()
+        }
+        _ = inspectorContent.waitForExistence(timeout: 5)
+    }
+
+    /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — the
+    /// type-specific configuration action each diagram's Settings tab has under a different label.
+    /// These live in the Settings tab's `Form`, not the toolbar — call `openSettingsTab()` first.
     var relayoutButton: XCUIElement { app.buttons["diagram.relayoutButton"] }
     var configureButton: XCUIElement { app.buttons["diagram.configureButton"] }
     var saveAsFreeformButton: XCUIElement { app.buttons["diagram.saveAsFreeformButton"] }
@@ -29,7 +71,7 @@ class DiagramScreenBase {
     /// The navigation bar's back button, for returning to `CodebaseDetailScreen` from a diagram.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// B22: on Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a
+    /// On Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a
     /// popover (macOS) or sheet (iOS/iPadOS) with this checkbox ("Include current coupling/coverage
     /// figures as read-only notes") instead of saving immediately. Class/Sequence/State have no
     /// equivalent metric and still save on tap. `SwiftUI.Toggle` surfaces as a checkbox on macOS but
@@ -47,7 +89,8 @@ class DiagramScreenBase {
 
     /// Drives the Package Diagram/Call Graph "Save as Freeform" flow end-to-end: open the popover/
     /// sheet, set the metrics-carryover checkbox, confirm. Class/Sequence/State screens don't have
-    /// this step — call `saveAsFreeformButton.tap()` directly there instead.
+    /// this step — call `saveAsFreeformButton.tap()` directly there instead. Every type now needs
+    /// `openSettingsTab()` called first (the button moved off the toolbar into the sidebar).
     func saveAsFreeform(includeMetricsNote: Bool) {
         saveAsFreeformButton.tap()
         _ = saveAsFreeformIncludeMetricsToggle.waitForExistence(timeout: 5)
@@ -58,9 +101,16 @@ class DiagramScreenBase {
         saveAsFreeformConfirmButton.tap()
     }
 
-    /// A crowded toolbar collapses trailing items into an iOS "More" overflow item on iPhone width,
-    /// removing a button from the directly-tappable bar until "More" is opened; the revealed row
-    /// only exposes its visible `label`, not the accessibility identifier.
+    /// Before the toolbar-unification pass, a crowded toolbar (up to seven items) collapsed trailing
+    /// items into an iOS "More" overflow item on iPhone width, and that overflow branch was the
+    /// common case for `fitToViewButton`/etc. — the short `waitForExistence(timeout: 1)` below
+    /// existed mostly as a settle delay before falling through to it. Now every generated diagram
+    /// type's toolbar only ever carries Undo/Redo, the iOS multi-select toggle, Fit to View, and
+    /// the sidebar toggle, which fit without collapsing — so the direct-tap branch is now the
+    /// common case, and a 1s wait is too tight on a slow-to-render screen (it fails hard, since
+    /// `OverflowBarButtonItem` no longer exists to fall back to). Wait as long as the macOS branch
+    /// already did, and guard the overflow fallback with its own existence check so a screen that's
+    /// merely slow doesn't crash the helper.
     func tapToolbarButton(_ button: XCUIElement, label: String) {
         #if os(macOS)
         // macOS's NSToolbar never collapses into an overflow item the way iOS's UINavigationBar
@@ -69,11 +119,17 @@ class DiagramScreenBase {
         _ = button.waitForExistence(timeout: 10)
         button.tap()
         #else
-        if button.waitForExistence(timeout: 1) {
+        if button.waitForExistence(timeout: 10) {
             button.tap()
             return
         }
-        app.buttons["OverflowBarButtonItem"].tap()
+        let overflowButton = app.buttons["OverflowBarButtonItem"]
+        guard overflowButton.waitForExistence(timeout: 2) else {
+            // Neither the direct button nor an overflow item ever appeared — let the subsequent
+            // assertion on the caller's side report the real failure instead of crashing here.
+            return
+        }
+        overflowButton.tap()
         let overflowItem = app.buttons[label]
         _ = overflowItem.waitForExistence(timeout: 5)
         overflowItem.tap()

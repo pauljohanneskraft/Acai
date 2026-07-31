@@ -5,9 +5,9 @@ import AcaiDiagram
 /// Converts a static call graph into an editable freeform diagram: each method becomes a
 /// `.method` node (the same monospaced box the generated view shows) and every call a dependency
 /// edge. The scope's coverage/leaf distinction isn't carried over by default — a hand-edited call
-/// graph has no analysis behind it — but when `includeMetricsNote` is set (B22), one read-only
-/// `.note` node reporting the resolved/total call-site coverage is appended instead of silently
-/// dropping the figure.
+/// graph has no analysis behind it — but when `includeMetricsNote` is set, one read-only `.note`
+/// node reporting the resolved/total call-site coverage is appended instead of silently dropping
+/// the figure.
 struct CallGraphFreeformConversion: FreeformConversion {
     let context: FreeformConversionContext
     let includeMetricsNote: Bool

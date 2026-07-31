@@ -132,7 +132,7 @@ extension ProjectBrowserViewModel {
 
     /// Convert a stored diagram to a freeform diagram.
     ///
-    /// - Parameter includeMetricsNote: B22's opt-in — Package/Call Graph screens thread the user's
+    /// - Parameter includeMetricsNote: the opt-in — Package/Call Graph screens thread the user's
     ///   checkbox choice through here; every other diagram type calls this with the default `false`
     ///   since they have no comparable metric to carry over.
     func saveAsFreeformDiagram(

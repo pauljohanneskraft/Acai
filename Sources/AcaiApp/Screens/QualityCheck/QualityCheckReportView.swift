@@ -27,9 +27,17 @@ struct QualityCheckReportView: View {
     /// The row/summary accent. Red for the gate preview in the editor; orange for the advisory
     /// findings shown in the codebase Code Quality Check section.
     var tint: Color = .red
-    /// Lets each violation row reveal its file in Finder. `nil` in the rules editor's live preview,
-    /// which has no codebase directory to resolve a relative path against.
+    /// Lets each violation row reveal its file in Finder and offer the full "Open in…" resolution.
+    /// `nil` in the rules editor's live preview, which has no codebase directory to resolve a
+    /// relative path — or a diagram — against.
     var codebase: Codebase?
+    /// Needed for each violation row's "Open in…" resolution. `nil` in the rules editor's live
+    /// preview alongside `codebase`.
+    var artifact: CodeArtifact?
+    /// The Cycle Diagram entry point, forwarded to each `cycle`-kind `ViolationRowView`. `nil` in
+    /// the rules editor's live preview (see `ViolationRowView.onViewAsDiagram`'s doc comment) —
+    /// `CodebaseAnalysesSection` is the one call site that supplies it.
+    var onViewAsDiagram: ((Violation) -> Void)?
 
     var body: some View {
         if report.isPassing {
@@ -51,7 +59,10 @@ struct QualityCheckReportView: View {
                     .foregroundStyle(tint)
             }
             ForEach(Array(report.violations.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, violation in
-                ViolationRowView(violation: violation, tint: tint, codebase: codebase)
+                ViolationRowView(
+                    violation: violation, tint: tint, codebase: codebase, artifact: artifact,
+                    onViewAsDiagram: onViewAsDiagram.map { callback in { callback(violation) } }
+                )
             }
         }
     }

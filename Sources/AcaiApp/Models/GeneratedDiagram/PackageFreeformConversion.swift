@@ -5,9 +5,9 @@ import AcaiDiagram
 /// Converts a package diagram into an editable freeform diagram: each module becomes a UML
 /// `.package` node (the same shape the generated view shows) and every cross-module dependency a
 /// dependency edge. Coupling metrics aren't carried over by default — a hand-edited package
-/// diagram has no analysis behind it — but when `includeMetricsNote` is set (B22), one read-only
-/// `.note` node summarizing every module's Ca/Ce/I/A/D is appended instead of silently dropping
-/// the figures.
+/// diagram has no analysis behind it — but when `includeMetricsNote` is set, one read-only `.note`
+/// node summarizing every module's Ca/Ce/I/A/D is appended instead of silently dropping the
+/// figures.
 struct PackageFreeformConversion: FreeformConversion {
     let context: FreeformConversionContext
     let includeMetricsNote: Bool

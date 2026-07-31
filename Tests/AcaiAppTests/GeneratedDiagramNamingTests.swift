@@ -28,12 +28,26 @@ struct GeneratedDiagramNamingTests {
         let cases: [(GeneratedDiagram.Content, DiagramType)] = [
             (.classDiagram(.init()), .classDiagram),
             (.stateDiagram(nil), .stateDiagram),
-            (.packageDiagram, .packageDiagram)
+            (.packageDiagram, .packageDiagram),
+            (.moduleCoupling, .moduleCoupling),
+            (.hotspot, .hotspot)
         ]
         for (content, type) in cases {
             let diagram = GeneratedDiagram(name: "", content: content, codebaseID: UUID())
             #expect(diagram.autoName(codebaseName: "MyApp") == "MyApp — \(type.displayName)")
         }
+    }
+
+    @Test func cycleDiagramNameListsMembers() {
+        let reference = CycleDiagramReference(scope: "types", members: ["A", "B", "C"])
+        let diagram = GeneratedDiagram(name: "", content: .cycleDiagram(reference), codebaseID: UUID())
+        #expect(diagram.autoName(codebaseName: "MyApp") == "MyApp — Cycle: A ↔ B ↔ C")
+    }
+
+    @Test func cycleDiagramNameTruncatesLongCycles() {
+        let reference = CycleDiagramReference(scope: "types", members: ["A", "B", "C", "D"])
+        let diagram = GeneratedDiagram(name: "", content: .cycleDiagram(reference), codebaseID: UUID())
+        #expect(diagram.autoName(codebaseName: "MyApp") == "MyApp — Cycle: A ↔ B ↔ C…")
     }
 
     @Test func emptyCodebaseNameOmitsPrefix() {

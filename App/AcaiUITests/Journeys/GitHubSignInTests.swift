@@ -3,7 +3,9 @@ import XCTest
 /// Verifies GitHub sign-in/out through `GitHubAccountSection`'s personal-access-token path (no
 /// device-flow polling to simulate — deterministic by construction) using
 /// `FixtureGitHubAccountService`'s canned identity, proving the seam actually works end to end,
-/// not just that it compiles.
+/// not just that it compiles. This UI moved from `NewCodebaseSheet`'s GitHub tab into the
+/// Settings surface (macOS: `Settings` scene / ⌘,; iPad/iPhone: a sheet via the sidebar's gear
+/// icon) — this journey now signs in/out there instead.
 ///
 /// `GitHubTokenStore` is Keychain-backed and not fixture-redirected, so a successful stubbed
 /// sign-in still writes to the real keychain item under `de.kraftsoftware.Acai.github` — this test
@@ -11,7 +13,6 @@ import XCTest
 /// stale entry for the next run on a reused simulator/host.
 @MainActor
 final class GitHubSignInTests: XCTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
     /// Must match `FixtureGitHubAccountService.login` (`Sources/AcaiApp/GitHub/GitHubAccountService.swift`)
     /// — this UI test target is a separate, out-of-process Xcode-project target with no access to
     /// `AcaiApp`'s internal symbols, unlike `Tests/AcaiAppTests`'s `@testable import`, so the two
@@ -24,16 +25,15 @@ final class GitHubSignInTests: XCTestCase {
         app.launchWithFixture("seeded")
 
         let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        XCTAssertTrue(detail.addCodebaseButton.waitForExistence(timeout: 10))
-        detail.addCodebaseButton.tap()
+        #if os(macOS)
+        // macOS reaches Settings via the real `Settings` scene, not a sidebar button — ⌘, opens it.
+        app.typeKey(",", modifierFlags: .command)
+        #else
+        XCTAssertTrue(browser.settingsButton.waitForExistence(timeout: 10))
+        browser.settingsButton.tap()
+        #endif
 
         let github = GitHubAccountScreen(app: app)
-        github.selectGitHubSource()
         defer { if github.signedInRow.exists { github.signOutButton.tap() } }
 
         XCTAssertTrue(github.patField.waitForExistence(timeout: 5))
@@ -43,7 +43,7 @@ final class GitHubSignInTests: XCTestCase {
         github.signInWithTokenButton.tap()
 
         XCTAssertTrue(github.signedInRow.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Signed in as \(Self.fixtureLogin)"].exists)
+        XCTAssertTrue(app.staticTexts[Self.fixtureLogin].firstMatch.exists)
 
         github.signOutButton.tap()
         XCTAssertFalse(github.signedInRow.waitForExistence(timeout: 5))

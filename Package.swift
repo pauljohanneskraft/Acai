@@ -151,7 +151,7 @@ let package = Package(
         // OpenSSL/mbedTLS, so it builds cleanly on both macOS and iOS with nothing to fetch/link.
         .package(url: "https://github.com/ibrahimcetin/SwiftGitX.git", from: "0.4.0"),
         // `libgit2` itself: already a *transitive* dependency of `SwiftGitX` (which vendors it from
-        // source), but `AcaiGit`'s worktree support (B03) calls `git_worktree_*` directly — SwiftGitX
+        // source), but `AcaiGit`'s worktree support calls `git_worktree_*` directly — SwiftGitX
         // has no worktree API of its own (confirmed: `SwiftGitXError.worktree` exists only as an
         // error-code case, nothing calls the C functions) — so this needs to be a direct dependency
         // too, not just inherited. Pinned `exact` to match SwiftGitX 0.4.0's own pin so both resolve

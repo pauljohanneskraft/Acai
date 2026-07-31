@@ -19,7 +19,8 @@ extension CodebaseDetailView {
             .map { metric in
                 StatisticDetail.Row(
                     id: metric.id, name: shortName(metric.name),
-                    value: "\(metric[keyPath: keyPath])", relativePath: typeRelativePath(metric.id))
+                    value: "\(metric[keyPath: keyPath])", relativePath: typeRelativePath(metric.id),
+                    reference: .type(id: metric.id))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
@@ -39,7 +40,8 @@ extension CodebaseDetailView {
             .map { metric in
                 StatisticDetail.Row(
                     id: metric.id, name: shortName(metric.name),
-                    value: format(metric[keyPath: keyPath]), relativePath: typeRelativePath(metric.id))
+                    value: format(metric[keyPath: keyPath]), relativePath: typeRelativePath(metric.id),
+                    reference: .type(id: metric.id))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
@@ -56,7 +58,8 @@ extension CodebaseDetailView {
             .map { module in
                 StatisticDetail.Row(
                     id: module.name, name: module.name,
-                    value: format(value(module)), relativePath: moduleDirectory(named: module.name))
+                    value: format(value(module)), relativePath: moduleDirectory(named: module.name),
+                    reference: .module(name: module.name))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }

@@ -1,12 +1,17 @@
 import SwiftUI
 import AcaiDiagram
 
-/// The call graph's sidebar. Leads with resolution coverage (how much of the observed call
-/// traffic could be statically resolved), then lists each method with its in/out call counts.
-/// Out-of-scope callee leaves are marked so the scoped focus stands out.
+/// The call graph's Inspector tab: selection-scoped, matching the Class/Freeform convention
+/// instead of the old "card for every method, re-sorted" behavior. Nothing selected shows a
+/// placeholder; one method selected shows its full detail card plus a short cross-linked list of
+/// its callers/callees, each tappable to jump the selection there. The coverage card stays visible
+/// regardless of selection — it's diagram-level information, not per-node detail.
 struct CallGraphInspector: View {
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
+    /// Re-points the canvas/inspector selection at another method — used by the related-methods
+    /// list so tapping a caller/callee jumps straight to it instead of making the user scroll to find it.
+    let onSelect: (String) -> Void
 
     /// Outgoing / incoming edge counts per node id (weights summed).
     private var callCounts: (out: [String: Int], in: [String: Int]) {
@@ -19,37 +24,65 @@ struct CallGraphInspector: View {
         return (outgoing, incoming)
     }
 
-    /// Selected methods first (in name order), then the rest.
-    private var orderedNodes: [CallGraph.Node] {
-        let sorted = graph.nodes.sorted { $0.label < $1.label }
-        let selected = sorted.filter { selectedNodeIDs.contains($0.id) }
-        let rest = sorted.filter { !selectedNodeIDs.contains($0.id) }
-        return selected + rest
-    }
-
     var body: some View {
-        content
-    }
-
-    private var content: some View {
-        let counts = callCounts
-        return ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 coverageCard
-                Text("Methods")
-                    .font(.headline)
-                ForEach(orderedNodes, id: \.id) { node in
-                    methodCard(
-                        node,
-                        out: counts.out[node.id] ?? 0,
-                        incoming: counts.in[node.id] ?? 0,
-                        highlighted: selectedNodeIDs.contains(node.id)
-                    )
-                }
-                legend
+                selectionContent
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var selectionContent: some View {
+        let counts = callCounts
+        if selectedNodeIDs.isEmpty {
+            emptyState
+        } else if selectedNodeIDs.count == 1, let node = graph.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
+            VStack(alignment: .leading, spacing: 12) {
+                methodCard(node, out: counts.out[node.id] ?? 0, incoming: counts.in[node.id] ?? 0, highlighted: true)
+                relatedMethodsSection(for: node)
+                legend
+            }
+        } else {
+            multiSelectionList
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "cursorarrow.click")
+                .font(.title)
+                .foregroundStyle(.secondary)
+            Text("Select a method to inspect")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 120)
+    }
+
+    private var multiSelectionList: some View {
+        let selected = graph.nodes.filter { selectedNodeIDs.contains($0.id) }.sorted { $0.label < $1.label }
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("\(selected.count) Methods Selected")
+                .font(.headline)
+            ForEach(selected, id: \.id) { node in
+                Button {
+                    onSelect(node.id)
+                } label: {
+                    HStack {
+                        Image(systemName: node.isFreeFunction ? "function" : "f.cursive")
+                            .foregroundStyle(.secondary)
+                        Text(node.label)
+                            .font(.system(.caption, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -92,6 +125,50 @@ struct CallGraphInspector: View {
             MetricRow("Called by", "\(incoming)")
         }
         .inspectorCard(highlighted: highlighted)
+    }
+
+    /// Methods `node` calls ("Calls") and methods that call `node` ("Called By"), each row jumping
+    /// the selection there on tap (cross-diagram `CodeElementReference` resolution is separate,
+    /// not-yet-built work — this stays within the one call graph already on screen).
+    private func relatedMethodsSection(for node: CallGraph.Node) -> some View {
+        let callees = graph.edges.filter { $0.from == node.id }
+            .compactMap { edge in graph.nodes.first { $0.id == edge.to } }
+        let callers = graph.edges.filter { $0.to == node.id }
+            .compactMap { edge in graph.nodes.first { $0.id == edge.from } }
+
+        return VStack(alignment: .leading, spacing: 8) {
+            if !callees.isEmpty {
+                relatedList(title: "Calls (\(callees.count))", nodes: callees)
+            }
+            if !callers.isEmpty {
+                relatedList(title: "Called By (\(callers.count))", nodes: callers)
+            }
+        }
+    }
+
+    private func relatedList(title: String, nodes: [CallGraph.Node]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            ForEach(nodes.sorted { $0.label < $1.label }, id: \.id) { related in
+                Button {
+                    onSelect(related.id)
+                } label: {
+                    HStack {
+                        Text(related.label)
+                            .font(.system(.caption, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private var legend: some View {

@@ -2,7 +2,10 @@ import SwiftUI
 import AcaiCore
 
 /// Section view displaying all types found in a codebase,
-/// sorted alphabetically with type-kind badges.
+/// sorted alphabetically with type-kind badges. Every row offers the full "Open in…"
+/// resolution (default tap-through + context menu, Finder reveal kept as an additional macOS-only
+/// secondary action) plus a "View Source" action — previously this section was purely display-only,
+/// with no navigation action at all.
 struct CodebaseTypesSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact
@@ -31,33 +34,38 @@ struct CodebaseTypesSection: View {
     }
 
     private func typeRow(type: TypeDeclaration) -> some View {
-        HStack(spacing: 8) {
-            typeKindBadge(type.kind)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(type.name)
-                    .fontWeight(.medium)
-                if !type.inheritedTypes.isEmpty {
-                    Text(type.inheritedTypes.map { displayName(for: $0.name) }.joined(separator: ", "))
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                typeKindBadge(type.kind)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(type.name)
+                        .fontWeight(.medium)
+                    if !type.inheritedTypes.isEmpty {
+                        Text(type.inheritedTypes.map { displayName(for: $0.name) }.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+                if !type.members.isEmpty {
+                    Text("\(type.members.count) members")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
+                Text(type.accessLevel.rawValue)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
             }
-            Spacer()
-            if !type.members.isEmpty {
-                Text("\(type.members.count) members")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            .openInCodeElement(.type(id: type.id), codebase: codebase, relativePath: type.location?.filePath)
+            if let location = type.location {
+                ViewSourceButton(codebase: codebase, relativePath: location.filePath)
             }
-            Text(type.accessLevel.rawValue)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(Color.secondary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 3))
         }
-        .revealsInFinder(codebase: codebase, relativePath: type.location?.filePath)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }
