@@ -32,6 +32,19 @@ final class FindingsScreen {
         app.descendants(matching: .any)["findings.row.\(id)"]
     }
 
-    var suppressButton: XCUIElement { app.buttons["findings.row.suppressButton"].firstMatch }
-    var unsuppressButton: XCUIElement { app.buttons["findings.row.unsuppressButton"].firstMatch }
+    /// The first violation row's own container (`findings.row.<Finding.id>`). Every row's
+    /// Suppress/Un-suppress button shares the SAME identifier (`findings.row.suppressButton`), so a
+    /// bare `.firstMatch` query against that identifier re-resolves fresh on every access — if the
+    /// list reflows between a `waitForExistence` and the following `.tap()`, those two accesses can
+    /// silently resolve to two different rows. Scoping to one captured row element up front removes
+    /// that ambiguity: every subsequent query below is anchored to *this* row, not re-derived from
+    /// the shared identifier.
+    var firstViolationRow: XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'findings.row.violation-'"))
+            .firstMatch
+    }
+
+    func suppressButton(in row: XCUIElement) -> XCUIElement { row.buttons["findings.row.suppressButton"] }
+    func unsuppressButton(in row: XCUIElement) -> XCUIElement { row.buttons["findings.row.unsuppressButton"] }
 }

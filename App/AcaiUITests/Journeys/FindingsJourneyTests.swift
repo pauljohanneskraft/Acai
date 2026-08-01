@@ -56,17 +56,20 @@ final class FindingsJourneyTests: XCTestCase {
         XCTAssertTrue(violationFilter.waitForExistence(timeout: 5))
 
         // Suppress the first row, verify it drops out of the default view, then confirm it
-        // comes back under "show suppressed too."
-        let suppress = findings.suppressButton
-        guard suppress.waitForExistence(timeout: 10) else {
-            XCTFail("No finding row with a Suppress action appeared.")
+        // comes back under "show suppressed too." Anchored to one captured row element throughout
+        // (see `FindingsScreen.firstViolationRow`), not re-resolved per access.
+        let row = findings.firstViolationRow
+        guard row.waitForExistence(timeout: 10) else {
+            XCTFail("No finding row appeared.")
             return
         }
+        let suppress = findings.suppressButton(in: row)
+        XCTAssertTrue(suppress.waitForExistence(timeout: 10), "No finding row with a Suppress action appeared.")
         suppress.tap()
         XCTAssertTrue(findings.showSuppressedToggle.waitForExistence(timeout: 5))
         findings.showSuppressedToggle.tap()
         XCTAssertTrue(
-            findings.unsuppressButton.waitForExistence(timeout: 10),
+            findings.unsuppressButton(in: row).waitForExistence(timeout: 10),
             "Suppressed finding didn't reappear under 'show suppressed too.'")
     }
 }

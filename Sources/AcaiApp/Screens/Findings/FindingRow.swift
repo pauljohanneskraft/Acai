@@ -13,7 +13,7 @@ struct FindingRow: View {
     var onToggleSuppressed: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 16) {
             summary
                 .openInCodeElement(finding.reference, codebase: codebase, relativePath: finding.location?.filePath)
             HStack(spacing: 12) {

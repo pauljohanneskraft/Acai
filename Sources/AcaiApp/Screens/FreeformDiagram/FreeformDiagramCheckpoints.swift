@@ -32,6 +32,13 @@ struct FreeformDiagramCheckpointsView: View {
                     }
                 }
             }
+            // Without an explicit height, this `List`'s size is driven by its content at the
+            // sheet's first layout pass — when that pass happens while `checkpoints` is still
+            // empty (every "Save Checkpoint" flow starts from this same sheet), the sheet can get
+            // stuck at that small size and never regrow once a checkpoint is added, clipping every
+            // row out of view on a later re-presentation. `CompareGitOverlay`'s ref list sidesteps
+            // the same class of bug the same way.
+            .frame(minHeight: 150, maxHeight: 300)
             .navigationTitle("Checkpoints")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
