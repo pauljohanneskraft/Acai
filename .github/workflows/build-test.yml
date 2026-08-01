@@ -196,7 +196,7 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: iPhone
@@ -263,7 +263,7 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: iPad
@@ -335,11 +335,11 @@ jobs:
       # the sandboxed runner's own container (see ScreenshotComparator.write's doc comment) — a
       # no-op the rest of the time.
       - name: Sync staged snapshots
-        if: steps.run-tests.outcome == 'failure'
+        if: failure()
         run: Scripts/sync_ui_snapshots.sh
 
       - name: Upload UI test screenshots
-        if: steps.run-tests.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: macOS
