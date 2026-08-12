@@ -127,11 +127,15 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
         featureBranchDiagram.chooseCompareRef("main")
-        // 30s, not 15s: the "old" side is a real `git` tree extraction + full re-analysis, on top
+        // 60s, not 15s: the "old" side is a real `git` tree extraction + full re-analysis, on top
         // of a GitHub-backed codebase's own clone directory — confirmed empirically that this can
         // occasionally take noticeably longer than a quick structural rebuild, the same class of
-        // occasional-slow-update fixed identically in `CompareGitRevisionTests`.
-        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 30)
+        // occasional-slow-update fixed identically in `CompareGitRevisionTests`. 30s wasn't enough on
+        // CI's iPad runner specifically: two separate runs (2026-08-01, 2026-08-11) both timed out at
+        // exactly the 30s mark with no error surfaced (`delta.error` absent — genuinely still
+        // loading, not failed), while the same test passes comfortably on the iPhone runner in the
+        // same run. That runner measured ~35min end-to-end vs. iPhone's ~24min for the same job.
+        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 60)
         let errorExists = featureBranchDiagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")
