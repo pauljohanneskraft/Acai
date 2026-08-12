@@ -45,13 +45,23 @@ struct GeneratedDiagramCodableTests {
     }
 
     @Test func configurationlessKindsRoundTrip() throws {
-        for content in [GeneratedDiagram.Content.packageDiagram] {
+        for content in [GeneratedDiagram.Content.packageDiagram, .moduleCoupling, .hotspot] {
             let diagram = GeneratedDiagram(name: "X", content: content, codebaseID: UUID())
             let decoded = try roundTrip(diagram)
             #expect(decoded == diagram)
             #expect(decoded.classConfiguration == nil)
             #expect(decoded.sequenceConfiguration == nil)
         }
+    }
+
+    @Test func cycleDiagramRoundTripsWithReference() throws {
+        let reference = CycleDiagramReference(scope: "modules", members: ["ModuleA", "ModuleB"])
+        let diagram = GeneratedDiagram(name: "Cyc", content: .cycleDiagram(reference), codebaseID: UUID())
+
+        let decoded = try roundTrip(diagram)
+        #expect(decoded == diagram)
+        #expect(decoded.type == .cycleDiagram)
+        #expect(decoded.cycleDiagramReference == reference)
     }
 
     @Test func stateDiagramRoundTripsWithConfiguration() throws {

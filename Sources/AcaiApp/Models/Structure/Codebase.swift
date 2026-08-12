@@ -24,10 +24,9 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// This codebase's file allow/blocklist, applied at indexing time. `nil` means unfiltered.
     var fileFilter: FileFilter?
     /// Set when this codebase is linked to a shared `GitRepository` (see `CodebaseRepositoryReference`)
-    /// — e.g. a local folder that turned out to already be a git working directory (B04's transparent
+    /// — e.g. a local folder that turned out to already be a git working directory (the transparent
     /// upgrade). `nil` for a codebase that's just a plain directory with no known repository.
     /// `directoryPath` remains the authoritative resolved on-disk location for now; nothing yet
-    /// re-resolves file access through this reference — that's a future worktree-integration pass
-    /// (B03's app-layer wiring).
+    /// re-resolves file access through this reference — that's a future worktree-integration pass.
     var repository: CodebaseRepositoryReference?
 }

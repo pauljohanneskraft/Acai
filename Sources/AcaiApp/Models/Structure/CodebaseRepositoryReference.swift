@@ -1,8 +1,8 @@
 import Foundation
 
 /// Records which shared git repository (`AcaiGit`'s `GitRepository`) a `Codebase`'s content is
-/// drawn from, and at what ref/subpath — added by B02 so a later pass can resolve a codebase's
-/// files through a shared/worktree-based clone instead of only `Codebase.directoryPath`.
+/// drawn from, and at what ref/subpath — so a later pass can resolve a codebase's files through a
+/// shared/worktree-based clone instead of only `Codebase.directoryPath`.
 ///
 /// Distinct from `GitHubSource`: `GitHubSource` records how the codebase's *folder* came to exist
 /// (an in-app GitHub clone into an app-managed directory); `CodebaseRepositoryReference` records

@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("GitWorktreeSync (B03 app-layer wiring)", .serialized)
+@Suite("GitWorktreeSync (app-layer wiring)", .serialized)
 struct GitWorktreeSyncTests {
     @Test("Two codebases attaching worktrees for the same remote share one hub clone")
     func sharesOneHubAcrossTwoWorktrees() async throws {

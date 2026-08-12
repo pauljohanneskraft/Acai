@@ -9,9 +9,9 @@ import AcaiDiagram
 /// cross-module dependency a dependency edge, so the freeform editor (which renders through the
 /// same `ContainerNodeView` the generated view uses) shows an identical module graph.
 ///
-/// Also covers B22: the opt-in `includeMetricsNote` flag that appends one read-only `.note` node
-/// summarizing the coupling metrics (Ca/Ce/I/A/D) that were computed but, before B22, silently
-/// dropped on conversion.
+/// Also covers the opt-in `includeMetricsNote` flag that appends one read-only `.note` node
+/// summarizing the coupling metrics (Ca/Ce/I/A/D) that were computed but, before this flag existed,
+/// silently dropped on conversion.
 @Suite("Package Diagram → Freeform Conversion")
 @MainActor
 struct PackageFreeformConversionTests {

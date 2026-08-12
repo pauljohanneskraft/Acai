@@ -25,6 +25,7 @@ struct PackageDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = false
+    @State private var sidebarTab: PackageDiagramSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var showSaveAsFreeformOptions = false
     @State private var includeMetricsNoteOnSave = false
@@ -75,7 +76,7 @@ struct PackageDiagramView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
-                        PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                        sidebar
                             .navigationTitle("Package Diagram")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
@@ -90,7 +91,7 @@ struct PackageDiagramView: View {
             canvasContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .inspector(isPresented: $showSidebar) {
-                    PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                    sidebar
                         .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
                 }
         }
@@ -98,10 +99,26 @@ struct PackageDiagramView: View {
         canvasContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .inspector(isPresented: $showSidebar) {
-                PackageDiagramInspector(diagram: viewModel.diagram, selectedNodeIDs: viewModel.selectedNodeIDs)
+                sidebar
                     .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
         #endif
+    }
+
+    /// Save as Freeform/Export Image move into the Settings tab; the Inspector tab becomes
+    /// selection-scoped (`PackageDiagramInspector`), with `onSelect` letting a related-module row
+    /// jump the canvas selection there directly.
+    private var sidebar: PackageDiagramSidebar {
+        PackageDiagramSidebar(
+            diagram: viewModel.diagram,
+            selectedNodeIDs: viewModel.selectedNodeIDs,
+            tab: $sidebarTab,
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            onSaveAsFreeform: confirmSaveAsFreeform,
+            onExportImage: exportImage,
+            showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
+            includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+        )
     }
 
     // MARK: - Canvas
@@ -168,6 +185,11 @@ struct PackageDiagramView: View {
         .frame(width: node.rect.width, height: node.rect.height)
         .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
         .position(x: node.rect.midX, y: node.rect.midY)
+        .onTapGesture(count: 2) {
+            viewModel.selectNode(node.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        }
         .diagramNodeInteraction(
             id: node.id,
             model: viewModel,
@@ -201,25 +223,6 @@ struct PackageDiagramView: View {
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
-                showSaveAsFreeformOptions = true
-            } label: {
-                Label("Save as Freeform", systemImage: "document.on.document")
-            }
-            .help("Save a copy as an editable Freeform diagram")
-            .accessibilityIdentifier("diagram.saveAsFreeformButton")
-            .saveAsFreeformOptions(
-                isPresented: $showSaveAsFreeformOptions,
-                includeMetricsNote: $includeMetricsNoteOnSave,
-                onConfirm: confirmSaveAsFreeform
-            )
-            Button {
-                exportImage()
-            } label: {
-                Label("Export Image", systemImage: "photo")
-            }
-            .help("Export the diagram as an image")
-            .accessibilityIdentifier("diagram.exportImageButton")
-            Button {
                 showSidebar.toggle()
             } label: {
                 Label("Sidebar", systemImage: "sidebar.trailing")
@@ -233,10 +236,10 @@ struct PackageDiagramView: View {
         model.exportImage(named: diagram.name, using: viewModel)
     }
 
-    // MARK: - Save as Freeform (B22: opt-in metric carryover)
+    // MARK: - Save as Freeform (opt-in metric carryover)
 
     /// Confirms the "Save as Freeform" action with one opt-in: whether to carry over the module
-    /// coupling figures already computed for this diagram as a read-only note (B22). Reflects the
+    /// coupling figures already computed for this diagram as a read-only note. Reflects the
     /// current, non-diff artifact even when `Compare vs git` is active — the converted copy is
     /// always built from the plain current tree, same as the rest of this conversion.
     private func confirmSaveAsFreeform() {

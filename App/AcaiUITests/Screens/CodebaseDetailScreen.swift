@@ -29,7 +29,7 @@ final class CodebaseDetailScreen {
         refPicker.choose(label, in: app, timeout: timeout)
     }
 
-    /// B53's second, discoverable delete path — a destructive button at the bottom of the screen,
+    /// A second, discoverable delete path — a destructive button at the bottom of the screen,
     /// alongside the existing sidebar/row context-menu path to the same confirmed-safe action.
     var deleteCodebaseButton: XCUIElement { app.buttons["codebaseDetail.deleteCodebaseButton"] }
     var deleteCodebaseConfirmButton: XCUIElement {

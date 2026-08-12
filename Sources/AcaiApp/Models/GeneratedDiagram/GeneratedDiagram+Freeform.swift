@@ -5,10 +5,9 @@ import AcaiLibrary
 import AcaiRender
 
 /// "Save as Freeform" for every diagram type. Each of the five diagram contents converts through
-/// its own `FreeformConversion` conformer (B23) — see that protocol's doc comment for what's
-/// shared (the outer skeleton, id-map bookkeeping, position-fallback tiering) versus what
-/// deliberately stays per-type (node/edge content construction, Class's grouping boxes, B22's
-/// metrics footer).
+/// its own `FreeformConversion` conformer — see that protocol's doc comment for what's shared (the
+/// outer skeleton, id-map bookkeeping, position-fallback tiering) versus what deliberately stays
+/// per-type (node/edge content construction, Class's grouping boxes, the metrics footer).
 extension GeneratedDiagram {
 
     /// - Parameter includeMetricsNote: When true, Package/Call Graph conversions append one
@@ -26,6 +25,18 @@ extension GeneratedDiagram {
         let context = FreeformConversionContext(
             diagram: self, artifact: artifact, positions: positions, scale: scale, offset: offset
         )
+        // Module Coupling, Hotspot, and Cycle Diagram are read-only analysis views — a scatter/
+        // chart point or an isolated cycle member has no sensible "freeform node"
+        // equivalent the way a class/module/participant does, so there's deliberately no conformer
+        // for them. Handled explicitly (not left to fall through to the `ClassFreeformConversion`
+        // default below, which would silently misinterpret their artifact as a class diagram):
+        // "Save as Freeform" isn't offered on any of these three types' toolbars, so this path is
+        // unreachable from the UI today — an empty diagram if it's ever invoked directly.
+        if [DiagramType.moduleCoupling, .hotspot, .cycleDiagram].contains(content.type) {
+            return FreeformDiagram(
+                name: name + " (Freeform)", canvasScale: scale, canvasOffsetX: offset.x, canvasOffsetY: offset.y
+            )
+        }
         if case .sequenceDiagram(let config) = content {
             return SequenceFreeformConversion(context: context, configuration: config).makeFreeformDiagram()
         }

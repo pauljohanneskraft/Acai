@@ -15,7 +15,6 @@ struct CallGraphView: View {
     let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var isConfiguring = false
 
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
@@ -40,20 +39,11 @@ struct CallGraphView: View {
             scope: scope,
             isComparePresented: isComparePresented,
             comparisonArtifact: comparisonArtifact,
-            onConfigure: { isConfiguring = true }
+            onApplyScope: { newScope in
+                model.diagrams.updateCallGraphScope(diagramID: diagram.id, scope: newScope)
+            }
         )
         .id(scope)
-        .sheet(isPresented: $isConfiguring) {
-            CallGraphConfigSheet(
-                artifact: artifact,
-                initial: scope,
-                onCancel: { isConfiguring = false },
-                onCreate: { newScope in
-                    model.diagrams.updateCallGraphScope(diagramID: diagram.id, scope: newScope)
-                    isConfiguring = false
-                }
-            )
-        }
     }
 }
 
@@ -66,7 +56,7 @@ private struct CallGraphCanvasView: View {
     let artifact: CodeArtifact
     let scope: CallGraphScope
     let isComparePresented: Binding<Bool>
-    let onConfigure: () -> Void
+    let onApplyScope: (CallGraphScope) -> Void
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: CallGraphViewModel
@@ -77,6 +67,7 @@ private struct CallGraphCanvasView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var showSidebar = false
+    @State private var sidebarTab: CallGraphSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var showSaveAsFreeformOptions = false
     @State private var includeMetricsNoteOnSave = false
@@ -95,13 +86,13 @@ private struct CallGraphCanvasView: View {
     init(
         diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
         isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil,
-        onConfigure: @escaping () -> Void
+        onApplyScope: @escaping (CallGraphScope) -> Void
     ) {
         self.diagram = diagram
         self.artifact = artifact
         self.scope = scope
         self.isComparePresented = isComparePresented
-        self.onConfigure = onConfigure
+        self.onApplyScope = onApplyScope
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
             scope: scope,
@@ -131,7 +122,7 @@ private struct CallGraphCanvasView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
-                        CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                        sidebar
                             .navigationTitle("Call Graph")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
@@ -147,7 +138,7 @@ private struct CallGraphCanvasView: View {
                 .overlay(alignment: .top) { coverageBanner }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .inspector(isPresented: $showSidebar) {
-                    CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                    sidebar
                         .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
                 }
         }
@@ -156,10 +147,29 @@ private struct CallGraphCanvasView: View {
             .overlay(alignment: .top) { coverageBanner }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .inspector(isPresented: $showSidebar) {
-                CallGraphInspector(graph: viewModel.graph, selectedNodeIDs: viewModel.selectedNodeIDs)
+                sidebar
                     .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
             }
         #endif
+    }
+
+    /// Folds `CallGraphConfigSheet`'s scope picker + Export actions into the Settings tab,
+    /// and makes the Inspector tab selection-scoped (`CallGraphInspector`), with `onSelect` letting
+    /// a related-method row jump the canvas selection there directly.
+    private var sidebar: CallGraphSidebar {
+        CallGraphSidebar(
+            artifact: artifact,
+            graph: viewModel.graph,
+            selectedNodeIDs: viewModel.selectedNodeIDs,
+            scope: scope,
+            tab: $sidebarTab,
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            onApplyScope: onApplyScope,
+            onSaveAsFreeform: confirmSaveAsFreeform,
+            onExportImage: exportImage,
+            showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
+            includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+        )
     }
 
     // MARK: - Coverage banner
@@ -239,6 +249,11 @@ private struct CallGraphCanvasView: View {
         .frame(width: node.rect.width, height: node.rect.height)
         .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
         .position(x: node.rect.midX, y: node.rect.midY)
+        .onTapGesture(count: 2) {
+            viewModel.selectNode(node.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        }
         .diagramNodeInteraction(
             id: node.id,
             model: viewModel,
@@ -271,30 +286,6 @@ private struct CallGraphCanvasView: View {
             .help("Fit the diagram to the visible canvas (⌘0)")
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
-            Button(action: onConfigure) {
-                Label("Configure Scope", systemImage: "slider.horizontal.3")
-            }
-            .help("Change the call graph's entry point and depth")
-            .accessibilityIdentifier("diagram.configureButton")
-            Button {
-                showSaveAsFreeformOptions = true
-            } label: {
-                Label("Save as Freeform", systemImage: "document.on.document")
-            }
-            .help("Save a copy as an editable Freeform diagram")
-            .accessibilityIdentifier("diagram.saveAsFreeformButton")
-            .saveAsFreeformOptions(
-                isPresented: $showSaveAsFreeformOptions,
-                includeMetricsNote: $includeMetricsNoteOnSave,
-                onConfirm: confirmSaveAsFreeform
-            )
-            Button {
-                exportImage()
-            } label: {
-                Label("Export Image", systemImage: "photo")
-            }
-            .help("Export the diagram as an image")
-            .accessibilityIdentifier("diagram.exportImageButton")
             Button {
                 showSidebar.toggle()
             } label: {
@@ -309,10 +300,10 @@ private struct CallGraphCanvasView: View {
         model.exportImage(named: diagram.name, using: viewModel)
     }
 
-    // MARK: - Save as Freeform (B22: opt-in metric carryover)
+    // MARK: - Save as Freeform (opt-in metric carryover)
 
     /// Confirms the "Save as Freeform" action with one opt-in: whether to carry over the call-site
-    /// resolution coverage already computed for this diagram as a read-only note (B22). Reflects
+    /// resolution coverage already computed for this diagram as a read-only note. Reflects
     /// the current, non-diff artifact even when `Compare vs git` is active — the converted copy is
     /// always built from the plain current tree, same as the rest of this conversion.
     private func confirmSaveAsFreeform() {

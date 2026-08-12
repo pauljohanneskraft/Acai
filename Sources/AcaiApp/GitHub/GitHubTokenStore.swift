@@ -23,6 +23,19 @@ struct GitHubTokenStore {
         var credential: GitHubCredential
         var login: String
         var avatarURL: URL?
+        /// The scopes GitHub reported the current token actually has (the scope checklist), read from
+        /// the `X-OAuth-Scopes` response header at sign-in time — classic PATs and OAuth/device-flow
+        /// tokens report this; fine-grained PATs currently don't, so `nil` there means "unknown,"
+        /// distinct from `[]` ("confirmed to have none"). `[String]?` (not defaulted in this
+        /// `Codable` struct's synthesized `init(from:)`) decodes to `nil` for every account already
+        /// persisted before this field existed — see `GitHubTokenStoreMigrationTests` for the proof,
+        /// not just the reasoning.
+        var scopes: [String]?
+        /// When the current token expires, if known — a device-flow (`GitHubCredential.gitHubApp`)
+        /// token already carries this; a fine-grained PAT's `github-authentication-token-expiration`
+        /// response header is captured here too, when GitHub sends it. `nil` means "no known expiry"
+        /// (a classic PAT, or a fine-grained PAT whose expiry wasn't reported).
+        var tokenExpiresAt: Date?
     }
 
     enum Failure: LocalizedError {

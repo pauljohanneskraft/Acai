@@ -16,6 +16,11 @@ struct ClassDiagramSidebar: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     @Binding var tab: ClassDiagramSidebarTab
+    /// Re-layout/Save as Freeform/Export Image moved here from the toolbar; the canvas state
+    /// (scale/offset) they need stays owned by `ClassDiagramView`, so it hands in closures instead.
+    let onRelayout: () -> Void
+    let onSaveAsFreeform: () -> Void
+    let onExportImage: () -> Void
 
     var body: some View {
         content
@@ -108,6 +113,11 @@ struct ClassDiagramSidebar: View {
                     Text("Product").tag(ClassDiagramConfiguration.Grouping.product)
                 }
                 Toggle("Show External Types", isOn: config.showExternalTypes)
+                Button(action: onRelayout) {
+                    Label("Re-layout", systemImage: "rectangle.3.group")
+                }
+                .help("Re-run automatic layout")
+                .accessibilityIdentifier("diagram.relayoutButton")
             }
 
             FocusSection(configuration: config, typeNames: typeNames)
@@ -121,6 +131,19 @@ struct ClassDiagramSidebar: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section("Export") {
+                Button(action: onSaveAsFreeform) {
+                    Label("Save as Freeform", systemImage: "document.on.document")
+                }
+                .help("Save a copy as an editable Freeform diagram")
+                .accessibilityIdentifier("diagram.saveAsFreeformButton")
+                Button(action: onExportImage) {
+                    Label("Export Image", systemImage: "photo")
+                }
+                .help("Export the diagram as an image")
+                .accessibilityIdentifier("diagram.exportImageButton")
             }
         }
         .formStyle(.grouped)

@@ -1,7 +1,7 @@
 import AcaiDiagram
 import Foundation
 
-/// B22: text for the read-only `.note` node `PackageFreeformConversion`/`CallGraphFreeformConversion`
+/// Text for the read-only `.note` node `PackageFreeformConversion`/`CallGraphFreeformConversion`
 /// (`PackageFreeformConversion.swift`/`CallGraphFreeformConversion.swift`) append when the user
 /// opts in to carrying over the coupling/coverage figures that conversion would otherwise silently
 /// drop.

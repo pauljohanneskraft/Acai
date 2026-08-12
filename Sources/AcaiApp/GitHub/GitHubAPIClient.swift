@@ -57,6 +57,19 @@ struct GitHubAPIClient {
         }
     }
 
+    /// `authenticatedUserWithMetadata()`'s result: the signed-in user plus what GitHub's response
+    /// headers reveal about the token itself (the scope checklist, the expiry prompt).
+    struct AuthenticatedUserInfo: Sendable {
+        var user: User
+        /// Parsed from the `X-OAuth-Scopes` response header (comma-separated) — sent for classic
+        /// PATs and OAuth/device-flow tokens. `nil` when the header is absent (fine-grained PATs
+        /// don't currently send it), meaning "unknown," not "confirmed to have no scopes."
+        var scopes: [String]?
+        /// Parsed from the `github-authentication-token-expiration` response header, when GitHub
+        /// sends it (fine-grained PATs report this; classic tokens generally don't).
+        var tokenExpiresAt: Date?
+    }
+
     struct Repository: Decodable, Identifiable, Hashable {
         var id: Int
         var name: String
@@ -76,6 +89,18 @@ struct GitHubAPIClient {
     /// `GET /user` — the signed-in account's login/avatar, for display.
     func authenticatedUser() async throws -> User {
         try await get("user", as: User.self)
+    }
+
+    /// `GET /user`, plus what the response headers reveal about the token itself — the scope
+    /// checklist and expiry prompt both read this instead of the plain `authenticatedUser()`
+    /// above (kept as-is since nothing else needs the metadata).
+    func authenticatedUserWithMetadata() async throws -> AuthenticatedUserInfo {
+        let (user, response) = try await getWithResponse("user", as: User.self)
+        return AuthenticatedUserInfo(
+            user: user,
+            scopes: response?.gitHubOAuthScopes,
+            tokenExpiresAt: response?.gitHubTokenExpiresAt
+        )
     }
 
     /// Page size for `repositories(page:)` — a response shorter than this is the last page.
@@ -114,6 +139,12 @@ struct GitHubAPIClient {
     }
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], as type: T.Type) async throws -> T {
+        try await getWithResponse(path, query: query, as: type).0
+    }
+
+    private func getWithResponse<T: Decodable>(
+        _ path: String, query: [URLQueryItem] = [], as type: T.Type
+    ) async throws -> (T, HTTPURLResponse?) {
         var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         if !query.isEmpty { components.queryItems = query }
         var request = URLRequest(url: components.url!)
@@ -122,7 +153,7 @@ struct GitHubAPIClient {
         let (data, response) = try await session.data(for: request)
         try validate(response, data: data)
         do {
-            return try JSONDecoder().decode(T.self, from: data)
+            return (try JSONDecoder().decode(T.self, from: data), response as? HTTPURLResponse)
         } catch {
             throw Failure.decoding(error.localizedDescription)
         }
@@ -134,5 +165,26 @@ struct GitHubAPIClient {
             let message = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
             throw Failure.http(http.statusCode, message)
         }
+    }
+}
+
+extension HTTPURLResponse {
+    /// `X-OAuth-Scopes` is a comma-separated list GitHub sends for classic PATs and OAuth/device-flow
+    /// tokens; fine-grained PATs don't currently send it — absence means "unknown," not "none."
+    var gitHubOAuthScopes: [String]? {
+        guard let raw = value(forHTTPHeaderField: "X-OAuth-Scopes"), !raw.isEmpty else { return nil }
+        return raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    /// `github-authentication-token-expiration`, when GitHub sends it (fine-grained PATs report
+    /// this). Parsed leniently (ISO 8601, falling back to an RFC-1123-ish format) — an unrecognized
+    /// format degrades to `nil` ("no known expiry"), never a crash on an unexpected header value.
+    var gitHubTokenExpiresAt: Date? {
+        guard let raw = value(forHTTPHeaderField: "github-authentication-token-expiration") else { return nil }
+        if let date = ISO8601DateFormatter().date(from: raw) { return date }
+        let rfc1123 = DateFormatter()
+        rfc1123.locale = Locale(identifier: "en_US_POSIX")
+        rfc1123.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
+        return rfc1123.date(from: raw)
     }
 }

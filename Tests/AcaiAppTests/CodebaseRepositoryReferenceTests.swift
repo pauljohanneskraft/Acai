@@ -5,7 +5,7 @@ import Testing
 @Suite("Codebase repository reference persistence")
 struct CodebaseRepositoryReferenceTests {
     @Test func decodingLegacyJSONWithoutRepositoryDefaultsToNil() throws {
-        // Real pre-B02 shape: no "repository" key at all.
+        // Real legacy shape, from before this field existed: no "repository" key at all.
         let legacyJSON = Data("""
         {
             "id": "8C7E6B2B-8B8B-4B8B-8B8B-8B8B8B8B8B8B",

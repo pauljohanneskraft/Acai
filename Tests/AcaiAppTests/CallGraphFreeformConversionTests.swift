@@ -69,7 +69,7 @@ struct CallGraphFreeformConversionTests {
         if case .method = content {} else { Issue.record("expected .method content") }
     }
 
-    // MARK: - B22: opt-in coverage metric carryover
+    // MARK: - Opt-in coverage metric carryover
 
     private func noteNodes(_ freeform: FreeformDiagram) -> [FreeformDiagram.Node] {
         freeform.nodes.filter { if case .note = $0.content { true } else { false } }

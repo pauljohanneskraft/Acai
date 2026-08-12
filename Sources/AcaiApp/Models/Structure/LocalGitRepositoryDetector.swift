@@ -2,11 +2,11 @@ import AcaiGit
 import Foundation
 
 /// Detects whether a user-picked local folder is already a git working directory (or a
-/// subdirectory of one) and, if so, resolves the `CodebaseRepositoryReference` that B04's
-/// transparent upgrade records for it. Read-only: this never touches anything on disk or starts a
-/// network operation. A plain, non-git folder — or a git repository with no `origin` remote
-/// configured (nothing a shared `GitRepository` could sync against) — resolves to `nil`, and the
-/// codebase keeps today's plain-directory behavior unchanged.
+/// subdirectory of one) and, if so, resolves the `CodebaseRepositoryReference` that the
+/// transparent local-folder upgrade records for it. Read-only: this never touches anything on
+/// disk or starts a network operation. A plain, non-git folder — or a git repository with no
+/// `origin` remote configured (nothing a shared `GitRepository` could sync against) — resolves to
+/// `nil`, and the codebase keeps today's plain-directory behavior unchanged.
 struct LocalGitRepositoryDetector {
     let directory: URL
 

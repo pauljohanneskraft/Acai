@@ -3,7 +3,7 @@ import Foundation
 
 /// Ensures a shared, app-managed clone exists for a remote (keyed by `AcaiGit.GitRepository`'s own
 /// credential-stripped normalization) and attaches/moves one codebase's linked worktree against it —
-/// the B03 replacement for `GitHubRepositoryClone`'s one-independent-clone-per-codebase model. Two
+/// the replacement for `GitHubRepositoryClone`'s one-independent-clone-per-codebase model. Two
 /// codebases pointing at the same remote share one on-disk object store and can sit at different
 /// commits simultaneously, each in its own worktree.
 struct GitWorktreeSync {
@@ -55,7 +55,7 @@ struct GitWorktreeSync {
 
     /// Deregisters `worktreeName` and deletes its working directory, without touching the shared
     /// hub clone itself — other codebases may still reference it. Removing the hub clone entirely
-    /// is a separate, explicit action (B05's Repositories UI "Remove" action), gated on no codebase
+    /// is a separate, explicit action (the Repositories UI's "Remove" action), gated on no codebase
     /// referencing it any longer.
     func removeWorktree(named worktreeName: String) async throws {
         let hub = hub

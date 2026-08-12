@@ -23,6 +23,7 @@ struct QualityCheckSection: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var editing = false
+    @State private var exportingCICheck = false
 
     private var configuration: QualityCheckConfiguration? {
         guard let config = codebase.qualityCheck, !config.rulesPath.isEmpty else { return nil }
@@ -41,9 +42,19 @@ struct QualityCheckSection: View {
             }
         } content: {
             VStack(alignment: .leading, spacing: 8) {
-                Text(statusLine)
-                    .font(.caption).foregroundStyle(.secondary)
-                    .lineLimit(1).truncationMode(.middle)
+                HStack(spacing: 8) {
+                    Text(statusLine)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(1).truncationMode(.middle)
+                    Spacer(minLength: 8)
+                    // Kept out of the collapsible header (shared with the count badge and
+                    // Set Up…/Edit…) so it doesn't crowd or truncate on iPhone-width layouts.
+                    if configuration != nil {
+                        Button("Export CI Check…") { exportingCICheck = true }
+                            .font(.caption)
+                            .accessibilityIdentifier("qualityCheck.exportCICheckButton")
+                    }
+                }
                 reportBody
             }
             .padding(.horizontal)
@@ -51,6 +62,15 @@ struct QualityCheckSection: View {
         .sheet(isPresented: $editing) {
             QualityCheckEditorSheet(codebaseID: codebase.id, artifact: artifact)
                 .environmentObject(model)
+        }
+        .sheet(isPresented: $exportingCICheck) {
+            if let configuration {
+                CIQualityCheckExportSheet(
+                    codebaseName: codebase.name,
+                    invocation: CIQualityCheckInvocation(
+                        directoryPath: codebase.directoryPath,
+                        rulesPath: configuration.rulesPath))
+            }
         }
     }
 
@@ -61,7 +81,25 @@ struct QualityCheckSection: View {
                 text: "Could not load rules: \(rulesError) — showing the built-in smell budgets instead.",
                 systemImage: "exclamationmark.triangle")
         }
-        QualityCheckReportView(report: report, showsSummary: false, tint: .orange, codebase: codebase)
+        QualityCheckReportView(
+            report: report, showsSummary: false, tint: .orange, codebase: codebase, artifact: artifact,
+            onViewAsDiagram: viewAsCycleDiagram
+        )
+    }
+
+    /// The Cycle Diagram entry point: a `cycle`-kind `Violation`'s `subject` is exactly
+    /// `CycleFinder.Cycle.members.joined(separator: ",")` and `detail["scope"]` is the scope's raw
+    /// value (see `QualityEvaluator.cycleViolations`) — enough to reconstruct a `CycleDiagramReference`
+    /// with no re-detection needed. Creates the diagram pre-scoped and selects it directly.
+    private func viewAsCycleDiagram(_ violation: Violation) {
+        guard let projectID = model.projectID(for: codebase.id) else { return }
+        let reference = CycleDiagramReference(
+            scope: violation.detail["scope"] ?? CycleFinder.Scope.types.rawValue,
+            members: violation.subject.split(separator: ",").map(String.init)
+        )
+        if let id = model.diagrams.add(to: projectID, codebaseID: codebase.id, content: .cycleDiagram(reference)) {
+            model.selection = .generatedDiagram(id)
+        }
     }
 
     private var statusLine: String {
@@ -79,6 +117,8 @@ struct QualityCheckSection: View {
 /// count and call-graph coverage are shown in the header and the report is handed to the report view.
 struct DeadCodeSection: View {
     let codebase: Codebase
+    /// Needed for each candidate's "Open in…" resolution.
+    let artifact: CodeArtifact
     /// Precomputed in the background (see ``CodebaseAnalysis``).
     let report: DeadCodeScan.Report
 
@@ -91,7 +131,7 @@ struct DeadCodeSection: View {
                     : "\(report.candidates.count) candidate(s) · call-graph coverage \(coverage)%",
                 tint: report.candidates.isEmpty ? .secondary : .orange)
         } content: {
-            DeadCodeReportView(report: report, codebase: codebase)
+            DeadCodeReportView(report: report, artifact: artifact, codebase: codebase)
                 .padding(.horizontal)
         }
     }

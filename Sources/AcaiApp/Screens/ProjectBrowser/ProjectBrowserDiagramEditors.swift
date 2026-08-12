@@ -165,7 +165,7 @@ struct ProjectCodebaseEditor {
     // MARK: Codebases
 
     /// `repository` is set when `NewCodebaseSheet`'s local-folder picker detected the picked
-    /// folder is already a git working directory with an `origin` remote (B04's transparent
+    /// folder is already a git working directory with an `origin` remote (the transparent
     /// upgrade, via `LocalGitRepositoryDetector`) — `nil` for a plain folder, which behaves exactly
     /// as before.
     func addCodebase(
@@ -204,12 +204,12 @@ struct ProjectCodebaseEditor {
         }
         store.deleteArtifactFile(for: codebaseID)
         store.deleteManagedRules(forCodebase: codebaseID)
-        // A codebase created since B03 (has both `githubSource` and `repository`) has a linked
-        // worktree, not an independent clone under `githubClonesDir` — remove that instead. Only
-        // the worktree goes: the shared hub clone itself stays, since other codebases may still
-        // reference it (removing that is a separate, explicit Repositories UI action, B05).
-        // Pre-B03 codebases (`githubSource` set, `repository` nil — never touched by this pass)
-        // keep using `deleteGitHubClone`, which is a harmless no-op for every other codebase shape.
+        // A codebase created after worktree support existed (has both `githubSource` and
+        // `repository`) has a linked worktree, not an independent clone under `githubClonesDir` —
+        // remove that instead. Only the worktree goes: the shared hub clone itself stays, since
+        // other codebases may still reference it (removing that is a separate, explicit
+        // Repositories UI action). Older codebases (`githubSource` set, `repository` nil) keep
+        // using `deleteGitHubClone`, which is a harmless no-op for every other codebase shape.
         if removedCodebase?.githubSource != nil, removedCodebase?.repository != nil {
             removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
         } else {
@@ -228,157 +228,6 @@ struct ProjectCodebaseEditor {
             hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
         let worktreeName = store.gitWorktreeName(for: codebaseID)
         Task { try? await sync.removeWorktree(named: worktreeName) }
-    }
-
-    // MARK: GitHub-backed codebases
-
-    /// Clones `owner/repo` at `ref` into a shared, app-managed "hub" clone (reused by every
-    /// codebase that references the same remote — B03) and attaches a fresh linked worktree for
-    /// this codebase, then indexes it — the GitHub equivalent of `addCodebase`. Two codebases
-    /// pointing at the same remote share one on-disk object store and can sit at different commits
-    /// simultaneously, each in its own worktree — this is true uniformly, whether this is the
-    /// first codebase ever to reference this remote or the fifth.
-    func addGitHubCodebase(
-        to projectID: UUID, name: String, credential: GitHubCredential, target: GitHubRepositoryRef
-    ) async {
-        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
-        let codebaseID = UUID()
-        let destination = GitWorktreeDestination(
-            hubStoreDirectory: store.gitRepositoriesDir, worktreeName: store.gitWorktreeName(for: codebaseID),
-            worktreeDirectory: store.gitWorktreeURL(for: codebaseID), locks: store.gitRepositoryLocks)
-        do {
-            let (headSHA, remoteURL) = try await repositoryService.attachWorktree(
-                credential: credential, owner: target.owner, repo: target.repo, ref: target.ref,
-                destination: destination)
-            let codebase = Codebase(
-                id: codebaseID,
-                name: name,
-                directoryPath: destination.worktreeDirectory.path,
-                githubSource: GitHubSource(
-                    owner: target.owner, repo: target.repo, ref: target.ref, refKind: target.kind,
-                    lastSyncedCommitSHA: headSHA, lastSyncedAt: Date()),
-                repository: CodebaseRepositoryReference(remoteURL: remoteURL, ref: target.ref)
-            )
-            store.projects[index].codebases.append(codebase)
-            persist()
-            await reindex(codebaseID: codebaseID)
-        } catch {
-            store.report("Clone failed: \(error.localizedDescription)")
-        }
-    }
-
-    /// Re-syncs a GitHub-backed codebase against its stored ref, then reindexes if the upstream
-    /// head commit has actually moved. An incremental fetch is cheap enough to just always run,
-    /// rather than pre-checking via a separate REST call.
-    func pull(codebaseID: UUID) async {
-        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
-        guard let account = GitHubTokenStore().load() else {
-            store.report("Sign in to GitHub to pull \(source.owner)/\(source.repo).")
-            return
-        }
-        do {
-            let latestSHA: String
-            if codebase.repository != nil {
-                // Created since B03: fetch the shared hub clone and move this codebase's own
-                // worktree along with it.
-                latestSHA = try await repositoryService.resyncWorktree(
-                    credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
-                    destination: worktreeDestination(codebaseID: codebaseID))
-            } else {
-                // Pre-B03 codebase: still an independent clone under `githubClonesDir`.
-                latestSHA = try await repositoryService.sync(
-                    credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
-                    into: store.githubCloneURL(for: codebaseID))
-            }
-            guard latestSHA != source.lastSyncedCommitSHA else { return }
-            mutateCodebase(codebaseID) {
-                $0.githubSource?.lastSyncedCommitSHA = latestSHA
-                $0.githubSource?.lastSyncedAt = Date()
-            }
-            await reindex(codebaseID: codebaseID)
-        } catch {
-            store.report("Pull failed: \(error.localizedDescription)")
-        }
-    }
-
-    /// Switches a GitHub-backed codebase to a different branch/tag: updates the stored ref and
-    /// forces a resync (bypassing the "unchanged head" short-circuit `pull` uses above, since the
-    /// ref itself just changed). Mirrors `pull`'s ordering above: the stored ref only changes once
-    /// the resync against it has actually succeeded, so a failed switch leaves the codebase on its
-    /// previous (still-valid) ref instead of pointing at a ref its on-disk content doesn't match.
-    func switchGitHubRef(codebaseID: UUID, ref: String, kind: GitHubRef.Kind) async {
-        guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
-        guard let account = GitHubTokenStore().load() else {
-            store.report("Sign in to GitHub to switch branches.")
-            return
-        }
-        do {
-            let headSHA: String
-            if codebase.repository != nil {
-                headSHA = try await repositoryService.resyncWorktree(
-                    credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
-                    destination: worktreeDestination(codebaseID: codebaseID))
-            } else {
-                headSHA = try await repositoryService.sync(
-                    credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
-                    into: store.githubCloneURL(for: codebaseID))
-            }
-            mutateCodebase(codebaseID) {
-                $0.githubSource?.ref = ref
-                $0.githubSource?.refKind = kind
-                $0.githubSource?.lastSyncedCommitSHA = headSHA
-                $0.githubSource?.lastSyncedAt = Date()
-                $0.repository?.ref = ref
-            }
-            await reindex(codebaseID: codebaseID)
-        } catch {
-            store.report("Branch switch failed: \(error.localizedDescription)")
-        }
-    }
-
-    /// Bundles `codebaseID`'s worktree location + the shared locks for a `resyncWorktree` call. The
-    /// credentialed transport URL to actually fetch/checkout over is built separately, inside
-    /// `GitHubRepositoryService`, from the caller's own `owner`/`repo`/`credential`.
-    private func worktreeDestination(codebaseID: UUID) -> GitWorktreeDestination {
-        GitWorktreeDestination(
-            hubStoreDirectory: store.gitRepositoriesDir, worktreeName: store.gitWorktreeName(for: codebaseID),
-            worktreeDirectory: store.gitWorktreeURL(for: codebaseID), locks: store.gitRepositoryLocks)
-    }
-
-    func reindex(codebaseID: UUID) async {
-        guard let codebase = codebase(for: codebaseID) else { return }
-        let path = codebase.directoryPath
-        let bookmark = codebase.securityScopedBookmark
-        let fileFilter = codebase.fileFilter
-        do {
-            // `refreshedBookmark` is populated (and only read) inside this single detached
-            // closure's own synchronous execution, then handed back through the return value —
-            // never captured mutably across the concurrency boundary.
-            let (newArtifact, refreshedBookmark) = try await Task.detached(priority: .userInitiated) {
-                var refreshedBookmark: SecurityScopedBookmark?
-                let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
-                    onRefresh: { refreshedBookmark = $0 },
-                    { url in try CodebaseAnalyzer().enrichedArtifact(at: url, fileFilter: fileFilter) }
-                )
-                return (artifact, refreshedBookmark)
-            }.value
-            // Re-resolve indices after the suspension — the user may have mutated the project/codebase
-            // list during the (potentially long) analysis, invalidating any pre-`await` indices.
-            guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
-                  let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
-            else { return }
-            store.projects[pIndex].codebases[cIndex].hasArtifact = true
-            store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
-            store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
-            store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
-            if let refreshedBookmark {
-                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshedBookmark
-            }
-            store.saveArtifact(newArtifact, for: codebaseID)
-            persistProject(store.projects[pIndex].id)
-        } catch {
-            store.report("Reindex failed: \(error.localizedDescription)")
-        }
     }
 
     // MARK: Quality-check rules
@@ -414,7 +263,10 @@ struct ProjectCodebaseEditor {
 
     // MARK: Helpers
 
-    private func mutateCodebase(_ codebaseID: UUID, _ transform: (inout Codebase) -> Void) {
+    // Not `private`: `ProjectBrowserDiagramEditors+GitHubSync.swift`'s extension (a separate file,
+    // kept there only to stay under this file's own line-count limit) needs to call these too —
+    // same "not private, another file's extension needs it too" pattern used throughout this app.
+    func mutateCodebase(_ codebaseID: UUID, _ transform: (inout Codebase) -> Void) {
         for i in store.projects.indices {
             if let j = store.projects[i].codebases.firstIndex(where: { $0.id == codebaseID }) {
                 transform(&store.projects[i].codebases[j])
@@ -424,19 +276,19 @@ struct ProjectCodebaseEditor {
         }
     }
 
-    private func persistProject(_ projectID: UUID) {
+    func persistProject(_ projectID: UUID) {
         if let project = store.projects.first(where: { $0.id == projectID }) { store.saveProject(project) }
         notify()
     }
 
-    private func codebase(for codebaseID: UUID) -> Codebase? {
+    func codebase(for codebaseID: UUID) -> Codebase? {
         for project in store.projects {
             if let codebase = project.codebases.first(where: { $0.id == codebaseID }) { return codebase }
         }
         return nil
     }
 
-    private func projectID(for codebaseID: UUID) -> UUID? {
+    func projectID(for codebaseID: UUID) -> UUID? {
         store.projects.first { $0.codebases.contains { $0.id == codebaseID } }?.id
     }
 }

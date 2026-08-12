@@ -26,14 +26,14 @@ struct GitWorktreeDestination: Sendable {
 protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
-    /// The old one-independent-clone-per-codebase sync, kept only for pre-B03 codebases that were
+    /// The old one-independent-clone-per-codebase sync, kept only for older codebases that were
     /// created against `ProjectStore.githubCloneURL(for:)` and still resolve their files there.
     @discardableResult
     func sync(
         credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
     ) async throws -> String
 
-    /// B03: ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
+    /// Ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
     /// codebase ever to reference it) and registers a brand-new linked worktree for one codebase.
     /// Returns the resolved commit SHA and the credential-free remote URL to persist in
     /// `CodebaseRepositoryReference`.
@@ -42,7 +42,7 @@ protocol GitHubRepositoryService: Sendable {
         credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
     ) async throws -> (headSHA: String, remoteURL: URL)
 
-    /// B03: re-syncs the shared hub clone (a fetch, not a clone) to `ref` and moves an
+    /// Re-syncs the shared hub clone (a fetch, not a clone) to `ref` and moves an
     /// already-registered worktree along with it — used by `pull`/`switchGitHubRef` once a
     /// codebase already has a worktree from `attachWorktree` above.
     @discardableResult

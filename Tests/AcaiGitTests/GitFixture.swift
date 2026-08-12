@@ -63,4 +63,33 @@ struct GitFixture {
 
         return Commits(initial: initial, tagged: tagged, feature: feature)
     }
+
+    /// Four commits on `main`, purpose-built (independent of `make()`, so existing tests asserting
+    /// on `make()`'s exact commit sequence stay unaffected): adds `README.md`, edits it, adds
+    /// `Other.swift`, edits `README.md` again — giving `README.md` a churn count of 2 (the root
+    /// "add" commit contributes no touches — see `GitChurn`'s doc comment) and `Other.swift` a
+    /// churn count of 1, for `GitRepository.churnByFile`/`GitChurn` to be tested against.
+    @discardableResult
+    func makeWithRepeatedTouches() throws -> String {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try run(["init", "--initial-branch=main"])
+
+        try "v1".write(to: directory.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run(["add", "README.md"])
+        try run(["commit", "-m", "add readme"])
+
+        try "v2".write(to: directory.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run(["add", "README.md"])
+        try run(["commit", "-m", "edit readme once"])
+
+        try "other".write(to: directory.appendingPathComponent("Other.swift"), atomically: true, encoding: .utf8)
+        try run(["add", "Other.swift"])
+        try run(["commit", "-m", "add other file"])
+
+        try "v3".write(to: directory.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run(["add", "README.md"])
+        try run(["commit", "-m", "edit readme twice"])
+
+        return try run(["rev-parse", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }

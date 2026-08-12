@@ -32,7 +32,7 @@ struct GitHubRepositoryClone {
     }
 
     /// `https://github.com/{owner}/{repo}.git`, with no embedded credential — what's actually safe
-    /// to persist in `CodebaseRepositoryReference.remoteURL` (B02/B03), unlike
+    /// to persist in `CodebaseRepositoryReference.remoteURL`, unlike
     /// `authenticatedRemoteURL` above, which must never be written to disk.
     var plainRemoteURL: URL {
         var components = URLComponents()

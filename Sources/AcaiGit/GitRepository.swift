@@ -103,6 +103,14 @@ public struct GitRepository: Sendable {
         return history
     }
 
+    /// Aggregates per-file touch counts across `ref`'s first-parent history — the churn half of the
+    /// churn × complexity "hotspot" technique. The walk itself lives in `GitChurn` (reused
+    /// as-is against any repository directory, not only a shared clone's); this just points it at
+    /// the shared clone's own `localPath`.
+    public func churnByFile(ref: String, limit: Int = 50) throws -> [String: Int] {
+        try GitChurn(directory: localPath).byFile(ref: ref, limit: limit)
+    }
+
     /// A stable, filesystem-safe, credential-free directory name for `remoteURL`: normalizes away
     /// userinfo, host case, and a trailing `.git`, then hashes the result so nothing from the
     /// original URL (including any embedded token) is recoverable from the path on disk.

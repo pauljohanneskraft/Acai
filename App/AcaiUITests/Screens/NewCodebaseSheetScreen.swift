@@ -1,8 +1,9 @@
 import XCTest
 
 /// Accessors for `NewCodebaseSheet`'s GitHub tab — the repository/branch pickers and the Clone
-/// action. Kept separate from `GitHubAccountScreen` (embedded inside this same sheet), which stays
-/// scoped to the sign-in section it wraps.
+/// action. Kept separate from `GitHubAccountScreen`, which now covers this tab's read-only
+/// signed-in summary / "Open Settings" prompt (the actual sign-in UI moved to Settings) via its
+/// own `newCodebaseSignedInAsLabel`/`newCodebaseOpenSettingsButton` accessors.
 @MainActor
 final class NewCodebaseSheetScreen {
     let app: XCUIApplication

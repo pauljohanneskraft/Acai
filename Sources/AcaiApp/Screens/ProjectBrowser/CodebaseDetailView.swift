@@ -15,26 +15,29 @@ struct CodebaseDetailView: View {
     @State private var isPulling = false
     /// Branches + tags for a GitHub-backed codebase's ref picker, loaded once per codebase.
     @State private var availableRefs: [GitHubRef] = []
-    /// Set when the user clicks "Sequence Diagram"; drives the configuration popup.
-    @State private var sequenceConfigContext: ConfigContext?
+    /// Set when the user clicks "Sequence Diagram"; drives the configuration popup. Not `private`:
+    /// the diagram-buttons and diagram-sheets extensions (separate files, kept there only to stay
+    /// under this file's own line-count limit) need to write it too.
+    @State var sequenceConfigContext: ConfigContext?
     /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
-    @State private var stateConfigContext: ConfigContext?
+    @State var stateConfigContext: ConfigContext?
     /// Set when the user clicks "Call Graph"; drives the scope-selection popup.
-    @State private var callGraphConfigContext: ConfigContext?
+    @State var callGraphConfigContext: ConfigContext?
     /// The detail pane's current content width, used to lay out the diagram/statistics card grids so
     /// they fill the full width and wrap to more rows only when space runs out.
-    @State private var contentWidth: CGFloat = 0
+    @State var contentWidth: CGFloat = 0
     /// The ranked drill-down presented when a statistics card is tapped.
     @State var statisticDetail: StatisticDetail?
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
     @State var statCardHeight: CGFloat = 0
-    @State private var diagramCardHeight: CGFloat = 0
+    @State var diagramCardHeight: CGFloat = 0
     /// Drives the destructive "Delete Codebase…" confirmation — a second, discoverable path
     /// to the same action the sidebar's context menu already offers.
     @State var showDeleteConfirmation = false
 
-    /// Identifies the codebase a pending diagram configuration belongs to.
-    private struct ConfigContext: Identifiable {
+    /// Identifies the codebase a pending diagram configuration belongs to. Not `private`, for the
+    /// same cross-file reason as the `@State` properties above.
+    struct ConfigContext: Identifiable {
         let projectID: UUID
         let codebaseID: UUID
         var id: UUID { codebaseID }
@@ -55,7 +58,7 @@ struct CodebaseDetailView: View {
         model.artifact(for: codebaseID)
     }
 
-    private var projectID: UUID? {
+    var projectID: UUID? {
         model.projectID(for: codebaseID)
     }
 
@@ -84,7 +87,7 @@ struct CodebaseDetailView: View {
                         }
                         CodebaseTypesSection(codebase: codebase, artifact: artifact)
                         Divider()
-                        CodebaseRelationshipsSection(artifact: artifact)
+                        CodebaseRelationshipsSection(codebase: codebase, artifact: artifact)
                     } else {
                         notIndexedSection(codebase: codebase)
                     }
@@ -111,6 +114,7 @@ struct CodebaseDetailView: View {
             }
             .sheet(item: $statisticDetail) { detail in
                 StatisticDetailSheet(codebase: codebase, detail: detail)
+                    .environmentObject(model)
             }
             .confirmationDialog(
                 "Delete \"\(codebase.name)\"?",
@@ -296,7 +300,7 @@ struct CodebaseDetailView: View {
             report: analysis.quality, usesConfiguredRules: analysis.usesConfiguredRules,
             rulesError: analysis.qualityError)
         Divider()
-        DeadCodeSection(codebase: codebase, report: analysis.deadCode)
+        DeadCodeSection(codebase: codebase, artifact: artifact, report: analysis.deadCode)
         Divider()
         ParseHealthSection(codebase: codebase, report: analysis.health)
         Divider()
@@ -317,85 +321,11 @@ struct CodebaseDetailView: View {
 
 }
 
-// Statistics, diagram buttons, and their layout helpers — kept in an extension so the main type body
-// stays within SwiftLint's `type_body_length`.
+// Not Indexed section — kept small; the diagram buttons/card-grid layout live in
+// `CodebaseDetailView+Diagrams.swift` and the diagram configuration sheets live in
+// `CodebaseDetailView+DiagramSheets.swift` (both separate files, kept there only to stay under
+// this file's own `file_length` limit).
 extension CodebaseDetailView {
-
-    // MARK: - Card grid layout
-
-    /// Flexible columns sized so `count` cards fill the full content width, wrapping to more rows only
-    /// when the pane is too narrow to fit them all at `target` width. Capping the column count at the
-    /// card count (rather than `.adaptive`) keeps the row full-width instead of leaving empty trailing
-    /// columns when there are fewer cards than would fit.
-    func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
-        let usableWidth = contentWidth - 32  // outer .padding(.horizontal) on each side
-        let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
-        let columns = max(1, min(count, fitting))
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: columns)
-    }
-
-    // MARK: - Diagrams
-
-    /// The diagram-generation buttons, shown inline directly under the header (no fold, no title) since
-    /// they are the pane's primary action.
-    private func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
-            ForEach(DiagramType.allCases) { type in
-                diagramButton(codebase: codebase, type: type)
-            }
-        }
-        .padding(.horizontal)
-        .padding(.bottom, 12)
-        .onPreferenceChange(CardHeightPreferenceKey.self) { height in
-            if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
-        }
-    }
-
-    /// A diagram type button. Each click creates a new generated diagram of that type; sequence
-    /// and state diagrams first open their configuration popup (entry point / variable selection).
-    private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
-        Button {
-            guard let projectID else { return }
-            if type == .sequenceDiagram {
-                sequenceConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
-                return
-            }
-            if type == .stateDiagram {
-                stateConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
-                return
-            }
-            if type == .callGraph {
-                callGraphConfigContext = ConfigContext(projectID: projectID, codebaseID: codebase.id)
-                return
-            }
-            if let id = model.diagrams.add(
-                to: projectID,
-                codebaseID: codebase.id,
-                content: GeneratedDiagram.Content(type: type)
-            ) {
-                model.selection = .generatedDiagram(id)
-            }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: type.systemImage)
-                    .font(.title2.bold())
-                Text(type.displayName)
-                    .font(.title3.bold())
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 12)
-            .background(GeometryReader { proxy in
-                Color.clear.preference(key: CardHeightPreferenceKey.self, value: proxy.size.height)
-            })
-            .frame(minHeight: diagramCardHeight > 0 ? diagramCardHeight : nil, alignment: .topLeading)
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("codebaseDetail.diagramButton.\(type.rawValue)")
-    }
 
     // MARK: - Not Indexed
 
@@ -420,81 +350,5 @@ extension CodebaseDetailView {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
-    }
-}
-
-// MARK: - Diagram configuration sheets
-
-extension CodebaseDetailView {
-
-    /// The state-diagram configuration popup, presented when "State Diagram" is clicked.
-    @ViewBuilder
-    private func stateConfigSheet(for context: ConfigContext) -> some View {
-        if let artifact = model.artifact(for: context.codebaseID) {
-            StateConfigSheet(
-                artifact: artifact,
-                onCancel: { stateConfigContext = nil },
-                onCreate: { config in
-                    let id = model.diagrams.add(
-                        to: context.projectID,
-                        codebaseID: context.codebaseID,
-                        content: .stateDiagram(config)
-                    )
-                    stateConfigContext = nil
-                    // Deferred: selecting in the same synchronous closure as this sheet's own
-                    // dismissal (a separate window on macOS) has been observed to occasionally drop
-                    // the parent NavigationSplitView's detail-column update entirely.
-                    if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
-                    }
-                }
-            )
-        }
-    }
-
-    /// The call-graph scope popup, presented when "Call Graph" is clicked.
-    @ViewBuilder
-    private func callGraphConfigSheet(for context: ConfigContext) -> some View {
-        if let artifact = model.artifact(for: context.codebaseID) {
-            CallGraphConfigSheet(
-                artifact: artifact,
-                onCancel: { callGraphConfigContext = nil },
-                onCreate: { scope in
-                    let id = model.diagrams.add(
-                        to: context.projectID,
-                        codebaseID: context.codebaseID,
-                        content: .callGraph(scope)
-                    )
-                    callGraphConfigContext = nil
-                    // Deferred — see `stateConfigSheet`'s `onCreate`.
-                    if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
-                    }
-                }
-            )
-        }
-    }
-
-    /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
-    @ViewBuilder
-    private func sequenceConfigSheet(for context: ConfigContext) -> some View {
-        if let artifact = model.artifact(for: context.codebaseID) {
-            SequenceConfigSheet(
-                artifact: artifact,
-                onCancel: { sequenceConfigContext = nil },
-                onCreate: { config in
-                    let id = model.diagrams.add(
-                        to: context.projectID,
-                        codebaseID: context.codebaseID,
-                        content: .sequenceDiagram(config)
-                    )
-                    sequenceConfigContext = nil
-                    // Deferred — see `stateConfigSheet`'s `onCreate`.
-                    if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
-                    }
-                }
-            )
-        }
     }
 }

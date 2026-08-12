@@ -6,21 +6,15 @@ import UIKit
 import AppKit
 #endif
 
-/// Sign-in/out UI for the app's single GitHub account — shared by `NewCodebaseSheet`'s GitHub tab
-/// (the only place it's embedded today). Two sign-in paths: paste a fine-grained PAT, or a GitHub
-/// App device-flow sign-in (only offered once `GitHubAppConfiguration.standard.clientID` has
-/// actually been filled in — see that type's doc comment for the one-time setup it depends on).
+/// Sign-in/out UI for the app's single GitHub account. This is the Settings pane's content — the
+/// source of truth reachable via ⌘, on macOS or the sidebar's gear icon on iPad/iPhone — instead
+/// of something embedded only inside `NewCodebaseSheet`'s GitHub tab, which now just reads
+/// `GitHubAccountStore` and points here when signed out. Two sign-in paths: paste a fine-grained
+/// PAT, or a GitHub App device-flow sign-in (only offered once `GitHubAppConfiguration.standard
+/// .clientID` has actually been filled in — see that type's doc comment for the one-time setup it
+/// depends on).
 struct GitHubAccountSection: View {
-    @Binding var account: GitHubTokenStore.StoredAccount?
-    let service: GitHubAccountService
-
-    /// Defaults to the real network implementation, swapped for `FixtureGitHubAccountService`
-    /// under a UI test fixture — see `GitHubAccountService`.
-    init(account: Binding<GitHubTokenStore.StoredAccount?>, service: GitHubAccountService? = nil) {
-        self._account = account
-        self.service = service ?? (UITestFixtureResolver().resolveBaseDir() != nil
-            ? FixtureGitHubAccountService() : LiveGitHubAccountService())
-    }
+    @EnvironmentObject private var accountStore: GitHubAccountStore
 
     @State private var patText = ""
     @State private var isSigningIn = false
@@ -35,20 +29,22 @@ struct GitHubAccountSection: View {
     @State private var isPresentingVerificationPage = false
     #endif
 
-    private let tokenStore = GitHubTokenStore()
-
     var body: some View {
-        VStack {
-            if let account {
+        VStack(alignment: .leading, spacing: 12) {
+            if let account = accountStore.account {
                 signedInView(account)
             } else {
                 signedOutView
             }
         }
         .onDisappear { pollTask?.cancel() }
+        .task(id: accountStore.account?.login) {
+            guard accountStore.account != nil else { return }
+            accountStore.refreshCodebaseCount()
+        }
         #if os(iOS)
         // Attaching the sheet to a background view hides the presentation anchor from the root of
-        // the hierarchy, avoiding conflicts with the host `NewCodebaseSheet` already presented.
+        // the hierarchy, avoiding conflicts with the host sheet already presented.
         .background {
             Color.clear
                 .sheet(isPresented: $isPresentingVerificationPage) {
@@ -67,25 +63,105 @@ struct GitHubAccountSection: View {
         #endif
     }
 
+    // MARK: - Signed in
+
+    @ViewBuilder
     private func signedInView(_ account: GitHubTokenStore.StoredAccount) -> some View {
-        HStack {
-            Text("Signed in as \(account.login)")
-                .accessibilityIdentifier("github.signedInRow")
+        HStack(spacing: 12) {
+            AsyncImage(url: account.avatarURL) { image in
+                image.resizable()
+            } placeholder: {
+                Image(systemName: "person.crop.circle.fill").resizable().foregroundStyle(.secondary)
+            }
+            .frame(width: 40, height: 40)
+            .clipShape(Circle())
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(account.login)
+                    .font(.headline)
+                    .accessibilityIdentifier("github.signedInRow")
+                Text(codebaseCountLine)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("github.usedByCodebasesLabel")
+            }
             Spacer()
-            Button("Sign Out") {
-                tokenStore.clear()
-                self.account = nil
+            Button("Sign Out", role: .destructive) {
+                accountStore.signOut()
             }
             .accessibilityIdentifier("github.signOutButton")
         }
+
+        if let expiryMessage {
+            Label(expiryMessage, systemImage: "clock.badge.exclamationmark")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .accessibilityIdentifier("github.expiryWarning")
+        }
+
+        scopeChecklist(account)
+
+        HStack {
+            if accountStore.isRefreshingScopes {
+                ProgressView().controlSize(.small)
+            }
+            Button("Refresh Scopes") {
+                Task { await accountStore.refreshScopes() }
+            }
+            .buttonStyle(.borderless)
+            .disabled(accountStore.isRefreshingScopes)
+            .accessibilityIdentifier("github.refreshScopesButton")
+        }
     }
+
+    /// A checklist of which scopes the current token actually has. `nil` scopes (fine-grained
+    /// PATs, which don't currently report this) show as "Unknown," never silently as "has every
+    /// scope" or "has none."
+    private func scopeChecklist(_ account: GitHubTokenStore.StoredAccount) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Scopes").font(.caption).foregroundStyle(.secondary)
+            if let scopes = account.scopes {
+                ForEach([GitHubScope.contentsRead, .metadataRead, .pullRequestsRead], id: \.rawValue) { scope in
+                    let has = scopes.contains(scope.rawValue)
+                    Label(scope.displayName, systemImage: has ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(has ? .green : .secondary)
+                        .font(.caption)
+                }
+            } else {
+                Label("Unknown — this token type doesn't report scopes", systemImage: "questionmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("github.scopesUnknownLabel")
+            }
+        }
+        .accessibilityIdentifier("github.scopeChecklist")
+    }
+
+    private var codebaseCountLine: String {
+        accountStore.codebaseCount == 1
+            ? "Used by 1 codebase"
+            : "Used by \(accountStore.codebaseCount) codebases"
+    }
+
+    /// A proactive re-auth prompt shown once expiry is close, rather than the token silently failing
+    /// on next use.
+    private var expiryMessage: String? {
+        guard let expiresAt = accountStore.account?.tokenExpiresAt else { return nil }
+        let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
+        guard daysRemaining <= 7 else { return nil }
+        if daysRemaining <= 0 { return "Your token has expired. Sign in again to keep pulling from GitHub." }
+        return "Your token expires \(expiresAt.formatted(.relative(presentation: .named))). Sign in again soon."
+    }
+
+    // MARK: - Signed out
 
     @ViewBuilder
     private var signedOutView: some View {
         if let deviceCode {
             deviceCodeView(deviceCode)
         } else {
-            Text("Paste a fine-grained personal access token scoped to Contents: Read-only.")
+            Text("Paste a fine-grained personal access token scoped to Contents: Read-only — "
+                + "GitHub never shares your password with Acai.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SecureField("Personal Access Token", text: $patText)
@@ -96,6 +172,10 @@ struct GitHubAccountSection: View {
                 .accessibilityIdentifier("github.signInWithTokenButton")
 
             if !GitHubAppConfiguration.standard.clientID.isEmpty {
+                Text("We'll generate a short code, copy it to your clipboard, and open github.com "
+                    + "so you can paste it and approve access.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Button("Sign in with GitHub") { pollTask = Task { await startDeviceFlow() } }
                     .buttonStyle(.borderless)
                     .disabled(isSigningIn)
@@ -147,13 +227,10 @@ struct GitHubAccountSection: View {
         Task {
             defer { isSigningIn = false }
             do {
-                let user = try await service.authenticatedUser(credential: credential)
-                let stored = GitHubTokenStore.StoredAccount(
-                    credential: credential, login: user.login, avatarURL: user.avatarURL)
-                try tokenStore.save(stored)
-                account = stored
+                try await accountStore.signIn(with: credential)
                 patText = ""
                 errorMessage = nil
+                accountStore.refreshCodebaseCount()
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -165,10 +242,10 @@ struct GitHubAccountSection: View {
         defer { isSigningIn = false }
         do {
             let clientID = GitHubAppConfiguration.standard.clientID
-            let code = try await service.requestDeviceCode(clientID: clientID)
+            let code = try await accountStore.requestDeviceCode(clientID: clientID)
             deviceCode = code
             copyToClipboard(code.userCode)
-            let credential = try await service.pollForCredential(code, clientID: clientID)
+            let credential = try await accountStore.pollForCredential(code, clientID: clientID)
             // The poll can succeed at almost the same moment the user taps "Cancel" — check
             // cancellation here too (not just in `catch` below), so a credential that arrives
             // right on that boundary doesn't still get signed in and written to Keychain.

@@ -18,6 +18,11 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
+    /// The selected message, keyed by its `SequenceLayoutModel.MessageLayout.id` (a positional index
+    /// into the time-ordered message list, not a stable identity) — the Inspector tab. Positional
+    /// ids are fine here: `applyConfiguration` always clears this alongside the node selection, so a
+    /// stale index can never survive a configuration change.
+    @Published var selectedMessageID: Int?
 
     private(set) var configuration: SequenceDiagramConfiguration
 
@@ -55,10 +60,17 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         diagram = Self.generate(artifact: artifact, configuration: newConfiguration)
         positionOverrides = [:]
         selectedNodeIDs = []
+        selectedMessageID = nil
         history.clear()
     }
 
     var isEmpty: Bool { diagram.participants.isEmpty }
+
+    /// Clears the selected message whenever the participant selection is replaced (a secondary
+    /// selection, same rationale as `FreeformDiagramViewModel.selectedEdgeID`).
+    func selectionWillReplace() {
+        selectedMessageID = nil
+    }
 
     // MARK: - Layout
 
@@ -69,6 +81,16 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     private var frameByID: [String: SequenceLayoutModel.ParticipantFrame] {
         Dictionary(layout.participants.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// The time-ordered messages, in the same order `SequenceLayoutModel.MessageLayout.id` indexes
+    /// into — the source-of-truth lookup the Inspector tab resolves a selected message against.
+    var orderedMessages: [SequenceDiagram.Message] { diagram.messages.sorted { $0.order < $1.order } }
+
+    /// A participant's display name, or `nil` if it no longer exists (stale selection after a
+    /// configuration change, which always clears the selection anyway).
+    func participantName(_ id: String) -> String? {
+        diagram.participants.first { $0.id == id }?.name
     }
 
     // MARK: - LayoutBackedCanvas

@@ -29,6 +29,33 @@ final class GitHubAddCodebaseTests: XCTestCase {
         }
 
         let browser = ProjectBrowserScreen(app: app)
+
+        // Sign in via Settings first — `NewCodebaseSheet`'s GitHub tab now just reads signed-in
+        // state from there instead of embedding its own sign-in UI. See `GitHubSignInTests` for the
+        // identical Settings-navigation pattern.
+        let github = GitHubAccountScreen(app: app)
+        // The real Keychain-backed `GitHubTokenStore` isn't fixture-redirected — always sign back
+        // out via `defer`, even if an assertion above it fails, so this never leaves a stale entry
+        // for the next run. See `GitHubSignInTests`' identical comment.
+        defer { if github.signedInRow.exists { github.signOutButton.tap() } }
+        #if os(macOS)
+        app.typeKey(",", modifierFlags: .command)
+        #else
+        XCTAssertTrue(browser.settingsButton.waitForExistence(timeout: 10))
+        browser.settingsButton.tap()
+        #endif
+        XCTAssertTrue(github.patField.waitForExistence(timeout: 5))
+        github.patField.tap()
+        github.patField.typeText("fixture-token")
+        github.signInWithTokenButton.tap()
+        XCTAssertTrue(github.signedInRow.waitForExistence(timeout: 5))
+        #if os(macOS)
+        app.typeKey("w", modifierFlags: .command)
+        #else
+        let settings = SettingsScreen(app: app)
+        settings.doneButton.tap()
+        #endif
+
         let projectRow = browser.projectRow(id: Self.projectID)
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
         projectRow.tap()
@@ -37,19 +64,7 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(detail.addCodebaseButton.waitForExistence(timeout: 10))
         detail.addCodebaseButton.tap()
 
-        let github = GitHubAccountScreen(app: app)
         github.selectGitHubSource()
-        // The real Keychain-backed `GitHubTokenStore` isn't fixture-redirected — always sign back
-        // out via `defer`, even if an assertion above it fails, so this never leaves a stale entry
-        // for the next run. See `GitHubSignInTests`' identical comment.
-        defer { if github.signedInRow.exists { github.signOutButton.tap() } }
-
-        XCTAssertTrue(github.patField.waitForExistence(timeout: 5))
-        github.patField.tap()
-        github.patField.typeText("fixture-token")
-        github.signInWithTokenButton.tap()
-        XCTAssertTrue(github.signedInRow.waitForExistence(timeout: 5))
-
         let sheet = NewCodebaseSheetScreen(app: app)
         XCTAssertTrue(sheet.repositoryPicker.waitForExistence(timeout: 10))
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker)
@@ -112,11 +127,15 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
         featureBranchDiagram.chooseCompareRef("main")
-        // 30s, not 15s: the "old" side is a real `git` tree extraction + full re-analysis, on top
+        // 60s, not 15s: the "old" side is a real `git` tree extraction + full re-analysis, on top
         // of a GitHub-backed codebase's own clone directory — confirmed empirically that this can
         // occasionally take noticeably longer than a quick structural rebuild, the same class of
-        // occasional-slow-update fixed identically in `CompareGitRevisionTests`.
-        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 30)
+        // occasional-slow-update fixed identically in `CompareGitRevisionTests`. 30s wasn't enough on
+        // CI's iPad runner specifically: two separate runs (2026-08-01, 2026-08-11) both timed out at
+        // exactly the 30s mark with no error surfaced (`delta.error` absent — genuinely still
+        // loading, not failed), while the same test passes comfortably on the iPhone runner in the
+        // same run. That runner measured ~35min end-to-end vs. iPhone's ~24min for the same job.
+        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 60)
         let errorExists = featureBranchDiagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")

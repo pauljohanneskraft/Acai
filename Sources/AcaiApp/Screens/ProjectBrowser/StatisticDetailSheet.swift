@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// A ranked drill-down for one statistics card: the items behind the metric, sorted by it. Each row
-/// can reveal its item in Finder (a type's file, or a module's directory). Built by the section, which
-/// owns the artifact/codebase needed for the reveal actions.
+/// offers the full "Open in…" resolution plus "View Source" (Finder reveal kept as an
+/// additional macOS-only secondary action). Built by the section, which owns the artifact/codebase
+/// needed for these actions.
 struct StatisticDetail: Identifiable {
     let id = UUID()
     let title: String
@@ -17,10 +18,13 @@ struct StatisticDetail: Identifiable {
         let value: String
         /// The item's path relative to the codebase directory, or `nil` when it can't be resolved.
         let relativePath: String?
+        /// The element this row is about — a type or a module, matching how the section built
+        /// this row (`typeDetail`/`moduleDetail`).
+        let reference: CodeElementReference
     }
 }
 
-/// Presents a `StatisticDetail` as a sortable, revealable list.
+/// Presents a `StatisticDetail` as a sortable, actionable list.
 struct StatisticDetailSheet: View {
     let codebase: Codebase
     let detail: StatisticDetail
@@ -62,16 +66,23 @@ struct StatisticDetailSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(detail.rows) { row in
-                HStack(spacing: 8) {
-                    Text(row.name)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer()
-                    Text(row.value)
-                        .font(.callout.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(row.name)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Text(row.value)
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .openInCodeElement(row.reference, codebase: codebase, relativePath: row.relativePath)
+                    // Only for a type row: a module row's `relativePath` is a directory, not a
+                    // file, and Quick Look isn't a useful way to "view source" for one.
+                    if case .type = row.reference, let relativePath = row.relativePath {
+                        ViewSourceButton(codebase: codebase, relativePath: relativePath)
+                    }
                 }
-                .revealsInFinder(codebase: codebase, relativePath: row.relativePath)
             }
         }
     }

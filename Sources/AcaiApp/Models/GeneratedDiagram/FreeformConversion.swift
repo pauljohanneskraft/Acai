@@ -12,7 +12,7 @@ struct FreeformConversionContext {
     let offset: CGPoint
 }
 
-/// The shared shape of every "Save as Freeform" conversion (B23): dispatch to one of these five
+/// The shared shape of every "Save as Freeform" conversion: dispatch to one of these five
 /// conformers (`ClassFreeformConversion`, `SequenceFreeformConversion`, `StateFreeformConversion`,
 /// `PackageFreeformConversion`, `CallGraphFreeformConversion`), each a value built for one
 /// conversion and asked to `makeFreeformDiagram()`.
@@ -23,10 +23,10 @@ struct FreeformConversionContext {
 /// entry → the diagram's stored `nodePositions` → a per-type staggered default).
 ///
 /// What's deliberately **not** forced into a shared shape, because the five conversions'
-/// requirements genuinely differ (see `GeneratedDiagram+Freeform.swift`'s doc comment and B23's
-/// backlog entry for why): per-item node/edge content construction (`makeNode`/`makeEdges` — a
-/// class's full member list has nothing in common with a lifeline or a package box), grouping-box
-/// materialization (Class-only), and B22's metrics-footer note (Package/Call Graph-only). Those
+/// requirements genuinely differ (see `GeneratedDiagram+Freeform.swift`'s doc comment for why):
+/// per-item node/edge content construction (`makeNode`/`makeEdges` — a class's full member list
+/// has nothing in common with a lifeline or a package box), grouping-box materialization
+/// (Class-only), and the metrics-footer note (Package/Call Graph-only). Those
 /// three are default-no-op hooks a conformer overrides only when it needs them, rather than every
 /// conformer being forced to implement a "grouping" or "metrics" concept that doesn't apply to it.
 protocol FreeformConversion {
@@ -58,7 +58,7 @@ protocol FreeformConversion {
     /// Grouping/container nodes drawn behind `memberNodes` (Class diagram's directory/product
     /// boxes only). Defaults to none.
     func groupingNodes(memberNodes: [FreeformDiagram.Node], idsBySourceID: [String: String]) -> [FreeformDiagram.Node]
-    /// B22's opt-in read-only metrics summary (Package/Call Graph only). Defaults to none.
+    /// The opt-in read-only metrics summary (Package/Call Graph only). Defaults to none.
     func metricsFooterNodes(existingNodes: [FreeformDiagram.Node]) -> [FreeformDiagram.Node]
 }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// One shared `AcaiGit.GitRepository`'s reverse index: every codebase, across every project, whose
-/// `Codebase.repository` references it — B05's Repositories sidebar/detail needs this to show
+/// `Codebase.repository` references it — the Repositories sidebar/detail needs this to show
 /// "used by N codebases" and to block removal while any codebase still depends on it.
 struct RepositoryIndexEntry: Identifiable, Hashable {
     var remoteURL: URL

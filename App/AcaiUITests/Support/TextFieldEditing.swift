@@ -35,6 +35,24 @@ extension XCUIElement {
         }
     }
 
+    /// Waits for `self` to be hittable, not just present, before tapping. Confirmed empirically
+    /// (`FreeformDiagramCheckpointsView`'s restore row, right after its sheet re-presents): a `List`
+    /// row can already `exist` — a real accessibility element, matched by identifier — while still
+    /// reporting a stale zero-size, off-screen frame from before the sheet's layout pass lands, which
+    /// fails a plain `tap()` with "Not hittable" even though `waitForExistence` already returned true.
+    /// Polls with a real `Thread.sleep` between reads rather than `XCTNSPredicateExpectation`:
+    /// `XCUIElement` isn't KVO-compliant, so a predicate expectation on `isHittable` latches its first
+    /// evaluation instead of re-querying — confirmed empirically too (a 5s predicate-expectation wait
+    /// never unstuck an element that a fresh `debugDescription` walk one second later showed was
+    /// already laid out correctly).
+    func tapWhenHittable(timeout: TimeInterval = 5, pollInterval: TimeInterval = 0.2) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !isHittable && Date() < deadline {
+            Thread.sleep(forTimeInterval: pollInterval)
+        }
+        tap()
+    }
+
     /// Picks an option from a `Picker`-rendered popup/menu (`self`) by its literal text — a SwiftUI
     /// `Picker` in a `Form` surfaces differently per platform (a popup-button menu on macOS, a pushed
     /// list or inline menu on iOS) and the option itself has no separate identifier, so this matches

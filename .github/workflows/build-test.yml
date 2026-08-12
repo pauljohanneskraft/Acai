@@ -173,6 +173,7 @@ jobs:
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
       - name: Run UI tests
+        id: run-tests
         run: |
           xcodebuild test \
             -project Acai.xcodeproj \
@@ -188,6 +189,18 @@ jobs:
         with:
           name: xcresult-iphone
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn
+
+      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
+      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
+      # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
+      # second xcodebuild invocation needed.
+      - name: Upload UI test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iPhone
+          path: App/AcaiUITests/__RecordedSnapshots__/iPhone/
           if-no-files-found: warn
 
   ui-test-ipad:
@@ -227,6 +240,7 @@ jobs:
         run: Scripts/simulator_prepare.sh "iPad (A16)"
 
       - name: Run UI tests
+        id: run-tests
         run: |
           xcodebuild test \
             -project Acai.xcodeproj \
@@ -242,6 +256,18 @@ jobs:
         with:
           name: xcresult-ipad
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn
+
+      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
+      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
+      # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
+      # second xcodebuild invocation needed.
+      - name: Upload UI test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iPad
+          path: App/AcaiUITests/__RecordedSnapshots__/iPad/
           if-no-files-found: warn
 
   ui-test-macos:
@@ -278,6 +304,7 @@ jobs:
           restore-keys: spm-xcode-${{ runner.os }}-
 
       - name: Run UI tests
+        id: run-tests
         run: |
           # Unlike the iOS Simulator jobs above, a real macOS binary needs at least an ad-hoc
           # signature to launch at all on Apple Silicon — `CODE_SIGNING_ALLOWED=NO` (which works
@@ -299,4 +326,22 @@ jobs:
         with:
           name: xcresult-macos
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          if-no-files-found: warn
+
+      # ScreenshotComparator writes every capture to /private/tmp/AcaiUITestSnapshots as a side
+      # effect of the normal (asserting) run above — not only in record mode — so a golden
+      # mismatch/miss there already leaves this ready to upload, with no second xcodebuild
+      # invocation needed. Sync first in case the direct entitled write unexpectedly fell back to
+      # the sandboxed runner's own container (see ScreenshotComparator.write's doc comment) — a
+      # no-op the rest of the time.
+      - name: Sync staged snapshots
+        if: failure()
+        run: Scripts/sync_ui_snapshots.sh
+
+      - name: Upload UI test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS
+          path: /private/tmp/AcaiUITestSnapshots/macOS/
           if-no-files-found: warn

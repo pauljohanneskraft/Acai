@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- GitHub API calls (`GitHubAPIClient`) and libgit2's HTTPS transport (`AcaiGit`'s
+	clone/fetch, wrapped by `GitHubRepositoryClone`/`GitRepository`) both need outbound network
+	access. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- `NewCodebaseSheet`'s local-folder `.fileImporter` picker: the sandbox only grants
+	continued access to a user-picked file/folder across launches via a security-scoped
+	bookmark (`SecurityScopedBookmark`), which itself requires this entitlement. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Debug-only, mirroring `AcaiUITests-macOS.entitlements`: `UITestFixtureResolver` points
+	`ProjectStore`/`GitHubTokenStore` at a disposable fixture directory under real, non-container
+	`/private/tmp` for XCUITest runs (`Launch.swift`'s `launchWithFixture`). Without this, the
+	sandboxed app-under-test can't write there itself, so every persist during a UI test (reindex,
+	GitHub sign-in, ...) fails. `UITestFixtureResolver.resolveBaseDir()` is `nil` for every real
+	launch, so this exception is never exercised outside tests — kept out of the Release
+	entitlements (`Acai-macOS.entitlements`) so the shipping app's sandbox stays tight. -->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/private/tmp/</string>
+	</array>
+</dict>
+</plist>

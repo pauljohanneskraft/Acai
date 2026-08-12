@@ -21,6 +21,13 @@ final class ProjectDetailScreen {
         return app.buttons["projectDetail.addDiagramButton"]
     }
 
+    /// Navigates to this project's aggregated Findings view — on compact width (iPhone) this
+    /// lives behind the same "+" toolbar `Menu` as `addCodebaseButton`/`addDiagramButton`.
+    var findingsButton: XCUIElement {
+        openAddMenuIfNeeded(target: "projectDetail.findingsButton")
+        return app.buttons["projectDetail.findingsButton"]
+    }
+
     /// The compact-width (iPhone) "+" toolbar button; never exists on regular width.
     var addMenuButton: XCUIElement { app.buttons["projectDetail.addMenuButton"] }
 
@@ -47,6 +54,12 @@ final class ProjectDetailScreen {
 
     func codebaseRow(id: String) -> XCUIElement {
         app.descendants(matching: .any)["projectDetail.codebaseRow.\(id)"]
+    }
+
+    /// Per-row in-flight state: present in place of the checkmark/dashed-circle while a
+    /// reindex/fetch/clone concerning this codebase is running — see `CodebaseIndexStatusBadge`.
+    func codebaseIndexingSpinner(id: String) -> XCUIElement {
+        app.descendants(matching: .any)["codebaseRow.indexingSpinner.\(id)"]
     }
 
     func freeformDiagramRow(id: String) -> XCUIElement {

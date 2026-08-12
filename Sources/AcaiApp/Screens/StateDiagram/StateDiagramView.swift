@@ -22,8 +22,20 @@ struct StateDiagramView: View {
     @State private var dragStartPositions: [String: CGPoint] = [:]
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var showConfigSheet = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var showSidebar = false
+    @State private var sidebarTab: StateDiagramSidebarTab = .settings
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
@@ -39,6 +51,81 @@ struct StateDiagramView: View {
     }
 
     var body: some View {
+        sidebarPresentedCanvas
+            .toolbar { toolbarContent }
+            .diagramCanvasLifecycle(
+                title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+            )
+    }
+
+    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
+    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
+    @ViewBuilder
+    private var sidebarPresentedCanvas: some View {
+        #if os(iOS)
+        if isCompactWidth {
+            diagramContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .sheet(isPresented: $showSidebar) {
+                    NavigationStack {
+                        sidebar
+                            .navigationTitle(diagram.name)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showSidebar = false }
+                                        .accessibilityIdentifier("diagram.sidebarDoneButton")
+                                }
+                            }
+                    }
+                }
+        } else {
+            diagramContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .inspector(isPresented: $showSidebar) {
+                    sidebar
+                        .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+                }
+        }
+        #else
+        diagramContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .inspector(isPresented: $showSidebar) {
+                sidebar
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 380)
+            }
+        #endif
+    }
+
+    /// The config-sheet fields fold into the Settings tab (live draft + Apply, not a modal);
+    /// Save as Freeform/Export Image move here from the toolbar.
+    private var sidebar: StateDiagramSidebar {
+        StateDiagramSidebar(
+            viewModel: viewModel, artifact: artifact, tab: $sidebarTab,
+            onApply: { config in
+                viewModel.applyConfiguration(config)
+                model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
+                centerDiagram()
+            },
+            onSaveAsFreeform: {
+                // Pass every state's live centre (not just dragged overrides) so the freeform
+                // copy reproduces the current layout exactly.
+                let layoutPositions = Dictionary(
+                    viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
+                    uniquingKeysWith: { first, _ in first }
+                )
+                model.saveAsFreeformDiagram(
+                    id: diagram.id,
+                    positions: layoutPositions,
+                    scale: canvasScale,
+                    offset: canvasOffset
+                )
+            },
+            onExportImage: exportImage
+        )
+    }
+
+    private var diagramContent: some View {
         Group {
             switch viewModel.result {
             case .success:
@@ -48,23 +135,6 @@ struct StateDiagramView: View {
             case nil:
                 unconfiguredState
             }
-        }
-        .toolbar { toolbarContent }
-        .diagramCanvasLifecycle(
-            title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
-        )
-        .sheet(isPresented: $showConfigSheet) {
-            StateConfigSheet(
-                artifact: artifact,
-                initial: viewModel.configuration,
-                onCancel: { showConfigSheet = false },
-                onCreate: { config in
-                    viewModel.applyConfiguration(config)
-                    model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
-                    showConfigSheet = false
-                    centerDiagram()
-                }
-            )
         }
     }
 
@@ -85,6 +155,9 @@ struct StateDiagramView: View {
                     ForEach(layout.nodes) { node in
                         stateNode(node)
                     }
+                    ForEach(layout.edges) { edge in
+                        transitionTapTarget(edge, layout: layout)
+                    }
                 }
             }
         )
@@ -97,6 +170,11 @@ struct StateDiagramView: View {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .position(x: node.rect.midX, y: node.rect.midY)
+        .onTapGesture(count: 2) {
+            viewModel.selectNode(node.id, extending: false)
+            sidebarTab = .inspector
+            showSidebar = true
+        }
         .diagramNodeInteraction(
             id: node.id,
             model: viewModel,
@@ -104,6 +182,44 @@ struct StateDiagramView: View {
             activeDragCanvasLocation: $activeDragCanvasLocation,
             onCommit: savePositions
         )
+    }
+
+    /// An invisible tap strip over a transition arrow, selecting it for the Inspector tab —
+    /// same rationale as `SequenceDiagramView.messageTapTarget`, sized to a full 44pt hit area.
+    private func transitionTapTarget(_ edge: StateLayoutModel.EdgeLayout, layout: StateLayoutModel) -> some View {
+        let midpoint: CGPoint = {
+            guard let from = layout.frame(for: edge.from), let to = layout.frame(for: edge.to) else {
+                return .zero
+            }
+            return CGPoint(x: (from.midX + to.midX) / 2, y: (from.midY + to.midY) / 2)
+        }()
+        let isSelected = viewModel.selectedTransitionID == edge.id
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            #if os(macOS)
+            .cursorOnHover(.pointingHand)
+            #endif
+            .frame(width: 44, height: 44)
+            .position(midpoint)
+            .accessibilityElement()
+            .accessibilityLabel("Transition" + (edge.label.map { ": \($0)" } ?? ""))
+            .accessibilityAddTraits(.isButton)
+            .onTapGesture(count: 2) {
+                viewModel.clearSelection()
+                viewModel.selectedTransitionID = edge.id
+                sidebarTab = .inspector
+                showSidebar = true
+            }
+            .onTapGesture(count: 1) {
+                let newSelection = (viewModel.selectedTransitionID == edge.id) ? nil : edge.id
+                viewModel.clearSelection()
+                viewModel.selectedTransitionID = newSelection
+            }
     }
 
     // MARK: - Toolbar
@@ -125,39 +241,12 @@ struct StateDiagramView: View {
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
-                showConfigSheet = true
+                showSidebar.toggle()
             } label: {
-                Label("Edit Configuration", systemImage: "slider.horizontal.3")
+                Label("Sidebar", systemImage: "sidebar.trailing")
             }
-            .help("Change the state diagram's tracked variable")
-            .accessibilityIdentifier("diagram.configureButton")
-            Button {
-                // Pass every state's live centre (not just dragged overrides) so the freeform
-                // copy reproduces the current layout exactly.
-                let layoutPositions = Dictionary(
-                    viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
-                    uniquingKeysWith: { first, _ in first }
-                )
-                model.saveAsFreeformDiagram(
-                    id: diagram.id,
-                    positions: layoutPositions,
-                    scale: canvasScale,
-                    offset: canvasOffset
-                )
-            } label: {
-                Label("Save as Freeform", systemImage: "document.on.document")
-            }
-            .help("Save a copy as an editable Freeform diagram")
-            .disabled(viewModel.diagram == nil)
-            .accessibilityIdentifier("diagram.saveAsFreeformButton")
-            Button {
-                exportImage()
-            } label: {
-                Label("Export Image", systemImage: "photo")
-            }
-            .help("Export the diagram as an image")
-            .disabled(viewModel.diagram == nil)
-            .accessibilityIdentifier("diagram.exportImageButton")
+            .help("Toggle the sidebar")
+            .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
 
@@ -176,7 +265,8 @@ struct StateDiagramView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 420)
             Button {
-                showConfigSheet = true
+                sidebarTab = .settings
+                showSidebar = true
             } label: {
                 Label("Edit Configuration", systemImage: "slider.horizontal.3")
             }
@@ -192,7 +282,8 @@ struct StateDiagramView: View {
             Text("This state diagram has no variable selected yet.")
                 .foregroundStyle(.secondary)
             Button {
-                showConfigSheet = true
+                sidebarTab = .settings
+                showSidebar = true
             } label: {
                 Label("Configure", systemImage: "slider.horizontal.3")
             }

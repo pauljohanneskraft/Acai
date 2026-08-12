@@ -5,7 +5,9 @@ import Foundation
 /// conformance instead of a `URLProtocol` mock. Scoped to sign-in only; other GitHub calls stay
 /// direct `GitHubAPIClient(credential:)` calls until they need the same treatment.
 protocol GitHubAccountService: Sendable {
-    func authenticatedUser(credential: GitHubCredential) async throws -> GitHubAPIClient.User
+    /// The signed-in user plus what GitHub's response headers reveal about the token itself —
+    /// the scope checklist and expiry prompt both read this (see `GitHubAPIClient.AuthenticatedUserInfo`).
+    func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo
     func requestDeviceCode(clientID: String) async throws -> GitHubDeviceAuthFlow.DeviceCode
     func pollForCredential(
         _ deviceCode: GitHubDeviceAuthFlow.DeviceCode, clientID: String
@@ -14,8 +16,8 @@ protocol GitHubAccountService: Sendable {
 
 /// Real network calls — exactly what `GitHubAccountSection` did inline before this seam existed.
 struct LiveGitHubAccountService: GitHubAccountService {
-    func authenticatedUser(credential: GitHubCredential) async throws -> GitHubAPIClient.User {
-        try await GitHubAPIClient(credential: credential).authenticatedUser()
+    func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo {
+        try await GitHubAPIClient(credential: credential).authenticatedUserWithMetadata()
     }
 
     func requestDeviceCode(clientID: String) async throws -> GitHubDeviceAuthFlow.DeviceCode {
@@ -35,8 +37,12 @@ struct FixtureGitHubAccountService: GitHubAccountService {
     /// The canned identity every fixture-stubbed sign-in resolves to.
     static let login = "octocat"
 
-    func authenticatedUser(credential: GitHubCredential) async throws -> GitHubAPIClient.User {
-        GitHubAPIClient.User(login: Self.login, avatarURL: nil)
+    func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo {
+        GitHubAPIClient.AuthenticatedUserInfo(
+            user: GitHubAPIClient.User(login: Self.login, avatarURL: nil),
+            scopes: ["contents:read", "metadata:read"],
+            tokenExpiresAt: nil
+        )
     }
 
     func requestDeviceCode(clientID: String) async throws -> GitHubDeviceAuthFlow.DeviceCode {

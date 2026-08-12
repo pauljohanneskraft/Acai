@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("RepositoryIndex (B05 reverse index)")
+@Suite("RepositoryIndex (reverse index)")
 struct RepositoryIndexTests {
     private func repositoryBackedCodebase(name: String, remoteURL: URL, ref: String = "main") -> Codebase {
         Codebase(

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The "Save as Freeform" confirmation shared by the two diagram types that have an opt-in metric
-/// to carry over (Package Diagram, Call Graph — B22): a single checkbox, "Include current
+/// to carry over (Package Diagram, Call Graph): a single checkbox, "Include current
 /// coupling/coverage figures as read-only notes," gating whether the conversion appends a `.note`
 /// summarizing the coupling/coverage figures already computed for the live diagram, instead of
 /// silently dropping them.
@@ -71,7 +71,7 @@ struct SaveAsFreeformOptionsModifier: ViewModifier {
 }
 
 extension View {
-    /// Attaches the B22 "Save as Freeform" options confirmation (see `SaveAsFreeformOptionsModifier`).
+    /// Attaches the "Save as Freeform" options confirmation (see `SaveAsFreeformOptionsModifier`).
     func saveAsFreeformOptions(
         isPresented: Binding<Bool>,
         includeMetricsNote: Binding<Bool>,

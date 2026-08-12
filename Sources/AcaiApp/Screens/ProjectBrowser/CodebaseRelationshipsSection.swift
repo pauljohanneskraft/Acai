@@ -2,8 +2,11 @@ import SwiftUI
 import AcaiCore
 
 /// Section view displaying all relationships in a codebase,
-/// sorted by source → target with kind indicators.
+/// sorted by source → target with kind indicators. Every row offers the full "Open in…"
+/// resolution (a relationship focuses a Class Diagram on both endpoints) — previously this section
+/// was purely display-only, with no navigation action at all.
 struct CodebaseRelationshipsSection: View {
+    let codebase: Codebase
     let artifact: CodeArtifact
 
     private func displayName(for id: String) -> String {
@@ -49,6 +52,8 @@ struct CodebaseRelationshipsSection: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .openInCodeElement(
+            .relationship(source: rel.source, target: rel.target, kind: rel.kind), codebase: codebase)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }

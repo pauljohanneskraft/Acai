@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Point-and-Place Insertion (B24)
+// MARK: - Point-and-Place Insertion
 
 /// Ghost preview + cancel affordance + background-tap commit handling for
 /// `FreeformDiagramViewModel.pendingPlacement`. Split from `FreeformDiagramView.swift` itself only to
