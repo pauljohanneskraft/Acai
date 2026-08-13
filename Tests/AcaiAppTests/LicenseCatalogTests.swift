@@ -29,9 +29,9 @@ struct LicenseCatalogTests {
     }
 
     @Test func throwsResourceMissingWhenTheBundleHasNoLicensesJSON() throws {
-        let bundle = try makeBundle(licensesJSON: nil)
+        let tempBundle = try makeBundle(licensesJSON: nil)
         #expect {
-            try LicenseCatalog(bundle: bundle).load()
+            try LicenseCatalog(bundle: tempBundle.bundle).load()
         } throws: { error in
             guard case LicenseCatalog.CatalogError.resourceMissing = error else { return false }
             return true
@@ -39,11 +39,11 @@ struct LicenseCatalogTests {
     }
 
     @Test func throwsOnAnUnsupportedSchemaVersion() throws {
-        let bundle = try makeBundle(licensesJSON: """
+        let tempBundle = try makeBundle(licensesJSON: """
         {"schemaVersion": 999, "generatedAt": "2026-01-01T00:00:00Z", "dependencies": []}
         """)
         #expect {
-            try LicenseCatalog(bundle: bundle).load()
+            try LicenseCatalog(bundle: tempBundle.bundle).load()
         } throws: { error in
             guard case LicenseCatalog.CatalogError.unsupportedSchemaVersion(let version) = error else { return false }
             return version == 999
@@ -51,7 +51,7 @@ struct LicenseCatalogTests {
     }
 
     @Test func decodesAWellFormedDocument() throws {
-        let bundle = try makeBundle(licensesJSON: """
+        let tempBundle = try makeBundle(licensesJSON: """
         {
             "schemaVersion": 1,
             "generatedAt": "2026-01-01T00:00:00Z",
@@ -68,7 +68,7 @@ struct LicenseCatalogTests {
             ]
         }
         """)
-        let dependencies = try LicenseCatalog(bundle: bundle).load()
+        let dependencies = try LicenseCatalog(bundle: tempBundle.bundle).load()
         #expect(dependencies.count == 1)
         #expect(dependencies[0].name == "example")
         #expect(dependencies[0].version == "1.0.0")
@@ -76,15 +76,29 @@ struct LicenseCatalogTests {
         #expect(dependencies[0].notes == nil)
     }
 
-    /// A loose directory `Bundle` stands in for the app bundle — `Bundle.url(forResource:withExtension:)`
-    /// resolves against either the same way.
-    private func makeBundle(licensesJSON: String?) throws -> Bundle {
+    private func makeBundle(licensesJSON: String?) throws -> TemporaryBundle {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if let licensesJSON {
             try licensesJSON.write(
                 to: directory.appendingPathComponent("Licenses.json"), atomically: true, encoding: .utf8)
         }
-        return try #require(Bundle(url: directory))
+        let bundle = try #require(Bundle(url: directory))
+        return TemporaryBundle(directory: directory, bundle: bundle)
+    }
+}
+
+/// Deletes its backing directory in `deinit`, so a test's temp bundle cleans up when it goes out of scope.
+private final class TemporaryBundle {
+    let bundle: Bundle
+    private let directory: URL
+
+    init(directory: URL, bundle: Bundle) {
+        self.directory = directory
+        self.bundle = bundle
+    }
+
+    deinit {
+        try? FileManager.default.removeItem(at: directory)
     }
 }

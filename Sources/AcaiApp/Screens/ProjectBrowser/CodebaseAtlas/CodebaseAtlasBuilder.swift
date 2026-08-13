@@ -9,8 +9,14 @@ struct PagedSection {
     let itemCount: Int
     let itemsPerPage: Int
 
+    init(itemCount: Int, itemsPerPage: Int) {
+        precondition(itemsPerPage > 0, "itemsPerPage must be positive")
+        self.itemCount = itemCount
+        self.itemsPerPage = itemsPerPage
+    }
+
     var pageCount: Int {
-        itemCount == 0 ? 1 : Int((Double(itemCount) / Double(itemsPerPage)).rounded(.up))
+        itemCount == 0 ? 1 : (itemCount + itemsPerPage - 1) / itemsPerPage
     }
 
     func range(forPage pageIndex: Int) -> Range<Int> {
