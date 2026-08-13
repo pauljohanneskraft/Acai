@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 
 /// The app's shared root scene content. `AcaiApp` is a library, not an executable — each platform's
@@ -11,6 +12,7 @@ public struct AcaiRootScene: Scene {
     @StateObject private var accountStore = GitHubAccountStore()
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     @StateObject private var settingsPresenter = SettingsPresenter()
+    @StateObject private var handoffPresenter = HandoffContinuationPresenter()
 
     public init() {}
 
@@ -19,6 +21,23 @@ public struct AcaiRootScene: Scene {
             ProjectBrowserView()
                 .modifier(DiagramThemeProvider())
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+                .onContinueUserActivity(DiagramHandoffActivity.activityType) { activity in
+                    guard let raw = activity.userInfo?["generatedDiagramID"] as? String, let id = UUID(uuidString: raw)
+                    else { return }
+                    handoffPresenter.pendingTarget = .diagram(id)
+                }
+                .onContinueUserActivity(CodebaseHandoffActivity.activityType) { activity in
+                    guard let raw = activity.userInfo?["codebaseID"] as? String, let id = UUID(uuidString: raw)
+                    else { return }
+                    handoffPresenter.pendingTarget = .codebase(id)
+                }
+                // A Spotlight search-result tap.
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
+                        return
+                    }
+                    handoffPresenter.pendingTarget = .spotlightItem(identifier)
+                }
         }
         .commands {
             DiagramThemeCommands()
@@ -33,6 +52,7 @@ public struct AcaiRootScene: Scene {
         .environmentObject(accountStore)
         .environmentObject(quickOpenPresenter)
         .environmentObject(settingsPresenter)
+        .environmentObject(handoffPresenter)
         #if os(macOS)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()

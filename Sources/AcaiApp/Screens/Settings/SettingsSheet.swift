@@ -14,6 +14,9 @@ struct SettingsSheet: View {
                 Section("GitHub Account") {
                     GitHubAccountSection()
                 }
+                Section("Licenses") {
+                    LicensesSection()
+                }
             }
             .navigationTitle("Settings")
             .toolbar {

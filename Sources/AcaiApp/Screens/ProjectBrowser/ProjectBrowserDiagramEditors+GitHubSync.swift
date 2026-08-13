@@ -208,6 +208,7 @@ extension ProjectCodebaseEditor {
             }
             store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
+            triggerSpotlightReindex()
         } catch {
             store.report("Reindex failed: \(error.localizedDescription)")
         }

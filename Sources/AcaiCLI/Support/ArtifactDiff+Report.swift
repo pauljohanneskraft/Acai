@@ -63,6 +63,7 @@ private extension TypeChange {
         }
         if !addedMembers.isEmpty { parts.append("+\(addedMembers.count) member(s)") }
         if !removedMembers.isEmpty { parts.append("-\(removedMembers.count) member(s)") }
+        if !changedMembers.isEmpty { parts.append("~\(changedMembers.count) member(s)") }
         return "~ \(id): \(parts.joined(separator: ", "))"
     }
 }

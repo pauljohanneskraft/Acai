@@ -44,6 +44,9 @@ struct CycleDiagramView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbarContent }
+            .userActivity(DiagramHandoffActivity.activityType) {
+                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
+            }
     }
 
     @ViewBuilder

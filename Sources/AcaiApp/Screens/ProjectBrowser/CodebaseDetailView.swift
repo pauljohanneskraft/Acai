@@ -100,6 +100,9 @@ struct CodebaseDetailView: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
             .navigationTitle(codebase.name)
+            .userActivity(CodebaseHandoffActivity.activityType) {
+                CodebaseHandoffActivity(codebase: codebase).configure($0)
+            }
             .task(id: model.analysisToken(for: codebaseID)) {
                 await model.ensureAnalysisLoaded(codebaseID: codebaseID)
             }

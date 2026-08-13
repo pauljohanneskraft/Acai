@@ -76,6 +76,44 @@ struct QuickOpenIndexBuilderTests {
         #expect(entries.contains { $0.kind == .freeformDiagram && $0.name == "Sketch" })
     }
 
+    @Test func indexesProjectAndCodebaseEntries() {
+        let projectID = UUID()
+        let codebaseID = UUID()
+        let project = Project(
+            id: projectID, title: "Demo", subtitle: "A sample project",
+            codebases: [Codebase(id: codebaseID, name: "Demo Codebase", directoryPath: "/tmp/demo")]
+        )
+        let builder = QuickOpenIndexBuilder(
+            projects: [project], artifacts: [:], generatedDiagrams: [:], freeformDiagrams: [:]
+        )
+        let entries = builder.entries()
+
+        let projectEntry = entries.first { $0.kind == .project }
+        #expect(projectEntry?.id == "project:\(projectID)")
+        #expect(projectEntry?.name == "Demo")
+        #expect(projectEntry?.subtitle == "A sample project")
+        #expect(projectEntry?.projectID == projectID)
+        #expect(projectEntry?.codebaseID == nil)
+
+        let codebaseEntry = entries.first { $0.kind == .codebase }
+        #expect(codebaseEntry?.id == "codebase:\(codebaseID)")
+        #expect(codebaseEntry?.name == "Demo Codebase")
+        #expect(codebaseEntry?.subtitle == "Demo")
+        #expect(codebaseEntry?.projectID == projectID)
+        #expect(codebaseEntry?.codebaseID == codebaseID)
+    }
+
+    @Test func projectEntryFallsBackToAGenericSubtitleWhenSubtitleIsEmpty() {
+        let projectID = UUID()
+        let project = Project(id: projectID, title: "Demo", subtitle: "", codebases: [])
+        let builder = QuickOpenIndexBuilder(
+            projects: [project], artifacts: [:], generatedDiagrams: [:], freeformDiagrams: [:]
+        )
+        let entries = builder.entries()
+
+        #expect(entries.first { $0.kind == .project }?.subtitle == "Project")
+    }
+
     @Test func emptyProjectListProducesNoEntries() {
         let builder = QuickOpenIndexBuilder(
             projects: [], artifacts: [:], generatedDiagrams: [:], freeformDiagrams: [:]

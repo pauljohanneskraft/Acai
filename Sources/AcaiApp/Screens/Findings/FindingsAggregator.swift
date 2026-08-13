@@ -38,7 +38,7 @@ struct FindingsAggregator {
         project.codebases.filter { model.artifact(for: $0.id) == nil }
     }
 
-    private func findings(for codebase: Codebase) -> [Finding] {
+    func findings(for codebase: Codebase) -> [Finding] {
         guard let analysis = model.analysis(for: codebase.id) else { return [] }
         let artifact = model.artifact(for: codebase.id)
         var results: [Finding] = []

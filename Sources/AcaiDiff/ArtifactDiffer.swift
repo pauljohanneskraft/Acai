@@ -77,11 +77,23 @@ public struct ArtifactDiffer: Sendable {
 
         let oldSignatures = Set(old.members.map(\.diffSignature))
         let newSignatures = Set(new.members.map(\.diffSignature))
-        let addedMembers = newSignatures.subtracting(oldSignatures).sorted()
-        let removedMembers = oldSignatures.subtracting(newSignatures).sorted()
+        var addedSignatures = newSignatures.subtracting(oldSignatures)
+        var removedSignatures = oldSignatures.subtracting(newSignatures)
+
+        let changedMembers = pairedMemberChanges(
+            oldMembers: old.members.filter { removedSignatures.contains($0.diffSignature) },
+            newMembers: new.members.filter { addedSignatures.contains($0.diffSignature) }
+        )
+        for change in changedMembers {
+            removedSignatures.remove(change.before)
+            addedSignatures.remove(change.after)
+        }
+
+        let addedMembers = addedSignatures.sorted()
+        let removedMembers = removedSignatures.sorted()
 
         guard kindChange != nil || accessChange != nil
-            || !addedMembers.isEmpty || !removedMembers.isEmpty
+            || !addedMembers.isEmpty || !removedMembers.isEmpty || !changedMembers.isEmpty
         else { return nil }
 
         return TypeChange(
@@ -89,8 +101,21 @@ public struct ArtifactDiffer: Sendable {
             kindChange: kindChange,
             accessChange: accessChange,
             addedMembers: addedMembers,
-            removedMembers: removedMembers
+            removedMembers: removedMembers,
+            changedMembers: changedMembers.sorted { $0.name < $1.name }
         )
+    }
+
+    /// Pairs unmatched members by name across revisions so a retyped/re-accessed member reads as
+    /// one change, not add+remove. Skips names with more than one unmatched candidate per side —
+    /// overloads have no reliable correspondence.
+    private func pairedMemberChanges(oldMembers: [Member], newMembers: [Member]) -> [MemberChange] {
+        let oldByName = Dictionary(grouping: oldMembers, by: \.name)
+        let newByName = Dictionary(grouping: newMembers, by: \.name)
+        return oldByName.compactMap { name, olds -> MemberChange? in
+            guard olds.count == 1, let news = newByName[name], news.count == 1 else { return nil }
+            return MemberChange(name: name, before: olds[0].diffSignature, after: news[0].diffSignature)
+        }
     }
 
     // MARK: - Relationships

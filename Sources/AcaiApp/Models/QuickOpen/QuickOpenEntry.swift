@@ -1,14 +1,16 @@
 import Foundation
 import AcaiCore
 
-/// One searchable thing Quick Open can find and jump to: a type, method, module, or existing
-/// diagram, from any project. Carries enough to both display a result row and resolve it — either
-/// directly (a diagram opens by selecting it) or through `CodeElementReference`'s existing
-/// resolution mechanism (a type/method/module opens via the same "Open in…" machinery every other
-/// surface in the app uses — Quick Open reuses it rather than inventing a second way to turn "a
-/// type" into "a diagram").
+/// One searchable thing Quick Open can find and jump to: a project, codebase, type, method,
+/// module, or existing diagram, from any project. Resolves either directly (a project/codebase/
+/// diagram opens by selecting it) or through `CodeElementReference`'s resolution mechanism (a
+/// type/method/module). Also the on-device Core Spotlight index's source of truth — see
+/// `SpotlightIndexer`. `QuickOpenView` itself still only displays the type/method/module/diagram
+/// kinds; `.project`/`.codebase` exist on this shared list for Spotlight's benefit.
 struct QuickOpenEntry: Identifiable, Hashable {
     enum Kind: Hashable {
+        case project
+        case codebase
         case type
         case method
         case module
@@ -35,6 +37,10 @@ struct QuickOpenEntry: Identifiable, Hashable {
 
     var systemImage: String {
         switch kind {
+        case .project:
+            "tray.full"
+        case .codebase:
+            "folder"
         case .type:
             "square.on.square"
         case .method:

@@ -73,7 +73,9 @@ optionalTargets.append(
             "AcaiRender",
             "AcaiGit",
             .product(name: "Yams", package: "Yams"),
-        ]
+        ],
+        // `.copy`, not `.process`: `Licenses.json` is data to decode, not an asset to transform.
+        resources: [.copy("Resources/Licenses.json")]
     )
 )
 optionalTargets.append(

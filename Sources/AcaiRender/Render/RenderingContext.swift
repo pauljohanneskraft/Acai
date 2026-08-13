@@ -1,6 +1,7 @@
 import CoreGraphics
 import SwiftUI
 import AcaiDiagram
+import AcaiDiff
 
 // Grouped parameter objects for the image renderers: the output-tuning knobs (scale/padding/palette)
 // and the optional delta-tint closures collapse into one argument apiece so entry points stay narrow.
@@ -55,13 +56,17 @@ public struct LaidOutDiagram: Sendable {
 public struct ClassColorOverrides: Sendable {
     public var edge: (@Sendable (GeneratedDiagramEdge) -> Color?)?
     public var node: (@Sendable (GeneratedDiagramNode) -> Color?)?
+    /// Non-color complement to `node`'s tint, so an exported image matches the on-screen canvas.
+    public var badge: (@Sendable (GeneratedDiagramNode) -> DeltaStatus?)?
 
     public init(
         edge: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        node: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
+        node: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil,
+        badge: (@Sendable (GeneratedDiagramNode) -> DeltaStatus?)? = nil
     ) {
         self.edge = edge
         self.node = node
+        self.badge = badge
     }
 
     /// No delta tint — every element keeps its themed colour.

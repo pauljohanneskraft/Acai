@@ -395,6 +395,9 @@ extension ProjectDetailView {
         Button { model.exportMermaid(for: codebase.id) } label: {
             Label("Export Mermaid", systemImage: "square.and.arrow.up")
         }
+        Button { Task { await model.exportAtlas(for: codebase.id) } } label: {
+            Label("Export Codebase Atlas", systemImage: "doc.richtext")
+        }
         Divider()
         Button(role: .destructive) {
             codebasePendingDeletion = codebase

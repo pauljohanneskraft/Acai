@@ -160,6 +160,7 @@ struct ProjectCodebaseEditor {
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
         persist()
+        triggerSpotlightReindex()
     }
 
     // MARK: Codebases
@@ -217,6 +218,7 @@ struct ProjectCodebaseEditor {
         }
         store.removeFromRecentlyViewed(.codebase(codebaseID))
         persist()
+        triggerSpotlightReindex()
     }
 
     /// Deregisters and deletes a codebase's linked worktree, leaving the shared hub clone (and any
@@ -290,6 +292,18 @@ struct ProjectCodebaseEditor {
 
     func projectID(for codebaseID: UUID) -> UUID? {
         store.projects.first { $0.codebases.contains { $0.id == codebaseID } }?.id
+    }
+
+    /// Rebuilds the on-device Spotlight index, off the main actor. Best-effort: a failure here
+    /// never surfaces to the user. Not `private`: `ProjectBrowserDiagramEditors+GitHubSync.swift` calls it too.
+    func triggerSpotlightReindex() {
+        let builder = QuickOpenIndexBuilder(
+            projects: store.projects, artifacts: store.artifacts,
+            generatedDiagrams: store.generatedDiagrams, freeformDiagrams: store.freeformDiagrams
+        )
+        Task.detached(priority: .userInitiated) {
+            try? await SpotlightIndexer().reindex(builder.entries())
+        }
     }
 }
 

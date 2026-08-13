@@ -227,6 +227,17 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         return Color(hex: hex)
     }
 
+    /// Non-color complement to `deltaColor(for:)` — feeds `TypeNodeView`'s `+`/`−`/`~` badge.
+    func deltaBadge(for node: GeneratedDiagramNode) -> DeltaStatus? {
+        guard let typeStatus else { return nil }
+        let status = typeStatus(node.id)
+        return status == .unchanged ? nil : status
+    }
+
+    func typeChange(for node: GeneratedDiagramNode) -> TypeChange? {
+        diff?.typeChange(ofType: node.id)
+    }
+
     func nodeRect(for id: String) -> CGRect? {
         guard let pos = nodePositions[id] else { return nil }
         let size = effectiveSize(for: id)
@@ -248,20 +259,24 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         // the colours into Sendable maps so the render closures don't capture the main-actor model.
         var edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)?
         var nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)?
+        var nodeBadge: (@Sendable (GeneratedDiagramNode) -> DeltaStatus?)?
         if isDeltaMode {
             let edgeColors = Dictionary(edges.compactMap { e in deltaColor(for: e).map { (e.id, $0) } },
                                         uniquingKeysWith: { first, _ in first })
             let nodeColors = Dictionary(nodes.compactMap { n in deltaColor(for: n).map { (n.id, $0) } },
                                         uniquingKeysWith: { first, _ in first })
+            let nodeBadges = Dictionary(nodes.compactMap { n in deltaBadge(for: n).map { (n.id, $0) } },
+                                        uniquingKeysWith: { first, _ in first })
             edgeColor = { edgeColors[$0.id] }
             nodeColor = { nodeColors[$0.id] }
+            nodeBadge = { nodeBadges[$0.id] }
         }
         let laidOut = LaidOutDiagram(
             nodes: nodes, edges: edges, positions: nodePositions, sizes: sizes, groupingBoxes: groupingBoxes)
         return try ClassImageRenderer().renderPNG(
             laidOut: laidOut,
             context: RenderingContext(scale: scale),
-            colors: ClassColorOverrides(edge: edgeColor, node: nodeColor)
+            colors: ClassColorOverrides(edge: edgeColor, node: nodeColor, badge: nodeBadge)
         )
     }
 }
