@@ -63,6 +63,10 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
         return .unchanged
     }
 
+    public func typeChange(ofType id: String) -> TypeChange? {
+        changedTypes.first { $0.id == id }
+    }
+
     /// An O(1) relationship-status lookup that pre-hashes the diff's edge keys once. For hot paths
     /// that classify *every* edge of the union diagram (delta rendering, redrawn each frame),
     /// building this once is O(N + M) instead of `status(of:)`'s O(N · M); `status(of:)` stays for

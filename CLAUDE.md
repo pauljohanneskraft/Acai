@@ -49,6 +49,7 @@ This separation is load-bearing — keep it:
 - Type nesting capped at 2 levels; cyclomatic complexity warns at 10.
 - Parsers are stateless `struct`s conforming to `CodeParser`.
 - **NEVER use a type as a static-function namespace — not on a caseless `enum`, and not on a `struct`/`class` either.** A `static func` with no instance to act on is a global function in disguise, which is a code smell in this OO codebase. This is non-negotiable. Put the behavior **on a value** instead: model it as a real type you instantiate and call instance methods on (e.g. `Glob("a*").matches(x)`, `StronglyConnectedComponents(adjacency: g).cycles`, `DeltaEdgeColors.standard.hex(for: status)`), or as a computed property / method in an `extension` on the type the behavior belongs to (e.g. `relationship.diffKey`, `member.diffSignature`). A `static let`/`static var` that vends a configured **instance** of the type (like `ModuleResolver.standard`) is fine — that's a value, not a namespace. Free functions are likewise disallowed.
+- Keep code documentation to an absolute minimum. Only add a comment when the information is genuinely useful and can't be inferred from the surrounding code or file — most code needs none. If a good name, a type signature, or something an IDE/LSP already surfaces (e.g. "who calls this," "this isn't private") would tell the reader the same thing, skip the comment; don't restate what the identifier already says. A comment describes the current state of the code, never its history (no "used to be X", "added for Y", "previously Z").
 
 ## Adding a language
 

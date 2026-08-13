@@ -96,8 +96,42 @@ struct ArtifactDifferTests {
         let old = artifact([type("Widget", members: [Member(name: "secret", kind: .method, accessLevel: .public)])])
         let new = artifact([type("Widget", members: [Member(name: "secret", kind: .method, accessLevel: .private)])])
         let change = try #require(ArtifactDiffer().diff(old: old, new: new).changedTypes.first)
-        #expect(change.removedMembers.contains { $0.contains("public") })
-        #expect(change.addedMembers.contains { $0.contains("private") })
+        #expect(change.addedMembers.isEmpty)
+        #expect(change.removedMembers.isEmpty)
+        let memberChange = try #require(change.changedMembers.first { $0.name == "secret" })
+        #expect(memberChange.before.contains("public"))
+        #expect(memberChange.after.contains("private"))
+    }
+
+    @Test func pairsRetypedMemberAsAChangeNotAddAndRemove() throws {
+        func widget(type valueType: String) -> TypeDeclaration {
+            self.type("Widget", members: [
+                Member(name: "count", kind: .property, accessLevel: .internal,
+                       type: TypeReference(name: valueType))
+            ])
+        }
+        let old = artifact([widget(type: "Int")])
+        let new = artifact([widget(type: "String")])
+        let change = try #require(ArtifactDiffer().diff(old: old, new: new).changedTypes.first)
+        #expect(change.addedMembers.isEmpty)
+        #expect(change.removedMembers.isEmpty)
+        let memberChange = try #require(change.changedMembers.first { $0.name == "count" })
+        #expect(memberChange.before.contains("Int"))
+        #expect(memberChange.after.contains("String"))
+    }
+
+    @Test func doesNotPairAmbiguousOverloadsAsAChange() throws {
+        // Two unmatched "move" overloads on the old side: no reliable pairing, so this stays add+remove.
+        func move(_ label: String) -> Member {
+            Member(name: "move", kind: .method, accessLevel: .internal,
+                   parameters: [Parameter(externalName: label, internalName: "p", type: TypeReference(name: "Point"))])
+        }
+        let old = artifact([type("Mover", members: [move("to"), move("from")])])
+        let new = artifact([type("Mover", members: [move("via")])])
+        let change = try #require(ArtifactDiffer().diff(old: old, new: new).changedTypes.first)
+        #expect(change.changedMembers.isEmpty)
+        #expect(change.removedMembers.count == 2)
+        #expect(change.addedMembers.contains { $0.contains("via") })
     }
 
     @Test func reportsMetricDeltas() {

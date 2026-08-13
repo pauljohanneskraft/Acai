@@ -98,7 +98,10 @@ struct QuickOpenView: View {
             generatedDiagrams: model.store.generatedDiagrams,
             freeformDiagrams: model.store.freeformDiagrams
         )
-        allEntries = await Task.detached(priority: .userInitiated) { builder.entries() }.value
+        // `.project`/`.codebase` entries exist on the shared list only for Spotlight's benefit.
+        allEntries = await Task.detached(priority: .userInitiated) {
+            builder.entries().filter { $0.kind != .project && $0.kind != .codebase }
+        }.value
     }
 
     /// Debounces to the trailing edge of a short pause rather than filtering on every keystroke —
@@ -122,6 +125,13 @@ struct QuickOpenView: View {
     private func apply(_ resolution: CodeElementResolution?, entry: QuickOpenEntry) {
         defer { dismissAction?() }
         switch entry.kind {
+        // Filtered out of `allEntries` in `buildIndex()`, but `ProjectBrowserViewModel
+        // .applyQuickOpenEntryDefault` reaches these same cases for a Spotlight continuation.
+        case .project:
+            model.selection = .project(entry.projectID)
+        case .codebase:
+            guard let id = entry.codebaseID else { return }
+            model.selection = .codebase(id)
         case .generatedDiagram:
             guard let id = entry.generatedDiagramID else { return }
             model.selection = .generatedDiagram(id)
@@ -129,14 +139,18 @@ struct QuickOpenView: View {
             guard let id = entry.freeformDiagramID else { return }
             model.selection = .freeformDiagram(id)
         case .type, .method, .module:
-            guard let resolution, let codebaseID = entry.codebaseID else { return }
-            switch resolution.target {
-            case .existing(let diagramID):
-                model.selection = .generatedDiagram(diagramID)
-            case .create(let content):
-                if let newID = model.diagrams.add(to: entry.projectID, codebaseID: codebaseID, content: content) {
-                    model.selection = .generatedDiagram(newID)
-                }
+            applyResolution(resolution, entry: entry)
+        }
+    }
+
+    private func applyResolution(_ resolution: CodeElementResolution?, entry: QuickOpenEntry) {
+        guard let resolution, let codebaseID = entry.codebaseID else { return }
+        switch resolution.target {
+        case .existing(let diagramID):
+            model.selection = .generatedDiagram(diagramID)
+        case .create(let content):
+            if let newID = model.diagrams.add(to: entry.projectID, codebaseID: codebaseID, content: content) {
+                model.selection = .generatedDiagram(newID)
             }
         }
     }

@@ -44,6 +44,9 @@ struct CallGraphView: View {
             }
         )
         .id(scope)
+        .userActivity(DiagramHandoffActivity.activityType) {
+            DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiCore
+import AcaiDiff
 
 /// A static, non-interactive rendering of a generated class diagram, used to produce image
 /// exports. It composes the same `GroupingBoxView` / `TypeNodeView` / `RelationshipEdgeView`
@@ -22,6 +23,8 @@ public struct DiagramSnapshotView: View {
     let edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)?
     /// Optional per-node fill override (delta mode); `nil` leaves nodes themed as normal.
     let nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)?
+    /// Non-color complement to `nodeColor`; `nil` draws no badge.
+    let nodeBadge: (@Sendable (GeneratedDiagramNode) -> DeltaStatus?)?
 
     public init(
         nodes: [GeneratedDiagramNode],
@@ -33,7 +36,8 @@ public struct DiagramSnapshotView: View {
         padding: CGFloat,
         palette: DiagramPalette = .light,
         edgeColor: (@Sendable (GeneratedDiagramEdge) -> Color?)? = nil,
-        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil
+        nodeColor: (@Sendable (GeneratedDiagramNode) -> Color?)? = nil,
+        nodeBadge: (@Sendable (GeneratedDiagramNode) -> DeltaStatus?)? = nil
     ) {
         self.nodes = nodes
         self.edges = edges
@@ -45,6 +49,7 @@ public struct DiagramSnapshotView: View {
         self.palette = palette
         self.edgeColor = edgeColor
         self.nodeColor = nodeColor
+        self.nodeBadge = nodeBadge
     }
 
     private func size(for id: String) -> CGSize {
@@ -80,7 +85,8 @@ public struct DiagramSnapshotView: View {
             ForEach(nodes.removingDuplicates(by: \.id)) { node in
                 if let pos = positions[node.id] {
                     let size = size(for: node.id)
-                    TypeNodeView(node: node, isSelected: false, borderOverride: nodeColor?(node))
+                    TypeNodeView(
+                        node: node, isSelected: false, borderOverride: nodeColor?(node), badge: nodeBadge?(node))
                         .frame(width: size.width, height: size.height)
                         .position(pos)
                 }

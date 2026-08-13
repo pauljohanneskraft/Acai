@@ -58,7 +58,8 @@ public struct ClassImageRenderer {
             nodes: laidOut.nodes, edges: laidOut.edges, positions: normalizedPositions, sizes: laidOut.sizes,
             groupingBoxes: normalizedBoxes,
             contentSize: CGSize(width: bounds.width, height: bounds.height),
-            padding: context.padding, palette: context.palette, edgeColor: colors.edge, nodeColor: colors.node)
+            padding: context.padding, palette: context.palette, edgeColor: colors.edge, nodeColor: colors.node,
+            nodeBadge: colors.badge)
 
         return try engine.render(
             view, contentSize: CGSize(width: bounds.width, height: bounds.height),

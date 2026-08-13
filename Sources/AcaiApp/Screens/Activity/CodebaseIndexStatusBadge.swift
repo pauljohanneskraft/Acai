@@ -10,15 +10,16 @@ struct CodebaseIndexStatusBadge: View {
     @ObservedObject var activityCenter: ActivityCenter
     let codebase: Codebase
 
-    private var isBusy: Bool { activityCenter.isBusy(.codebase(codebase.id)) }
+    /// Labelled by its own title, so an Atlas export or GitHub pull isn't mislabeled "Indexing".
+    private var busyOperation: ActivityOperation? { activityCenter.operation(for: .codebase(codebase.id)) }
 
     var body: some View {
         Group {
-            if isBusy {
+            if let busyOperation {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel("Indexing")
-                    .help("Indexing…")
+                    .accessibilityLabel(busyOperation.title)
+                    .help(busyOperation.title)
                     .accessibilityIdentifier("codebaseRow.indexingSpinner.\(codebase.id)")
             } else if codebase.hasArtifact {
                 Image(systemName: "checkmark.circle.fill")

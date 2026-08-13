@@ -128,6 +128,47 @@ extension ProjectBrowserViewModel {
         pendingExport = PendingExport(filename: "\(name).mmd", contentType: .plainText, data: Data(mermaid.utf8))
     }
 
+    // MARK: Codebase Atlas Export
+
+    /// Bundles every diagram, statistic, and finding for `codebaseID` into one paginated PDF
+    /// (``CodebaseAtlasBuilder``) and queues it for `.fileExporter`. Routed through
+    /// `store.activityCenter.run` (same as `reindex`) so it shows up as the codebase row's spinner.
+    func exportAtlas(for codebaseID: UUID) async {
+        guard let codebase = codebase(for: codebaseID) else { return }
+        guard let artifact = artifact(for: codebaseID) else {
+            store.report("Could not export Atlas: \"\(codebase.name)\" hasn't been indexed yet.")
+            return
+        }
+        await ensureAnalysisLoaded(codebaseID: codebaseID)
+        guard let analysis = analysis(for: codebaseID) else {
+            store.report("Could not export Atlas: analysis for \"\(codebase.name)\" isn't ready yet.")
+            return
+        }
+        guard let projectID = projectID(for: codebaseID),
+              let project = store.projects.first(where: { $0.id == projectID })
+        else { return }
+
+        let diagrams = generatedDiagramsForProject(projectID).filter { $0.codebaseID == codebaseID }
+        let findings = FindingsAggregator(project: project, model: self).findings(for: codebase)
+        let builder = CodebaseAtlasBuilder(
+            codebase: codebase, artifact: artifact, diagrams: diagrams,
+            metrics: analysis.metrics, findings: findings)
+
+        do {
+            let data = try await store.activityCenter.run(
+                title: "Exporting \(codebase.name) atlas…", kind: .other(systemImage: "doc.richtext"),
+                subject: .codebase(codebaseID)
+            ) {
+                try await builder.build()
+            }
+            // Cancelled before finishing: don't queue a result we discarded.
+            guard let data else { return }
+            pendingExport = PendingExport(filename: "\(codebase.name).pdf", contentType: .pdf, data: data)
+        } catch {
+            store.report("Atlas export failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: Save as Freeform Diagram
 
     /// Convert a stored diagram to a freeform diagram.

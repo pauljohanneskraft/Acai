@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiCore
+import AcaiDiff
 
 // MARK: - Display Data Types
 
@@ -46,6 +47,8 @@ public struct TypeNodeView: View {
     /// Optional delta border tint (added/removed/changed); colours the node's outline rather than
     /// its fill so the body text and theme stay readable. `nil` uses the themed border.
     let borderOverride: Color?
+    /// Non-color complement to `borderOverride`; `nil` draws no badge.
+    let badge: DeltaStatus?
 
     @Environment(\.diagramPalette) private var palette
 
@@ -61,7 +64,8 @@ public struct TypeNodeView: View {
         methods: [MemberDisplayItem],
         enumCases: [EnumCaseDisplayItem],
         isSelected: Bool,
-        borderOverride: Color? = nil
+        borderOverride: Color? = nil,
+        badge: DeltaStatus? = nil
     ) {
         self.name = name
         self.kind = kind
@@ -72,6 +76,7 @@ public struct TypeNodeView: View {
         self.enumCases = enumCases
         self.isSelected = isSelected
         self.borderOverride = borderOverride
+        self.badge = badge
     }
 
     public var body: some View {
@@ -95,6 +100,12 @@ public struct TypeNodeView: View {
                     lineWidth: borderOverride != nil ? 3 : (isSelected ? 2 : 1))
         )
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
+        .overlay(alignment: .topTrailing) {
+            if let badge, badge.badgeGlyph != nil {
+                DeltaBadgeView(status: badge)
+                    .offset(x: 7, y: -7)
+            }
+        }
         // Keyed by name, not a stable id — `TypeNodeView` has no id of its own. Good enough for a
         // UI-test hook; a name collision within one diagram is a known edge case.
         .accessibilityIdentifier("diagram.typeNode.\(name)")
@@ -205,7 +216,9 @@ public struct TypeNodeView: View {
 // MARK: - TypeNodeView Convenience Initializers
 
 extension TypeNodeView {
-    public init(node: GeneratedDiagramNode, isSelected: Bool, borderOverride: Color? = nil) {
+    public init(
+        node: GeneratedDiagramNode, isSelected: Bool, borderOverride: Color? = nil, badge: DeltaStatus? = nil
+    ) {
         self.init(
             name: node.name,
             kind: node.kind,
@@ -227,7 +240,29 @@ extension TypeNodeView {
                     EnumCaseDisplayItem(id: enumCase.id, text: enumCase.displayText)
                 },
             isSelected: isSelected,
-            borderOverride: borderOverride
+            borderOverride: borderOverride,
+            badge: badge
         )
+    }
+}
+
+// MARK: - Delta Badge
+
+private struct DeltaBadgeView: View {
+    let status: DeltaStatus
+
+    var body: some View {
+        Text(status.badgeGlyph ?? "")
+            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .foregroundColor(.white)
+            .frame(width: 15, height: 15)
+            .background(Circle().fill(fill))
+            .overlay(Circle().stroke(Color.white, lineWidth: 1))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(status.badgeAccessibilityLabel ?? "")
+    }
+
+    private var fill: Color {
+        status.deltaHex.map { Color(hex: $0) } ?? Color.secondary
     }
 }

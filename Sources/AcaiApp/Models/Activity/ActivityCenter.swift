@@ -29,6 +29,12 @@ final class ActivityCenter: ObservableObject {
         return operations.contains { $0.subject == subject }
     }
 
+    /// The in-flight operation concerning `subject`, if any.
+    func operation(for subject: ActivityOperation.Subject) -> ActivityOperation? {
+        guard subject != .none else { return nil }
+        return operations.first { $0.subject == subject }
+    }
+
     func cancel(_ id: ActivityOperation.ID) {
         operations.first { $0.id == id }?.requestCancel()
     }

@@ -94,6 +94,9 @@ struct ClassDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+            .userActivity(DiagramHandoffActivity.activityType) {
+                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
+            }
     }
 
     /// On compact width (iPhone), `.inspector` collapses to a sheet-like presentation with no
@@ -219,13 +222,14 @@ struct ClassDiagramView: View {
                 let size = viewModel.effectiveSize(for: node.id)
                 let selected = viewModel.selectedNodeIDs.contains(node.id)
                 let deltaBorder = viewModel.deltaColor(for: node)
+                let deltaBadge = viewModel.deltaBadge(for: node)
                 Group {
                     if hasUserSize {
-                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder)
+                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
                             .frame(width: size.width, height: size.height)
                             .contentShape(Rectangle().inset(by: 6))
                     } else {
-                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder)
+                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
                             .measuredNode(id: node.id)
                     }
                 }

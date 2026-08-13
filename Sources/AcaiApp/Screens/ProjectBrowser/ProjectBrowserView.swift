@@ -15,6 +15,9 @@ public struct ProjectBrowserView: View {
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
+    // Set by `AcaiRootScene`'s `.onContinueUserActivity`. Not `private`: `ProjectBrowserView+Handoff.swift`
+    // needs to read/clear it too.
+    @EnvironmentObject var handoffPresenter: HandoffContinuationPresenter
     #if !os(macOS)
     // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
     // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
@@ -129,6 +132,7 @@ public struct ProjectBrowserView: View {
             QuickOpenSheetHost()
                 .environmentObject(model)
         }
+        .onChange(of: handoffPresenter.pendingTarget) { _, target in resolveHandoffContinuation(target) }
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()

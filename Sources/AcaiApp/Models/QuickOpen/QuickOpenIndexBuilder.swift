@@ -7,6 +7,8 @@ import AcaiCore
 /// `QuickOpenIndex`: building this over every project's every codebase's full artifact is the real
 /// cost (debouncing keystrokes alone doesn't fix re-scanning everything on every search), not
 /// something to redo synchronously on the main actor per query.
+///
+/// Also the data source `SpotlightIndexer` feeds into the on-device Core Spotlight index.
 struct QuickOpenIndexBuilder: Sendable {
     var projects: [Project]
     /// Semantic artifacts keyed by codebase id — the same data `ProjectStore.artifacts` holds.
@@ -17,7 +19,22 @@ struct QuickOpenIndexBuilder: Sendable {
     func entries() -> [QuickOpenEntry] {
         var entries: [QuickOpenEntry] = []
         for project in projects {
+            entries.append(QuickOpenEntry(
+                id: "project:\(project.id)",
+                name: project.title,
+                kind: .project,
+                subtitle: project.subtitle.isEmpty ? "Project" : project.subtitle,
+                projectID: project.id
+            ))
             for codebase in project.codebases {
+                entries.append(QuickOpenEntry(
+                    id: "codebase:\(codebase.id)",
+                    name: codebase.name,
+                    kind: .codebase,
+                    subtitle: project.title,
+                    projectID: project.id,
+                    codebaseID: codebase.id
+                ))
                 entries += codebaseEntries(project: project, codebase: codebase)
             }
             for diagramID in project.generatedDiagramIDs {

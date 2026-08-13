@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiCore
+import AcaiDiff
 import AcaiLibrary
 import AcaiRender
 
@@ -170,6 +171,10 @@ struct ClassDiagramSidebar: View {
                         Section(node.name) {
                             LabeledContent("Kind", value: node.kind.rawValue)
 
+                            if let change = viewModel.typeChange(for: node) {
+                                whatChangedSection(change)
+                            }
+
                             DisclosureGroup("Visibility") {
                                 Toggle("Show Properties", isOn: editor.typeVisibility(
                                     nodeID, override: \.propertyVisibility, default: \.showProperties))
@@ -238,6 +243,48 @@ struct ClassDiagramSidebar: View {
             }
             .listStyle(.inset)
         }
+    }
+
+    @ViewBuilder
+    private func whatChangedSection(_ change: TypeChange) -> some View {
+        DisclosureGroup("What Changed") {
+            if let kindChange = change.kindChange {
+                LabeledContent("Kind") {
+                    Text("\(kindChange.before.rawValue) → \(kindChange.after.rawValue)")
+                        .font(.caption.monospaced())
+                }
+            }
+            if let accessChange = change.accessChange {
+                LabeledContent("Access") {
+                    Text("\(accessChange.before.rawValue) → \(accessChange.after.rawValue)")
+                        .font(.caption.monospaced())
+                }
+            }
+            ForEach(change.changedMembers, id: \.name) { memberChange in
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("~ \(memberChange.name)")
+                        .font(.caption.monospaced())
+                    Text(memberChange.before)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                        .strikethrough()
+                    Text(memberChange.after)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ForEach(change.addedMembers, id: \.self) { member in
+                Text("+ \(member)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.green)
+            }
+            ForEach(change.removedMembers, id: \.self) { member in
+                Text("− \(member)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.red)
+            }
+        }
+        .accessibilityIdentifier("diagram.inspector.whatChanged")
     }
 
     @ViewBuilder

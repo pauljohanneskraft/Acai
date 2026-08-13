@@ -21,4 +21,13 @@ extension DeltaStatus {
     public var deltaHex: String? {
         DeltaEdgeColors.standard.hex(forStatus: rawValue)
     }
+
+    /// Non-color counterpart to `deltaHex`, since status must never be color-only.
+    public var badgeGlyph: String? {
+        DeltaBadgeGlyphs.standard.glyph(forStatus: rawValue)
+    }
+
+    public var badgeAccessibilityLabel: String? {
+        badgeGlyph != nil ? rawValue.capitalized : nil
+    }
 }

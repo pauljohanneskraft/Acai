@@ -49,12 +49,16 @@ public struct ClassImageExporter: Sendable {
             edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)).deltaColor
         }
         let nodeColor: @Sendable (GeneratedDiagramNode) -> Color? = { typeStatus($0.id).deltaColor }
+        let nodeBadge: @Sendable (GeneratedDiagramNode) -> DeltaStatus? = { node in
+            let status = typeStatus(node.id)
+            return status == .unchanged ? nil : status
+        }
         let (configuration, scale, palette, languages) = (configuration, scale, palette, languages)
         return try await MainActor.run {
             try ClassImageRenderer().renderPNG(
                 artifact: union, configuration: configuration, languages: languages,
                 context: RenderingContext(scale: CGFloat(scale), palette: palette),
-                colors: ClassColorOverrides(edge: edgeColor, node: nodeColor))
+                colors: ClassColorOverrides(edge: edgeColor, node: nodeColor, badge: nodeBadge))
         }
     }
 }
