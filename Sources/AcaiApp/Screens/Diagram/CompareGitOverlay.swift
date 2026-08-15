@@ -128,16 +128,23 @@ struct DeltaHostedDiagramView<Content: View>: View {
     }
 
     var body: some View {
-        content($isComparePresented)
-            .id("\(comparisonTaskID)|\(loaded)")
-            .task(id: comparisonTaskID) {
-                await model.ensureComparisonLoaded(for: diagram)
-            }
-            .onChange(of: comparisonTaskID) { _, _ in
-                guard isComparePresented else { return }
-                isComparePresented = false
-                DispatchQueue.main.async { isComparePresented = true }
-            }
+        // `.task(id:)` sits on this `ZStack`, not on `content`, so it's governed only by
+        // `comparisonTaskID` — `content`'s own `.id()` below additionally includes `loaded`, and a
+        // `.task` chained onto that identity would restart every time `loaded` flips, redundantly
+        // re-invoking `ensureComparisonLoaded` right as loading finishes. A single-child `ZStack` is
+        // layout-neutral — nothing to size/align against — so this changes only the task's lifecycle.
+        ZStack {
+            content($isComparePresented)
+                .id("\(comparisonTaskID)|\(loaded)")
+                .onChange(of: comparisonTaskID) { _, _ in
+                    guard isComparePresented else { return }
+                    isComparePresented = false
+                    DispatchQueue.main.async { isComparePresented = true }
+                }
+        }
+        .task(id: comparisonTaskID) {
+            await model.ensureComparisonLoaded(for: diagram)
+        }
     }
 }
 
@@ -337,6 +344,11 @@ struct CompareGitPanel: View {
                 ProgressView().controlSize(.small)
                 Text("Loading \(diagram.comparisonGitRef ?? "")…").font(.caption).foregroundStyle(.secondary)
             }
+            // Distinguishes, for a UI test that times out waiting for "delta.loaded", "the panel is
+            // genuinely still loading" (a real timing issue) from "the panel never reached a
+            // recognizable comparison state at all" (a different bug) — both currently surface
+            // identically as a bare timeout with `comparisonError` unset.
+            .accessibilityIdentifier("delta.loading")
         } else {
             Text("Loaded").font(.caption).foregroundStyle(.secondary)
                 .accessibilityIdentifier("delta.loaded")

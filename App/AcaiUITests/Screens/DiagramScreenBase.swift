@@ -156,6 +156,11 @@ class DiagramScreenBase {
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
     var compareLoadedIndicator: XCUIElement { app.descendants(matching: .any)["delta.loaded"] }
     var compareErrorIndicator: XCUIElement { app.descendants(matching: .any)["delta.error"] }
+    /// Present while the panel is showing "Loading…" — lets a timed-out wait for
+    /// `compareLoadedIndicator` distinguish "genuinely still loading" from "never reached a
+    /// recognizable comparison state at all," which otherwise both look identical (a bare timeout
+    /// with `compareErrorIndicator` also absent).
+    var compareLoadingIndicator: XCUIElement { app.descendants(matching: .any)["delta.loading"] }
 
     /// Taps the floating Compare button to reveal `CompareGitPanel`'s popover/sheet, then waits for
     /// the HEAD row (always present) to appear — the panel's controls aren't in the accessibility

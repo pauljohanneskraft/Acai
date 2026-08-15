@@ -127,18 +127,24 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
         featureBranchDiagram.chooseCompareRef("main")
-        // 60s, not 15s: the "old" side is a real `git` tree extraction + full re-analysis, on top
-        // of a GitHub-backed codebase's own clone directory — confirmed empirically that this can
-        // occasionally take noticeably longer than a quick structural rebuild, the same class of
-        // occasional-slow-update fixed identically in `CompareGitRevisionTests`. 30s wasn't enough on
-        // CI's iPad runner specifically: two separate runs (2026-08-01, 2026-08-11) both timed out at
-        // exactly the 30s mark with no error surfaced (`delta.error` absent — genuinely still
-        // loading, not failed), while the same test passes comfortably on the iPhone runner in the
-        // same run. That runner measured ~35min end-to-end vs. iPhone's ~24min for the same job.
-        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 60)
+        // 90s, not 15s: this exact wait has already needed bumping once before (30s → 60s) for the
+        // identical symptom on CI's iPad runner specifically — two runs (2026-08-01, 2026-08-11)
+        // timed out at exactly 30s with no error, and it recurred at 60s (2026-08-15). Confirmed via
+        // `GitFixtureRepository.makeRemote()` (this test's own fixture) that the repository being
+        // compared is trivially small — 3 files, 3 commits — so the "old" side's real `git` tree
+        // extraction + full re-analysis (`AcaiGit.GitRevisionSnapshot`, on top of a GitHub-backed
+        // codebase's worktree) is not itself doing meaningful work here; the recurring slowness is
+        // consistent with CI's iPad-runner host being measurably slower/more contended than its
+        // iPhone counterpart for the *same* job (confirmed in the same run: ~35min iPad vs. ~24min
+        // iPhone end-to-end), not a data-volume problem. `compareLoadingIndicator` (new) tells a
+        // future failure here whether the panel was genuinely still in its "Loading…" state (this
+        // hypothesis) or never reached a recognizable comparison state at all (a different bug) —
+        // both looked identical before (a bare timeout with no error shown).
+        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 90)
         let errorExists = featureBranchDiagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
-        XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage)")
+        XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage) "
+                      + "(still loading: \(featureBranchDiagram.compareLoadingIndicator.exists))")
         XCTAssertFalse(errorExists, errorMessage)
     }
 }
