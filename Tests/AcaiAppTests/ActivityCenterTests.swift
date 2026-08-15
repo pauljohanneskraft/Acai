@@ -2,10 +2,10 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// Polls a condition instead of sleeping a guessed duration before asserting on it — the two tests
-/// below assert on state set by an unstructured `Task { }`'s body, and nothing bounds how long that
-/// takes to even get scheduled onto the main actor under a loaded CI runner. A fixed sleep races
-/// that scheduling latency and flakes when it loses; polling only fails if the condition truly never
+/// Polls a condition instead of sleeping a guessed duration before asserting on it — the tests below
+/// assert on state set by an unstructured `Task { }`'s body, and nothing bounds how long that takes
+/// to even get scheduled onto the main actor under a loaded CI runner. A fixed sleep races that
+/// scheduling latency and flakes when it loses; polling only fails if the condition truly never
 /// becomes true within `timeout`, which is a real bug rather than a slow runner.
 ///
 /// `@MainActor`, matching `ActivityCenterTests` below: the conditions it polls read `ActivityCenter`
@@ -65,15 +65,17 @@ struct ActivityCenterTests {
         let center = ActivityCenter()
         let codebaseID = UUID()
         let otherCodebaseID = UUID()
+        let gate = AsyncGate()
         let task = Task {
             try await center.run(title: "Indexing…", kind: .reindex, subject: .codebase(codebaseID)) {
-                try await Task.sleep(nanoseconds: 200_000_000)
+                await gate.wait()
                 return 1
             }
         }
         try await Eventually().waitUntil { center.isBusy(.codebase(codebaseID)) }
         #expect(center.isBusy(.codebase(codebaseID)))
         #expect(!center.isBusy(.codebase(otherCodebaseID)))
+        await gate.open()
         _ = try await task.value
         #expect(!center.isBusy(.codebase(codebaseID)))
     }
