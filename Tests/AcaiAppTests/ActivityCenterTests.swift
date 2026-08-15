@@ -24,6 +24,26 @@ private struct Eventually {
     }
 }
 
+/// A one-shot signal an in-flight operation can `wait()` on, so a test can hold an operation open
+/// until it has actually observed the state it's asserting on — a fixed `Task.sleep` races the
+/// scheduling latency `Eventually` above is designed to avoid, and flakes under a loaded parallel
+/// test run for the same reason.
+private actor AsyncGate {
+    private var isOpen = false
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func open() {
+        isOpen = true
+        continuation?.resume()
+        continuation = nil
+    }
+
+    func wait() async {
+        if isOpen { return }
+        await withCheckedContinuation { continuation = $0 }
+    }
+}
+
 /// The generic in-flight-operation registry. Covers the three contracts every call site
 /// (`reindex`, `pull`, `switchGitHubRef`, `addGitHubCodebase`, `RepositoryDetailView.fetchNow`)
 /// relies on: the row disappears once `run` returns, `isBusy(_:)` is true for exactly the right
@@ -74,6 +94,23 @@ struct ActivityCenterTests {
         center.cancel(operation.id)
         let result = try await task.value
         #expect(result == nil)
+        #expect(center.operations.isEmpty)
+    }
+
+    @Test func progressOverloadPublishesReportedValuesOnTheRow() async throws {
+        let center = ActivityCenter()
+        let gate = AsyncGate()
+        let task = Task {
+            try await center.run(title: "Fetching…", kind: .gitFetch) { onProgress in
+                onProgress(0.5)
+                await gate.wait()
+                return 1
+            }
+        }
+        try await Eventually().waitUntil { center.operations.first?.progress == 0.5 }
+        #expect(center.operations.first?.progress == 0.5)
+        await gate.open()
+        _ = try await task.value
         #expect(center.operations.isEmpty)
     }
 

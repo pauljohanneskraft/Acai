@@ -1,5 +1,6 @@
 import Foundation
 import AcaiCore
+import AcaiQuality
 
 /// Rendering configuration for a generated class diagram: which members and relationships
 /// to show, how to group nodes, and access-level / generated-code filtering.
@@ -47,6 +48,29 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// When set, restricts the diagram to a single type and the slice of the
     /// relationship graph around it. `nil` renders the whole codebase.
     public var focus: FocusConfiguration?
+    /// When set, only types this selector matches are shown — the same matching vocabulary
+    /// `AcaiQuality`'s rules use, reused instead of a second, diagram-specific filter. `nil` (the
+    /// default) shows every type, identical to behavior before this existed.
+    public var filter: AcaiQuality.Selector?
 
     public init() {}
+}
+
+extension ClassDiagramConfiguration {
+    /// `true` if every one of `ids` currently shows both its properties and methods (per-type
+    /// override, falling back to the global default) — the direction a bulk "toggle visibility"
+    /// action should flip away from.
+    public func showsMembers(forTypeIDs ids: some Collection<String>) -> Bool {
+        ids.allSatisfy { id in
+            (propertyVisibility[id] ?? showProperties) && (methodVisibility[id] ?? showMethods)
+        }
+    }
+
+    /// Sets a property+method visibility override for every one of `ids`.
+    public mutating func setMemberVisibility(_ show: Bool, forTypeIDs ids: some Collection<String>) {
+        for id in ids {
+            propertyVisibility[id] = show
+            methodVisibility[id] = show
+        }
+    }
 }

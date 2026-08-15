@@ -78,7 +78,7 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            if let artifact = parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
+            if let artifact = try parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -96,7 +96,7 @@ public struct AnalysisService: Sendable {
         _ spec: SourceSpec,
         rootURL: URL,
         includingFile: (String) -> Bool
-    ) -> CodeArtifact? {
+    ) throws -> CodeArtifact? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
@@ -107,7 +107,7 @@ public struct AnalysisService: Sendable {
         let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
         guard !files.isEmpty else { return nil }
 
-        let parsed = parseFiles(files, using: codeParser, rootURL: rootURL)
+        let parsed = try parseFiles(files, using: codeParser, rootURL: rootURL)
         return enrichPerLanguage(parsed, spec: spec, fallback: codeParser.configuration)
     }
 
@@ -135,10 +135,11 @@ public struct AnalysisService: Sendable {
     /// first-seen order so the merged artifact's top-level language is stable.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) -> (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]) {
+    ) throws -> (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]) {
         var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
         for file in files {
+            try Task.checkCancellation()
             let relativePath = file.relativePath(from: rootURL)
             do {
                 let source = try String(contentsOf: file, encoding: .utf8)

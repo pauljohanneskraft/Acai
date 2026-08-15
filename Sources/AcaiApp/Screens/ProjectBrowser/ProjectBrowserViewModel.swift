@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AcaiGit
 import AcaiLibrary
 import AcaiCore
 import AcaiDiagram
@@ -27,12 +28,47 @@ final class ProjectBrowserViewModel: ObservableObject {
         case findings(UUID)
     }
 
+    /// Watches every local-folder codebase's directory and triggers a full reindex when it
+    /// changes — see `FileWatchReindexCoordinator`. `[weak self]`: the coordinator outlives no
+    /// particular `editing` snapshot, so it always resolves a fresh one per reindex.
+    private(set) lazy var fileWatchCoordinator = FileWatchReindexCoordinator { [weak self] id in
+        await self?.editing.reindex(codebaseID: id)
+    }
+
+    /// Checks GitHub-backed codebases' remotes on a schedule and reindexes those whose `HEAD`
+    /// moved — see `ScheduledRefreshCoordinator`. macOS drives it with a periodic sweep
+    /// (`startScheduledRefresh()`); iOS drives it one codebase per `BGAppRefreshTask` wake instead
+    /// (`ScheduledRefreshTaskRunner`, also started from `startScheduledRefresh()`).
+    private(set) lazy var scheduledRefreshCoordinator = ScheduledRefreshCoordinator(store: store) { [weak self] id in
+        await self?.editing.pull(codebaseID: id)
+    }
+    #if os(iOS)
+    private(set) lazy var scheduledRefreshTaskRunner = ScheduledRefreshTaskRunner(
+        coordinator: scheduledRefreshCoordinator)
+    #endif
+    private var didStartScheduledRefresh = false
+
     init(store: ProjectStore = ProjectStore()) {
         self.store = store
+        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
+    }
+
+    /// Starts the scheduled-refresh mechanism appropriate to the current platform. Idempotent —
+    /// safe to call from a view's `.task`, which may run again if the view is recreated.
+    func startScheduledRefresh() {
+        guard !didStartScheduledRefresh else { return }
+        didStartScheduledRefresh = true
+        #if os(macOS)
+        scheduledRefreshCoordinator.startPeriodicSweep(interval: .seconds(15 * 60))
+        #else
+        scheduledRefreshTaskRunner.register()
+        scheduledRefreshTaskRunner.scheduleNext()
+        #endif
     }
 
     func persistChanges() {
         store.save()
+        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
@@ -92,61 +128,30 @@ final class ProjectBrowserViewModel: ObservableObject {
         )
     }
 
-    // MARK: - Delta comparison (git revision)
+    // MARK: - Delta comparison (git revision) — state; behavior in +Comparison.swift
 
-    /// Identity of a cached comparison snapshot: which directory at which git ref.
-    private struct ComparisonKey: Hashable {
-        let directory: String
-        let ref: String
-    }
-
-    /// Cached "old"-side artifacts for delta mode, keyed by codebase directory + git ref. Populated
-    /// asynchronously by `ensureComparisonLoaded`; read through `comparisonArtifact(for:)`.
-    @Published private var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+    /// Cached artifacts for delta mode, **semantic** (un-flattened, matching `semanticArtifact(for:)`
+    /// — flattening happens at read, in `displayArtifact(for:)`), keyed by codebase directory +
+    /// resolved git ref. Populated asynchronously by `ensureComparisonLoaded`.
+    @Published var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+    /// Flattened, display-ready derivation of `comparisonArtifacts`, filled lazily on read — mirrors
+    /// `displayArtifactCache`'s "not `@Published`, pure derivation" reasoning below.
+    var comparisonDisplayCache: [ComparisonKey: CodeArtifact] = [:]
+    /// Resolved merge-base SHAs for pull-request comparisons, populated by `ensureComparisonLoaded`.
+    @Published var resolvedMergeBases: [MergeBaseKey: String] = [:]
 
     /// Most recent comparison load error, surfaced near the picker.
-    @Published private(set) var comparisonError: String?
+    @Published var comparisonError: String?
 
-    /// Sets (or clears, with `nil`) the git revision a diagram is compared against in delta mode,
-    /// dropping saved positions since the rendered element set changes between normal and union.
-    func updateComparisonGitRef(diagramID: UUID, ref: String?) {
-        comparisonError = nil
-        diagrams.mutate(diagramID, clearPositions: true) {
-            $0.comparisonGitRef = (ref?.isEmpty == true) ? nil : ref
-        }
-    }
+    /// Files the user has checked off in a diagram's Compare panel changed-files list, and findings
+    /// they've checked off in its "New findings" list — an in-memory, per-session reading aid, never
+    /// persisted, keyed by diagram id. Reset by `updateComparisonGitRef`/`selectComparisonPullRequest`.
+    @Published var comparisonReviewedFiles: [UUID: Set<String>] = [:]
+    @Published var comparisonReviewedFindings: [UUID: Set<String>] = [:]
 
-    /// Loads the "old" artifact for a diagram's comparison ref via a read-only `git archive`
-    /// snapshot, caching it. A no-op when delta mode is off or the snapshot is already cached.
-    func ensureComparisonLoaded(for diagram: GeneratedDiagram) async {
-        guard let codebase = codebase(for: diagram.codebaseID),
-              let ref = diagram.comparisonGitRef
-        else { return }
-        let directory = codebase.directoryPath
-        let fileFilter = codebase.fileFilter
-        let key = ComparisonKey(directory: directory, ref: ref)
-        guard comparisonArtifacts[key] == nil else { return }
-        let url = URL(fileURLWithPath: directory).standardizedFileURL
-        do {
-            let semantic = try await Task.detached(priority: .userInitiated) {
-                try GitRevisionSnapshot(directory: url, reference: ref).artifact(fileFilter: fileFilter)
-            }.value
-            // Flatten to the same diagram-ready form as the current-side artifact so delta mode
-            // diffs like-for-like (node ids must match the flattened display artifact).
-            comparisonArtifacts[key] = CodebaseAnalyzer().flattenedForDisplay(semantic)
-            comparisonError = nil
-        } catch {
-            comparisonError = error.localizedDescription
-        }
-    }
-
-    /// The cached "old" artifact for a diagram's current comparison ref, if already loaded.
-    func comparisonArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
-        guard let ref = diagram.comparisonGitRef,
-              let directory = codebase(for: diagram.codebaseID)?.directoryPath
-        else { return nil }
-        return comparisonArtifacts[ComparisonKey(directory: directory, ref: ref)]
-    }
+    /// Cached quality/dead-code/health analysis of `comparisonSemanticArtifact(for:)`, for the
+    /// Compare panel's findings delta. Populated asynchronously by `ensureComparisonAnalysisLoaded`.
+    @Published var comparisonAnalyses: [ComparisonKey: CodebaseAnalysis] = [:]
 
     /// Memoised diagram-ready (flattened) form of each codebase's stored semantic artifact, keyed by
     /// codebase and stamped with its `lastIndexed` so a reindex invalidates it. Not `@Published`: it

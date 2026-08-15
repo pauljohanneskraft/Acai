@@ -39,18 +39,20 @@ public struct GitRepository: Sendable {
     /// simultaneously should add a `GitWorktree` instead of calling this repeatedly with different
     /// refs.
     @discardableResult
-    public func sync(ref: String) async throws -> String {
+    public func sync(ref: String, onProgress: (@Sendable (Double) -> Void)? = nil) async throws -> String {
         // `GitClone.sync(into:)` stages a fresh clone in a sibling `.itemReplacementDirectory`
         // before moving it into place — `FileManager` needs `storeDirectory` to already exist to
         // pick an appropriate (same-volume) location for that staging directory, so this can't be
         // left for `GitClone` itself to create only once it's ready to move the finished clone in.
         try FileManager.default.createDirectory(at: storeDirectory, withIntermediateDirectories: true)
-        return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: localPath)
+        return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: localPath, onProgress: onProgress)
     }
 
     /// Incremental fetch of the shared clone's `origin` remote, without switching its own ref.
-    public func fetch() async throws {
-        try await GitCheckout(directory: localPath).fetch()
+    /// Reports transfer progress through `onProgress` and aborts cooperatively if the calling
+    /// `Task` is cancelled — see `GitFetch`.
+    public func fetch(onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
+        try await GitCheckout(directory: localPath).fetch(onProgress: onProgress)
     }
 
     /// Whether this repository's shared clone has been synced/fetched to disk at least once.
@@ -77,6 +79,11 @@ public struct GitRepository: Sendable {
     /// Local and remote branches, then tags — see `GitCheckout.refs()`.
     public func refs() throws -> [GitCheckout.Ref] {
         try GitCheckout(directory: localPath).refs()
+    }
+
+    /// The merge-base commit of `a` and `b` — see `GitCheckout.mergeBase(_:_:)`.
+    public func mergeBase(_ a: String, _ b: String) throws -> String {
+        try GitCheckout(directory: localPath).mergeBase(a, b)
     }
 
     /// Extracts `ref`'s tree (optionally scoped to `subpath`, e.g. one package of a monorepo) into

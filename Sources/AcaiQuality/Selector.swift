@@ -4,7 +4,7 @@ import AcaiCore
 /// optional and AND-combined: a node matches when *all* present facets match it. This is the shared
 /// matching vocabulary for every rule kind. It names no language — `stereotype`/`annotation` are
 /// resolved against the injected `LanguageConfiguration` map, never hardcoded markers.
-public struct Selector: Codable, Equatable, Sendable {
+public struct Selector: Codable, Hashable, Sendable {
     /// Exact module/target name, or a glob (`*`, `?`) over it.
     public var module: String?
     /// Glob (`*`, `?`) over a type's canonical id / qualified name.

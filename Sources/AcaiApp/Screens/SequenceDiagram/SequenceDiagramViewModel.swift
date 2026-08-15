@@ -2,6 +2,8 @@ import Foundation
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiLibrary
+import AcaiQuality
 import AcaiRender
 
 /// Backs the movement-only sequence diagram view. The `SequenceDiagram` is regenerated from the
@@ -47,11 +49,41 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         artifact: CodeArtifact,
         configuration: SequenceDiagramConfiguration
     ) -> SequenceDiagram {
-        SequenceDiagramBuilder(
+        let diagram = SequenceDiagramBuilder(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
             maxDepth: configuration.maxDepth,
             typeMapping: configuration.typeMapping
         ).build(from: artifact)
+        guard let filter = configuration.filter else { return diagram }
+        return filtered(diagram, by: filter, artifact: artifact)
+    }
+
+    /// Drops participants `filter` doesn't match (and messages touching them) — except the trace's
+    /// entry-point participant (always the first one added, per `SequenceDiagramBuilder`), which
+    /// stays regardless: hiding the root of the trace would defeat the diagram's purpose. A free
+    /// function, or a participant whose type can't be resolved back to a declaration, has no type to
+    /// match a selector's module/stereotype/kind/access facets against, so it passes through
+    /// (fails open) rather than silently vanishing.
+    private static func filtered(
+        _ diagram: SequenceDiagram, by filter: AcaiQuality.Selector, artifact: CodeArtifact
+    ) -> SequenceDiagram {
+        let entryID = diagram.participants.first?.id
+        let graphView = GraphView(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
+        let typesByName = Dictionary(
+            artifact.flattened().map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        let keptIDs = Set(diagram.participants.filter { participant in
+            guard participant.id != entryID else { return true }
+            guard let type = typesByName[participant.name], let node = graphView.node(id: type.id) else {
+                return true
+            }
+            return filter.matches(node)
+        }.map(\.id))
+        return SequenceDiagram(
+            title: diagram.title,
+            participants: diagram.participants.filter { keptIDs.contains($0.id) },
+            messages: diagram.messages.filter { keptIDs.contains($0.from) && keptIDs.contains($0.to) },
+            fragments: diagram.fragments
+        )
     }
 
     /// Re-runs the trace for a new configuration, dropping stale offsets and history.
@@ -62,6 +94,14 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         selectedNodeIDs = []
         selectedMessageID = nil
         history.clear()
+    }
+
+    /// Re-derives the diagram for a new filter, keeping the trace's entry point and — unlike
+    /// `applyConfiguration` — the lifeline offsets/undo history, since filtering only removes
+    /// participants/messages, it never repositions a surviving one.
+    func applyFilter(_ filter: AcaiQuality.Selector?) {
+        configuration.filter = filter
+        diagram = Self.generate(artifact: artifact, configuration: configuration)
     }
 
     var isEmpty: Bool { diagram.participants.isEmpty }

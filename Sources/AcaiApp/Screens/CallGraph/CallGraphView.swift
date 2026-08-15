@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 import UniformTypeIdentifiers
 
 /// Generated static call-graph screen. A thin wrapper that owns the scope re-configuration sheet
@@ -36,7 +37,9 @@ struct CallGraphView: View {
         CallGraphCanvasView(
             diagram: diagram,
             artifact: artifact,
+            codebase: codebase,
             scope: scope,
+            filter: diagram.callGraphFilter,
             isComparePresented: isComparePresented,
             comparisonArtifact: comparisonArtifact,
             onApplyScope: { newScope in
@@ -57,6 +60,7 @@ struct CallGraphView: View {
 private struct CallGraphCanvasView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
+    let codebase: Codebase
     let scope: CallGraphScope
     let isComparePresented: Binding<Bool>
     let onApplyScope: (CallGraphScope) -> Void
@@ -87,18 +91,21 @@ private struct CallGraphCanvasView: View {
     }
 
     init(
-        diagram: GeneratedDiagram, artifact: CodeArtifact, scope: CallGraphScope,
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase, scope: CallGraphScope,
+        filter: AcaiQuality.Selector?,
         isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil,
         onApplyScope: @escaping (CallGraphScope) -> Void
     ) {
         self.diagram = diagram
         self.artifact = artifact
+        self.codebase = codebase
         self.scope = scope
         self.isComparePresented = isComparePresented
         self.onApplyScope = onApplyScope
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
             scope: scope,
+            filter: filter,
             restoredPositions: diagram.nodePositions.mapValues(\.cgPoint),
             comparisonArtifact: comparisonArtifact
         ))
@@ -165,6 +172,8 @@ private struct CallGraphCanvasView: View {
             graph: viewModel.graph,
             selectedNodeIDs: viewModel.selectedNodeIDs,
             scope: scope,
+            filter: filterBinding,
+            codebaseID: codebase.id,
             tab: $sidebarTab,
             onSelect: { viewModel.selectNode($0, extending: false) },
             onApplyScope: onApplyScope,
@@ -172,6 +181,16 @@ private struct CallGraphCanvasView: View {
             onExportImage: exportImage,
             showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
             includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+        )
+    }
+
+    private var filterBinding: Binding<AcaiQuality.Selector?> {
+        Binding(
+            get: { viewModel.filter },
+            set: { newValue in
+                model.diagrams.updateCallGraphFilter(diagramID: diagram.id, filter: newValue)
+                viewModel.applyFilter(newValue)
+            }
         )
     }
 

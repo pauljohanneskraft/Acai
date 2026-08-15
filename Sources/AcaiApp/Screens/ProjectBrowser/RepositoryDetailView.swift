@@ -149,9 +149,9 @@ struct RepositoryDetailView: View {
             // the same as a codebase's reindex/fetch does.
             _ = try await model.store.activityCenter.run(
                 title: "Fetching \(remoteURL.lastPathComponent)…", kind: .gitFetch, subject: .repository(remoteURL)
-            ) {
+            ) { onProgress in
                 try await locks.run(for: hub) {
-                    try await hub.fetch()
+                    try await hub.fetch(onProgress: onProgress)
                 }
             }
             await loadDetails()

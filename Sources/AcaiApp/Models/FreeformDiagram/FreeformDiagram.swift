@@ -281,14 +281,24 @@ extension FreeformDiagram.Node {
         var accessLevel: AccessLevel = .internal
         var isStatic: Bool = false
         var isAbstract: Bool = false
-        /// For methods: `"(param: Type, ...)"`.
+        /// Legacy free-text parameter list, e.g. `"param: Type, other: Type"`. Superseded by
+        /// `structuredParameters`; kept only so members saved before structured editing existed
+        /// still render via `displayString`.
         var parameters: String = ""
+        /// A method's parameter list. Empty for a property, and for a method never re-edited
+        /// since before structured editing existed (see `parameters`).
+        var structuredParameters: [Parameter] = []
 
         /// A single-line display string, e.g. `"name: String"` or `"doWork(input: Int): String"`.
         var displayString: String {
             var result = name
-            if !parameters.isEmpty {
-                result += "(\(parameters))"
+            let paramList = structuredParameters.isEmpty
+                ? parameters
+                : structuredParameters
+                    .map { $0.type.isEmpty ? $0.name : "\($0.name): \($0.type)" }
+                    .joined(separator: ", ")
+            if !paramList.isEmpty {
+                result += "(\(paramList))"
             }
             if !type.isEmpty {
                 result += ": \(type)"
@@ -299,38 +309,31 @@ extension FreeformDiagram.Node {
 }
 
 extension FreeformDiagram.Node.Member {
-    /// Parse a property line like `"name: String"` — the inverse of `displayString` for a
-    /// property. Splits on the first colon and trims both sides; a missing type becomes `""`.
-    init(propertyText: String) {
-        let parts = propertyText.split(separator: ":", maxSplits: 1)
-        let name = parts.first.map(String.init)?.trimmingCharacters(in: .whitespaces)
-            ?? propertyText.trimmingCharacters(in: .whitespaces)
-        let type = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : ""
-        self.init(name: name, type: type)
+    private enum CodingKeys: String, CodingKey {
+        case id, name, type, accessLevel, isStatic, isAbstract, parameters, structuredParameters
     }
 
-    /// Parse a method line like `"doWork(input: Int): String"` — the inverse of `displayString`
-    /// for a method. Falls back to a bare `name: Type` (no parens) or just a name.
-    init(methodText: String) {
-        let trimmed = methodText.trimmingCharacters(in: .whitespaces)
-        var name = trimmed
-        var parameters = ""
-        var returnType = ""
-        if let parenStart = trimmed.firstIndex(of: "("),
-           let parenEnd = trimmed.firstIndex(of: ")") {
-            name = String(trimmed[trimmed.startIndex..<parenStart]).trimmingCharacters(in: .whitespaces)
-            parameters = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
-            let afterParen = trimmed[trimmed.index(after: parenEnd)...]
-            if let colonIdx = afterParen.firstIndex(of: ":") {
-                returnType = String(afterParen[afterParen.index(after: colonIdx)...])
-                    .trimmingCharacters(in: .whitespaces)
-            }
-        } else if let colonIdx = trimmed.firstIndex(of: ":") {
-            name = String(trimmed[trimmed.startIndex..<colonIdx]).trimmingCharacters(in: .whitespaces)
-            returnType = String(trimmed[trimmed.index(after: colonIdx)...])
-                .trimmingCharacters(in: .whitespaces)
-        }
-        self.init(name: name, type: returnType, parameters: parameters)
+    /// Members saved before structured parameter editing existed have no `structuredParameters`
+    /// key on disk — default to an empty list rather than failing to decode the whole diagram.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        type = try container.decodeIfPresent(String.self, forKey: .type) ?? ""
+        accessLevel = try container.decodeIfPresent(AccessLevel.self, forKey: .accessLevel) ?? .internal
+        isStatic = try container.decodeIfPresent(Bool.self, forKey: .isStatic) ?? false
+        isAbstract = try container.decodeIfPresent(Bool.self, forKey: .isAbstract) ?? false
+        parameters = try container.decodeIfPresent(String.self, forKey: .parameters) ?? ""
+        structuredParameters = try container.decodeIfPresent([FreeformDiagram.Node.Parameter].self,
+                                                               forKey: .structuredParameters) ?? []
+    }
+}
+
+extension FreeformDiagram.Node {
+    /// One parameter of a method member: a name and a type, e.g. `input: Int`.
+    struct Parameter: Codable, Hashable, Sendable {
+        var name: String
+        var type: String
     }
 }
 

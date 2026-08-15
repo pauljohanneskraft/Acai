@@ -1,4 +1,5 @@
 import AcaiCore
+import AcaiQuality
 
 /// Describes how a sequence diagram is traced from a codebase: the starting method, how deep
 /// to follow calls, and how abstract receiver types resolve to concrete ones. The counterpart
@@ -11,17 +12,23 @@ public struct SequenceDiagramConfiguration: Codable, Hashable, Sendable {
     public var maxDepth: Int
     /// Maps protocol/interface names to the concrete type whose body should be followed.
     public var typeMapping: [String: String]
+    /// When set, only participants this selector matches are shown (their messages drop with
+    /// them); the trace's entry-point participant is always exempt, since hiding the root of the
+    /// trace would defeat the diagram's purpose. `nil` (the default) shows every participant.
+    public var filter: AcaiQuality.Selector?
 
     public init(
         entryTypeName: String,
         entryMethodName: String,
         maxDepth: Int = 5,
-        typeMapping: [String: String] = [:]
+        typeMapping: [String: String] = [:],
+        filter: AcaiQuality.Selector? = nil
     ) {
         self.entryTypeName = entryTypeName
         self.entryMethodName = entryMethodName
         self.maxDepth = maxDepth
         self.typeMapping = typeMapping
+        self.filter = filter
     }
 }
 

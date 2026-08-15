@@ -10,12 +10,14 @@ public struct MemberDisplayItem: Identifiable {
     public let text: String
     public let isStatic: Bool
     public let isAbstract: Bool
+    public let accessLevel: AccessLevel
 
-    public init(id: String, text: String, isStatic: Bool, isAbstract: Bool) {
+    public init(id: String, text: String, isStatic: Bool, isAbstract: Bool, accessLevel: AccessLevel) {
         self.id = id
         self.text = text
         self.isStatic = isStatic
         self.isAbstract = isAbstract
+        self.accessLevel = accessLevel
     }
 }
 
@@ -196,12 +198,7 @@ public struct TypeNodeView: View {
     // MARK: - Member Row
 
     private func memberRow(_ member: MemberDisplayItem) -> some View {
-        Text(member.text)
-            .font(.system(size: 11, design: .monospaced))
-            .if(member.isStatic) { $0.underline() }
-            .if(member.isAbstract) { $0.italic() }
-            .foregroundColor(palette.secondaryInk)
-            .lineLimit(1)
+        MemberRowView(item: member, compact: true)
     }
 
     // MARK: - Divider
@@ -224,16 +221,8 @@ extension TypeNodeView {
             kind: node.kind,
             stereotype: node.stereotype,
             genericParameters: node.genericParameters,
-            properties: node.properties
-                .removingDuplicates(by: \.id)
-                .map { m in
-                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-                },
-            methods: node.methods
-                .removingDuplicates(by: \.id)
-                .map { m in
-                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-                },
+            properties: node.properties.removingDuplicates(by: \.id).map(\.displayItem),
+            methods: node.methods.removingDuplicates(by: \.id).map(\.displayItem),
             enumCases: node.enumCases
                 .removingDuplicates(by: \.id)
                 .map { enumCase in

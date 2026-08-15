@@ -12,13 +12,47 @@ struct FreeformDiagramInspector: View {
     /// shortcuts and let the focused field handle native text undo.
     @Binding var isEditingText: Bool
 
-    @State private var newPropertyText: String = ""
-    @State private var newMethodText: String = ""
+    // Not `private`: `FreeformDiagramInspector+Members.swift` (a same-type extension in another
+    // file) reads/resets these for the inline add-property/add-method rows.
+    @State var newPropertyName: String = ""
+    @State var newPropertyType: String = ""
+    @State var newPropertyAccessLevel: AccessLevel = .internal
+    @State var newPropertyIsStatic = false
+    @State var newPropertyIsAbstract = false
+    @State var newMethodName: String = ""
+    @State var newMethodReturnType: String = ""
+    @State var newMethodParameters: [FreeformDiagram.Node.Parameter] = []
+    @State var newMethodAccessLevel: AccessLevel = .internal
+    @State var newMethodIsStatic = false
+    @State var newMethodIsAbstract = false
+    @State var memberSheet: MemberSheet?
     /// Internal (not private) so the sequence-inspector extension file can focus fields too.
     @FocusState var focusedField: Field?
 
     /// Text fields that, while focused, should own ⌘Z.
     enum Field: Hashable { case name, note, newProperty, newMethod }
+
+    /// Which structured member editor sheet is presented, and for which node/member. Not
+    /// `private`: referenced by `FreeformDiagramInspector+Members.swift` too.
+    enum MemberSheet: Identifiable {
+        case addProperty(nodeID: String)
+        case editProperty(nodeID: String, memberID: UUID)
+        case addMethod(nodeID: String)
+        case editMethod(nodeID: String, memberID: UUID)
+
+        var id: String {
+            switch self {
+            case .addProperty(let nodeID):
+                "addProperty-\(nodeID)"
+            case .editProperty(let nodeID, let memberID):
+                "editProperty-\(nodeID)-\(memberID)"
+            case .addMethod(let nodeID):
+                "addMethod-\(nodeID)"
+            case .editMethod(let nodeID, let memberID):
+                "editMethod-\(nodeID)-\(memberID)"
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -48,30 +82,14 @@ struct FreeformDiagramInspector: View {
             isEditingText = (newValue != nil)
         }
         .onDisappear { isEditingText = false }
+        .sheet(item: $memberSheet) { sheet in
+            memberSheetContent(sheet)
+        }
     }
 
     // MARK: - Node Inspector
 
     private func nodeInspector(node: FreeformDiagram.Node) -> some View {
-        #if os(macOS)
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                nodeNameSection(node: node)
-                nodeKindSection(node: node)
-                nodePositionSection(node: node)
-                nodeContentSections(node: node)
-                nodeRelationshipsSection(node: node)
-                Button(role: .destructive) {
-                    viewModel.removeNode(node.id)
-                } label: {
-                    Label("Delete Node", systemImage: "trash")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding()
-        }
-        #else
         Form {
             nodeNameSection(node: node)
             nodeKindSection(node: node)
@@ -87,7 +105,6 @@ struct FreeformDiagramInspector: View {
                 }
             }
         }
-        #endif
     }
 
     private func nodeNameSection(node: FreeformDiagram.Node) -> some View {
@@ -124,22 +141,78 @@ struct FreeformDiagramInspector: View {
         }
     }
 
+    /// Coalescing keys for runs of consecutive keystrokes in one numeric field, so typing a
+    /// multi-digit value undoes as a single step (mirrors `TypeMemberEditor`'s own text fields).
+    private enum PositionField: Hashable {
+        case x(String), y(String), width(String), height(String)
+    }
+
     private func nodePositionSection(node: FreeformDiagram.Node) -> some View {
         Section {
             HStack {
-                Text("X: \(Int(node.positionX))").font(.caption.monospaced())
-                Spacer()
-                Text("Y: \(Int(node.positionY))").font(.caption.monospaced())
+                TextField("X", value: positionXBinding(node: node), format: .number)
+                    .accessibilityIdentifier("inspector.positionXField")
+                TextField("Y", value: positionYBinding(node: node), format: .number)
+                    .accessibilityIdentifier("inspector.positionYField")
             }
-            let size = viewModel.nodeSize(node.id)
             HStack {
-                Text("W: \(Int(size.width))").font(.caption.monospaced())
-                Spacer()
-                Text("H: \(Int(size.height))").font(.caption.monospaced())
+                TextField("W", value: widthBinding(node: node), format: .number)
+                    .accessibilityIdentifier("inspector.widthField")
+                TextField("H", value: heightBinding(node: node), format: .number)
+                    .accessibilityIdentifier("inspector.heightField")
             }
         } header: {
             Text("Position & Size").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
         }
+    }
+
+    private func positionXBinding(node: FreeformDiagram.Node) -> Binding<Double> {
+        Binding(
+            get: { node.positionX },
+            set: { newValue in
+                viewModel.recordUndo(coalescingKey: PositionField.x(node.id))
+                viewModel.moveNode(node.id, to: CGPoint(x: CGFloat(newValue), y: CGFloat(node.positionY)))
+                viewModel.save()
+            }
+        )
+    }
+
+    private func positionYBinding(node: FreeformDiagram.Node) -> Binding<Double> {
+        Binding(
+            get: { node.positionY },
+            set: { newValue in
+                viewModel.recordUndo(coalescingKey: PositionField.y(node.id))
+                viewModel.moveNode(node.id, to: CGPoint(x: CGFloat(node.positionX), y: CGFloat(newValue)))
+                viewModel.save()
+            }
+        )
+    }
+
+    /// Width/height editing applies to every node kind, not just resizable containers: rendering
+    /// (`FreeformDiagramView+Canvas.swift`'s `nodeContent`) already honors an explicit size for
+    /// any kind once set, so a typed value here works the same way a container drag-resize does.
+    private func widthBinding(node: FreeformDiagram.Node) -> Binding<Double> {
+        Binding(
+            get: { viewModel.nodeSize(node.id).width },
+            set: { newValue in
+                let currentHeight = viewModel.nodeSize(node.id).height
+                viewModel.recordUndo(coalescingKey: PositionField.width(node.id))
+                viewModel.resizeNode(node.id, width: CGFloat(newValue), height: currentHeight)
+                viewModel.save()
+            }
+        )
+    }
+
+    private func heightBinding(node: FreeformDiagram.Node) -> Binding<Double> {
+        Binding(
+            get: { viewModel.nodeSize(node.id).height },
+            set: { newValue in
+                let currentWidth = viewModel.nodeSize(node.id).width
+                viewModel.recordUndo(coalescingKey: PositionField.height(node.id))
+                viewModel.resizeNode(node.id, width: currentWidth, height: CGFloat(newValue))
+                viewModel.save()
+            }
+        )
     }
 
     @ViewBuilder
@@ -260,73 +333,6 @@ struct FreeformDiagramInspector: View {
         }
     }
 
-    // MARK: - Member Sections
-
-    private func propertiesSection(nodeID: String, content: FreeformDiagram.Node.TypeContent) -> some View {
-        Section {
-            ForEach(content.properties) { prop in
-                HStack {
-                    Text(prop.displayString)
-                        .font(.system(size: 12, design: .monospaced))
-                    Spacer()
-                    Button(role: .destructive) {
-                        viewModel.members.removeProperty(from: nodeID, memberID: prop.id)
-                    } label: {
-                        Image(systemName: "minus.circle")
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            HStack {
-                TextField("e.g. name: String", text: $newPropertyText)
-                    .font(.system(size: 12, design: .monospaced))
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focusedField, equals: .newProperty)
-                Button {
-                    viewModel.members.addPropertyFromText(to: nodeID, text: newPropertyText)
-                    newPropertyText = ""
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .disabled(newPropertyText.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        } header: {
-            Text("Properties").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-        }
-    }
-
-    private func methodsSection(nodeID: String, content: FreeformDiagram.Node.TypeContent) -> some View {
-        Section {
-            ForEach(content.methods) { method in
-                HStack {
-                    Text(method.displayString)
-                        .font(.system(size: 12, design: .monospaced))
-                    Spacer()
-                    Button(role: .destructive) {
-                        viewModel.members.removeMethod(from: nodeID, memberID: method.id)
-                    } label: {
-                        Image(systemName: "minus.circle")
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            HStack {
-                TextField("e.g. doWork(input: Int): String", text: $newMethodText)
-                    .font(.system(size: 12, design: .monospaced))
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focusedField, equals: .newMethod)
-                Button {
-                    viewModel.members.addMethodFromText(to: nodeID, text: newMethodText)
-                    newMethodText = ""
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .disabled(newMethodText.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        } header: {
-            Text("Methods").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-        }
-    }
 }
 
 // MARK: - Edge & Multi-Node Inspectors
@@ -339,29 +345,6 @@ extension FreeformDiagramInspector {
         let isTransition = edge.transition != nil
         let deleteTitle = isMessage ? "Delete Message"
             : isTransition ? "Delete Transition" : "Delete Relationship"
-        #if os(macOS)
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if isMessage {
-                    messageSection(edge: edge)
-                } else if isTransition {
-                    transitionSection(edge: edge)
-                } else {
-                    edgePickersSection(edge: edge)
-                }
-                edgeSummary(edge: edge)
-                Button(role: .destructive) {
-                    viewModel.removeEdge(edge.id)
-                    viewModel.selectedEdgeID = nil
-                } label: {
-                    Label(deleteTitle, systemImage: "trash")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding()
-        }
-        #else
         return Form {
             if isMessage {
                 messageSection(edge: edge)
@@ -383,7 +366,6 @@ extension FreeformDiagramInspector {
                 }
             }
         }
-        #endif
     }
 
     private func edgePickersSection(edge: FreeformDiagram.Edge) -> some View {
@@ -439,33 +421,6 @@ extension FreeformDiagramInspector {
 
     @ViewBuilder
     private var multiNodeInspector: some View {
-        #if os(macOS)
-        VStack(spacing: 12) {
-            Text("\(viewModel.selectedNodeIDs.count) nodes selected")
-                .font(.headline)
-
-            List {
-                ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
-                    if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
-                        HStack {
-                            Image(systemName: node.content.kind.systemImage)
-                            Text(node.name)
-                        }
-                    }
-                }
-            }
-            .listStyle(.inset)
-
-            Button(role: .destructive) {
-                viewModel.deleteSelection()
-            } label: {
-                Label("Delete Selected", systemImage: "trash")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .padding()
-        }
-        #else
         Form {
             Section {
                 ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
@@ -485,6 +440,5 @@ extension FreeformDiagramInspector {
                 }
             }
         }
-        #endif
     }
 }

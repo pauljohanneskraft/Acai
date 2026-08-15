@@ -78,6 +78,39 @@ struct GitHubNetworkingTests {
         )
     }
 
+    @Test func pullRequestsRequestsExpectedPathAndDecodesEachField() async throws {
+        nonisolated(unsafe) var capturedRequest: URLRequest?
+        MockURLProtocol.handler = { request in
+            capturedRequest = request
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            let body: [[String: Any]] = [[
+                "number": 42,
+                "title": "Add widget support",
+                "user": ["login": "octocat"],
+                "base": ["ref": "main"],
+                "head": ["ref": "feature/widget"],
+                "state": "open"
+            ]]
+            return (response, try JSONSerialization.data(withJSONObject: body))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("secret-token"))
+        let pullRequests = try await client.pullRequests(owner: "acme", repo: "widgets")
+
+        #expect(pullRequests.count == 1)
+        let pullRequest = try #require(pullRequests.first)
+        #expect(pullRequest.number == 42)
+        #expect(pullRequest.title == "Add widget support")
+        #expect(pullRequest.authorLogin == "octocat")
+        #expect(pullRequest.baseRef == "main")
+        #expect(pullRequest.headRef == "feature/widget")
+        #expect(pullRequest.state == "open")
+        #expect(capturedRequest?.url?.path == "/repos/acme/widgets/pulls")
+        #expect(capturedRequest?.url?.query?.contains("per_page=100") == true)
+        #expect(capturedRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
+    }
+
     @Test func httpErrorStatusSurfacesAsFailure() async throws {
         MockURLProtocol.handler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!

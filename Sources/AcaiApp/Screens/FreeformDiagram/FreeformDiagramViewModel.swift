@@ -256,6 +256,14 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         return true
     }
 
+    // MARK: - Connection Tools (relationships / messages / transitions)
+
+    /// The most recently used connection tool, defaulting to a plain association so the
+    /// quick-add slot always has something sensible to offer before the user has added any edge.
+    /// See `FreeformDiagramViewModel+ConnectionTool.swift` for `ConnectionTool` itself and the
+    /// methods that read/apply it.
+    @Published var lastUsedConnectionTool: ConnectionTool = .relationship(.association)
+
     // MARK: - Selection
 
     /// Drives the shared `selectAll` / marquee defaults on `CanvasInteraction`.

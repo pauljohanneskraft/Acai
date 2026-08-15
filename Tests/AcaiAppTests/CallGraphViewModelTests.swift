@@ -3,6 +3,7 @@ import Testing
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 @testable import AcaiApp
 
 @Suite("Call Graph View Model")
@@ -45,6 +46,28 @@ struct CallGraphViewModelTests {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .type("A"))
         #expect(vm.graph.nodes.first { $0.id == "A.run" }?.inScope == true)
         #expect(vm.graph.nodes.first { $0.id == "B.work" }?.inScope == false)
+    }
+
+    @Test func filterKeepsOnlyMatchingTypesAndDropsTheirEdges() {
+        let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
+        vm.applyFilter(Selector(typeGlob: "A"))
+        #expect(vm.graph.nodes.map(\.id) == ["A.run"])
+        #expect(vm.graph.edges.isEmpty)
+        #expect(vm.filter == Selector(typeGlob: "A"))
+    }
+
+    @Test func filterKeepsPositionOverridesForSurvivingNodes() {
+        let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
+        vm.positionOverrides = ["A.run": CGPoint(x: 5, y: 6)]
+        vm.applyFilter(Selector(typeGlob: "A"))
+        #expect(vm.positionOverrides["A.run"] == CGPoint(x: 5, y: 6))
+    }
+
+    @Test func clearingFilterRestoresEveryNode() {
+        let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase, filter: Selector(typeGlob: "A"))
+        #expect(vm.graph.nodes.map(\.id) == ["A.run"])
+        vm.applyFilter(nil)
+        #expect(vm.graph.nodes.map(\.id) == ["A.run", "B.work"])
     }
 
     @Test func selectionTogglesAndClears() {

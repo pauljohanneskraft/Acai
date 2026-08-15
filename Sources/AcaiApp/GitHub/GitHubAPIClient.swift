@@ -25,6 +25,35 @@ private struct GitHubRefResponse: Decodable {
     var name: String
 }
 
+/// An open pull request, for the Compare panel's PR picker.
+struct GitHubPullRequest: Identifiable, Hashable {
+    var number: Int
+    var title: String
+    var authorLogin: String
+    /// The branch the PR targets (the "old" side of a three-dot comparison, via its merge-base
+    /// with `headRef`).
+    var baseRef: String
+    /// The branch/SHA carrying the PR's own commits (the "new" side).
+    var headRef: String
+    var state: String
+
+    var id: Int { number }
+}
+
+/// The bare shape `GET repos/{owner}/{repo}/pulls` actually returns.
+private struct GitHubPullRequestResponse: Decodable {
+    struct Branch: Decodable {
+        var ref: String
+    }
+
+    var number: Int
+    var title: String
+    var user: GitHubRepositoryOwner
+    var base: Branch
+    var head: Branch
+    var state: String
+}
+
 /// A thin, read-only `URLSession`-based client for the GitHub REST API — every endpoint here is a
 /// `GET`, and none of them can mutate anything on GitHub regardless of what the credential allows.
 struct GitHubAPIClient {
@@ -136,6 +165,19 @@ struct GitHubAPIClient {
             query: [URLQueryItem(name: "per_page", value: "100")],
             as: [GitHubRefResponse].self
         ).map { GitHubRef(name: $0.name, kind: .tag) }
+    }
+
+    /// `GET /repos/{owner}/{repo}/pulls` — open pull requests, for the Compare panel's PR picker.
+    func pullRequests(owner: String, repo: String) async throws -> [GitHubPullRequest] {
+        try await get(
+            "repos/\(owner)/\(repo)/pulls",
+            query: [URLQueryItem(name: "per_page", value: "100")],
+            as: [GitHubPullRequestResponse].self
+        ).map {
+            GitHubPullRequest(
+                number: $0.number, title: $0.title, authorLogin: $0.user.login,
+                baseRef: $0.base.ref, headRef: $0.head.ref, state: $0.state)
+        }
     }
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], as type: T.Type) async throws -> T {

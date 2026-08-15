@@ -15,8 +15,8 @@ struct GitHubRepositoryClone {
     /// Clones/syncs `destination` to `ref`'s current commit, replacing its contents only once the
     /// whole operation succeeds. Returns the ref's head commit SHA.
     @discardableResult
-    func sync(into destination: URL) async throws -> String {
-        try await GitClone(remoteURL: authenticatedRemoteURL, ref: ref).sync(into: destination)
+    func sync(into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil) async throws -> String {
+        try await GitClone(remoteURL: authenticatedRemoteURL, ref: ref).sync(into: destination, onProgress: onProgress)
     }
 
     /// `https://x-access-token:{PAT}@github.com/{owner}/{repo}.git` — GitHub accepts any

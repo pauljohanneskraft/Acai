@@ -39,13 +39,32 @@ struct ActivityOperation: Identifiable, Sendable {
     var title: String
     var kind: Kind
     var subject: Subject
-    /// `nil` = indeterminate (no operation kind reports real byte/object progress yet — that's
-    /// `AcaiGit`'s libgit2 transfer-callback plumbing, a separate, not-yet-built piece of work).
-    /// Kept here so a future operation that *can* report progress has somewhere to put it without
-    /// another model change.
+    /// `nil` = indeterminate. A git fetch/clone reports real `received_objects / total_objects`
+    /// progress here once libgit2 knows the pack's total size (see `GitFetch`, `ActivityCenter`'s
+    /// progress-reporting `run` overload); a reindex's parse pass has no comparable notion of
+    /// total work and stays indeterminate throughout.
     var progress: Double?
     var startedAt: Date = Date()
     /// Requests cancellation of the underlying work. See `ActivityCenter.run`'s doc comment for
     /// exactly what "cancel" does and doesn't guarantee for the operation kinds wired in today.
     var requestCancel: @Sendable () -> Void
+}
+
+/// Throttles how often a noisy progress source (libgit2's transfer-progress callback fires on
+/// every packet) is allowed to reach `ActivityCenter.updateProgress` — without this, a fetch of any
+/// real size would queue thousands of main-actor hops. `@unchecked Sendable`: `NSLock` already
+/// provides the exclusion `advance(to:)` needs across the arbitrary threads libgit2 calls back on.
+final class ActivityProgressGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var lastReported = -1.0
+
+    /// Whether `value` has moved far enough past the last reported value (or reached completion)
+    /// to be worth publishing.
+    func advance(to value: Double) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard value - lastReported >= 0.01 || value >= 1 else { return false }
+        lastReported = value
+        return true
+    }
 }

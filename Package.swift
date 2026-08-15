@@ -22,11 +22,16 @@ optionalTargets.append(
             "AcaiCore",
             "AcaiDiagram",
             "AcaiDiff",
+            // For `GraphView`/`Selector` — the class-diagram Filter section reuses the quality
+            // engine's selector vocabulary instead of a second, diagram-specific one.
+            "AcaiQuality",
         ]
     )
 )
 optionalTargets.append(
-    .testTarget(name: "AcaiRenderTests", dependencies: ["AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram"])
+    .testTarget(
+        name: "AcaiRenderTests",
+        dependencies: ["AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality"])
 )
 cliOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
@@ -243,9 +248,11 @@ let package = Package(
         ),
 
         // MARK: DOT/Graphviz diagram generator
+        // Depends on AcaiQuality for `Selector` (diagram-filter configuration, e.g.
+        // `SequenceDiagramConfiguration.filter`) — still agnostic: `Selector` names no language.
         .target(
             name: "AcaiDiagram",
-            dependencies: ["AcaiCore"]
+            dependencies: ["AcaiCore", "AcaiQuality"]
         ),
 
         // MARK: Semantic architecture diffing — agnostic graph/metric comparison of two artifacts,
@@ -318,7 +325,7 @@ let package = Package(
         .testTarget(name: "AcaiDartTests", dependencies: ["AcaiDart", "AcaiCore"]),
         .testTarget(name: "AcaiPythonTests", dependencies: ["AcaiPython", "AcaiCore"]),
         .testTarget(name: "AcaiCFamilyTests", dependencies: ["AcaiCFamily", "AcaiCore"]),
-        .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore"]),
+        .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality"]),
         .testTarget(name: "AcaiDiffTests", dependencies: ["AcaiDiff", "AcaiCore", "AcaiDiagram"]),
         .testTarget(name: "AcaiQualityTests", dependencies: ["AcaiQuality", "AcaiCore"]),
         .testTarget(name: "AcaiLibraryTests", dependencies: ["AcaiLibrary", "AcaiDiagram"]),

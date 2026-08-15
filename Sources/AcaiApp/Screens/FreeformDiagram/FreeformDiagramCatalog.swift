@@ -125,6 +125,7 @@ struct FreeformDiagramCatalog: View {
             let selected = viewModel.selectionOrder
             if selected.count == 2 {
                 viewModel.addEdge(from: selected[0], to: selected[1], kind: kind)
+                viewModel.lastUsedConnectionTool = .relationship(kind)
             }
         } label: {
             HStack {
@@ -180,8 +181,10 @@ struct FreeformDiagramCatalog: View {
             Button {
                 if twoSelected {
                     viewModel.state.addTransition(from: states[0], to: states[1])
+                    viewModel.lastUsedConnectionTool = .transition
                 } else if oneSelected, let only = states.first {
                     viewModel.state.addTransition(from: only, to: only)
+                    viewModel.lastUsedConnectionTool = .transition
                 }
             } label: {
                 HStack {
@@ -215,8 +218,10 @@ struct FreeformDiagramCatalog: View {
             let lifelines = viewModel.sequence.orderedLifelineSelection
             if isSelf, let only = lifelines.first {
                 viewModel.sequence.addMessage(from: only, to: only, kind: kind)
+                viewModel.lastUsedConnectionTool = .message(kind)
             } else if lifelines.count == 2 {
                 viewModel.sequence.addMessage(from: lifelines[0], to: lifelines[1], kind: kind)
+                viewModel.lastUsedConnectionTool = .message(kind)
             }
         } label: {
             HStack {

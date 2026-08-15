@@ -36,6 +36,12 @@ struct FreeformDiagramView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     #endif
 
+    /// Compact-width (iPhone) bottom-bar mode: `.select` is today's tap-to-select/drag/context-menu
+    /// canvas behavior (unchanged); `.place` shows `FreeformBottomToolbar`'s catalog strip above the
+    /// bar so a node kind can be picked without ever opening the sidebar.
+    enum BottomBarMode: Hashable { case select, place }
+    @State private var bottomBarMode: BottomBarMode = .select
+
     var body: some View {
         canvasArea
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,6 +58,18 @@ struct FreeformDiagramView: View {
             .onChange(of: viewModel.pendingPlacement) { _, newValue in
                 beginningPlacementClosesCompactSidebar(newValue)
             }
+            #if os(iOS)
+            .onChange(of: bottomBarMode) { _, newValue in
+                if newValue == .select {
+                    viewModel.cancelPlacement()
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if horizontalSizeClass == .compact, bottomBarMode == .place {
+                    FreeformBottomToolbar(viewModel: viewModel)
+                }
+            }
+            #endif
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: {})
@@ -85,6 +103,29 @@ struct FreeformDiagramView: View {
                     .help("Toggle the Node Catalog / Inspector sidebar")
                     .accessibilityIdentifier("diagram.sidebarToggleButton")
                 }
+                #if os(iOS)
+                if horizontalSizeClass == .compact {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        Picker("Bottom Bar Mode", selection: $bottomBarMode) {
+                            Label("Select", systemImage: "cursorarrow").tag(BottomBarMode.select)
+                            Label("Place", systemImage: "plus.square.on.square").tag(BottomBarMode.place)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .accessibilityIdentifier("diagram.bottomBar.modePicker")
+
+                        Spacer()
+
+                        Button {
+                            viewModel.applyLastUsedConnectionTool()
+                        } label: {
+                            Label("Quick Add", systemImage: viewModel.lastUsedConnectionToolSystemImage)
+                        }
+                        .disabled(!viewModel.canApplyLastUsedConnectionTool)
+                        .accessibilityIdentifier("diagram.bottomBar.quickAddButton")
+                    }
+                }
+                #endif
             }
             #if os(macOS)
             .navigationTitle(browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram")

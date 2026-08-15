@@ -24,14 +24,19 @@ struct CallGraphInspector: View {
         return (outgoing, incoming)
     }
 
+    @ViewBuilder
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                coverageCard
-                selectionContent
+        if selectedNodeIDs.count > 1 {
+            multiSelectionList
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    coverageCard
+                    selectionContent
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -40,14 +45,12 @@ struct CallGraphInspector: View {
         let counts = callCounts
         if selectedNodeIDs.isEmpty {
             emptyState
-        } else if selectedNodeIDs.count == 1, let node = graph.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
+        } else if let node = graph.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
             VStack(alignment: .leading, spacing: 12) {
                 methodCard(node, out: counts.out[node.id] ?? 0, incoming: counts.in[node.id] ?? 0, highlighted: true)
                 relatedMethodsSection(for: node)
                 legend
             }
-        } else {
-            multiSelectionList
         }
     }
 
@@ -65,25 +68,15 @@ struct CallGraphInspector: View {
 
     private var multiSelectionList: some View {
         let selected = graph.nodes.filter { selectedNodeIDs.contains($0.id) }.sorted { $0.label < $1.label }
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("\(selected.count) Methods Selected")
-                .font(.headline)
-            ForEach(selected, id: \.id) { node in
-                Button {
-                    onSelect(node.id)
-                } label: {
-                    HStack {
-                        Image(systemName: node.isFreeFunction ? "function" : "f.cursive")
-                            .foregroundStyle(.secondary)
-                        Text(node.label)
-                            .font(.system(.caption, design: .monospaced))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
+        return MultiSelectionInspector(
+            items: selected,
+            title: { Text("^[\($0) Method](inflect: true) Selected") },
+            rowIcon: { $0.isFreeFunction ? "function" : "f.cursive" },
+            rowLabel: \.label,
+            rowDetail: nil,
+            onSelect: onSelect,
+            bulkAction: nil
+        )
     }
 
     private var coverageCard: some View {

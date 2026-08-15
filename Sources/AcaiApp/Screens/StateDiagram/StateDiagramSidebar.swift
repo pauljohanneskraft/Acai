@@ -319,15 +319,22 @@ struct StateDiagramSidebar: View {
         .listStyle(.inset)
     }
 
+    private struct SelectableState: Identifiable {
+        let id: String
+        let name: String
+    }
+
     private var multiSelectionList: some View {
-        List {
-            Section("\(viewModel.selectedNodeIDs.count) States Selected") {
-                ForEach(Array(viewModel.selectedNodeIDs).sorted(), id: \.self) { id in
-                    Text(viewModel.stateName(id) ?? id)
-                        .font(.caption.monospaced())
-                }
-            }
-        }
-        .listStyle(.inset)
+        let selected = viewModel.selectedNodeIDs.sorted()
+            .map { SelectableState(id: $0, name: viewModel.stateName($0) ?? $0) }
+        return MultiSelectionInspector(
+            items: selected,
+            title: { Text("^[\($0) State](inflect: true) Selected") },
+            rowIcon: { _ in nil },
+            rowLabel: \.name,
+            rowDetail: nil,
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            bulkAction: nil
+        )
     }
 }

@@ -2,6 +2,7 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 
 struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
@@ -17,7 +18,24 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     /// When set, the diagram renders in delta mode: the working-tree analysis is compared against
     /// its source at this git revision and added/removed/changed elements are colour-coded.
     /// `nil` renders normally.
+    ///
+    /// When `comparisonBaseRef` is also set (a pull-request comparison), this instead names the
+    /// "new" side — the PR's head — and both sides are historical revisions rather than one
+    /// revision vs. the live working tree.
     var comparisonGitRef: String?
+    /// The PR's base branch for a pull-request comparison — `comparisonGitRef`'s "old" side is
+    /// resolved as their merge-base (three-dot semantics), not this branch's own tip. `nil` for the
+    /// two pre-existing modes (one ref vs. the live working tree).
+    var comparisonBaseRef: String?
+    /// Selector filter for a package diagram — kept as a sibling field (rather than folded into
+    /// `content`'s `.packageDiagram` case, which carries no payload today) so already-persisted
+    /// diagrams keep decoding under `Content`'s synthesized `Codable`: adding an associated value
+    /// to an existing no-payload case would change that case's JSON shape. `nil` (the default)
+    /// shows every module, identical to behavior before this existed.
+    var packageDiagramFilter: AcaiQuality.Selector?
+    /// Selector filter for a call graph — same rationale as `packageDiagramFilter`: kept outside
+    /// `content` so `.callGraph(CallGraphScope)`'s existing JSON shape never changes.
+    var callGraphFilter: AcaiQuality.Selector?
     var nodePositions: [String: NodePosition] = [:]
     /// User-overridden node sizes (from resize handles).
     var nodeSizes: [String: NodeSize] = [:]

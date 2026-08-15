@@ -1,6 +1,16 @@
 import Foundation
 import AcaiGit
 
+/// The credential + repository coordinate a sync/clone/fetch operates against — bundled so
+/// `GitHubRepositoryService.sync`/`attachWorktree`/`resyncWorktree` stay under the
+/// function-parameter-count limit once `onProgress` joined them.
+struct GitHubRepositoryTarget: Sendable {
+    var credential: GitHubCredential
+    var owner: String
+    var repo: String
+    var ref: String
+}
+
 /// Where a repository-backed codebase's worktree should live and how its fetch/checkout against
 /// the shared hub clone should be serialized — bundled (like `GitHubRepositoryRef`) to keep
 /// `GitHubRepositoryService.attachWorktree`/`resyncWorktree` under the function-parameter-count
@@ -26,11 +36,13 @@ struct GitWorktreeDestination: Sendable {
 protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
+    /// Open pull requests, for the Compare panel's PR picker.
+    func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest]
     /// The old one-independent-clone-per-codebase sync, kept only for older codebases that were
     /// created against `ProjectStore.githubCloneURL(for:)` and still resolve their files there.
     @discardableResult
     func sync(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
+        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> String
 
     /// Ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
@@ -39,7 +51,8 @@ protocol GitHubRepositoryService: Sendable {
     /// `CodebaseRepositoryReference`.
     @discardableResult
     func attachWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> (headSHA: String, remoteURL: URL)
 
     /// Re-syncs the shared hub clone (a fetch, not a clone) to `ref` and moves an
@@ -47,7 +60,8 @@ protocol GitHubRepositoryService: Sendable {
     /// codebase already has a worktree from `attachWorktree` above.
     @discardableResult
     func resyncWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> String
 }
 
@@ -73,35 +87,44 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
         return try await branches + tags
     }
 
+    func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest] {
+        try await GitHubAPIClient(credential: credential).pullRequests(owner: owner, repo: repo)
+    }
+
     @discardableResult
     func sync(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
+        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> String {
-        try await GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
-            .sync(into: destination)
+        try await GitHubRepositoryClone(
+            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref
+        ).sync(into: destination, onProgress: onProgress)
     }
 
     @discardableResult
     func attachWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (headSHA: String, remoteURL: URL) {
-        let clone = GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
+        let clone = GitHubRepositoryClone(
+            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref)
         let headSHA = try await GitWorktreeSync(
-            transportURL: clone.authenticatedRemoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
-            locks: destination.locks
-        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory)
+            transportURL: clone.authenticatedRemoteURL, ref: target.ref,
+            hubStoreDirectory: destination.hubStoreDirectory, locks: destination.locks
+        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory, onProgress: onProgress)
         return (headSHA, clone.plainRemoteURL)
     }
 
     @discardableResult
     func resyncWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> String {
-        let clone = GitHubRepositoryClone(credential: credential, owner: owner, repo: repo, ref: ref)
+        let clone = GitHubRepositoryClone(
+            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref)
         return try await GitWorktreeSync(
-            transportURL: clone.authenticatedRemoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
-            locks: destination.locks
-        ).resyncWorktree(at: destination.worktreeDirectory)
+            transportURL: clone.authenticatedRemoteURL, ref: target.ref,
+            hubStoreDirectory: destination.hubStoreDirectory, locks: destination.locks
+        ).resyncWorktree(at: destination.worktreeDirectory, onProgress: onProgress)
     }
 }
 
@@ -148,35 +171,46 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
         }
     }
 
+    /// No UI-test fixture stages open pull requests today — an empty list keeps this network-free
+    /// (never falls through to `LiveGitHubRepositoryService`) rather than throwing, so a journey
+    /// that merely opens the Compare panel on a GitHub-backed codebase sees an empty PR picker
+    /// instead of an error.
+    func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest] {
+        []
+    }
+
     @discardableResult
     func sync(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, into destination: URL
+        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> String {
         guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
-        return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: destination)
+        return try await GitClone(remoteURL: remoteURL, ref: target.ref)
+            .sync(into: destination, onProgress: onProgress)
     }
 
     @discardableResult
     func attachWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (headSHA: String, remoteURL: URL) {
         guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
         let headSHA = try await GitWorktreeSync(
-            transportURL: remoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            transportURL: remoteURL, ref: target.ref, hubStoreDirectory: destination.hubStoreDirectory,
             locks: destination.locks
-        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory)
+        ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory, onProgress: onProgress)
         return (headSHA, remoteURL)
     }
 
     @discardableResult
     func resyncWorktree(
-        credential: GitHubCredential, owner: String, repo: String, ref: String, destination: GitWorktreeDestination
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> String {
         guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
         return try await GitWorktreeSync(
-            transportURL: remoteURL, ref: ref, hubStoreDirectory: destination.hubStoreDirectory,
+            transportURL: remoteURL, ref: target.ref, hubStoreDirectory: destination.hubStoreDirectory,
             locks: destination.locks
-        ).resyncWorktree(at: destination.worktreeDirectory)
+        ).resyncWorktree(at: destination.worktreeDirectory, onProgress: onProgress)
     }
 }
 

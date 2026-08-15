@@ -133,6 +133,7 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         .onChange(of: handoffPresenter.pendingTarget) { _, target in resolveHandoffContinuation(target) }
+        .task { model.startScheduledRefresh() }
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()
@@ -267,7 +268,7 @@ public struct ProjectBrowserView: View {
     @ViewBuilder
     private func generatedDiagramDetail(diagramID: UUID) -> some View {
         if let diagram = model.generatedDiagram(for: diagramID),
-           let artifact = model.artifact(for: diagram.codebaseID),
+           let artifact = model.comparisonNewArtifact(for: diagram) ?? model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
             case .sequenceDiagram:

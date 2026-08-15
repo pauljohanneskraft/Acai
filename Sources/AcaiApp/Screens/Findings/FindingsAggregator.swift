@@ -40,7 +40,13 @@ struct FindingsAggregator {
 
     func findings(for codebase: Codebase) -> [Finding] {
         guard let analysis = model.analysis(for: codebase.id) else { return [] }
-        let artifact = model.artifact(for: codebase.id)
+        return findings(for: codebase, analysis: analysis, artifact: model.artifact(for: codebase.id))
+    }
+
+    /// Same mapping as `findings(for:)`, but against an explicit artifact/analysis pair instead of
+    /// the live model's cache — for recomputing findings against a historical revision (the Compare
+    /// panel's findings delta), which never touches `model.analysis(for:)`/`model.artifact(for:)`.
+    func findings(for codebase: Codebase, analysis: CodebaseAnalysis, artifact: CodeArtifact?) -> [Finding] {
         var results: [Finding] = []
         results.append(contentsOf: violationFindings(analysis.quality, codebase: codebase, artifact: artifact))
         results.append(contentsOf: deadCodeFindings(analysis.deadCode, codebase: codebase, artifact: artifact))

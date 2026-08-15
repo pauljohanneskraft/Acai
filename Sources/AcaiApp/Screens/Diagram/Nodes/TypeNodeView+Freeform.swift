@@ -20,7 +20,8 @@ extension TypeNodeView {
                     id: member.id.uuidString,
                     text: Self.formatFreeformMember(member, isMethod: false),
                     isStatic: member.isStatic,
-                    isAbstract: member.isAbstract
+                    isAbstract: member.isAbstract,
+                    accessLevel: member.accessLevel
                 )
             },
             methods: content.methods.map { member in
@@ -28,7 +29,8 @@ extension TypeNodeView {
                     id: member.id.uuidString,
                     text: Self.formatFreeformMember(member, isMethod: true),
                     isStatic: member.isStatic,
-                    isAbstract: member.isAbstract
+                    isAbstract: member.isAbstract,
+                    accessLevel: member.accessLevel
                 )
             },
             enumCases: content.enumCases.map { enumCase in

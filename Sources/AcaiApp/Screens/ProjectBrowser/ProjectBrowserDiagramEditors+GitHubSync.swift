@@ -33,10 +33,11 @@ extension ProjectCodebaseEditor {
         do {
             let cloneResult = try await activityCenter.run(
                 title: "Cloning \(target.owner)/\(target.repo)…", kind: .gitClone, subject: .codebase(codebaseID)
-            ) {
-                try await repositoryService.attachWorktree(
-                    credential: credential, owner: target.owner, repo: target.repo, ref: target.ref,
-                    destination: destination)
+            ) { onProgress in
+                let repositoryTarget = GitHubRepositoryTarget(
+                    credential: credential, owner: target.owner, repo: target.repo, ref: target.ref)
+                return try await repositoryService.attachWorktree(
+                    repositoryTarget, destination: destination, onProgress: onProgress)
             }
             // Cancelled before finishing: don't add a `Codebase` for a clone we're pretending never
             // happened. `attachWorktree` itself doesn't observe cancellation (see `ActivityCenter
@@ -79,18 +80,17 @@ extension ProjectCodebaseEditor {
         do {
             let fetchResult = try await store.activityCenter.run(
                 title: "Fetching \(source.owner)/\(source.repo)…", kind: .gitFetch, subject: .codebase(codebaseID)
-            ) { () throws -> String in
+            ) { onProgress throws -> String in
+                let target = GitHubRepositoryTarget(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref)
                 if usesWorktree {
                     // Fetch the shared hub clone and move this codebase's own worktree along with it.
                     return try await repositoryService.resyncWorktree(
-                        credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
-                        destination: worktreeDestination)
+                        target, destination: worktreeDestination, onProgress: onProgress)
                 } else {
                     // A codebase created before worktree support existed: still an independent
                     // clone under `githubClonesDir`.
-                    return try await repositoryService.sync(
-                        credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref,
-                        into: legacyCloneURL)
+                    return try await repositoryService.sync(target, into: legacyCloneURL, onProgress: onProgress)
                 }
             }
             // Cancelled before finishing: don't stamp a new `lastSyncedCommitSHA`/reindex against a
@@ -128,15 +128,14 @@ extension ProjectCodebaseEditor {
             let switchResult = try await store.activityCenter.run(
                 title: "Switching \(source.owner)/\(source.repo) to \(ref)…",
                 kind: .gitFetch, subject: .codebase(codebaseID)
-            ) { () throws -> String in
+            ) { onProgress throws -> String in
+                let target = GitHubRepositoryTarget(
+                    credential: account.credential, owner: source.owner, repo: source.repo, ref: ref)
                 if usesWorktree {
                     return try await repositoryService.resyncWorktree(
-                        credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
-                        destination: worktreeDestination)
+                        target, destination: worktreeDestination, onProgress: onProgress)
                 } else {
-                    return try await repositoryService.sync(
-                        credential: account.credential, owner: source.owner, repo: source.repo, ref: ref,
-                        into: legacyCloneURL)
+                    return try await repositoryService.sync(target, into: legacyCloneURL, onProgress: onProgress)
                 }
             }
             // Cancelled before finishing: leave the codebase on its previous, still-valid ref rather
@@ -175,22 +174,27 @@ extension ProjectCodebaseEditor {
             // never captured mutably across the concurrency boundary.
             //
             // Registered with `activityCenter` so this shows up in the Activity indicator and flips
-            // the codebase row's checkmark to a spinner for as long as it runs. Cancelling it here
-            // only discards the result below (`reindexResult == nil`) — `CodebaseAnalyzer`'s parse
-            // pass doesn't poll `Task.isCancelled` internally (verified by inspection, not assumed),
-            // so the detached parse keeps running to completion in the background even after Cancel
-            // is tapped. Real mid-flight interruption is a separate, not-yet-built piece of work.
+            // the codebase row's checkmark to a spinner for as long as it runs. `Task.detached`
+            // doesn't inherit cancellation from its parent, so the detached parse is explicitly
+            // cancelled via `withTaskCancellationHandler` when the wrapping `run` task is cancelled
+            // — `AnalysisService.parseFiles` then observes it between files (`Task.checkCancellation`)
+            // and the parse actually stops, rather than merely having its result discarded.
             let reindexResult = try await store.activityCenter.run(
                 title: "Indexing \(codebase.name)…", kind: .reindex, subject: .codebase(codebaseID)
             ) {
-                try await Task.detached(priority: .userInitiated) {
+                let detached = Task.detached(priority: .userInitiated) {
                     var refreshedBookmark: SecurityScopedBookmark?
                     let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
                         onRefresh: { refreshedBookmark = $0 },
                         { url in try CodebaseAnalyzer().enrichedArtifact(at: url, fileFilter: fileFilter) }
                     )
                     return (artifact, refreshedBookmark)
-                }.value
+                }
+                return try await withTaskCancellationHandler {
+                    try await detached.value
+                } onCancel: {
+                    detached.cancel()
+                }
             }
             // Cancelled before finishing: don't apply a result we discarded.
             guard let (newArtifact, refreshedBookmark) = reindexResult else { return }

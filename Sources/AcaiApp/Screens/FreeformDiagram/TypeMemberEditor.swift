@@ -1,4 +1,20 @@
 import Foundation
+import AcaiCore
+
+extension FreeformDiagram.Node.Member {
+    /// A copy with the name/type trimmed and the legacy `parameters` string cleared (structured
+    /// editing always writes `structuredParameters` instead), or `nil` if the trimmed name is
+    /// blank. Used by `TypeMemberEditor` to commit an add/edit draft.
+    fileprivate func trimmedForCommit() -> Self? {
+        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmedName.isEmpty else { return nil }
+        var result = self
+        result.name = trimmedName
+        result.type = type.trimmingCharacters(in: .whitespaces)
+        result.parameters = ""
+        return result
+    }
+}
 
 /// Type-member editing for the freeform diagram: adding/removing properties and methods on `.type`
 /// nodes, plus the inline text editing (node name, note text) that the inspector drives keystroke by
@@ -17,18 +33,40 @@ final class TypeMemberEditor {
         case note(String)
     }
 
-    /// Parse a single string like "name: String" into a property and add it.
-    func addPropertyFromText(to nodeID: String, text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        context.updateTypeContent(nodeID) { $0.properties.append(.init(propertyText: trimmed)) }
+    /// Appends a property built from `draft`'s name/type/access/static/abstract fields (its `id`
+    /// and legacy `parameters` string are ignored). No-op if the name is blank.
+    func addProperty(to nodeID: String, draft: FreeformDiagram.Node.Member) {
+        guard let trimmed = draft.trimmedForCommit() else { return }
+        context.updateTypeContent(nodeID) { content in
+            content.properties.append(trimmed)
+        }
     }
 
-    /// Parse a single string like "doWork(input: Int): String" into a method and add it.
-    func addMethodFromText(to nodeID: String, text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        context.updateTypeContent(nodeID) { $0.methods.append(.init(methodText: trimmed)) }
+    func updateProperty(in nodeID: String, memberID: UUID, draft: FreeformDiagram.Node.Member) {
+        guard let trimmed = draft.trimmedForCommit() else { return }
+        context.updateTypeContent(nodeID) { content in
+            guard let idx = content.properties.firstIndex(where: { $0.id == memberID }) else { return }
+            content.properties[idx] = trimmed
+            content.properties[idx].id = memberID
+        }
+    }
+
+    /// Appends a method built from `draft`'s name/return type/parameters/access/static/abstract
+    /// fields (its `id` is ignored). No-op if the name is blank.
+    func addMethod(to nodeID: String, draft: FreeformDiagram.Node.Member) {
+        guard let trimmed = draft.trimmedForCommit() else { return }
+        context.updateTypeContent(nodeID) { content in
+            content.methods.append(trimmed)
+        }
+    }
+
+    func updateMethod(in nodeID: String, memberID: UUID, draft: FreeformDiagram.Node.Member) {
+        guard let trimmed = draft.trimmedForCommit() else { return }
+        context.updateTypeContent(nodeID) { content in
+            guard let idx = content.methods.firstIndex(where: { $0.id == memberID }) else { return }
+            content.methods[idx] = trimmed
+            content.methods[idx].id = memberID
+        }
     }
 
     func removeProperty(from nodeID: String, memberID: UUID) {

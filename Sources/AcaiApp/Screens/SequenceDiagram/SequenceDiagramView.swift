@@ -104,11 +104,15 @@ struct SequenceDiagramView: View {
     /// Save as Freeform/Export Image move here from the toolbar.
     private var sidebar: SequenceDiagramSidebar {
         SequenceDiagramSidebar(
-            viewModel: viewModel, artifact: artifact, tab: $sidebarTab,
+            viewModel: viewModel, artifact: artifact, codebaseID: codebase.id, tab: $sidebarTab,
             onApply: { config in
                 viewModel.applyConfiguration(config)
                 model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
                 centerDiagram()
+            },
+            onApplyFilter: { filter in
+                viewModel.applyFilter(filter)
+                model.diagrams.updateSequenceFilter(diagramID: diagram.id, filter: filter)
             },
             onSaveAsFreeform: {
                 // Pass every participant's live x (not just dragged overrides) so the freeform

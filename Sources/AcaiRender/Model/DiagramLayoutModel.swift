@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import AcaiCore
+import AcaiQuality
 
 /// Pure, view-independent core of a generated class diagram: it turns a `CodeArtifact`
 /// into laid-out nodes and edges. Shared by the macOS app's interactive view model and
@@ -56,8 +57,18 @@ public struct DiagramLayoutModel: Sendable {
             resolved.relationships = subset.relationships
         }
 
+        // Built only when a selector filter is configured — a `GraphView` computes the full metrics
+        // suite, which would otherwise become the cost of every unrelated Settings toggle (the Form
+        // live-binds and rebuilds this model on every edit).
+        let filterGraph = configuration.filter.map { _ in GraphView(artifact: resolved, languageResolver: languages) }
         let visibleTypes = resolved.types.filter {
             GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
+        }.filter { type in
+            guard let selector = configuration.filter else { return true }
+            // A type absent from the filter graph (should not happen — both are derived from the
+            // same `resolved` set) fails open rather than silently vanishing from the diagram.
+            guard let node = filterGraph?.node(id: type.id) else { return true }
+            return selector.matches(node)
         }
         // Distinct types can share an id when a language doesn't qualify by module (e.g. two
         // top-level Python classes of the same name in different files); node ids must be unique

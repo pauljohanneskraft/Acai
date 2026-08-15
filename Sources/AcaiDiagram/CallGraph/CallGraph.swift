@@ -14,7 +14,7 @@ public struct CallGraph: Codable, Hashable, Sendable {
 
     /// One method (or free function) participating in the call graph (as a caller, a callee, or
     /// both).
-    public struct Node: Codable, Hashable, Sendable {
+    public struct Node: Codable, Hashable, Sendable, Identifiable {
         /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions.
         public var id: String
         /// The owning type's simple name; empty for a free function.

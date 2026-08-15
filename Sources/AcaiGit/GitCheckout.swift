@@ -1,5 +1,6 @@
 import Foundation
 import SwiftGitX
+import libgit2
 
 /// Operates on an already-cloned repository directory: fetch, list refs, switch to a ref, read
 /// HEAD. Cross-platform replacement for shelling out to `/usr/bin/git`.
@@ -38,13 +39,11 @@ public struct GitCheckout {
         self.repository = repository
     }
 
-    /// Incremental fetch of the `origin` remote — not a full re-download.
-    public func fetch() async throws {
-        do {
-            try await repository.fetch()
-        } catch {
-            throw error.asFailure("Couldn't fetch the repository")
-        }
+    /// Incremental fetch of the `origin` remote — not a full re-download. Reports transfer
+    /// progress through `onProgress` and aborts cooperatively if the calling `Task` is cancelled —
+    /// see `GitFetch`.
+    public func fetch(onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
+        try await GitFetch(repositoryDirectory: directory).run(onProgress: onProgress)
     }
 
     /// A branch or tag name paired with its kind.
@@ -126,6 +125,76 @@ public struct GitCheckout {
                 throw error
             }
         }
+    }
+
+    /// The most recent commit both `a` and `b` share as an ancestor — three-dot diff semantics (e.g.
+    /// a pull request's base branch vs. its head, not the base branch's own tip). `SwiftGitX`
+    /// exposes no merge-base primitive, so this opens its own raw libgit2 handle for `directory`'s
+    /// repository root and calls `git_merge_base` directly, following `GitWorktree`'s precedent for
+    /// bypassing `SwiftGitX.Repository` (and pairing `SwiftGitXRuntime.initialize()`/`.shutdown()`
+    /// the same way, since that init/shutdown pair only happens as a side effect of a live
+    /// `SwiftGitX.Repository`, which this deliberately never opens).
+    public func mergeBase(_ a: String, _ b: String) throws -> String {
+        guard let root = GitRepositoryRoot(directory: directory).find() else {
+            throw Failure.notAGitRepository(directory.path)
+        }
+
+        func message(_ context: String) -> String {
+            if let error = git_error_last(), let text = error.pointee.message {
+                return "\(context): \(String(cString: text))"
+            }
+            return context
+        }
+
+        do {
+            try SwiftGitXRuntime.initialize()
+        } catch {
+            throw GitFailure(message: "Couldn't initialize libgit2: \(error.message)")
+        }
+        defer { _ = try? SwiftGitXRuntime.shutdown() }
+
+        var repositoryPointer: OpaquePointer?
+        guard git_repository_open(&repositoryPointer, root.path) == 0, let repositoryPointer else {
+            throw GitFailure(message: message("Couldn't open \"\(root.path)\""))
+        }
+        defer { git_repository_free(repositoryPointer) }
+
+        // `git_revparse_single`'s own DWIM search (branch/tag/SHA/`HEAD~N`) never tries an
+        // `origin/`-prefixed name, so a branch that only exists as a remote-tracking ref in a clone
+        // or linked worktree (e.g. a GitHub-backed codebase's non-default branch) wouldn't resolve
+        // by its plain name alone. Try the remote-tracking form first, exactly the priority
+        // `GitReference.resolveBase` already established for every other revision lookup in this
+        // module, then fall back to `revision` as given (DWIM covers a local branch, tag, SHA, or
+        // `HEAD`/`HEAD~N` from there).
+        func resolvedOID(for revision: String) throws -> git_oid {
+            if let oid = revparsedOID(for: "origin/\(revision)", in: repositoryPointer) {
+                return oid
+            }
+            guard let oid = revparsedOID(for: revision, in: repositoryPointer) else {
+                throw GitFailure(message: message("Couldn't resolve \"\(revision)\""))
+            }
+            return oid
+        }
+
+        func revparsedOID(for revision: String, in repositoryPointer: OpaquePointer) -> git_oid? {
+            var object: OpaquePointer?
+            guard git_revparse_single(&object, repositoryPointer, revision) == 0, let object else { return nil }
+            defer { git_object_free(object) }
+            return git_object_id(object)?.pointee
+        }
+
+        var oidA = try resolvedOID(for: a)
+        var oidB = try resolvedOID(for: b)
+
+        var result = git_oid()
+        guard git_merge_base(&result, repositoryPointer, &oidA, &oidB) == 0 else {
+            throw GitFailure(message: message("Couldn't find a merge base for \"\(a)\" and \"\(b)\""))
+        }
+
+        guard let hex = git_oid_tostr_s(&result) else {
+            throw GitFailure(message: "Couldn't format the merge-base commit id")
+        }
+        return String(cString: hex)
     }
 
     /// Switches to `ref`. Prefers a branch/tag switch (attaches HEAD so a later `fetch` still knows

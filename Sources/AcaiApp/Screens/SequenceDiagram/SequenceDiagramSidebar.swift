@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 import AcaiRender
 
 /// Sidebar tab choices for the sequence diagram, matching Class Diagram's closed vocabulary.
@@ -19,10 +20,14 @@ enum SequenceDiagramSidebarTab {
 struct SequenceDiagramSidebar: View {
     @ObservedObject var viewModel: SequenceDiagramViewModel
     let artifact: CodeArtifact
+    let codebaseID: UUID
     @Binding var tab: SequenceDiagramSidebarTab
     let onApply: (SequenceDiagramConfiguration) -> Void
+    let onApplyFilter: (AcaiQuality.Selector?) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
+
+    @EnvironmentObject private var model: ProjectBrowserViewModel
 
     @State private var draftEntryTypeName: String
     @State private var draftEntryMethodName: String
@@ -43,15 +48,19 @@ struct SequenceDiagramSidebar: View {
     init(
         viewModel: SequenceDiagramViewModel,
         artifact: CodeArtifact,
+        codebaseID: UUID,
         tab: Binding<SequenceDiagramSidebarTab>,
         onApply: @escaping (SequenceDiagramConfiguration) -> Void,
+        onApplyFilter: @escaping (AcaiQuality.Selector?) -> Void,
         onSaveAsFreeform: @escaping () -> Void,
         onExportImage: @escaping () -> Void
     ) {
         self.viewModel = viewModel
         self.artifact = artifact
+        self.codebaseID = codebaseID
         self._tab = tab
         self.onApply = onApply
+        self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
         _draftEntryTypeName = State(initialValue: viewModel.configuration.entryTypeName)
@@ -165,6 +174,13 @@ struct SequenceDiagramSidebar: View {
                 }
             }
 
+            DiagramFilterSection(
+                filter: filterBinding,
+                codebaseID: codebaseID,
+                projectID: model.projectID(for: codebaseID) ?? codebaseID,
+                artifact: artifact
+            )
+
             Section("Export") {
                 Button(action: onSaveAsFreeform) {
                     Label("Save as Freeform", systemImage: "document.on.document")
@@ -211,6 +227,13 @@ struct SequenceDiagramSidebar: View {
         }
     }
 
+    private var filterBinding: Binding<AcaiQuality.Selector?> {
+        Binding(
+            get: { viewModel.configuration.filter },
+            set: { onApplyFilter($0) }
+        )
+    }
+
     private func applyResolvedMapping() {
         var mapping: [String: String] = [:]
         for row in pendingMappingRows {
@@ -248,91 +271,4 @@ struct SequenceDiagramSidebar: View {
             .sorted()
     }
 
-    // MARK: - Selection Inspector
-
-    @ViewBuilder
-    private var selectionInspector: some View {
-        if let messageID = viewModel.selectedMessageID, viewModel.orderedMessages.indices.contains(messageID) {
-            messageDetail(viewModel.orderedMessages[messageID])
-        } else if let participantID = viewModel.selectedNodeIDs.first, viewModel.selectedNodeIDs.count == 1 {
-            participantDetail(participantID)
-        } else if viewModel.selectedNodeIDs.count > 1 {
-            multiSelectionList
-        } else {
-            emptyInspectorState
-        }
-    }
-
-    private var emptyInspectorState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "cursorarrow.click")
-                .font(.title)
-                .foregroundStyle(.secondary)
-            Text("Select a lifeline or message to inspect")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func participantDetail(_ participantID: String) -> some View {
-        let name = viewModel.participantName(participantID) ?? participantID
-        let sent = viewModel.orderedMessages.filter { $0.from == participantID }
-        let received = viewModel.orderedMessages.filter { $0.to == participantID && $0.from != participantID }
-        return List {
-            Section(name) {
-                if !sent.isEmpty {
-                    DisclosureGroup("Sends (\(sent.count))") {
-                        ForEach(Array(sent.enumerated()), id: \.offset) { _, message in
-                            messageRow(message)
-                        }
-                    }
-                }
-                if !received.isEmpty {
-                    DisclosureGroup("Receives (\(received.count))") {
-                        ForEach(Array(received.enumerated()), id: \.offset) { _, message in
-                            messageRow(message)
-                        }
-                    }
-                }
-            }
-        }
-        .listStyle(.inset)
-    }
-
-    private func messageRow(_ message: SequenceDiagram.Message) -> some View {
-        HStack {
-            Text(message.label ?? message.kind.rawValue)
-                .font(.caption.monospaced())
-            Spacer()
-            Text("\(viewModel.participantName(message.from) ?? message.from) → "
-                 + "\(viewModel.participantName(message.to) ?? message.to)")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func messageDetail(_ message: SequenceDiagram.Message) -> some View {
-        List {
-            Section(message.label ?? "Message") {
-                LabeledContent("From", value: viewModel.participantName(message.from) ?? message.from)
-                LabeledContent("To", value: viewModel.participantName(message.to) ?? message.to)
-                LabeledContent("Kind", value: message.kind.rawValue)
-                LabeledContent("Order", value: "\(message.order)")
-            }
-        }
-        .listStyle(.inset)
-    }
-
-    private var multiSelectionList: some View {
-        List {
-            Section("\(viewModel.selectedNodeIDs.count) Lifelines Selected") {
-                ForEach(Array(viewModel.selectedNodeIDs).sorted(), id: \.self) { id in
-                    Text(viewModel.participantName(id) ?? id)
-                        .font(.caption.monospaced())
-                }
-            }
-        }
-        .listStyle(.inset)
-    }
 }

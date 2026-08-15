@@ -9,7 +9,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
     // MARK: - Node
 
     /// One build module, annotated with its coupling metrics.
-    public struct Node: Codable, Hashable, Sendable {
+    public struct Node: Codable, Hashable, Sendable, Identifiable {
         public var id: String
         public var name: String
         public var typeCount: Int

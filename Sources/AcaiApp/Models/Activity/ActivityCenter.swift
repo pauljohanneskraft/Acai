@@ -7,16 +7,11 @@ import Foundation
 /// instance lives on `ProjectStore` (`ProjectStore.activityCenter`), matching how
 /// `GitRepositoryLocks` is already a single shared instance for a store's lifetime.
 ///
-/// **Cancellation, stated precisely:** `run` always gives its `operation` a real `Task` to
-/// cooperate with, and cancelling here reliably stops **the result from being applied** — the
-/// caller never sees a value back, so it cannot persist stale state or report a spurious error.
-/// What it does **not** do, verified by inspection rather than assumed: neither `CodebaseAnalyzer`'s
-/// synchronous parse pass nor `AcaiGit`'s libgit2 calls poll `Task.isCancelled` internally, so
-/// cancelling a reindex or a git fetch/clone does not interrupt CPU/network work already in flight —
-/// it keeps running to completion in the background, just discarded. Wiring true mid-flight
-/// interruption into those two call chains is separate, not-yet-built work that depends on this
-/// type existing first; this type's job is to make every operation visible and to make "cancel" at
-/// least mean "don't act on this anymore," never a button that lies about what it does.
+/// **Cancellation:** `run` always gives its `operation` a real `Task` to cooperate with.
+/// `AnalysisService.parseFiles` polls `Task.isCancelled` between files, and `GitFetch` (reached
+/// through `GitRepository.fetch`/`GitCheckout.fetch`/`GitClone.sync`) checks cancellation inside
+/// libgit2's own transfer-progress callback and aborts the transfer in flight — so cancelling here
+/// stops the work itself, not just whether its result gets applied.
 @MainActor
 final class ActivityCenter: ObservableObject {
     @Published private(set) var operations: [ActivityOperation] = []
@@ -54,8 +49,28 @@ final class ActivityCenter: ObservableObject {
         priority: TaskPriority = .userInitiated,
         _ operation: @escaping @Sendable () async throws -> T
     ) async throws -> T? {
-        let task = Task<T, any Error>(priority: priority) { try await operation() }
+        try await run(title: title, kind: kind, subject: subject, priority: priority) { _ in try await operation() }
+    }
+
+    /// Same as `run(title:kind:subject:priority:_:)`, but hands `operation` a progress sink it can
+    /// call (from any thread — e.g. libgit2's transfer-progress callback) to drive the row's
+    /// determinate progress bar instead of an indeterminate spinner. Reports are throttled via
+    /// `ActivityProgressGate` so a callback firing on every packet doesn't queue a flood of
+    /// main-actor hops.
+    func run<T: Sendable>(
+        title: String,
+        kind: ActivityOperation.Kind,
+        subject: ActivityOperation.Subject = .none,
+        priority: TaskPriority = .userInitiated,
+        _ operation: @escaping @Sendable (@escaping @Sendable (Double) -> Void) async throws -> T
+    ) async throws -> T? {
         let id = UUID()
+        let gate = ActivityProgressGate()
+        let onProgress: @Sendable (Double) -> Void = { [weak self] progress in
+            guard gate.advance(to: progress) else { return }
+            Task { @MainActor in self?.updateProgress(id, progress: progress) }
+        }
+        let task = Task<T, any Error>(priority: priority) { try await operation(onProgress) }
         operations.append(ActivityOperation(
             id: id, title: title, kind: kind, subject: subject, progress: nil,
             requestCancel: { task.cancel() }

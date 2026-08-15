@@ -91,6 +91,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
 public struct DiagramMember: Identifiable, Sendable {
     public let id: String
     public let accessSymbol: String
+    public let accessLevel: AccessLevel
     public let name: String
     public let displayText: String
     public let isStatic: Bool
@@ -99,6 +100,7 @@ public struct DiagramMember: Identifiable, Sendable {
     public init(from member: Member, isMethod: Bool, collectionTypeNames: Set<String> = []) {
         self.id = "\(member.name)_\(member.kind.rawValue)_\(member.type?.name ?? "")"
         self.accessSymbol = member.umlAccessSymbol
+        self.accessLevel = member.accessLevel
         self.name = member.name
         self.isStatic = member.modifiers.contains(.static) || member.modifiers.contains(.class)
         self.isAbstract = member.modifiers.contains(.abstract)
@@ -106,6 +108,13 @@ public struct DiagramMember: Identifiable, Sendable {
         self.displayText = isMethod
             ? member.umlMethodLine(collectionTypeNames: collectionTypeNames)
             : member.umlPropertyLine(collectionTypeNames: collectionTypeNames)
+    }
+}
+
+extension DiagramMember {
+    public var displayItem: MemberDisplayItem {
+        MemberDisplayItem(
+            id: id, text: displayText, isStatic: isStatic, isAbstract: isAbstract, accessLevel: accessLevel)
     }
 }
 

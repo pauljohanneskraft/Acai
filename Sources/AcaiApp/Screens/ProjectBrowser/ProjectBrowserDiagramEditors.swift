@@ -5,6 +5,7 @@ import AcaiDiagram
 import AcaiGit
 import AcaiLibrary
 import AcaiRender
+import AcaiQuality
 
 // Diagram-management collaborators carved out of `ProjectBrowserViewModel` (it had grown into a
 // god-object). Each is a thin value over the shared `ProjectStore` reference plus the owning view
@@ -53,6 +54,24 @@ struct GeneratedDiagramEditor {
     /// never alters the type set).
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
         mutate(diagramID, clearPositions: false) { $0.classConfiguration = configuration }
+    }
+
+    /// Updates a package diagram's selector filter. Positions are kept: filtering only removes
+    /// nodes/edges, it never changes what a surviving node's saved position means.
+    func updatePackageDiagramFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.packageDiagramFilter = filter }
+    }
+
+    /// Updates a call graph's selector filter. See `updatePackageDiagramFilter`.
+    func updateCallGraphFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.callGraphFilter = filter }
+    }
+
+    /// Updates a sequence diagram's selector filter, keeping the rest of the configuration and —
+    /// unlike `updateSequenceConfiguration` — the saved positions, since filtering only removes
+    /// participants/messages.
+    func updateSequenceFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.sequenceConfiguration?.filter = filter }
     }
 
     func updatePositions(

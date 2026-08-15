@@ -27,10 +27,12 @@ struct GitWorktreeSync {
     /// `worktreeDirectory`, checked out (always detached — see `GitCheckout.switchToDetached`) at
     /// `ref`. Returns the resolved commit SHA.
     @discardableResult
-    func attachWorktree(named worktreeName: String, at worktreeDirectory: URL) async throws -> String {
+    func attachWorktree(
+        named worktreeName: String, at worktreeDirectory: URL, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> String {
         let hub = hub
         return try await locks.run(for: hub) {
-            try await hub.sync(ref: ref)
+            try await hub.sync(ref: ref, onProgress: onProgress)
             try GitWorktree(repositoryDirectory: hub.localPath).add(name: worktreeName, at: worktreeDirectory)
             let checkout = try GitCheckout(directory: worktreeDirectory)
             try checkout.switchToDetached(ref: ref)
@@ -43,10 +45,12 @@ struct GitWorktreeSync {
     /// (same `ref`) and `switchGitHubRef` (a new one) once a codebase already has a worktree from
     /// `attachWorktree` above. Returns the resolved commit SHA.
     @discardableResult
-    func resyncWorktree(at worktreeDirectory: URL) async throws -> String {
+    func resyncWorktree(
+        at worktreeDirectory: URL, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> String {
         let hub = hub
         return try await locks.run(for: hub) {
-            try await hub.sync(ref: ref)
+            try await hub.sync(ref: ref, onProgress: onProgress)
             let checkout = try GitCheckout(directory: worktreeDirectory)
             try checkout.switchToDetached(ref: ref)
             return try checkout.headCommitSHA
