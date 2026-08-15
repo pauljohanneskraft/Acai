@@ -16,10 +16,17 @@ private final class FireCounter: @unchecked Sendable {
 /// Uses millisecond durations throughout so this stays fast and deterministic under
 /// `swift test --parallel` — no real-seconds sleeps, matching `ActivityCenterTests`'s own
 /// `Eventually` polling pattern rather than a fixed-duration wait racing scheduling latency.
+///
+/// `timeout` defaults generously (10s) despite the debouncer durations under test being tens of
+/// milliseconds: on a resource-constrained CI runner, `swift test --parallel` schedules all 232
+/// suites' tasks concurrently against far fewer cores than a dev machine has, so even a 20ms
+/// `Task.sleep` inside `TrailingDebouncer.trigger()` can go a full second or more without getting a
+/// scheduling turn — a real, previously observed CI failure (`counter.count == 0` after the old,
+/// tighter 2s bound), not evidence the debouncer itself failed to fire.
 @Suite("TrailingDebouncer")
 struct TrailingDebouncerTests {
     private func waitUntil(
-        timeout: Duration = .seconds(2), pollInterval: Duration = .milliseconds(5), _ condition: () -> Bool
+        timeout: Duration = .seconds(10), pollInterval: Duration = .milliseconds(5), _ condition: () -> Bool
     ) async throws {
         let deadline = ContinuousClock.now + timeout
         while !condition(), ContinuousClock.now < deadline {
