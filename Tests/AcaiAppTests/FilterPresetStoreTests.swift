@@ -60,10 +60,9 @@ struct FilterPresetStoreTests {
         future.presets = [FilterPreset(name: "Future", selector: nil)]
         try store.save(future, projectID: projectID)
 
-        // Today's guard is `>= 1`, so this specific case still round-trips — the real intent this
-        // test protects is that *some* explicit version check exists at all, not a bare decode.
         let loaded = store.load(projectID: projectID)
-        #expect(loaded.formatVersion == 999)
+        #expect(loaded.presets.isEmpty)
+        #expect(loaded.formatVersion == FilterPresetList.currentFormatVersion)
     }
 
     @Test("Saved preset files are sorted-key, pretty-printed JSON, so they stay diffable")

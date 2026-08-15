@@ -13,8 +13,14 @@ struct FilterPreset: Codable, Hashable, Sendable, Identifiable {
 /// The persisted, versioned container for a project's saved filter presets — mirrors
 /// `FindingsSuppressionBaseline`'s shape (a `formatVersion` field, a plain array), so a project
 /// with nothing saved yet and a future incompatible format both degrade to "no presets" rather
-/// than a decode error.
+/// than a decode error. `FilterPresetStore.load` is what actually enforces the version check
+/// against `currentFormatVersion` below — this type only carries the field.
 struct FilterPresetList: Codable, Equatable, Sendable {
-    var formatVersion = 1
+    /// The highest format version this build understands. `FilterPresetStore.load` rejects (and
+    /// degrades to empty rather than misreading) anything newer, matching
+    /// `ProjectStoreExport.currentFormatVersion`'s established convention.
+    static let currentFormatVersion = 1
+
+    var formatVersion = Self.currentFormatVersion
     var presets: [FilterPreset] = []
 }

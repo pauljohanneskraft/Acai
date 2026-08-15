@@ -68,7 +68,7 @@ final class ActivityCenter: ObservableObject {
         let gate = ActivityProgressGate()
         let onProgress: @Sendable (Double) -> Void = { [weak self] progress in
             guard gate.advance(to: progress) else { return }
-            Task { @MainActor in self?.updateProgress(id, progress: progress) }
+            Task(priority: priority) { @MainActor in self?.updateProgress(id, progress: progress) }
         }
         let task = Task<T, any Error>(priority: priority) { try await operation(onProgress) }
         operations.append(ActivityOperation(

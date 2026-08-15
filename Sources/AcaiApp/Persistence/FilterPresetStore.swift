@@ -28,7 +28,7 @@ struct FilterPresetStore: Sendable {
     func load(projectID: UUID) -> FilterPresetList {
         guard let data = try? Data(contentsOf: url(forProject: projectID)),
               let decoded = try? JSONDecoder().decode(FilterPresetList.self, from: data),
-              decoded.formatVersion >= 1
+              decoded.formatVersion <= FilterPresetList.currentFormatVersion
         else { return FilterPresetList() }
         return decoded
     }
