@@ -38,18 +38,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>de.kraftsoftware.acai.viewDiagram</string>
-		<string>de.kraftsoftware.acai.viewCodebase</string>
-	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>de.kraftsoftware.Acai.refresh</string>
-	</array>
 </dict>
 </plist>
