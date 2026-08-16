@@ -21,7 +21,6 @@ struct UITestFixtureResolver {
         self.arguments = arguments
     }
 
-    /// The staged fixture directory passed via `-AcaiUITestFixtureBaseDir <path>`, if any.
     func resolveBaseDir() -> URL? {
         resolve(Self.launchArgument)
     }
@@ -29,8 +28,7 @@ struct UITestFixtureResolver {
     static let gitHubRemoteLaunchArgument = "-AcaiUITestGitHubRemoteURL"
 
     /// A local git repository passed via `-AcaiUITestGitHubRemoteURL <path>`, to clone/fetch from
-    /// instead of real github.com — see `FixtureGitHubRepositoryService`
-    /// (`Sources/AcaiApp/GitHub/GitHubRepositoryService.swift`).
+    /// instead of real github.com.
     func resolveGitHubRemoteURL() -> URL? {
         resolve(Self.gitHubRemoteLaunchArgument)
     }

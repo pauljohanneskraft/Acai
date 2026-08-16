@@ -3,13 +3,7 @@ import Foundation
 /// Reads/writes one project's `FilterPresetList` to a plain JSON file — sorted-keys,
 /// pretty-printed encoding so the file stays diffable/git-reviewable, atomic writes (temp file +
 /// rename, via `Data.write(options: .atomic)`) so a save can never leave a half-written file
-/// behind if the app is killed mid-write. A small, self-contained type (its own directory under
-/// the same `baseDir` `ProjectStore` already uses, rather than a new method added to
-/// `ProjectStore` itself) so it doesn't touch that shared, heavily-used file — same shape as
-/// `FindingsSuppressionStore`.
-///
-/// A value you instantiate over a `baseDir` and call instance methods on — never a static-function
-/// namespace.
+/// behind if the app is killed mid-write.
 struct FilterPresetStore: Sendable {
     let baseDir: URL
 

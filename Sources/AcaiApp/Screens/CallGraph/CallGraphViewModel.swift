@@ -7,11 +7,6 @@ import AcaiLibrary
 import AcaiQuality
 import AcaiRender
 
-/// Backs the movement-only call-graph view. The `CallGraph` is derived from the artifact for the
-/// chosen `scope` and (optional) selector `filter`, so it always tracks the code — like package,
-/// there is no configuration popup and no analysis failure to surface. The user may drag method
-/// nodes; those positions are the only other editable, undoable state. Conforms to
-/// `CanvasInteraction` so it reuses the shared canvas.
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let artifact: CodeArtifact
@@ -21,14 +16,12 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     @Published private(set) var graph: CallGraph
     @Published private(set) var filter: AcaiQuality.Selector?
 
-    /// Per-method centre overrides, keyed by node id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
-    /// The call-graph diff when comparing against another revision; drives node/edge tinting.
     private var diff: CallGraphDiff?
 
     // MARK: - Init
@@ -46,8 +39,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
-    /// Re-derives the graph for a new filter, keeping node positions (filtering only removes
-    /// nodes/edges, it never repositions a surviving one).
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
@@ -66,11 +57,8 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         }
     }
 
-    /// Drops nodes `filter` doesn't match (and edges touching them). Only nodes owned by a type
-    /// (`typeName` non-empty) can be matched — a free function has no type to resolve a selector's
-    /// module/stereotype/kind/access facets against, so free-function nodes always pass through.
-    /// A node whose type can't be resolved back to a declaration also passes through (fails open)
-    /// rather than silently vanishing from the graph.
+    /// Free functions and nodes whose type can't be resolved back to a declaration always pass
+    /// through (fail open) rather than silently vanishing from the graph.
     private func filtered(_ graph: CallGraph) -> CallGraph {
         guard let filter else { return graph }
         let graphView = GraphView(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
@@ -89,16 +77,13 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         )
     }
 
-    /// Whether the graph is rendering a delta against a comparison revision.
     var isDeltaMode: Bool { diff != nil }
 
-    /// The delta fill for a method node, or `nil` when unchanged / not in delta mode.
     func nodeDeltaColor(id: String) -> Color? {
         guard let diff, let hex = diff.status(ofNode: id).deltaHex else { return nil }
         return Color(hex: hex)
     }
 
-    /// The delta stroke for a call edge, or `nil` when unchanged / not in delta mode.
     func edgeDeltaColor(from: String, to: String) -> Color? {
         guard let diff, let hex = diff.status(ofEdgeFrom: from, to: to).deltaHex else { return nil }
         return Color(hex: hex)
@@ -106,7 +91,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring node drags.
     var layout: CallGraphLayoutModel {
         CallGraphLayoutModel(graph: graph, positionOverrides: positionOverrides)
     }

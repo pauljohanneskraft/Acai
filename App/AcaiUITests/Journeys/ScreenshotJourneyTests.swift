@@ -28,8 +28,8 @@ final class ScreenshotJourneyTests: XCTestCase {
         projectRow.tap()
 
         // Waiting on the codebase row itself, not `addCodebaseButton`, reaches this screen
-        // identically on both compact (iPhone) and regular width — see `AccessibilityAuditTests`'
-        // comment on why `addCodebaseButton` isn't reachable the same way on both.
+        // identically on both compact (iPhone) and regular width, since `addCodebaseButton` isn't
+        // reachable the same way on both.
         let detail = ProjectDetailScreen(app: app)
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
@@ -38,28 +38,21 @@ final class ScreenshotJourneyTests: XCTestCase {
             screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
-        // The compact-width (iPhone) "+" toolbar button only ever opens this Menu — it doesn't
-        // navigate anywhere by itself. Regular width (iPad/macOS) has no such button
-        // (`addCodebaseButton`/`addDiagramButton` sit directly in the toolbar/header there
-        // instead), so this state doesn't exist to capture on those platforms.
+        // Regular width (iPad/macOS) has no such button (`addCodebaseButton`/`addDiagramButton`
+        // sit directly in the toolbar/header there instead), so this state doesn't exist to
+        // capture on those platforms.
         if detail.addMenuButton.exists {
             detail.addMenuButton.tap()
-            // Looser than the file's shared default (measured, not guessed): a `Menu`'s
-            // presentation on iOS renders through a translucent material, and two recordings of
-            // this exact state — confirmed fresh installs each time, `screenshotAfterAnimationsIdle`
-            // confirming the rest of the frame had stopped changing — still differed by ~0.35% in
-            // the blurred region behind the menu. `ProjectDetail/iPhone/populated.png` (same screen,
-            // same run, no menu open) was pixel-identical across the same passes, so the source
-            // isn't this screen's layout, it's the `Menu` material not converging to the same bytes
-            // twice — the same class of noise the macOS default already accounts for, just smaller.
+            // Looser than the file's shared default: iOS's `Menu` renders through a translucent
+            // material that doesn't converge to identical bytes between recordings of the same
+            // state.
             comparator.validate(
                 viewType: "ProjectDetail", state: "addMenuOpen",
                 screenshot: app.screenshotAfterAnimationsIdle(), testCase: self, maxChangedFraction: 7.0e-3
             )
-            // The open menu is covered by a full-screen (invisible outside its own bounds) touch
-            // blocker — confirmed via a debug screenshot showing the row visually unobstructed yet
-            // still reported "not hittable" — so any single coordinate tap dismisses it; bottom
-            // center is safely below both the menu and all real row content.
+            // The open menu is covered by a full-screen touch blocker invisible outside its own
+            // bounds, so any single coordinate tap dismisses it; bottom center is safely below
+            // both the menu and all real row content.
             app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
         }
 
@@ -79,14 +72,8 @@ final class ScreenshotJourneyTests: XCTestCase {
             screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
-        // Double-tapping a node selects it and switches the sidebar to the Inspector tab in one
-        // action (`ClassDiagramView`'s `.onTapGesture(count: 2)`). `.firstMatch`: unlike `.tap()`,
-        // `.doubleTap()` requires resolving to a single element, but every row of text inside
-        // `TypeNodeView` carries the same identifier (observed empirically via the accessibility
-        // tree dump on iOS).
-        // Re-checked immediately before acting, not just via the existence check above — the
-        // screenshot capture in between takes real wall-clock time, and the canvas can still be
-        // settling/re-laying-out during it.
+        // `.firstMatch`: unlike `.tap()`, `.doubleTap()` requires resolving to a single element,
+        // but every row of text inside `TypeNodeView` carries the same identifier.
         let base = diagram.typeNode(named: "Base").firstMatch
         XCTAssertTrue(base.waitForExistence(timeout: 10))
         base.doubleTap()

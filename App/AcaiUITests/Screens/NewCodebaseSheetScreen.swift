@@ -1,9 +1,7 @@
 import XCTest
 
-/// Accessors for `NewCodebaseSheet`'s GitHub tab — the repository/branch pickers and the Clone
-/// action. Kept separate from `GitHubAccountScreen`, which now covers this tab's read-only
-/// signed-in summary / "Open Settings" prompt (the actual sign-in UI moved to Settings) via its
-/// own `newCodebaseSignedInAsLabel`/`newCodebaseOpenSettingsButton` accessors.
+/// Kept separate from `GitHubAccountScreen`, which covers this tab's read-only signed-in summary /
+/// "Open Settings" prompt (the actual sign-in UI moved to Settings).
 @MainActor
 final class NewCodebaseSheetScreen {
     let app: XCUIApplication
@@ -15,17 +13,12 @@ final class NewCodebaseSheetScreen {
     var sourcePicker: XCUIElement { app.descendants(matching: .any)["newCodebase.sourcePicker"] }
     var localNameField: XCUIElement { app.textFields["newCodebase.localNameField"] }
     var chooseDirectoryButton: XCUIElement { app.buttons["newCodebase.chooseDirectoryButton"] }
-    /// A plain (non-`.plain`-styled) toolbar button — `app.buttons[...]`, like `cloneButton` below,
-    /// resolves to the single real `Button` element without the wrapping bar-item container's
-    /// duplicate match (`app.descendants(matching: .any)` would hit both).
     var addButton: XCUIElement { app.buttons["newCodebase.addButton"] }
     var repositoryPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.repositoryPicker"] }
     var refPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.refPicker"] }
     var cloneButton: XCUIElement { app.buttons["newCodebase.cloneButton"] }
     var cloneLoadingIndicator: XCUIElement { app.descendants(matching: .any)["newCodebase.clone.loading"] }
 
-    /// Picks a repository/ref from their respective `Picker`s — see `XCUIElement.choose(_:in:timeout:)`
-    /// for why this matches by literal text rather than a per-option identifier.
     @discardableResult
     func choose(_ label: String, from picker: XCUIElement, timeout: TimeInterval = 10) -> XCUIElement {
         picker.choose(label, in: app, timeout: timeout)

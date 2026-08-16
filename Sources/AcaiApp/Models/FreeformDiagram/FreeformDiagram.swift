@@ -15,7 +15,6 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
     var createdDate: Date = Date()
     // periphery:ignore
     var lastModified: Date = Date()
-    /// Named, restorable full-state snapshots the user has saved. See `Checkpoint`.
     var checkpoints: [Checkpoint] = []
 
     /// The fixed icon for every freeform diagram. Freeform diagrams have no type, so the icon
@@ -62,14 +61,11 @@ struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension FreeformDiagram {
-    /// One placed item on a freeform canvas: an identity, a display name, the `Content` that selects
-    /// how it is drawn, and a manual position (plus optional size for container kinds).
     struct Node: Identifiable, Codable, Hashable, Sendable {
         /// String id (from a UUID) so class/sequence/freeform views share one `CanvasInteraction`
         /// protocol on node identity.
         var id: String = UUID().uuidString
         var name: String
-        /// What the node represents and how it is rendered (type box, actor, package, …).
         var content: Content
         /// Top-left corner position, in canvas points.
         var positionX: Double = 0
@@ -97,7 +93,6 @@ extension FreeformDiagram {
     /// (state machine) when it represents one of those instead.
     struct Edge: Identifiable, Codable, Hashable, Sendable {
         var id: String = UUID().uuidString
-        /// `id` of the `Node` the edge starts/ends at.
         var sourceNodeID: String
         var targetNodeID: String
         /// The relationship kind drawn for an ordinary edge (ignored for sequence messages).
@@ -115,7 +110,6 @@ extension FreeformDiagram {
 }
 
 extension FreeformDiagram.Edge {
-    /// The label parts of a state-machine transition.
     struct Transition: Codable, Hashable, Sendable {
         var event: String?
         var guardCondition: String?
@@ -171,7 +165,6 @@ extension FreeformDiagram.Node {
         /// A call-graph method (or free function). The `Type.method` label is `node.name`.
         case method
 
-        /// The element kind derived from this content.
         var kind: FreeformDiagramNodeKind {
             switch self {
             case .type(let c):
@@ -330,7 +323,6 @@ extension FreeformDiagram.Node.Member {
 }
 
 extension FreeformDiagram.Node {
-    /// One parameter of a method member: a name and a type, e.g. `input: Int`.
     struct Parameter: Codable, Hashable, Sendable {
         var name: String
         var type: String

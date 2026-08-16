@@ -2,9 +2,6 @@ import AcaiCore
 import AcaiQuality
 
 extension Violation {
-    /// The code element this violation is about, so a Findings-style row can resolve through
-    /// `CodeElementReference` like everything else. `nil` if `subject` is empty.
-    ///
     /// `subject` carries no structured kind of its own (a type id, module name, or `A→B` edge) —
     /// rather than switch on `ruleKind` (a bare `String`, easy to drift out of sync with
     /// `QualityEvaluator`), this resolves structurally: split on "→" for an edge, else take the

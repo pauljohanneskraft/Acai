@@ -1,6 +1,5 @@
 import XCTest
 
-/// Accessors for a project's detail pane (`ProjectDetailView`).
 @MainActor
 final class ProjectDetailScreen {
     let app: XCUIApplication
@@ -9,8 +8,6 @@ final class ProjectDetailScreen {
         self.app = app
     }
 
-    /// On compact width (iPhone) this action lives behind a "+" toolbar `Menu`;
-    /// `openAddMenuIfNeeded` opens it first so this accessor resolves identically either way.
     var addCodebaseButton: XCUIElement {
         openAddMenuIfNeeded(target: "projectDetail.addCodebaseButton")
         return app.buttons["projectDetail.addCodebaseButton"]
@@ -21,8 +18,6 @@ final class ProjectDetailScreen {
         return app.buttons["projectDetail.addDiagramButton"]
     }
 
-    /// Navigates to this project's aggregated Findings view — on compact width (iPhone) this
-    /// lives behind the same "+" toolbar `Menu` as `addCodebaseButton`/`addDiagramButton`.
     var findingsButton: XCUIElement {
         openAddMenuIfNeeded(target: "projectDetail.findingsButton")
         return app.buttons["projectDetail.findingsButton"]
@@ -33,12 +28,9 @@ final class ProjectDetailScreen {
 
     /// A no-op on regular width, or once the menu is already open — checked via `target`'s own
     /// existence first, so repeated calls never tap "+" twice and toggle the menu shut again.
-    ///
     /// `menuButton` needs a real wait, not a plain `.exists`: a caller reading this accessor right
-    /// after navigating to `ProjectDetailScreen` can race the screen's own initial render, where
-    /// `addMenuButton` doesn't exist *yet* either — a one-shot `.exists` check would silently skip
-    /// tapping "+", and the caller's own `waitForExistence` on `target` then polls forever for a
-    /// menu that never got opened.
+    /// after navigating here can race the screen's own initial render, where `addMenuButton`
+    /// doesn't exist *yet* either.
     private func openAddMenuIfNeeded(target: String) {
         guard !app.buttons[target].exists else { return }
         let menuButton = app.buttons["projectDetail.addMenuButton"]
@@ -66,8 +58,6 @@ final class ProjectDetailScreen {
         app.descendants(matching: .any)["projectDetail.freeformDiagramRow.\(id)"]
     }
 
-    /// A second, discoverable delete path — a destructive button at the bottom of the screen,
-    /// alongside the sidebar context-menu path to the same action.
     var deleteProjectButton: XCUIElement { app.buttons["projectDetail.deleteProjectButton"] }
     var deleteProjectConfirmButton: XCUIElement {
         app.buttons.matching(identifier: "projectDetail.project.delete.confirmButton").firstMatch

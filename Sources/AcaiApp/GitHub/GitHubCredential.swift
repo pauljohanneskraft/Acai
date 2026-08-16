@@ -7,7 +7,6 @@ enum GitHubCredential: Codable, Hashable {
     case personalAccessToken(String)
     case gitHubApp(accessToken: String, expiresAt: Date?, refreshToken: String?)
 
-    /// The `Authorization` header value to send on every GitHub API request.
     var authorizationHeaderValue: String {
         switch self {
         case .personalAccessToken(let token):

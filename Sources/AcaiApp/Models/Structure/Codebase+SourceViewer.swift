@@ -12,13 +12,9 @@ extension Codebase {
         }
     }
 
-    /// Resolves a codebase-relative path (as stored in `SourceLocation.filePath`) to a real file
-    /// `URL`, validating it against path-escape/symlink-escape attacks (`PathEscapeGuard`) and
-    /// confirming the file actually exists. This is the one accessor every call site should resolve
-    /// a codebase-relative path through, rather than inlining `directoryPath` + path-joining
-    /// directly — a future change to what backs a codebase's file access (e.g. resolving through
-    /// `Codebase.repository`'s worktree instead of `directoryPath` directly) only has this one call
-    /// site to update instead of several scattered ones.
+    /// The one accessor every call site should resolve a codebase-relative path through, rather
+    /// than inlining `directoryPath` + path-joining directly, so a future change to what backs file
+    /// access only needs updating here.
     ///
     /// Runs synchronously — callers on a `View`/view model should dispatch this off the main actor
     /// (e.g. `Task.detached`), since it touches the filesystem.

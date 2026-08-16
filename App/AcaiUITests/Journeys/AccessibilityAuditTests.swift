@@ -1,18 +1,11 @@
 import XCTest
 
-/// A guardrail test: walks the seeded-project journey's own screens and asserts
-/// every interactive element it touches has a real accessibility label (not just an identifier —
-/// the "no element more informative visually than to VoiceOver" rule).
+/// Walks the seeded-project journey's own screens and asserts every interactive element it
+/// touches has a real accessibility label, not just an identifier.
 ///
-/// **Tap-target size is checked but not asserted as a hard failure yet.** Running this against the
-/// real app on first build surfaced genuine, pre-existing gaps below Apple HIG's 44×44pt minimum —
-/// the compact-width "New project" toolbar button (~37×36pt), the Reindex button (~21pt tall), and
-/// the diagram toolbar's Undo/Redo buttons (~40×36pt) all measured under the bar. That's exactly
-/// what this layer exists to catch, but retrofitting every pre-existing toolbar button's tap area
-/// is separate, real guardrail-compliance work, not something to force through as a side
-/// effect of building the testing system itself. `logIfBelowMinimumTapTarget` reports every miss
-/// to the test log (so it stays visible, not silently swallowed) without failing the run; flip it
-/// to a hard `XCTAssertGreaterThanOrEqual` once the underlying buttons are actually fixed.
+/// Tap-target misses below Apple HIG's 44×44pt minimum are logged, not asserted — flip
+/// `logIfBelowMinimumTapTarget` to a hard `XCTAssertGreaterThanOrEqual` once the underlying
+/// buttons are fixed.
 @MainActor
 final class AccessibilityAuditTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
@@ -45,10 +38,9 @@ final class AccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
         projectRow.tap()
 
-        // `addCodebaseButton`/`addDiagramButton` aren't audited here: on compact width (iPhone)
-        // they live inside a toolbar `Menu` (`ProjectDetailView`'s `#if !os(macOS)` toolbar) rather
-        // than as directly-reachable buttons, so auditing them needs a menu-opening screen-object
-        // helper this first slice doesn't have yet — deferred rather than silently skipped.
+        // `addCodebaseButton`/`addDiagramButton` aren't audited here: on compact width they live
+        // inside a toolbar `Menu`, not as directly-reachable buttons, and auditing them needs a
+        // menu-opening screen-object helper this doesn't have yet.
         let detail = ProjectDetailScreen(app: app)
 
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
@@ -65,12 +57,9 @@ final class AccessibilityAuditTests: XCTestCase {
         let diagram = ClassDiagramScreen(app: app)
         classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
 
-        // `fitToViewButton`/`sidebarToggleButton` aren't audited on compact width either: the
-        // diagram toolbar carries up to seven items ("seven icons competing for one navigation
-        // bar"), so iOS collapses
-        // the overflow behind a "More" button this first slice's screen objects don't open yet.
-        // Undo/Redo happen to survive the collapse today; that's an iOS toolbar-ordering detail,
-        // not a guarantee.
+        // `fitToViewButton`/`sidebarToggleButton` aren't audited on compact width either: iOS
+        // collapses the diagram toolbar's overflow behind a "More" button the screen objects don't
+        // open yet. Undo/Redo happen to survive the collapse today, but that's not guaranteed.
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 15), "diagram canvas never rendered")
         XCTAssertTrue(diagram.undoButton.waitForExistence(timeout: 15))
         assertAccessible(diagram.undoButton, name: "Undo button")

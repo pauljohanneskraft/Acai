@@ -28,9 +28,6 @@ final class ViewSourceQuickLookTests: XCTestCase {
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
         codebaseDetail.reindexButton.tap()
 
-        // The Quality Check section evaluates automatically once an artifact exists (no separate
-        // "run" action) — `quality.yml`'s always-tripping budget means a `ViolationRowView` (and
-        // therefore its "View Source" button) appears as soon as reindexing finishes.
         let viewSourceButton = app.buttons["violation.viewSourceButton"].firstMatch
         XCTAssertTrue(viewSourceButton.waitForExistence(timeout: 30))
         viewSourceButton.tap()

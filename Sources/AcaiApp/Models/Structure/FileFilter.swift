@@ -1,22 +1,16 @@
 import Foundation
 import AcaiQuality
 
-/// A per-codebase, ordered file allow/blocklist evaluated against each file's path relative to the
-/// codebase root, applied at indexing time (`CodebaseAnalyzer`) so an excluded file is never even
-/// parsed. `nil` on `Codebase.fileFilter` — and an empty `rules` list — both mean "no filtering,"
-/// identical to every codebase's behavior before this existed.
+/// A per-codebase, ordered file allow/blocklist, applied at indexing time so an excluded file is
+/// never parsed.
 struct FileFilter: Codable, Hashable, Sendable {
     var rules: [Rule] = []
 
-    /// Whether `relativePath` should be parsed, evaluating `rules` in order and taking the *last*
-    /// match — `.gitignore`-style, so a later, more specific rule can override an earlier general
-    /// one. No matching rule (including an empty rule list) means "include," so a freshly added
-    /// codebase with no filter configured behaves exactly as before this existed.
+    /// Evaluates `rules` in order and takes the *last* match — `.gitignore`-style, so a later, more
+    /// specific rule can override an earlier general one. No matching rule means "include."
     ///
-    /// To scope a codebase down to only a subset ("only analyze `Sources/Core/**`"), block
-    /// everything first (`.block("*")`) then allow the subset — the same two-rule idiom
-    /// `.gitignore` negation uses, rather than a second, implicit "any allow rule flips the
-    /// default" mode that would make a mixed allow+block list ambiguous.
+    /// To scope a codebase down to only a subset, block everything first (`.block("*")`) then allow
+    /// the subset — the same two-rule idiom `.gitignore` negation uses.
     func includes(_ relativePath: String) -> Bool {
         var result = true
         for rule in rules where rule.matches(relativePath) {
@@ -49,17 +43,13 @@ extension FileFilter {
             self.action = action
         }
 
-        /// A ceiling on the path length a regex rule is evaluated against. Real file paths are a
-        /// few hundred characters at most; bounding the input size forecloses catastrophic-
-        /// backtracking blowups tied to input length. Not a full guarantee (a pathological pattern
-        /// can still be slow on a short string), but the input here is always one path, never file
-        /// contents.
+        /// Bounds regex input size to forecloses catastrophic-backtracking blowups tied to input
+        /// length. Not a full guarantee, but the input here is always one path, never file contents.
         private static let maxRegexInputLength = 4096
 
-        /// Whether this rule matches `relativePath`. A malformed regex, or a path longer than
-        /// `maxRegexInputLength`, degrades to "doesn't match" rather than crashing or hanging —
-        /// `validationError` is how a caller surfaces the malformed-pattern case as feedback
-        /// instead of a silent no-op.
+        /// A malformed regex, or a path longer than `maxRegexInputLength`, degrades to "doesn't
+        /// match" rather than crashing or hanging — `validationError` surfaces the malformed-pattern
+        /// case separately instead of a silent no-op here.
         func matches(_ relativePath: String) -> Bool {
             switch syntax {
             case .glob:
@@ -72,8 +62,6 @@ extension FileFilter {
             }
         }
 
-        /// `nil` when `pattern` is usable (always, for a glob rule); otherwise a message suitable
-        /// for an inline validation error next to the pattern field.
         var validationError: String? {
             guard syntax == .regex else { return nil }
             do {

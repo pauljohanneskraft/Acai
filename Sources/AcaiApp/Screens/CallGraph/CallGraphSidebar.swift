@@ -3,18 +3,13 @@ import AcaiCore
 import AcaiDiagram
 import AcaiQuality
 
-/// Sidebar tab choices for the call graph, matching Class Diagram's closed vocabulary.
 enum CallGraphSidebarTab {
     case settings, inspector
 }
 
-/// Call Graph's sidebar: folds `CallGraphConfigSheet`'s scope picker into a live Settings
-/// tab (instead of a one-shot modal) plus Export actions moved off the toolbar, and makes the
-/// Inspector tab selection-scoped (`CallGraphInspector`).
-///
 /// Applying a new scope rebuilds the whole graph (`CallGraphView`'s `.id(scope)` gives the canvas a
-/// fresh identity, dropping positions/undo history), so — like Sequence/State — scope edits stage
-/// into a local draft applied only on an explicit "Apply" tap.
+/// fresh identity, dropping positions/undo history), so scope edits stage into a local draft
+/// applied only on an explicit "Apply" tap.
 struct CallGraphSidebar: View {
     let artifact: CodeArtifact
     let graph: CallGraph
@@ -162,8 +157,9 @@ struct CallGraphSidebar: View {
         .formStyle(.grouped)
     }
 
-    // MARK: - Lookups (duplicated from `CallGraphConfigSheet`, kept independent since that type is
-    // also the creation-time flow presented from `CodebaseDetailView` and stays untouched)
+    // MARK: - Lookups
+    // Duplicated from `CallGraphConfigSheet`, kept independent since that type is also the
+    // creation-time flow presented from `CodebaseDetailView` and stays untouched.
 
     private var typeNames: [String] {
         artifact.types

@@ -2,11 +2,8 @@ import XCTest
 
 /// Golden screenshots for the four generated diagram types not already covered by
 /// `ScreenshotJourneyTests`/`CompareGitRevisionTests` (Class Diagram): Sequence, State, Package, and
-/// Call Graph. Each test reindexes the `seeded` fixture's `SampleSwiftPackage` codebase fresh — its
-/// `Base`/`Derived`/`Helper`/`Worker` types form a `Derived.doWork() -> Helper.performTask() ->
-/// Worker.execute()` composition chain (for Sequence/Call Graph) and a `Base.id` chain-with-branch
-/// (`run()`'s `"requested" -> "running" -> "finished"` chain, `fail()`'s `"failed"` branch, for
-/// State) — patterned directly on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
+/// Call Graph. The seeded fixture's `Base`/`Derived`/`Helper`/`Worker` types are patterned directly
+/// on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
 /// content.
 @MainActor
@@ -21,8 +18,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
             .appendingPathComponent("__Snapshots__"))
     }
 
-    /// Launches the seeded fixture and reindexes it, returning `CodebaseDetailScreen` once every
-    /// `codebaseDetail.diagramButton.*` is available — shared preamble for all four tests below.
     private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
@@ -58,14 +53,10 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         sequence.methodPicker.choose("doWork", in: app)
         sequence.nextButton.tap()
 
-        // 30s, not this file's usual 10s — same occasional-slow-render flakiness as
-        // `testCallGraphScreenshot` below, confirmed on CI.
         XCTAssertTrue(sequence.participant(named: "Derived").waitForExistence(timeout: 30))
         XCTAssertTrue(sequence.participant(named: "Helper").exists)
         XCTAssertTrue(sequence.participant(named: "Worker").exists)
 
-        // A freshly-created diagram opens at its default scale/offset, not auto-fit — with 3
-        // participants side by side, only the first is on-screen until this fits the whole layout.
         sequence.fitToViewButton.tap()
         comparator.validate(
             viewType: "SequenceDiagram", state: "populated",
@@ -85,18 +76,11 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         state.variablePicker.choose("id", in: app)
         state.createButton.tap()
 
-        // A freshly-created diagram opens at its default scale/offset, not auto-fit (unlike
-        // re-editing an existing diagram's configuration, which does call `centerDiagram()`) — with
-        // 5 nodes across a branching layout, the initial/failed states can start outside the visible
-        // canvas, unlike Class/Sequence's smaller default layouts.
-        // 30s, not this file's usual 10s — same occasional-slow-render flakiness as
-        // `testCallGraphScreenshot` below, confirmed on CI.
         XCTAssertTrue(state.fitToViewButton.waitForExistence(timeout: 30))
         state.fitToViewButton.tap()
 
-        // `Base.id`'s values are Swift string-literal assignments (`id = "idle"`, etc.), and
-        // `StateNodeView`'s label is the assignment's raw source text — quotes included, not the
-        // unquoted string value — so the state's name (and this identifier) is literally `"idle"`.
+        // `StateNodeView`'s label is the assignment's raw source text, quotes included, so the
+        // state's name (and this identifier) is literally `"idle"`.
         XCTAssertTrue(state.stateNode(named: "\"idle\"").waitForExistence(timeout: 10))
         XCTAssertTrue(state.stateNode(named: "\"requested\"").exists)
         XCTAssertTrue(state.stateNode(named: "\"failed\"").exists)
@@ -116,8 +100,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
 
         XCTAssertTrue(package.containerNode(named: "SampleSwiftPackage").waitForExistence(timeout: 10))
 
-        // A freshly-created diagram opens at its default scale/offset, not auto-fit — the single
-        // package box starts mostly off-screen until this fits it into view.
         package.fitToViewButton.tap()
         comparator.validate(
             viewType: "PackageDiagram", state: "populated",
@@ -133,21 +115,14 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
         let callGraphButton = codebaseDetail.diagramButton(type: "callGraph")
         callGraphButton.tapUntil(callGraph.createButton)
 
-        // "Whole Codebase" is the config sheet's default selection — no scope picker interaction
-        // needed for a meaningful graph.
         callGraph.createButton.tap()
 
-        // 30s, not this file's usual 10s: confirmed empirically that call-graph creation can
-        // occasionally miss an update cycle and take noticeably longer than the other diagram
-        // types' equivalent wait to actually render (a passing run typically finishes in ~12s
-        // total here, well under even the old 10s budget — the wider margin is for the occasional
-        // slow one, not the typical case).
+        // 30s, not this file's usual 10s: call-graph creation can occasionally take noticeably
+        // longer than the other diagram types' render to complete.
         XCTAssertTrue(callGraph.node(id: "Derived.doWork").waitForExistence(timeout: 30))
         XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists)
         XCTAssertTrue(callGraph.node(id: "Worker.execute").exists)
 
-        // A freshly-created diagram opens at its default scale/offset, not auto-fit — with 3 nodes
-        // side by side, only one is on-screen until this fits the whole layout.
         callGraph.fitToViewButton.tap()
         comparator.validate(
             viewType: "CallGraph", state: "populated",

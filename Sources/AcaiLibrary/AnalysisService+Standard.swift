@@ -11,7 +11,6 @@ import AcaiCFamily
 // language-agnostic — adding or swapping a language is a change to this composition root only.
 extension AnalysisService {
 
-    /// The standard parser set covering every built-in language.
     public static let standardParsers: [any CodeParser] = [
         SwiftCodeParser(),
         KotlinCodeParser(),
@@ -24,8 +23,8 @@ extension AnalysisService {
         CppCodeParser()
     ]
 
-    /// The standard build-system detectors. Each concrete detector now lives in its language
-    /// target; this list merely orders them (priority order — SPM before Xcode for Swift, etc.).
+    /// Order matters: `ProjectDiscovery` gives the first detector per language priority
+    /// (e.g. SPM before Xcode for Swift).
     public static var standardDetectors: [any BuildSystemDetector] {
         [
             SwiftPackageManagerDetector(),
@@ -41,7 +40,6 @@ extension AnalysisService {
         ]
     }
 
-    /// Batteries-included service: all built-in parsers with auto-detected project layout.
     public static let standard = AnalysisService(
         parsers: standardParsers,
         projectDiscovery: ProjectDiscovery(
@@ -53,11 +51,8 @@ extension AnalysisService {
 
 extension CodeArtifact {
     /// Classifies **each type** by its own stamped `sourceLanguage`, so a mixed-language codebase is
-    /// styled/enriched/filtered per-language rather than by one dominant config.
-    ///
-    /// Falls back to the artifact's top-level config for an unstamped or unregistered language,
-    /// keeping the UI/CLI robust to a hand-loaded artifact. Deliberately no public single-config
-    /// accessor — resolving one flat config per artifact was the polyglot bug this replaced.
+    /// styled/enriched/filtered per-language rather than by one dominant config. Falls back to the
+    /// artifact's top-level config for an unstamped or unregistered language.
     public var standardLanguageResolver: LanguageConfigurationResolver {
         let registry = AnalysisService.standard.registry
         let fallback = registry.configuration(for: metadata.sourceLanguage) ?? LanguageConfiguration()

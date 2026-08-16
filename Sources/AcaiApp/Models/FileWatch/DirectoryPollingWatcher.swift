@@ -1,15 +1,11 @@
 #if os(iOS)
 import Foundation
 
-/// iOS fallback for `DirectoryChangeWatcher`: `DispatchSource.makeFileSystemObjectSource` still
-/// works under App Sandbox on iOS, but a security-scoped local-folder codebase's directory handle
-/// isn't necessarily kept open the way this needs, and `NSFilePresenter`'s coordinated-file-change
-/// API is built around a single well-known document URL rather than an arbitrary externally-picked
-/// folder tree — both are a poor fit for "an arbitrary user-picked directory, watched indefinitely
-/// in the background" on this platform. Polls the directory's own modification date on `interval`
-/// instead: coarser (only catches direct children changing, same as `DirectoryChangeWatcher`'s own
-/// non-recursive limitation, and only as often as `interval`) but simple and reliable within the
-/// sandbox.
+/// `DispatchSource.makeFileSystemObjectSource` and `NSFilePresenter` are both a poor fit for "an
+/// arbitrary user-picked directory, watched indefinitely in the background" under iOS's App
+/// Sandbox, so this polls the directory's own modification date on `interval` instead: coarser
+/// (only catches direct children changing, and only as often as `interval`) but simple and
+/// reliable within the sandbox.
 ///
 /// Runs entirely on a detached background task — filesystem access never happens on the calling
 /// (typically main) actor.

@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Generalizes the `delta.loading`/`delta.loaded`/`delta.error` identifier convention
-/// `CompareGitPanel` first established, so a UI test can wait on a real completion signal instead of
-/// inferring "done" from an unrelated downstream element.
+/// The `.loading`/`.loaded`/`.error` accessibility identifier suffixes let a UI test wait on a real
+/// completion signal instead of inferring "done" from an unrelated downstream element.
 enum AsyncOperationPhase: Equatable {
     case idle
     case loading(String)

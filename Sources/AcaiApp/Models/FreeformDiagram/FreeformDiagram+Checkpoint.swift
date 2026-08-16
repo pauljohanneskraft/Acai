@@ -13,13 +13,10 @@ extension FreeformDiagram {
 }
 
 extension FreeformDiagram {
-    /// Appends a new checkpoint capturing the diagram's current nodes and edges.
     mutating func saveCheckpoint(named name: String) {
         checkpoints.append(Checkpoint(name: name, nodes: nodes, edges: edges))
     }
 
-    /// Replaces the diagram's nodes and edges with those captured in the given checkpoint, if it
-    /// still exists. The checkpoint itself is left in place, so it can be restored again later.
     mutating func restoreCheckpoint(_ id: Checkpoint.ID) {
         guard let checkpoint = checkpoints.first(where: { $0.id == id }) else { return }
         nodes = checkpoint.nodes

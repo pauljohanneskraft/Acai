@@ -1,11 +1,7 @@
 import XCTest
 
-/// Verifies GitHub sign-in/out through `GitHubAccountSection`'s personal-access-token path (no
-/// device-flow polling to simulate — deterministic by construction) using
-/// `FixtureGitHubAccountService`'s canned identity, proving the seam actually works end to end,
-/// not just that it compiles. This UI moved from `NewCodebaseSheet`'s GitHub tab into the
-/// Settings surface (macOS: `Settings` scene / ⌘,; iPad/iPhone: a sheet via the sidebar's gear
-/// icon) — this journey now signs in/out there instead.
+/// Verifies GitHub sign-in/out through `GitHubAccountSection`'s personal-access-token path using
+/// `FixtureGitHubAccountService`'s canned identity.
 ///
 /// `GitHubTokenStore` is Keychain-backed and not fixture-redirected, so a successful stubbed
 /// sign-in still writes to the real keychain item under `de.kraftsoftware.Acai.github` — this test

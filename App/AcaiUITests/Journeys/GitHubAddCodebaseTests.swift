@@ -3,18 +3,13 @@ import XCTest
 import UIKit
 #endif
 
-/// Proves the headline change of the real-git-engine slice end to end, through the real app UI:
-/// adding a GitHub-backed codebase now does a real `libgit2` clone (not a zipball download), and
-/// switching its branch does a real incremental fetch into the *same* clone directory (not a full
-/// re-download) — verified behaviorally by asserting the Class Diagram's node set actually changes
-/// after the switch, plus that Compare (previously impossible for any GitHub-backed codebase) works.
+/// Adding a GitHub-backed codebase does a real `libgit2` clone, and switching its branch does a
+/// real incremental fetch into the *same* clone directory — verified behaviorally by asserting the
+/// Class Diagram's node set actually changes after the switch, plus that Compare works.
 ///
-/// No real network access: `FixtureGitHubRepositoryService` (`Sources/AcaiApp/GitHub/
-/// GitHubRepositoryService.swift`) clones/fetches from a local repository `GitFixtureRepository`
-/// builds fresh at launch — `main` with two commits (`Widget`, `Gadget`), `feature` one commit
-/// further ahead (`Extra`) — instead of github.com. Sign-in still goes through
-/// `FixtureGitHubAccountService`'s canned PAT path (`GitHubSignInTests`), since the credential
-/// value itself is never actually used to reach a real server on this path.
+/// No real network access: `FixtureGitHubRepositoryService` clones/fetches from a local repository
+/// `GitFixtureRepository` builds fresh at launch — `main` with two commits (`Widget`, `Gadget`),
+/// `feature` one commit further ahead (`Extra`) — instead of github.com.
 @MainActor
 final class GitHubAddCodebaseTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
@@ -30,13 +25,11 @@ final class GitHubAddCodebaseTests: XCTestCase {
 
         let browser = ProjectBrowserScreen(app: app)
 
-        // Sign in via Settings first — `NewCodebaseSheet`'s GitHub tab now just reads signed-in
-        // state from there instead of embedding its own sign-in UI. See `GitHubSignInTests` for the
-        // identical Settings-navigation pattern.
+        // `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than
+        // embedding its own sign-in UI, so sign in there first.
         let github = GitHubAccountScreen(app: app)
-        // The real Keychain-backed `GitHubTokenStore` isn't fixture-redirected — always sign back
-        // out via `defer`, even if an assertion above it fails, so this never leaves a stale entry
-        // for the next run. See `GitHubSignInTests`' identical comment.
+        // `GitHubTokenStore` is Keychain-backed and not fixture-redirected — always sign back out
+        // via `defer`, even on assertion failure, so this never leaves a stale entry behind.
         defer { if github.signedInRow.exists { github.signOutButton.tap() } }
         #if os(macOS)
         app.typeKey(",", modifierFlags: .command)
@@ -73,7 +66,6 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(sheet.cloneButton.isEnabled)
         sheet.cloneButton.tap()
 
-        // The sheet dismisses once cloning + the initial reindex both finish.
         let codebaseRow = detail.codebaseRow(named: "fixture-repo")
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 30), "the GitHub clone/index never finished")
         let codebaseDetail = CodebaseDetailScreen(app: app)
@@ -88,17 +80,10 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(diagram.typeNode(named: "Gadget").exists)
         XCTAssertFalse(diagram.typeNode(named: "Extra").exists, "feature-only content leaked into the main clone")
 
-        // Back to the codebase detail screen to switch branches: a real incremental fetch +
-        // checkout into the *same* clone directory — not a fresh full re-download — so the
-        // diagram's node set should now include `Extra`. `backButton` from the diagram pops all
-        // the way to the sidebar (not just one level to `CodebaseDetailScreen`), so re-enter via
-        // the sidebar's own codebase row rather than assuming a fixed stack depth.
-        //
-        // Both macOS's and iPad's (regular width) `NavigationSplitView` keep the sidebar visible
-        // and directly tappable alongside the detail pane at all times — there's no push/pop stack
-        // to back out of (no "BackButton" exists on either, confirmed empirically on iPad: it
-        // still shows "Hide Sidebar" in the accessibility dump, meaning the sidebar was never
-        // covered). Only iPhone's compact width covers the sidebar with a push/pop stack.
+        // `backButton` from the diagram pops all the way to the sidebar, not just one level to
+        // `CodebaseDetailScreen`, so re-enter via the sidebar's own codebase row rather than
+        // assuming a fixed stack depth. Only iPhone's compact width covers the sidebar with a
+        // push/pop stack in the first place — macOS and iPad's regular width keep it visible.
         #if os(iOS)
         if UIDevice.current.userInterfaceIdiom != .pad {
             diagram.backButton.tap()
@@ -112,39 +97,24 @@ final class GitHubAddCodebaseTests: XCTestCase {
         codebaseDetail.chooseRef("feature")
 
         // Waits on the switch's own completion signal instead of inferring "done" from the diagram
-        // button's mere existence (which is already true mid-switch, before content updates) —
-        // see `CodebaseDetailView`'s `refSwitchPhase`/`AsyncOperationStatusView`.
+        // button's mere existence, which is already true mid-switch, before content updates.
         XCTAssertTrue(
             codebaseDetail.refSwitchLoadedIndicator.waitForExistence(timeout: UITestWaits.standard.long),
             "the branch switch never finished")
         let classDiagramButtonAfterSwitch = codebaseDetail.diagramButton(type: "class")
-        // Used for the rest of the test — both re-verifying the switch and then running Compare —
-        // so it's named for what it persistently shows (the feature branch), not the one-off event
-        // that produced it.
         let featureBranchDiagram = ClassDiagramScreen(app: app)
         classDiagramButtonAfterSwitch.tapUntil(featureBranchDiagram.typeNode(named: "Extra"))
 
         XCTAssertTrue(featureBranchDiagram.typeNode(named: "Extra").waitForExistence(timeout: 10),
                       "switching branches should have fetched feature's new content into the same clone")
 
-        // Compare — previously impossible for any GitHub-backed codebase (no `.git` directory
-        // existed at all) — now works here too, exactly as it does for a local-folder codebase.
         XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
         featureBranchDiagram.chooseCompareRef("main")
-        // 90s, not 15s: this exact wait has already needed bumping once before (30s → 60s) for the
-        // identical symptom on CI's iPad runner specifically — two runs (2026-08-01, 2026-08-11)
-        // timed out at exactly 30s with no error, and it recurred at 60s (2026-08-15). Confirmed via
-        // `GitFixtureRepository.makeRemote()` (this test's own fixture) that the repository being
-        // compared is trivially small — 3 files, 3 commits — so the "old" side's real `git` tree
-        // extraction + full re-analysis (`AcaiGit.GitRevisionSnapshot`, on top of a GitHub-backed
-        // codebase's worktree) is not itself doing meaningful work here; the recurring slowness is
-        // consistent with CI's iPad-runner host being measurably slower/more contended than its
-        // iPhone counterpart for the *same* job (confirmed in the same run: ~35min iPad vs. ~24min
-        // iPhone end-to-end), not a data-volume problem. `compareLoadingIndicator` (new) tells a
-        // future failure here whether the panel was genuinely still in its "Loading…" state (this
-        // hypothesis) or never reached a recognizable comparison state at all (a different bug) —
-        // both looked identical before (a bare timeout with no error shown).
+        // 90s: CI's iPad runner is measurably slower/more contended than its iPhone counterpart for
+        // the same job, and the fixture repo is trivially small, so this isn't a data-volume
+        // problem. `compareLoadingIndicator` distinguishes a genuine still-loading timeout from
+        // never reaching a recognizable comparison state at all.
         let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 90)
         let errorExists = featureBranchDiagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"

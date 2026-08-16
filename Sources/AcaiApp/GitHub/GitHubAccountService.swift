@@ -1,12 +1,8 @@
 import Foundation
 
-/// The sign-in operations `GitHubAccountSection` needs — split out from `GitHubAPIClient`/
-/// `GitHubDeviceAuthFlow` so a UI test process can swap in a deterministic, network-free
-/// conformance instead of a `URLProtocol` mock. Scoped to sign-in only; other GitHub calls stay
-/// direct `GitHubAPIClient(credential:)` calls until they need the same treatment.
+/// The sign-in operations `GitHubAccountSection` needs — split out so a UI test process can swap
+/// in a deterministic, network-free conformance instead of a `URLProtocol` mock.
 protocol GitHubAccountService: Sendable {
-    /// The signed-in user plus what GitHub's response headers reveal about the token itself —
-    /// the scope checklist and expiry prompt both read this (see `GitHubAPIClient.AuthenticatedUserInfo`).
     func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo
     func requestDeviceCode(clientID: String) async throws -> GitHubDeviceAuthFlow.DeviceCode
     func pollForCredential(
@@ -14,7 +10,6 @@ protocol GitHubAccountService: Sendable {
     ) async throws -> GitHubCredential
 }
 
-/// Real network calls — exactly what `GitHubAccountSection` did inline before this seam existed.
 struct LiveGitHubAccountService: GitHubAccountService {
     func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo {
         try await GitHubAPIClient(credential: credential).authenticatedUserWithMetadata()
@@ -34,7 +29,6 @@ struct LiveGitHubAccountService: GitHubAccountService {
 /// Deterministic canned responses for the snapshot tests' XCUITest journeys — no network access.
 /// Selected only when `UITestFixtureResolver().resolveBaseDir() != nil`.
 struct FixtureGitHubAccountService: GitHubAccountService {
-    /// The canned identity every fixture-stubbed sign-in resolves to.
     static let login = "octocat"
 
     func authenticatedUserInfo(credential: GitHubCredential) async throws -> GitHubAPIClient.AuthenticatedUserInfo {

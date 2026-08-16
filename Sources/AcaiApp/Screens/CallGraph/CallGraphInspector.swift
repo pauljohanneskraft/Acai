@@ -1,19 +1,11 @@
 import SwiftUI
 import AcaiDiagram
 
-/// The call graph's Inspector tab: selection-scoped, matching the Class/Freeform convention
-/// instead of the old "card for every method, re-sorted" behavior. Nothing selected shows a
-/// placeholder; one method selected shows its full detail card plus a short cross-linked list of
-/// its callers/callees, each tappable to jump the selection there. The coverage card stays visible
-/// regardless of selection — it's diagram-level information, not per-node detail.
 struct CallGraphInspector: View {
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
-    /// Re-points the canvas/inspector selection at another method — used by the related-methods
-    /// list so tapping a caller/callee jumps straight to it instead of making the user scroll to find it.
     let onSelect: (String) -> Void
 
-    /// Outgoing / incoming edge counts per node id (weights summed).
     private var callCounts: (out: [String: Int], in: [String: Int]) {
         var outgoing: [String: Int] = [:]
         var incoming: [String: Int] = [:]
@@ -120,9 +112,8 @@ struct CallGraphInspector: View {
         .inspectorCard(highlighted: highlighted)
     }
 
-    /// Methods `node` calls ("Calls") and methods that call `node` ("Called By"), each row jumping
-    /// the selection there on tap (cross-diagram `CodeElementReference` resolution is separate,
-    /// not-yet-built work — this stays within the one call graph already on screen).
+    /// Cross-diagram `CodeElementReference` resolution is separate, not-yet-built work — this stays
+    /// within the one call graph already on screen.
     private func relatedMethodsSection(for node: CallGraph.Node) -> some View {
         let callees = graph.edges.filter { $0.from == node.id }
             .compactMap { edge in graph.nodes.first { $0.id == edge.to } }

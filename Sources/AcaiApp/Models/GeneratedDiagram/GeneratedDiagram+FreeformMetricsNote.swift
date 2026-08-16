@@ -1,11 +1,6 @@
 import AcaiDiagram
 import Foundation
 
-/// Text for the read-only `.note` node `PackageFreeformConversion`/`CallGraphFreeformConversion`
-/// (`PackageFreeformConversion.swift`/`CallGraphFreeformConversion.swift`) append when the user
-/// opts in to carrying over the coupling/coverage figures that conversion would otherwise silently
-/// drop.
-
 extension PackageDiagram {
     /// One line per module summarizing its coupling metrics — the text carried into the `.note`
     /// node `PackageFreeformConversion` appends when `includeMetricsNote` is set.

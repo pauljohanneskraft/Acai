@@ -25,20 +25,16 @@ public struct PNGGoldenComparison: Sendable {
         self.maxChangedFraction = maxChangedFraction
     }
 
-    /// True when `data` is a Git LFS pointer file rather than real PNG bytes.
     public func isLFSPointer(_ data: Data) -> Bool {
         guard let prefix = String(data: data.prefix(64), encoding: .utf8) else { return false }
         return prefix.hasPrefix("version https://git-lfs")
     }
 
-    /// The 4-byte PNG signature prefix (`\x89PNG`).
     public func hasPNGMagic(_ data: Data) -> Bool {
         Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47]
     }
 
-    /// Compares `committed` (a checked-in golden) against `rendered` (a fresh re-render), returning
-    /// the fraction of a downsampled luminance grid that changed beyond ``perCellDelta`` against
-    /// ``maxChangedFraction``.
+    /// Compares `committed` (a checked-in golden) against `rendered` (a fresh re-render).
     public func compare(committed: Data, rendered: Data) -> Outcome {
         if isLFSPointer(committed) { return .lfsPointer }
         guard hasPNGMagic(committed), hasPNGMagic(rendered) else { return .notAPNG }

@@ -48,7 +48,6 @@ final class NewSheetsScreenshotTests: XCTestCase {
         XCTAssertTrue(detail.addCodebaseButton.waitForExistence(timeout: 10))
         detail.addCodebaseButton.tap()
 
-        // `.localFolder` is the sheet's default tab — no source-picker interaction needed.
         let sheet = NewCodebaseSheetScreen(app: app)
         XCTAssertTrue(sheet.localNameField.waitForExistence(timeout: 10))
         comparator.validate(

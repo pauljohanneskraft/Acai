@@ -18,20 +18,12 @@ import Yams
 @MainActor
 final class ProjectStore: ObservableObject {
     @Published var projects: [Project] = []
-
-    /// In-memory cache of loaded diagrams, keyed by ID.
     @Published var generatedDiagrams: [UUID: GeneratedDiagram] = [:]
     @Published var freeformDiagrams: [UUID: FreeformDiagram] = [:]
-
-    /// In-memory cache of loaded artifacts, keyed by codebase ID.
     @Published var artifacts: [UUID: CodeArtifact] = [:]
-
-    /// Last-opened diagrams/codebases across every project, plus pins. See its own type doc for
-    /// why nothing writes to this yet.
     @Published var recentlyViewed = RecentlyViewed()
 
-    /// The most recent load/save failure, surfaced to the UI (e.g. via an alert). Replaces the
-    /// old `print`-and-swallow so a failed write doesn't silently look successful.
+    /// The most recent load/save failure, surfaced to the UI (e.g. via an alert).
     @Published var lastError: StoreError?
 
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
@@ -40,7 +32,6 @@ final class ProjectStore: ObservableObject {
         let message: String
     }
 
-    /// Records a failure both to the console (for logs) and to `lastError` (for the UI).
     func report(_ message: String) {
         print(message)
         lastError = StoreError(message: message)
@@ -50,31 +41,20 @@ final class ProjectStore: ObservableObject {
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
-    /// Holds YAML rules files for UI-authored code-quality checks (one per codebase). A check whose
-    /// `rulesPath` resolves inside this directory is "managed" — editable in the form; any other
-    /// path is an external file the user referenced.
+    /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
+    /// form; any other path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
-    /// Holds the app-managed local folders for GitHub-backed codebases created before worktree
-    /// support existed (see `GitHubSource`), one subdirectory per codebase, named by its id —
-    /// parallels `artifactsDir`/`rulesDir`. Newer codebases use `gitRepositoriesDir`/
-    /// `gitWorktreesDir` instead (see below); this stays only so those older, still-persisted
-    /// codebases keep resolving correctly.
+    /// GitHub-backed codebases created before worktree support existed only — newer codebases use
+    /// `gitRepositoriesDir`/`gitWorktreesDir` instead.
     var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
-    /// Holds one shared "hub" clone per distinct remote URL (see `AcaiGit.GitRepository`), keyed by
-    /// its own credential-stripped, normalized-URL hash — the shared object store, reused by every
-    /// codebase that references the same remote instead of each getting an independent full clone.
+    /// One shared "hub" clone per distinct remote URL, reused by every codebase referencing it
+    /// instead of each getting an independent full clone.
     var gitRepositoriesDir: URL { baseDir.appendingPathComponent("git-repositories", isDirectory: true) }
-    /// Holds one linked-worktree checkout per repository-backed codebase (see `AcaiGit.GitWorktree`),
-    /// named by the codebase's id — parallels `githubClonesDir`'s old one-clone-per-codebase layout,
-    /// except each subdirectory here is a worktree of a shared `gitRepositoriesDir` clone rather than
-    /// an independent clone of its own.
+    /// One linked-worktree checkout per repository-backed codebase.
     var gitWorktreesDir: URL { baseDir.appendingPathComponent("git-worktrees", isDirectory: true) }
-    /// Serializes fetch-vs-checkout per shared repository (not per codebase) across every codebase
-    /// that references it — see `AcaiGit.GitRepositoryLocks`. One instance for this store's entire
-    /// lifetime; a fresh instance would provide no exclusion against this one.
+    /// One instance for this store's entire lifetime; a fresh instance would provide no exclusion
+    /// against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
-    /// The in-flight-operation registry every reindex/fetch/clone reports into — one
-    /// instance for this store's entire lifetime, matching `gitRepositoryLocks` above.
     let activityCenter = ActivityCenter()
     private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
@@ -281,7 +261,6 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    /// Same as `saveArtifact`, but awaited.
     func saveArtifactAndWait(_ artifact: CodeArtifact, for codebaseID: UUID) async throws {
         artifacts[codebaseID] = artifact
         try await writeArtifactToDisk(artifact, for: codebaseID)
@@ -350,36 +329,28 @@ final class ProjectStore: ObservableObject {
 
     // MARK: - GitHub clones (older codebases only — see `githubClonesDir`)
 
-    /// Where a GitHub-backed codebase's synced folder lives (whether or not it exists yet) —
-    /// what `Codebase.directoryPath` points at once `githubSource` is set, for codebases created
-    /// before worktree support existed. New codebases use `gitWorktreeURL(for:)` instead.
     func githubCloneURL(for codebaseID: UUID) -> URL {
         githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }
 
-    /// Removes a GitHub-backed codebase's synced folder, mirroring `deleteArtifactFile`.
     func deleteGitHubClone(for codebaseID: UUID) {
         try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
     }
 
     // MARK: - Git worktrees
 
-    /// The libgit2 worktree name registered for a codebase — stable and unique per codebase, so it
-    /// can't collide with a branch/worktree name a user might otherwise pick.
+    /// Stable and unique per codebase, so it can't collide with a branch/worktree name a user
+    /// might otherwise pick.
     func gitWorktreeName(for codebaseID: UUID) -> String {
         "codebase-\(codebaseID.uuidString)"
     }
 
-    /// Where a repository-backed codebase's linked worktree checkout lives (whether or not it
-    /// exists yet) — what `Codebase.directoryPath` points at for codebases created since worktree
-    /// support was added.
     func gitWorktreeURL(for codebaseID: UUID) -> URL {
         gitWorktreesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
     }
 
     // MARK: - Managed quality-check rules
 
-    /// The location of the app-managed YAML rules file for a codebase (whether or not it exists yet).
     func managedRulesURL(forCodebase codebaseID: UUID) -> URL {
         rulesDir.appendingPathComponent("codebase_\(codebaseID.uuidString).yaml")
     }
@@ -394,7 +365,6 @@ final class ProjectStore: ObservableObject {
         return resolved == managed || resolved.hasPrefix(managed + "/")
     }
 
-    /// Serializes UI-authored rules to the codebase's managed YAML file and returns its URL.
     @discardableResult
     func saveManagedRules(_ rules: QualityRules, forCodebase codebaseID: UUID) throws -> URL {
         let url = managedRulesURL(forCodebase: codebaseID)
@@ -403,7 +373,6 @@ final class ProjectStore: ObservableObject {
         return url
     }
 
-    /// Decodes the codebase's managed rules file, or `nil` if it doesn't exist yet / can't be read.
     func loadManagedRules(forCodebase codebaseID: UUID) -> QualityRules? {
         let url = managedRulesURL(forCodebase: codebaseID)
         guard let yaml = try? String(contentsOf: url, encoding: .utf8) else { return nil }

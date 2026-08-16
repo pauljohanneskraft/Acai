@@ -5,9 +5,6 @@ import AcaiRender
 import AcaiQuality
 import UniformTypeIdentifiers
 
-/// Generated static call-graph screen. A thin wrapper that owns the scope re-configuration sheet
-/// and rebuilds the canvas (keyed by scope) when the scope changes, so re-scoping immediately
-/// re-derives the graph. The heavy lifting lives in `CallGraphCanvasView`.
 struct CallGraphView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
@@ -53,10 +50,6 @@ struct CallGraphView: View {
     }
 }
 
-/// Movement-only canvas for a static call graph at a fixed scope. Lets the user drag method nodes
-/// on the shared canvas layer (`PannableCanvas`, drag gesture, undo/redo) like the package view.
-/// Methods render as rounded boxes (in-scope solid, out-of-scope callees dashed); calls are arrows
-/// whose thickness encodes their multiplicity. A banner reports static-resolution coverage.
 private struct CallGraphCanvasView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
@@ -121,8 +114,6 @@ private struct CallGraphCanvasView: View {
             )
     }
 
-    /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
-    /// uses a real `.sheet` here instead of relying on `.inspector`'s own collapsed presentation.
     @ViewBuilder
     private var sidebarPresentedCanvas: some View {
         #if os(iOS)
@@ -163,9 +154,6 @@ private struct CallGraphCanvasView: View {
         #endif
     }
 
-    /// Folds `CallGraphConfigSheet`'s scope picker + Export actions into the Settings tab,
-    /// and makes the Inspector tab selection-scoped (`CallGraphInspector`), with `onSelect` letting
-    /// a related-method row jump the canvas selection there directly.
     private var sidebar: CallGraphSidebar {
         CallGraphSidebar(
             artifact: artifact,
@@ -255,7 +243,6 @@ private struct CallGraphCanvasView: View {
         }
     }
 
-    /// A coloured delta outline overlaid on a node, or nothing when the node is unchanged.
     @ViewBuilder
     private func deltaBorder(_ color: Color?) -> some View {
         if let color {
@@ -285,7 +272,6 @@ private struct CallGraphCanvasView: View {
         )
     }
 
-    /// Maps a call's multiplicity to a line-width multiplier, clamped so the heaviest edges stay legible.
     private static func lineWidthScale(forWeight weight: Int) -> CGFloat {
         min(1 + CGFloat(weight - 1) * 0.35, 3)
     }
@@ -324,10 +310,8 @@ private struct CallGraphCanvasView: View {
 
     // MARK: - Save as Freeform (opt-in metric carryover)
 
-    /// Confirms the "Save as Freeform" action with one opt-in: whether to carry over the call-site
-    /// resolution coverage already computed for this diagram as a read-only note. Reflects
-    /// the current, non-diff artifact even when `Compare vs git` is active — the converted copy is
-    /// always built from the plain current tree, same as the rest of this conversion.
+    /// Reflects the current, non-diff artifact even when `Compare vs git` is active — the converted
+    /// copy is always built from the plain current tree.
     private func confirmSaveAsFreeform() {
         let layoutPositions = Dictionary(
             viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -365,8 +349,6 @@ private struct CallGraphCanvasView: View {
     }
 }
 
-/// A single method box in the call graph: `Type.method`, solid for in-scope methods and dashed +
-/// lighter for out-of-scope callee leaves so the focus stands out.
 private struct CallGraphNodeView: View {
     let node: CallGraph.Node
     let isSelected: Bool
@@ -391,7 +373,6 @@ private struct CallGraphNodeView: View {
                         style: StrokeStyle(lineWidth: isSelected ? 2 : 1, dash: node.inScope ? [] : [4, 3])
                     )
             )
-            // Keyed by id (`Type.method`), same rationale/edge case as `TypeNodeView.accessibilityIdentifier`.
             .accessibilityIdentifier("diagram.callGraphNode.\(node.id)")
     }
 }

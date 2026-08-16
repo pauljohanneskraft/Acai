@@ -1,11 +1,8 @@
 import XCTest
 
-/// Adds Call Graph-specific accessors (canvas method nodes, the scope-selection config sheet, and
-/// the Settings tab's live scope form and the selection-scoped Inspector) to
-/// `DiagramScreenBase`'s shared toolbar/sidebar accessors.
 final class CallGraphScreen: DiagramScreenBase {
-    /// A method's box, by its `CallGraph.Node.id` (`"Type.method"`) — mirrors
-    /// `ClassDiagramScreen.typeNode`, same "keyed by name, no stable id" caveat.
+    /// Keyed by `CallGraph.Node.id` (`"Type.method"`) — no separate stable id, same caveat as
+    /// `ClassDiagramScreen.typeNode`.
     func node(id: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.callGraphNode.\(id)"]
     }

@@ -37,7 +37,6 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     /// `content` so `.callGraph(CallGraphScope)`'s existing JSON shape never changes.
     var callGraphFilter: AcaiQuality.Selector?
     var nodePositions: [String: NodePosition] = [:]
-    /// User-overridden node sizes (from resize handles).
     var nodeSizes: [String: NodeSize] = [:]
     var canvasScale: Double = 1.0
     var canvasOffsetX: Double = 0
@@ -47,7 +46,6 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension GeneratedDiagram {
-    /// The diagram's type paired with its type-specific configuration.
     enum Content: Codable, Hashable, Sendable {
         case classDiagram(ClassDiagramConfiguration)
         case sequenceDiagram(SequenceDiagramConfiguration)
@@ -67,8 +65,6 @@ extension GeneratedDiagram {
         /// .CycleFinder` already reported for it — see `CycleDiagramReference`.
         case cycleDiagram(CycleDiagramReference)
 
-        /// Default content for a freshly created diagram of the given type: each kind gets its
-        /// own default configuration (none is privileged over the others).
         init(type: DiagramType) {
             switch type {
             case .classDiagram:
@@ -118,7 +114,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The diagram type, derived from `content`.
     var type: DiagramType { content.type }
 
     /// The name derived from the diagram's configuration, e.g. `"MyApp — Sequence: Foo.bar"`.
@@ -153,7 +148,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The class-diagram configuration, when this is a class diagram.
     var classConfiguration: ClassDiagramConfiguration? {
         get {
             if case .classDiagram(let config) = content { config } else { nil }
@@ -163,7 +157,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The sequence configuration, when this is a sequence diagram.
     var sequenceConfiguration: SequenceDiagramConfiguration? {
         get {
             if case .sequenceDiagram(let config) = content { config } else { nil }
@@ -173,7 +166,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The state configuration, when this is a (configured) state diagram.
     var stateConfiguration: StateDiagramConfiguration? {
         get {
             if case .stateDiagram(let config) = content { config } else { nil }
@@ -183,7 +175,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The call-graph scope, when this is a call graph.
     var callGraphScope: CallGraphScope? {
         get {
             if case .callGraph(let scope) = content { scope } else { nil }
@@ -193,7 +184,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The isolated cycle's scope/members, when this is a cycle diagram.
     var cycleDiagramReference: CycleDiagramReference? {
         if case .cycleDiagram(let reference) = content { reference } else { nil }
     }

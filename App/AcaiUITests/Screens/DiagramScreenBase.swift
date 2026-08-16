@@ -1,10 +1,6 @@
 import CoreGraphics
 import XCTest
 
-/// Accessors for the chrome common across every diagram type's toolbar today (`UndoRedoToolbarButtons`,
-/// Fit to View, the sidebar toggle). Stays narrow rather than a unified sidebar-tab base class: the
-/// diagram types have genuinely different sidebar architectures, so a shared Settings/Inspector/
-/// Compare accessor set would encode a unification that hasn't shipped.
 @MainActor
 class DiagramScreenBase {
     let app: XCUIApplication
@@ -17,26 +13,21 @@ class DiagramScreenBase {
     var redoButton: XCUIElement { app.buttons["diagram.redoButton"] }
     var fitToViewButton: XCUIElement { app.buttons["diagram.fitToViewButton"] }
     var sidebarToggleButton: XCUIElement { app.buttons["diagram.sidebarToggleButton"] }
-    /// The inspector/sidebar's own "Done" button, shown only on compact width (iPhone), where
-    /// `.inspector(isPresented:)` collapses to a plain sheet with no built-in dismiss chrome.
+    /// Shown only on compact width (iPhone), where `.inspector(isPresented:)` collapses to a plain
+    /// sheet with no built-in dismiss chrome.
     var sidebarDoneButton: XCUIElement { app.buttons["diagram.sidebarDoneButton"] }
 
     // MARK: - Sidebar tabs (every generated diagram type now has this Settings/Inspector split)
 
-    /// The segmented control's own tab items — a plain `Picker(selection:)` with `.pickerStyle(.segmented)`
-    /// surfaces its `Text` case labels as buttons, not a custom identifier.
+    /// A plain `Picker(selection:)` with `.pickerStyle(.segmented)` surfaces its `Text` case labels
+    /// as buttons, not a custom identifier.
     var settingsTabButton: XCUIElement { app.buttons["Settings"] }
     var inspectorTabButton: XCUIElement { app.buttons["Inspector"] }
-    /// The Settings tab's `Form` content — every diagram type's sidebar tags it identically
-    /// (`ClassDiagramSidebar` originated the scheme; Sequence/State/Package/Call Graph's new
-    /// sidebars match it).
     var settingsContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.settings"] }
     var inspectorContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.inspector"] }
 
-    /// Opens the sidebar (if not already open) and selects its Settings tab, waiting for the tab's
-    /// `Form` content to appear — the precondition for reaching `relayoutButton`/`configureButton`/
-    /// `saveAsFreeformButton`/`exportImageButton`/any type-specific Settings control, all of which
-    /// moved off the toolbar into this tab.
+    /// Precondition for reaching `relayoutButton`/`configureButton`/`saveAsFreeformButton`/
+    /// `exportImageButton`/any type-specific Settings control, all of which live in this tab.
     func openSettingsTab() {
         if !settingsContent.exists && !inspectorContent.exists {
             sidebarToggleButton.tap()
@@ -47,10 +38,8 @@ class DiagramScreenBase {
         _ = settingsContent.waitForExistence(timeout: 5)
     }
 
-    /// Opens the sidebar (if not already open) and selects its Inspector tab. Most journeys reach
-    /// the Inspector by double-tapping a canvas element instead (every diagram type's node/edge tap
-    /// targets switch tabs as part of the same gesture), so this is for the cases that need it
-    /// without an element to double-tap yet.
+    /// Most journeys reach the Inspector by double-tapping a canvas element instead; this is for
+    /// the cases that need it without an element to double-tap yet.
     func openInspectorTab() {
         if !settingsContent.exists && !inspectorContent.exists {
             sidebarToggleButton.tap()
@@ -61,36 +50,25 @@ class DiagramScreenBase {
         _ = inspectorContent.waitForExistence(timeout: 5)
     }
 
-    /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — the
-    /// type-specific configuration action each diagram's Settings tab has under a different label.
-    /// These live in the Settings tab's `Form`, not the toolbar — call `openSettingsTab()` first.
+    /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — call
+    /// `openSettingsTab()` first, these live in the Settings tab's `Form`, not the toolbar.
     var relayoutButton: XCUIElement { app.buttons["diagram.relayoutButton"] }
     var configureButton: XCUIElement { app.buttons["diagram.configureButton"] }
     var saveAsFreeformButton: XCUIElement { app.buttons["diagram.saveAsFreeformButton"] }
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
-    /// The navigation bar's back button, for returning to `CodebaseDetailScreen` from a diagram.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// On Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a
-    /// popover (macOS) or sheet (iOS/iPadOS) with this checkbox ("Include current coupling/coverage
-    /// figures as read-only notes") instead of saving immediately. Class/Sequence/State have no
-    /// equivalent metric and still save on tap. `SwiftUI.Toggle` surfaces as a checkbox on macOS but
-    /// a switch on iOS, so this is looked up via the broad `.any` matcher rather than `.switches`/
-    /// `.checkBoxes`, mirroring `compareCustomRefField`'s same cross-platform caveat above.
+    /// On Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a popover (macOS) or
+    /// sheet (iOS/iPadOS) with this checkbox instead of saving immediately. `SwiftUI.Toggle` surfaces
+    /// as a checkbox on macOS but a switch on iOS, hence the broad `.any` matcher.
     var saveAsFreeformIncludeMetricsToggle: XCUIElement {
         app.descendants(matching: .any)["diagram.saveAsFreeform.includeMetricsToggle"]
     }
-    /// Confirms the popover/sheet opened by `saveAsFreeformButton` on Package Diagram/Call Graph screens.
     var saveAsFreeformConfirmButton: XCUIElement { app.buttons["diagram.saveAsFreeform.confirmButton"] }
-    /// Cancels the popover/sheet opened by `saveAsFreeformButton` without saving. Only present on
-    /// iOS/iPadOS's `.sheet` presentation and macOS's popover (both wire this up); the popover can
-    /// also be dismissed by clicking away on macOS.
     var saveAsFreeformCancelButton: XCUIElement { app.buttons["diagram.saveAsFreeform.cancelButton"] }
 
-    /// Drives the Package Diagram/Call Graph "Save as Freeform" flow end-to-end: open the popover/
-    /// sheet, set the metrics-carryover checkbox, confirm. Class/Sequence/State screens don't have
-    /// this step — call `saveAsFreeformButton.tap()` directly there instead. Every type now needs
-    /// `openSettingsTab()` called first (the button moved off the toolbar into the sidebar).
+    /// Class/Sequence/State screens have no confirmation step — call `saveAsFreeformButton.tap()`
+    /// directly there instead.
     func saveAsFreeform(includeMetricsNote: Bool) {
         saveAsFreeformButton.tap()
         _ = saveAsFreeformIncludeMetricsToggle.waitForExistence(timeout: 5)
@@ -101,21 +79,10 @@ class DiagramScreenBase {
         saveAsFreeformConfirmButton.tap()
     }
 
-    /// Before the toolbar-unification pass, a crowded toolbar (up to seven items) collapsed trailing
-    /// items into an iOS "More" overflow item on iPhone width, and that overflow branch was the
-    /// common case for `fitToViewButton`/etc. — the short `waitForExistence(timeout: 1)` below
-    /// existed mostly as a settle delay before falling through to it. Now every generated diagram
-    /// type's toolbar only ever carries Undo/Redo, the iOS multi-select toggle, Fit to View, and
-    /// the sidebar toggle, which fit without collapsing — so the direct-tap branch is now the
-    /// common case, and a 1s wait is too tight on a slow-to-render screen (it fails hard, since
-    /// `OverflowBarButtonItem` no longer exists to fall back to). Wait as long as the macOS branch
-    /// already did, and guard the overflow fallback with its own existence check so a screen that's
-    /// merely slow doesn't crash the helper.
+    /// Falls back to iOS's "More" toolbar overflow item if `button` itself never appears — macOS's
+    /// `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only.
     func tapToolbarButton(_ button: XCUIElement, label: String) {
         #if os(macOS)
-        // macOS's NSToolbar never collapses into an overflow item the way iOS's UINavigationBar
-        // does — `OverflowBarButtonItem` doesn't exist here, so a not-yet-rendered button has no
-        // fallback target; just wait longer for the real one instead of tapping a dead end.
         _ = button.waitForExistence(timeout: 10)
         button.tap()
         #else
@@ -125,8 +92,6 @@ class DiagramScreenBase {
         }
         let overflowButton = app.buttons["OverflowBarButtonItem"]
         guard overflowButton.waitForExistence(timeout: 2) else {
-            // Neither the direct button nor an overflow item ever appeared — let the subsequent
-            // assertion on the caller's side report the real failure instead of crashing here.
             return
         }
         overflowButton.tap()
@@ -142,35 +107,22 @@ class DiagramScreenBase {
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
 
-    /// The floating button overlaid on the canvas; opens `CompareGitPanel` in a popover/sheet.
     var compareButton: XCUIElement { app.descendants(matching: .any)["delta.openButton"] }
-    /// A row in the inline ref list (HEAD / each branch / each tag / Custom…) — no "None" row and
-    /// no separate on/off toggle: tapping a row enables the diff against that ref directly;
-    /// `compareClearButton` is what turns it back off. `name` matches `CompareGitPanel.RefRow.id`
-    /// (e.g. `"HEAD"`, a branch/tag name, or `"custom"`).
+    /// No "None" row and no separate on/off toggle: tapping a row enables the diff against that ref
+    /// directly; `compareClearButton` turns it back off. `name` matches `CompareGitPanel.RefRow.id`.
     func compareRefRow(_ name: String) -> XCUIElement { app.buttons["delta.ref.\(name)"] }
-    /// Nav-bar toolbar button; disables comparison directly. Narrowed to `.buttons`, not the broad
-    /// `.any` matcher the other accessors use — a toolbar `Button`'s identifier matches more than one
-    /// descendant node under `.any`.
     var compareClearButton: XCUIElement { app.buttons["delta.clearButton"] }
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
     var compareLoadedIndicator: XCUIElement { app.descendants(matching: .any)["delta.loaded"] }
     var compareErrorIndicator: XCUIElement { app.descendants(matching: .any)["delta.error"] }
-    /// Present while the panel is showing "Loading…" — lets a timed-out wait for
-    /// `compareLoadedIndicator` distinguish "genuinely still loading" from "never reached a
-    /// recognizable comparison state at all," which otherwise both look identical (a bare timeout
-    /// with `compareErrorIndicator` also absent).
     var compareLoadingIndicator: XCUIElement { app.descendants(matching: .any)["delta.loading"] }
 
-    /// Taps the floating Compare button to reveal `CompareGitPanel`'s popover/sheet, then waits for
-    /// the HEAD row (always present) to appear — the panel's controls aren't in the accessibility
-    /// tree at all until this opens it.
+    /// The panel's controls aren't in the accessibility tree until this opens it.
     func openCompare() {
         compareButton.tap()
         _ = compareRefRow("HEAD").waitForExistence(timeout: 5)
     }
 
-    /// Taps the ref list row named `name` directly (e.g. `"HEAD"`, a branch/tag name, or `"none"`).
     @discardableResult
     func chooseCompareRef(_ name: String) -> XCUIElement {
         let row = compareRefRow(name)

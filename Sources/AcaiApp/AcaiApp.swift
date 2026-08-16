@@ -31,7 +31,6 @@ public struct AcaiRootScene: Scene {
                     else { return }
                     handoffPresenter.pendingTarget = .codebase(id)
                 }
-                // A Spotlight search-result tap.
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
                         return

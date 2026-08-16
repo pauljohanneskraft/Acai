@@ -1,10 +1,7 @@
 import Foundation
 
 /// Trailing-edge debounce: each `trigger()` restarts the delay, and `onFire` runs once, `duration`
-/// after the *last* `trigger()` call, only if no further `trigger()` arrived in the meantime. Used
-/// by `DirectoryChangeWatcher` to collapse a burst of filesystem events (a save touches several
-/// files in quick succession) into a single reindex, and kept as its own type so the debounce
-/// timing itself is testable without a real filesystem or `DispatchSource` in the loop.
+/// after the *last* `trigger()` call, only if no further `trigger()` arrived in the meantime.
 final class TrailingDebouncer: @unchecked Sendable {
     private let duration: Duration
     private let onFire: @Sendable () -> Void

@@ -3,8 +3,7 @@ import Security
 
 /// Keychain-backed storage for the signed-in GitHub account's credential + display info, shared
 /// verbatim between macOS and iOS — unlike the filesystem bookmarks `ScopedResourceAccess` needs,
-/// Keychain access to an app's own items requires no sandbox entitlement. Only one account is
-/// ever stored at a time, matching the single "GitHub sign-in" the app exposes.
+/// Keychain access to an app's own items requires no sandbox entitlement.
 struct GitHubTokenStore {
     private let service = "de.kraftsoftware.Acai.github"
     private let account = "default"
@@ -18,23 +17,17 @@ struct GitHubTokenStore {
         UITestFixtureResolver().resolveBaseDir()?.appendingPathComponent("github-token.json")
     }
 
-    /// The signed-in account: its credential plus enough profile info to show who's signed in.
     struct StoredAccount: Codable, Hashable {
         var credential: GitHubCredential
         var login: String
         var avatarURL: URL?
-        /// The scopes GitHub reported the current token actually has (the scope checklist), read from
-        /// the `X-OAuth-Scopes` response header at sign-in time — classic PATs and OAuth/device-flow
-        /// tokens report this; fine-grained PATs currently don't, so `nil` there means "unknown,"
-        /// distinct from `[]` ("confirmed to have none"). `[String]?` (not defaulted in this
-        /// `Codable` struct's synthesized `init(from:)`) decodes to `nil` for every account already
-        /// persisted before this field existed — see `GitHubTokenStoreMigrationTests` for the proof,
-        /// not just the reasoning.
+        /// Read from the `X-OAuth-Scopes` response header at sign-in time — classic PATs and
+        /// OAuth/device-flow tokens report this; fine-grained PATs currently don't, so `nil` here
+        /// means "unknown," distinct from `[]` ("confirmed to have none"). Also decodes to `nil`
+        /// for every account persisted before this field existed (see `GitHubTokenStoreMigrationTests`).
         var scopes: [String]?
-        /// When the current token expires, if known — a device-flow (`GitHubCredential.gitHubApp`)
-        /// token already carries this; a fine-grained PAT's `github-authentication-token-expiration`
-        /// response header is captured here too, when GitHub sends it. `nil` means "no known expiry"
-        /// (a classic PAT, or a fine-grained PAT whose expiry wasn't reported).
+        /// `nil` means "no known expiry" (a classic PAT, or a fine-grained PAT whose expiry wasn't
+        /// reported).
         var tokenExpiresAt: Date?
     }
 
@@ -66,7 +59,6 @@ struct GitHubTokenStore {
         return try? JSONDecoder().decode(StoredAccount.self, from: data)
     }
 
-    /// Saves (inserting or overwriting) the signed-in account.
     func save(_ account: StoredAccount) throws {
         if let fixtureFileURL {
             let data = try JSONEncoder().encode(account)
@@ -87,9 +79,8 @@ struct GitHubTokenStore {
         }
     }
 
-    /// Signs out: removes the stored account. Already-cloned folders on disk are untouched —
-    /// they remain plain local codebases; further `pull`s against private repos will fail until
-    /// signing back in.
+    /// Already-cloned folders on disk are untouched — further `pull`s against private repos will
+    /// fail until signing back in.
     func clear() {
         if let fixtureFileURL {
             try? FileManager.default.removeItem(at: fixtureFileURL)

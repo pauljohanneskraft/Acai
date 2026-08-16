@@ -1,21 +1,16 @@
 import Foundation
 import SwiftGitX
 
-/// Builds real git history inside a fixture directory at UI-test launch time, via `SwiftGitX`
-/// itself rather than shelling out to `/usr/bin/git`. That's not a style choice: `Process`/`Pipe`
-/// don't exist at all in iOS's Foundation (a real, compile-time platform constraint discovered
-/// while building this — `Tests/AcaiGitTests/GitFixture.swift`'s SwiftPM-side counterpart can only
-/// get away with `Process` because that target is macOS-only by construction, whereas this one is
-/// compiled into `Acai-iOSUITests` too), so building the fixture with the same library the app
-/// itself uses is both the only option and the more faithful one.
+/// Builds real git history via `SwiftGitX` rather than shelling out to `/usr/bin/git`: `Process`/
+/// `Pipe` don't exist at all in iOS's Foundation, and this fixture is compiled into
+/// `Acai-iOSUITests` too (unlike `Tests/AcaiGitTests/GitFixture.swift`'s macOS-only counterpart).
 struct GitFixtureRepository {
     let directory: URL
 
     /// Turns `directory` (an already-staged, non-git fixture directory) into a real git repo whose
-    /// current history is exactly `paths`' present-on-disk content — deliberately leaving the
+    /// current history is exactly `paths`' present-on-disk content — deliberately leaves the
     /// directory free for the caller to make a further, uncommitted edit afterward, so comparing
-    /// the working tree against `HEAD` later produces a real, visible delta rather than a vacuous
-    /// "compared identical states" no-op. See `CompareGitRevisionTests`.
+    /// the working tree against `HEAD` later produces a real delta. See `CompareGitRevisionTests`.
     func commitInitialRevision(paths: [String]) throws {
         let repository = try Repository.create(at: directory)
         try configureIdentity(repository)
@@ -24,12 +19,10 @@ struct GitFixtureRepository {
         try ensureInitialBranchIsNamedMain(repository)
     }
 
-    /// Builds a standalone repository from scratch, standing in for a GitHub remote
-    /// (`GitHubAddCodebaseTests`): a minimal Swift package on `main` with two commits (adding
-    /// `Widget.swift` then `Gadget.swift`), and a `feature` branch one commit further ahead (adding
-    /// `Extra.swift`) — so cloning `main` then switching to `feature` produces a visibly different
-    /// Class Diagram, proving the switch actually re-fetched/re-checked-out real content rather
-    /// than being a no-op.
+    /// Standalone repository standing in for a GitHub remote (`GitHubAddCodebaseTests`): `main`
+    /// with two commits, and a `feature` branch one commit further ahead — so cloning `main` then
+    /// switching to `feature` produces a visibly different Class Diagram, proving the switch
+    /// actually re-fetched/re-checked-out real content rather than being a no-op.
     func makeRemote() throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try write(packageManifest, to: "Package.swift")
@@ -58,9 +51,8 @@ struct GitFixtureRepository {
     }
 
     /// No real git history — one plain directory per ref, matching what
-    /// `FastFixtureGitHubRepositoryService` expects under `-AcaiUITestGitHubFastFixtureRoot`. Use
-    /// instead of `makeRemote()` when a journey doesn't need to prove real git mechanics.
-    /// `refs`: ref name → relative file path → file content.
+    /// `FastFixtureGitHubRepositoryService` expects. Use instead of `makeRemote()` when a journey
+    /// doesn't need to prove real git mechanics. `refs`: ref name → relative file path → content.
     func makeCannedRemote(refs: [String: [String: String]]) throws {
         for (ref, files) in refs {
             let refDirectory = directory.appendingPathComponent(ref, isDirectory: true)
@@ -74,19 +66,15 @@ struct GitFixtureRepository {
         }
     }
 
-    /// `git_commit_create_from_stage` needs `user.name`/`user.email` from *some* config scope, and
-    /// the UI test process has no reliable global `~/.gitconfig` to fall back on (confirmed
-    /// empirically: committing without this failed with "config value 'user.name' was not found")
-    /// — so this fixture always sets its own repo-local identity rather than depending on one.
+    /// The UI test process has no reliable global `~/.gitconfig` to fall back on (confirmed
+    /// empirically: committing without this failed with "config value 'user.name' was not found").
     private func configureIdentity(_ repository: Repository) throws {
         try repository.config.set("user.name", to: "UI Test")
         try repository.config.set("user.email", to: "uitest@example.com")
     }
 
-    /// Renames the just-created repository's initial branch (whatever libgit2 defaulted it to —
-    /// "master" unless the host's global git config sets `init.defaultBranch`) to "main", so this
-    /// fixture's branch name is deterministic regardless of the host machine's config. Must run
-    /// right after the first commit: an unborn HEAD (no commits yet) has no branch to rename.
+    /// Makes this fixture's branch name deterministic regardless of the host's `init.defaultBranch`
+    /// config. Must run right after the first commit: an unborn HEAD has no branch to rename.
     private func ensureInitialBranchIsNamedMain(_ repository: Repository) throws {
         guard let branch = try repository.HEAD as? Branch, branch.name != "main" else { return }
         try repository.branch.rename(branch, to: "main")

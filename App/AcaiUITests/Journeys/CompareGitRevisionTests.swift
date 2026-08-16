@@ -1,11 +1,5 @@
 import XCTest
 
-/// Proves the Compare/diff engine (`AcaiGit`, wired through `CompareGitPanel`) actually works
-/// end to end, on both platforms, through the real app UI — no manual click-through needed. Before
-/// this slice, this feature was `#if os(macOS)`-gated and shelled out to `git archive`/`tar`; this
-/// journey is what replaces the manual "run the app, add a codebase, toggle Compare" verification
-/// pass.
-///
 /// The seeded fixture's codebase isn't a git repo by default; `GitFixtureRepository` turns it into
 /// one at launch, commits its current (pre-edit) content as `HEAD`, then this test edits the
 /// working tree afterward (adding `Added.swift`) *without* committing — so comparing the
@@ -57,9 +51,6 @@ final class CompareGitRevisionTests: XCTestCase {
         XCTAssertTrue(diagram.typeNode(named: "Added").waitForExistence(timeout: 10),
                       "the uncommitted edit should still be visible on the current (working-tree) side")
 
-        // Open the Compare popover/sheet and capture it in its default (off) state before toggling
-        // anything — this is the actual UI surface `CompareOverlayButton` opens, not just the
-        // floating button itself.
         XCTAssertTrue(diagram.compareButton.waitForExistence(timeout: 10))
         diagram.openCompare()
         comparator.validate(
@@ -67,12 +58,9 @@ final class CompareGitRevisionTests: XCTestCase {
             screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
-        // Pick HEAD directly from the ref picker (no separate on/off toggle) and wait for the "old"
-        // snapshot to load. 30s, not this file's more typical ~10s: the "old" side is a real
-        // `git` tree extraction + full re-analysis (`GitRevisionSnapshot`), not a cached lookup —
-        // confirmed empirically that this can occasionally take noticeably longer than a quick
-        // structural diagram build, the same class of occasional-slow-update seen and fixed for
-        // call-graph creation (`GeneratedDiagramScreenshotTests`).
+        // 30s, not this file's usual ~10s: the "old" side is a real git tree extraction + full
+        // re-analysis (`GitRevisionSnapshot`), not a cached lookup, and can occasionally take
+        // noticeably longer than a quick structural diagram build.
         diagram.chooseCompareRef("HEAD")
         let loaded = diagram.compareLoadedIndicator.waitForExistence(timeout: 30)
         let errorExists = diagram.compareErrorIndicator.exists

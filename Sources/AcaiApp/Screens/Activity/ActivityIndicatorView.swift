@@ -1,12 +1,5 @@
 import SwiftUI
 
-/// The global Activity indicator: a toolbar icon (badge count while anything's in flight) that
-/// expands to a list of every in-flight operation the `ActivityCenter` knows about, each with a
-/// Cancel affordance. Lives directly in `ProjectBrowserView`'s sidebar toolbar, right next to the
-/// Diagram Theme picker, on every platform — macOS gets a `.popover`; iPad/iPhone the same content
-/// (a `.popover` reads fine on iPad too; iPhone's compact width collapses it to a sheet the same way
-/// `CompareOverlayButton` already does, so this reuses that established platform split rather than
-/// inventing a second one).
 struct ActivityIndicatorView: View {
     @ObservedObject var activityCenter: ActivityCenter
     @State private var isExpanded = false
@@ -52,8 +45,6 @@ struct ActivityIndicatorView: View {
     }
 }
 
-/// The expanded list behind the indicator: one named row per in-flight operation, each with a
-/// Cancel button, plus a designed empty state — not just the happy "operations exist" path.
 private struct ActivityOperationListView: View {
     @ObservedObject var activityCenter: ActivityCenter
     @Environment(\.dismiss) private var dismiss
@@ -101,9 +92,7 @@ private struct ActivityOperationRow: View {
                 if let progress = operation.progress {
                     ProgressView(value: progress)
                 } else {
-                    // No operation kind reports real byte/object progress yet (that needs libgit2's
-                    // transfer callbacks — a separate, not-yet-built piece of work) — an
-                    // indeterminate spinner is the honest state, not a fabricated percentage.
+                    // No operation reports real byte/object progress yet; indeterminate is honest, not fabricated.
                     ProgressView()
                         .controlSize(.small)
                 }

@@ -1,10 +1,8 @@
 import XCTest
 
-/// A destructive "Delete Project…"/"Delete Codebase…" button at the bottom of
-/// `ProjectDetailView`/`CodebaseDetailView` — a second, discoverable path to the same
-/// confirmed-safe action `DeleteConfirmationTests` already covers via the sidebar/row context
-/// menu. Each test launches its own fresh copy of the fixture, so a confirmed deletion in one
-/// test never affects another.
+/// Covers the "Delete Project…"/"Delete Codebase…" buttons at the bottom of
+/// `ProjectDetailView`/`CodebaseDetailView`, a second path to the same action
+/// `DeleteConfirmationTests` covers via the sidebar/row context menu.
 @MainActor
 final class DiscoverableDeletePathTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"

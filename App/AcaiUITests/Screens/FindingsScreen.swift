@@ -1,7 +1,5 @@
 import XCTest
 
-/// Accessors for the project-level Findings view (`FindingsView`) — its loading/empty states,
-/// filters, and rows, plus each row's "Open in…"/"View Source"/"Suppress" actions.
 @MainActor
 final class FindingsScreen {
     let app: XCUIApplication
@@ -18,8 +16,7 @@ final class FindingsScreen {
 
     var codebaseFilter: XCUIElement { app.descendants(matching: .any)["findings.codebaseFilter"] }
     /// Not a `.buttons` query — `.toggleStyle(.button)` still renders as a native `Switch` in this
-    /// accessibility tree (checked via a live UI-test run, not assumed), same reasoning as
-    /// `ProjectBrowserScreen.newProjectButton`'s own `.descendants(matching: .any)` comment.
+    /// accessibility tree (confirmed via a live UI-test run).
     var showSuppressedToggle: XCUIElement { app.descendants(matching: .any)["findings.showSuppressedToggle"] }
     var suppressionSaveLoadedIndicator: XCUIElement {
         app.descendants(matching: .any)["findings.suppressionSave.loaded"]
@@ -30,18 +27,15 @@ final class FindingsScreen {
         app.buttons["findings.kindFilter.\(kind)"]
     }
 
-    /// `id` is the finding's own stable `Finding.id`.
     func row(id: String) -> XCUIElement {
         app.descendants(matching: .any)["findings.row.\(id)"]
     }
 
-    /// The first violation row's own container (`findings.row.<Finding.id>`). Every row's
-    /// Suppress/Un-suppress button shares the SAME identifier (`findings.row.suppressButton`), so a
-    /// bare `.firstMatch` query against that identifier re-resolves fresh on every access — if the
-    /// list reflows between a `waitForExistence` and the following `.tap()`, those two accesses can
-    /// silently resolve to two different rows. Scoping to one captured row element up front removes
-    /// that ambiguity: every subsequent query below is anchored to *this* row, not re-derived from
-    /// the shared identifier.
+    /// Every row's Suppress/Un-suppress button shares the SAME identifier
+    /// (`findings.row.suppressButton`), so a bare `.firstMatch` query against it re-resolves fresh on
+    /// every access — if the list reflows between a `waitForExistence` and the following `.tap()`,
+    /// those two accesses can silently resolve to two different rows. Scoping to one captured row
+    /// element up front removes that ambiguity.
     var firstViolationRow: XCUIElement {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'findings.row.violation-'"))

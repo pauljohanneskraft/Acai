@@ -1,6 +1,5 @@
-/// One entry in the "Keyboard Shortcuts" reference panel: a symbol, its action name, and the
-/// context it applies in. Kept in sync by hand with the app's real `.keyboardShortcut(...)` call
-/// sites — only lists shortcuts that actually exist.
+/// Kept in sync by hand with the app's real `.keyboardShortcut(...)` call sites — only lists
+/// shortcuts that actually exist.
 struct KeyboardShortcutReference: Identifiable, Hashable {
     var id: String { context + symbol }
     var symbol: String
@@ -9,16 +8,13 @@ struct KeyboardShortcutReference: Identifiable, Hashable {
 }
 
 extension KeyboardShortcutReference {
-    /// A named section of the panel — one per context (canvas, undo, selection, …).
     struct Group: Identifiable, Hashable {
         var id: String { title }
         var title: String
         var shortcuts: [KeyboardShortcutReference]
     }
 
-    /// Every shortcut currently wired up in the app, grouped for display. `⌘0` (fit to view) is
-    /// shared by every diagram canvas; the rest are freeform-canvas-only. `⌘?` is macOS-only —
-    /// iOS/iPadOS opens the panel from the sidebar toolbar instead.
+    /// `⌘?` is macOS-only — iOS/iPadOS opens the panel from the sidebar toolbar instead.
     static let groups: [Group] = {
         var groups: [Group] = [
             Group(title: "Canvas", shortcuts: [

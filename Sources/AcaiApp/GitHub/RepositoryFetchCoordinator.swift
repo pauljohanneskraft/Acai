@@ -3,20 +3,14 @@ import Foundation
 
 /// Fetches each *unique* remote referenced by a batch of codebases at most once, instead of every
 /// codebase in a monorepo (N codebases sharing one shared hub clone — see `GitWorktreeSync`)
-/// running its own full fetch back-to-back. Sits in front of any "refresh several codebases at
-/// once" entry point — today that's `FileWatchReindexCoordinator` (4c) and
-/// `ScheduledRefreshCoordinator` (4d), the two triggers that can plausibly touch a monorepo's
-/// several codebases in the same pass.
+/// running its own full fetch back-to-back.
 ///
 /// A remote that was already fetched within `recencyWindow` — by this coordinator, by a manual
-/// per-codebase `pull`, or by anything else touching the same shared clone — is skipped, mirroring
-/// `pull(codebaseID:)`'s own `latestSHA != lastSyncedCommitSHA` skip-if-unchanged idea one level
-/// earlier (before any per-codebase ref resolution even runs).
+/// per-codebase `pull`, or by anything else touching the same shared clone — is skipped.
 struct RepositoryFetchCoordinator {
     var recencyWindow: TimeInterval
     private let fetch: @Sendable (GitRepository, (@Sendable (Double) -> Void)?) async throws -> Void
 
-    /// Real fetches, serialized per-repository through `locks` — the production configuration.
     init(locks: GitRepositoryLocks, recencyWindow: TimeInterval = 60) {
         self.recencyWindow = recencyWindow
         self.fetch = { repository, onProgress in
@@ -35,8 +29,8 @@ struct RepositoryFetchCoordinator {
         self.fetch = fetch
     }
 
-    /// Fetches each distinct repository in `repositories` (deduped by shared on-disk clone path,
-    /// so two `GitRepository` values for the same remote count as one) at most once.
+    /// Deduped by shared on-disk clone path, so two `GitRepository` values for the same remote
+    /// count as one.
     func fetchEachRemoteOnce(
         among repositories: [GitRepository], onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws {
@@ -51,10 +45,9 @@ struct RepositoryFetchCoordinator {
         }
     }
 
-    /// Same as `fetchEachRemoteOnce(among:onProgress:)`, but derives the repository set from
-    /// `codebases`' own worktree-backed `repository` references (`Codebase.repository?.remoteURL`)
-    /// — codebases with no such reference (a plain local folder, or an older independent GitHub
-    /// clone predating worktree support) have nothing shared to dedup and are skipped.
+    /// Derives the repository set from `codebases`' own worktree-backed `repository` references —
+    /// codebases with no such reference (a plain local folder, or an older independent GitHub
+    /// clone predating worktree support) are skipped.
     func fetchEachRemoteOnce(
         for codebases: [Codebase], hubStoreDirectory: URL, onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws {

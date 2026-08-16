@@ -2,9 +2,6 @@ import Foundation
 import AcaiGit
 import CryptoKit
 
-/// The credential + repository coordinate a sync/clone/fetch operates against — bundled so
-/// `GitHubRepositoryService.sync`/`attachWorktree`/`resyncWorktree` stay under the
-/// function-parameter-count limit once `onProgress` joined them.
 struct GitHubRepositoryTarget: Sendable {
     var credential: GitHubCredential
     var owner: String
@@ -12,18 +9,12 @@ struct GitHubRepositoryTarget: Sendable {
     var ref: String
 }
 
-/// Where a repository-backed codebase's worktree should live and how its fetch/checkout against
-/// the shared hub clone should be serialized — bundled (like `GitHubRepositoryRef`) to keep
-/// `GitHubRepositoryService.attachWorktree`/`resyncWorktree` under the function-parameter-count
-/// limit.
 struct GitWorktreeDestination: Sendable {
-    /// Where every shared hub clone lives, one subdirectory per remote — see
-    /// `ProjectStore.gitRepositoriesDir`.
+    /// One subdirectory per remote — see `ProjectStore.gitRepositoriesDir`.
     var hubStoreDirectory: URL
-    /// The libgit2 worktree name to register — see `ProjectStore.gitWorktreeName(for:)`. Unused by
-    /// `resyncWorktree`, which moves an already-registered worktree rather than creating one.
+    /// Unused by `resyncWorktree`, which moves an already-registered worktree rather than
+    /// creating one.
     var worktreeName: String
-    /// Where this codebase's linked worktree checkout lives — see `ProjectStore.gitWorktreeURL(for:)`.
     var worktreeDirectory: URL
     /// Serializes fetch-vs-checkout against the shared hub clone across every codebase referencing
     /// it — see `ProjectStore.gitRepositoryLocks`.
@@ -31,13 +22,12 @@ struct GitWorktreeDestination: Sendable {
 }
 
 /// The repository/branch/tag/clone operations `NewCodebaseSheet`, `CodebaseDetailView`, and
-/// `ProjectCodebaseEditor` need against a GitHub-backed codebase — split out (like
-/// `GitHubAccountService`) so a UI test process can swap in a deterministic, network-free
-/// conformance instead of an in-process `URLProtocol` mock.
+/// `ProjectCodebaseEditor` need against a GitHub-backed codebase — split out so a UI test process
+/// can swap in a deterministic, network-free conformance instead of an in-process `URLProtocol`
+/// mock.
 protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
-    /// Open pull requests, for the Compare panel's PR picker.
     func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest]
     /// The old one-independent-clone-per-codebase sync, kept only for older codebases that were
     /// created against `ProjectStore.githubCloneURL(for:)` and still resolve their files there.
@@ -48,8 +38,6 @@ protocol GitHubRepositoryService: Sendable {
 
     /// Ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
     /// codebase ever to reference it) and registers a brand-new linked worktree for one codebase.
-    /// Returns the resolved commit SHA and the credential-free remote URL to persist in
-    /// `CodebaseRepositoryReference`.
     @discardableResult
     func attachWorktree(
         _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
@@ -57,8 +45,7 @@ protocol GitHubRepositoryService: Sendable {
     ) async throws -> (headSHA: String, remoteURL: URL)
 
     /// Re-syncs the shared hub clone (a fetch, not a clone) to `ref` and moves an
-    /// already-registered worktree along with it — used by `pull`/`switchGitHubRef` once a
-    /// codebase already has a worktree from `attachWorktree` above.
+    /// already-registered worktree along with it.
     @discardableResult
     func resyncWorktree(
         _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
@@ -66,7 +53,6 @@ protocol GitHubRepositoryService: Sendable {
     ) async throws -> String
 }
 
-/// Real network calls — exactly what each call site did inline before this seam existed.
 struct LiveGitHubRepositoryService: GitHubRepositoryService {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository] {
         let client = GitHubAPIClient(credential: credential)
@@ -133,13 +119,12 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
 /// `repositories`/`refs` return canned data for the one local fixture repository, and `sync`
 /// performs a real libgit2 clone/fetch (via `AcaiGit.GitClone`) against `remoteURL` — a local git
 /// repository staged by the UI test — instead of `https://github.com/...`. Selected whenever
-/// `UITestFixtureResolver().resolveBaseDir() != nil`, regardless of whether `remoteURL` is set:
-/// every UI-test-fixture launch must get the network-free conformance, even ones that never clone,
+/// `UITestFixtureResolver().resolveBaseDir() != nil`, regardless of whether `remoteURL` is set —
 /// otherwise a signed-in-only journey would fall through to `LiveGitHubRepositoryService` and hit
 /// real network with a fake credential.
 struct FixtureGitHubRepositoryService: GitHubRepositoryService {
-    /// `nil` when no `-AcaiUITestGitHubRemoteURL` was configured — `repositories(credential:)`
-    /// doesn't need it; `refs`/`sync` throw a local `Failure` instead of falling back to network.
+    /// `nil` when no `-AcaiUITestGitHubRemoteURL` was configured — `refs`/`sync` throw a local
+    /// `Failure` instead of falling back to network.
     let remoteURL: URL?
 
     enum Failure: LocalizedError {
@@ -154,7 +139,6 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
         }
     }
 
-    /// The canned repository every fixture-stubbed picker resolves to.
     static let repository = GitHubAPIClient.Repository(
         id: 1, name: "fixture-repo", fullName: "octocat/fixture-repo",
         owner: GitHubRepositoryOwner(login: "octocat"), defaultBranch: "main", isPrivate: false)
@@ -163,8 +147,6 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
         [Self.repository]
     }
 
-    /// Lists the fixture remote's actual local+tag refs (via `GitCheckout`) so the picker reflects
-    /// whatever branches/tags the UI test's fixture repository actually created.
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef] {
         guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
         return try GitCheckout(directory: remoteURL).refNames().map { name in
@@ -172,10 +154,8 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
         }
     }
 
-    /// No UI-test fixture stages open pull requests today — an empty list keeps this network-free
-    /// (never falls through to `LiveGitHubRepositoryService`) rather than throwing, so a journey
-    /// that merely opens the Compare panel on a GitHub-backed codebase sees an empty PR picker
-    /// instead of an error.
+    /// An empty list rather than throwing, so a journey that merely opens the Compare panel sees an
+    /// empty PR picker instead of an error.
     func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest] {
         []
     }
@@ -218,7 +198,6 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
 /// Network-free *and* git-free: `sync`/`attachWorktree`/`resyncWorktree` copy an already-staged
 /// directory instead of running real libgit2 operations, so a journey that just needs a GitHub-
 /// backed codebase to exist doesn't pay for git timing it isn't proving.
-/// `FixtureGitHubRepositoryService` above stays the real-git conformance for journeys that are.
 struct FastFixtureGitHubRepositoryService: GitHubRepositoryService {
     let sourceDirectoriesByRef: [String: URL]
 
@@ -299,8 +278,7 @@ struct FastFixtureGitHubRepositoryService: GitHubRepositoryService {
 }
 
 /// Picks between `LiveGitHubRepositoryService`, real-git `FixtureGitHubRepositoryService`, and
-/// git-free `FastFixtureGitHubRepositoryService`, factored out for three call sites
-/// (`NewCodebaseSheet`, `CodebaseDetailView`, `ProjectCodebaseEditor`).
+/// git-free `FastFixtureGitHubRepositoryService`.
 struct GitHubRepositoryServiceResolver {
     func resolve() -> GitHubRepositoryService {
         guard UITestFixtureResolver().resolveBaseDir() != nil else { return LiveGitHubRepositoryService() }

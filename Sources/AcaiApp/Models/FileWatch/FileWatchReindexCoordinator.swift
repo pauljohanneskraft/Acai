@@ -1,19 +1,13 @@
 import Foundation
 
-/// Watches every local-folder codebase's directory (`Codebase.githubSource == nil` — a GitHub-backed
-/// codebase is refreshed by `ScheduledRefreshCoordinator` (4d) instead, never by file-watch) and
-/// triggers a **full** reindex, debounced, whenever its directory changes. `DirectoryChangeWatcher`
-/// on macOS, `DirectoryPollingWatcher` on iOS — see their own doc comments for why they differ per
-/// platform.
+/// Watches every local-folder codebase's directory (`Codebase.githubSource == nil`; a GitHub-backed
+/// codebase is refreshed by `ScheduledRefreshCoordinator` instead) and triggers a **full** reindex,
+/// debounced, whenever its directory changes.
 ///
 /// `reindex` is injected rather than called directly on a `ProjectCodebaseEditor`: that type is
-/// re-created per access (see `ProjectBrowserViewModel.editing`) and isn't something this
-/// long-lived coordinator can hold onto, so its owner instead hands in a closure that resolves a
-/// fresh editor per call, e.g. `{ [weak self] id in await self?.editing.reindex(codebaseID: id) }`.
-/// That existing `reindex(codebaseID:)` already runs through `ActivityCenter`, so a file-watch
-/// -triggered reindex shows up in the Activity indicator identically to a manual one, with no
-/// separate wiring needed here. Incremental reindexing (only re-parsing changed files) is out of
-/// scope and deliberately not what this calls — every trigger is a full `reindex(codebaseID:)`.
+/// re-created per access and isn't something this long-lived coordinator can hold onto, so its
+/// owner instead hands in a closure that resolves a fresh editor per call. Incremental reindexing
+/// (only re-parsing changed files) is out of scope — every trigger is a full `reindex(codebaseID:)`.
 @MainActor
 final class FileWatchReindexCoordinator {
     private var watchers: [UUID: DirectoryWatch] = [:]
@@ -22,9 +16,8 @@ final class FileWatchReindexCoordinator {
     private let reindex: @Sendable (UUID) async -> Void
 
     /// - Parameter didFinishDebounceWindow: fires once per debounce window elapsing, after the
-    ///   resulting `reindex` call completes, regardless of what that call did — a settle signal with
-    ///   no production consumer today, only for tests that need to distinguish "correctly didn't
-    ///   reindex" from "hasn't finished yet."
+    ///   resulting `reindex` call completes — a settle signal for tests that need to distinguish
+    ///   "correctly didn't reindex" from "hasn't finished yet."
     init(
         debounce: Duration = .seconds(3),
         didFinishDebounceWindow: (@Sendable () -> Void)? = nil,
@@ -35,10 +28,8 @@ final class FileWatchReindexCoordinator {
         self.reindex = reindex
     }
 
-    /// Reconciles active watchers against `codebases`: starts one for every local-folder codebase
-    /// not already watched, stops one for any codebase no longer present or no longer a local
-    /// folder. Call whenever the tracked codebase set (or a codebase's `directoryPath`/
-    /// `githubSource`) may have changed — e.g. after every `persist()` in `ProjectCodebaseEditor`.
+    /// Call whenever the tracked codebase set (or a codebase's `directoryPath`/`githubSource`) may
+    /// have changed.
     func sync(codebases: [Codebase]) {
         let localFolders = Dictionary(
             uniqueKeysWithValues: codebases.filter { $0.githubSource == nil }.map { ($0.id, $0.directoryPath) })
@@ -52,7 +43,6 @@ final class FileWatchReindexCoordinator {
         }
     }
 
-    /// Stops every active watcher — e.g. when the owning store is torn down.
     func stopAll() {
         for watcher in watchers.values { watcher.stop() }
         watchers.removeAll()
