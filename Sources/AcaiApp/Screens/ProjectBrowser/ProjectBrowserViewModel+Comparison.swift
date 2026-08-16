@@ -5,8 +5,8 @@ import AcaiCore
 extension ProjectBrowserViewModel {
     // MARK: - Delta comparison (git revision)
 
-    /// Identity of a cached comparison snapshot: which directory at which resolved git ref (a
-    /// branch/tag/SHA, or — for a pull-request comparison's "old" side — a resolved merge-base SHA).
+    /// `ref` is a branch/tag/SHA, or — for a pull-request comparison's "old" side — a resolved
+    /// merge-base SHA.
     struct ComparisonKey: Hashable {
         let directory: String
         let ref: String
@@ -20,9 +20,7 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
-    /// Sets (or clears, with `nil`) the git revision a diagram is compared against in delta mode
-    /// (HEAD / a branch or tag / a custom revision, always vs. the live working tree), dropping
-    /// saved positions since the rendered element set changes, and exits pull-request mode.
+    /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
         comparisonError = nil
         diagrams.mutate(diagramID, clearPositions: true) {
@@ -70,12 +68,10 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
-    /// Loads the artifact(s) a diagram's comparison needs via a read-only `GitDiffSnapshot`,
-    /// caching them. With `comparisonBaseRef` unset (HEAD/ref/custom mode), loads just the "old"
-    /// side, diffed against the live working tree as before. With it set (pull-request mode), first
-    /// resolves the merge-base of `comparisonBaseRef` and `comparisonGitRef`, then loads both that
-    /// merge-base and `comparisonGitRef` itself as historical snapshots — no live working tree is
-    /// involved. A no-op wherever a snapshot is already cached.
+    /// With `comparisonBaseRef` unset (HEAD/ref/custom mode), loads just the "old" side, diffed
+    /// against the live working tree. With it set (pull-request mode), first resolves the
+    /// merge-base of `comparisonBaseRef` and `comparisonGitRef`, then loads both that merge-base and
+    /// `comparisonGitRef` itself as historical snapshots — no live working tree is involved.
     func ensureComparisonLoaded(for diagram: GeneratedDiagram) async {
         guard let codebase = codebase(for: diagram.codebaseID),
               let ref = diagram.comparisonGitRef
@@ -120,9 +116,8 @@ extension ProjectBrowserViewModel {
         }
     }
 
-    /// The "old" side's cached comparison key: `comparisonGitRef` in HEAD/ref/custom mode, or the
-    /// resolved merge-base of `comparisonBaseRef`/`comparisonGitRef` in pull-request mode (`nil`
-    /// until that resolution finishes).
+    /// `comparisonGitRef` in HEAD/ref/custom mode, or the resolved merge-base of
+    /// `comparisonBaseRef`/`comparisonGitRef` in pull-request mode (`nil` until resolved).
     private func oldComparisonKey(for diagram: GeneratedDiagram) -> ComparisonKey? {
         guard let ref = diagram.comparisonGitRef,
               let directory = codebase(for: diagram.codebaseID)?.directoryPath
@@ -135,8 +130,8 @@ extension ProjectBrowserViewModel {
         return ComparisonKey(directory: directory, ref: sha)
     }
 
-    /// The "new" side's cached comparison key in pull-request mode only — `nil` in HEAD/ref/custom
-    /// mode, where the "new" side is the live working tree instead (`artifact(for:)`).
+    /// `nil` in HEAD/ref/custom mode, where the "new" side is the live working tree instead
+    /// (`artifact(for:)`).
     private func newComparisonKey(for diagram: GeneratedDiagram) -> ComparisonKey? {
         guard diagram.comparisonBaseRef != nil,
               let ref = diagram.comparisonGitRef,
@@ -145,9 +140,8 @@ extension ProjectBrowserViewModel {
         return ComparisonKey(directory: directory, ref: ref)
     }
 
-    /// Flattens and caches a cached semantic comparison artifact for display, mirroring
-    /// `artifact(for:)`'s own flatten + generated-type filter so delta mode diffs like-for-like
-    /// (node ids must match the current side's display artifact).
+    /// Mirrors `artifact(for:)`'s own flatten + generated-type filter so delta mode diffs
+    /// like-for-like (node ids must match the current side's display artifact).
     private func displayArtifact(for key: ComparisonKey) -> CodeArtifact? {
         guard let semantic = comparisonArtifacts[key] else { return nil }
         if let cached = comparisonDisplayCache[key] { return cached }
@@ -158,27 +152,24 @@ extension ProjectBrowserViewModel {
         return display
     }
 
-    /// The cached "old" (display, flattened) artifact for a diagram's current comparison, if loaded.
     func comparisonArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
         oldComparisonKey(for: diagram).flatMap(displayArtifact)
     }
 
-    /// The cached "new" (display, flattened) artifact override for a pull-request comparison —
     /// `nil` in HEAD/ref/custom mode or while still loading, in which case the caller should fall
     /// back to the codebase's current live artifact (`artifact(for:)`).
     func comparisonNewArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
         newComparisonKey(for: diagram).flatMap(displayArtifact)
     }
 
-    /// The cached "old" (semantic, un-flattened) artifact — the historical-side counterpart of
-    /// `semanticArtifact(for:)`, for recomputing findings against the comparison revision.
+    /// The historical-side counterpart of `semanticArtifact(for:)`, for recomputing findings
+    /// against the comparison revision.
     func comparisonSemanticArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
         oldComparisonKey(for: diagram).flatMap { comparisonArtifacts[$0] }
     }
 
-    /// Computes and caches the comparison-side analysis for a diagram, mirroring
-    /// `ensureAnalysisLoaded`'s shape but against the historical "old" artifact instead of the live
-    /// one. A no-op once the comparison snapshot isn't loaded yet or is already analyzed.
+    /// Mirrors `ensureAnalysisLoaded`'s shape but against the historical "old" artifact instead of
+    /// the live one.
     func ensureComparisonAnalysisLoaded(for diagram: GeneratedDiagram) async {
         guard let key = oldComparisonKey(for: diagram), comparisonAnalyses[key] == nil,
               let semantic = comparisonArtifacts[key],
@@ -191,7 +182,6 @@ extension ProjectBrowserViewModel {
         comparisonAnalyses[key] = analysis
     }
 
-    /// The cached comparison-side analysis for a diagram, or `nil` while still computing/absent.
     func comparisonAnalysis(for diagram: GeneratedDiagram) -> CodebaseAnalysis? {
         oldComparisonKey(for: diagram).flatMap { comparisonAnalyses[$0] }
     }

@@ -6,13 +6,12 @@ import UIKit
 import AppKit
 #endif
 
-/// Sign-in/out UI for the app's single GitHub account. This is the Settings pane's content — the
-/// source of truth reachable via ⌘, on macOS or the sidebar's gear icon on iPad/iPhone — instead
-/// of something embedded only inside `NewCodebaseSheet`'s GitHub tab, which now just reads
-/// `GitHubAccountStore` and points here when signed out. Two sign-in paths: paste a fine-grained
-/// PAT, or a GitHub App device-flow sign-in (only offered once `GitHubAppConfiguration.standard
-/// .clientID` has actually been filled in — see that type's doc comment for the one-time setup it
-/// depends on).
+/// Sign-in/out UI for the app's single GitHub account — the Settings pane's content, reachable
+/// via ⌘, on macOS or the sidebar's gear icon on iPad/iPhone. `NewCodebaseSheet`'s GitHub tab
+/// reads `GitHubAccountStore` and points here when signed out. Two sign-in paths: paste a
+/// fine-grained PAT, or a GitHub App device-flow sign-in (only offered once
+/// `GitHubAppConfiguration.standard.clientID` has actually been filled in — see that type's doc
+/// comment for the one-time setup it depends on).
 struct GitHubAccountSection: View {
     @EnvironmentObject private var accountStore: GitHubAccountStore
 
@@ -143,8 +142,6 @@ struct GitHubAccountSection: View {
             : "Used by \(accountStore.codebaseCount) codebases"
     }
 
-    /// A proactive re-auth prompt shown once expiry is close, rather than the token silently failing
-    /// on next use.
     private var expiryMessage: String? {
         guard let expiresAt = accountStore.account?.tokenExpiresAt else { return nil }
         let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
@@ -281,8 +278,8 @@ struct GitHubAccountSection: View {
 }
 
 #if os(iOS)
-/// Wraps `SFSafariViewController` so the device-flow verification page opens in-app rather than
-/// backgrounding Acai in external Safari — see `deviceCodeView`'s comment for why that matters.
+/// Opens the device-flow verification page in-app rather than backgrounding Acai in external
+/// Safari — see `deviceCodeView`'s comment for why that matters.
 private struct SafariView: UIViewControllerRepresentable {
     let url: URL
 

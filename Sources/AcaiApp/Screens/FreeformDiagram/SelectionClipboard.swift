@@ -5,9 +5,8 @@ import AppKit
 import UIKit
 #endif
 
-/// Cut / copy / paste for the freeform diagram's node-and-edge selection. Copy serialises the
-/// selected nodes (and the edges between them) to the system pasteboard; paste re-materialises them
-/// with fresh ids and a small offset so they don't land on top of the originals.
+/// Paste re-materialises nodes with fresh ids and a small offset so they don't land on top of
+/// the originals.
 @MainActor
 final class SelectionClipboard {
     private unowned let context: any FreeformEditingContext
@@ -16,7 +15,6 @@ final class SelectionClipboard {
         self.context = context
     }
 
-    /// Internal clipboard representation.
     private struct ClipboardPayload: Codable {
         var nodes: [FreeformDiagram.Node]
         var edges: [FreeformDiagram.Edge]
@@ -24,7 +22,6 @@ final class SelectionClipboard {
 
     private static var pasteboardType: String { "com.acai.diagram.nodes" }
 
-    /// Copy the currently selected nodes (and edges between them) to the system clipboard.
     func copySelection() {
         guard !context.selectedNodeIDs.isEmpty else { return }
         let selectedNodes = context.nodes.filter { context.selectedNodeIDs.contains($0.id) }
@@ -47,7 +44,6 @@ final class SelectionClipboard {
         #endif
     }
 
-    /// Cut: copy selection then delete.
     func cutSelection() {
         guard !context.selectedNodeIDs.isEmpty else { return }
         copySelection()
@@ -58,7 +54,6 @@ final class SelectionClipboard {
         context.save()
     }
 
-    /// Paste from the system clipboard, offsetting positions so nodes don't overlap originals.
     func paste() {
         #if os(macOS)
         guard let data = NSPasteboard.general.data(forType: .init(Self.pasteboardType)),

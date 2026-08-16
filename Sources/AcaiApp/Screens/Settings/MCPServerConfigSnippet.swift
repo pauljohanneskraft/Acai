@@ -1,7 +1,5 @@
 import Foundation
 
-/// Formats the `mcpServers` JSON block that both Claude Desktop's `claude_desktop_config.json`
-/// and Claude Code's own MCP config expect.
 struct MCPServerConfigSnippet {
     let serverName: String
     let binaryPath: String

@@ -12,9 +12,8 @@ struct NewCodebaseSheet: View {
     let projectID: UUID
     private let repositoryService: GitHubRepositoryService
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    // Reads signed-in state from the shared store instead of loading its own copy — signing
-    // in/out in Settings is reflected here immediately, and this sheet no longer embeds its own
-    // sign-in UI when signed out (it points at Settings instead — see `gitHubSection` below).
+    // Reads signed-in state from the shared store, so signing in/out in Settings is reflected
+    // here immediately — see `gitHubSection` for the signed-out prompt.
     @EnvironmentObject private var accountStore: GitHubAccountStore
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
     @Environment(\.dismiss) private var dismiss
@@ -38,11 +37,9 @@ struct NewCodebaseSheet: View {
     @State private var securityScopedBookmark: SecurityScopedBookmark?
     @State private var isChoosingDirectory = false
     /// Set when the picked folder turns out to already be a git working directory with an
-    /// `origin` remote — the transparent local-folder upgrade. `nil` for a plain folder, which
-    /// keeps today's behavior unchanged.
+    /// `origin` remote — the transparent local-folder upgrade. `nil` for a plain folder.
     @State private var repositoryReference: CodebaseRepositoryReference?
 
-    // GitHub state
     @State private var repositories: [GitHubAPIClient.Repository] = []
     @State private var repositorySearch = ""
     @State private var selectedRepository: GitHubAPIClient.Repository?

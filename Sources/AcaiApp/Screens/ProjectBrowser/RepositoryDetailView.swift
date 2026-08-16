@@ -1,9 +1,6 @@
 import AcaiGit
 import SwiftUI
 
-/// The Repositories detail pane: one shared `AcaiGit.GitRepository`'s remote URL, on-disk size,
-/// last-fetched time, and every codebase (across every project) referencing it — plus Fetch
-/// now/Manage worktrees/Remove actions.
 struct RepositoryDetailView: View {
     let remoteURL: URL
     @EnvironmentObject private var model: ProjectBrowserViewModel
