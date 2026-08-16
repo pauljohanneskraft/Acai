@@ -268,20 +268,31 @@ final class ProjectStore: ObservableObject {
 
     /// Updates the in-memory artifact immediately, then encodes and writes it to disk off the main
     /// actor — for a large codebase, JSON encode + atomic write can visibly stall the UI if done
-    /// inline. The detached task only touches the plain `Sendable` `url`/`stored` values.
+    /// inline. Fire-and-forget; callers that need "saved" to be a real completion signal (not just a
+    /// side effect) use `saveArtifactAndWait` instead.
     func saveArtifact(_ artifact: CodeArtifact, for codebaseID: UUID) {
         artifacts[codebaseID] = artifact
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
         Task {
             do {
-                try await Task.detached(priority: .utility) {
-                    try JSONEncoder().encode(stored).write(to: url, options: .atomic)
-                }.value
+                try await writeArtifactToDisk(artifact, for: codebaseID)
             } catch {
                 report("Failed to save analysis: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// Same as `saveArtifact`, but awaited.
+    func saveArtifactAndWait(_ artifact: CodeArtifact, for codebaseID: UUID) async throws {
+        artifacts[codebaseID] = artifact
+        try await writeArtifactToDisk(artifact, for: codebaseID)
+    }
+
+    private func writeArtifactToDisk(_ artifact: CodeArtifact, for codebaseID: UUID) async throws {
+        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
+        let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
+        try await Task.detached(priority: .utility) {
+            try JSONEncoder().encode(stored).write(to: url, options: .atomic)
+        }.value
     }
 
     func deleteGeneratedDiagramFile(_ id: UUID) {

@@ -6,7 +6,7 @@ import AcaiLibrary
 /// Analyzes a source directory into the enriched `CodeArtifact` the app stores and renders. Owns
 /// the exact analyze-then-enrich pipeline used for reindexing, so any other producer of an artifact
 /// (e.g. a git-revision snapshot for delta mode) yields a like-for-like artifact that diffs cleanly.
-struct CodebaseAnalyzer {
+struct CodebaseAnalyzer: CodebaseAnalyzing {
     let service: AnalysisService
 
     init(service: AnalysisService = .standard) {

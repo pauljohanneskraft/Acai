@@ -1,5 +1,6 @@
 import Foundation
 import AcaiGit
+import CryptoKit
 
 /// The credential + repository coordinate a sync/clone/fetch operates against — bundled so
 /// `GitHubRepositoryService.sync`/`attachWorktree`/`resyncWorktree` stay under the
@@ -214,13 +215,103 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     }
 }
 
-/// Picks between `LiveGitHubRepositoryService` and `FixtureGitHubRepositoryService` using the same
-/// "is any UI test fixture active" check used elsewhere, factored out for three call sites
-/// (`NewCodebaseSheet`, `CodebaseDetailView`, `ProjectCodebaseEditor`). The git-remote URL is a
-/// separate, narrower signal passed through when present, never used to decide fixture-vs-live.
+/// Network-free *and* git-free: `sync`/`attachWorktree`/`resyncWorktree` copy an already-staged
+/// directory instead of running real libgit2 operations, so a journey that just needs a GitHub-
+/// backed codebase to exist doesn't pay for git timing it isn't proving.
+/// `FixtureGitHubRepositoryService` above stays the real-git conformance for journeys that are.
+struct FastFixtureGitHubRepositoryService: GitHubRepositoryService {
+    let sourceDirectoriesByRef: [String: URL]
+
+    enum Failure: LocalizedError {
+        case noStagedContent(ref: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .noStagedContent(let ref):
+                "No staged fixture content for ref “\(ref)” — pass it to "
+                + "GitFixtureRepository.makeCannedRemote(refs:)."
+            }
+        }
+    }
+
+    func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository] {
+        [FixtureGitHubRepositoryService.repository]
+    }
+
+    func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef] {
+        sourceDirectoriesByRef.keys.sorted().map { GitHubRef(name: $0, kind: .branch) }
+    }
+
+    func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest] {
+        []
+    }
+
+    /// Not a real git SHA — nothing downstream validates the format, so a stable per-ref digest is
+    /// enough.
+    private func cannedSHA(for ref: String) -> String {
+        SHA256.hash(data: Data(ref.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func stagedDirectory(for ref: String) throws -> URL {
+        guard let url = sourceDirectoriesByRef[ref] else { throw Failure.noStagedContent(ref: ref) }
+        return url
+    }
+
+    private func copyTree(from source: URL, to destination: URL) throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.removeItem(at: destination)
+        }
+        try fileManager.createDirectory(
+            at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try fileManager.copyItem(at: source, to: destination)
+    }
+
+    @discardableResult
+    func sync(
+        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> String {
+        try copyTree(from: try stagedDirectory(for: target.ref), to: destination)
+        onProgress?(1)
+        return cannedSHA(for: target.ref)
+    }
+
+    @discardableResult
+    func attachWorktree(
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> (headSHA: String, remoteURL: URL) {
+        try copyTree(from: try stagedDirectory(for: target.ref), to: destination.worktreeDirectory)
+        onProgress?(1)
+        let remoteURL = URL(string: "https://fixture.invalid/\(target.owner)/\(target.repo)")!
+        return (cannedSHA(for: target.ref), remoteURL)
+    }
+
+    @discardableResult
+    func resyncWorktree(
+        _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> String {
+        try copyTree(from: try stagedDirectory(for: target.ref), to: destination.worktreeDirectory)
+        onProgress?(1)
+        return cannedSHA(for: target.ref)
+    }
+}
+
+/// Picks between `LiveGitHubRepositoryService`, real-git `FixtureGitHubRepositoryService`, and
+/// git-free `FastFixtureGitHubRepositoryService`, factored out for three call sites
+/// (`NewCodebaseSheet`, `CodebaseDetailView`, `ProjectCodebaseEditor`).
 struct GitHubRepositoryServiceResolver {
     func resolve() -> GitHubRepositoryService {
         guard UITestFixtureResolver().resolveBaseDir() != nil else { return LiveGitHubRepositoryService() }
+        if let fastFixtureRoot = UITestFixtureResolver().resolveGitHubFastFixtureRoot() {
+            let refDirectories = (try? FileManager.default.contentsOfDirectory(
+                at: fastFixtureRoot, includingPropertiesForKeys: nil
+            )) ?? []
+            let sourceDirectoriesByRef = Dictionary(
+                uniqueKeysWithValues: refDirectories.map { ($0.lastPathComponent, $0) })
+            return FastFixtureGitHubRepositoryService(sourceDirectoriesByRef: sourceDirectoriesByRef)
+        }
         return FixtureGitHubRepositoryService(remoteURL: UITestFixtureResolver().resolveGitHubRemoteURL())
     }
 }

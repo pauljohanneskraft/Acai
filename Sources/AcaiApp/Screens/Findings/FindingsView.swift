@@ -19,6 +19,7 @@ struct FindingsView: View {
     @State private var suppression = FindingsSuppressionBaseline()
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
+    @State private var suppressionSavePhase: AsyncOperationPhase = .idle
 
     private var project: Project? {
         model.store.projects.first { $0.id == projectID }
@@ -115,6 +116,7 @@ struct FindingsView: View {
         let visible = filteredAndSorted(allFindings)
         VStack(alignment: .leading, spacing: 0) {
             filterBar(project: project)
+            AsyncOperationStatusView(identifierPrefix: "findings.suppressionSave", phase: suppressionSavePhase)
             if !stillAnalyzing.isEmpty || !notIndexed.isEmpty {
                 statusNote(stillAnalyzing: stillAnalyzing, notIndexed: notIndexed)
             }
@@ -265,13 +267,16 @@ struct FindingsView: View {
         // boundary as an immutable copy, not a captured mutable variable — the same rebinding
         // `ViewSourceButton.resolve()` uses for its own detached-task capture.
         let toSave = updated
+        suppressionSavePhase = .loading("Saving…")
         Task {
             do {
                 try await Task.detached(priority: .userInitiated) {
                     try FindingsSuppressionStore(baseDir: baseDir).save(toSave, projectID: projectID)
                 }.value
+                suppressionSavePhase = .loaded
             } catch {
                 suppressionError = error.localizedDescription
+                suppressionSavePhase = .failed(error.localizedDescription)
             }
         }
     }

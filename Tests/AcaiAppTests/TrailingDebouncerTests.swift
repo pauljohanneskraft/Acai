@@ -17,21 +17,27 @@ private final class FireCounter: @unchecked Sendable {
 /// `swift test --parallel` — no real-seconds sleeps, matching `ActivityCenterTests`'s own
 /// `Eventually` polling pattern rather than a fixed-duration wait racing scheduling latency.
 ///
-/// `timeout` defaults generously (10s) despite the debouncer durations under test being tens of
-/// milliseconds: on a resource-constrained CI runner, `swift test --parallel` schedules all 232
-/// suites' tasks concurrently against far fewer cores than a dev machine has, so even a 20ms
+/// `@MainActor`: required to use the shared `Eventually` (see its own doc comment) — nothing polled
+/// here is main-actor state itself, but `Eventually` must run on the same actor as its caller.
+///
+/// `Eventually`'s `timeout` is set generously (10s) below despite the debouncer durations under test
+/// being tens of milliseconds: on a resource-constrained CI runner, `swift test --parallel` schedules
+/// all 232 suites' tasks concurrently against far fewer cores than a dev machine has, so even a 20ms
 /// `Task.sleep` inside `TrailingDebouncer.trigger()` can go a full second or more without getting a
 /// scheduling turn — a real, previously observed CI failure (`counter.count == 0` after the old,
 /// tighter 2s bound), not evidence the debouncer itself failed to fire.
 @Suite("TrailingDebouncer")
+@MainActor
 struct TrailingDebouncerTests {
-    private func waitUntil(
-        timeout: Duration = .seconds(10), pollInterval: Duration = .milliseconds(5), _ condition: () -> Bool
-    ) async throws {
-        let deadline = ContinuousClock.now + timeout
-        while !condition(), ContinuousClock.now < deadline {
-            try await Task.sleep(for: pollInterval)
-        }
+    /// Waits for `duration` to really elapse, signaled by a throwaway same-duration
+    /// `TrailingDebouncer` through `AsyncGate`, rather than guessing a `Task.sleep` length — so a
+    /// following negative assertion's only failure mode is `AsyncGate`'s own generous timeout, never
+    /// a race against how long the debouncer under test happens to take.
+    private func waitForRealElapsed(_ duration: Duration) async throws {
+        let gate = AsyncGate()
+        let beacon = TrailingDebouncer(duration: duration) { Task { await gate.open() } }
+        beacon.trigger()
+        try await gate.wait(timeout: .seconds(10))
     }
 
     @Test("A single trigger fires once after the duration elapses")
@@ -39,7 +45,7 @@ struct TrailingDebouncerTests {
         let counter = FireCounter()
         let debouncer = TrailingDebouncer(duration: .milliseconds(20)) { counter.increment() }
         debouncer.trigger()
-        try await waitUntil { counter.count == 1 }
+        try await Eventually(timeout: .seconds(10)).waitUntil { counter.count == 1 }
         #expect(counter.count == 1)
     }
 
@@ -47,14 +53,19 @@ struct TrailingDebouncerTests {
     func burstOfTriggersFiresOnce() async throws {
         let counter = FireCounter()
         let debouncer = TrailingDebouncer(duration: .milliseconds(30)) { counter.increment() }
+        // No inter-trigger sleep: `trigger()` is synchronous and cancels/reschedules its own pending
+        // fire, so a tight back-to-back loop is both a more faithful "burst" and avoids racing a
+        // guessed sleep duration against real CI scheduling latency (the previous inter-trigger
+        // `Task.sleep` could itself run long enough to let the debounce window elapse mid-burst).
         for _ in 0..<10 {
             debouncer.trigger()
-            try await Task.sleep(for: .milliseconds(5))
         }
-        // Still within the debounce window of the last trigger: must not have fired yet.
-        // swiftlint:disable:next empty_count
-        #expect(counter.count == 0)
-        try await waitUntil { counter.count == 1 }
+        try await Eventually(timeout: .seconds(10)).waitUntil { counter.count >= 1 }
+        // A debouncer that doesn't actually collapse the burst (fires per-trigger, or fires the
+        // first trigger too) would keep incrementing past 1 — wait a further real debounce window
+        // (via `waitForRealElapsed`, not a guessed sleep) before asserting the final count, so that
+        // failure mode is caught here rather than by `waitUntil` getting lucky on a transient `== 1`.
+        try await waitForRealElapsed(.milliseconds(30))
         #expect(counter.count == 1)
     }
 
@@ -64,7 +75,7 @@ struct TrailingDebouncerTests {
         let debouncer = TrailingDebouncer(duration: .milliseconds(20)) { counter.increment() }
         debouncer.trigger()
         debouncer.cancel()
-        try await Task.sleep(for: .milliseconds(60))
+        try await waitForRealElapsed(.milliseconds(60))
         // swiftlint:disable:next empty_count
         #expect(counter.count == 0)
     }

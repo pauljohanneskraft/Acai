@@ -111,8 +111,13 @@ final class GitHubAddCodebaseTests: XCTestCase {
         XCTAssertTrue(codebaseDetail.refPicker.waitForExistence(timeout: 10))
         codebaseDetail.chooseRef("feature")
 
+        // Waits on the switch's own completion signal instead of inferring "done" from the diagram
+        // button's mere existence (which is already true mid-switch, before content updates) —
+        // see `CodebaseDetailView`'s `refSwitchPhase`/`AsyncOperationStatusView`.
+        XCTAssertTrue(
+            codebaseDetail.refSwitchLoadedIndicator.waitForExistence(timeout: UITestWaits.standard.long),
+            "the branch switch never finished")
         let classDiagramButtonAfterSwitch = codebaseDetail.diagramButton(type: "class")
-        XCTAssertTrue(classDiagramButtonAfterSwitch.waitForExistence(timeout: 30), "the branch switch never finished")
         // Used for the rest of the test — both re-verifying the switch and then running Compare —
         // so it's named for what it persistently shows (the feature branch), not the one-off event
         // that produced it.

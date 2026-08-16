@@ -35,6 +35,31 @@ struct UITestFixtureResolver {
         resolve(Self.gitHubRemoteLaunchArgument)
     }
 
+    static let gitHubFastFixtureRootLaunchArgument = "-AcaiUITestGitHubFastFixtureRoot"
+
+    /// Selects `FastFixtureGitHubRepositoryService` over the real-git `FixtureGitHubRepositoryService`.
+    func resolveGitHubFastFixtureRoot() -> URL? {
+        resolve(Self.gitHubFastFixtureRootLaunchArgument)
+    }
+
+    static let codebaseArtifactLaunchArgument = "-AcaiUITestCodebaseArtifact"
+
+    /// Every `-AcaiUITestCodebaseArtifact <codebaseID> <path>` pair (repeatable) — see
+    /// `CodebaseAnalyzingResolver`. A codebase with no entry still gets the real analyzer.
+    func resolveCodebaseArtifactURLs() -> [UUID: URL] {
+        var result: [UUID: URL] = [:]
+        var index = arguments.startIndex
+        while index < arguments.endIndex {
+            defer { index += 1 }
+            guard arguments[index] == Self.codebaseArtifactLaunchArgument,
+                  arguments.indices.contains(index + 2),
+                  let codebaseID = UUID(uuidString: arguments[index + 1])
+            else { continue }
+            result[codebaseID] = URL(fileURLWithPath: arguments[index + 2])
+        }
+        return result
+    }
+
     static let colorSchemeLaunchArgument = "-AcaiUITestColorScheme"
 
     /// A forced `light`/`dark` appearance passed via `-AcaiUITestColorScheme <light|dark>`, so

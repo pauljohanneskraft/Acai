@@ -50,7 +50,7 @@ struct NewCodebaseSheet: View {
     @State private var selectedRef: GitHubRef?
     @State private var isLoadingRepositories = false
     @State private var isLoadingRefs = false
-    @State private var isCloning = false
+    @State private var clonePhase: AsyncOperationPhase = .idle
     @State private var gitHubErrorMessage: String?
 
     private var account: GitHubTokenStore.StoredAccount? { accountStore.account }
@@ -279,10 +279,9 @@ struct NewCodebaseSheet: View {
             // "Add" once the repository already has a local hub clone (this will attach a
             // worktree, not start a fresh network clone) — "Clone" the first time.
             Button(isSelectedRepositoryAlreadyCloned ? "Add" : "Clone") {
-                guard let repository = selectedRepository, let ref = selectedRef, let account, !isCloning else {
-                    return
-                }
-                isCloning = true
+                guard let repository = selectedRepository, let ref = selectedRef, let account,
+                      !clonePhase.isInFlight else { return }
+                clonePhase = .loading("Cloning…")
                 Task {
                     await model.editing.addGitHubCodebase(
                         to: projectID,
@@ -291,12 +290,13 @@ struct NewCodebaseSheet: View {
                         target: GitHubRepositoryRef(
                             owner: repository.owner.login, repo: repository.name, ref: ref.name, kind: ref.kind)
                     )
-                    isCloning = false
+                    clonePhase = .loaded
                     dismiss()
                 }
             }
-            .disabled(selectedRepository == nil || selectedRef == nil || account == nil || isCloning)
+            .disabled(selectedRepository == nil || selectedRef == nil || account == nil || clonePhase.isInFlight)
             .accessibilityIdentifier("newCodebase.cloneButton")
+            AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: clonePhase)
         }
     }
 

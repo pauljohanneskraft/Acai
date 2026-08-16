@@ -18,10 +18,20 @@ import Foundation
 final class FileWatchReindexCoordinator {
     private var watchers: [UUID: DirectoryWatch] = [:]
     private let debounce: Duration
+    private let didFinishDebounceWindow: (@Sendable () -> Void)?
     private let reindex: @Sendable (UUID) async -> Void
 
-    init(debounce: Duration = .seconds(3), reindex: @escaping @Sendable (UUID) async -> Void) {
+    /// - Parameter didFinishDebounceWindow: fires once per debounce window elapsing, after the
+    ///   resulting `reindex` call completes, regardless of what that call did — a settle signal with
+    ///   no production consumer today, only for tests that need to distinguish "correctly didn't
+    ///   reindex" from "hasn't finished yet."
+    init(
+        debounce: Duration = .seconds(3),
+        didFinishDebounceWindow: (@Sendable () -> Void)? = nil,
+        reindex: @escaping @Sendable (UUID) async -> Void
+    ) {
         self.debounce = debounce
+        self.didFinishDebounceWindow = didFinishDebounceWindow
         self.reindex = reindex
     }
 
@@ -49,8 +59,11 @@ final class FileWatchReindexCoordinator {
     }
 
     private func makeWatcher(directoryPath: String, codebaseID: UUID) -> DirectoryWatch {
-        let onChange: @Sendable () -> Void = { [reindex] in
-            Task { @MainActor in await reindex(codebaseID) }
+        let onChange: @Sendable () -> Void = { [reindex, didFinishDebounceWindow] in
+            Task { @MainActor in
+                await reindex(codebaseID)
+                didFinishDebounceWindow?()
+            }
         }
         #if os(macOS)
         return DirectoryChangeWatcher(directoryPath: directoryPath, debounce: debounce, onChange: onChange)

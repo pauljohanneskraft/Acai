@@ -57,6 +57,23 @@ struct GitFixtureRepository {
         try repository.switch(to: repository.branch["main", type: .local]!)
     }
 
+    /// No real git history — one plain directory per ref, matching what
+    /// `FastFixtureGitHubRepositoryService` expects under `-AcaiUITestGitHubFastFixtureRoot`. Use
+    /// instead of `makeRemote()` when a journey doesn't need to prove real git mechanics.
+    /// `refs`: ref name → relative file path → file content.
+    func makeCannedRemote(refs: [String: [String: String]]) throws {
+        for (ref, files) in refs {
+            let refDirectory = directory.appendingPathComponent(ref, isDirectory: true)
+            try FileManager.default.createDirectory(at: refDirectory, withIntermediateDirectories: true)
+            for (relativePath, content) in files {
+                let fileURL = refDirectory.appendingPathComponent(relativePath)
+                try FileManager.default.createDirectory(
+                    at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try content.write(to: fileURL, atomically: true, encoding: .utf8)
+            }
+        }
+    }
+
     /// `git_commit_create_from_stage` needs `user.name`/`user.email` from *some* config scope, and
     /// the UI test process has no reliable global `~/.gitconfig` to fall back on (confirmed
     /// empirically: committing without this failed with "config value 'user.name' was not found")

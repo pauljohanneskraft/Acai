@@ -21,6 +21,9 @@ final class FindingsScreen {
     /// accessibility tree (checked via a live UI-test run, not assumed), same reasoning as
     /// `ProjectBrowserScreen.newProjectButton`'s own `.descendants(matching: .any)` comment.
     var showSuppressedToggle: XCUIElement { app.descendants(matching: .any)["findings.showSuppressedToggle"] }
+    var suppressionSaveLoadedIndicator: XCUIElement {
+        app.descendants(matching: .any)["findings.suppressionSave.loaded"]
+    }
 
     /// `kind` is a `Finding.Kind.rawValue` (`"violation"`, `"deadCode"`, `"health"`).
     func kindFilter(_ kind: String) -> XCUIElement {

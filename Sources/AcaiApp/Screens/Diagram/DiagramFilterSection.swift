@@ -17,12 +17,15 @@ struct DiagramFilterSection: View {
     @State private var showSaveAsPreset = false
     @State private var presetName = ""
     @State private var showQualityRulesEditor = false
+    @State private var presetSavePhase: AsyncOperationPhase = .idle
+    @State private var presetSaveError: String?
 
     var body: some View {
         Section("Filter") {
             SelectorEditor(title: "Show only", selector: nonOptionalFilter)
             saveAsQualityRuleButton
             presetControls
+            AsyncOperationStatusView(identifierPrefix: "diagramFilter.presetSave", phase: presetSavePhase)
         }
         .task { await loadPresets() }
         .alert("Save as Preset", isPresented: $showSaveAsPreset) {
@@ -34,6 +37,14 @@ struct DiagramFilterSection: View {
         }
         .sheet(isPresented: $showQualityRulesEditor) {
             QualityCheckEditorSheet(codebaseID: codebaseID, artifact: artifact)
+        }
+        .alert(
+            "Couldn't Save Preset",
+            isPresented: Binding(get: { presetSaveError != nil }, set: { if !$0 { presetSaveError = nil } })
+        ) {
+            Button("OK", role: .cancel) { presetSaveError = nil }
+        } message: {
+            Text(presetSaveError ?? "")
         }
     }
 
@@ -115,10 +126,17 @@ struct DiagramFilterSection: View {
         // A fresh `let` (not the `var` mutated above) so this Sendable value crosses the isolation
         // boundary as an immutable copy — same rebinding `FindingsView.toggleSuppressed` uses.
         let toSave = updated
+        presetSavePhase = .loading("Saving preset…")
         Task {
-            try? await Task.detached(priority: .userInitiated) {
-                try FilterPresetStore(baseDir: baseDir).save(toSave, projectID: projectID)
-            }.value
+            do {
+                try await Task.detached(priority: .userInitiated) {
+                    try FilterPresetStore(baseDir: baseDir).save(toSave, projectID: projectID)
+                }.value
+                presetSavePhase = .loaded
+            } catch {
+                presetSaveError = error.localizedDescription
+                presetSavePhase = .failed(error.localizedDescription)
+            }
         }
     }
 }

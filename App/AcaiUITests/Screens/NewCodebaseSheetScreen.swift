@@ -22,6 +22,7 @@ final class NewCodebaseSheetScreen {
     var repositoryPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.repositoryPicker"] }
     var refPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.refPicker"] }
     var cloneButton: XCUIElement { app.buttons["newCodebase.cloneButton"] }
+    var cloneLoadingIndicator: XCUIElement { app.descendants(matching: .any)["newCodebase.clone.loading"] }
 
     /// Picks a repository/ref from their respective `Picker`s — see `XCUIElement.choose(_:in:timeout:)`
     /// for why this matches by literal text rather than a per-option identifier.

@@ -9,10 +9,9 @@ struct CodebaseDetailView: View {
     private let repositoryService: GitHubRepositoryService
     @EnvironmentObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var isIndexing = false
-    /// `true` while a GitHub `Pull` or branch/tag switch is in flight — mirrors `isIndexing`'s
-    /// role for the local-folder "Reindex" action.
-    @State private var isPulling = false
+    @State private var reindexPhase: AsyncOperationPhase = .idle
+    @State private var pullPhase: AsyncOperationPhase = .idle
+    @State private var refSwitchPhase: AsyncOperationPhase = .idle
     /// Branches + tags for a GitHub-backed codebase's ref picker, loaded once per codebase.
     @State private var availableRefs: [GitHubRef] = []
     /// Set when the user clicks "Sequence Diagram"; drives the configuration popup. Not `private`:
@@ -206,16 +205,17 @@ struct CodebaseDetailView: View {
                 githubActions(codebase: codebase, source: source)
             } else {
                 Button {
-                    isIndexing = true
+                    reindexPhase = .loading("Indexing…")
                     Task {
                         await model.editing.reindex(codebaseID: codebase.id)
-                        isIndexing = false
+                        reindexPhase = .loaded
                     }
                 } label: {
                     Label("Reindex", systemImage: "arrow.clockwise")
                 }
-                .disabled(isIndexing)
+                .disabled(reindexPhase.isInFlight)
                 .accessibilityIdentifier("codebaseDetail.reindexButton")
+                AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
             }
         }
     }
@@ -228,11 +228,11 @@ struct CodebaseDetailView: View {
             set: { newID in
                 let currentRef = GitHubRef(name: source.ref, kind: source.refKind)
                 guard let selected = (availableRefs + [currentRef]).first(where: { $0.id == newID }) else { return }
-                isPulling = true
+                refSwitchPhase = .loading("Switching to \(selected.name)…")
                 Task {
                     await model.editing.switchGitHubRef(
                         codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
-                    isPulling = false
+                    refSwitchPhase = .loaded
                 }
             }
         )) {
@@ -245,21 +245,23 @@ struct CodebaseDetailView: View {
         }
         .labelsHidden()
         .frame(maxWidth: 160)
-        .disabled(isPulling)
+        .disabled(refSwitchPhase.isInFlight)
         .accessibilityIdentifier("codebaseDetail.refPicker")
         .task(id: codebase.id) { await loadAvailableRefs(source: source) }
+        AsyncOperationStatusView(identifierPrefix: "codebaseDetail.refSwitch", phase: refSwitchPhase)
 
         Button {
-            isPulling = true
+            pullPhase = .loading("Pulling…")
             Task {
                 await model.editing.pull(codebaseID: codebase.id)
-                isPulling = false
+                pullPhase = .loaded
             }
         } label: {
             Label("Pull", systemImage: "arrow.triangle.2.circlepath")
         }
-        .disabled(isPulling)
+        .disabled(pullPhase.isInFlight)
         .accessibilityIdentifier("codebaseDetail.pullButton")
+        AsyncOperationStatusView(identifierPrefix: "codebaseDetail.pull", phase: pullPhase)
     }
 
     private func loadAvailableRefs(source: GitHubSource) async {
@@ -341,15 +343,16 @@ extension CodebaseDetailView {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button {
-                isIndexing = true
+                reindexPhase = .loading("Indexing…")
                 Task {
                     await model.editing.reindex(codebaseID: codebase.id)
-                    isIndexing = false
+                    reindexPhase = .loaded
                 }
             } label: {
                 Label("Index Now", systemImage: "arrow.clockwise")
             }
-            .disabled(isIndexing)
+            .disabled(reindexPhase.isInFlight)
+            AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)

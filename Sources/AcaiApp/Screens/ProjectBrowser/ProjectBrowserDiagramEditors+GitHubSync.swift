@@ -168,6 +168,8 @@ extension ProjectCodebaseEditor {
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
         let fileFilter = codebase.fileFilter
+        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
+        let store = store
         do {
             // `refreshedBookmark` is populated (and only read) inside this single detached
             // closure's own synchronous execution, then handed back through the return value —
@@ -179,6 +181,9 @@ extension ProjectCodebaseEditor {
             // cancelled via `withTaskCancellationHandler` when the wrapping `run` task is cancelled
             // — `AnalysisService.parseFiles` then observes it between files (`Task.checkCancellation`)
             // and the parse actually stops, rather than merely having its result discarded.
+            //
+            // The artifact is saved to disk (awaited) *inside* this closure, before `run` returns —
+            // otherwise `isBusy`/the row's spinner would flip to "done" before the write lands.
             let reindexResult = try await store.activityCenter.run(
                 title: "Indexing \(codebase.name)…", kind: .reindex, subject: .codebase(codebaseID)
             ) {
@@ -186,15 +191,17 @@ extension ProjectCodebaseEditor {
                     var refreshedBookmark: SecurityScopedBookmark?
                     let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
                         onRefresh: { refreshedBookmark = $0 },
-                        { url in try CodebaseAnalyzer().enrichedArtifact(at: url, fileFilter: fileFilter) }
+                        { url in try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter) }
                     )
                     return (artifact, refreshedBookmark)
                 }
-                return try await withTaskCancellationHandler {
+                let (artifact, refreshedBookmark) = try await withTaskCancellationHandler {
                     try await detached.value
                 } onCancel: {
                     detached.cancel()
                 }
+                try await store.saveArtifactAndWait(artifact, for: codebaseID)
+                return (artifact, refreshedBookmark)
             }
             // Cancelled before finishing: don't apply a result we discarded.
             guard let (newArtifact, refreshedBookmark) = reindexResult else { return }
@@ -210,7 +217,6 @@ extension ProjectCodebaseEditor {
             if let refreshedBookmark {
                 store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshedBookmark
             }
-            store.saveArtifact(newArtifact, for: codebaseID)
             persistProject(store.projects[pIndex].id)
             triggerSpotlightReindex()
         } catch {

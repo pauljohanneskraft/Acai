@@ -11,6 +11,9 @@ final class CodebaseDetailScreen {
     }
 
     var reindexButton: XCUIElement { app.buttons["codebaseDetail.reindexButton"] }
+    var reindexLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.reindex.loaded"] }
+    var refSwitchLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refSwitch.loaded"] }
+    var pullLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.pull.loaded"] }
 
     /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
     func diagramButton(type: String) -> XCUIElement {
