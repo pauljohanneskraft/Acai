@@ -101,7 +101,7 @@ struct StateDiagramView: View {
     }
 
     /// The config-sheet fields fold into the Settings tab (live draft + Apply, not a modal);
-    /// Save as Freeform/Export Image move here from the toolbar.
+    /// Save as Freeform/Export Image live here, not in the toolbar.
     private var sidebar: StateDiagramSidebar {
         StateDiagramSidebar(
             viewModel: viewModel, artifact: artifact, tab: $sidebarTab,

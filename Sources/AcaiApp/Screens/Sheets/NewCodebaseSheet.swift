@@ -32,7 +32,6 @@ struct NewCodebaseSheet: View {
     @State private var name = ""
     @FocusState private var isNameFieldFocused: Bool
 
-    // Local-folder state
     @State private var directoryURL: URL?
     @State private var securityScopedBookmark: SecurityScopedBookmark?
     @State private var isChoosingDirectory = false
@@ -103,12 +102,10 @@ struct NewCodebaseSheet: View {
                 // inside this same security-scoped access window.
                 repositoryReference = LocalGitRepositoryDetector(directory: url).detect()
             }
-            // `.task(id:)`, not `.onChange(of:)`: now that sign-in moved to Settings, `account` is
-            // typically already non-nil the *first* time this sheet appears (signed in earlier,
-            // in a different sheet) rather than transitioning from nil→non-nil while this view is
-            // on-screen — `.onChange` only fires on a later transition, so it would never fire for
-            // the now-common "already signed in" case. `.task(id:)` runs for the current value
-            // immediately on appear *and* re-runs on change, covering both cases.
+            // `.task(id:)`, not `.onChange(of:)`: `account` is typically already non-nil the
+            // *first* time this sheet appears, so `.onChange` (which only fires on a later
+            // transition) would never fire. `.task(id:)` runs immediately on appear and re-runs
+            // on change, covering both cases.
             .task(id: account?.login) {
                 guard account != nil else { return }
                 await loadRepositories()
@@ -163,9 +160,8 @@ struct NewCodebaseSheet: View {
     private var gitHubSection: some View {
         Section {
             if let account {
-                // Read-only summary here — the full sign-in/scopes/expiry UI lives in Settings now;
-                // this just confirms who's signed in and lets you jump there for anything more
-                // (sign out, re-authorize, check scopes).
+                // Read-only summary — the full sign-in/scopes/expiry UI lives in Settings; this
+                // just confirms who's signed in and lets you jump there for anything more.
                 HStack {
                     Text("Signed in as \(account.login)")
                         .accessibilityIdentifier("newCodebase.signedInAsLabel")
@@ -297,10 +293,8 @@ struct NewCodebaseSheet: View {
         }
     }
 
-    /// Whether the selected GitHub repository already has a shared hub clone on disk — drives the
-    /// "Already cloned locally" hint and the confirm button's label above. Checked
-    /// against the plain (credential-free) remote URL `GitHubRepositoryClone` would build for this
-    /// repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
+    /// Checked against the plain (credential-free) remote URL `GitHubRepositoryClone` would build
+    /// for this repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
     private var isSelectedRepositoryAlreadyCloned: Bool {
         guard let repository = selectedRepository, account != nil else { return false }
         var plainRemoteURLComponents = URLComponents()

@@ -7,7 +7,6 @@ import AcaiCore
 // (pre-filled) or the properties/methods section's "Add" row is used (blank). Save commits
 // through `TypeMemberEditor`'s `add*`/`update*` mutators; Cancel discards the local draft.
 
-/// Edits a `.type` node's property: name, type, access level, static/abstract flags.
 struct PropertyEditorSheet: View {
     let existing: FreeformDiagram.Node.Member?
     let onSave: (FreeformDiagram.Node.Member) -> Void
@@ -58,8 +57,6 @@ struct PropertyEditorSheet: View {
     }
 }
 
-/// Edits a `.type` node's method: name, return type, parameter list, access level,
-/// static/abstract flags.
 struct MethodEditorSheet: View {
     let existing: FreeformDiagram.Node.Member?
     let onSave: (FreeformDiagram.Node.Member) -> Void
@@ -117,8 +114,7 @@ struct MethodEditorSheet: View {
     }
 }
 
-/// Shared access-level picker + static/abstract toggles, used by both member editor sheets
-/// (inside their own `Section`) and the inline add-property/add-method rows.
+/// Used by both member editor sheets and the inline add-property/add-method rows.
 struct MemberFlagsFields: View {
     @Binding var accessLevel: AccessLevel
     @Binding var isStatic: Bool
@@ -138,7 +134,6 @@ struct MemberFlagsFields: View {
     }
 }
 
-/// `MemberFlagsFields` wrapped in its own `Section`, for the member editor sheets.
 struct MemberFlagsSection: View {
     @Binding var accessLevel: AccessLevel
     @Binding var isStatic: Bool
@@ -151,8 +146,7 @@ struct MemberFlagsSection: View {
     }
 }
 
-/// An addable/removable list of `name: type` parameter rows, shared by the method editor sheet
-/// and the inline add-method row.
+/// Shared by the method editor sheet and the inline add-method row.
 struct ParameterListEditor: View {
     @Binding var parameters: [FreeformDiagram.Node.Parameter]
     let accessibilityPrefix: String

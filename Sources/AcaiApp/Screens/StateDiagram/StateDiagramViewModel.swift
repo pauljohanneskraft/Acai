@@ -15,7 +15,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
     @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
-    /// Per-state centre overrides, keyed by state id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
@@ -60,7 +59,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         }
     }
 
-    /// Re-runs the analysis for a new configuration, dropping stale positions and history.
     func applyConfiguration(_ newConfiguration: StateDiagramConfiguration) {
         configuration = newConfiguration
         result = Self.generate(artifact: artifact, configuration: newConfiguration)
@@ -82,13 +80,11 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         diagram?.states.first { $0.id == id }?.name
     }
 
-    /// The generated diagram, when the analysis succeeded.
     var diagram: StateDiagram? {
         if case .success(let diagram) = result { return diagram }
         return nil
     }
 
-    /// The analysis failure, when there is one.
     var analysisError: StateDiagramAnalysisError? {
         if case .failure(let error) = result { return error }
         return nil
@@ -96,7 +92,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring node drags.
     var layout: StateLayoutModel {
         StateLayoutModel(diagram: diagram ?? StateDiagram(), positionOverrides: positionOverrides)
     }

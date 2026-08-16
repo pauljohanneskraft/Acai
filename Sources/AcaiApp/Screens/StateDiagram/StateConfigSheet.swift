@@ -7,12 +7,10 @@ import AcaiDiagram
 /// plus the maximum number of distinct states before the analysis fails.
 struct StateConfigSheet: View {
     let artifact: CodeArtifact
-    /// Pre-fills the form when editing an existing diagram's configuration.
     let initial: StateDiagramConfiguration?
     let onCancel: () -> Void
     let onCreate: (StateDiagramConfiguration) -> Void
 
-    /// Where the variable lives: a type, or the module/global scope.
     private enum Scope: Hashable {
         case type(String)
         case globals
@@ -126,9 +124,8 @@ struct StateConfigSheet: View {
 
     // MARK: - Lookups
 
-    /// Every type declaration (including nested ones) that declares at least one
-    /// stored property. Mirrors `StateAnalysis.findType`, which recurses into
-    /// `nestedTypes` and matches on `qualifiedName`.
+    /// Mirrors `StateAnalysis.findType`, which recurses into `nestedTypes` and matches on
+    /// `qualifiedName`.
     private var typesWithStoredProperties: [TypeDeclaration] {
         var result: [TypeDeclaration] = []
         func walk(_ types: [TypeDeclaration]) {
@@ -143,9 +140,8 @@ struct StateConfigSheet: View {
         return result
     }
 
-    /// Qualified names of types that declare at least one stored property.
-    /// Qualified (not simple) names so nested types are reachable and same-named
-    /// types don't collide.
+    /// Qualified (not simple) names so nested types are reachable and same-named types don't
+    /// collide.
     private var typeNamesWithStoredProperties: [String] {
         typesWithStoredProperties.map(\.qualifiedName).uniqued().sorted()
     }
@@ -168,7 +164,6 @@ struct StateConfigSheet: View {
         return (plausible.uniqued().sorted() + rest.uniqued().sorted()).uniqued()
     }
 
-    /// Whether a variable's declared type suggests an enumerable state space.
     private func isPlausibleStateHolder(_ member: Member) -> Bool {
         guard let typeName = member.type?.name else { return false }
         if enumTypeNames.contains(typeName) { return true }

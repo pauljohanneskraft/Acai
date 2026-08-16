@@ -5,19 +5,14 @@ import QuickLook
 import QuickLookUI
 #endif
 
-/// Read-only source preview backed by Quick Look — the system's own document previewer (the same
-/// one Files.app uses; there is no private, higher-fidelity viewer to reach for instead). Chosen
-/// over a custom syntax-highlighting stack (originally spec'd around Highlightr) so this viewer
-/// needs zero custom tokenizing, no new dependency, and no license-notice work. The tradeoff, taken
-/// deliberately: Quick Look has no line/column addressing API, so jump-to-line isn't possible here —
-/// `SourceLocation.line`/`.column` go unused by this view.
+/// Read-only source preview backed by Quick Look — chosen over a custom syntax-highlighting stack
+/// so this view needs no custom tokenizing, dependency, or license-notice work. Tradeoff: Quick
+/// Look has no line/column addressing API, so `SourceLocation.line`/`.column` go unused here.
 ///
-/// Presented as a `.sheet` on **both** platforms for this call site (`ViolationRowView`'s "View
-/// Source" button): `QLPreviewController` (iOS/iPadOS) and `QLPreviewView` (macOS, via
-/// `QuickLookUI`) are genuinely different API families with no single shared SwiftUI wrapper, but
-/// macOS deliberately doesn't reach for `.inspector` here — this call site is a report row nested
-/// arbitrarily deep in a scroll view, not a screen that owns its own inspector column, so a real
-/// side-pane presentation would mean plumbing state up through several intermediate views.
+/// Presented as a `.sheet` on both platforms since `QLPreviewController` (iOS) and `QLPreviewView`
+/// (macOS) have no shared SwiftUI wrapper; macOS doesn't use `.inspector` here because this call
+/// site (`ViolationRowView`'s "View Source" button) is nested deep in a scroll view, not a screen
+/// that owns its own inspector column.
 struct SourceViewerSheet: View {
     let url: URL
 
@@ -46,7 +41,6 @@ struct SourceViewerSheet: View {
 }
 
 #if os(iOS)
-/// Wraps `QLPreviewController` (UIKit-only — there is no SwiftUI-native Quick Look view on iOS).
 private struct QuickLookPreview: UIViewControllerRepresentable {
     let url: URL
 

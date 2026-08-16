@@ -10,9 +10,6 @@ import AcaiRender
 final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection?
-    /// A rendered image/DOT/Mermaid export waiting to be written, driving the single `.fileExporter`
-    /// modifier in `ProjectBrowserView` (cross-platform: `.fileExporter` replaces the old
-    /// macOS-only `NSSavePanel` calls). See `ProjectBrowserViewModel+Export.swift`.
     @Published var pendingExport: PendingExport?
 
     enum Selection: Hashable {
@@ -20,25 +17,20 @@ final class ProjectBrowserViewModel: ObservableObject {
         case codebase(UUID)
         case generatedDiagram(UUID)
         case freeformDiagram(UUID)
-        /// A shared `AcaiGit.GitRepository`, identified by its credential-free remote URL — the
-        /// Repositories sidebar section.
+        /// Identified by its credential-free remote URL.
         case repository(URL)
-        /// A project's aggregated Findings view — every quality violation, dead-code
-        /// candidate, and parse diagnostic across every codebase in the project, in one list.
         case findings(UUID)
     }
 
-    /// Watches every local-folder codebase's directory and triggers a full reindex when it
-    /// changes — see `FileWatchReindexCoordinator`. `[weak self]`: the coordinator outlives no
-    /// particular `editing` snapshot, so it always resolves a fresh one per reindex.
+    /// `[weak self]`: the coordinator outlives no particular `editing` snapshot, so it always
+    /// resolves a fresh one per reindex.
     private(set) lazy var fileWatchCoordinator = FileWatchReindexCoordinator { [weak self] id in
         await self?.editing.reindex(codebaseID: id)
     }
 
-    /// Checks GitHub-backed codebases' remotes on a schedule and reindexes those whose `HEAD`
-    /// moved — see `ScheduledRefreshCoordinator`. macOS drives it with a periodic sweep
-    /// (`startScheduledRefresh()`); iOS drives it one codebase per `BGAppRefreshTask` wake instead
-    /// (`ScheduledRefreshTaskRunner`, also started from `startScheduledRefresh()`).
+    /// macOS drives this with a periodic sweep (`startScheduledRefresh()`); iOS drives it one
+    /// codebase per `BGAppRefreshTask` wake instead (`ScheduledRefreshTaskRunner`, also started
+    /// from `startScheduledRefresh()`).
     private(set) lazy var scheduledRefreshCoordinator = ScheduledRefreshCoordinator(store: store) { [weak self] id in
         await self?.editing.pull(codebaseID: id)
     }

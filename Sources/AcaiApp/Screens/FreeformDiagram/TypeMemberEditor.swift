@@ -2,9 +2,8 @@ import Foundation
 import AcaiCore
 
 extension FreeformDiagram.Node.Member {
-    /// A copy with the name/type trimmed and the legacy `parameters` string cleared (structured
-    /// editing always writes `structuredParameters` instead), or `nil` if the trimmed name is
-    /// blank. Used by `TypeMemberEditor` to commit an add/edit draft.
+    /// The legacy `parameters` string is cleared (structured editing always writes
+    /// `structuredParameters` instead). Returns `nil` if the trimmed name is blank.
     fileprivate func trimmedForCommit() -> Self? {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return nil }
@@ -16,9 +15,6 @@ extension FreeformDiagram.Node.Member {
     }
 }
 
-/// Type-member editing for the freeform diagram: adding/removing properties and methods on `.type`
-/// nodes, plus the inline text editing (node name, note text) that the inspector drives keystroke by
-/// keystroke. Consecutive keystrokes in one field coalesce into a single undo step.
 @MainActor
 final class TypeMemberEditor {
     private unowned let context: any FreeformEditingContext
@@ -27,7 +23,6 @@ final class TypeMemberEditor {
         self.context = context
     }
 
-    /// Coalescing keys for runs of consecutive text edits that should undo as a single step.
     private enum TextEditField: Hashable {
         case name(String)
         case note(String)
@@ -88,7 +83,6 @@ final class TypeMemberEditor {
         context.save()
     }
 
-    /// Update the free-form text of a note node.
     func updateNoteText(_ nodeID: String, text: String) {
         guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
               case .note(let existing) = context.nodes[idx].content, existing != text else { return }

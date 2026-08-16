@@ -5,14 +5,13 @@ import AcaiCore
 import AcaiDiagram
 import UniformTypeIdentifiers
 
-/// A diagram view model that can render its current diagram to PNG data.
 @MainActor
 protocol DiagramImageExporting {
     func exportPNGData(scale: CGFloat) throws -> Data
 }
 
-/// A rendered export waiting to be written to a user-chosen location — the payload behind the
-/// single `.fileExporter` modifier in `ProjectBrowserView`, shared by image/DOT/Mermaid export.
+/// The payload behind the single `.fileExporter` modifier in `ProjectBrowserView`, shared by
+/// image/DOT/Mermaid export.
 struct PendingExport: Identifiable {
     let id = UUID()
     let filename: String
@@ -20,8 +19,8 @@ struct PendingExport: Identifiable {
     let data: Data
 }
 
-/// A `FileDocument` wrapping raw bytes, so `PendingExport`'s PNG/DOT/Mermaid payloads can all drive
-/// the same `.fileExporter` call regardless of content type.
+/// Wraps raw bytes so `PendingExport`'s PNG/DOT/Mermaid payloads can all drive the same
+/// `.fileExporter` call regardless of content type.
 struct ExportDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.data] }
 
@@ -44,9 +43,7 @@ struct ExportDocument: FileDocument {
 
 extension ProjectBrowserViewModel {
 
-    /// Renders the exporter's PNG and queues it for `.fileExporter`, routing any failure to the
-    /// error alert. Shared by every generated-diagram view so the render/error handling lives in
-    /// one place.
+    /// Shared by every generated-diagram view so the render/error handling lives in one place.
     func exportImage(named name: String, using exporter: any DiagramImageExporting) {
         do {
             let data = try exporter.exportPNGData(scale: 2)
@@ -79,7 +76,6 @@ extension ProjectBrowserViewModel {
         }
     }
 
-    /// Export options carrying the current theme and the artifact's resolved language quirks.
     private func exportOptions(for artifact: CodeArtifact) -> ClassDiagramOptions {
         ClassDiagramOptions(
             theme: DiagramThemeSelection.currentExportTheme,
@@ -87,7 +83,6 @@ extension ProjectBrowserViewModel {
         )
     }
 
-    /// Drops the source language's machine-generated types when it declares a generated-code filter.
     private func hidingGeneratedTypes(_ artifact: CodeArtifact) -> CodeArtifact {
         artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
@@ -100,7 +95,6 @@ extension ProjectBrowserViewModel {
 
     // MARK: Mermaid Export
 
-    /// Renders the codebase's class diagram as Mermaid (embeds directly in Markdown).
     func generateMermaid(for codebaseID: UUID) -> String {
         guard let codebase = codebase(for: codebaseID) else { return "classDiagram\n" }
 
@@ -130,9 +124,8 @@ extension ProjectBrowserViewModel {
 
     // MARK: Codebase Atlas Export
 
-    /// Bundles every diagram, statistic, and finding for `codebaseID` into one paginated PDF
-    /// (``CodebaseAtlasBuilder``) and queues it for `.fileExporter`. Routed through
-    /// `store.activityCenter.run` (same as `reindex`) so it shows up as the codebase row's spinner.
+    /// Routed through `store.activityCenter.run` (same as `reindex`) so it shows up as the
+    /// codebase row's spinner.
     func exportAtlas(for codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
         guard let artifact = artifact(for: codebaseID) else {
@@ -171,11 +164,8 @@ extension ProjectBrowserViewModel {
 
     // MARK: Save as Freeform Diagram
 
-    /// Convert a stored diagram to a freeform diagram.
-    ///
     /// - Parameter includeMetricsNote: the opt-in — Package/Call Graph screens thread the user's
-    ///   checkbox choice through here; every other diagram type calls this with the default `false`
-    ///   since they have no comparable metric to carry over.
+    ///   checkbox choice through here; every other diagram type calls this with the default `false`.
     func saveAsFreeformDiagram(
         id diagramId: UUID,
         positions: [String: CGPoint],
@@ -210,8 +200,6 @@ extension ProjectBrowserViewModel {
     }
 }
 
-// The generated-diagram view models all render their current diagram to PNG via the shared
-// `DiagramImageRenderer`, so the export panel can drive any of them uniformly.
 extension ClassDiagramViewModel: DiagramImageExporting {}
 extension SequenceDiagramViewModel: DiagramImageExporting {}
 extension StateDiagramViewModel: DiagramImageExporting {}

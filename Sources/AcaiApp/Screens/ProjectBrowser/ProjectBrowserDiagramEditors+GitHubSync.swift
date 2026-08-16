@@ -1,22 +1,16 @@
 import Foundation
 import AcaiGit
 
-// `ProjectCodebaseEditor`'s GitHub-sync concern (clone/pull/switch-ref, all funneling into
-// `reindex`), carved out of `ProjectBrowserDiagramEditors.swift` to keep that file under the
-// project's file-length limit — mirrors `ProjectBrowserView+Repositories.swift`'s identical reason
-// for existing as a separate file. `codebase(for:)`/`projectID(for:)`/`mutateCodebase`/
-// `persistProject` (defined in the main file) are no longer `private` so this extension can call
-// them — same "not private, another file's extension needs it too" pattern used throughout this
-// app (see `ProjectBrowserView`'s own stored properties for precedent).
+// `codebase(for:)`/`projectID(for:)`/`mutateCodebase`/`persistProject` (defined in the main file)
+// are no longer `private` so this extension can call them.
 extension ProjectCodebaseEditor {
     // MARK: GitHub-backed codebases
 
     /// Clones `owner/repo` at `ref` into a shared, app-managed "hub" clone (reused by every
-    /// codebase that references the same remote) and attaches a fresh linked worktree for
-    /// this codebase, then indexes it — the GitHub equivalent of `addCodebase`. Two codebases
-    /// pointing at the same remote share one on-disk object store and can sit at different commits
-    /// simultaneously, each in its own worktree — this is true uniformly, whether this is the
-    /// first codebase ever to reference this remote or the fifth.
+    /// codebase that references the same remote) and attaches a fresh linked worktree for this
+    /// codebase, then indexes it — the GitHub equivalent of `addCodebase`. Two codebases pointing
+    /// at the same remote share one on-disk object store and can sit at different commits
+    /// simultaneously, each in its own worktree.
     func addGitHubCodebase(
         to projectID: UUID, name: String, credential: GitHubCredential, target: GitHubRepositoryRef
     ) async {
@@ -154,8 +148,7 @@ extension ProjectCodebaseEditor {
         }
     }
 
-    /// Bundles `codebaseID`'s worktree location + the shared locks for a `resyncWorktree` call. The
-    /// credentialed transport URL to actually fetch/checkout over is built separately, inside
+    /// The credentialed transport URL to actually fetch/checkout over is built separately, inside
     /// `GitHubRepositoryService`, from the caller's own `owner`/`repo`/`credential`.
     private func worktreeDestination(codebaseID: UUID) -> GitWorktreeDestination {
         GitWorktreeDestination(

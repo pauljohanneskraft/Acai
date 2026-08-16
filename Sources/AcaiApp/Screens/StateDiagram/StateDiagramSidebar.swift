@@ -3,14 +3,12 @@ import AcaiCore
 import AcaiDiagram
 import AcaiRender
 
-/// Sidebar tab choices for the state diagram, matching Class Diagram's closed vocabulary.
 enum StateDiagramSidebarTab {
     case settings, inspector
 }
 
 /// State Diagram's sidebar: folds `StateConfigSheet`'s variable-selection fields into a live
-/// Settings tab (instead of a one-shot modal), and adds an Inspector tab showing detail for the
-/// selected state or transition — neither existed before this pass.
+/// Settings tab, and adds an Inspector tab showing detail for the selected state or transition.
 ///
 /// Like Sequence Diagram, applying a new variable re-runs the whole analysis and drops state
 /// positions/undo history (`StateDiagramViewModel.applyConfiguration`), so edits stage into a local
@@ -23,9 +21,9 @@ struct StateDiagramSidebar: View {
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
 
-    /// Where the variable lives: a type, or the module/global scope. Mirrors `StateConfigSheet`'s
-    /// own private `Scope`, duplicated rather than shared since that sheet stays untouched (it's
-    /// also the creation-time flow presented from `CodebaseDetailView`).
+    /// Mirrors `StateConfigSheet`'s own private `Scope`, duplicated rather than shared since that
+    /// sheet stays untouched (it's also the creation-time flow presented from
+    /// `CodebaseDetailView`).
     private enum Scope: Hashable {
         case type(String)
         case globals
