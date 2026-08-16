@@ -28,10 +28,20 @@ optionalTargets.append(
         ]
     )
 )
+
+// MARK: PNG golden-comparison math, shared by the render-snapshot tests in AcaiRenderTests and
+// AcaiAppTests. A pure leaf target — no swift-testing dependency (would need a license/privacy
+// pass for no real benefit) and no AcaiCore/AcaiLibrary dependency.
+optionalTargets.append(
+    .target(name: "AcaiPNGComparison", dependencies: [])
+)
+
 optionalTargets.append(
     .testTarget(
         name: "AcaiRenderTests",
-        dependencies: ["AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality"])
+        dependencies: [
+            "AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality", "AcaiPNGComparison"
+        ])
 )
 cliOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
@@ -90,7 +100,7 @@ optionalTargets.append(
         // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
         // `ClassDiagramConfiguration` fixtures directly.
         dependencies: [
-            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram",
+            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison",
         ],
         // The render snapshot tests' committed goldens (read by file path, not `Bundle.module` — see
         // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
