@@ -31,9 +31,8 @@ struct CompareOverlayButton: View {
         Button {
             isPresented = true
         } label: {
-            // No circled variant of this glyph exists in SF Symbols — `Image(systemName:)` would
-            // silently render nothing. Use the base glyph and signal on/off via the background fill
-            // (filled colored circle vs. plain translucent one) instead, so state isn't color-alone.
+            // No circled variant of this glyph exists in SF Symbols — signal on/off via the
+            // background fill instead, so state isn't color-alone.
             Image(systemName: "arrow.triangle.branch")
                 .font(.title3)
                 .foregroundStyle(isOn ? .white : Color.secondary)
@@ -48,8 +47,8 @@ struct CompareOverlayButton: View {
         #if os(macOS)
         .popover(isPresented: $isPresented) {
             // Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
-            // `NavigationStack` presented in a `.popover` renders its items in the presenting window's
-            // own toolbar instead of inside the popover. A plain header row sidesteps that.
+            // `NavigationStack` presented in a `.popover` renders its items in the presenting
+            // window's own toolbar instead of inside the popover.
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Compare vs git").font(.headline)
@@ -63,9 +62,9 @@ struct CompareOverlayButton: View {
         }
         #else
         .sheet(isPresented: $isPresented) {
-            // A sheet has no built-in close chrome, so an explicit Done button is the discoverable,
-            // VoiceOver-reachable dismiss path. Unlike macOS's popover, a sheet's `NavigationStack`
-            // toolbar renders correctly inside it.
+            // A sheet has no built-in close chrome, so an explicit Done button is the discoverable
+            // dismiss path (unlike macOS's popover, a sheet's `NavigationStack` toolbar renders
+            // correctly here).
             NavigationStack {
                 CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: onSelectChangedFileTypes)
                     .navigationTitle("Compare vs git")
@@ -85,8 +84,7 @@ struct CompareOverlayButton: View {
 
     /// "Clear" is the counterpart to picking a ref from the list, not one more list item, so it
     /// lives in the panel's header chrome rather than at the top of the scrollable content
-    /// underneath — a real button shared verbatim between macOS's inline header row and iOS's
-    /// nav-bar toolbar item.
+    /// underneath.
     private var clearButton: some View {
         Button("Clear") {
             model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
@@ -148,11 +146,10 @@ struct DeltaHostedDiagramView<Content: View>: View {
     }
 }
 
-/// The actual comparison controls (previously a permanent on-canvas bar): comparing the codebase's
-/// current working tree against a git revision (`HEAD`, a branch, a SHA, …) and colour-coding the
-/// added/removed/changed elements. Reads and writes the diagram's `comparisonGitRef` through the
-/// model; the actual snapshot load is driven by the host view's `.task`. Presented inside
-/// `CompareOverlayButton`'s popover/sheet.
+/// Comparison controls: comparing the codebase's current working tree against a git revision
+/// (`HEAD`, a branch, a SHA, …) and colour-coding the added/removed/changed elements. Reads and
+/// writes the diagram's `comparisonGitRef` through the model; the actual snapshot load is driven
+/// by the host view's `.task`. Presented inside `CompareOverlayButton`'s popover/sheet.
 struct CompareGitPanel: View {
     /// One row in the inline ref list: picking a ref enables the diff directly, no on/off step.
     /// There's no "None" row — the leading `Clear` button turns comparison back off.
@@ -190,7 +187,6 @@ struct CompareGitPanel: View {
             }
         }
 
-        /// The trailing kind badge — `nil` for Custom, which isn't a ref at all.
         var kindLabel: String? {
             switch self {
             case .custom:
@@ -234,7 +230,6 @@ struct CompareGitPanel: View {
             + availableRefs.filter { $0.name != "HEAD" }.map(RefRow.ref) + [.custom]
     }
 
-    /// `nil` when comparison is off — no row shows a checkmark in that state.
     private var selectedRow: RefRow? {
         guard let ref = diagram.comparisonGitRef else { return nil }
         if let baseRef = diagram.comparisonBaseRef {
@@ -324,9 +319,6 @@ struct CompareGitPanel: View {
         }
     }
 
-    /// Whether both sides a comparison needs are loaded — the "old" side always, plus the "new"
-    /// (head) side too in pull-request mode, where it's a historical snapshot rather than the
-    /// always-available live working tree.
     private var isFullyLoaded: Bool {
         model.comparisonArtifact(for: diagram) != nil
             && (diagram.comparisonBaseRef == nil || model.comparisonNewArtifact(for: diagram) != nil)
@@ -470,9 +462,8 @@ struct CompareGitPanel: View {
         availableRefs = (try? GitCheckout(directory: directory).refs()) ?? []
     }
 
-    /// Loads open pull requests for the list, only for a GitHub-backed codebase — a plain local
-    /// folder has no PRs to offer. Best-effort, like `loadAvailableRefs()`: a failure (not signed
-    /// in, no network) just leaves the PR rows empty.
+    /// Only for a GitHub-backed codebase — a plain local folder has no PRs to offer. Best-effort:
+    /// a failure (not signed in, no network) just leaves the PR rows empty.
     private func loadPullRequests() async {
         guard let codebase = model.codebase(for: diagram.codebaseID),
               let source = codebase.githubSource,

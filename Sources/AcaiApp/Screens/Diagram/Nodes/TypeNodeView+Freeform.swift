@@ -8,7 +8,6 @@ import AcaiRender
 // diagrams are an app-only concept, so this initializer stays here and delegates to the
 // shared view's primitive initializer.
 extension TypeNodeView {
-    /// Create from a freeform diagram node with type content.
     init(node: FreeformDiagram.Node, content: FreeformDiagram.Node.TypeContent, isSelected: Bool) {
         self.init(
             name: node.name,

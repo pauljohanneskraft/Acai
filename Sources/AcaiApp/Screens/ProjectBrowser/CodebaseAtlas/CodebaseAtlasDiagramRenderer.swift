@@ -15,16 +15,12 @@ enum AtlasDiagramRenderOutcome {
 }
 
 /// Resolves one `GeneratedDiagram` to its rendered PNG bytes via the same per-kind view models the
-/// app's own "Export Image" action already uses (`ClassDiagramViewModel`, `SequenceDiagramViewModel`,
-/// `StateDiagramViewModel`, `PackageDiagramViewModel`, `CallGraphViewModel` — see
-/// `ProjectBrowserViewModel+Export.swift`'s `DiagramImageExporting` conformances). Reuses that
-/// existing rendering pipeline rather than adding a new one; a value you instantiate over one
-/// codebase and call `render(_:scale:)` on for each of its diagrams.
+/// app's own "Export Image" action already uses (`DiagramImageExporting` conformances in
+/// `ProjectBrowserViewModel+Export.swift`).
 ///
-/// `moduleCoupling`/`hotspot`/`cycleDiagram` diagrams have no PNG-export path anywhere in the app
-/// today (no per-diagram "Export Image" action covers them either — they're chart-style views, not
-/// canvas-based diagrams with a `DiagramLayoutModel`), so they resolve to `.unsupported` rather than
-/// growing a new renderer here.
+/// `moduleCoupling`/`hotspot`/`cycleDiagram` have no PNG-export path anywhere in the app today —
+/// they're chart-style views, not canvas-based diagrams with a `DiagramLayoutModel` — so they
+/// resolve to `.unsupported` rather than growing a new renderer here.
 @MainActor
 struct CodebaseAtlasDiagramRenderer {
     let codebase: Codebase

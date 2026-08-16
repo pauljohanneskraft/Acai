@@ -291,15 +291,11 @@ struct SequenceDiagramView: View {
         )
     }
 
-    /// Fits the viewport to the diagram's full rendered extent, not just the participant headers.
-    /// `FitToView` unions whatever rects it's handed — feeding it only the header rects (as this
-    /// once did) frames a ~44pt-tall strip, so the fit centers *that* strip in the viewport and
-    /// pushes everything below it (messages, activation bars, fragments, the lifeline tails) down
-    /// past vertical center. Unioning in `layout.contentSize` (the layout's own full-extent
-    /// computation, anchored at the same (0, 0) origin `SequenceEnsembleView` renders from) fixes
-    /// the vertical extent; keeping the header rects in the union (rather than relying on
-    /// `contentSize` alone) preserves correct framing when a dragged participant header sits left
-    /// of the layout's default origin, which `contentSize`'s own width doesn't account for.
+    /// `FitToView` unions whatever rects it's handed, so header rects alone would center just the
+    /// ~44pt header strip and push messages/activation bars/fragments below vertical center.
+    /// `layout.contentSize` (anchored at the same origin `SequenceEnsembleView` renders from) covers
+    /// the vertical extent; the header rects stay in the union too, since a dragged header left of
+    /// the layout's default origin isn't captured by `contentSize`'s own width.
     private func centerDiagram() {
         let layout = viewModel.layout
         let headerIDs = layout.participants.map(\.id)

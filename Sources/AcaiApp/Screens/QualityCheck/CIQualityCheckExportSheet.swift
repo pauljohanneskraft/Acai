@@ -5,10 +5,9 @@ import UIKit
 import AppKit
 #endif
 
-/// Surfaces the "Export CI Check" action offered next to `QualityCheckSection`: the exact `acai
-/// quality` invocation for this codebase's configured rules file, as a copyable shell command and
-/// a ready-to-paste GitHub Actions step. No new engine capability — this only formats an
-/// invocation string from data the app already has (see `CIQualityCheckInvocation`).
+/// Surfaces the "Export CI Check" action offered next to `QualityCheckSection`: the `acai quality`
+/// invocation for this codebase's configured rules file, as a copyable shell command and a
+/// ready-to-paste GitHub Actions step.
 struct CIQualityCheckExportSheet: View {
     let codebaseName: String
     let invocation: CIQualityCheckInvocation

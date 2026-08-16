@@ -1,10 +1,7 @@
 import SwiftUI
 import AcaiCore
 
-/// Read-only analysis view: isolates and renders exactly one detected `AcaiQuality
-/// .CycleFinder` cycle's members and the edges connecting them, laid out as the loop it is —
-/// members placed evenly around a circle, arrows drawn between the ones a relationship actually
-/// connects. No new detection logic (`CycleDiagramData` only resolves display edges among an
+/// No new detection logic (`CycleDiagramData` only resolves display edges among an
 /// already-known member set); no drag/undo/redo/Save-as-Freeform/Export (see
 /// `GeneratedDiagram+Freeform.swift`'s doc comment) — a fixed, auto-fit layout since there is
 /// nothing to arrange.

@@ -183,7 +183,6 @@ struct PackageDiagramView: View {
         }
     }
 
-    /// A coloured delta outline overlaid on a node, or nothing when the node is unchanged.
     @ViewBuilder
     private func deltaBorder(_ color: Color?) -> some View {
         if let color {
@@ -217,7 +216,6 @@ struct PackageDiagramView: View {
         )
     }
 
-    /// Maps a dependency's weight to a line-width multiplier, clamped so the heaviest edges stay legible.
     private static func lineWidthScale(forWeight weight: Int) -> CGFloat {
         min(1 + CGFloat(weight - 1) * 0.35, 3)
     }

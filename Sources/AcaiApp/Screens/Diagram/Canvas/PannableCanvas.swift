@@ -7,12 +7,11 @@ struct PannableCanvas<Model: CanvasInteraction, Content: View>: View {
     @ObservedObject var model: Model
     @Binding var scale: CGFloat
     @Binding var offset: CGPoint
-    /// The canvas-space location of the node currently under the pointer during a drag, used to
-    /// trigger edge auto-pan. `nil` when no drag is in progress.
+    /// Canvas-space location of the node under the pointer during a drag, for edge auto-pan.
+    /// `nil` when no drag is in progress.
     var activeDragCanvasLocation: CGPoint?
     var autoPanController: EdgeAutoPanController
-    /// Reports the real, measured canvas viewport size whenever it changes — forwarded straight
-    /// through to `InfiniteCanvas`, see its own doc comment for why this exists.
+    /// Forwarded straight through to `InfiniteCanvas`.
     var onViewportSizeChange: ((CGSize) -> Void)?
     /// Overrides the default background-tap behavior (`model.clearSelection()`) — e.g. Freeform's
     /// point-and-place insertion, where a tap should commit a pending placement instead of clearing

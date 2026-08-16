@@ -4,36 +4,32 @@ import AcaiQuality
 import AcaiDiagram
 
 /// Aggregates the unified Findings list for one project: every quality violation, dead-code
-/// candidate, and parse diagnostic across every codebase in the project, normalized to `Finding`. A
-/// value you instantiate over the project and the view model (for each codebase's already-cached
-/// `CodebaseAnalysis`/artifact) and call `findings()` on — callers own waiting for each codebase's
-/// analysis to finish loading first (`ProjectBrowserViewModel.ensureAnalysisLoaded`); a codebase
-/// whose analysis isn't ready yet simply contributes nothing this call, rather than blocking.
+/// candidate, and parse diagnostic across every codebase, normalized to `Finding`. Callers own
+/// waiting for each codebase's analysis to load first (`ensureAnalysisLoaded`); a codebase whose
+/// analysis isn't ready yet simply contributes nothing this call, rather than blocking.
 ///
-/// `@MainActor` because it reads `ProjectBrowserViewModel`'s own main-actor-isolated caches
-/// directly — it's only ever instantiated from the (main-actor) view layer, right before rendering.
+/// `@MainActor` because it reads `ProjectBrowserViewModel`'s main-actor-isolated caches directly.
 @MainActor
 struct FindingsAggregator {
     let project: Project
     let model: ProjectBrowserViewModel
 
-    /// Every finding currently available across the project's codebases, unsorted and unfiltered —
-    /// `FindingsView` applies severity/recency ordering and the kind/codebase filters on top.
+    /// Unsorted and unfiltered — `FindingsView` applies severity/recency ordering and the
+    /// kind/codebase filters on top.
     func findings() -> [Finding] {
         project.codebases.flatMap(findings(for:))
     }
 
-    /// Codebases in the project whose analysis is still being computed — drives the view's partial
-    /// "Analyzing N more codebase(s)…" note rather than a single all-or-nothing loading screen.
+    /// Drives the view's partial "Analyzing N more codebase(s)…" note rather than a single
+    /// all-or-nothing loading screen.
     func codebasesStillAnalyzing() -> [Codebase] {
         project.codebases.filter { codebase in
             model.artifact(for: codebase.id) != nil && model.analysis(for: codebase.id) == nil
         }
     }
 
-    /// Codebases in the project that have never been indexed — they simply have nothing to
-    /// contribute (not an error), but the view surfaces this explicitly rather than silently
-    /// omitting them.
+    /// Never been indexed — not an error, but the view surfaces this explicitly rather than
+    /// silently omitting them.
     func codebasesNotIndexed() -> [Codebase] {
         project.codebases.filter { model.artifact(for: $0.id) == nil }
     }
@@ -44,8 +40,8 @@ struct FindingsAggregator {
     }
 
     /// Same mapping as `findings(for:)`, but against an explicit artifact/analysis pair instead of
-    /// the live model's cache — for recomputing findings against a historical revision (the Compare
-    /// panel's findings delta), which never touches `model.analysis(for:)`/`model.artifact(for:)`.
+    /// the live model's cache — for recomputing findings against a historical revision (the
+    /// Compare panel's findings delta).
     func findings(for codebase: Codebase, analysis: CodebaseAnalysis, artifact: CodeArtifact?) -> [Finding] {
         var results: [Finding] = []
         results.append(contentsOf: violationFindings(analysis.quality, codebase: codebase, artifact: artifact))
@@ -106,8 +102,6 @@ struct FindingsAggregator {
                 title: diagnostic.message,
                 message: diagnostic.kind.rawValue,
                 location: diagnostic.location,
-                // A `ParseDiagnostic` carries no type/method identity — "View Source" is its only
-                // action.
                 reference: nil,
                 indexedAt: codebase.lastIndexed)
         }

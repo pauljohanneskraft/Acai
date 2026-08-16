@@ -4,8 +4,6 @@ import AcaiDiagram
 
 // MARK: - Catalog Sidebar
 
-/// Sidebar panel listing available node kinds and relationship types
-/// for the freeform diagram editor.
 struct FreeformDiagramCatalog: View {
     @ObservedObject var viewModel: FreeformDiagramViewModel
 
@@ -77,11 +75,9 @@ struct FreeformDiagramCatalog: View {
         }
     }
 
-    /// Tapping a catalog entry no longer inserts immediately — it enters placement mode
-    /// (`FreeformDiagramViewModel.beginPlacement(kind:)`): a ghost preview follows the cursor/touch
-    /// and the next canvas tap commits the node there (see `FreeformDiagramView`'s ghost overlay and
-    /// `commitPlacement(at:)`). Dragging the button straight onto the canvas still inserts directly
-    /// via `.onDrag`/`handleCatalogDrop`, unchanged.
+    /// Tapping a catalog entry enters placement mode (`FreeformDiagramViewModel.beginPlacement(kind:)`):
+    /// a ghost preview follows the cursor/touch and the next canvas tap commits the node there.
+    /// Dragging the button onto the canvas still inserts directly via `.onDrag`/`handleCatalogDrop`.
     private func catalogButton(kind: FreeformDiagramNodeKind) -> some View {
         let isPending = viewModel.pendingPlacement == kind
         return Button {

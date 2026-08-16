@@ -8,16 +8,14 @@ import AcaiDiagram
 // keep the main view model file under its type-body-length budget.
 
 extension FreeformDiagramViewModel {
-    /// A kind of connector the Node/Relationship/Message/Transition catalogs can add between
-    /// selected elements. Tracked so the compact bottom bar's quick-add slot can repeat whichever
-    /// one the user reached for most recently.
+    /// Tracked so the compact bottom bar's quick-add slot can repeat whichever one the user
+    /// reached for most recently.
     enum ConnectionTool: Equatable {
         case relationship(Relationship.Kind)
         case message(SequenceDiagram.Message.Kind)
         case transition
     }
 
-    /// SF Symbol name for `ConnectionTool`'s bottom-bar quick-add button.
     var lastUsedConnectionToolSystemImage: String {
         switch lastUsedConnectionTool {
         case .relationship, .transition:
@@ -34,7 +32,6 @@ extension FreeformDiagramViewModel {
         }
     }
 
-    /// Whether `applyLastUsedConnectionTool()` would do anything given the current selection.
     var canApplyLastUsedConnectionTool: Bool {
         switch lastUsedConnectionTool {
         case .relationship:
@@ -46,9 +43,7 @@ extension FreeformDiagramViewModel {
         }
     }
 
-    /// Applies `lastUsedConnectionTool` to the current selection: a relationship between two
-    /// selected nodes, a message between one (self) or two selected lifelines, or a transition
-    /// between one (self) or two selected states. No-op if the selection doesn't fit.
+    /// No-op if the selection doesn't fit.
     func applyLastUsedConnectionTool() {
         switch lastUsedConnectionTool {
         case .relationship(let kind):

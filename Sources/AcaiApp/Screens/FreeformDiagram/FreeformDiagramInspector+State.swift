@@ -2,15 +2,9 @@ import SwiftUI
 import AcaiDiagram
 
 // MARK: - State Inspectors (states, transitions)
-//
-// The inspector sections for state-diagram elements: editing a transition edge (endpoints,
-// event, guard, action) and a state node's UML flavour. Split from the main inspector file,
-// which hosts the node/relationship sections.
 
 extension FreeformDiagramInspector {
 
-    /// Inspector for a state-transition edge: endpoints plus the UML
-    /// `event [guard] / action` label parts.
     func transitionSection(edge: FreeformDiagram.Edge) -> some View {
         let stateNodes = viewModel.nodes.filter { viewModel.state.isStateNode($0.id) }
         return Section {
@@ -51,7 +45,6 @@ extension FreeformDiagramInspector {
         }
     }
 
-    /// Inspector section for a state node's UML flavour.
     func stateKindSection(nodeID: String, kind: StateDiagram.State.Kind) -> some View {
         Section {
             Picker("State kind", selection: Binding(

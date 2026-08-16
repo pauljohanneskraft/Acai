@@ -29,9 +29,7 @@ struct UndoRedoToolbarButtons<Model: CanvasInteraction>: View {
     }
 }
 
-/// Toggles a `CanvasInteraction` model's touch-only "Select" mode (see `isMultiSelectActive`'s
-/// documentation): while active, tapping a node adds/removes it from the selection instead of
-/// replacing it — the touch substitute for macOS's Cmd-click, which has no iOS/iPadOS equivalent.
+/// Toggles a `CanvasInteraction` model's touch-only "Select" mode (see `isMultiSelectActive`).
 /// macOS doesn't need this button (it keeps Cmd-click), so callers gate it `#if !os(macOS)`.
 struct MultiSelectToggleButton<Model: CanvasInteraction>: View {
     @ObservedObject var model: Model

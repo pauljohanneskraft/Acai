@@ -136,7 +136,6 @@ extension FreeformDiagramView {
                 .offset(y: anchorY)
                 .allowsHitTesting(false)
 
-            // Tap targets over each message arrow, selecting the backing edge.
             ForEach(layout.messages) { message in
                 messageTapTarget(
                     message,
@@ -145,8 +144,7 @@ extension FreeformDiagramView {
                 )
             }
 
-            // Selected-fragment highlight + tap targets on the fragment tabs. (Fragment frames
-            // themselves are drawn by the ensemble; frame ids are the backing node ids.)
+            // Fragment frames are drawn by the ensemble; frame ids are the backing node ids.
             ForEach(layout.fragments) { fragment in
                 if viewModel.selectedNodeIDs.contains(fragment.id) {
                     SequenceFragmentView(fragment: fragment, isSelected: true)
@@ -156,15 +154,13 @@ extension FreeformDiagramView {
                 fragmentTapTarget(fragment, anchorY: anchorY)
             }
 
-            // Interactive participant headers.
             ForEach(viewModel.sequence.lifelineNodes) { node in
                 lifelineHeader(for: node, anchorY: anchorY)
             }
         }
     }
 
-    /// An invisible tap strip over a fragment's operator tab, selecting its backing node.
-    /// Sized from the layout's `tabRect` (plus slack) so the whole tab is always clickable,
+    /// Sized from the layout's `tabRect` plus slack, so the whole tab is always clickable
     /// however long the operator name.
     private func fragmentTapTarget(
         _ fragment: SequenceLayoutModel.FragmentFrame,

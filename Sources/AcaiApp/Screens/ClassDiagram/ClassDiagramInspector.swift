@@ -4,13 +4,10 @@ import AcaiDiff
 import AcaiLibrary
 import AcaiRender
 
-/// Inspector tab choices for the generated diagram inspector.
 enum ClassDiagramSidebarTab {
     case settings, inspector
 }
 
-/// Inspector sidebar for the generated diagram view, showing configuration
-/// options and details of the currently-selected nodes.
 struct ClassDiagramSidebar: View {
     @ObservedObject var viewModel: ClassDiagramViewModel
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -345,9 +342,6 @@ struct ClassDiagramSidebar: View {
     }
 }
 
-/// Class-diagram focus controls: enable focus, pick a root type, and tune depth, direction,
-/// relationship kinds, and edge inclusion. Mutations flow through the shared `configuration`
-/// binding, so the diagram rebuilds live.
 private struct FocusSection: View {
     @Binding var configuration: ClassDiagramConfiguration
     let typeNames: [String]

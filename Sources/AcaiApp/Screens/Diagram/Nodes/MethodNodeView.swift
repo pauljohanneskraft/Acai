@@ -1,9 +1,8 @@
 import SwiftUI
 import AcaiRender
 
-/// A call-graph method node: a rounded monospaced box labelled `Type.method` (or a bare
-/// function name). Used both by the freeform editor's `.method` nodes and as the visual match
-/// for a call graph saved as freeform.
+/// A rounded monospaced box labelled `Type.method` (or a bare function name). Used both by the
+/// freeform editor's `.method` nodes and as the visual match for a call graph saved as freeform.
 struct MethodNodeView: View {
     let name: String
     let isSelected: Bool

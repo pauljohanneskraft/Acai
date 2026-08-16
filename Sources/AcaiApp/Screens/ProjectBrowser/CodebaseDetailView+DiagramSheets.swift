@@ -1,10 +1,7 @@
 import SwiftUI
 
-// Diagram configuration sheets (State/Call Graph/Sequence) — split out of `CodebaseDetailView` to
-// keep that file under SwiftLint's `file_length` limit. Pure relocation, no behavior change.
 extension CodebaseDetailView {
 
-    /// The state-diagram configuration popup, presented when "State Diagram" is clicked.
     @ViewBuilder
     func stateConfigSheet(for context: ConfigContext) -> some View {
         if let artifact = model.artifact(for: context.codebaseID) {
@@ -29,7 +26,6 @@ extension CodebaseDetailView {
         }
     }
 
-    /// The call-graph scope popup, presented when "Call Graph" is clicked.
     @ViewBuilder
     func callGraphConfigSheet(for context: ConfigContext) -> some View {
         if let artifact = model.artifact(for: context.codebaseID) {
@@ -52,7 +48,6 @@ extension CodebaseDetailView {
         }
     }
 
-    /// The sequence-diagram configuration popup, presented when "Sequence Diagram" is clicked.
     @ViewBuilder
     func sequenceConfigSheet(for context: ConfigContext) -> some View {
         if let artifact = model.artifact(for: context.codebaseID) {

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Collects the tallest natural card height in a grid so every card can match it.
 struct CardHeightPreferenceKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -8,16 +7,14 @@ struct CardHeightPreferenceKey: PreferenceKey {
     }
 }
 
-/// How serious a metric's headline value is. Rendered as the *intensity* of the card's family tint —
-/// a calm wash when healthy, a saturated tile when critical — so the hotspots pop out of the grid on
-/// their own. The card owns the opacity ramp (``MetricStatCard/fillOpacity``).
+/// Rendered as the *intensity* of the card's family tint — a calm wash when healthy, a saturated
+/// tile when critical — so hotspots pop out of the grid on their own.
 enum MetricSeverity {
     case ok, caution, critical
 }
 
-/// The amber/red guardrails for a directional metric — the value where it turns from healthy to a
-/// caution, then to a critical hotspot. Metrics with no meaningful "bad" direction have no threshold
-/// (and so sit at the calm baseline intensity).
+/// Metrics with no meaningful "bad" direction have no threshold, and so sit at the calm baseline
+/// intensity.
 struct MetricThreshold {
     let amber: Double
     let red: Double
@@ -29,10 +26,8 @@ struct MetricThreshold {
     }
 }
 
-/// A family of related metrics, sharing one band hue so the statistics grid reads as coherent groups
-/// rather than a rainbow. Four vivid, diverse tones drawn from the original card palette — spread
-/// around the wheel (a warm one included) so the grid stays colourful. Severity lives in the tile's
-/// intensity (see ``MetricStatCard/fillOpacity``), kept subtle so the hues never muddy.
+/// Shares one band hue per family so the statistics grid reads as coherent groups rather than a
+/// rainbow; severity is conveyed separately via the tile's intensity (``MetricStatCard/fillOpacity``).
 enum MetricFamily {
     case coupling, oo, smell, structural
 
@@ -50,10 +45,6 @@ enum MetricFamily {
     }
 }
 
-/// A statistics card: an icon, a title, a primary value, and optional secondary text and an exemplar
-/// caption (the item(s) driving the metric — up to three named, then "and N more"). When `onTap` is set
-/// the whole card is a button (opens the metric's drill-down list). Reports its natural height and
-/// stretches to `uniformHeight` so a row of cards shares one height. Knows nothing about the model.
 struct MetricStatCard: View {
     let title: String
     let icon: String
@@ -61,11 +52,9 @@ struct MetricStatCard: View {
     let primary: String
     var secondary: String?
     var exemplar: String?
-    /// Traffic-light standing for the headline value; `nil` for metrics with no "bad" direction.
     var severity: MetricSeverity?
     var uniformHeight: CGFloat = 0
-    /// One-line explanation of what the metric measures, shown as a hover tooltip. Reuses the same
-    /// copy already shown in the tap-through drill-down, so hovering surfaces it without a click.
+    /// Shown as a hover tooltip; reuses the same copy already shown in the tap-through drill-down.
     var blurb: String?
     var onTap: (() -> Void)?
 
@@ -119,8 +108,6 @@ struct MetricStatCard: View {
         .contentShape(Rectangle())
     }
 
-    /// The family tint's opacity, ramped by severity so hotspots read as the boldest tiles: a calm wash
-    /// for healthy and direction-neutral metrics (`nil`), stronger for a caution, boldest for a critical.
     private var fillOpacity: Double {
         switch severity {
         case .none, .some(.ok):

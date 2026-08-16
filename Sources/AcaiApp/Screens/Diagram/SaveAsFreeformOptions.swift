@@ -71,7 +71,6 @@ struct SaveAsFreeformOptionsModifier: ViewModifier {
 }
 
 extension View {
-    /// Attaches the "Save as Freeform" options confirmation (see `SaveAsFreeformOptionsModifier`).
     func saveAsFreeformOptions(
         isPresented: Binding<Bool>,
         includeMetricsNote: Binding<Bool>,

@@ -3,9 +3,9 @@ import AcaiDiagram
 import AcaiRender
 
 /// The package diagram's Inspector tab: selection-scoped, matching the Class/Freeform
-/// convention instead of the old "card for every module, re-sorted" behavior. Nothing selected
-/// shows a placeholder; one module selected shows its full metrics card plus a short cross-linked
-/// list of the modules it depends on / is depended on by, each tappable to jump the selection there.
+/// convention. Nothing selected shows a placeholder; one module selected shows its full metrics
+/// card plus a short cross-linked list of the modules it depends on / is depended on by, each
+/// tappable to jump the selection there.
 struct PackageDiagramInspector: View {
     let diagram: PackageDiagram
     let selectedNodeIDs: Set<String>

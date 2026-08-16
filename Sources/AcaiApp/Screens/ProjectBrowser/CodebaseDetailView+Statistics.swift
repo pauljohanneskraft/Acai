@@ -1,11 +1,8 @@
 import SwiftUI
 import AcaiCore
 
-// Drill-down list construction and Finder-reveal helpers for the statistics cards. Kept in a separate
-// file (same module) so `CodebaseDetailView.swift` stays within SwiftLint's `file_length`.
 extension CodebaseDetailView {
 
-    /// Types ranked by the metric (descending, value > 0), each row revealing the type's file.
     func typeDetail(
         _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>
@@ -25,8 +22,7 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
-    /// Types ranked by a `Double`-valued metric (descending, value > 0), each value formatted by
-    /// `format`. Mirrors the `Int` overload for ratio/mean metrics.
+    /// Mirrors the `Int` overload above, for ratio/mean metrics.
     func typeDetail(
         _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>, format: (Double) -> String
@@ -46,8 +42,6 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
-    /// Modules ranked by a metric (`value`, descending, value > 0), each value formatted by `format`
-    /// and each row revealing the module's directory.
     func moduleDetail(
         _ title: String, _ description: String, _ modules: [CodeMetrics.ModuleCoupling],
         value: (CodeMetrics.ModuleCoupling) -> Double, format: (Double) -> String
@@ -64,7 +58,6 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
-    /// The last `.`-separated segment of a qualified type name, for a compact caption.
     func shortName(_ qualifiedName: String) -> String {
         qualifiedName.split(separator: ".").last.map(String.init) ?? qualifiedName
     }
@@ -73,8 +66,7 @@ extension CodebaseDetailView {
         artifact.flatMap { location(forTypeID: id, in: $0) }?.filePath
     }
 
-    /// The source location of a (possibly nested) type by its canonical id — looked up in the
-    /// flattened type space the metrics are computed over.
+    /// Looked up in the flattened type space, since a type here may be nested.
     private func location(forTypeID id: String, in artifact: CodeArtifact) -> SourceLocation? {
         artifact.flattened().first { $0.id == id }?.location
     }

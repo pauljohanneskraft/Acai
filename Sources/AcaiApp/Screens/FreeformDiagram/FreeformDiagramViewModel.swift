@@ -5,7 +5,6 @@ import AcaiRender
 import AppKit
 #endif
 
-/// View model for the freeform diagram editor.
 @MainActor
 final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction,
     FreeformEditingContext {
@@ -17,13 +16,9 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     // Each owns one editing domain over the shared nodes/edges (via `FreeformEditingContext`), so
     // this view model stays the canvas / history / selection / persistence facade the views observe.
 
-    /// Lifelines, ordered messages, and combined fragments.
     lazy var sequence = SequenceEditor(context: self)
-    /// States and labeled transitions.
     lazy var state = StateMachineEditor(context: self)
-    /// Type members and inline text (name / member / note) editing.
     lazy var members = TypeMemberEditor(context: self)
-    /// Cut / copy / paste of the node-and-edge selection.
     lazy var clipboard = SelectionClipboard(context: self)
 
     @Published var nodes: [FreeformDiagram.Node] = []
@@ -31,8 +26,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     @Published var isMultiSelectActive = false
     @Published var selectedNodeIDs: Set<String> = [] {
         didSet {
-            // Keep the click order in sync no matter how the set is mutated (taps, marquee,
-            // shared canvas gestures): drop deselected ids, append newly selected ones.
             selectionOrder.removeAll { !selectedNodeIDs.contains($0) }
             for id in selectedNodeIDs where !selectionOrder.contains(id) {
                 selectionOrder.append(id)
@@ -47,26 +40,23 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     @Published var selectionRect: CGRect?
     /// When set, the user is in "draw relationship" mode: dragging from a node creates an edge.
     @Published var pendingRelationshipKind: Relationship.Kind?
-    /// While dragging to draw a relationship, the source node.
     @Published var relationshipDragSourceID: String?
-    /// The current endpoint (canvas coords) of the relationship being drawn.
+    /// Canvas coordinates.
     @Published var relationshipDragEndpoint: CGPoint?
 
-    /// Actual measured sizes of rendered node views (updated by GeometryReader).
+    /// Updated by `GeometryReader`.
     var measuredNodeSizes: [String: CGSize] = [:]
 
     // MARK: - Undo / Redo
 
-    /// Snapshot type that captures the undoable portion of the diagram state.
     struct DiagramSnapshot: Equatable, Sendable {
         var nodes: [FreeformDiagram.Node]
         var edges: [FreeformDiagram.Edge]
     }
 
-    /// History manager backing Cmd+Z / Shift+Cmd+Z.
+    /// Backs Cmd+Z / Shift+Cmd+Z.
     let history = DiagramHistoryManager<DiagramSnapshot>()
 
-    /// Undoable state: the nodes and edges. (See `DiagramHistoryHosting`.)
     var historySnapshot: DiagramSnapshot {
         get { DiagramSnapshot(nodes: nodes, edges: edges) }
         set {
@@ -75,7 +65,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         }
     }
 
-    /// Persist after an undo/redo restores a snapshot.
     func persistAfterHistoryChange() { save() }
 
     init() {}
@@ -114,7 +103,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         save()
     }
 
-    /// Remove the given nodes and any edges touching them, and drop them from the selection.
     /// Does **not** record undo or save — callers own that so a batch removal is one undo step.
     func removeNodes(_ ids: Set<String>) {
         guard !ids.isEmpty else { return }
@@ -123,8 +111,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         selectedNodeIDs.subtract(ids)
     }
 
-    /// Delete the current selection (the selected edge and/or all selected nodes) as a single
-    /// undoable action, so one ⌘Z restores everything at once.
+    /// Deletes the selected edge and/or all selected nodes as a single undoable action.
     func deleteSelection() {
         guard !selectedNodeIDs.isEmpty || selectedEdgeID != nil else { return }
         recordUndo()
@@ -154,7 +141,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         }
     }
 
-    /// Increase the draw order of a node so it renders on top of siblings in the same layer.
     func moveNodeHigher(_ nodeID: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
@@ -166,7 +152,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         save()
     }
 
-    /// Decrease the draw order of a node so it renders below siblings in the same layer.
     func moveNodeLower(_ nodeID: String) {
         guard let idx = nodes.firstIndex(where: { $0.id == nodeID }) else { return }
         let isContainer = nodes[idx].isResizable
@@ -230,24 +215,19 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     // MARK: - Point-and-Place Insertion
 
-    /// Set when the user has picked a catalog entry and is placing it: the view renders a ghost
-    /// preview following the cursor/touch, and the next canvas tap commits the node there (see
-    /// `commitPlacement(at:)`). `nil` when no placement is in progress.
+    /// The next canvas tap commits the node here — see `commitPlacement(at:)`.
     @Published private(set) var pendingPlacement: FreeformDiagramNodeKind?
 
-    /// Enters placement mode for `kind`, replacing any placement already pending.
     func beginPlacement(kind: FreeformDiagramNodeKind) {
         pendingPlacement = kind
     }
 
-    /// Leaves placement mode without inserting a node.
     func cancelPlacement() {
         pendingPlacement = nil
     }
 
-    /// Commits the pending placement at `position` (canvas coordinates) and leaves placement mode.
-    /// Routes through `addNode(kind:name:at:)` — the same choke point drag-drop and the context menu
-    /// use — so undo keeps working identically. No-op (returns `false`) if nothing is pending.
+    /// Routes through `addNode(kind:name:at:)` — the same choke point drag-drop and the context
+    /// menu use — so undo keeps working identically.
     @discardableResult
     func commitPlacement(at position: CGPoint) -> Bool {
         guard let kind = pendingPlacement else { return false }
@@ -303,7 +283,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         return (browserModel?.freeformDiagram(for: diagramID)?.checkpoints ?? []).reversed()
     }
 
-    /// Saves a new checkpoint capturing the current nodes and edges under `name`.
     func saveCheckpoint(named name: String) {
         guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         diagram.nodes = nodes
@@ -312,7 +291,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         browserModel?.freeforms.update(diagramID: diagramID, diagram: diagram)
     }
 
-    /// Replaces the canvas's nodes and edges with the checkpoint's, as one undoable step.
+    /// One undoable step.
     func restoreCheckpoint(_ checkpointID: FreeformDiagram.Checkpoint.ID) {
         guard let diagramID, var diagram = browserModel?.freeformDiagram(for: diagramID) else { return }
         recordUndo()
@@ -344,11 +323,9 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         guard let node = nodes.first(where: { $0.id == nodeID }) else {
             return CGSize(width: 120, height: 60)
         }
-        // If the user has explicitly resized a container node, use that.
         if let w = node.width, let h = node.height {
             return CGSize(width: w, height: h)
         }
-        // Prefer the actual measured size from the rendered view.
         if let measured = measuredNodeSizes[nodeID] {
             return measured
         }
@@ -373,7 +350,6 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
             let width = max(140, CGFloat(max(node.name.count, text.count / max(lines, 1))) * 7.5 + 32)
             return CGSize(width: min(width, 300), height: CGFloat(lines) * 18 + 48)
         case .package, .boundary, .subsystem:
-            // Default container size before user resizes.
             let width = max(200, CGFloat(node.name.count) * 8.5 + 60)
             return CGSize(width: width, height: 150)
         case .lifeline:

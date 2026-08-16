@@ -3,7 +3,6 @@ import AcaiCore
 import AcaiDiagram
 import AcaiQuality
 
-/// Sidebar tab choices for the package diagram, matching Class Diagram's closed vocabulary.
 enum PackageDiagramSidebarTab {
     case settings, inspector
 }

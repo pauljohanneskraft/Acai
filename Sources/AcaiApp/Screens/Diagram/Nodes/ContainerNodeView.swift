@@ -30,7 +30,6 @@ struct ContainerNodeView: View {
     enum Style {
         case package, boundary, subsystem
 
-        /// The palette colour family backing this style.
         var tint: ContainerTint {
             switch self {
             case .package:

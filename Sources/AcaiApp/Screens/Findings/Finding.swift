@@ -4,10 +4,8 @@ import AcaiCore
 /// One row in the project-level Findings view — a quality violation, a dead-code candidate,
 /// or a health-check parse diagnostic, normalized to one shape so every flaw-detection lens the
 /// engine produces can be sorted, filtered, and resolved through `CodeElementReference`
-/// identically, regardless of which scan produced it. Previously each lens lived buried inside
-/// `CodebaseDetailView`'s scroll, one codebase at a time, in its own collapsible section.
+/// identically, regardless of which scan produced it.
 struct Finding: Identifiable, Hashable {
-    /// Which lens produced this finding.
     enum Kind: String, CaseIterable, Identifiable, Hashable {
         case violation
         case deadCode
@@ -38,10 +36,9 @@ struct Finding: Identifiable, Hashable {
         }
     }
 
-    /// A finding's severity, used as the list's primary sort key (highest first). No lens in this
-    /// data model carries an explicit severity field, so this is derived structurally (see
-    /// `FindingsAggregator`) rather than trusted from the source data — kept a closed, ordered
-    /// vocabulary shared across every lens rather than each lens inventing its own ranking.
+    /// The list's primary sort key (highest first). No lens carries an explicit severity field,
+    /// so this is derived structurally (see `FindingsAggregator`) — a closed, ordered vocabulary
+    /// shared across every lens rather than each lens inventing its own ranking.
     enum Severity: Int, Comparable, CaseIterable, Hashable {
         case info
         case warning
@@ -88,7 +85,7 @@ struct Finding: Identifiable, Hashable {
     /// health-check parse diagnostic, which carries no type/method identity), in which case "View
     /// Source" is the row's only action.
     let reference: CodeElementReference?
-    /// The finding's "recency" for the list's secondary sort key: the codebase's own last-indexed
-    /// timestamp — the freshest signal available without git-blame authorship, which isn't built yet.
+    /// The list's secondary sort key: the codebase's own last-indexed timestamp, the freshest
+    /// recency signal available without git-blame authorship.
     let indexedAt: Date?
 }

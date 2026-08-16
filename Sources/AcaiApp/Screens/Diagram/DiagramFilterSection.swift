@@ -5,7 +5,7 @@ import AcaiQuality
 /// A "Filter" `Form` section shared by every diagram type's Settings tab: the unmodified
 /// `SelectorEditor` (the same selector vocabulary `AcaiQuality`'s rules already use, instead of a
 /// second, diagram-specific filter), a "Save as Quality Rule" reverse action, and named,
-/// project-wide filter presets (save the current filter / apply a saved one).
+/// project-wide filter presets.
 struct DiagramFilterSection: View {
     @Binding var filter: AcaiQuality.Selector?
     let codebaseID: UUID

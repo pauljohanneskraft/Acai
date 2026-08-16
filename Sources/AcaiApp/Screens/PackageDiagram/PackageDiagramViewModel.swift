@@ -28,7 +28,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
-    /// The package-level diff when comparing against another revision; drives node/edge tinting.
     private var diff: PackageDiagramDiff?
 
     // MARK: - Init
@@ -67,16 +66,13 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         }
     }
 
-    /// Whether the diagram is rendering a delta against a comparison revision.
     var isDeltaMode: Bool { diff != nil }
 
-    /// The delta fill for a module node, or `nil` when unchanged / not in delta mode.
     func nodeDeltaColor(id: String) -> Color? {
         guard let diff, let hex = diff.status(ofNode: id).deltaHex else { return nil }
         return Color(hex: hex)
     }
 
-    /// The delta stroke for a dependency edge, or `nil` when unchanged / not in delta mode.
     func edgeDeltaColor(from: String, to: String) -> Color? {
         guard let diff, let hex = diff.status(ofEdgeFrom: from, to: to).deltaHex else { return nil }
         return Color(hex: hex)
@@ -84,7 +80,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring node drags.
     var layout: PackageLayoutModel {
         PackageLayoutModel(diagram: diagram, positionOverrides: positionOverrides)
     }

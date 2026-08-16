@@ -4,8 +4,6 @@ import AcaiDiagram
 
 // MARK: - Inspector Sidebar
 
-/// Inspector panel for the freeform diagram editor, showing details of the
-/// currently-selected node, edge, or multi-selection.
 struct FreeformDiagramInspector: View {
     @ObservedObject var viewModel: FreeformDiagramViewModel
     /// Mirrors whether any text field here is focused, so the parent can suspend its ⌘Z/⇧⌘Z
@@ -32,8 +30,7 @@ struct FreeformDiagramInspector: View {
     /// Text fields that, while focused, should own ⌘Z.
     enum Field: Hashable { case name, note, newProperty, newMethod }
 
-    /// Which structured member editor sheet is presented, and for which node/member. Not
-    /// `private`: referenced by `FreeformDiagramInspector+Members.swift` too.
+    /// Not `private`: referenced by `FreeformDiagramInspector+Members.swift` too.
     enum MemberSheet: Identifiable {
         case addProperty(nodeID: String)
         case editProperty(nodeID: String, memberID: UUID)

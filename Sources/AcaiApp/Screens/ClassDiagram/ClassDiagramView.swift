@@ -3,7 +3,6 @@ import AcaiCore
 import AcaiRender
 import UniformTypeIdentifiers
 
-/// View for a stored (generated) diagram that persists positions and supports re-generation.
 struct ClassDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact

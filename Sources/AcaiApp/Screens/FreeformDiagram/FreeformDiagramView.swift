@@ -2,9 +2,6 @@ import SwiftUI
 import AcaiCore
 import UniformTypeIdentifiers
 
-/// Editor view for freeform (user-created) diagrams.
-/// Provides a canvas with drag-to-select, a catalog sidebar for adding nodes/edges,
-/// and inline editing of node members.
 @MainActor
 struct FreeformDiagramView: View {
     let diagramID: UUID
@@ -36,9 +33,8 @@ struct FreeformDiagramView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     #endif
 
-    /// Compact-width (iPhone) bottom-bar mode: `.select` is today's tap-to-select/drag/context-menu
-    /// canvas behavior (unchanged); `.place` shows `FreeformBottomToolbar`'s catalog strip above the
-    /// bar so a node kind can be picked without ever opening the sidebar.
+    /// `.place` shows `FreeformBottomToolbar`'s catalog strip above the bar so a node kind can be
+    /// picked without ever opening the sidebar.
     enum BottomBarMode: Hashable { case select, place }
     @State private var bottomBarMode: BottomBarMode = .select
 
@@ -266,9 +262,6 @@ struct FreeformDiagramView: View {
         }
     }
 
-    /// Shown on a freshly created Freeform diagram until the first node is added, since neither
-    /// the right-click context menu nor the Node Catalog sidebar (hidden by default) is otherwise
-    /// discoverable.
     private var emptyCanvasHint: some View {
         VStack(spacing: 12) {
             Image(systemName: "hand.draw")

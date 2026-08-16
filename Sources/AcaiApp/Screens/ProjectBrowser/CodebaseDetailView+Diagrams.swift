@@ -1,9 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-// The diagram-generation buttons and their card-grid layout — kept in a separate file (same
-// pattern as `CodebaseDetailView+StatisticsCards.swift`) so `CodebaseDetailView.swift` stays within
-// SwiftLint's `file_length` limit.
 extension CodebaseDetailView {
 
     // MARK: - Card grid layout
@@ -13,7 +10,7 @@ extension CodebaseDetailView {
     /// card count (rather than `.adaptive`) keeps the row full-width instead of leaving empty trailing
     /// columns when there are fewer cards than would fit.
     func cardColumns(count: Int, target: CGFloat = 200) -> [GridItem] {
-        let usableWidth = contentWidth - 32  // outer .padding(.horizontal) on each side
+        let usableWidth = contentWidth - 32 // outer .padding(.horizontal) on each side
         let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
         let columns = max(1, min(count, fitting))
         return Array(repeating: GridItem(.flexible(), spacing: 12), count: columns)
@@ -21,8 +18,6 @@ extension CodebaseDetailView {
 
     // MARK: - Diagrams
 
-    /// The diagram-generation buttons, shown inline directly under the header (no fold, no title) since
-    /// they are the pane's primary action.
     func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
         // Cycle Diagram is deliberately excluded here: it has no meaningful content until a
         // specific cycle is chosen, so it isn't offered as a general "add a diagram" type — its one
@@ -41,8 +36,6 @@ extension CodebaseDetailView {
         }
     }
 
-    /// A diagram type button. Each click creates a new generated diagram of that type; sequence
-    /// and state diagrams first open their configuration popup (entry point / variable selection).
     private func diagramButton(codebase: Codebase, type: DiagramType) -> some View {
         Button {
             guard let projectID else { return }

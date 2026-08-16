@@ -17,7 +17,6 @@ struct QualityRuleFromSelector {
         return path.isEmpty || model.store.isManaged(path: path)
     }
 
-    /// Appends `selector` as a metric-budget scaffold to the codebase's managed quality rules.
     func appendRule(for selector: AcaiQuality.Selector) {
         var rules = model.editing.loadEditableRules(codebaseID: codebaseID)
         rules.budgets.append(MetricBudget(target: selector, metric: .maxCyclomaticComplexity, max: 10))

@@ -16,7 +16,6 @@ struct ClassDiagramConfigEditor {
     let diagramID: GeneratedDiagram.ID
     let artifact: CodeArtifact
 
-    /// Read-modify-write the configuration, persisting and applying it live.
     func mutate(_ transform: (inout ClassDiagramConfiguration) -> Void) {
         var configuration = viewModel.configuration
         transform(&configuration)
@@ -41,8 +40,6 @@ struct ClassDiagramConfigEditor {
         )
     }
 
-    /// A toggle binding for one type's per-category visibility. Reading falls back to the global
-    /// default when the type has no override; writing records an explicit per-type override.
     func typeVisibility(
         _ typeID: String,
         override overrideKeyPath: WritableKeyPath<ClassDiagramConfiguration, [String: Bool]>,

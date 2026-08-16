@@ -91,7 +91,6 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         self.diagram = SequenceDiagramGenerator(artifact: artifact, configuration: configuration).generate()
     }
 
-    /// Re-runs the trace for a new configuration, dropping stale offsets and history.
     func applyConfiguration(_ newConfiguration: SequenceDiagramConfiguration) {
         configuration = newConfiguration
         diagram = SequenceDiagramGenerator(artifact: artifact, configuration: newConfiguration).generate()
@@ -119,7 +118,6 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring participant drags (only the horizontal component is used).
     var layout: SequenceLayoutModel {
         SequenceLayoutModel(diagram: diagram, positionOverrides: positionOverrides.mapValues(\.x))
     }

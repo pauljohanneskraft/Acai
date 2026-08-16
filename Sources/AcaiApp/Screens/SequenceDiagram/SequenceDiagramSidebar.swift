@@ -39,7 +39,7 @@ struct SequenceDiagramSidebar: View {
     @State private var pendingMappingRows: [MappingRow] = []
 
     private struct MappingRow: Identifiable {
-        let id: String  // protocol name
+        let id: String
         var protocolName: String { id }
         let candidates: [String]
         var selection: String?
@@ -199,8 +199,7 @@ struct SequenceDiagramSidebar: View {
         .formStyle(.grouped)
     }
 
-    /// Runs a first-pass trace; if any encountered participant is an abstraction with conformers,
-    /// stage the resolution rows instead of applying immediately (mirrors `SequenceConfigSheet.advance()`).
+    /// Mirrors `SequenceConfigSheet.advance()`.
     private func apply() {
         let preview = SequenceDiagramBuilder(
             entryPoint: (draftEntryTypeName, draftEntryMethodName),

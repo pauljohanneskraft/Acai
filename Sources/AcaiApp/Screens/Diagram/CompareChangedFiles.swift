@@ -3,8 +3,7 @@ import AcaiDiff
 
 /// The file-level view of an `ArtifactDiff` — which source files a comparison's added/removed/
 /// changed types live in — for `CompareGitPanel`'s changed-files list and the node filter tapping a
-/// row drives. A value you construct over the diff's two sides and ask for `files`, rather than a
-/// namespaced helper: the file → type-id grouping is itself the interesting computation, done once.
+/// row drives.
 struct CompareChangedFiles {
     let diff: ArtifactDiff
     let oldArtifact: CodeArtifact

@@ -26,7 +26,7 @@ struct SequenceConfigSheet: View {
     private enum Phase { case entryPoint, resolveInterfaces }
 
     private struct MappingRow: Identifiable {
-        let id: String  // protocol name
+        let id: String
         var protocolName: String { id }
         let candidates: [String]
         var selection: String?  // chosen concrete type, or nil = leave abstract
@@ -105,7 +105,6 @@ struct SequenceConfigSheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $typeQuery)
                         Picker("Type", selection: $entryTypeName) {
-                            // No class selected = top-level scope; the method picker then lists free functions.
                             Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
                             ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
                         }
@@ -169,8 +168,6 @@ struct SequenceConfigSheet: View {
 
     // MARK: - Actions
 
-    /// Run a first-pass trace; if any encountered participant is an abstraction with conformers,
-    /// move to the resolution phase, otherwise create immediately.
     private func advance() {
         let preview = SequenceDiagramBuilder(
             entryPoint: (entryTypeName, entryMethodName),
@@ -221,7 +218,6 @@ struct SequenceConfigSheet: View {
         artifact.freestandingFunctions.map(\.name).uniqued().sorted()
     }
 
-    /// Names of types that declare at least one method — valid entry-point types.
     private var callableTypeNames: [String] {
         artifact.types
             .filter { $0.members.contains { $0.kind == .method } }
@@ -230,8 +226,6 @@ struct SequenceConfigSheet: View {
             .sorted()
     }
 
-    /// Method names on the selected entry type, or the top-level functions when no class is
-    /// selected (empty type name).
     private var methodNames: [String] {
         guard !entryTypeName.isEmpty else { return freeFunctionNames }
         guard let type = artifact.types.first(where: { $0.name == entryTypeName }) else { return [] }

@@ -15,8 +15,6 @@ struct CompareFindingsDelta {
         Key(kind: finding.kind, title: finding.title, filePath: finding.location?.filePath)
     }
 
-    /// Findings present in `newFindings` with no matching key in `oldFindings` — genuinely new,
-    /// not just the same finding shifted to a different line.
     var added: [Finding] {
         let oldKeys = Set(oldFindings.map(key))
         return newFindings.filter { !oldKeys.contains(key($0)) }

@@ -2,9 +2,6 @@ import SwiftUI
 import AcaiCore
 
 // MARK: - Member Editing (properties & methods on `.type` nodes)
-//
-// Structured property/method rows, their inline "Add" mini-forms, and the tap-to-edit sheet
-// wiring. Split from the main inspector file, which hosts the node/relationship sections.
 
 extension FreeformDiagramInspector {
     @ViewBuilder

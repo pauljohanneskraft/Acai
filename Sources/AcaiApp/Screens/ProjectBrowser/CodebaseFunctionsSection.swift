@@ -1,9 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-/// Section view displaying a codebase's top-level (module-scope) functions — the ones that
-/// aren't members of any type, so they never show up in the class diagram or the types list.
-/// Common in languages with free functions (Python, JavaScript, Dart, Kotlin).
 struct CodebaseFunctionsSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact

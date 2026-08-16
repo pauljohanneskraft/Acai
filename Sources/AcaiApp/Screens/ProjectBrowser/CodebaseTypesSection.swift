@@ -1,11 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-/// Section view displaying all types found in a codebase,
-/// sorted alphabetically with type-kind badges. Every row offers the full "Open in…"
-/// resolution (default tap-through + context menu, Finder reveal kept as an additional macOS-only
-/// secondary action) plus a "View Source" action — previously this section was purely display-only,
-/// with no navigation action at all.
 struct CodebaseTypesSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact
