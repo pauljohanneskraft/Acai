@@ -17,7 +17,6 @@ extension Node {
         return nsStr.substring(with: nsRange)
     }
 
-    /// The source location of this node's start position.
     public func location(in context: SourceFileContext) -> SourceLocation {
         let point = pointRange.lowerBound
         return SourceLocation(
@@ -37,7 +36,6 @@ extension Node {
         children().contains { !$0.isNamed && $0.text(in: context) == keyword }
     }
 
-    /// Returns `true` if any direct child's text (named or anonymous) equals `text`.
     public func hasDirectChildText(_ text: String, in context: SourceFileContext) -> Bool {
         children().contains { $0.text(in: context) == text }
     }

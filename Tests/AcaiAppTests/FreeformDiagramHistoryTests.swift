@@ -46,7 +46,6 @@ struct FreeformDiagramHistoryTests {
         let vm = model()
         vm.addNode(kind: .type(.class), name: "A", at: .zero)
         vm.undo()
-        // After undo: nothing to undo, one state to redo.
         #expect(vm.canUndo == false)
         #expect(vm.canRedo == true)
 
@@ -67,13 +66,11 @@ struct FreeformDiagramHistoryTests {
         vm.addNode(kind: .type(.class), name: "A", at: .zero)
         let id = vm.nodes[0].id
 
-        // Simulate per-keystroke updates to the same name field.
         vm.members.updateNodeName(id, name: "Ab")
         vm.members.updateNodeName(id, name: "Abc")
         vm.members.updateNodeName(id, name: "Abcd")
         #expect(vm.nodes[0].name == "Abcd")
 
-        // One undo reverts the whole run of keystrokes back to the pre-edit name.
         vm.undo()
         #expect(vm.nodes[0].name == "A")
         #expect(vm.canUndo == true)
@@ -131,7 +128,6 @@ struct FreeformDiagramHistoryTests {
         vm.deleteSelection()
         #expect(vm.nodes.isEmpty)
 
-        // A single undo restores both nodes.
         vm.undo()
         #expect(vm.nodes.count == 2)
     }

@@ -19,7 +19,6 @@ struct ClassDiagramDeltaTests {
     }
 
     @Test func deltaColorsAddedAndRemovedEdgesButNotUnchanged() {
-        // old: A→B and A→D ; new: A→B (unchanged) and A→C (added). A→D removed.
         let old = artifact([type("A"), type("B"), type("C"), type("D")], [
             Relationship(kind: .dependency, source: "A", target: "B"),
             Relationship(kind: .dependency, source: "A", target: "D")

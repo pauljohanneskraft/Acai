@@ -14,7 +14,6 @@ public struct TreeSitterGrammar {
         self.sourceLanguage = sourceLanguage
     }
 
-    /// A parser configured with this grammar, or `nil` if the grammar could not be loaded.
     public func makeParser() -> Parser? {
         let parser = Parser()
         do {
@@ -25,8 +24,6 @@ public struct TreeSitterGrammar {
         }
     }
 
-    /// An empty artifact for `fileName` carrying a single diagnostic explaining that the grammar
-    /// could not be loaded, so the failure surfaces in output instead of crashing the process.
     public func loadFailureArtifact(fileName: String) -> CodeArtifact {
         CodeArtifact(metadata: .init(
             sourceLanguage: sourceLanguage,

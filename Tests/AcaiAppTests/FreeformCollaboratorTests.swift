@@ -93,13 +93,11 @@ struct FreeformCollaboratorTests {
         ctx.edges = [existing]
         let editor = SequenceEditor(context: ctx)
 
-        // Two lifelines and no order yet ⇒ stamped with the next order + synchronous kind.
         var edge = FreeformDiagram.Edge(sourceNodeID: "B", targetNodeID: "A", kind: .dependency)
         editor.reclassify(&edge)
         #expect(edge.messageOrder == 4)
         #expect(edge.messageKind == .synchronous)
 
-        // Re-pointing onto a non-lifeline clears the message fields.
         edge.targetNodeID = "C"
         editor.reclassify(&edge)
         #expect(edge.messageOrder == nil)
@@ -117,7 +115,6 @@ struct FreeformCollaboratorTests {
         edge.messageKind = nil
         editor.reclassify(&edge)
 
-        // The order is preserved and the missing kind is backfilled.
         #expect(edge.messageOrder == 2)
         #expect(edge.messageKind == .synchronous)
     }
@@ -149,7 +146,6 @@ struct FreeformCollaboratorTests {
         #expect(dest.nodes.count == 1)
         #expect(dest.edges.isEmpty)
 
-        // Cut removes the node *and* the dangling edge touching it.
         clipboard.cutSelection()
         #expect(ctx.nodes.map(\.id) == ["B"])
         #expect(ctx.edges.isEmpty)

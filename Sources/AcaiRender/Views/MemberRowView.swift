@@ -1,15 +1,10 @@
 import SwiftUI
 import AcaiCore
 
-/// Renders one property/method line of a UML type box: the shared row used by both the canvas
-/// (`TypeNodeView`, `compact: true`) and the inspector's member lists (`compact: false`).
-///
-/// `compact` rows render byte-identically to the pre-existing canvas text (no weight change, no
+/// `compact` rows must render byte-identically to the pre-existing canvas text (no weight change, no
 /// icon): `DiagramLayoutModel.estimateSize`'s char-count width heuristic drives the headless CLI
-/// renderer, where no live SwiftUI measurement ever runs, and the committed `Examples/` class PNGs
-/// (regenerated only when their content is meant to change) proved a `.semibold` public/open row
-/// already shifts glyph widths enough to fail the pixel-diff regression. Non-compact rows have no
-/// such constraint, so they carry the full access-level affordance: weight and a leading glyph.
+/// renderer, where no live SwiftUI measurement ever runs, and a `.semibold` public/open row already
+/// shifts glyph widths enough to fail the committed `Examples/` PNG pixel-diff regression.
 public struct MemberRowView: View {
     let item: MemberDisplayItem
     let compact: Bool

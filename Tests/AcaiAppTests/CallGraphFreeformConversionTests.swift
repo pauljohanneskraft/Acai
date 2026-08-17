@@ -88,7 +88,6 @@ struct CallGraphFreeformConversionTests {
         let freeform = callGraphDiagram().convertToFreeform(
             artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
         )
-        // Two method nodes plus the appended coverage note.
         #expect(freeform.nodes.count == 3)
         let notes = noteNodes(freeform)
         #expect(notes.count == 1)

@@ -3,38 +3,27 @@ import AcaiCore
 
 // MARK: - TreeSitterExtracting
 
-/// Protocol for tree-sitter-based language extractors (Kotlin, Java, JS/TS, Dart). Conformers must
-/// implement ``walkSourceFile(_:)``; the extension supplies convenience helpers, artifact assembly,
-/// relationship resolution, and the property-map builder.
 public protocol TreeSitterExtracting {
 
     // MARK: - Required State
 
-    /// The source-file context (source text + file name).
     var context: SourceFileContext { get }
 
-    /// Accumulated type declarations discovered during extraction.
     var types: [TypeDeclaration] { get set }
 
-    /// Simple names of every type declared in the file, collected in one pre-pass before bodies are
-    /// extracted so call-site resolution sees the complete set, including forward-declared siblings.
-    /// Populate via ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
+    /// Collected in one pre-pass before bodies are extracted so call-site resolution sees the complete
+    /// set, including forward-declared siblings. Populate via
+    /// ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
     var declaredTypeNames: Set<String> { get set }
 
-    /// Accumulated inter-type relationships discovered during extraction.
     var relationships: [Relationship] { get set }
 
-    /// Top-level functions that are not members of any type.
     var freestandingFunctions: [Member] { get set }
 
-    /// The current namespace / package / library scope
-    /// (used by ``qualifiedName(_:)``).
     var currentNamespace: String? { get set }
 
     // MARK: - Required Methods
 
-    /// Walks the root AST node to extract top-level declarations. Each language module implements
-    /// this with its own AST traversal logic.
     mutating func walkSourceFile(_ node: Node)
 }
 
@@ -44,7 +33,6 @@ extension TreeSitterExtracting {
 
     // MARK: Convenience Helpers
 
-    /// The source text covered by the given AST node.
     public func text(_ node: Node) -> String {
         let nsStr = context.source as NSString
         let nsRange = node.range
@@ -54,7 +42,6 @@ extension TreeSitterExtracting {
         return nsStr.substring(with: nsRange)
     }
 
-    /// The source location of the given AST node's start position.
     public func loc(_ node: Node) -> SourceLocation {
         let point = node.pointRange.lowerBound
         return SourceLocation(
@@ -64,13 +51,10 @@ extension TreeSitterExtracting {
         )
     }
 
-    /// Builds a fully-qualified name from ``currentNamespace``
-    /// and a simple type name.
     public func qualifiedName(_ name: String) -> String {
         currentNamespace.map { "\($0).\(name)" } ?? name
     }
 
-    /// Whether the node has an anonymous (keyword) child with the given text.
     public func hasAnonymousKeyword(
         _ keyword: String,
         in node: Node
@@ -78,7 +62,6 @@ extension TreeSitterExtracting {
         node.hasAnonymousChild(keyword, in: context)
     }
 
-    /// Whether any direct child's text equals the given string.
     public func hasDirectChildText(
         _ value: String,
         in node: Node
@@ -88,7 +71,6 @@ extension TreeSitterExtracting {
 
     // MARK: Artifact Assembly
 
-    /// Assembles accumulated state into a ``AcaiCore/CodeArtifact``.
     public func buildArtifact(
         language: CodeArtifact.SourceLanguage
     ) -> CodeArtifact {
@@ -103,18 +85,16 @@ extension TreeSitterExtracting {
         )
     }
 
-    /// Normalises an annotation/decorator's source text to the canonical `@Name` form, adding a
-    /// leading `@` when the grammar's token omits it. (For grammars that instead include the `@`
-    /// and want it stripped, do that at the call site — this only ever adds one.)
+    /// Adds a leading `@` when the grammar's token omits it; grammars that instead include the `@`
+    /// and want it stripped should do that at the call site — this only ever adds one.
     public func normalizedAnnotation(_ text: String) -> String {
         text.hasPrefix("@") ? text : "@\(text)"
     }
 
     // MARK: Supertype Relationships
 
-    /// Records an inheritance/conformance edge from `owner` (a type's id or qualified name) to each of
-    /// `supertypes`. The edges' `target` is each supertype's simple name; `resolveRelationshipNames()`
-    /// later maps it to a qualified id.
+    /// The edges' `target` is each supertype's simple name; `resolveRelationshipNames()` later maps it
+    /// to a qualified id.
     public mutating func recordSupertypeRelationships(
         from owner: String,
         to supertypes: [TypeReference],
@@ -127,7 +107,6 @@ extension TreeSitterExtracting {
 
     // MARK: Relationship Resolution
 
-    /// Resolves relationship source/target strings against the types already collected in ``types``.
     /// Supertype names are taken verbatim from source text (e.g. `Animal`) while type IDs are fully
     /// qualified (e.g. `com.example.Animal`); this maps short names to qualified IDs.
     public mutating func resolveRelationshipNames() {
@@ -157,7 +136,6 @@ extension TreeSitterExtracting {
 
     // MARK: Property Map
 
-    /// Builds a `[propertyName: typeName]` map from already-extracted members, for call-site extraction.
     public func buildPropertyMap(
         from members: [Member]
     ) -> [String: String] {
@@ -170,11 +148,10 @@ extension TreeSitterExtracting {
         return map
     }
 
-    /// Builds a `[methodName: returnTypeName]` map from already-extracted members (unambiguous
-    /// overloads only), so a same-type method call can seed a local's type like a direct construction
-    /// does. Only usable by extractors that collect a type's full member set before resolving any body
-    /// (CFamily, Dart) — one that resolves bodies inline needs its own per-type pre-pass instead, since
-    /// a forward-declared method wouldn't yet be in `members` here.
+    /// Unambiguous overloads only, so a same-type method call can seed a local's type like a direct
+    /// construction does. Only usable by extractors that collect a type's full member set before
+    /// resolving any body (CFamily, Dart) — one that resolves bodies inline needs its own per-type
+    /// pre-pass instead, since a forward-declared method wouldn't yet be in `members` here.
     public func methodReturnTypeMap(from members: [Member]) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for member in members where member.kind == .method {
@@ -185,9 +162,8 @@ extension TreeSitterExtracting {
         return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
-    /// One pre-pass over the raw AST collecting the simple name of every type declaration
-    /// (recursively), so the full set is known before any body is resolved. `name` extracts the
-    /// declaration node's simple name; declarations whose name can't be read are skipped.
+    /// Recurses so the full set is known before any body is resolved. Declarations whose name can't
+    /// be read via `name` are skipped.
     public func collectDeclaredTypeNames(
         from root: Node,
         declarationNodeTypes: Set<String>,
