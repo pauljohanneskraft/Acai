@@ -2,11 +2,9 @@ import Foundation
 import AcaiCore
 import AcaiQuality
 
-/// Rendering configuration for a generated class diagram: which members and relationships
-/// to show, how to group nodes, and access-level / generated-code filtering.
-///
-/// Shared by the macOS app (where it is persisted inside `GeneratedDiagram`) and the CLI
-/// image command, so both produce identical diagrams from the same options.
+/// Rendering configuration for a generated class diagram. Shared by the macOS app (persisted
+/// inside `GeneratedDiagram`) and the CLI image command, so both produce identical diagrams
+/// from the same options.
 public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// How diagram nodes are partitioned for layout. `.product` additionally draws a
     /// labelled "package" box behind each compiled product (build target / module).
@@ -23,9 +21,7 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// visibility is `propertyVisibility[id] ?? showProperties`. Flipping the global toggle
     /// clears this map. App-only; the CLI leaves it empty.
     public var propertyVisibility: [String: Bool] = [:]
-    /// Per-type overrides for method visibility. See `propertyVisibility`.
     public var methodVisibility: [String: Bool] = [:]
-    /// Per-type overrides for enum-case visibility. See `propertyVisibility`.
     public var enumCaseVisibility: [String: Bool] = [:]
     public var showRelationships: Bool = true
     public var showInheritance: Bool = true
@@ -39,7 +35,6 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     public var showAnnotationStereotypes: Bool = true
     public var grouping: Grouping = .product
     public var showExternalTypes: Bool = false
-    /// Access level filter — only show members at or above this level.
     public var minimumAccessLevel: AccessLevel?
     /// When `true`, hides types the source language marks as machine-generated (via its
     /// `LanguageConfiguration.generatedCodeFilter` — e.g. Dart's `*.freezed.dart`/`*.g.dart`).
@@ -49,8 +44,8 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// relationship graph around it. `nil` renders the whole codebase.
     public var focus: FocusConfiguration?
     /// When set, only types this selector matches are shown — the same matching vocabulary
-    /// `AcaiQuality`'s rules use, reused instead of a second, diagram-specific filter. `nil` (the
-    /// default) shows every type, identical to behavior before this existed.
+    /// `AcaiQuality`'s rules use, reused instead of a second, diagram-specific filter. `nil` shows
+    /// every type.
     public var filter: AcaiQuality.Selector?
 
     public init() {}
@@ -66,7 +61,6 @@ extension ClassDiagramConfiguration {
         }
     }
 
-    /// Sets a property+method visibility override for every one of `ids`.
     public mutating func setMemberVisibility(_ show: Bool, forTypeIDs ids: some Collection<String>) {
         for id in ids {
             propertyVisibility[id] = show

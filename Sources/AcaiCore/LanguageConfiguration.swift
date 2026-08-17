@@ -31,9 +31,7 @@ public struct NamePattern: Sendable, Equatable, Hashable, Codable {
 /// `displayName`/`explanation` are surfaced verbatim in UI (e.g. the app's inspector toggle), and
 /// matching is expressed as data (`fileSuffixes` + `typeNamePatterns`) rather than code.
 public struct GeneratedCodeFilter: Sendable, Equatable, Hashable, Codable {
-    /// Human-readable label for the affordance, e.g. `"Dart Generated Types"`.
     public var displayName: String
-    /// One-line explanation for the affordance, e.g. `"Hides types from .freezed.dart, .g.dart…"`.
     public var explanation: String
     /// File-name suffixes emitted by the language's code generators, e.g. `[".freezed.dart"]`.
     public var fileSuffixes: [String]
@@ -52,12 +50,10 @@ public struct GeneratedCodeFilter: Sendable, Equatable, Hashable, Codable {
         self.typeNamePatterns = typeNamePatterns
     }
 
-    /// `true` when `path` names a file produced by this language's code generators.
     public func matchesFile(_ path: String) -> Bool {
         fileSuffixes.contains { path.hasSuffix($0) }
     }
 
-    /// `true` when `typeName` follows one of this language's code-generation naming patterns.
     public func matchesTypeName(_ typeName: String) -> Bool {
         typeNamePatterns.contains { $0.matches(typeName) }
     }

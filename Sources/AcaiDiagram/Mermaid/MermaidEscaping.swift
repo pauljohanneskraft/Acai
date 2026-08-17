@@ -1,10 +1,6 @@
-/// Assigns collision-free Mermaid node ids within a single diagram.
-///
 /// `mermaidSafeID` maps every non-alphanumeric character to `_`, so distinct sources such as
 /// `A.B` and `A-B` can collapse to the same id (`A_B`) and silently merge two nodes. This
-/// allocator keeps the readable base id where unique and disambiguates colliding ones by
-/// suffixing `_2`, `_3`, … — every id it hands out is recorded, so suffixed ids can't collide
-/// with later bases either.
+/// allocator disambiguates collisions with a `_2`, `_3`, … suffix.
 struct MermaidIDAllocator {
     private var used: Set<String> = []
 
@@ -28,22 +24,19 @@ extension String {
         return first.isNumber ? "_" + mapped : mapped
     }
 
-    /// Escapes a string for use inside a Mermaid double-quoted label. Quotes become
-    /// the `#quot;` entity and newlines become `<br/>` line breaks.
     var mermaidLabelEscaped: String {
         replacingOccurrences(of: "\"", with: "#quot;")
             .replacingOccurrences(of: "\n", with: "<br/>")
     }
 
-    /// Escapes a string for an unquoted edge/transition label. Newlines collapse to
-    /// spaces and colons are entity-encoded so they don't terminate the label.
+    /// Colons terminate an unquoted Mermaid label, so they're entity-encoded rather than kept raw.
     var mermaidTextEscaped: String {
         replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: ":", with: "#colon;")
     }
 
-    /// Converts a type string's angle-bracket generics to Mermaid's tilde notation
-    /// (`List<Item>` → `List~Item~`), which Mermaid renders without breaking parsing.
+    /// Mermaid's class-diagram syntax uses `<`/`>` for its own grammar, so generics switch to
+    /// tilde notation (`List<Item>` → `List~Item~`) to avoid breaking parsing.
     var mermaidGenerics: String {
         replacingOccurrences(of: "<", with: "~")
             .replacingOccurrences(of: ">", with: "~")

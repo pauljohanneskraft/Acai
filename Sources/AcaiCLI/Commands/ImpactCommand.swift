@@ -3,8 +3,6 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    /// Reports the blast radius of a type: every type that transitively depends on it, so an agent
-    /// can gauge "is this safe to change?" before touching it.
     struct Impact: ParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Show the transitive dependents (blast radius) of a type"

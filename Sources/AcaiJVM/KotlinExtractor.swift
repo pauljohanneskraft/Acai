@@ -1,8 +1,6 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Extracts type declarations, relationships, and freestanding functions
-/// from a Kotlin source file's tree-sitter AST.
 struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
 
     /// Kotlin structural decision-point node types for cyclomatic complexity (`when` entries, `if`/
@@ -40,7 +38,6 @@ struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
 
     // MARK: - Kotlin-Specific Helpers
 
-    /// Shorthand for ``hasAnonymousKeyword(_:in:)``.
     func hasKeyword(_ keyword: String, in node: Node) -> Bool {
         hasAnonymousKeyword(keyword, in: node)
     }

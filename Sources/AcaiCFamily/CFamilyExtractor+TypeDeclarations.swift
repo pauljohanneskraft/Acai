@@ -107,7 +107,6 @@ extension CFamilyExtractor {
             break
         }
 
-        // Plain alias (or alias of a forward-declared/named tag): record a `typeAlias`.
         let underlying = baseTypeReference(typeNode)
         let aliasId = qualifiedName(aliasName)
         types.append(TypeDeclaration(

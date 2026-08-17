@@ -66,7 +66,6 @@ extension JSExtractor: AssignmentResolving {
         interpolationChildTypes: ["template_substitution"]
     )
 
-    /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
         let valueText = trimmedText(node)

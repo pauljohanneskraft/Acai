@@ -1,8 +1,6 @@
 import ArgumentParser
 import AcaiCore
 
-/// CLI spelling of `Relationship.Kind`, used by `--focus-relationship` to restrict which
-/// relationship kinds the focus traversal follows and draws.
 enum RelationshipKindOption: String, ExpressibleByArgument, CaseIterable {
     case inheritance
     case conformance

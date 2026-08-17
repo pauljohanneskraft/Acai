@@ -2,32 +2,22 @@ import CoreGraphics
 import Foundation
 import AcaiDiagram
 
-/// Pure, headless-friendly layout for a `SequenceDiagram`: turns participants and
-/// time-ordered messages into concrete geometry (header rects, lifelines, message arrows,
-/// activation bars). Shared by the app canvas, the freeform editor and CLI image export.
-///
-/// Coordinates originate at `(0, 0)` (top-left of the header row). Participants are placed
-/// left-to-right in generated order; a caller may override a participant's horizontal centre
-/// (keyed by `Participant.id`), the only layout editing the generated view allows.
+/// Pure, headless-friendly layout for a `SequenceDiagram`: turns participants and time-ordered
+/// messages into concrete geometry (header rects, lifelines, message arrows, activation bars).
+/// Coordinates originate at `(0, 0)` (top-left of the header row). A caller may override a
+/// participant's horizontal centre (keyed by `Participant.id`), the only layout editing the
+/// generated view allows.
 public struct SequenceLayoutModel {
 
     // MARK: - Tunables
 
-    /// Vertical extent of a participant header box.
     public static let headerHeight: CGFloat = 44
-    /// Horizontal gap between the edges of adjacent participant headers.
     public static let participantGap: CGFloat = 64
-    /// Vertical gap between the header row and the first message.
     public static let firstMessageGap: CGFloat = 36
-    /// Vertical distance between consecutive messages.
     public static let messageRowHeight: CGFloat = 44
-    /// Slack drawn below the last message before the lifeline ends.
     public static let lifelineTailGap: CGFloat = 28
-    /// Width reserved for a self-message loop.
     public static let selfLoopWidth: CGFloat = 56
-    /// Width of an execution-occurrence (activation) bar.
     public static let activationWidth: CGFloat = 10
-    /// Horizontal offset of each nesting level of activation bars.
     public static let activationNestOffset: CGFloat = 5
     /// Vertical lead/tail an activation bar extends past its first/last message.
     public static let activationCap: CGFloat = 8
@@ -58,7 +48,6 @@ public struct SequenceLayoutModel {
         public let y: CGFloat
         public let label: String?
         public let kind: SequenceDiagram.Message.Kind
-        /// Whether sender and receiver are the same lifeline (drawn as a loop).
         public let isSelf: Bool
 
         public init(
@@ -117,9 +106,6 @@ public struct SequenceLayoutModel {
 
     // MARK: - Init
 
-    /// - Parameters:
-    ///   - diagram: The generated sequence diagram.
-    ///   - positionOverrides: Optional horizontal-centre overrides keyed by `Participant.id`.
     public init(diagram: SequenceDiagram, positionOverrides: [String: CGFloat] = [:]) {
         let ordered = diagram.messages.sorted { $0.order < $1.order }
         let messageAreaTop = Self.headerHeight + Self.firstMessageGap
@@ -186,8 +172,6 @@ public struct SequenceLayoutModel {
         self.contentSize = CGSize(width: width, height: lifelineBottom)
     }
 
-    /// Assigns each message its row y, inserting extra lead-in before rows that open a fragment
-    /// operand so the tab/guard/separator don't overlap message labels.
     private static func rowYs(
         for ordered: [SequenceDiagram.Message],
         fragments: [SequenceDiagram.Fragment],
@@ -219,7 +203,6 @@ public struct SequenceLayoutModel {
     ) -> FragmentFrame? {
         let operands = fragment.operands.sorted { $0.firstOrder < $1.firstOrder }
 
-        // Per-operand vertical span from its covered message rows, plus the lifelines involved.
         var spans: [(operand: SequenceDiagram.Fragment.Operand, minY: CGFloat, maxY: CGFloat)] = []
         var coveredNames: Set<String> = []
         var coversSelfMessage = false
@@ -299,7 +282,6 @@ private struct ActivationPass {
         open[name, default: []].append(y)
     }
 
-    /// Pop the top activation of a participant, emitting its finished bar.
     private mutating func pop(on name: String, at y: CGFloat) {
         guard let frame = frameByID[name], var stack = open[name], !stack.isEmpty else { return }
         let start = stack.removeLast()

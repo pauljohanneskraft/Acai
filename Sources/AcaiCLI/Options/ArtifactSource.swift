@@ -30,14 +30,11 @@ struct ArtifactSource: ParsableArguments {
         }
     }
 
-    /// Loads the selected artifact: a stored analysis (`--from`) or a freshly analyzed source
-    /// directory (`--source`). Parse warnings are surfaced to stderr either way.
     func resolve() throws -> CodeArtifact {
         try Self.resolve(from: from, source: source, language: language)
     }
 
-    /// Shared `--from` / `--source` resolution, also used by commands loading more than one
-    /// artifact (e.g. `diff`'s old/new sides).
+    /// Also used by commands loading more than one artifact (e.g. `diff`'s old/new sides).
     static func resolve(from: String?, source: String?, language: [LanguageOption]) throws -> CodeArtifact {
         let artifact: CodeArtifact
         if let from {
@@ -57,8 +54,7 @@ struct ArtifactSource: ParsableArguments {
         return artifact
     }
 
-    /// Loads a stored artifact: a `.json` file path, or the name of a stored analysis. A
-    /// `DecodingError` means the file predates a schema change, so it's reported as "regenerate it"
+    /// A `DecodingError` means the file predates a schema change, so it's reported as "regenerate it"
     /// rather than a raw decode dump.
     static func loadStored(_ value: String) throws -> CodeArtifact {
         let directURL = URL(fileURLWithPath: value)

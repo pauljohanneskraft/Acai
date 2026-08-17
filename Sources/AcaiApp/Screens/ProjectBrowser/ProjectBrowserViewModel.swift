@@ -97,8 +97,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Project / Codebase lifecycle
 
-    /// Project/codebase CRUD, reindexing, and per-codebase quality-check rules. Carved out of
-    /// this view model (see ``GeneratedDiagramEditor``); shares the store + change notifications.
     var editing: ProjectCodebaseEditor {
         ProjectCodebaseEditor(
             store: store,
@@ -110,8 +108,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Generated Diagram CRUD
 
-    /// Create/update/delete operations for generated diagrams. Carved out of this view model so it
-    /// keeps a single responsibility; shares the same store + change notifications.
     var diagrams: GeneratedDiagramEditor {
         GeneratedDiagramEditor(
             store: store,
@@ -181,7 +177,6 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// change (an in-place managed-rules edit keeps the same rules path and reindex date).
     private var analysisRevisions: [UUID: Int] = [:]
 
-    /// The current analysis identity for a codebase — the detail view keys its `.task` on this value.
     func analysisToken(for codebaseID: UUID) -> AnalysisToken {
         let codebase = codebase(for: codebaseID)
         return AnalysisToken(
@@ -190,7 +185,6 @@ final class ProjectBrowserViewModel: ObservableObject {
             revision: analysisRevisions[codebaseID, default: 0])
     }
 
-    /// The cached analysis for a codebase, or `nil` while it is still being computed (or absent).
     func analysis(for codebaseID: UUID) -> CodebaseAnalysis? {
         if case .ready(_, let analysis) = analyses[codebaseID] { return analysis }
         return nil
@@ -230,7 +224,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Freeform Diagram CRUD
 
-    /// Create/update/delete operations for freeform diagrams (see ``GeneratedDiagramEditor``).
     var freeforms: FreeformDiagramEditor {
         FreeformDiagramEditor(
             store: store,
@@ -251,8 +244,6 @@ final class ProjectBrowserViewModel: ObservableObject {
         }?.id
     }
 
-    /// The repository → codebases reverse index, built fresh from the current project list —
-    /// see `RepositoryIndex`.
     func repositoryIndex() -> [RepositoryIndexEntry] {
         RepositoryIndex(projects: store.projects).entries()
     }
@@ -291,13 +282,11 @@ final class ProjectBrowserViewModel: ObservableObject {
         store.artifact(for: codebaseID)
     }
 
-    /// All generated diagrams for a project.
     func generatedDiagramsForProject(_ projectID: UUID) -> [GeneratedDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
         return project.generatedDiagramIDs.compactMap { store.generatedDiagrams[$0] }
     }
 
-    /// All freeform diagrams for a project.
     func freeformDiagramsForProject(_ projectID: UUID) -> [FreeformDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
         return project.freeformDiagramIDs.compactMap { store.freeformDiagrams[$0] }

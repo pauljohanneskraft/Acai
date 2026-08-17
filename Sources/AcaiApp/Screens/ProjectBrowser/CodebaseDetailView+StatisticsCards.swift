@@ -166,7 +166,6 @@ extension CodebaseDetailView {
                 : nil)
     }
 
-    /// Mirrors the `Int` overload above.
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>,

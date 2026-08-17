@@ -10,7 +10,6 @@ public struct MemberFilter: Equatable, Sendable {
     public var minParameters: Int?
     /// Only publicly-settable stored properties (the `mutablePublicState` shape).
     public var isPublicVar: Bool?
-    /// Only members that `override` an inherited member.
     public var isOverride: Bool?
 
     public init(
@@ -25,7 +24,6 @@ public struct MemberFilter: Equatable, Sendable {
         self.isOverride = isOverride
     }
 
-    /// Whether every present facet holds for `member`.
     public func matches(_ member: Member) -> Bool {
         if let kind, member.kind != kind { return false }
         if let minParameters, member.parameters.count < minParameters { return false }
@@ -41,10 +39,9 @@ public struct MemberFilter: Equatable, Sendable {
 }
 
 /// Enumerates the types (and their members) that satisfy a `Selector` + `MemberFilter`, tagged with
-/// their `SourceLocation` for precise jump targets. A value you instantiate over an artifact
-/// (`TypeQuery(artifact:selector:members:).rows`); the CLI's `inspect` command renders the rows and
-/// downstream tooling (#104 worklist, #106 MCP) reuses them. Agnostic — `stereotype`/`annotation`
-/// facets resolve against the injected `LanguageConfiguration` map.
+/// their `SourceLocation` for precise jump targets. The CLI's `inspect` command renders the rows and
+/// downstream tooling reuses them. Agnostic — `stereotype`/`annotation` facets resolve against the
+/// injected `LanguageConfiguration` map.
 public struct TypeQuery: Sendable {
     public struct TypeRow: Codable, Equatable, Sendable {
         public var id: String

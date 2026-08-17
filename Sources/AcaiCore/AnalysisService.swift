@@ -2,9 +2,6 @@ import Foundation
 
 // MARK: - Analysis Service
 
-/// Orchestrates parsing: maps languages to their `CodeParser`, runs files through them,
-/// and merges results into a single `CodeArtifact`.
-///
 /// Language-agnostic by construction: it holds whatever parsers and project-discovery strategy it
 /// is given and knows nothing about any specific language. The standard, batteries-included set of
 /// languages is assembled in the composition root (`AcaiLibrary`) as `AnalysisService.standard`.
@@ -12,14 +9,10 @@ public struct AnalysisService: Sendable {
 
     // MARK: - Properties
 
-    /// The parsers this service uses, one per supported language.
     public let parsers: [any CodeParser]
 
-    /// The project-discovery coordinator used by `analyzeProject`.
     public let projectDiscovery: ProjectDiscovery
 
-    /// Per-language quirks for the parsers in this service, for downstream stages to look up by
-    /// `CodeArtifact.metadata.sourceLanguage`.
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
 
     // MARK: - Initialisation
@@ -40,8 +33,6 @@ public struct AnalysisService: Sendable {
 
     // MARK: - Parser Registry
 
-    /// Returns the parser registered for `language`, or `nil` when none is registered.
-    ///
     /// Returning `nil` rather than silently substituting a parser surfaces the bug of a language
     /// reaching analysis without being wired into ``parsers`` (a trap when adding a language)
     /// instead of masking it as mis-parsed by the wrong language.
@@ -51,8 +42,6 @@ public struct AnalysisService: Sendable {
 
     // MARK: - Project Analysis
 
-    /// Auto-discovers source directories via `projectDiscovery`, then parses and merges all files.
-    ///
     /// `includingFile` is an optional caller-supplied predicate over each candidate file's path
     /// (relative to `rootURL`), checked before a file is read/parsed — the hook a caller-owned
     /// allow/blocklist (e.g. `AcaiApp`'s per-codebase file filter) plugs into. Defaults to including
@@ -91,7 +80,6 @@ public struct AnalysisService: Sendable {
         return result.resolvingCallSiteReceivers()
     }
 
-    /// Parses all files for a single language spec and returns the combined artifact.
     private func parseSpec(
         _ spec: SourceSpec,
         rootURL: URL,
@@ -111,8 +99,8 @@ public struct AnalysisService: Sendable {
         return enrichPerLanguage(parsed, spec: spec, fallback: codeParser.configuration)
     }
 
-    /// Collects the spec's source files for `codeParser`, skipping every registered language's
-    /// build-output/dependency directories (plus the universal VCS dir), then `includingFile`.
+    /// Skips every registered language's build-output/dependency directories (plus the universal VCS
+    /// dir), not just `codeParser`'s own, before applying `includingFile`.
     private func collectFiles(
         for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
     ) -> [URL] {

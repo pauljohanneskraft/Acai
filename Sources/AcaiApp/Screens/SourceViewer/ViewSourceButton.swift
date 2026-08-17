@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Resolves `relativePath` against `codebase` off the main actor (it touches the filesystem) and
-/// presents it in a read-only `SourceViewerSheet` (Quick Look) on success, or a specific,
-/// actionable alert on failure (a missing file, or a rejected path-escape/symlink-escape attempt
-/// from `Codebase.resolvedFileURL`).
+/// Resolves `relativePath` off the main actor (touches the filesystem); on failure shows an
+/// actionable alert, including a rejected path-escape/symlink-escape attempt from
+/// `Codebase.resolvedFileURL`.
 struct ViewSourceButton: View {
     let codebase: Codebase
     let relativePath: String

@@ -2,11 +2,6 @@ import AcaiCore
 import AcaiTreeSitter
 import TreeSitterPython
 
-/// Parses Python source into a `CodeArtifact` using the tree-sitter Python grammar.
-///
-/// Python has no field/type declarations the way statically-typed languages do — instance
-/// attributes appear as `self.x = …` inside `__init__`/methods, so the extractor synthesises
-/// properties from those assignments in addition to class-body annotated assignments.
 public struct PythonCodeParser: CodeParser {
     public let language: CodeArtifact.SourceLanguage = .python
     public let fileExtensions: [String] = ["py"]

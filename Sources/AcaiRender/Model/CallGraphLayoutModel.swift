@@ -3,12 +3,8 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 
-/// Computes node frames and edge routes for a `CallGraph`.
-///
-/// Methods and their calls form a directed graph, so layout delegates to the shared
-/// `SugiyamaLayoutEngine` — the same approach `PackageLayoutModel` and `StateLayoutModel` use.
-/// Each call is fed as an `.inheritance` edge so `LayerAssignment` stacks the graph into clean
-/// caller/callee layers.
+/// Computes node frames and edge routes for a `CallGraph` via the shared `SugiyamaLayoutEngine`.
+/// Calls are fed as `.inheritance` edges so `LayerAssignment` stacks callers above callees.
 public struct CallGraphLayoutModel: Sendable {
 
     public struct NodeFrame: Identifiable, Sendable {
@@ -31,8 +27,6 @@ public struct CallGraphLayoutModel: Sendable {
 
     private let framesByID: [String: CGRect]
 
-    /// Lays out `graph`, with `positionOverrides` (node-id → centre) taking precedence over
-    /// computed positions — used to restore user drags.
     public init(graph: CallGraph, positionOverrides: [String: CGPoint] = [:]) {
         let layout = DirectedGraphLayout(
             nodeSizes: graph.nodes.map { ($0.id, Self.estimatedSize(for: $0)) },
@@ -47,12 +41,10 @@ public struct CallGraphLayoutModel: Sendable {
         }
     }
 
-    /// The laid-out frame for a method id, when it exists.
     public func frame(for id: String) -> CGRect? {
         framesByID[id]
     }
 
-    /// Estimated render size for a method box: wide enough for its `Type.method` label.
     public static func estimatedSize(for node: CallGraph.Node) -> CGSize {
         let width = max(120, CGFloat(node.label.count) * 7 + 32)
         return CGSize(width: min(width, 320), height: 52)

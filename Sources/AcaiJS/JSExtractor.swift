@@ -57,7 +57,6 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
         )
         walkSourceFile(root)
 
-        // Post-process: qualify type IDs with their namespace so edges resolve correctly.
         Self.qualifyIDs(&types, prefix: nil)
 
         return CodeArtifact(

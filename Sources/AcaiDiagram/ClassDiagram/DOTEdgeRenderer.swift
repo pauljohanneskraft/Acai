@@ -1,6 +1,5 @@
 import AcaiCore
 
-/// Renders `Relationship` values as DOT edge definitions.
 struct DOTEdgeRenderer {
     let options: ClassDiagramOptions
 

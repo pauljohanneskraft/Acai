@@ -72,7 +72,6 @@ extension DartExtractor: AssignmentResolving {
         interpolationChildTypes: ["template_substitution"]
     )
 
-    /// Classifies an assigned value node for static state analysis.
     /// `true`/`false` are anonymous tokens in the Dart grammar, so they are
     /// matched by text rather than node type.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {

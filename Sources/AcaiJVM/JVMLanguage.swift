@@ -21,7 +21,6 @@ private let jvmAnnotationStereotypes: [String: String] = [
     "component": "component"
 ]
 
-/// Build-output / tooling directories common to Gradle and Maven projects.
 private let jvmExcludedDirectories: Set<String> = ["build", "target", "bin", "out", ".gradle", ".idea"]
 
 /// JVM entry points invoked by frameworks rather than resolvable call sites: JUnit test methods and

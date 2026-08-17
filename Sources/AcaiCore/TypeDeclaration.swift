@@ -9,36 +9,30 @@
 ///   and `CallSite`. A naive plugin that swaps these silently renders broken/empty diagrams.
 public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// Stable, namespace-qualified identity (equal to ``qualifiedName``). Relationship endpoints,
-    /// ``extensionOf``, and nested-type ids resolve against this; a nested type's id must be
-    /// hierarchically prefixed by its parent's id.
+    /// ``extensionOf``, and nested-type ids resolve against this.
     public var id: String
     /// The **simple** (unqualified) source name — must match the simple names used in
     /// `TypeReference.name` and a `CallReceiver.type` receiver for resolution to succeed.
     public var name: String
-    /// The namespace/package-qualified name; equal to ``id``.
     public var qualifiedName: String
-    /// The kind of type — selects the class-box stereotype and some edge semantics.
     public var kind: TypeKind
     /// The declaration's visibility. Always set: each parser resolves the language's default
     /// (Swift `internal`, Java `package-private`, Kotlin/Dart/Python/C-family `public`, …) when
     /// the source has no explicit modifier.
     public var accessLevel: AccessLevel
-    /// Declaration modifiers (`final`, `abstract`, `static`, …) in source order.
+    /// In source order.
     public var modifiers: [Modifier]
-    /// The type's own generic parameters (`<T>`).
     public var genericParameters: [GenericParameter]
     /// Protocol `associatedtype` requirements (distinct from generic parameters).
     public var associatedTypes: [GenericParameter]
     /// Supertypes and conformances as written at the declaration. Each is resolved to a target
     /// `id` during enrichment where one exists; unresolved entries render as external nodes.
     public var inheritedTypes: [TypeReference]
-    /// The declared members (properties, methods, …); extension members are merged in here.
+    /// Extension members are merged in here.
     public var members: [Member]
-    /// The cases of an enum (empty for non-enums).
     public var enumCases: [EnumCase]
     /// Types declared inside this one; each nested id must be prefixed by ``id``.
     public var nestedTypes: [TypeDeclaration]
-    /// Raw annotation/attribute markers on the declaration (e.g. `@objc`, `@Entity`).
     public var annotations: [String]
     /// When this declaration is an extension/category, the identity of the type it augments. Must
     /// match a target's ``qualifiedName``/``id``/``name`` *after generics are stripped* (`Foo<T>` →
@@ -46,12 +40,11 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     public var extensionOf: String?
     /// The enclosing namespace/package, when the language has one. Feeds ``qualifiedName``.
     public var namespace: String?
-    /// Where the type is declared (drives provenance-aware module attribution).
+    /// Drives provenance-aware module attribution.
     public var location: SourceLocation?
-    /// The language this type was parsed from, stamped during enrichment so a polyglot artifact can
-    /// resolve each type's own `LanguageConfiguration` rather than a single artifact-wide one. `nil`
-    /// for a type produced outside the enrichment pipeline (synthesised placeholder, hand-built
-    /// fixture); a `LanguageConfigurationResolver` maps that to its required default.
+    /// Stamped during enrichment so a polyglot artifact can resolve each type's own
+    /// `LanguageConfiguration` rather than a single artifact-wide one. `nil` for a type produced
+    /// outside the enrichment pipeline; a `LanguageConfigurationResolver` maps that to its default.
     public var sourceLanguage: CodeArtifact.SourceLanguage?
 
     public init(
@@ -92,8 +85,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         self.sourceLanguage = sourceLanguage
     }
 
-    /// A copy of this type (and its nested types, recursively) stamped with `language` — used during
-    /// enrichment to record each type's originating language for later per-type config resolution.
+    /// A copy of this type (and its nested types, recursively) stamped with `language`.
     public func stampingSourceLanguage(_ language: CodeArtifact.SourceLanguage) -> TypeDeclaration {
         var copy = self
         copy.sourceLanguage = language

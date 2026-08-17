@@ -9,9 +9,7 @@ import AcaiLibrary
 import AcaiRender
 
 extension AcaiCommand {
-    /// Renders a class diagram to a PNG using the same SwiftUI views and layout engine as the
-    /// macOS app (via `AcaiRender`), rather than DOT/Graphviz. macOS-only: rendering needs
-    /// SwiftUI's `ImageRenderer`, which requires a GUI / window-server session.
+    /// macOS-only: rendering needs SwiftUI's `ImageRenderer`, which requires a GUI / window-server session.
     struct Image: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "image",
@@ -128,7 +126,6 @@ extension AcaiCommand {
             try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
         }
 
-        /// The old side for a delta image, if `--source-old` / `--from-old` is given.
         private func resolveOldArtifact() throws -> CodeArtifact? {
             guard fromOld != nil || sourceOld != nil else { return nil }
             return try ArtifactSource.resolve(from: fromOld, source: sourceOld, language: artifactSource.language)
@@ -145,8 +142,6 @@ extension AcaiCommand {
             print("Wrote image to \(output)")
         }
 
-        /// Selects the exporter for the requested flags and renders the PNG — a delta when an old
-        /// revision is given, otherwise the plain diagram.
         private func renderData(artifact: CodeArtifact, old: CodeArtifact?) async throws -> Data {
             if let sequenceFrom {
                 let exporter = SequenceImageExporter(
@@ -177,8 +172,6 @@ extension AcaiCommand {
             }
         }
 
-        /// The class-diagram configuration derived from the grouping/access/member/focus flags,
-        /// shared by the plain and delta render paths.
         private func classDiagramConfiguration() -> ClassDiagramConfiguration {
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = grouping

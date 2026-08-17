@@ -1,4 +1,3 @@
-/// Renders a `SequenceDiagram` to a Mermaid `sequenceDiagram`.
 public struct SequenceDiagramMermaidRenderer: MermaidRenderer {
     public let theme: DiagramTheme?
 

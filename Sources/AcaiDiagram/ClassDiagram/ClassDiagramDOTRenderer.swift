@@ -11,12 +11,10 @@ public struct ClassDiagramDOTRenderer: DOTRenderer {
         self.options = options
     }
 
-    /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
         generate(from: ClassDiagramBuilder(options: options).build(from: artifact))
     }
 
-    /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).
     public func generate(from enriched: ClassDiagram) -> String {
         let nodeRenderer = DOTNodeRenderer(options: options)
         let edgeRenderer = DOTEdgeRenderer(options: options)

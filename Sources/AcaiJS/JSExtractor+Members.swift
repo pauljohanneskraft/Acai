@@ -66,8 +66,6 @@ extension JSExtractor {
         }
     }
 
-    /// Builds a `varName → typeName` map by pre-scanning the class body for field
-    /// definitions and TypeScript constructor parameter properties.
     private func buildPropertyMapFromBody(_ bodyNode: Node) -> [String: String] {
         var map: [String: String] = [:]
 
@@ -162,7 +160,6 @@ extension JSExtractor {
         )
     }
 
-    /// Bundles the kind, access level, modifiers, and computed flag extracted from a method node.
     private struct MethodSignatureInfo {
         var kind: MemberKind
         var accessLevel: AccessLevel?
@@ -249,8 +246,7 @@ extension JSExtractor {
         return modifiers
     }
 
-    /// Infers a field's type from a direct `new Foo()` construction initializer. Mirrors the
-    /// construction check `localBindings` already applies to local declarations.
+    /// Mirrors the construction check `localBindings` already applies to local declarations.
     private func constructedType(fromFieldValue value: Node?) -> TypeReference? {
         guard let value, value.nodeType == "new_expression",
               let ctor = value.child(byFieldName: "constructor"), ctor.nodeType == "identifier"

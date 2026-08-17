@@ -88,8 +88,6 @@ public struct ProjectBrowserView: View {
                             Label("Diagram Theme", systemImage: "paintbrush")
                         }
                     }
-                    // Visible on every platform this toolbar exists on, right next to the menu
-                    // above that already holds the Diagram Theme picker + Keyboard Shortcuts button.
                     ToolbarItem(placement: .topBarTrailing) {
                         ActivityIndicatorView(activityCenter: model.store.activityCenter)
                     }
@@ -195,10 +193,6 @@ public struct ProjectBrowserView: View {
     private var sidebarContent: some View {
         VStack(spacing: 0) {
             #if !os(macOS)
-            // iPad's pinned search field atop the Projects sidebar's List — new code, sits directly
-            // above the `List` (not inside the toolbar). iPhone gets a dedicated toolbar button
-            // instead (see the compact-width `ToolbarItem` above), so this only needs to render at
-            // regular width.
             if horizontalSizeClass != .compact {
                 quickOpenSearchFieldProxy
                 Divider()

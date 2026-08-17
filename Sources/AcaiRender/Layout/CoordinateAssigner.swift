@@ -1,8 +1,7 @@
 import CoreGraphics
 
 /// Phase 3 of Sugiyama layout: converts layer assignments and ordering into concrete (x, y) centre
-/// coordinates. A value you instantiate with node sizes, spacing and adjacency, then ask to
-/// `assign(layers:)`.
+/// coordinates.
 struct CoordinateAssigner {
     let nodeSizes: [String: CGSize]
     let horizontalSpacing: CGFloat
@@ -10,12 +9,10 @@ struct CoordinateAssigner {
     /// Bidirectional adjacency, used by the straightening refinement passes.
     let adjacency: [String: Set<String>]
 
-    /// Centre positions for each node across the ordered `layers`.
     func assign(layers: [[String]]) -> [String: CGPoint] {
         guard !layers.isEmpty else { return [:] }
         var positions: [String: CGPoint] = [:]
 
-        // Step 1: Y coordinate = centre of each layer.
         var layerYCenters: [CGFloat] = []
         var currentY: CGFloat = 0
         for layer in layers {
@@ -24,7 +21,6 @@ struct CoordinateAssigner {
             currentY += maxHeight + verticalSpacing
         }
 
-        // Step 2: X coordinates within each layer.
         var layerWidths: [CGFloat] = []
         for (layerIndex, layer) in layers.enumerated() {
             var currentX: CGFloat = 0
@@ -36,19 +32,16 @@ struct CoordinateAssigner {
             layerWidths.append(max(currentX - horizontalSpacing, 0))
         }
 
-        // Step 3: Centre all layers relative to the widest.
         let maxWidth = layerWidths.max() ?? 0
         for (layerIndex, layer) in layers.enumerated() {
             let offsetX = (maxWidth - layerWidths[layerIndex]) / 2
             for nodeID in layer { positions[nodeID]?.x += offsetX }
         }
 
-        // Step 4: Refinement — nudge nodes toward connected neighbours to straighten edges.
         for _ in 0..<8 { refinementPass(layers: layers, positions: &positions) }
         return positions
     }
 
-    /// Shifts each node toward the average X of its neighbours (damped), then resolves overlaps.
     private func refinementPass(layers: [[String]], positions: inout [String: CGPoint]) {
         for layer in layers {
             for nodeID in layer {
@@ -62,7 +55,6 @@ struct CoordinateAssigner {
         }
     }
 
-    /// Ensures nodes in a layer don't overlap after position adjustments.
     private func resolveOverlaps(layer: [String], positions: inout [String: CGPoint]) {
         let sorted = layer.sorted { (positions[$0]?.x ?? 0) < (positions[$1]?.x ?? 0) }
         guard sorted.count > 1 else { return }

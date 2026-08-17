@@ -1,6 +1,5 @@
 import AcaiCore
 
-/// Groups `TypeDeclaration` values into DOT subgraph clusters by file or namespace.
 struct DOTClusterRenderer {
     let options: ClassDiagramOptions
 

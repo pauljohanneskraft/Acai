@@ -9,9 +9,7 @@ import libgit2
 /// `// TODO: Implement options as parameter`), unlike its
 /// `Repository.clone(from:to:options:transferProgressHandler:)`, which already wires
 /// `git_indexer_progress_cb` up to a progress handler and checks `Task.isCancelled` inside that
-/// callback to abort the transfer. This mirrors that same technique for fetch — and follows
-/// `GitWorktree`'s established precedent of opening a raw repository pointer directly when
-/// `SwiftGitX`'s wrapper lacks a primitive.
+/// callback to abort the transfer. This mirrors that same technique for fetch.
 public struct GitFetch {
     public let repositoryDirectory: URL
 
@@ -31,10 +29,9 @@ public struct GitFetch {
     }
 
     /// Fetches the `origin` remote, reporting `received_objects / total_objects` through
-    /// `onProgress` as the transfer proceeds. The next time libgit2 calls back into the
-    /// transfer-progress hook after the calling `Task` is cancelled, the callback returns a
-    /// negative status, which aborts the in-flight transfer (not merely discarding the result) and
-    /// surfaces here as `CancellationError`.
+    /// `onProgress`. Once the calling `Task` is cancelled, the next transfer-progress callback
+    /// returns a negative status, which aborts the in-flight transfer itself (not merely the
+    /// result) and surfaces here as `CancellationError`.
     public func run(onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
         try Task.checkCancellation()
         let root = GitRepositoryRoot(directory: repositoryDirectory).find() ?? repositoryDirectory
@@ -89,9 +86,9 @@ public struct GitFetch {
     }
 
     /// Opens `root` as a raw libgit2 handle, runs `body`, and always frees the handle afterward.
-    /// Pairs `SwiftGitXRuntime.initialize()`/`.shutdown()` around the raw C calls itself, exactly
-    /// like `GitWorktree.withRepositoryPointer` — bypassing `SwiftGitX.Repository` also bypasses the
-    /// reference-counted init/shutdown its `init`/`deinit` pair provides.
+    /// Bypassing `SwiftGitX.Repository` also bypasses the reference-counted init/shutdown its
+    /// `init`/`deinit` pair provides, so this pairs `SwiftGitXRuntime.initialize()`/`.shutdown()`
+    /// itself, like `GitWorktree.withRepositoryPointer`.
     private func withRepositoryPointer<T>(at root: URL, _ body: (OpaquePointer) throws -> T) throws -> T {
         do {
             try SwiftGitXRuntime.initialize()

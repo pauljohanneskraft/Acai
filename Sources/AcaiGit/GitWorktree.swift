@@ -4,11 +4,10 @@ import libgit2
 
 /// Manages libgit2 "linked working trees" for one shared `GitRepository`'s clone — the mechanism
 /// that lets multiple `Codebase`s check out different refs of the same repository simultaneously
-/// without each duplicating its object store. Calls `git_worktree_*` directly: `SwiftGitX` (the
-/// higher-level wrapper `AcaiGit` otherwise uses throughout) has no worktree API of its own
-/// (confirmed: `SwiftGitXError.worktree` exists only as an error-code case, nothing in `SwiftGitX`
-/// calls `git_worktree_*`) — but `libgit2` is already a transitive dependency via `SwiftGitX`, so
-/// this is direct C interop, not a new package.
+/// without each duplicating its object store. Calls `git_worktree_*` directly: `SwiftGitX` has no
+/// worktree API of its own (`SwiftGitXError.worktree` exists only as an error-code case; nothing
+/// in `SwiftGitX` calls `git_worktree_*`) — but `libgit2` is already a transitive dependency via
+/// `SwiftGitX`, so this is direct C interop, not a new package.
 ///
 /// `git_worktree_add` can only attach a *new* branch (or reuse one at the risk of libgit2's
 /// "already checked out" conflict with another worktree) — it has no "detached at an arbitrary
@@ -17,8 +16,6 @@ import libgit2
 /// ref they actually want via `GitCheckout(directory:).switchToDetached(ref:)` — never
 /// `switchTo(ref:)`, which attaches to a branch and would conflict with that same branch already
 /// being checked out in the shared clone's own working directory or another worktree.
-/// `switchToDetached` reuses `GitCheckout`'s existing, tested branch/tag/SHA resolution instead of
-/// duplicating it here in raw C, just always producing a detached HEAD.
 public struct GitWorktree {
     public let repositoryDirectory: URL
 
@@ -39,7 +36,7 @@ public struct GitWorktree {
 
     /// Registers a new linked working tree named `name` at `path`, checked out to a fresh branch
     /// (also named `name`, so it can't collide with a branch a caller cares about) at the shared
-    /// repository's current HEAD. `path` must not already exist; its parent is created if needed.
+    /// repository's current HEAD. `path` must not already exist.
     @discardableResult
     public func add(name: String, at path: URL) throws -> URL {
         try FileManager.default.createDirectory(
@@ -62,7 +59,6 @@ public struct GitWorktree {
         }
     }
 
-    /// Names of every linked working tree currently registered for this repository.
     public func list() throws -> [String] {
         try withRepositoryPointer { repositoryPointer in
             var names = git_strarray()
@@ -78,9 +74,8 @@ public struct GitWorktree {
         }
     }
 
-    /// Removes the worktree named `name`: prunes libgit2's own bookkeeping
-    /// (`.git/worktrees/<name>`) and its working directory. A no-op if nothing is registered under
-    /// that name (e.g. it was already removed).
+    /// Prunes libgit2's own bookkeeping (`.git/worktrees/<name>`) and the working directory. A
+    /// no-op if nothing is registered under `name` (e.g. it was already removed).
     public func remove(name: String) throws {
         try withRepositoryPointer { repositoryPointer in
             var worktreePointer: OpaquePointer?
@@ -103,15 +98,12 @@ public struct GitWorktree {
         }
     }
 
-    /// Opens `repositoryDirectory` as a raw libgit2 handle (independent of any `SwiftGitX.Repository`
-    /// that might also have it open — worktree operations aren't exposed through that wrapper), runs
-    /// `body`, and always frees the handle afterward.
-    ///
-    /// Bypassing `SwiftGitX.Repository` also bypasses the global libgit2 runtime init/shutdown its
-    /// `init`/`deinit` pair, so this pairs the same reference-counted `SwiftGitXRuntime.initialize()`/
-    /// `.shutdown()` around the raw C calls itself — otherwise, if no `SwiftGitX.Repository` happens
-    /// to be alive at the same moment, libgit2 rejects every call here with "library has not been
-    /// initialized".
+    /// Opens `repositoryDirectory` as a raw libgit2 handle, runs `body`, and always frees the
+    /// handle afterward. Bypassing `SwiftGitX.Repository` also bypasses the global libgit2 runtime
+    /// init/shutdown its `init`/`deinit` pair provides, so this pairs
+    /// `SwiftGitXRuntime.initialize()`/`.shutdown()` around the raw C calls itself — otherwise, if
+    /// no `SwiftGitX.Repository` happens to be alive at the same moment, libgit2 rejects every call
+    /// here with "library has not been initialized".
     private func withRepositoryPointer<T>(_ body: (OpaquePointer) throws -> T) throws -> T {
         do {
             try SwiftGitXRuntime.initialize()

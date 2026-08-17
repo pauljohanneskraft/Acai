@@ -2,8 +2,6 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// Main content area view displayed when a codebase is selected in the sidebar.
-/// Shows statistics, types, relationships, and diagram generation buttons.
 struct CodebaseDetailView: View {
     let codebaseID: UUID
     private let repositoryService: GitHubRepositoryService
@@ -12,20 +10,13 @@ struct CodebaseDetailView: View {
     @State private var reindexPhase: AsyncOperationPhase = .idle
     @State private var pullPhase: AsyncOperationPhase = .idle
     @State private var refSwitchPhase: AsyncOperationPhase = .idle
-    /// Branches + tags for a GitHub-backed codebase's ref picker, loaded once per codebase.
     @State private var availableRefs: [GitHubRef] = []
-    /// Set when the user clicks "Sequence Diagram"; drives the configuration popup. Not `private`:
-    /// the diagram-buttons and diagram-sheets extensions (separate files, kept there only to stay
-    /// under this file's own line-count limit) need to write it too.
+    /// Not `private`: the diagram-buttons and diagram-sheets extensions (separate files, kept there
+    /// only to stay under this file's own line-count limit) need to write it too.
     @State var sequenceConfigContext: ConfigContext?
-    /// Set when the user clicks "State Diagram"; drives the variable-selection popup.
     @State var stateConfigContext: ConfigContext?
-    /// Set when the user clicks "Call Graph"; drives the scope-selection popup.
     @State var callGraphConfigContext: ConfigContext?
-    /// The detail pane's current content width, used to lay out the diagram/statistics card grids so
-    /// they fill the full width and wrap to more rows only when space runs out.
     @State var contentWidth: CGFloat = 0
-    /// The ranked drill-down presented when a statistics card is tapped.
     @State var statisticDetail: StatisticDetail?
     /// Uniform card heights per grid (each = the tallest card in that grid), so cards never differ.
     @State var statCardHeight: CGFloat = 0
@@ -34,8 +25,7 @@ struct CodebaseDetailView: View {
     /// to the same action the sidebar's context menu already offers.
     @State var showDeleteConfirmation = false
 
-    /// Identifies the codebase a pending diagram configuration belongs to. Not `private`, for the
-    /// same cross-file reason as the `@State` properties above.
+    /// Not `private`, for the same cross-file reason as the `@State` properties above.
     struct ConfigContext: Identifiable {
         let projectID: UUID
         let codebaseID: UUID
@@ -220,7 +210,6 @@ struct CodebaseDetailView: View {
         }
     }
 
-    /// The "Pull" + branch/tag picker shown instead of "Reindex" for a GitHub-backed codebase.
     @ViewBuilder
     private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
         Picker("Branch/Tag", selection: Binding(
@@ -311,8 +300,6 @@ struct CodebaseDetailView: View {
         Divider()
     }
 
-    /// Shown while the codebase's analysis is being computed on a background thread, so selecting a
-    /// codebase never blocks on the scans.
     private var analyzingPlaceholder: some View {
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)

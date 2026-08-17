@@ -8,11 +8,11 @@ enum StateDiagramSidebarTab {
 }
 
 /// State Diagram's sidebar: folds `StateConfigSheet`'s variable-selection fields into a live
-/// Settings tab, and adds an Inspector tab showing detail for the selected state or transition.
+/// Settings tab, plus an Inspector tab for the selected state/transition.
 ///
-/// Like Sequence Diagram, applying a new variable re-runs the whole analysis and drops state
-/// positions/undo history (`StateDiagramViewModel.applyConfiguration`), so edits stage into a local
-/// draft applied only on an explicit "Apply" tap rather than live-binding on every change.
+/// Applying a new variable re-runs the whole analysis and drops state positions/undo history
+/// (`StateDiagramViewModel.applyConfiguration`), so edits stage into a local draft applied only
+/// on an explicit "Apply" tap rather than live-binding on every change.
 struct StateDiagramSidebar: View {
     @ObservedObject var viewModel: StateDiagramViewModel
     let artifact: CodeArtifact

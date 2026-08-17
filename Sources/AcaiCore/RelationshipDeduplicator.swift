@@ -2,13 +2,10 @@
 /// inferred edges where a stronger explicit relationship already covers the same ordered pair.
 struct RelationshipDeduplicator {
 
-    /// Redundant-edge removal followed by exact-duplicate removal — the order the enrichment pipeline
-    /// has always used (`deduplicate(removeRedundantEdges(…))`).
     func reduced(_ relationships: [Relationship]) -> [Relationship] {
         deduplicated(withoutRedundantEdges(relationships))
     }
 
-    /// Drops exact-duplicate edges (same source, target and kind), keeping first occurrence.
     private func deduplicated(_ relationships: [Relationship]) -> [Relationship] {
         var seen = Set<String>()
         return relationships.filter { rel in

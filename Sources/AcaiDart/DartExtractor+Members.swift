@@ -211,7 +211,6 @@ extension DartExtractor {
 
     // MARK: - Method/Function Signatures
 
-    /// Wraps a property member with the method_signature's static modifier if needed.
     private func wrapPropertyMember(_ member: Member, isStatic: Bool, at node: Node) -> Member {
         var mods = member.modifiers
         if isStatic, !mods.contains(.static) { mods.append(.static) }
@@ -223,7 +222,6 @@ extension DartExtractor {
         )
     }
 
-    /// Resolves a `method_signature` child directly (constructor, getter, setter, operator).
     private func resolveMethodSignatureChild(
         _ child: Node, nodeType: String, isStatic: Bool, at node: Node
     ) -> Member? {

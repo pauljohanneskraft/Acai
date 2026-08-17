@@ -5,8 +5,6 @@ import AcaiTreeSitter
 
 extension PythonExtractor: AssignmentResolving {
 
-    /// Resolves Python `assignment` (`x = …`, `self.x = …`) and `augmented_assignment` (`x += …`)
-    /// nodes whose target is a plain identifier or a `self`-qualified attribute.
     func resolveAssignment(_ node: Node) -> VariableAssignment? {
         switch node.nodeType {
         case "assignment":
@@ -43,7 +41,6 @@ extension PythonExtractor: AssignmentResolving {
         nilLiteral: ["none"]
     )
 
-    /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
         let valueText = trimmedText(node)

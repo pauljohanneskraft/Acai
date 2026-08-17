@@ -2,9 +2,8 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// Configuration popup for a value-flow state diagram: pick the variable whose
-/// assignments define the state space (a stored property of a type, or a global),
-/// plus the maximum number of distinct states before the analysis fails.
+/// Configuration popup for a value-flow state diagram: pick the variable whose assignments
+/// define the state space, plus the max number of distinct states before analysis fails.
 struct StateConfigSheet: View {
     let artifact: CodeArtifact
     let initial: StateDiagramConfiguration?
@@ -146,8 +145,6 @@ struct StateConfigSheet: View {
         typesWithStoredProperties.map(\.qualifiedName).uniqued().sorted()
     }
 
-    /// Variables in the selected scope: plausible state holders (enum-typed or
-    /// bool/int/string) first, then the rest, each group alphabetical.
     private var variableNames: [String] {
         let members: [Member]
         switch scope {

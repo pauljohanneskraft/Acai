@@ -2,7 +2,6 @@
 /// slice of the relationship graph. Answers "what could break if I change this?" as a count plus the
 /// list of dependents with `file:line`. Wraps `FocusedSubsetBuilder` with `direction: .dependents`.
 public struct ImpactAnalysis: Sendable {
-    /// One type that depends on the root.
     public struct Dependent: Codable, Equatable, Sendable {
         public var id: String
         public var qualifiedName: String
@@ -13,7 +12,6 @@ public struct ImpactAnalysis: Sendable {
         public var root: String
         /// `false` when the root name couldn't be resolved to a declared type.
         public var found: Bool
-        /// Number of transitive dependents.
         public var blastRadius: Int
         public var dependents: [Dependent]
     }
@@ -54,7 +52,6 @@ public struct ImpactAnalysis: Sendable {
 }
 
 private extension TypeDeclaration {
-    /// Whether this declaration is the one named by `name` (its id, simple, or qualified name).
     func matches(name: String) -> Bool {
         id == name || self.name == name || qualifiedName == name
     }

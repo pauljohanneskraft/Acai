@@ -6,13 +6,13 @@ import QuickLookUI
 #endif
 
 /// Read-only source preview backed by Quick Look — chosen over a custom syntax-highlighting stack
-/// so this view needs no custom tokenizing, dependency, or license-notice work. Tradeoff: Quick
-/// Look has no line/column addressing API, so `SourceLocation.line`/`.column` go unused here.
+/// to avoid tokenizing/license-notice work. Tradeoff: Quick Look has no line/column API, so
+/// `SourceLocation.line`/`.column` go unused here.
 ///
 /// Presented as a `.sheet` on both platforms since `QLPreviewController` (iOS) and `QLPreviewView`
-/// (macOS) have no shared SwiftUI wrapper; macOS doesn't use `.inspector` here because this call
-/// site (`ViolationRowView`'s "View Source" button) is nested deep in a scroll view, not a screen
-/// that owns its own inspector column.
+/// (macOS) have no shared SwiftUI wrapper; macOS skips `.inspector` since the call site
+/// (`ViolationRowView`'s "View Source" button) sits deep in a scroll view, not a screen with its
+/// own inspector column.
 struct SourceViewerSheet: View {
     let url: URL
 

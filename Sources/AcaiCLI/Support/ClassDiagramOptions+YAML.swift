@@ -66,8 +66,6 @@ extension ClassDiagramOptions {
         if let value = yaml["fontSize"] as? Int { self.fontSize = value }
     }
 
-    /// Parses a `focus:` sub-mapping (`root`, `depth`, `direction`, `relationships`,
-    /// `interconnections`). Requires `root`; otherwise the block is ignored.
     private mutating func applyFocus(from yaml: [String: Any]) {
         guard let focusYaml = yaml["focus"] as? [String: Any],
               let root = focusYaml["root"] as? String else { return }

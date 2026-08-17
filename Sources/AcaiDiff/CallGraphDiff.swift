@@ -5,8 +5,7 @@ extension CallGraph.Edge: WeightedGraphEdge {}
 
 /// The delta between two `CallGraph` revisions. Method nodes are identified by `id`
 /// (`Type.method` / `function`); call edges by `(from, to)`, with a call-count change reported as
-/// *changed*. The `union` merges both revisions so a renderer can draw every node/edge and tint
-/// each by `status(ofNode:)` / `status(ofEdgeFrom:to:)`.
+/// *changed*.
 public struct CallGraphDiff: Sendable {
     public let union: CallGraph
     private let delta: GraphDelta<CallGraph.Node, CallGraph.Edge>

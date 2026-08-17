@@ -24,7 +24,6 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         public var sourceLanguage: SourceLanguage
         public var filePaths: [String]
         public var toolVersion: String?
-        /// Concrete parse problems (location + kind + message) gathered while parsing.
         /// Empty when every source file parsed cleanly.
         public var parseDiagnostics: [ParseDiagnostic]
 
@@ -71,8 +70,8 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
 }
 
 extension CodeArtifact {
-    /// A copy with every type (and nested type) stamped with `language`. Applied per language group
-    /// during enrichment so each type in a merged polyglot artifact records where it came from.
+    /// Applied per language group during enrichment so each type in a merged polyglot artifact
+    /// records where it came from.
     public func stampingSourceLanguage(_ language: SourceLanguage) -> CodeArtifact {
         var copy = self
         copy.types = types.map { $0.stampingSourceLanguage(language) }
@@ -130,8 +129,6 @@ extension CodeArtifact {
 
     // MARK: - Generated-Code Filtering
 
-    /// Returns a new artifact with each language's generated types (and their relationships) removed.
-    ///
     /// `resolver` supplies each type's `GeneratedCodeFilter` from its own language, so a polyglot
     /// artifact filters each language's generated files under that language's rules rather than one
     /// dominant filter.

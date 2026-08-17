@@ -1,6 +1,3 @@
-// Single-class focus: reduce a class diagram to the subgraph around one type, by walking the
-// relationship graph from a root type and keeping only the reachable neighbourhood.
-
 /// Restricts a class diagram to one type and the slice of the relationship graph around it.
 ///
 /// The model is *source depends on target* for every `Relationship.Kind` (child → parent,
@@ -45,7 +42,6 @@ public struct FocusConfiguration: Codable, Hashable, Sendable {
 }
 
 /// Restricts a type/relationship set to one type and the slice of the relationship graph around it.
-/// Instantiate with the graph and a ``FocusConfiguration``, then read ``subset``.
 public struct FocusedSubsetBuilder {
     let types: [TypeDeclaration]
     let relationships: [Relationship]

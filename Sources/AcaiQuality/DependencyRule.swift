@@ -7,7 +7,6 @@ public struct DependencyRule: Codable, Equatable, Sendable {
     public var to: Selector
     /// Which edge kinds count as a dependency for this rule; `nil` means all kinds.
     public var kinds: Set<Relationship.Kind>?
-    /// Optional override for the violation message.
     public var message: String?
 
     public init(from: Selector, to: Selector, kinds: Set<Relationship.Kind>? = nil, message: String? = nil) {

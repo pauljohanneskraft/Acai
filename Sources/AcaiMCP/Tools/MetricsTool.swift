@@ -1,8 +1,7 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_metrics` — the full static-analysis metric set (counts, per-module coupling/instability,
-/// per-type OO metrics and smell scores). Mirrors `acai metrics --format json`.
+/// `acai_metrics` — the full static-analysis metric set. Mirrors `acai metrics --format json`.
 struct MetricsTool: AnalysisTool {
     let name = "acai_metrics"
     let description = """

@@ -32,7 +32,6 @@ struct FeatureEnvy {
                 continue
             }
         }
-        // Reads of the method's own stored properties count toward "own".
         for read in method.fieldReads where read.receiver == nil && ownProperties.contains(read.name) {
             own += 1
         }
@@ -50,8 +49,6 @@ struct FeatureEnvy {
         case unknown
     }
 
-    /// Classifies a call's dispatch: `self` and calls on the type's own name are `.own`; a call on
-    /// another declared type is `.foreign`; free-function and unresolved calls are `.unknown`.
     private func classify(_ receiver: CallReceiver) -> Target {
         switch receiver {
         case .selfDispatch:

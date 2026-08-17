@@ -1,8 +1,7 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_impact` — the blast radius of a type: every type that transitively depends on it, so an agent
-/// can answer "is this safe to change?" before touching it. Mirrors `acai impact <Type>`.
+/// `acai_impact` — the blast radius of a type. Mirrors `acai impact <Type>`.
 struct ImpactTool: AnalysisTool {
     let name = "acai_impact"
     let description = """

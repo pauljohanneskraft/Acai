@@ -1,8 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-/// Draws a relationship line between two node rectangles with appropriate
-/// UML arrow heads and line styles.
 public struct RelationshipEdgeView: View, Equatable {
     let kind: Relationship.Kind
     let sourceRect: CGRect
@@ -15,11 +13,9 @@ public struct RelationshipEdgeView: View, Equatable {
     /// Multiplicity drawn near the target (head) endpoint.
     let targetLabel: String?
     /// Multiplies the kind's default line width — used by the package diagram to encode a
-    /// dependency's weight as thickness. Defaults to `1` (unchanged for class/state edges).
+    /// dependency's weight as thickness.
     let lineWidthScale: CGFloat
-    /// Optional colour override for the line and arrow/diamond strokes. When set (e.g. a delta
-    /// diagram tinting an added/removed edge) it wins over `palette.edgeLine`; `nil` leaves the
-    /// edge themed exactly as before.
+    /// Optional colour override for the line and arrow/diamond strokes; wins over `palette.edgeLine`.
     let strokeColor: Color?
 
     public init(
@@ -91,7 +87,6 @@ public struct RelationshipEdgeView: View, Equatable {
                     dashPhase: baseStyle.dashPhase
                 )
 
-                // A delta override tints the strokes; otherwise the themed edge colour is used.
                 let lineColor = strokeColor ?? palette.edgeLine
 
                 linePath.stroke(lineColor, style: style)
@@ -136,8 +131,7 @@ public struct RelationshipEdgeView: View, Equatable {
         }
     }
 
-    /// A small cardinality label nudged in from `anchor` along the edge (and to one side)
-    /// so it sits beside the endpoint rather than under the node or the arrow head.
+    /// Nudged to one side so it doesn't sit under the node or the arrow head.
     private func multiplicityLabel(_ text: String, near anchor: CGPoint, toward other: CGPoint) -> some View {
         let dx = other.x - anchor.x
         let dy = other.y - anchor.y
@@ -151,7 +145,6 @@ public struct RelationshipEdgeView: View, Equatable {
 
     // MARK: - Connection Points
 
-    /// Computes the points where the edge line intersects the source and target node rectangles.
     private func connectionPoints(from source: CGRect, to target: CGRect) -> (CGPoint, CGPoint) {
         let sourceCenter = CGPoint(x: source.midX, y: source.midY)
         let targetCenter = CGPoint(x: target.midX, y: target.midY)
@@ -162,7 +155,6 @@ public struct RelationshipEdgeView: View, Equatable {
         return (start, end)
     }
 
-    /// Finds the intersection of a line from `from` toward `to` with the boundary of `rect`.
     private func intersectionPoint(from: CGPoint, to: CGPoint, rect: CGRect) -> CGPoint {
         let dx = to.x - from.x
         let dy = to.y - from.y

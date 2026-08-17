@@ -12,7 +12,6 @@ struct CFamilyHeaderClassifier {
         self.source = source
     }
 
-    /// `true` when the header contains a construct that is valid C++ but not C.
     var looksLikeCpp: Bool {
         let scan = scanned
         let code = scan.stripped
@@ -26,7 +25,6 @@ struct CFamilyHeaderClassifier {
         ]
         if keywordMarkers.contains(where: { containsWord($0, in: code) }) { return true }
 
-        // `public:` / `private:` / `protected:` access-section labels.
         if ["public", "private", "protected"].contains(where: { containsAccessLabel($0, in: code) }) {
             return true
         }

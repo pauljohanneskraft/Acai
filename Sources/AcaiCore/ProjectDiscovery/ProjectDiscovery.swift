@@ -2,18 +2,11 @@ import Foundation
 
 // MARK: - Project Discovery Coordinator
 
-/// Coordinates build-system detectors to discover which languages and source directories
-/// to analyse in a project root.
-///
 /// Detectors are tried in priority order. The first detector that claims a language wins;
 /// later detectors returning the same language are ignored (e.g. SPM takes priority over
 /// Xcode for Swift). The `fallback` detector activates only when no registered detector matched.
 public struct ProjectDiscovery: Sendable {
-
-    /// Ordered list of build-system detectors, tried in sequence.
     public let detectors: [any BuildSystemDetector]
-
-    /// Used when no detector in `detectors` matches.
     public let fallback: any BuildSystemDetector
 
     public init(detectors: [any BuildSystemDetector], fallback: any BuildSystemDetector) {
@@ -21,8 +14,6 @@ public struct ProjectDiscovery: Sendable {
         self.fallback = fallback
     }
 
-    /// Returns one `SourceSpec` per discovered language, deduplicated by language
-    /// so that the first matching detector per language wins.
     public func discoverSourceSpecs(
         in rootURL: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]

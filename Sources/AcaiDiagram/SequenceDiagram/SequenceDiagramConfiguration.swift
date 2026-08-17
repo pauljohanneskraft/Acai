@@ -8,7 +8,6 @@ import AcaiQuality
 public struct SequenceDiagramConfiguration: Codable, Hashable, Sendable {
     public var entryTypeName: String
     public var entryMethodName: String
-    /// Maximum call-graph traversal depth.
     public var maxDepth: Int
     /// Maps protocol/interface names to the concrete type whose body should be followed.
     public var typeMapping: [String: String]
@@ -33,7 +32,6 @@ public struct SequenceDiagramConfiguration: Codable, Hashable, Sendable {
 }
 
 extension SequenceDiagramBuilder {
-    /// Builds from a stored configuration; convenience over the entry-point initializer.
     public init(configuration: SequenceDiagramConfiguration, title: String? = nil) {
         self.init(
             entryPoint: (configuration.entryTypeName, configuration.entryMethodName),

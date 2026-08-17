@@ -5,24 +5,18 @@ import AcaiTreeSitter
 
 extension PythonExtractor {
 
-    /// Base names that mark a class as an enumeration.
     private static let enumBaseNames: Set<String> = [
         "Enum", "IntEnum", "IntFlag", "Flag", "StrEnum", "ReprEnum"
     ]
-    /// Base names that mark a class as abstract (in addition to any `@abstractmethod` member).
     private static let abstractBaseNames: Set<String> = ["ABC", "ABCMeta"]
-    /// Stdlib "marker" bases that convey kind/abstractness rather than a real supertype. They are
-    /// reflected in the `TypeKind`/`.abstract` modifier instead of drawn as inheritance edges, so
-    /// a Python `class C(Enum)` / `class P(Protocol)` reads like the other languages' native enum
-    /// and interface (no phantom `Enum`/`Protocol`/`ABC` external nodes).
+    /// Stdlib "marker" bases reflected in `TypeKind`/`.abstract` instead of drawn as inheritance
+    /// edges, so `class C(Enum)` reads like other languages' native enum (no phantom `Enum` node).
     private static let markerBaseNames: Set<String> =
         enumBaseNames.union(abstractBaseNames).union(["Protocol", "Generic"])
 
     mutating func extractClass(_ node: Node, decorators: [String]) -> TypeDeclaration {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
-        // Qualify the id/qualifiedName with the enclosing type's namespace so a nested `Inner`
-        // doesn't collide with a top-level `Inner` (at the top level this is just `name`, so
-        // existing output is unchanged). The relationship source uses the qualified id to match.
+        // Namespaced so a nested `Inner` doesn't collide with a top-level `Inner`.
         let qualified = qualifiedName(name)
         let bases = extractBases(node, className: qualified)
         let kind = classKind(forBaseNames: bases.allNames)
@@ -40,7 +34,6 @@ extension PythonExtractor {
         )
 
         if let body = node.child(byFieldName: "body") {
-            // Nested types declared in this body are qualified against this class's id.
             let savedNamespace = currentNamespace
             currentNamespace = qualified
             defer { currentNamespace = savedNamespace }
@@ -66,9 +59,8 @@ extension PythonExtractor {
 
     // MARK: - Base classes
 
-    /// Extracts positional base classes. `allNames` is every positional base (for kind/abstract
-    /// detection); `inherited`/heritage relationships exclude the stdlib markers; `generics` are
-    /// pulled from `Generic[T]` / `Protocol[T]` bases. Keyword arguments (`metaclass=…`) are skipped.
+    /// `allNames` is every positional base (for kind/abstract detection); `inherited` excludes the
+    /// stdlib markers. Keyword arguments (`metaclass=…`) are skipped.
     private mutating func extractBases(
         _ classNode: Node, className: String
     ) -> (allNames: [String], inherited: [TypeReference], generics: [GenericParameter]) {
@@ -97,8 +89,6 @@ extension PythonExtractor {
         return (allNames, inherited, generics)
     }
 
-    /// The simple type name of a base-class expression (`identifier`, `module.Base` → `Base`,
-    /// `Base[T]` → `Base`).
     func baseTypeName(from node: Node) -> String? {
         switch node.nodeType {
         case "identifier":
@@ -134,8 +124,7 @@ extension PythonExtractor {
 
     // MARK: - Enum body
 
-    /// For enum classes, class-body `NAME = value` assignments are enum cases (not properties);
-    /// methods are still extracted as members.
+    /// Class-body `NAME = value` assignments are enum cases here, not properties.
     private mutating func parseEnumBody(_ body: Node, into decl: inout TypeDeclaration) {
         let scope = CallSiteScope(knownTypeNames: declaredTypeNames)
         for child in body.namedChildren() {

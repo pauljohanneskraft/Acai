@@ -3,10 +3,9 @@ import AcaiCore
 /// Computes the structural delta between two `CodeArtifact` revisions.
 ///
 /// Both inputs should be `enriched()` (relationship endpoints resolved to canonical type ids,
-/// structural edges inferred) so the two sides are compared on equal footing. Stored analyses
-/// produced by `analyze`/`store` are already enriched. The differ names no language: identity is
-/// the canonical `TypeDeclaration.id` for nodes and `(source, target, kind)` for edges. Every
-/// output array is sorted, so the diff is deterministic and its JSON is byte-stable.
+/// structural edges inferred) so the two sides are compared on equal footing; stored analyses
+/// produced by `analyze`/`store` already are. Every output array is sorted, so the diff is
+/// deterministic and its JSON is byte-stable.
 public struct ArtifactDiffer: Sendable {
     private let moduleResolver: ModuleResolver
 
@@ -43,10 +42,9 @@ public struct ArtifactDiffer: Sendable {
         )
     }
 
-    /// The union of two revisions as a single artifact for rendering a delta diagram: every type
-    /// from both sides (new wins on id collision) and every relationship from both sides (deduped by
-    /// (source, target, kind), new wins). Removed types/edges thus appear alongside added and
-    /// unchanged ones, so a caller can tint each by `ArtifactDiff.status(of:)`.
+    /// The union of two revisions as a single artifact for rendering a delta diagram: every type and
+    /// relationship from both sides (new wins on collision), so removed elements appear alongside
+    /// added and unchanged ones and a caller can tint each by `ArtifactDiff.status(of:)`.
     public func unionArtifact(old: CodeArtifact, new: CodeArtifact) -> CodeArtifact {
         let newFlat = new.flattened()
         let newIDs = Set(newFlat.map(\.id))
@@ -106,9 +104,9 @@ public struct ArtifactDiffer: Sendable {
         )
     }
 
-    /// Pairs unmatched members by name across revisions so a retyped/re-accessed member reads as
-    /// one change, not add+remove. Skips names with more than one unmatched candidate per side —
-    /// overloads have no reliable correspondence.
+    /// Pairs unmatched members by name so a retyped/re-accessed member reads as one change, not
+    /// add+remove. Skips names with more than one unmatched candidate per side — overloads have no
+    /// reliable correspondence.
     private func pairedMemberChanges(oldMembers: [Member], newMembers: [Member]) -> [MemberChange] {
         let oldByName = Dictionary(grouping: oldMembers, by: \.name)
         let newByName = Dictionary(grouping: newMembers, by: \.name)
@@ -183,11 +181,9 @@ public struct ArtifactDiffer: Sendable {
 }
 
 extension Member {
-    /// A stable, human-readable signature for set-difference diffing. Includes access level,
-    /// `static`/`class`, kind, name, parameter labels + types and return type, so an overload, a
-    /// visibility change, or a signature change reads as add+remove rather than a silent edit.
-    /// Without the labels, `move(to:)` and `move(from:)` collide; without access, a `public`→
-    /// `private` change is invisible.
+    /// A stable signature for set-difference diffing, covering access level, `static`/`class`,
+    /// kind, name, parameter labels + types and return type — without the labels, `move(to:)` and
+    /// `move(from:)` collide; without access, a `public`→`private` change is invisible.
     var diffSignature: String {
         let params = parameters.map { param in
             let label = param.externalName ?? param.internalName

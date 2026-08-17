@@ -1,10 +1,5 @@
-/// Where a ``CallSite`` is dispatched — the statically-determined receiver of a call.
-///
-/// Replaces the older `receiverType: String?`, whose `nil` conflated a call on the enclosing
-/// instance with a free-function call.
 public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
 
-    /// A call on the enclosing instance (`self.foo()` / `this.foo()`).
     case selfDispatch
 
     /// A call whose receiver resolves to a declared type.
@@ -14,7 +9,6 @@ public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
     /// the receiver up by simple name, so a qualified value silently drops the call.
     case type(String)
 
-    /// A free-function call — no receiver.
     case free
 
     /// The receiver can't be resolved (a generic parameter / protocol existential with unknown concrete
@@ -53,21 +47,14 @@ public enum CallReceiver: Codable, Equatable, Hashable, Sendable {
     case ownMethodReturn(methodName: String, remainingHops: [String])
 }
 
-/// A statically-observable call to a method or free function, recorded
-/// inside a `Member`'s body during source analysis.
-///
-/// Parsers populate `Member.callSites` when they can determine the call target
-/// from the source text. Dynamic dispatch (e.g. protocol witness calls through an
-/// existential, closures stored in variables) may not be captured.
+/// Dynamic dispatch (e.g. protocol witness calls through an existential, closures stored in
+/// variables) may not be captured — parsers only populate this from statically-observable source text.
 public struct CallSite: Codable, Equatable, Hashable, Sendable {
 
-    /// How the call is dispatched — `self`, a declared type, a free function, or unresolved.
     public var receiver: CallReceiver
 
-    /// The name of the method or function being called.
     public var methodName: String
 
-    /// Source location of the call expression.
     public var location: SourceLocation?
 
     public init(
@@ -80,7 +67,6 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
         self.location = location
     }
 
-    /// The receiver's declared simple type name, or `nil` for a `self`/free/unresolved dispatch.
     public var receiverType: String? {
         if case .type(let name) = receiver { return name }
         return nil

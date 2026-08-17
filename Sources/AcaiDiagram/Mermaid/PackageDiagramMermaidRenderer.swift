@@ -1,7 +1,5 @@
 import Foundation
 
-/// Renders a `PackageDiagram` to a Mermaid `flowchart`.
-///
 /// Each module is a node labelled with its coupling metrics and shaded by its
 /// distance from the main sequence; edges carry the cross-module reference weight.
 public struct PackageDiagramMermaidRenderer: MermaidRenderer {

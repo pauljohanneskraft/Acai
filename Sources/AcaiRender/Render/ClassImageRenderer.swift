@@ -8,17 +8,15 @@ import AcaiDiagram
 import AppKit
 #endif
 
-/// Renders a class diagram to PNG via the shared `DiagramSnapshotView` — the same views the app
-/// draws on screen. Two entry points: a headless one that lays out from a `CodeArtifact` (the CLI),
-/// and one that takes an already-laid-out diagram (the app, to capture the live canvas).
+/// Renders a class diagram to PNG via the shared `DiagramSnapshotView`. Two entry points: a
+/// headless one that lays out from a `CodeArtifact` (the CLI), and one that takes an
+/// already-laid-out diagram (the app, to capture the live canvas).
 @MainActor
 public struct ClassImageRenderer {
     private let engine = DiagramImageRenderer()
 
     public init() {}
 
-    /// Builds and lays out the diagram for `artifact` (using estimated node sizes, since no SwiftUI
-    /// measurement happens headlessly) and renders it to PNG data.
     public func renderPNG(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
@@ -45,7 +43,6 @@ public struct ClassImageRenderer {
         let bounds = contentBounds(
             positions: laidOut.positions, sizes: laidOut.sizes, boxes: laidOut.groupingBoxes)
 
-        // Normalize so the content's top-left sits at the origin.
         let dx = -bounds.minX
         let dy = -bounds.minY
         let normalizedPositions = laidOut.positions.mapValues { CGPoint(x: $0.x + dx, y: $0.y + dy) }
@@ -91,8 +88,7 @@ public struct ClassImageRenderer {
         #endif
     }
 
-    /// The bounding rect of all node rects and grouping boxes. Falls back to a small empty canvas
-    /// when there is nothing to draw.
+    /// Falls back to a small empty canvas when there is nothing to draw.
     private func contentBounds(
         positions: [String: CGPoint],
         sizes: [String: CGSize],

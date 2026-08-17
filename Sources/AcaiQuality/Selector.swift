@@ -42,7 +42,6 @@ public struct Selector: Codable, Hashable, Sendable {
         self.minNesting = minNesting
     }
 
-    /// Whether `node` satisfies every present facet.
     public func matches(_ node: GraphView.Node) -> Bool {
         if let module, !Glob(module).matches(node.module) { return false }
         if let typeGlob, !Glob(typeGlob).matches(node.id), !Glob(typeGlob).matches(node.qualifiedName) {
@@ -65,10 +64,10 @@ public struct Selector: Codable, Hashable, Sendable {
     }
 }
 
-/// A compiled `*`/`?` glob pattern, anchored to the whole string. A value you instantiate from a
-/// pattern and ask `matches(_:)` — kept in-target (no regex dependency) so a malformed pattern can
-/// never throw at evaluation time. Public so any module wanting the same glob vocabulary (e.g.
-/// `AcaiApp`'s file allow/blocklist) reuses this instead of a second, incompatible pattern matcher.
+/// A compiled `*`/`?` glob pattern, anchored to the whole string. Kept in-target (no regex
+/// dependency) so a malformed pattern can never throw at evaluation time. Public so any module
+/// wanting the same glob vocabulary (e.g. `AcaiApp`'s file allow/blocklist) reuses this instead of a
+/// second, incompatible pattern matcher.
 public struct Glob: Sendable {
     private let pattern: [Character]
 

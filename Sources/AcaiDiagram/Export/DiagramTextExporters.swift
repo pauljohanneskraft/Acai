@@ -4,7 +4,6 @@ import AcaiCore
 // into a `DiagramExport`. Shared by every text front end (the CLI `diagram` command, the MCP
 // `acai_diagram` tool) so the builder→renderer wiring lives once.
 
-/// Builds the class diagram and pairs both text renderers.
 public struct ClassDiagramTextExporter: Sendable {
     public let options: ClassDiagramOptions
 
@@ -22,7 +21,6 @@ public struct ClassDiagramTextExporter: Sendable {
     }
 }
 
-/// Traces a sequence diagram from the entry point and pairs both text renderers.
 public struct SequenceDiagramTextExporter: Sendable {
     public let request: SequenceDiagramRequest
     public let theme: DiagramTheme?
@@ -42,7 +40,6 @@ public struct SequenceDiagramTextExporter: Sendable {
     }
 }
 
-/// Runs the value-flow state analysis and pairs both text renderers.
 public struct StateDiagramTextExporter: Sendable {
     public let request: StateDiagramRequest
     public let theme: DiagramTheme?
@@ -62,8 +59,8 @@ public struct StateDiagramTextExporter: Sendable {
     }
 }
 
-/// Builds the package/module dependency diagram and pairs both text renderers. The caller injects the
-/// artifact's `LanguageConfigurationResolver` (the package build enriches first, per type).
+/// The caller injects the artifact's `LanguageConfigurationResolver` (the package build enriches
+/// first, per type).
 public struct PackageDiagramTextExporter: Sendable {
     public let languages: LanguageConfigurationResolver
     public let theme: DiagramTheme?
@@ -83,8 +80,7 @@ public struct PackageDiagramTextExporter: Sendable {
     }
 }
 
-/// Builds a static call graph (optionally scoped) and pairs both text renderers. Emits no coverage
-/// note — a caller that wants it reads `graph.coverage` off the built graph.
+/// Emits no coverage note — a caller that wants it reads `graph.coverage` off the built graph.
 public struct CallGraphTextExporter: Sendable {
     public let request: CallGraphRequest
     public let theme: DiagramTheme?

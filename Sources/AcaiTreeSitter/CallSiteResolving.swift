@@ -3,25 +3,21 @@ import AcaiCore
 
 // MARK: - CallSiteScope
 
-/// The statically-known context used to resolve a method call's receiver to a type.
-///
 /// Resolution stays deliberately conservative — a call site is only captured when its receiver is
 /// provably a known type: a typed stored property, an explicit `this`/`self`, or a
 /// `TypeName.method()` where `TypeName` is declared. Anything else is dropped, keeping the resulting
 /// sequence diagrams near-zero-false-edge.
 public struct CallSiteScope: Sendable {
-    /// `propertyName: typeName` for the enclosing type's stored properties — only those with a
-    /// determinable type (call-site resolution needs the type).
+    /// Stored properties with a determinable type — call-site resolution needs the type.
     public var knownProperties: [String: String]
     /// Simple names of types declared in the current file (for `TypeName.method()`).
     public var knownTypeNames: Set<String>
     /// Names of **all** the enclosing type's stored properties, including untyped ones (e.g. Python's
-    /// `self.x = …`). Field-read capture filters by name only, so it needs the full set — not just the
-    /// typed subset in ``knownProperties``. Defaults to `knownProperties`' keys when unspecified.
+    /// `self.x = …`). Field-read capture filters by name only, so it needs the full set — not just
+    /// the typed subset in ``knownProperties``.
     public var knownPropertyNames: Set<String>
-    /// `methodName: returnTypeName` for the enclosing type's own methods (unambiguous overloads
-    /// only), so a local initialized from a same-type method call (`let x = compute()`) can have its
-    /// type inferred the same way a direct construction already does.
+    /// Unambiguous overloads only, so a local initialized from a same-type method call
+    /// (`let x = compute()`) can have its type inferred the same way a direct construction already does.
     public var knownMethodReturnTypes: [String: String]
 
     public init(
@@ -36,8 +32,7 @@ public struct CallSiteScope: Sendable {
         self.knownMethodReturnTypes = knownMethodReturnTypes
     }
 
-    /// Resolves a single-identifier receiver (`receiver.method()`) to a ``AcaiCore/CallSite``: a typed
-    /// stored property resolves to its declared type; a known type name is a static call; a
+    /// A typed stored property resolves to its declared type; a known type name is a static call; a
     /// capitalised name matching neither is deferred (`.unresolvedTypeName`), possibly declared
     /// elsewhere in the project, resolved post-merge. Returns `nil` for locals/parameters/external
     /// receivers.
@@ -58,8 +53,7 @@ public struct CallSiteScope: Sendable {
         return nil
     }
 
-    /// A copy of this scope with `locals` overlaid onto `knownProperties` (a local shadows a same-named
-    /// stored property). Leaves `knownPropertyNames` untouched, since a local isn't a field.
+    /// Leaves `knownPropertyNames` untouched, since a local isn't a field.
     public func merging(locals: [String: String]) -> CallSiteScope {
         guard !locals.isEmpty else { return self }
         var copy = self
@@ -67,9 +61,8 @@ public struct CallSiteScope: Sendable {
         return copy
     }
 
-    /// A copy of this scope with each parameter's provable declared type overlaid onto
-    /// `knownProperties`, so `param.method()` resolves like a typed stored property. Delegates to
-    /// ``merging(locals:)`` since the overlay semantics are identical.
+    /// Overlays each parameter's provable declared type onto `knownProperties`, so `param.method()`
+    /// resolves like a typed stored property.
     public func merging(parameters: [Parameter]) -> CallSiteScope {
         let map = Dictionary(
             parameters.compactMap { parameter in parameter.type.map { (parameter.internalName, $0.name) } },
@@ -91,12 +84,9 @@ public struct CallSiteScope: Sendable {
 // MARK: - CallSiteResolving
 
 /// Opt-in protocol for extractors that support call-site resolution (not every language needs it,
-/// e.g. Dart doesn't). Requires ``resolveCallSite(_:knownProperties:)`` and provides the recursive
-/// walk infrastructure in the extension.
+/// e.g. Dart doesn't).
 public protocol CallSiteResolving: TreeSitterExtracting {
 
-    /// Resolves a single AST node to a ``AcaiCore/CallSite`` if it represents a statically-resolvable
-    /// method call (on a known property, `this`/`self`, or a known type). `nil` otherwise.
     func resolveCallSite(
         _ node: Node,
         scope: CallSiteScope
@@ -114,9 +104,8 @@ extension CallSiteResolving {
 
     public func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] { [:] }
 
-    /// Recursively collects local bindings by applying `binding` to every node in `body`; a language's
-    /// ``localBindings(in:)`` uses this so it only writes a per-node recogniser, not the traversal.
-    /// A later binding for the same name wins.
+    /// A language's ``localBindings(in:)`` uses this so it only writes a per-node recogniser, not the
+    /// traversal. A later binding for the same name wins.
     public func collectLocalBindings(
         in body: Node, binding: (Node) -> (name: String, type: String)?
     ) -> [String: String] {
@@ -131,9 +120,8 @@ extension CallSiteResolving {
         return map
     }
 
-    /// Extracts call sites from a body node using the statically-known ``CallSiteScope``. Worth
-    /// walking even when no properties are known, since `this`/`self` and `TypeName.method()` calls
-    /// are still resolvable. The body's provable local bindings are folded into the scope first.
+    /// Worth walking even when no properties are known, since `this`/`self` and `TypeName.method()`
+    /// calls are still resolvable. The body's provable local bindings are folded into the scope first.
     public func extractCallSites(
         from body: Node?,
         scope: CallSiteScope
@@ -144,7 +132,6 @@ extension CallSiteResolving {
         return sites
     }
 
-    /// Recursively walks AST nodes, collecting resolved call sites.
     private func walkForCallSites(
         _ node: Node,
         scope: CallSiteScope,
@@ -170,7 +157,6 @@ extension CallSiteResolving {
         scope: CallSiteScope,
         location: SourceLocation?
     ) -> CallSite? {
-        // Pattern: this.method(args) — a direct call on the enclosing instance.
         if receiver.nodeType == grammar.selfNodeType {
             return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
         }
@@ -185,13 +171,11 @@ extension CallSiteResolving {
         else { return nil }
         let hop = text(member)
 
-        // Pattern: this.prop.method(args) — a direct property access already resolves in-file.
         if object.nodeType == grammar.selfNodeType {
             return scope.resolvedCallSite(receiverName: hop, methodName: methodName, location: location)
         }
 
-        // A deeper chain (`model.diagrams.method()`): resolve the chain's head (`model`) to a type
-        // and defer `hop` (`diagrams`) to the post-merge pass.
+        // Deeper chain: resolve the head to a type and defer `hop` to the post-merge pass.
         guard object.nodeType == "identifier" else { return nil }
         let headName = text(object)
         let headType = scope.knownProperties[headName]

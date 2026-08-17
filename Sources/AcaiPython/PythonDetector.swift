@@ -1,9 +1,6 @@
 import Foundation
 import AcaiCore
 
-/// Detects Python projects (`pyproject.toml`, `setup.py`, `setup.cfg`, or `requirements.txt`) and
-/// locates Python sources, preferring a `src/` layout when present.
-///
 /// `IndicatorFiles`/`SourceDirectoryProbe`/`SourceFilePresence` are constructed where used rather
 /// than stored — holding a `SourceFilePresence` as a stored property currently mis-compiles.
 public struct PythonDetector: BuildSystemDetector {

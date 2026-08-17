@@ -1,12 +1,6 @@
 import SwiftUI
 import AcaiDiagram
 
-/// A static rendering of a `SequenceDiagram` from a pre-computed `SequenceLayoutModel`:
-/// participant headers, dashed lifelines and time-ordered message arrows. Shared by the live
-/// app canvas (which overlays gestures on top) and the CLI image export.
-///
-/// Coordinates come straight from the layout model; the view sizes itself to
-/// `layout.contentSize` plus a uniform `padding`.
 public struct SequenceDiagramSnapshotView: View {
     let layout: SequenceLayoutModel
     let padding: CGFloat
@@ -50,9 +44,7 @@ public struct SequenceDiagramSnapshotView: View {
 
 // MARK: - Ensemble (lifelines + activations + messages)
 
-/// The non-interactive body of a sequence diagram — lifelines, activation bars and message
-/// arrows — without participant headers. Shared by the static snapshot, generated-diagram canvas
-/// and freeform editor; callers draw their own headers on top.
+/// Callers draw their own participant headers on top.
 public struct SequenceEnsembleView: View {
     let layout: SequenceLayoutModel
     /// Optional per-message delta tint, keyed on the message's layout id. `nil` leaves all
@@ -88,9 +80,7 @@ public struct SequenceEnsembleView: View {
 
 // MARK: - Combined Fragment
 
-/// A UML 2 combined-fragment frame: a rectangle around the covered message rows with the
-/// operator name in a pentagon tab at the top-left, guard conditions in brackets, and dashed
-/// separators between operands (for `alt` / `par`).
+/// A UML 2 combined-fragment frame (e.g. `alt` / `par`).
 public struct SequenceFragmentView: View {
     let fragment: SequenceLayoutModel.FragmentFrame
     let isSelected: Bool
@@ -166,8 +156,7 @@ public struct SequenceFragmentView: View {
 
 // MARK: - Activation Bar
 
-/// An execution occurrence ("focus of control"): the thin rectangle on a lifeline marking the
-/// span during which the participant is processing a message.
+/// An execution occurrence ("focus of control") on a lifeline.
 public struct SequenceActivationBarView: View {
     let bar: SequenceLayoutModel.ActivationBar
 
@@ -188,7 +177,6 @@ public struct SequenceActivationBarView: View {
 
 // MARK: - Lifeline
 
-/// The dashed vertical lifeline dropping from a participant header.
 public struct SequenceLifelineView: View {
     let participant: SequenceLayoutModel.ParticipantFrame
 
@@ -209,7 +197,6 @@ public struct SequenceLifelineView: View {
 
 // MARK: - Participant Header
 
-/// A lifeline header box, styled by the participant's role.
 public struct SequenceParticipantHeader: View {
     let participant: SequenceLayoutModel.ParticipantFrame
     let isSelected: Bool
@@ -224,9 +211,6 @@ public struct SequenceParticipantHeader: View {
     }
 }
 
-/// A standalone participant header (name + role stereotype), reused by the sequence snapshot and
-/// the freeform-diagram lifeline node so both look identical.
-///
 /// Styled like `TypeNodeView` (fixed light fills, explicit ink text, kind-tinted border) so it
 /// stays readable in dark mode, where dynamic colors would invert against the light canvas.
 public struct ParticipantHeaderView: View {
@@ -273,7 +257,6 @@ public struct ParticipantHeaderView: View {
 
 // MARK: - Message
 
-/// A single message arrow (or self-loop) at its laid-out vertical position.
 public struct SequenceMessageView: View {
     let message: SequenceLayoutModel.MessageLayout
     /// Per-message delta tint (added/removed). `nil` uses the theme's edge colour.
@@ -363,7 +346,6 @@ public struct SequenceMessageView: View {
 // MARK: - Styling
 
 extension SequenceDiagram.Message.Kind {
-    /// Stroke for a message line: solid for calls, dashed for returns / async fire-and-forget.
     var sequenceStrokeStyle: StrokeStyle {
         switch self {
         case .synchronous, .create:

@@ -69,7 +69,6 @@ public struct ClassColorOverrides: Sendable {
         self.badge = badge
     }
 
-    /// No delta tint — every element keeps its themed colour.
     public static let plain = ClassColorOverrides()
 }
 
@@ -87,6 +86,5 @@ public struct GraphColorOverrides: Sendable {
         self.edge = edge
     }
 
-    /// No delta tint — every element keeps its themed colour.
     public static let plain = GraphColorOverrides()
 }

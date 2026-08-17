@@ -102,7 +102,6 @@ public struct SequenceDiagramBuilder: Sendable {
 
 // MARK: - Sequence Diagram Traversal Helpers
 
-/// Pre-built lookup tables for sequence diagram construction.
 private struct SequenceTraversalLookups {
     let typesByName: [String: TypeDeclaration]
     let membersByKey: [String: Member]
@@ -125,7 +124,6 @@ private struct SequenceTraversalLookups {
     }
 }
 
-/// Mutable state for recursive sequence diagram traversal.
 private struct SequenceTraversal {
     let lookups: SequenceTraversalLookups
     let typeMapping: [String: String]

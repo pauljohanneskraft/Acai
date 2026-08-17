@@ -5,8 +5,6 @@ import AcaiTreeSitter
 
 extension PythonExtractor {
 
-    /// Parses a (non-enum) class body: nested classes, methods, class-body fields, and instance
-    /// attributes synthesised from `self.x = …` assignments inside the methods.
     mutating func parseClassBody(_ body: Node, into decl: inout TypeDeclaration) {
         for child in body.namedChildren() {
             if child.nodeType == "class_definition" {
@@ -40,7 +38,6 @@ extension PythonExtractor {
         }
     }
 
-    /// Function definitions in a class body, paired with their decorator names (empty when bare).
     func collectMethodNodes(_ body: Node) -> [(node: Node, decorators: [String])] {
         var result: [(node: Node, decorators: [String])] = []
         for child in body.namedChildren() {
@@ -54,10 +51,8 @@ extension PythonExtractor {
         return result
     }
 
-    /// A `methodName → returnTypeName` map from the class's own method nodes (annotated with an
-    /// explicit `-> Type`; Python has no implicit return-type inference to fall back to), so a
-    /// same-type method call — including one declared later in the class — can seed a local's type.
-    /// Overloaded names with differing return types are dropped rather than guessed.
+    /// Built only from methods with an explicit `-> Type` (Python has no return-type inference to
+    /// fall back to); ambiguous overloaded names are dropped rather than guessed.
     private func methodReturnTypeMap(
         fromMethodNodes methodNodes: [(node: Node, decorators: [String])]
     ) -> [String: String] {
@@ -82,8 +77,6 @@ extension PythonExtractor {
 
     // MARK: - Class-body fields
 
-    /// Direct class-body attributes: plain `x = …`, annotated `x: T`, or annotated `x: T = …`
-    /// (the dataclass/`__slots__`-free style of field declaration).
     private func collectClassBodyFields(_ body: Node, scope: CallSiteScope) -> [Member] {
         var fields: [Member] = []
         for child in body.namedChildren() where child.nodeType == "expression_statement" {
@@ -109,13 +102,8 @@ extension PythonExtractor {
 
     // MARK: - Instance-attribute synthesis (self.x = …)
 
-    /// Synthesises property members from `self.x = …` assignments inside method bodies. This is the
-    /// only place idiomatic Python declares instance attributes, so it is core to producing useful
-    /// diagrams. Attributes already declared in the class body (passed via `existing`) are skipped,
-    /// and each attribute is emitted once even if assigned in several methods. A type is recorded
-    /// when the assignment is annotated (`self.x: T = …`) or, failing that, when it's a direct
-    /// construction of a same-file declared type (`self.x = Foo()` — the far more common idiom),
-    /// the same fallback `localBindings` already applies to locals.
+    /// `self.x = …` inside methods is the only place idiomatic Python declares instance attributes,
+    /// so this synthesises properties from those assignments, skipping ones already in `existing`.
     private func synthesizeSelfFields(
         fromMethods methods: [(node: Node, decorators: [String])], existing: Set<String>
     ) -> [Member] {
@@ -147,9 +135,8 @@ extension PythonExtractor {
         return fields
     }
 
-    /// Infers a field's type from a direct construction of a same-file declared type
-    /// (`Foo()`, not `foo.Bar()` — a call whose function is a bare `identifier`), when there's no
-    /// type annotation. Mirrors the construction check `localBindings` already applies to locals.
+    /// Mirrors the construction check `localBindings` already applies to locals: a direct `Foo()`
+    /// construction of a same-file declared type (not `foo.Bar()`), when there's no type annotation.
     private func constructedType(fromAssignmentRight right: Node?) -> TypeReference? {
         guard let call = right, call.nodeType == "call",
               let function = call.child(byFieldName: "function"), function.nodeType == "identifier",
@@ -158,7 +145,6 @@ extension PythonExtractor {
         return TypeReference(name: text(function))
     }
 
-    /// Collects every `assignment`/`augmented_assignment` node reachable from `node`, in source order.
     private func collectAssignmentNodes(_ node: Node, into result: inout [Node]) {
         if node.nodeType == "assignment" || node.nodeType == "augmented_assignment" {
             result.append(node)
@@ -170,10 +156,6 @@ extension PythonExtractor {
 
     // MARK: - Methods & functions
 
-    /// Extracts a `function_definition` as a `Member` (works for methods and module-level functions).
-    /// `self`/`cls` is dropped from the parameter list; `__init__` becomes an initializer; decorators
-    /// drive kind/modifiers (`@property` → computed, `@staticmethod` → static, `@abstractmethod`
-    /// → abstract, `@final` → final).
     func extractCallable(_ node: Node, decorators: [String], scope: CallSiteScope) -> Member {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_anonymous"
         var params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
@@ -216,9 +198,8 @@ extension PythonExtractor {
         )
     }
 
-    /// Python structural decision-point node types for cyclomatic complexity: conditionals, loops,
-    /// exception handlers, `match` cases and ternaries. Short-circuit `and`/`or` are excluded so the
-    /// metric is consistent across languages (several grammars model them as generic binary nodes).
+    /// Short-circuit `and`/`or` are excluded so the metric stays consistent across languages
+    /// (several grammars model them as generic binary nodes rather than decision points).
     static let branchNodeKinds: Set<String> = [
         "if_statement", "elif_clause", "for_statement", "while_statement", "except_clause",
         "case_clause"

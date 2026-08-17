@@ -45,7 +45,6 @@ public struct StateDiagramDOTRenderer: DOTRenderer {
 
     // MARK: - State rendering
 
-    /// Returns rendered DOT text and the next available cluster index.
     private func renderStates(_ states: [StateDiagram.State], clusterIndex: Int) -> (output: String, nextIndex: Int) {
         var out = ""
         var index = clusterIndex

@@ -16,11 +16,7 @@ public struct GitClone {
 
     /// Clones/syncs `destination` to `ref`'s current commit, replacing its contents (if any) only
     /// once the whole operation has fully succeeded — a failed sync leaves whatever was there
-    /// before untouched. Returns the resolved commit's SHA. Reports transfer progress through
-    /// `onProgress` and aborts cooperatively if the calling `Task` is cancelled — for a fresh
-    /// clone, `SwiftGitX`'s own `Repository.clone(from:to:options:transferProgressHandler:)`
-    /// already wires both; for an existing checkout, `GitCheckout.fetch(onProgress:)` does (see
-    /// `GitFetch`).
+    /// before untouched. Returns the resolved commit's SHA.
     @discardableResult
     public func sync(into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil) async throws -> String {
         let repository = try await openOrClone(into: destination, onProgress: onProgress)

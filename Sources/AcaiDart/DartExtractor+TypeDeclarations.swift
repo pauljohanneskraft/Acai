@@ -108,7 +108,6 @@ extension DartExtractor {
 
     // MARK: - Mixin Declaration
 
-    /// Extracts 'on' constraint types from a mixin declaration.
     private mutating func extractMixinOnConstraints(
         _ node: Node, typeId: String
     ) -> [TypeReference] {

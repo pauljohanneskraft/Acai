@@ -1,7 +1,6 @@
 import ArgumentParser
 
-/// The numeric traversal limits shared by the `diagram` and `image` commands. `--max-depth` and
-/// `--max-states` must be at least 1 and are capped to prevent a runaway traversal.
+/// Shared by the `diagram` and `image` commands; capped to prevent a runaway traversal.
 struct DiagramLimits {
     var depthRange = 1...100
     var statesRange = 1...1000

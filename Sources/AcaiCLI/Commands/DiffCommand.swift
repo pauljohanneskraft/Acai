@@ -122,8 +122,7 @@ extension AcaiCommand {
             }
         }
 
-        /// Dispatches to the requested diagram type's delta exporter, which diffs both revisions and
-        /// renders the union with added=green/removed=red/changed=amber.
+        /// Renders the union of both revisions with added=green/removed=red/changed=amber.
         private func deltaDiagram(old: CodeArtifact, new: CodeArtifact, format: FormatOption) throws -> String {
             let diagramFormat = format.diagramFormat
             if let sequenceFrom {

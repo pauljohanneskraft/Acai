@@ -8,7 +8,6 @@ import AcaiLibrary
 // model from both revisions, diffs them, and renders the union with added=green/removed=red/
 // changed=amber colour overrides.
 
-/// Class-diagram delta: the union artifact with each type/edge tinted by its diff status.
 struct ClassDeltaExporter {
     func render(old: CodeArtifact, new: CodeArtifact, format: DiagramFormat) -> String {
         let differ = ArtifactDiffer()
@@ -31,7 +30,6 @@ struct ClassDeltaExporter {
     }
 }
 
-/// Sequence-diagram delta traced from an entry point.
 struct SequenceDeltaExporter {
     let request: SequenceDiagramRequest
 
@@ -47,7 +45,6 @@ struct SequenceDeltaExporter {
     }
 }
 
-/// Value-flow state-diagram delta for a variable.
 struct StateDeltaExporter {
     let request: StateDiagramRequest
 
@@ -63,7 +60,6 @@ struct StateDeltaExporter {
     }
 }
 
-/// Package/module dependency-diagram delta.
 struct PackageDeltaExporter {
     func render(old: CodeArtifact, new: CodeArtifact, format: DiagramFormat) -> String {
         let request = PackageDiagramRequest()
@@ -81,7 +77,6 @@ struct PackageDeltaExporter {
     }
 }
 
-/// Static call-graph delta.
 struct CallGraphDeltaExporter {
     let request: CallGraphRequest
 

@@ -11,7 +11,6 @@ public struct StronglyConnectedComponents: Sendable {
         self.adjacency = adjacency
     }
 
-    /// The non-trivial strongly-connected components — i.e. the dependency cycles.
     public var cycles: [Set<String>] {
         var search = Search(adjacency: adjacency)
         return search.run()

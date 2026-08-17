@@ -1,12 +1,6 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Walks a tree-sitter Python AST and produces AcaiCore model types.
-///
-/// Conforms to ``CallSiteResolving`` and ``AssignmentResolving`` (sequence-diagram support) on top of
-/// the shared ``TreeSitterExtracting`` infrastructure. Python's distinguishing trait: instance fields
-/// are not declared in the class body — they appear as `self.x = …` inside methods — so the member
-/// extractor synthesises properties from those assignments (see `PythonExtractor+Members`).
 struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     let context: SourceFileContext
 
@@ -16,9 +10,6 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     var globalVariables: [Member] = []
     var currentNamespace: String?
     var declaredTypeNames: Set<String> = []
-    /// Call sites made by bare top-level statements (a script's `main()` call, or the idiomatic
-    /// `if __name__ == "__main__":` block), collected during `walkSourceFile` and attached to a
-    /// synthetic always-reachable freestanding member.
     var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String) {
@@ -46,9 +37,8 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
 
     // MARK: - Access Level (naming convention)
 
-    /// Python has no access keywords; visibility is conveyed by leading underscores.
-    /// Dunders (`__init__`) are public; `__x` (not a dunder) → private (name-mangled); `_x` →
-    /// protected; plain names → public.
+    /// Python has no access keywords; visibility is conveyed by leading underscores (dunders are
+    /// public, `__x` is name-mangled private, `_x` is protected).
     func accessLevel(forName name: String) -> AccessLevel {
         if name.hasPrefix("__") && name.hasSuffix("__") { return .public }
         if name.hasPrefix("__") { return .private }

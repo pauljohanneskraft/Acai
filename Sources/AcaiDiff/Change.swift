@@ -1,4 +1,3 @@
-/// A before/after pair for a single scalar that changed.
 public struct Change<T: Codable & Equatable & Sendable>: Codable, Equatable, Sendable {
     public var before: T
     public var after: T
@@ -8,8 +7,8 @@ public struct Change<T: Codable & Equatable & Sendable>: Codable, Equatable, Sen
         self.after = after
     }
 
-    /// A change only when both sides exist and actually differ; `nil` otherwise (equal, or absent
-    /// on one side). Lets a metric delta read `Change(from: old?.x, to: new?.x)`.
+    /// `nil` when either side is absent or the two are equal, so a metric delta can read
+    /// `Change(from: old?.x, to: new?.x)` and only get a value when something actually moved.
     public init?(from before: T?, to after: T?) {
         guard let before, let after, before != after else { return nil }
         self.init(before: before, after: after)

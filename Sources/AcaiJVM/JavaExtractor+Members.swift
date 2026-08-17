@@ -61,7 +61,6 @@ extension JavaExtractor {
 
     // MARK: - Unified Body Dispatch
 
-    /// Roles for dispatching child nodes within a type body.
     private enum BodyChildRole {
         case method
         case constructor
@@ -73,7 +72,6 @@ extension JavaExtractor {
         case annotationTypeElement
     }
 
-    /// Dispatch table for class/record bodies.
     private static let classBodyDispatch: [String: BodyChildRole] = [
         "method_declaration": .method,
         "constructor_declaration": .constructor,
@@ -87,7 +85,6 @@ extension JavaExtractor {
         "annotation_type_declaration": .nestedType
     ]
 
-    /// Dispatch table for interface bodies.
     private static let interfaceBodyDispatch: [String: BodyChildRole] = [
         "method_declaration": .method,
         "constant_declaration": .field,
@@ -99,7 +96,6 @@ extension JavaExtractor {
         "annotation_type_declaration": .nestedType
     ]
 
-    /// Dispatch table for enum bodies.
     private static let enumBodyDispatch: [String: BodyChildRole] = [
         "enum_constant": .enumConstant,
         "enum_body_declarations": .enumBodyDeclarations,
@@ -112,7 +108,6 @@ extension JavaExtractor {
         "interface_declaration": .nestedType
     ]
 
-    /// Dispatch table for annotation type bodies.
     private static let annotationTypeBodyDispatch: [String: BodyChildRole] = [
         "annotation_type_element_declaration": .annotationTypeElement,
         "field_declaration": .field,
@@ -126,7 +121,6 @@ extension JavaExtractor {
         if let value { array.append(value) }
     }
 
-    /// Bundles the mutable accumulator state passed through body extraction.
     struct BodyExtractionContext {
         var members: [Member] = []
         var nestedTypes: [TypeDeclaration] = []
@@ -135,7 +129,6 @@ extension JavaExtractor {
         var scope: CallSiteScope = CallSiteScope()
     }
 
-    /// Iterates over body children, dispatching each to the appropriate handler via the dispatch table.
     private mutating func extractBodyMembers(
         _ node: Node,
         context: inout BodyExtractionContext,
@@ -147,7 +140,6 @@ extension JavaExtractor {
         }
     }
 
-    /// Executes the handler for a single body child based on its role.
     private mutating func dispatchBodyChild(
         _ role: BodyChildRole,
         child: Node,

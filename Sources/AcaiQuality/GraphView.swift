@@ -8,7 +8,6 @@ import AcaiCore
 /// the caller (the CLI resolves them from the artifact's `LanguageConfiguration`), so this names no
 /// language or framework.
 public struct GraphView: Sendable {
-    /// A type node enriched with everything the rule selectors and budgets need.
     public struct Node: Sendable {
         public var id: String
         public var qualifiedName: String

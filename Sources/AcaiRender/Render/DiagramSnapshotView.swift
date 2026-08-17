@@ -3,16 +3,14 @@ import AcaiCore
 import AcaiDiff
 
 /// A static, non-interactive rendering of a generated class diagram, used to produce image
-/// exports. It composes the same `GroupingBoxView` / `TypeNodeView` / `RelationshipEdgeView`
-/// the live canvas uses — but without gestures, selection, zoom or the infinite canvas — so
-/// snapshots match what the app shows.
+/// exports. Composes the same `GroupingBoxView` / `TypeNodeView` / `RelationshipEdgeView` the
+/// live canvas uses, but without gestures, selection, zoom or the infinite canvas.
 ///
 /// All coordinates are expected pre-normalized to the content's own space (top-left at the
 /// origin); the view sizes itself to `contentSize` plus a uniform `padding`.
 public struct DiagramSnapshotView: View {
     let nodes: [GeneratedDiagramNode]
     let edges: [GeneratedDiagramEdge]
-    /// Node center positions, normalized so the content's top-left sits at the origin.
     let positions: [String: CGPoint]
     let sizes: [String: CGSize]
     let groupingBoxes: [DiagramLayoutModel.GroupingBox]

@@ -2,11 +2,8 @@
 /// `~`, unchanged un-badged. Mirrors `DeltaEdgeColors` — a plain value carrying no diff logic — so a
 /// node's changed status reads from its shape/glyph alone, not only from its tint.
 public struct DeltaBadgeGlyphs: Sendable {
-    /// Added in the new revision.
     public let added: String
-    /// Removed since the old revision.
     public let removed: String
-    /// Present in both but changed (kind/access/members).
     public let changed: String
 
     public init(added: String = "+", removed: String = "−", changed: String = "~") {
@@ -15,7 +12,6 @@ public struct DeltaBadgeGlyphs: Sendable {
         self.changed = changed
     }
 
-    /// The conventional `+`/`−`/`~` glyphs.
     public static let standard = DeltaBadgeGlyphs()
 
     /// The glyph for a status keyword (`added`/`removed`/`changed`), or `nil` for anything else

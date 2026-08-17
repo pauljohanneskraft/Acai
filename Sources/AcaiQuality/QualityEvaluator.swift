@@ -21,6 +21,7 @@ public struct QualityEvaluator: Sendable {
     public func evaluate(_ rawArtifact: CodeArtifact) -> QualityReport {
         // Machine-generated types are dropped before evaluation unless the rules opt in — so budgets
         // and cycles reflect only hand-written code. Idempotent, so a pre-filtered artifact is fine.
+        // Idempotent, so a pre-filtered artifact is fine.
         let artifact = rules.includeGeneratedTypes
             ? rawArtifact
             : rawArtifact.filteringGeneratedTypes(using: languageResolver)
@@ -33,8 +34,7 @@ public struct QualityEvaluator: Sendable {
         let typesByID = Dictionary(
             artifact.flattened().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
-        // The structural rule findings (forbidden deps, cycles, layering, contracts) in a stable,
-        // deterministic order — CI diffs shouldn't churn on reordering.
+        // Deterministic order — CI diffs shouldn't churn on reordering.
         var structural: [Violation] = []
         structural += forbiddenViolations(graph)
         if let cycles = rules.cycles {
@@ -49,8 +49,6 @@ public struct QualityEvaluator: Sendable {
                 < ($1.ruleKind, $1.subject, $1.source?.filePath ?? "", $1.source?.line ?? 0)
         }
 
-        // Budget findings (the merged code smells) lead, ranked worst-first, so the report opens with
-        // the highest-leverage refactors; the structural findings follow in deterministic order.
         let budgets = budgetViolations(graph, typesByID: typesByID)
         return QualityReport(violations: budgets + structural, checkedRuleCount: rules.ruleCount)
     }
@@ -100,7 +98,6 @@ public struct QualityEvaluator: Sendable {
     // MARK: - Layering
 
     private func layeringViolations(_ graph: GraphView, rule: LayerRule) -> [Violation] {
-        // Assign each type the index of the first layer whose selector matches it.
         var layerOf: [String: Int] = [:]
         for node in graph.nodes {
             if let index = rule.layers.firstIndex(where: { $0.selector.matches(node) }) {
@@ -156,9 +153,8 @@ public struct QualityEvaluator: Sendable {
 
     // MARK: - Budgets
 
-    /// Budget breaches (the merged code smells), ranked **worst-first** by how far each value
-    /// overshoots its bound relative to the bound — so the report leads with the highest-leverage
-    /// refactors. Ties break by subject for stable output.
+    /// Ranked **worst-first** by how far each value overshoots its bound relative to the bound, so
+    /// the report leads with the highest-leverage refactors. Ties break by subject for stable output.
     private func budgetViolations(_ graph: GraphView, typesByID: [String: TypeDeclaration]) -> [Violation] {
         let scored = rules.budgets.flatMap { budget in
             budget.metric.isModuleScoped
@@ -193,8 +189,8 @@ public struct QualityEvaluator: Sendable {
         }
     }
 
-    /// For a low-cohesion (`lcom`) budget breach, appends the actual method clusters so the report
-    /// says *how* to split the type, not just that it should be. A no-op for every other metric.
+    /// For a low-cohesion (`lcom`) budget breach, appends the actual method clusters. A no-op for
+    /// every other metric.
     private func enrichWithCohesionPartition(
         _ violation: Violation, budget: MetricBudget, typesByID: [String: TypeDeclaration]
     ) -> Violation {
@@ -211,9 +207,7 @@ public struct QualityEvaluator: Sendable {
 
 private extension MetricBudget {
     /// A breach when `value` falls outside `[min, max]`, else `nil`, paired with its *severity* — how
-    /// far the value overshoots its bound relative to the bound — so the findings can be ranked
-    /// worst-first. The message carries the metric's `smellHint` so a breach reads as actionable
-    /// remediation, not just a crossed ceiling.
+    /// far the value overshoots its bound relative to the bound — so findings can be ranked worst-first.
     func breach(value: Double, subject: String, source: SourceLocation?) -> (severity: Double, violation: Violation)? {
         var problem: String?
         var severity = 0.0

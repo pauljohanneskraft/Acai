@@ -3,9 +3,6 @@ import AcaiDiagram
 import AcaiLibrary
 
 extension AcaiCommand {
-    /// Three cuts of the one static call graph, selected by `--mode`: `metrics` (per-method
-    /// fan-in/out, recursion, coverage), `cycles` (method-level mutual-recursion clusters), and
-    /// `deadcode` (uncalled, non-entry-point candidates).
     struct CallGraph: ParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "callgraph",
@@ -42,7 +39,7 @@ extension AcaiCommand {
 
         mutating func validate() throws {
             try artifactSource.validate()
-            // Surface a malformed --scope as a usage error (exit 64) rather than a crash.
+            // Convert a malformed --scope into a usage error (exit 64) instead of letting it crash later.
             do {
                 _ = try CallGraphScopeOption(raw: scope).resolved()
             } catch let error as DiagramRequestError {

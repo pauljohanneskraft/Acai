@@ -3,17 +3,15 @@ import AcaiTreeSitter
 // import TreeSitterJavaScript
 import TreeSitterTypeScript
 
-/// Unified parser for both JavaScript and TypeScript (including JSX/TSX).
-/// TypeScript is treated as a superset of JavaScript. When `isTypeScript` is true,
-/// type annotations, interfaces, type aliases, and enums are parsed.
-/// When false, those constructs are skipped/ignored.
+/// Unified parser for both JavaScript and TypeScript (including JSX/TSX). When `isTypeScript` is
+/// true, type annotations, interfaces, type aliases, and enums are parsed; when false those
+/// constructs are skipped.
 public struct JSCodeParser: CodeParser {
     public let isTypeScript: Bool
 
     public var language: CodeArtifact.SourceLanguage { isTypeScript ? .typeScript : .javaScript }
     public var fileExtensions: [String] { isTypeScript ? ["ts", "tsx"] : ["js", "jsx", "mjs"] }
 
-    /// Creates a parser for JavaScript (`isTypeScript: false`) or TypeScript (`isTypeScript: true`).
     public init(isTypeScript: Bool = true) {
         self.isTypeScript = isTypeScript
     }

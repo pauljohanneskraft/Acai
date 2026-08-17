@@ -28,7 +28,6 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         case featureEnvyMethods
         /// Data-class / anemic score `properties / (properties + methods)` (1 = pure data).
         case dataClassScore
-        /// Depth of the nested-type tree rooted at the type.
         case nestingDepth
         /// Highest cyclomatic complexity of any single method — the one gnarly method WMC hides.
         case maxCyclomaticComplexity
@@ -46,7 +45,6 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         }
     }
 
-    /// Which modules/types this budget applies to.
     public var target: Selector
     public var metric: Metric
     public var max: Double?
@@ -67,10 +65,8 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         self.message = message
     }
 
-    /// The built-in code-smell budgets: sensible starting thresholds for the type-scoped smell
-    /// metrics, applied whenever a project runs the quality check without its own `quality.yml`. Each
-    /// is a whole-codebase budget, so a project graduates the ones it cares about into its config
-    /// unchanged.
+    /// Sensible starting thresholds for the type-scoped smell metrics, applied whenever a project
+    /// runs the quality check without its own `quality.yml`.
     /// `mutablePublicState` is deliberately *not* here: publicly-settable stored properties are
     /// idiomatic in value types, so it floods struct-heavy code as a default. Gate it explicitly via a
     /// `quality.yml` when a project wants it.
@@ -96,13 +92,11 @@ public struct MetricBudget: Codable, Equatable, Sendable {
 }
 
 extension MetricBudget.Metric {
-    /// This metric's value on a per-type metric row, or `nil` when the metric is module-scoped. A
-    /// lookup table rather than a large `switch` keeps the accessor within the complexity budget.
+    /// A lookup table rather than a large `switch` keeps the accessor within the complexity budget.
     func value(in type: CodeMetrics.TypeMetric) -> Double? {
         Self.typeAccessors[self]?(type)
     }
 
-    /// This metric's value on a per-module coupling row, or `nil` when the metric is type-scoped.
     func value(in module: CodeMetrics.ModuleCoupling) -> Double? {
         Self.moduleAccessors[self]?(module)
     }
@@ -131,8 +125,7 @@ extension MetricBudget.Metric {
         .publicApiSurface: { Double($0.publicMemberCount) }
     ]
 
-    /// A one-line remediation hint for this metric when it reads as a smell — appended to a budget
-    /// breach so the report says how to fix it, not just that a ceiling was crossed.
+    /// Appended to a budget breach so the report says how to fix it, not just that a ceiling was crossed.
     var smellHint: String {
         switch self {
         case .maxParameters:

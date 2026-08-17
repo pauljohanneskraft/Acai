@@ -55,9 +55,8 @@ extension CFamilyExtractor {
         attachBodies(pendingBodies, to: &members)
     }
 
-    /// Resolves and attaches call sites + assignments for the recorded method bodies, using a scope
-    /// built from the type's fully-extracted members (so all stored properties are known) plus the
-    /// current file's known type names.
+    /// Resolves and attaches call sites + assignments once the type's full member set is known, so
+    /// every stored property is available to the scope.
     private func attachBodies(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
         guard !pendingBodies.isEmpty else { return }
         let scope = CallSiteScope(
@@ -149,8 +148,6 @@ extension CFamilyExtractor {
         }
     }
 
-    /// Builds a member for a free `function_definition` (or `nil` if the declarator is not a
-    /// function), resolving the body's call sites + assignments against the file's known functions.
     mutating func extractFunctionDefinition(_ node: Node, defaultAccess: AccessLevel) -> Member? {
         guard var member = functionMember(from: node, ownerName: nil, access: defaultAccess) else {
             return nil

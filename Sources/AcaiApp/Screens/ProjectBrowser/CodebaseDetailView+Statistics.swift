@@ -22,7 +22,6 @@ extension CodebaseDetailView {
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
-    /// Mirrors the `Int` overload above, for ratio/mean metrics.
     func typeDetail(
         _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>, format: (Double) -> String

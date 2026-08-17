@@ -23,7 +23,6 @@ public struct SequenceEntryPoint: Equatable, Sendable {
         self.methodName = methodName
     }
 
-    /// The `(typeName, methodName)` pair `SequenceDiagramBuilder` expects.
     public var components: (typeName: String, methodName: String) {
         (typeName, methodName)
     }

@@ -3,12 +3,11 @@ import Foundation
 import SwiftUI
 import AcaiDiagram
 
-// Per-diagram-kind PNG renderers. Each builds its own layout model + snapshot view (the same views
-// the app canvas draws) and hands it to the shared `DiagramImageRenderer` engine, which stays
-// model-agnostic.
+// Per-diagram-kind PNG renderers. Each builds its own layout model + snapshot view and hands it
+// to the shared `DiagramImageRenderer` engine, which stays model-agnostic.
 
-/// Renders a `SequenceDiagram` to PNG. `positionOverrides` (participant-id → horizontal centre)
-/// reproduce a hand-spread layout; pass `[:]` for the default arrangement.
+/// `positionOverrides` (participant-id → horizontal centre) reproduce a hand-spread layout; pass
+/// `[:]` for the default arrangement.
 @MainActor
 public struct SequenceImageRenderer {
     private let engine = DiagramImageRenderer()
@@ -29,8 +28,8 @@ public struct SequenceImageRenderer {
     }
 }
 
-/// Renders a `StateDiagram` to PNG. `positionOverrides` (state-id → centre) reproduce a
-/// hand-arranged layout; pass `[:]` for the default arrangement.
+/// `positionOverrides` (state-id → centre) reproduce a hand-arranged layout; pass `[:]` for the
+/// default arrangement.
 @MainActor
 public struct StateImageRenderer {
     private let engine = DiagramImageRenderer()
@@ -51,7 +50,6 @@ public struct StateImageRenderer {
     }
 }
 
-/// Renders a `PackageDiagram` to PNG via the shared `PackageLayoutModel` + `PackageDiagramSnapshotView`.
 @MainActor
 public struct PackageImageRenderer {
     private let engine = DiagramImageRenderer()
@@ -73,7 +71,6 @@ public struct PackageImageRenderer {
     }
 }
 
-/// Renders a `CallGraph` to PNG via the shared `CallGraphLayoutModel` + `CallGraphSnapshotView`.
 @MainActor
 public struct CallGraphImageRenderer {
     private let engine = DiagramImageRenderer()

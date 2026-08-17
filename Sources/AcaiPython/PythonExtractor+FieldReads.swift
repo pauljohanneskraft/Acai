@@ -1,8 +1,7 @@
 import AcaiTreeSitter
 
 extension PythonExtractor {
-    /// Field-read resolver for Python: bare names and the `attribute` of a `self.<attr>` access are
-    /// both `identifier` nodes. Constructed inline (the extractor stays stateless).
+    /// Bare names and the `attribute` of a `self.<attr>` access are both `identifier` nodes.
     var fieldReadResolver: FieldReadResolver {
         FieldReadResolver(context: context, identifierTypes: ["identifier"])
     }

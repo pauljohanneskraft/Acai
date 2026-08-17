@@ -1,14 +1,10 @@
 import SwiftUI
 import AcaiDiagram
 
-/// A single state-machine node, styled per its UML kind: filled circle (initial),
-/// bullseye (final), diamond (choice), bar (fork/join), rounded rectangle with the
-/// title and optional `entry/exit/do` rows (normal/composite — composites render
-/// flat, without nested substates, in this version).
+/// Composites render flat, without nested substates, in this version.
 ///
-/// Shared by the generated state-diagram canvas, the static snapshot, and the
-/// freeform-diagram editor so all three look identical. Fixed light fills with
-/// explicit ink text, matching `TypeNodeView`'s visual language.
+/// Fixed light fills with explicit ink text, matching `TypeNodeView`'s visual language, so it
+/// stays readable in dark mode.
 public struct StateNodeView: View {
     let name: String
     let kind: StateDiagram.State.Kind
@@ -115,7 +111,6 @@ public struct StateNodeView: View {
     }
 }
 
-/// A diamond (rotated square) inscribed in the view's bounds.
 public struct DiamondShape: Shape {
     public init() {}
 
@@ -132,9 +127,7 @@ public struct DiamondShape: Shape {
 
 // MARK: - Ensemble (transition edges)
 
-/// The transition arrows of a state diagram, drawn from a pre-computed
-/// `StateLayoutModel`. Callers (snapshot, generated canvas) draw their own
-/// node views on top so selection/drag behaviour stays caller-specific.
+/// Callers draw their own node views on top so selection/drag behaviour stays caller-specific.
 public struct StateEnsembleView: View {
     let layout: StateLayoutModel
     /// Optional per-transition delta tint, keyed on the edge. `nil` leaves the theme colour, so the
@@ -169,9 +162,6 @@ public struct StateEnsembleView: View {
 
 // MARK: - Snapshot
 
-/// A static rendering of a `StateDiagram` from a pre-computed `StateLayoutModel`:
-/// transition arrows plus state nodes. Shared by the CLI image export and "save
-/// as image" — mirroring `SequenceDiagramSnapshotView`.
 public struct StateDiagramSnapshotView: View {
     let layout: StateLayoutModel
     let padding: CGFloat

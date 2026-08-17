@@ -5,7 +5,6 @@ public struct SequenceDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Participant
 
-    /// A lifeline in the sequence diagram.
     public struct Participant: Codable, Hashable, Sendable {
         public enum Kind: String, Codable, Hashable, Sendable, CaseIterable {
             case actor
@@ -47,7 +46,6 @@ public struct SequenceDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Message
 
-    /// A communication between two participants at a specific point in time.
     public struct Message: Codable, Hashable, Sendable {
         public enum Kind: String, Codable, Hashable, Sendable, CaseIterable {
             case synchronous    /// Filled arrowhead – caller blocks until reply
@@ -57,11 +55,10 @@ public struct SequenceDiagram: Codable, Hashable, Sendable {
             case destroy        /// Object destruction (`<<destroy>>`)
         }
 
-        public var from: String  // participant id
-        public var to: String    // participant id
+        public var from: String
+        public var to: String
         public var label: String?
         public var kind: Kind
-        /// Determines the top-to-bottom order in which this message is drawn.
         public var order: Int
 
         public init(

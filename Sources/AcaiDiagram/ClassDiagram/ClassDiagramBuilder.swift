@@ -5,10 +5,6 @@ import AcaiCore
 /// A value you instantiate with the options and ask to `build(from:)` — deliberately not a
 /// `CodeArtifact.classDiagram(...)` extension, so the agnostic `CodeArtifact` never references the
 /// diagram layer back.
-///
-/// Building runs AcaiCore enrichment once (extension resolution, name→id resolution, inferred
-/// composition/aggregation/dependency edges, external detection, optional single-type focus).
-/// Enrichment is idempotent, so building from an already-enriched artifact is a no-op.
 public struct ClassDiagramBuilder: Sendable {
     private let options: ClassDiagramOptions
 

@@ -1,12 +1,6 @@
 import Foundation
 
-/// Last-resort detector used when no recognised build system is found.
-///
-/// Scans the project root for all known source file extensions and returns
-/// a `SourceSpec` for each language that has at least one matching file.
 public struct FallbackDetector: BuildSystemDetector {
-
-    /// The parsers used to resolve file extensions for each language.
     public let parsers: [any CodeParser]
 
     public init(parsers: [any CodeParser]) {

@@ -7,21 +7,15 @@ import AcaiCore
 /// Rule kinds: forbidden dependencies, dependency cycles, metric budgets (which subsume the code
 /// smells), ordered layers, and stereotype contracts.
 public struct QualityRules: Codable, Equatable, Sendable {
-    /// "`from` must not depend on `to`" rules.
     public var forbidden: [DependencyRule]
-    /// Optional cycle detection over modules (or types).
     public var cycles: CycleRule?
-    /// Numeric guardrails on coupling/OO metrics.
     public var budgets: [MetricBudget]
-    /// Optional ordered-layer rule: dependencies may only flow downward.
     public var layers: LayerRule?
-    /// "Only `only`-matching types may depend into `into`" contracts.
     public var contracts: [StereotypeContract]
 
-    /// Whether machine-generated types are analysed. `false` (the default) drops each language's
-    /// generated types before metrics/smells/cycles are evaluated, so the report reflects only
-    /// hand-written code; set `true` in the rules file to include generated code. Mirrors the CLI's
-    /// `--include-generated` / MCP `includeGenerated` for the tools that aren't rules-file driven.
+    /// `false` (the default) drops each language's generated types before metrics/smells/cycles are
+    /// evaluated. Mirrors the CLI's `--include-generated` / MCP `includeGenerated` for the tools that
+    /// aren't rules-file driven.
     public var includeGeneratedTypes: Bool
 
     public init(
@@ -40,8 +34,8 @@ public struct QualityRules: Codable, Equatable, Sendable {
         self.includeGeneratedTypes = includeGeneratedTypes
     }
 
-    /// Lenient decoding so a rules file may omit any section it doesn't use (an absent `forbidden`/
-    /// `budgets` is empty, not a decoding error).
+    /// A rules file may omit any section it doesn't use (an absent `forbidden`/`budgets` is empty,
+    /// not a decoding error).
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         forbidden = try container.decodeIfPresent([DependencyRule].self, forKey: .forbidden) ?? []
@@ -58,8 +52,8 @@ public struct QualityRules: Codable, Equatable, Sendable {
         forbidden.count + (cycles == nil ? 0 : 1) + budgets.count + (layers == nil ? 0 : 1) + contracts.count
     }
 
-    /// The rules applied when a project runs the quality check without its own `quality.yml`: the
-    /// curated code-smell budgets. So a no-config `acai quality` still flags god classes, feature envy,
-    /// long parameter lists, low cohesion, and the like out of the box.
+    /// Applied when a project runs the quality check without its own `quality.yml`, so a no-config
+    /// `acai quality` still flags god classes, feature envy, long parameter lists, low cohesion, and
+    /// the like out of the box.
     public static let defaultQuality = QualityRules(budgets: MetricBudget.defaultSmellBudgets)
 }

@@ -1,18 +1,14 @@
 import CoreGraphics
 import AcaiCore
 
-/// Orchestrates a layered graph layout algorithm to produce clean, hierarchical
-/// node positions for class diagrams.
-///
-/// For typical codebases where many types are unrelated by inheritance, this
-/// engine groups types by directory, lays out each connected component
-/// separately, then arranges the component clusters in a grid.
+/// For typical codebases where many types are unrelated by inheritance, this engine groups types
+/// by directory, lays out each connected component separately, then arranges the component
+/// clusters in a grid.
 public struct SugiyamaLayoutEngine: Sendable {
 
     public struct NodeInput: Sendable {
         let id: String
         let size: CGSize
-        /// Directory-based group for clustering unrelated types.
         let group: String?
 
         public init(id: String, size: CGSize, group: String?) {
@@ -44,10 +40,6 @@ public struct SugiyamaLayoutEngine: Sendable {
 
     public init() {}
 
-    /// Runs the full layout pipeline:
-    /// 1. Find connected components (using all edge types).
-    /// 2. Within each component, run Sugiyama (layer -> order -> coordinate).
-    /// 3. Arrange components in a grid, respecting directory grouping.
     public func layout(nodes: [NodeInput], edges: [EdgeInput]) -> LayoutResult {
         guard !nodes.isEmpty else { return LayoutResult(positions: [:]) }
 
@@ -142,7 +134,6 @@ public struct SugiyamaLayoutEngine: Sendable {
         return LayoutResult(positions: placeBlocksInGrid(blocks))
     }
 
-    /// Shifts a block's positions so its top-left node corner sits at `(padding, padding)`.
     private func normalizeToOrigin(
         _ positions: [String: CGPoint],
         nodeSizes: [String: CGSize],

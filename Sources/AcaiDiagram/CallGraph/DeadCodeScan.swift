@@ -10,7 +10,6 @@ import AcaiCore
 /// `override`, protocol/interface requirements) are applied here; the language-specific test/framework
 /// markers come from the injected configuration, so this names no language.
 public struct DeadCodeScan: Sendable {
-    /// A method that might be unused.
     public struct Candidate: Codable, Hashable, Sendable {
         public var id: String
         public var location: SourceLocation?

@@ -3,7 +3,6 @@ public struct StateDiagram: Codable, Hashable, Sendable {
 
     // MARK: - State
 
-    /// A configuration the system can occupy.
     public struct State: Codable, Hashable, Sendable {
         public enum Kind: String, Codable, Hashable, Sendable, CaseIterable {
             case initial    /// Filled black circle – entry point
@@ -45,10 +44,9 @@ public struct StateDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Transition
 
-    /// A directed edge triggered by an event, optionally guarded and producing an action.
     public struct Transition: Codable, Hashable, Sendable {
-        public var from: String   // state id
-        public var to: String     // state id
+        public var from: String
+        public var to: String
         /// The triggering event (shown before the guard).
         public var event: String?
         /// Boolean condition in `[brackets]`.

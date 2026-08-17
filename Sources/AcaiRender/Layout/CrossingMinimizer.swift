@@ -1,12 +1,10 @@
 /// Phase 2 of Sugiyama layout: orders nodes within each layer to minimize edge crossings between
-/// adjacent layers using the barycenter heuristic. A value you instantiate with the (bidirectional)
-/// adjacency and ask to `minimize(_:)`.
+/// adjacent layers using the barycenter heuristic.
 struct CrossingMinimizer {
     let adjacency: [String: Set<String>]
     /// Number of sweep passes (alternating top-down and bottom-up).
     var iterations = 24
 
-    /// Reorders nodes within `layers` to reduce crossings, returning the reordered layers.
     func minimize(_ layers: [[String]]) -> [[String]] {
         guard layers.count > 1 else { return layers }
         var result = layers
@@ -38,7 +36,6 @@ struct CrossingMinimizer {
         return result
     }
 
-    /// Reorders a single layer by the barycenter of each node's neighbours in the reference layer.
     private func reorder(
         _ layer: [String], referenceLayer: [String], referencePositions: [String: Int]
     ) -> [String] {
@@ -49,7 +46,6 @@ struct CrossingMinimizer {
         }
     }
 
-    /// The average position of a node's neighbours in the reference layer.
     private func barycenter(of nodeID: String, in referenceSet: Set<String>, positions: [String: Int]) -> Double {
         let neighbors = (adjacency[nodeID] ?? []).filter { referenceSet.contains($0) }
         guard !neighbors.isEmpty else { return Double.greatestFiniteMagnitude }

@@ -9,21 +9,17 @@ import AcaiCore
 /// parser handles an ambiguous `.h` header is decided per file by `CCodeParser`, not here.
 public struct CFamilyBuildSystemDetector: BuildSystemDetector {
 
-    /// File names (relative to the project root) whose presence signals this build system.
     public let indicatorFiles: [String]
 
     public init(indicatorFiles: [String]) {
         self.indicatorFiles = indicatorFiles
     }
 
-    /// Preset for CMake projects.
     public static let cmake = CFamilyBuildSystemDetector(indicatorFiles: ["CMakeLists.txt"])
 
-    /// Preset for Make projects.
     public static let make = CFamilyBuildSystemDetector(
         indicatorFiles: ["Makefile", "makefile", "GNUmakefile"])
 
-    /// Preset for Meson projects.
     public static let meson = CFamilyBuildSystemDetector(indicatorFiles: ["meson.build"])
 
     public func isPresent(at root: URL) -> Bool {

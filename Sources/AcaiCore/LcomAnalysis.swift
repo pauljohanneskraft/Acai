@@ -72,8 +72,6 @@ public struct LcomAnalysis {
         }
     }
 
-    /// Whether a call is dispatched on the type itself: a `self`-dispatch or an explicit receiver of
-    /// the type's own name. Free-function and unresolved calls are not self.
     private func callsSelf(_ call: CallSite) -> Bool {
         switch call.receiver {
         case .selfDispatch:
@@ -107,13 +105,11 @@ private struct DisjointSet {
         if left != right { parent[left] = right }
     }
 
-    /// The number of distinct components across all nodes.
     var componentCount: Int {
         var roots = self
         return Set((0..<parent.count).map { roots.root(of: $0) }).count
     }
 
-    /// The nodes grouped by their connected component (one inner array per component).
     mutating func groups() -> [[Int]] {
         var byRoot: [Int: [Int]] = [:]
         for node in 0..<parent.count { byRoot[root(of: node), default: []].append(node) }

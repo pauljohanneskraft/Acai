@@ -1,8 +1,8 @@
 import AcaiCore
 
-/// Finds dependency cycles in a `CodeArtifact`, at module or type scope, over the same graph the
-/// quality rules see. Module adjacency is provenance-aware (via `ModuleAttribution`), so a
-/// cross-module extension does not manufacture a phantom upward edge / false cycle.
+/// Finds dependency cycles in a `CodeArtifact`, at module or type scope. Module adjacency is
+/// provenance-aware (via `ModuleAttribution`), so a cross-module extension does not manufacture a
+/// phantom upward edge / false cycle.
 ///
 /// Shared by `QualityEvaluator` (the `cycle` rule) and the `quality --explore` cycle listing so the
 /// two never disagree.
@@ -12,7 +12,7 @@ public struct CycleFinder: Sendable {
         case types
     }
 
-    /// One detected cycle: the strongly-connected component's members, sorted for determinism.
+    /// A strongly-connected component's members, sorted for determinism.
     public struct Cycle: Sendable, Equatable {
         public var scope: Scope
         public var members: [String]

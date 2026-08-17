@@ -1,7 +1,6 @@
 import Foundation
 
-/// Recursively sums the allocated on-disk size of every regular file under a directory —
-/// `GitRepository.onDiskSize`'s primitive, factored out since it's a plain filesystem concern with
+/// `GitRepository.onDiskSize`'s primitive, kept separate since it's plain filesystem logic with
 /// nothing git-specific about it.
 struct DirectoryTreeSize {
     let directory: URL

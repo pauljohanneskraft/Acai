@@ -14,8 +14,6 @@ public enum TypeKind: String, Codable, Equatable, Hashable, Sendable, CaseIterab
     case record
     case mixin
 
-    /// The UML stereotype label for this type kind, or `nil` for kinds
-    /// that have no stereotype (e.g. `.class`, `.extension`).
     public var stereotypeString: String? {
         switch self {
         case .protocol, .interface:

@@ -4,7 +4,6 @@ import AcaiDiff
 
 // MARK: - Display Data Types
 
-/// A pre-formatted member line for display in a UML type box.
 public struct MemberDisplayItem: Identifiable {
     public let id: String
     public let text: String
@@ -21,7 +20,6 @@ public struct MemberDisplayItem: Identifiable {
     }
 }
 
-/// A pre-formatted enum case line for display in a UML type box.
 public struct EnumCaseDisplayItem: Identifiable {
     public let id: String
     public let text: String
@@ -34,9 +32,6 @@ public struct EnumCaseDisplayItem: Identifiable {
 
 // MARK: - UML Type Box View
 
-/// Renders a code-type node as a three-compartment UML class box.
-/// Used by both generated diagrams (from `GeneratedDiagramNode`) and freeform diagrams
-/// (from `FreeformDiagram.Node` + `TypeNodeContent`).
 public struct TypeNodeView: View {
     let name: String
     let kind: TypeKind

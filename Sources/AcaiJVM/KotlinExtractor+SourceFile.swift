@@ -7,7 +7,6 @@ extension KotlinExtractor {
 
     // MARK: - Source File
 
-    /// Actions for top-level source-file child nodes.
     private enum SourceFileAction {
         case setPackage
         case classDeclaration
@@ -16,7 +15,6 @@ extension KotlinExtractor {
         case typeAlias
     }
 
-    /// Dispatch table mapping source-file child node types to actions.
     private static let sourceFileDispatch: [String: SourceFileAction] = [
         "package_header": .setPackage,
         "class_declaration": .classDeclaration,
@@ -31,7 +29,6 @@ extension KotlinExtractor {
         }
     }
 
-    /// Executes the action associated with a source-file child node.
     private mutating func performSourceFileAction(_ action: SourceFileAction, on node: Node) {
         switch action {
         case .setPackage:
@@ -69,7 +66,6 @@ extension KotlinExtractor {
 
     // MARK: - Modifiers
 
-    // Lookup tables for modifier extraction.
     private static let visibilityMap: [String: AccessLevel] = [
         "public": .public, "private": .private,
         "protected": .protected, "internal": .internal
@@ -95,11 +91,8 @@ extension KotlinExtractor {
         ]
     ]
 
-    /// Extracts modifier information from a `modifiers` node.
-    ///
-    /// In Kotlin every declaration without an explicit visibility modifier
-    /// is **public** by default, so the returned `accessLevel`
-    /// falls back to `.public`.
+    /// In Kotlin every declaration without an explicit visibility modifier is **public** by default,
+    /// so the returned `accessLevel` falls back to `.public`.
     func extractModifiers(
         _ node: Node?
     ) -> ModifierInfo {

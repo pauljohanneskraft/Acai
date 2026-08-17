@@ -11,21 +11,18 @@ public struct ModuleAttribution: Sendable {
     private let resolver: ModuleResolver
     private let idToModule: [String: String]
 
-    /// - Parameter idToModule: each in-codebase type id mapped to its declaring module (resolved
-    ///   from the type's own file). Edge endpoints not in the map are external and resolve to `nil`.
+    /// - Parameter idToModule: each in-codebase type id mapped to its declaring module. Edge
+    ///   endpoints not in the map are external and resolve to `nil`.
     public init(resolver: ModuleResolver = .standard, idToModule: [String: String]) {
         self.resolver = resolver
         self.idToModule = idToModule
     }
 
-    /// The module the edge originates from: its `origin` file's module when known (the declaring
-    /// extension/member), else the source type's home module.
     public func sourceModule(of edge: Relationship) -> String? {
         if let origin = edge.origin { return resolver.productName(forFilePath: origin) }
         return idToModule[edge.source]
     }
 
-    /// The module the edge points into: the target type's home module.
     public func targetModule(of edge: Relationship) -> String? {
         idToModule[edge.target]
     }

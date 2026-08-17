@@ -4,7 +4,6 @@ import Foundation
 /// ``TypeDeclaration/qualifiedName``). A distinct type from a bare simple name so the two identity
 /// formats can't be silently confused at a resolution boundary.
 public struct TypeID: Hashable, Sendable, Codable, CustomStringConvertible {
-    /// The canonical id string (a type's fully-qualified id).
     public let value: String
 
     public init(_ value: String) {
@@ -97,8 +96,6 @@ public struct TypeIdentityResolver: Sendable {
             .union(exactKeyCount.filter { $0.value > 1 }.keys)
     }
 
-    /// Resolves a referenced type name (generics stripped by the caller where relevant) to a
-    /// canonical identity.
     public func resolve(_ name: String) -> ResolvedTypeIdentity {
         if let id = idByName[name] { return .resolved(TypeID(id)) }
         if ambiguousSimpleNames.contains(name) { return .ambiguous(name) }

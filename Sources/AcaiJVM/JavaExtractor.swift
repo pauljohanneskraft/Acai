@@ -43,7 +43,6 @@ struct JavaExtractor: TreeSitterExtracting, CallSiteResolving {
         return buildArtifact(language: .java)
     }
 
-    /// Walks the tree collecting the name of every `enum_constant`.
     private func collectEnumConstantNames(from root: Node) -> Set<String> {
         var names: Set<String> = []
         func walk(_ node: Node) {

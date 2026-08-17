@@ -6,8 +6,7 @@ extension TypeKind: ExpressibleByArgument {}
 extension MemberKind: ExpressibleByArgument {}
 // `AccessLevel: ExpressibleByArgument` is already declared in ClassDiagramFlags.swift.
 
-/// The shared type-selector flags (`--module`, `--type`, `--kind`, …) that narrow which types a
-/// query-style command reports on. Every facet is optional and AND-combined by `Selector.matches`.
+/// Every facet is optional and AND-combined by `Selector.matches`.
 struct SelectorOption: ParsableArguments {
     @Option(name: .long, help: "Only types whose module/target matches this name or glob (*, ?).")
     var module: String?
@@ -33,7 +32,7 @@ struct SelectorOption: ParsableArguments {
     @Option(name: .long, help: "Only types nested at least this deep.")
     var minNesting: Int?
 
-    /// The engine `Selector` these flags describe. A selector with no flags set matches every type.
+    /// A selector with no flags set matches every type.
     var selector: Selector {
         Selector(
             module: module,

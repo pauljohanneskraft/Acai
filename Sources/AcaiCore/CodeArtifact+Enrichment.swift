@@ -3,8 +3,6 @@
 
 extension CodeArtifact {
 
-    /// Runs the full enrichment pipeline in order.
-    ///
     /// `resolver` supplies each type's language classification, resolved *per type* from its `sourceLanguage`
     /// so a polyglot artifact applies each language's own rules rather than one dominant config. Injected
     /// rather than hard-coded to stay language-agnostic; required, with no empty default. Idempotent.
@@ -231,8 +229,6 @@ extension CodeArtifact {
         return sameModuleMatches[0].id
     }
 
-    /// Merges `ext`'s members/nested types/inherited types into the (possibly nested) type with
-    /// `id`, recursing into `nestedTypes` to find it.
     private static func mergeExtensionMembers(
         _ ext: TypeDeclaration, intoTypeWithID id: String, into types: inout [TypeDeclaration]
     ) {
