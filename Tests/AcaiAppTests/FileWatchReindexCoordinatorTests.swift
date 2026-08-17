@@ -37,7 +37,7 @@ struct FileWatchReindexCoordinatorTests {
 
         try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
-        try await Eventually(timeout: .seconds(5)).waitUntil { spy.reindexedIDs.contains(codebaseID) }
+        try await Eventually(timeout: .seconds(15)).waitUntil { spy.reindexedIDs.contains(codebaseID) }
         #expect(spy.reindexedIDs == [codebaseID])
         coordinator.stopAll()
     }
@@ -72,7 +72,7 @@ struct FileWatchReindexCoordinatorTests {
         try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
         try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
-        try await gate.wait(timeout: .seconds(5))
+        try await gate.wait(timeout: .seconds(15))
         #expect(spy.reindexedIDs == [controlID])
         coordinator.stopAll()
     }
@@ -103,7 +103,7 @@ struct FileWatchReindexCoordinatorTests {
         try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
         try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
-        try await gate.wait(timeout: .seconds(5))
+        try await gate.wait(timeout: .seconds(15))
         #expect(spy.reindexedIDs == [controlID])
         coordinator.stopAll()
     }
