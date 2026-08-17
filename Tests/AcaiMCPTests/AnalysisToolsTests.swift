@@ -9,7 +9,6 @@ import Testing
 @Suite("Analysis Tools")
 struct AnalysisToolsTests {
 
-    /// The engine artifact for the fixture, computed directly, to compare tool output against.
     private func engineArtifact(_ dir: URL) throws -> CodeArtifact {
         try AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
     }
@@ -63,7 +62,6 @@ struct AnalysisToolsTests {
                 "acai_impact", on: .standard, path: dir, ["type": .string("Repository")])
             let object = try #require(value.objectValue)
             #expect(object["found"]?.boolValue == true)
-            // Service depends on Repository, so it appears in the blast radius.
             #expect((object["blastRadius"]?.intValue ?? 0) >= 1)
         }
     }
@@ -113,7 +111,7 @@ struct AnalysisToolsTests {
     @Test func refreshMustBeABooleanNotAString() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            // A stringified `"true"` used to silently read as `false` and serve a stale snapshot.
+            // A stringified `"true"` must not silently decode as `false` and serve a stale snapshot.
             await #expect(throws: (any Error).self) {
                 _ = try await MCPTestSupport.call(
                     "acai_metrics", on: .standard, path: dir, ["refresh": .string("true")])
@@ -148,7 +146,7 @@ struct AnalysisToolsTests {
             try "budgets: []\n".write(to: rules, atomically: true, encoding: .utf8)
             let value = try await MCPTestSupport.call(
                 "acai_quality", on: .standard, path: dir, ["rules": .string(rules.path)])
-            #expect(value.objectValue != nil)  // a decodable QualityReport verdict
+            #expect(value.objectValue != nil)
         }
     }
 }

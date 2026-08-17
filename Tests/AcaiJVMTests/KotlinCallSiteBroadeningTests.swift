@@ -40,7 +40,6 @@ struct KotlinCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `val local = Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -68,7 +67,6 @@ struct KotlinCallSiteBroadeningTests {
         #expect(runMethod?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
     }
 
-    /// A typed function parameter is a provable call-site receiver, just like a stored property.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {

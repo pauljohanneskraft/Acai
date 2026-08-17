@@ -77,7 +77,6 @@ struct SequenceFreeformConversionTests {
         #expect(kinds.contains(.return))
         // Labels carry the method name without any numbering prefix.
         #expect(freeform.edges.contains { $0.label == "work" })
-        // Strictly increasing time order.
         let orders = freeform.edges.compactMap(\.messageOrder)
         #expect(orders == orders.sorted())
         #expect(Set(orders).count == orders.count)
@@ -99,9 +98,7 @@ struct SequenceFreeformConversionTests {
             Issue.record("expected a sequence layout for a diagram with lifelines")
             return
         }
-        // Lifelines sit exactly at the converted node positions.
         #expect(Set(layout.participants.map(\.lifelineX)) == [80, 320])
-        // Both messages survive, in order, with the callee activation present.
         #expect(layout.messages.count == 2)
         #expect(layout.messages[0].y < layout.messages[1].y)
         #expect(!layout.activations.isEmpty)

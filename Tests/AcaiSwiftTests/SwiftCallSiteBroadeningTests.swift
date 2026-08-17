@@ -38,7 +38,6 @@ struct SwiftCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local whose type is provable from its construction resolves to that type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 

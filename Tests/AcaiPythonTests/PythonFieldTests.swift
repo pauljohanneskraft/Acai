@@ -86,7 +86,6 @@ struct PythonFieldTests {
         """
         let counter = type(named: "Counter", in: source)
         let props = counter?.members.filter { $0.kind == .property }.map(\.name)
-        // `count` appears in two methods but is emitted once; `last` is also captured.
         #expect(props == ["count", "last"])
     }
 
@@ -100,7 +99,6 @@ struct PythonFieldTests {
         """
         let config = type(named: "Config", in: source)
         let timeouts = config?.members.filter { $0.name == "timeout" }
-        // Declared once: the class-body annotated field, not a duplicate from self.timeout.
         #expect(timeouts?.count == 1)
         #expect(timeouts?.first?.type?.name == "int")
     }
@@ -118,7 +116,6 @@ struct PythonFieldTests {
         """
         let status = type(named: "Status", in: source)
         #expect(status?.enumCases.map(\.name) == ["ACTIVE", "INACTIVE"])
-        // The cases are not also emitted as properties; the method still is a member.
         #expect(status?.members.filter { $0.kind == .property }.isEmpty == true)
         #expect(status?.members.contains { $0.name == "is_active" } == true)
     }

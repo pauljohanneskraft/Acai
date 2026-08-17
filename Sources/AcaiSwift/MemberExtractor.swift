@@ -2,8 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 /// Extracts a type's members (functions, properties, initializers, deinitializers, subscripts, and
-/// enum cases) from their SwiftSyntax declarations. Composes the shared signature/type-reference/
-/// location helpers rather than re-deriving them.
+/// enum cases) from their SwiftSyntax declarations.
 struct MemberExtractor {
 
     private let signatures = DeclarationSignatureExtractor()
@@ -93,7 +92,6 @@ struct MemberExtractor {
         return members
     }
 
-    /// The binding-independent attributes shared by every property member of one `var`/`let` decl.
     private struct PropertyAttributes {
         let accessLevel: AccessLevel
         let setAccessLevel: AccessLevel?

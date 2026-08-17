@@ -10,7 +10,6 @@ struct GitWorktreeTests {
         return url
     }
 
-    /// Clones the fixture into a shared-store-shaped layout and returns (repository, commits).
     private func makeSharedClone(root: URL) async throws -> (GitRepository, GitFixture.Commits) {
         let source = root.appendingPathComponent("source", isDirectory: true)
         let commits = try GitFixture(directory: source).make()

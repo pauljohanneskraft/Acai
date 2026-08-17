@@ -36,7 +36,6 @@ struct ToolRegistryTests {
             #expect(schema["type"]?.stringValue == "object")
             let properties = try #require(schema["properties"]?.objectValue)
             let required = try #require(schema["required"]?.arrayValue).compactMap(\.stringValue)
-            // Most tools take a single `path`; `acai_diff` compares two (`pathOld`/`pathNew`).
             let pathKeys = tool.name == "acai_diff" ? ["pathOld", "pathNew"] : ["path"]
             for key in pathKeys {
                 #expect(properties[key] != nil)

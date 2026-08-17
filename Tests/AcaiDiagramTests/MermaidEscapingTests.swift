@@ -1,9 +1,6 @@
 import Testing
 @testable import AcaiDiagram
 
-/// Unit tests for the Mermaid escaping/id helpers (`MermaidEscaping.swift`). These string rules are
-/// what keep special characters in type names, generics, and labels from breaking a generated
-/// Mermaid diagram, and were previously only exercised indirectly through the renderer goldens.
 @Suite("Mermaid escaping")
 struct MermaidEscapingTests {
 
@@ -18,7 +15,6 @@ struct MermaidEscapingTests {
 
     @Test func idAllocatorDisambiguatesCollisions() {
         var allocator = MermaidIDAllocator()
-        // `A.B` and `A-B` both reduce to `A_B`; the allocator must keep them distinct.
         #expect(allocator.id(for: "A.B") == "A_B")
         #expect(allocator.id(for: "A-B") == "A_B_2")
         #expect(allocator.id(for: "A/B") == "A_B_3")

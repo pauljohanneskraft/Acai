@@ -80,15 +80,13 @@ struct CallSiteCollector {
 
     /// Treats a same-file declared type or any capitalised identifier as a type name, so `Foo()`/`UUID()`
     /// read as construction, not a call — cross-file types aren't in `knownTypeNames`, hence the
-    /// capitalisation guard (Swift methods are lowerCamelCase). Not `private`: used from
-    /// `CallSiteCollector+LocalBindings.swift`.
+    /// capitalisation guard (Swift methods are lowerCamelCase).
     func isTypeName(_ name: String) -> Bool {
         knownTypeNames.contains(name) || name.first?.isUppercase == true
     }
 
     /// Strips `foo<T>()` generic-specialisation and `foo?()` optional-chaining wrappers so the callee
-    /// reduces to its underlying `MemberAccessExprSyntax` / `DeclReferenceExprSyntax`. Not `private`:
-    /// also used from `CallSiteCollector+IterationClosures.swift`.
+    /// reduces to its underlying `MemberAccessExprSyntax` / `DeclReferenceExprSyntax`.
     func unwrappedCallee(_ expr: ExprSyntax) -> ExprSyntax {
         if let generic = expr.as(GenericSpecializationExprSyntax.self) { return generic.expression }
         if let optional = expr.as(OptionalChainingExprSyntax.self) { return optional.expression }
@@ -188,7 +186,6 @@ struct CallSiteCollector {
     /// Whether `node` is a genuinely bare identifier reference — not the callee of its immediately
     /// enclosing call (already recorded via `FunctionCallExprSyntax`) and not the tail of a qualified
     /// member access (`self.chooseFile`, `object.chooseFile` — not handled as value references).
-    /// Shared by both call-site walkers (`DeclarationVisitor`, `AccessorCallSiteWalker`).
     func isBareReferenceUse(_ node: DeclReferenceExprSyntax) -> Bool {
         guard var parent = node.parent else { return false }
         if let memberAccess = parent.as(MemberAccessExprSyntax.self), memberAccess.declName.id == node.id {
@@ -227,17 +224,9 @@ struct CallSiteCollector {
         let receiver: CallReceiver
     }
 
-    /// Resolves the declared type for a receiver expression (only when provably resolvable or
-    /// deferrable to the post-merge pass; otherwise `nil`, dropping the call):
-    /// - `varName.method()` / `self.varName.method()` — known stored property → `.type`,
-    /// - `self.method()` — call on the enclosing instance → `.selfDispatch`,
-    /// - `Self.method()` — static call on the enclosing type → `.type(enclosingTypeName)`, kept
-    ///   distinct from `self.method()` since Swift itself disambiguates static from instance dispatch,
-    /// - `TypeName.method()` for a known type → `.type`,
-    /// - a capitalised receiver not known in this file → deferred `.unresolvedTypeName`, resolved
-    ///   post-merge by `CodeArtifact.resolvingCallSiteReceivers()`,
-    /// - `a.b.method()` where `a` resolves to a known type but `b` isn't a property here → deferred
-    ///   `.propertyChain`, resolved post-merge against the full project type graph.
+    /// Resolves the declared type for a receiver expression: a known stored property or same-file type
+    /// name resolves directly; a capitalised name not known here, or a deeper property chain, defers to
+    /// the post-merge pass (`CodeArtifact.resolvingCallSiteReceivers()`). `nil` drops the call.
     private func resolveReceiver(
         from base: ExprSyntax?, propertyMap: [String: String], enclosingTypeName: String?,
         knownLocalNames: Set<String>
@@ -286,7 +275,6 @@ struct CallSiteCollector {
             return ResolvedReceiver(receiver: .type(name))
         }
         // Capitalised but not declared in this file: possibly declared elsewhere in the project.
-        // Deferred, resolved post-merge once the full type set is known.
         if name.first?.isUppercase == true {
             return ResolvedReceiver(receiver: .unresolvedTypeName(name))
         }
@@ -326,9 +314,7 @@ struct CallSiteCollector {
             of: memberAccess.base, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName) {
             return ResolvedReceiver(receiver: .propertyChain(headTypeName: headType, hops: [hop]))
         }
-        // The chain's head isn't resolvable here either — most often the enclosing type's own stored
-        // property, declared in a sibling extension file (same rationale as
-        // `resolveIdentifierReceiver`). Defer the whole chain to the post-merge pass.
+        // Same rationale as the unresolvable-head case in `resolveIdentifierReceiver`.
         if let headName = bareLowercaseIdentifier(memberAccess.base), enclosingTypeName != nil,
            !knownLocalNames.contains(headName) {
             return ResolvedReceiver(receiver: .ownProperty(propertyName: headName, remainingHops: [hop]))
@@ -336,8 +322,7 @@ struct CallSiteCollector {
         return nil
     }
 
-    /// A bare, lowercase identifier receiver expression — the shape an unqualified property access
-    /// takes. Not `private`: also used from `CallSiteCollector+IterationClosures.swift`.
+    /// A bare, lowercase identifier receiver expression — the shape an unqualified property access takes.
     func bareLowercaseIdentifier(_ expr: ExprSyntax?) -> String? {
         guard let declRef = expr.map(unwrappedReceiverBase)?.as(DeclReferenceExprSyntax.self) else { return nil }
         let name = declRef.baseName.text
@@ -381,8 +366,7 @@ struct CallSiteCollector {
     }
 
     /// The constructed type name of a `Foo(...)` call expression, or `nil` when its callee isn't a
-    /// type name (so `bar()` / `Foo.make()` aren't mistaken for constructions). Not `private`: also
-    /// used from `CallSiteCollector+LocalBindings.swift`.
+    /// type name (so `bar()` / `Foo.make()` aren't mistaken for constructions).
     func constructedTypeName(_ call: FunctionCallExprSyntax) -> String? {
         guard let declRef = unwrappedCallee(call.calledExpression).as(DeclReferenceExprSyntax.self) else {
             return nil

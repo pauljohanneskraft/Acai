@@ -1,9 +1,6 @@
 import Testing
 @testable import AcaiCore
 
-/// Post-merge resolution of deferred `CallReceiver` cases: `.unresolvedTypeName` with a dotted
-/// qualified path (fully-qualified nested-type receivers), `.ownPropertyElement` (closure-`$0`
-/// array-element receivers), and `.ownMethodReturn` (cross-file same-type method-return locals).
 /// See `EnrichmentTests` for the original `.unresolvedTypeName`/`.propertyChain`/`.ownProperty` coverage.
 @Suite("Core: Deferred Call-Receiver Resolution")
 struct DeferredCallReceiverResolutionTests {

@@ -30,7 +30,6 @@ struct ParityToolsTests {
     @Test func diffAcceptsAJSONBaseline() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            // Persist an artifact baseline, then diff the live tree against that .json file.
             let artifact = try AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
             let encoder = JSONEncoder()
             let baseline = dir.appendingPathComponent("baseline.json")

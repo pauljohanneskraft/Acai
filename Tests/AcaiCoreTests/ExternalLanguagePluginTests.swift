@@ -12,8 +12,6 @@ extension CodeArtifact.SourceLanguage {
     fileprivate static let fake = CodeArtifact.SourceLanguage(rawValue: "fake")
 }
 
-/// A made-up language whose quirks (primitives, collections, generated-code filter, build dirs)
-/// live wholly in its configuration.
 private struct FakeLangParser: CodeParser {
     var language: CodeArtifact.SourceLanguage { .fake }
     var fileExtensions: [String] { ["fk"] }
@@ -70,9 +68,9 @@ struct ExternalLanguagePluginTests {
         let enriched = artifact.enriched(configuration: parser.configuration)
 
         let targets = Set(enriched.relationships.map(\.target))
-        #expect(targets.contains("Engine"))          // real type became an edge
-        #expect(!targets.contains("FakeInt"))        // external primitive was classified out
-        #expect(!targets.contains("FakeList"))       // external collection was classified out
+        #expect(targets.contains("Engine"))
+        #expect(!targets.contains("FakeInt"))
+        #expect(!targets.contains("FakeList"))
     }
 
     @Test("generated-code filtering uses the external language's filter")
@@ -88,12 +86,12 @@ struct ExternalLanguagePluginTests {
         )
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .fake), types: [real, byName, byFile])
 
-        _ = try #require(parser.configuration.generatedCodeFilter)  // the language declares a filter
+        _ = try #require(parser.configuration.generatedCodeFilter)
         let filtered = artifact.filteringGeneratedTypes(
             using: LanguageConfigurationResolver(single: parser.configuration))
 
         let names = Set(filtered.types.map(\.name))
-        #expect(names == ["Real"])                    // both generated types removed
+        #expect(names == ["Real"])
     }
 
     @Test("a registry built from external parsers resolves them, and returns nil for unknown")

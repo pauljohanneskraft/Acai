@@ -27,7 +27,6 @@ struct PerTypeVisibilityTests {
 
         #expect(!shown.properties.isEmpty)
         #expect(hidden.properties.isEmpty)
-        // Methods and enum cases are unaffected by the property override.
         #expect(!hidden.methods.isEmpty)
         #expect(!hidden.enumCases.isEmpty)
     }

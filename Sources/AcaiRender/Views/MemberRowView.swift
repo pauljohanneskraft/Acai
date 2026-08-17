@@ -1,10 +1,10 @@
 import SwiftUI
 import AcaiCore
 
-/// `compact` rows must render byte-identically to the pre-existing canvas text (no weight change, no
-/// icon): `DiagramLayoutModel.estimateSize`'s char-count width heuristic drives the headless CLI
-/// renderer, where no live SwiftUI measurement ever runs, and a `.semibold` public/open row already
-/// shifts glyph widths enough to fail the committed `Examples/` PNG pixel-diff regression.
+/// `compact` rows carry no weight change and no icon: `DiagramLayoutModel.estimateSize`'s char-count
+/// width heuristic drives the headless CLI renderer, where no live SwiftUI measurement ever runs, and
+/// a `.semibold` public/open row shifts glyph widths enough to fail the committed `Examples/` PNG
+/// pixel-diff.
 public struct MemberRowView: View {
     let item: MemberDisplayItem
     let compact: Bool

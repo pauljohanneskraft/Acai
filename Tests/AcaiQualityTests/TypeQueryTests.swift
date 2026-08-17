@@ -3,8 +3,6 @@ import Foundation
 import AcaiCore
 @testable import AcaiQuality
 
-/// Covers `TypeQuery` + `MemberFilter`: the type `Selector` narrows which types appear, the member
-/// filter narrows which members (and drops types with no surviving member), and rows carry locations.
 @Suite("Quality: TypeQuery")
 struct TypeQueryTests {
 
@@ -50,7 +48,6 @@ struct TypeQueryTests {
             artifact: artifact([wide, narrow]),
             members: MemberFilter(kind: .method, minParameters: 3)).rows
 
-        // Only `Wide` keeps a member with 3+ parameters.
         #expect(rows.map(\.qualifiedName) == ["Wide"])
         #expect(rows[0].members.map(\.name) == ["f"])
     }

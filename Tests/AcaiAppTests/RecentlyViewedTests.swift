@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `RecentlyViewed`: recency-ordering + pin-persistence, the model half of "Recently Viewed +
-/// pinning."
 @Suite("RecentlyViewed")
 struct RecentlyViewedTests {
 
@@ -82,7 +80,6 @@ struct RecentlyViewedTests {
 }
 
 extension UUID {
-    /// A deterministic UUID from a small integer, for test fixtures that need distinct-but-stable ids.
     fileprivate init(_ value: Int) {
         self.init(uuidString: String(format: "00000000-0000-0000-0000-%012d", value))!
     }

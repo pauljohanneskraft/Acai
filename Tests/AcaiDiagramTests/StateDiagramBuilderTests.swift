@@ -52,11 +52,9 @@ struct StateDiagramBuilderTests {
 
     @Test func transitionsFormSequentialChains() throws {
         let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
-        // Chain inside load(): loading → loaded labeled load().
         #expect(diagram.transitions.contains {
             $0.from == "state_loading" && $0.to == "state_loaded" && $0.event == "load()"
         })
-        // Initial value edge: __initial → idle, unlabeled.
         #expect(diagram.transitions.contains {
             $0.from == "__initial" && $0.to == "state_idle" && $0.event == nil
         })
@@ -70,7 +68,6 @@ struct StateDiagramBuilderTests {
     }
 
     @Test func qualifiedAndImplicitCasesCollapseIntoOneState() throws {
-        // `.loaded` and `State.loaded` should produce a single state.
         let diagram = try StateDiagramBuilder(configuration: config()).build(from: loaderArtifact())
         let loadedStates = diagram.states.filter { $0.name == "loaded" }
         #expect(loadedStates.count == 1)

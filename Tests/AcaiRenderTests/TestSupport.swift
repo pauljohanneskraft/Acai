@@ -4,10 +4,9 @@ import AcaiCore
 import AcaiLibrary
 @testable import AcaiRender
 
-// AcaiRender's layout/render model now takes the source language's configuration explicitly. These
-// test conveniences restore the former signatures by resolving that configuration from the standard
-// registry (the same source production uses), so render tests don't repeat the lookup. Production
-// keeps the configuration a required, explicit parameter.
+// AcaiRender's layout/render model takes the source language's configuration explicitly. These
+// test conveniences resolve it from the standard registry (the same one production uses), so
+// render tests don't repeat the lookup; production keeps the parameter required and explicit.
 
 extension DiagramLayoutModel {
     init(artifact: CodeArtifact, configuration: ClassDiagramConfiguration) {

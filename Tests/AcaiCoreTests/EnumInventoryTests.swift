@@ -2,8 +2,6 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Covers `EnumInventory`: enum-like types are collected with their cases, raw values and
-/// associated-value shapes; non-enum types are skipped; output is sorted.
 @Suite("Core: EnumInventory")
 struct EnumInventoryTests {
 
@@ -33,7 +31,6 @@ struct EnumInventoryTests {
 
         let entries = EnumInventory(artifact: artifact([payload, suit, plain])).entries
 
-        // Only the two enums, sorted by qualified name.
         #expect(entries.map(\.type) == ["Payload", "Suit"])
         let hearts = entries[1].cases[0]
         #expect(hearts.name == "hearts")

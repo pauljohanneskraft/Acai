@@ -3,9 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// End-to-end coverage of `acai image`: parse → analyze → build the diagram → rasterize → write the
-/// PNG file. macOS-only: the `image` subcommand needs SwiftUI's `ImageRenderer` and is not compiled
-/// on Linux.
+/// macOS-only: the `image` subcommand needs SwiftUI's `ImageRenderer` and is not compiled on Linux.
 @Suite("Image Command Run")
 struct ImageCommandRunTests {
 

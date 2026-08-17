@@ -2,7 +2,6 @@ import Testing
 @testable import AcaiDart
 @testable import AcaiCore
 
-/// Covers property-receiver, `this.method()`, and `TypeName.method()` call-site forms.
 @Suite("Dart: Call-Site Resolution")
 struct DartCallSiteTests {
     let parser = DartCodeParser()
@@ -39,7 +38,6 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `var local = Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -68,7 +66,6 @@ struct DartCallSiteTests {
         #expect(run?.callSites.contains { $0.methodName == "process" && $0.receiverType == "Helper" } == true)
     }
 
-    /// A typed method parameter is a provable call-site receiver, just like a typed field.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -86,9 +83,8 @@ struct DartCallSiteTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
     }
 
-    /// A local initialized from a same-type method call (`var x = compute();`) resolves its receiver
-    /// type from the method's unambiguous return type, the same way `var h = Helper();` already
-    /// does — including when the method is declared *after* the caller.
+    /// Resolves the same way `var h = Helper();` already does — including when the method is
+    /// declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {

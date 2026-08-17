@@ -2,8 +2,6 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Covers `ImpactAnalysis`: transitive dependents are collected (reverse reachability), the root is
-/// excluded, an unknown root is reported as not found, and depth bounds the walk.
 @Suite("Core: ImpactAnalysis")
 struct ImpactAnalysisTests {
 
@@ -31,7 +29,6 @@ struct ImpactAnalysisTests {
 
     @Test func depthBoundsTheWalk() {
         let report = ImpactAnalysis(artifact: chain(), rootType: "A", maxDepth: 1).report
-        // Only the direct dependent B is within one hop.
         #expect(report.dependents.map(\.id) == ["B"])
     }
 

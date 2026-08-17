@@ -7,10 +7,8 @@ import AcaiCore
 import AcaiDiagram
 @testable import AcaiLibrary
 
-/// Path/pipeline conveniences for the proof PNGs committed under `Examples/`: locating the
-/// checked-in exports, running the same analysis pipeline `acai image` uses, and the
-/// per-suite/per-theme parametrization. The actual PNG-comparison math lives in
-/// `ExampleGoldenComparator` below (wrapping `AcaiPNGComparison`), not here.
+/// Path/pipeline conveniences for the proof PNGs committed under `Examples/`. The actual
+/// PNG-comparison math lives in `ExampleGoldenComparator` below, not here.
 enum ExamplePNGs {
 
     /// `Tests/AcaiRenderTests/<file>.swift` → repo root is three levels up.
@@ -36,14 +34,13 @@ enum ExamplePNGs {
 }
 
 /// Structural + perceptual regression checks for a committed `Examples/` PNG, wrapping
-/// `AcaiPNGComparison`'s shared diff math. Each test suite instantiates its own comparator instead
-/// of calling through a static-function namespace.
+/// `AcaiPNGComparison`'s shared diff math.
 ///
 /// Two environment realities are tolerated rather than failed:
 /// - **Git LFS pointers.** The PNGs are stored in LFS; a checkout without LFS materialized leaves a
-///   short text pointer. We detect that and skip byte-level validation.
+///   short text pointer, which skips byte-level validation.
 /// - **Headless rendering.** `ImageRenderer`/CoreGraphics need a window-server session, so on a
-///   headless agent `renderingFailed`/`encodingFailed` are expected; we skip the re-render half.
+///   headless agent `renderingFailed`/`encodingFailed` skip the re-render half.
 struct ExampleGoldenComparator {
     private let comparison = PNGGoldenComparison()
 
@@ -58,14 +55,14 @@ struct ExampleGoldenComparator {
         return (uint32(at: 16), uint32(at: 20))
     }
 
-    /// Validates a committed PNG against a freshly-rendered one. `render` mirrors the CLI's
-    /// `acai image` code path for that diagram; it may throw a render error on a headless host.
+    /// `render` mirrors the CLI's `acai image` code path for that diagram; it may throw a render
+    /// error on a headless host.
     @MainActor
     func validate(_ url: URL, render: () throws -> Data) throws {
         let committed = try Data(contentsOf: url)
         #expect(!committed.isEmpty, "\(url.lastPathComponent) is empty")
 
-        if comparison.isLFSPointer(committed) { return }  // LFS not materialized — nothing more to check.
+        if comparison.isLFSPointer(committed) { return }
         #expect(comparison.hasPNGMagic(committed), "\(url.lastPathComponent) is neither a PNG nor an LFS pointer")
         guard let expected = pngPixelSize(committed) else {
             Issue.record("Could not read PNG size from \(url.lastPathComponent)")
@@ -76,7 +73,7 @@ struct ExampleGoldenComparator {
         do {
             fresh = try render()
         } catch DiagramImageRenderError.renderingFailed, DiagramImageRenderError.encodingFailed {
-            return  // Headless: structural checks above still ran.
+            return
         }
 
         #expect(comparison.hasPNGMagic(fresh), "re-rendered \(url.lastPathComponent) is not a PNG")
@@ -84,7 +81,7 @@ struct ExampleGoldenComparator {
             Issue.record("Could not read PNG size from re-rendered \(url.lastPathComponent)")
             return
         }
-        // Same renderer/inputs → dimensions match; allow a small tolerance for font/OS drift.
+        // Allow a small tolerance for font/OS drift.
         func close(_ lhs: Int, _ rhs: Int) -> Bool {
             abs(lhs - rhs) <= max(4, Int((Double(rhs) * 0.05).rounded(.up)))
         }
@@ -93,9 +90,8 @@ struct ExampleGoldenComparator {
             "\(url.lastPathComponent) size drifted: committed \(expected), re-rendered \(actual)"
         )
 
-        // Content: the committed golden must still match what the current renderer produces. A
-        // dimension match alone is blind to in-bounds changes (e.g. multiplicity labels), so this
-        // compares the actual pixels via a downsampled, AA-tolerant perceptual diff.
+        // A dimension match alone is blind to in-bounds changes (e.g. multiplicity labels), so this
+        // also compares pixels via a downsampled, AA-tolerant perceptual diff.
         switch comparison.compare(committed: committed, rendered: fresh) {
         case .match, .lfsPointer, .notAPNG:
             break
@@ -201,7 +197,6 @@ struct StateDiagramPNGTests {
 struct PackageDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    // `dir` is the on-disk subdirectory; the package sample is scanned per-language subdir.
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
         ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
         ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python),

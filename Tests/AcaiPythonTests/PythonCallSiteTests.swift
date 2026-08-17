@@ -55,7 +55,6 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "load" && $0.receiverType == "Config" })
     }
 
-    /// A type-annotated parameter is a provable call-site receiver, just like a typed property.
     @Test func callOnTypedParameter() {
         let source = """
         class Engine:
@@ -70,9 +69,7 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "start" && $0.receiverType == "Engine" })
     }
 
-    /// A local initialized from a same-type method call (`x = compute()`) resolves its receiver type
-    /// from the method's unambiguous `-> Type` annotation, the same way `x = Engine()` already does —
-    /// including when the method is declared *after* the caller.
+    /// Resolves from `compute`'s `-> Type` annotation even when `compute` is declared after the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget:
@@ -91,8 +88,7 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "use" && $0.receiverType == "Widget" })
     }
 
-    /// A call made only from a class-body field initializer is recorded so its target isn't
-    /// false-flagged as dead.
+    /// A call made only from a class-body field initializer is recorded so its target isn't false-flagged as dead.
     @Test func capturesClassBodyFieldInitializerCall() {
         let source = """
         def make_handler():
@@ -105,8 +101,6 @@ struct PythonCallSiteTests {
         #expect(sites.contains { $0.methodName == "make_handler" && $0.receiver == .free })
     }
 
-    /// A local whose type is provable from construction (`x = Foo()`) or an annotation (`x: Foo = …`)
-    /// resolves the receiver of a later `x.method()`.
     @Test func resolvesLocalFromConstructionAndAnnotation() {
         let source = """
         class Engine:

@@ -27,12 +27,9 @@ struct DiagramImageRendererTests {
         )
     }
 
-    /// Renders a small diagram to PNG and checks it is a non-empty, well-formed PNG.
-    ///
     /// `ImageRenderer` and CoreGraphics PNG encoding need a macOS window-server session, so on
-    /// a headless agent (e.g. CI) `renderingFailed`/`encodingFailed` are expected; we treat
-    /// either as an environment limitation rather than a test failure. Any other error still
-    /// fails loudly.
+    /// a headless agent (e.g. CI) `renderingFailed`/`encodingFailed` are expected and treated as
+    /// an environment limitation rather than a test failure. Any other error still fails loudly.
     @Test @MainActor func rendersNonBlankPNG() throws {
         let data: Data
         do {
@@ -41,7 +38,7 @@ struct DiagramImageRendererTests {
             return
         }
         #expect(!data.isEmpty)
-        // PNG magic bytes: 89 50 4E 47.
+        // PNG magic bytes.
         #expect(Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47])
     }
 }

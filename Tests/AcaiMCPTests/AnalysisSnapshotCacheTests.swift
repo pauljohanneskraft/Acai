@@ -13,7 +13,6 @@ struct AnalysisSnapshotCacheTests {
             let cache = AnalysisSnapshotCache()
             _ = try await cache.artifact(path: dir.path)
             _ = try await cache.artifact(path: dir.path)
-            // Second call is a cache hit — only one real analysis ran.
             #expect(await cache.analysisCount == 1)
         }
     }
@@ -77,9 +76,9 @@ struct AnalysisSnapshotCacheTests {
         try FileManager.default.setAttributes([.modificationDate: mtime as Any], ofItemAtPath: renamed.path)
 
         let after = SourceTreeSignature(root: dir)
-        #expect(after != before)                                 // the move shifts the signature
-        #expect(after.contentDigest != before.contentDigest)     // ...specifically via the path digest
-        #expect(after.fileCount == before.fileCount)             // ...even though the file count is unchanged
+        #expect(after != before)
+        #expect(after.contentDigest != before.contentDigest)
+        #expect(after.fileCount == before.fileCount)
     }
 
     @Test func missingPathThrows() async {
@@ -97,10 +96,10 @@ struct AnalysisSnapshotCacheTests {
 
         try MCPTestSupport.writeSampleSwiftSource(in: dir)
         let before = SourceTreeSignature(root: dir)
-        #expect(SourceTreeSignature(root: dir) == before)  // stable when nothing changes
+        #expect(SourceTreeSignature(root: dir) == before)
 
         try "class Extra {}".write(
             to: dir.appendingPathComponent("Extra.swift"), atomically: true, encoding: .utf8)
-        #expect(SourceTreeSignature(root: dir) != before)  // a new file shifts the signature
+        #expect(SourceTreeSignature(root: dir) != before)
     }
 }

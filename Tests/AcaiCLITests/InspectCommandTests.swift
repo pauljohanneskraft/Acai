@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai inspect`: `--from`/`--source` validation, selector + member filtering, and that every
-/// emitted row carries a `file:line` jump target.
 @Suite("Inspect Command")
 struct InspectCommandTests {
 
@@ -27,7 +25,6 @@ struct InspectCommandTests {
             #expect(contents.contains("\"qualifiedName\""))
             #expect(contents.contains("Service"))
             #expect(contents.contains("\"members\""))
-            // Precise jump targets: file path + line for each row.
             #expect(contents.contains("\"filePath\""))
             #expect(contents.contains("\"line\""))
         }

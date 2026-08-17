@@ -2,8 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 /// Builds a `TypeDeclaration` from each kind of Swift type declaration (class, struct, enum,
-/// protocol, extension, type alias, actor). Composes the shared signature/type-reference/location
-/// helpers; the per-kind methods differ only in their `TypeKind` and a few node-specific fields.
+/// protocol, extension, type alias, actor).
 struct TypeDeclarationExtractor {
 
     private let signatures = DeclarationSignatureExtractor()

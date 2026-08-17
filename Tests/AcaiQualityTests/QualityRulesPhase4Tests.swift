@@ -39,7 +39,6 @@ struct ConformancePhase4Tests {
     }
 
     @Test func upwardDependencyIsAViolation() {
-        // Domain → UI is upward: forbidden.
         let art = artifact(
             [type("View", module: "UI"), type("Service", module: "Domain")],
             [Relationship(kind: .dependency, source: "Service", target: "View")])
@@ -48,7 +47,6 @@ struct ConformancePhase4Tests {
     }
 
     @Test func skippingLayerIsAViolationWhenSkipDisallowed() {
-        // UI → Infra skips Domain; allowed when allowSkip, flagged otherwise.
         let art = artifact(
             [type("View", module: "UI"), type("Repo", module: "Infra")],
             [Relationship(kind: .dependency, source: "View", target: "Repo")])
@@ -114,7 +112,6 @@ struct ConformancePhase4Tests {
         let report = QualityEvaluator(
             rules: rules, annotationStereotypes: ["repository": "repository"]
         ).evaluate(art)
-        // Controller is flagged; the @Repository is not.
         #expect(report.violations.contains { $0.subject == "Controller→Database" })
         #expect(!report.violations.contains { $0.subject == "UserRepo→Database" })
     }

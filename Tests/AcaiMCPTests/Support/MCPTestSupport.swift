@@ -7,7 +7,6 @@ import Testing
 /// that the caller removes; tests never touch the user's config.
 enum MCPTestSupport {
 
-    /// Runs `body` with a fresh temp directory that is removed afterwards.
     static func withTempDirectory<T>(_ body: (URL) async throws -> T) async throws -> T {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiMCPTests-\(UUID().uuidString)", isDirectory: true)
@@ -45,7 +44,6 @@ enum MCPTestSupport {
         return values
     }
 
-    /// Calls a tool by name through the registry and returns its structured JSON payload.
     static func call(
         _ name: String, on registry: ToolRegistry, path: URL, _ extra: [String: Value] = [:]
     ) async throws -> Value {
@@ -61,7 +59,6 @@ enum MCPTestSupport {
         try await registry.call(name: name, arguments: arguments(path: path, extra))
     }
 
-    /// The text of a tool result's first content item, or a recorded failure.
     static func firstText(_ result: CallTool.Result) -> String {
         if case let .text(text, _, _) = result.content.first {
             return text

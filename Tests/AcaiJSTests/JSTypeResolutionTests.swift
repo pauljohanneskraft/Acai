@@ -16,7 +16,6 @@ struct JSTypeResolutionTests {
             class Dog extends Animal {}
         }
         """
-        // Before enrichment the supertype is the raw, unqualified name.
         let raw = parser.parse(source: source, fileName: "zoo.ts").flattened()
         #expect(raw.first { $0.name == "Dog" }?.inheritedTypes.first?.name == "Animal")
 

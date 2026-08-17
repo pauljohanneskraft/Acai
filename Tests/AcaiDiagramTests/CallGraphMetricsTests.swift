@@ -2,12 +2,9 @@ import Testing
 @testable import AcaiCore
 @testable import AcaiDiagram
 
-/// Covers `CallGraphMetrics` (fan-in/out, recursion, coverage, hot-first ordering) and `MethodCycles`
-/// (SCC over call-graph edges).
 @Suite("Call graph metrics & cycles")
 struct CallGraphMetricsTests {
 
-    /// `A.run` → `B.work`; `B.work` carries a location.
     private func chainArtifact() -> CodeArtifact {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift),
@@ -28,7 +25,6 @@ struct CallGraphMetricsTests {
             ])
     }
 
-    /// `A.ping` ↔ `B.pong` call each other — a two-method cycle.
     private func mutualRecursionArtifact() -> CodeArtifact {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift),

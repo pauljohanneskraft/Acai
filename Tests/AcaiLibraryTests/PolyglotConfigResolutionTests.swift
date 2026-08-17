@@ -10,7 +10,6 @@ import AcaiCore
 @Suite("Polyglot per-type config resolution")
 struct PolyglotConfigResolutionTests {
 
-    /// Writes a Swift subdir and a Python subdir under one root, then analyses the whole root.
     private func analyzePolyglotFixture() throws -> CodeArtifact {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiPolyglot-\(UUID().uuidString)", isDirectory: true)
@@ -51,8 +50,8 @@ struct PolyglotConfigResolutionTests {
         // The crux: two types in one artifact resolve to *different* language quirks. A single flat
         // config could only match one of them.
         #expect(swiftCollections != pyCollections)
-        #expect(swiftCollections.contains("Array"))   // Swift's collection vocabulary
-        #expect(pyCollections.contains("list"))       // Python's collection vocabulary
+        #expect(swiftCollections.contains("Array"))
+        #expect(pyCollections.contains("list"))
     }
 
     @Test func perTypeReEnrichmentIsIdempotentOnAPolyglotArtifact() throws {

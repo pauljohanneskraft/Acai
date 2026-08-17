@@ -11,9 +11,9 @@ import AcaiDiff
 @Suite("Class delta diagram exports", .serialized)
 struct ClassDiagramDeltaExportTests {
 
-    /// (golden stem, language, Before/After source folder). JavaScript omitted — no type annotations.
-    /// Each language's Before/After shows a change natural to it: OO languages drop an inheritance and
-    /// gain a composition; C (no inheritance) swaps one composition for another.
+    /// JavaScript omitted — no type annotations. Each language's Before/After shows a change natural
+    /// to it: OO languages drop an inheritance and gain a composition; C (no inheritance) swaps one
+    /// composition for another.
     static let cases: [(stem: String, language: CodeArtifact.SourceLanguage, folder: String)] = [
         ("swift", .swift, "Swift"),
         ("kotlin", .kotlin, "Kotlin"),
@@ -25,8 +25,7 @@ struct ClassDiagramDeltaExportTests {
         ("cpp", .cpp, "Cpp")
     ]
 
-    /// Mirrors `DiffCommand.deltaDiagram`: analyze both revisions, diff them, then build the union
-    /// diagram with the diff-status colour override.
+    /// Mirrors `DiffCommand.deltaDiagram`.
     private func render(
         _ language: CodeArtifact.SourceLanguage, folder: String, mermaid: Bool
     ) throws -> String {
@@ -81,9 +80,9 @@ struct SequenceDiagramDeltaExportTests {
         var entry: (typeName: String, methodName: String) { (entryType, entryMethod) }
     }
 
-    /// Mirrors the sequence coverage (no plain JavaScript). Each Before/After drops one message
-    /// (`verify`, red) and adds another (`log`, green); `charge` is unchanged. DOT carries the
-    /// colour; Mermaid's sequence syntax can't, so its golden is the union uncolored.
+    /// No plain JavaScript. Each Before/After drops one message (`verify`, red) and adds another
+    /// (`log`, green); `charge` is unchanged. DOT carries the colour; Mermaid's sequence syntax
+    /// can't, so its golden is the union uncolored.
     static let cases: [Case] = [
         Case(stem: "swift", language: .swift, dir: "Swift", entryType: "Checkout", entryMethod: "placeOrder"),
         Case(stem: "kotlin", language: .kotlin, dir: "Kotlin", entryType: "Checkout", entryMethod: "placeOrder"),
@@ -96,8 +95,7 @@ struct SequenceDiagramDeltaExportTests {
         Case(stem: "c", language: .c, dir: "C", entryType: "", entryMethod: "place_order")
     ]
 
-    /// Mirrors `DiffCommand.sequenceDelta`: build the sequence diagram from both revisions, diff,
-    /// render the union with the per-message colour override (DOT only).
+    /// Mirrors `DiffCommand.sequenceDelta`.
     private func render(_ testCase: Case, mermaid: Bool) throws -> String {
         let old = try ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagramDiff", testCase.dir, "Before"), language: testCase.language)
@@ -148,8 +146,7 @@ struct StateDiagramDeltaExportTests {
         ("c", .c, "C")
     ]
 
-    /// Mirrors `DiffCommand.stateDelta`: build the state diagram from both revisions, diff, render
-    /// the union with the per-transition colour override (DOT only).
+    /// Mirrors `DiffCommand.stateDelta`.
     private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state", maxStates: 20)
         let old = try StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
@@ -197,8 +194,7 @@ struct PackageDiagramDeltaExportTests {
         ("c", .c, "C")
     ]
 
-    /// Mirrors `DiffCommand.packageDelta`: build the package diagram from both revisions, diff,
-    /// render the union with the per-node and per-edge colour overrides.
+    /// Mirrors `DiffCommand.packageDelta`.
     private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
         let oldArtifact = try ExampleExports.analyze(
             ExampleExports.examples("PackageDiagramDiff", dir, "Before"), language: language)
@@ -254,8 +250,7 @@ struct CallGraphDeltaExportTests {
         ("c", .c, "C")
     ]
 
-    /// Mirrors `DiffCommand.callGraphDelta`: build the whole-codebase call graph from both
-    /// revisions, diff, render the union with the per-node and per-edge colour overrides.
+    /// Mirrors `DiffCommand.callGraphDelta`.
     private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
         let old = try CallGraphBuilder().build(from: ExampleExports.analyze(
             ExampleExports.examples("CallGraphDiff", dir, "Before"), language: language))

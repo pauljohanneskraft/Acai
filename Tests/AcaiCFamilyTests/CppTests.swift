@@ -48,18 +48,14 @@ struct CppTests {
         let circle = artifact.types.first { $0.name == "Circle" }
         #expect(circle?.inheritedTypes.contains { $0.name == "Shape" } == true)
         #expect(artifact.relationships.contains { $0.kind == .inheritance && $0.target == "Shape" })
-        // The pure virtual `area() const = 0` is recorded as abstract.
         let shape = artifact.types.first { $0.name == "Shape" }
         let area = shape?.members.first { $0.name == "area" }
         #expect(area?.modifiers.contains(.abstract) == true)
-        // A class with a pure-virtual member is itself an abstract type (so the abstractness
-        // metric counts it like an interface); the concrete subclass is not.
+        // A class with a pure-virtual member is itself abstract (counts as an interface); the subclass isn't.
         #expect(shape?.modifiers.contains(.abstract) == true)
         #expect(circle?.modifiers.contains(.abstract) == false)
     }
 
-    /// A record nested inside another record gets an id qualified by its enclosing record, so it
-    /// doesn't collide with a top-level record sharing the same simple name.
     @Test func nestedRecordIDIsQualified() {
         let source = """
         struct Inner {

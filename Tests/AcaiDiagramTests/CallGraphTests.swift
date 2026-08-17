@@ -5,7 +5,6 @@ import Testing
 @Suite("Call graph extraction")
 struct CallGraphTests {
 
-    /// Two types where `A.run` calls `B.work`; everything resolves.
     private func twoTypeArtifact() -> CodeArtifact {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
@@ -114,7 +113,6 @@ struct CallGraphTests {
 
     @Test func typeScopeBoundsCallersButKeepsCalleeLeaf() {
         let graph = CallGraphBuilder(scope: .type("A")).build(from: twoTypeArtifact())
-        // Only A is a caller; B.work is pulled in as an out-of-scope leaf.
         let aNode = graph.nodes.first { $0.id == "A.run" }
         let bNode = graph.nodes.first { $0.id == "B.work" }
         #expect(aNode?.inScope == true)
@@ -128,7 +126,6 @@ struct CallGraphTests {
         artifact.types[1].location = SourceLocation(filePath: "Other/B.swift", line: 1, column: 1)
         let graph = CallGraphBuilder(scope: .module("Core")).build(from: artifact)
         #expect(graph.nodes.first { $0.id == "A.run" }?.inScope == true)
-        // B is out of module: still a resolved-callee leaf, not in scope.
         #expect(graph.nodes.first { $0.id == "B.work" }?.inScope == false)
     }
 
@@ -154,7 +151,6 @@ struct CallGraphTests {
             ]
         )
         let graph = CallGraphBuilder().build(from: artifact)
-        // A.run -> log (free function, implicit receiver), and log -> format (free->free).
         #expect(graph.edges == [
             CallGraph.Edge(from: "A.run", to: "log", weight: 1),
             CallGraph.Edge(from: "log", to: "format", weight: 1)

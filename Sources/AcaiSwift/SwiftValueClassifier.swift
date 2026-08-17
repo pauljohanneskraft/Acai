@@ -2,8 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 /// Classifies Swift expressions into ``VariableAssignment`` values and targets
-/// for static state analysis. Shared by `DeclarationVisitor` (assignments inside
-/// bodies) and `MemberExtractor` (stored-property initializers).
+/// for static state analysis.
 struct SwiftValueClassifier {
 
     /// Compound-assignment operators: their result depends on the previous
@@ -14,8 +13,6 @@ struct SwiftValueClassifier {
         "&+=", "&-=", "&*=", "&<<=", "&>>="
     ]
 
-    /// Classifies an assigned (or initializer) expression.
-    ///
     /// Enum cases written with payloads (`.loaded(data)`) parse as
     /// `FunctionCallExprSyntax` and are deliberately classified as
     /// `.expression` — their state space is not enumerable.

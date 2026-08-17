@@ -1,9 +1,7 @@
 import Foundation
 
-/// Builds a small local git repository with real commit history, for `AcaiGit`'s tests to clone
-/// from / open — via `/usr/bin/git` (fixture setup only; the types under test never shell out).
-/// `swift test` only ever runs this target on a macOS host (this target is only built inside
-/// `Package.swift`'s `#if canImport(SwiftUI)` block), so `Process` is always available here.
+/// Shells out to `/usr/bin/git` (fixture setup only; the types under test never shell out).
+/// `Process` is safe to use here because this target only ever builds on macOS.
 struct GitFixture {
     let directory: URL
 
@@ -25,8 +23,6 @@ struct GitFixture {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
-    /// Creates the repository with two commits on `main` (the second tagged `v1`) and a `feature`
-    /// branch one commit ahead. Returns the SHA of each commit of interest.
     struct Commits {
         let initial: String
         let tagged: String
@@ -64,11 +60,8 @@ struct GitFixture {
         return Commits(initial: initial, tagged: tagged, feature: feature)
     }
 
-    /// Four commits on `main`, purpose-built (independent of `make()`, so existing tests asserting
-    /// on `make()`'s exact commit sequence stay unaffected): adds `README.md`, edits it, adds
-    /// `Other.swift`, edits `README.md` again — giving `README.md` a churn count of 2 (the root
-    /// "add" commit contributes no touches — see `GitChurn`'s doc comment) and `Other.swift` a
-    /// churn count of 1, for `GitRepository.churnByFile`/`GitChurn` to be tested against.
+    /// Independent of `make()`; gives `README.md` a churn count of 2 (the root commit contributes no
+    /// touches — see `GitChurn`'s doc comment) and `Other.swift` a churn count of 1.
     @discardableResult
     func makeWithRepeatedTouches() throws -> String {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

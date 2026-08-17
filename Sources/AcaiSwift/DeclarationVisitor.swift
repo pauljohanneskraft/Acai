@@ -31,23 +31,20 @@ struct CallSiteAccumulator {
 }
 
 final class DeclarationVisitor: SyntaxVisitor {
-    // Not `private`: read from `DeclarationVisitor+CallSiteHelpers.swift`'s extension (split out to
-    // stay within SwiftLint's `file_length`).
     let fileName: String
     var types: [TypeDeclaration] = []
     private var relationships: [Relationship] = []
     private var freestandingFunctions: [Member] = []
     var globalVariables: [Member] = []
     var typeStack: [TypeDeclaration] = []
-    /// Mirrors `typeStack`: each entry is the current type's `methodName → returnType` map, pre-passed
-    /// from the raw syntax so a forward-declared method's return type is seen too.
+    /// Mirrors `typeStack`: each type's `methodName → returnType` map, pre-passed so a forward-declared
+    /// method's return type is seen too.
     var methodReturnTypeMapStack: [[String: String]] = []
-    /// Mirrors `typeStack`: each entry is this type's own method names with more than one distinct
-    /// return type among overloads — tracked separately so a genuinely ambiguous overload is never
-    /// mistaken for a cross-file method and deferred.
+    /// Mirrors `typeStack`: each type's own method names with an ambiguous (multi-)return-type overload,
+    /// so those are never mistaken for a cross-file method and deferred.
     var ambiguousReturnTypeMethodNamesStack: [Set<String>] = []
-    /// Mirrors `typeStack`: each entry is the current type's own method names, pre-passed so a bare
-    /// method-reference-as-value (`action: chooseFile`) resolves regardless of declaration order.
+    /// Mirrors `typeStack`: each type's own method names, so a bare method-reference-as-value
+    /// (`action: chooseFile`) resolves regardless of declaration order.
     var methodNameMapStack: [Set<String>] = []
 
     // MARK: - Call-site collection state
@@ -80,8 +77,6 @@ final class DeclarationVisitor: SyntaxVisitor {
     /// resolve, since the property lives on the protocol, not the extension's own member list.
     let protocolProperties: [String: [String: String]]
 
-    // Composable extractors: each owns one slice of the SwiftSyntax-to-model mapping, so this visitor
-    // delegates rather than depending on every syntax node type directly.
     private let typeDeclarations = TypeDeclarationExtractor()
     private let members: MemberExtractor
     let signatures = DeclarationSignatureExtractor()
@@ -282,7 +277,6 @@ final class DeclarationVisitor: SyntaxVisitor {
             }
         }
         if typeStack.isEmpty {
-            // Top-level (module-scope) let/var.
             recordingTopLevelGlobalReceiverOrigins(from: node.bindings)
             globalVariables.append(contentsOf: extractedMembers)
         } else {
@@ -378,8 +372,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         if !callSiteState.localMap.isEmpty {
             receiverMap.merge(callSiteState.localMap) { _, local in local }
         }
-        // An implicit-`$0` iteration closure (see `recordingIterationClosureCallSites`'s doc). The
-        // default child traversal below still descends into the closure too, redundantly but harmlessly.
+        // An implicit-`$0` iteration closure (see `recordingIterationClosureCallSites`'s doc).
         if functionBodyDepth > 0 {
             recordingIterationClosureCallSites(in: node)
         }
@@ -413,15 +406,11 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
-        // A bare identifier or the member of a `self.x` access, recorded when it names a stored
-        // property of the enclosing type (issue #111).
         if functionBodyDepth > 0,
            let read = callSites.fieldRead(
                from: node, propertyMap: callSiteState.propertyMap, fileName: fileName) {
             callSiteState.pendingFieldReads.append(read)
         }
-        // A bare method name used as a value (`action: chooseFile`), not a call — see
-        // `CallSiteCollector.isBareReferenceUse`'s doc for the exclusions.
         if functionBodyDepth > 0, callSites.isBareReferenceUse(node),
            let site = callSites.methodReference(
                from: node, propertyMap: callSiteState.propertyMap, methodNames: methodNameMapStack.last ?? [],

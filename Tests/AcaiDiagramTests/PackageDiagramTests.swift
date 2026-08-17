@@ -8,7 +8,6 @@ struct PackageDiagramTests {
 
     // MARK: - Fixtures
 
-    /// Two modules: `ModuleA` (two concrete classes) depends on `ModuleB` (one protocol).
     private func twoModuleArtifact() -> CodeArtifact {
         let typeA = TypeDeclaration(
             id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public,

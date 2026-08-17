@@ -16,7 +16,6 @@ struct ParserConformanceChecker {
         var description: String { "[#\(invariant)] \(detail)" }
     }
 
-    /// Returns every invariant violation in `artifact` (empty when it is contract-conformant).
     func violations(in artifact: CodeArtifact) -> [Violation] {
         var violations: [Violation] = []
         let flat = artifact.flattened()

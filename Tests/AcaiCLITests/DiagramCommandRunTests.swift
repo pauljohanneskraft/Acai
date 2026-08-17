@@ -8,8 +8,6 @@ import Testing
 @Suite("Diagram Command Run")
 struct DiagramCommandRunTests {
 
-    /// Asserts that running `diagram` with `arguments` throws an error whose message contains
-    /// `expected`.
     private func expectRunError(_ arguments: [String], contains expected: String) throws {
         var cmd = try CLITestSupport.parseDiagram(arguments)
         #expect {
@@ -159,7 +157,6 @@ struct DiagramCommandRunTests {
     @Test func untraceableSequenceEntryPointThrows() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
-            // A real type/method split, but no such method exists to trace.
             try expectRunError(
                 ["--source", dir.path, "--sequence-from", "Service.missing"],
                 contains: "No calls could be traced"

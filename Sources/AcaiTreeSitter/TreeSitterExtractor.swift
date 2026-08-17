@@ -162,8 +162,7 @@ extension TreeSitterExtracting {
         return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
-    /// Recurses so the full set is known before any body is resolved. Declarations whose name can't
-    /// be read via `name` are skipped.
+    /// Declarations whose name can't be read via `name` are skipped.
     public func collectDeclaredTypeNames(
         from root: Node,
         declarationNodeTypes: Set<String>,
@@ -182,10 +181,9 @@ extension TreeSitterExtracting {
         return names
     }
 
-    /// Type-like identifier names referenced anywhere inside a member's body/initializer subtree — the
-    /// dependencies the coupling metrics consume. Walks iteratively (explicit stack) so a deeply
-    /// nested body can't overflow the stack. Over-captures every identifier by design; the engine
-    /// keeps only names that resolve to a known type.
+    /// Walks iteratively (explicit stack) so a deeply nested body can't overflow the stack.
+    /// Over-captures every identifier by design; the engine keeps only names that resolve to a known
+    /// type.
     public func referencedTypeNames(in body: Node?) -> [String] {
         guard let body else { return [] }
         var names: Set<String> = []

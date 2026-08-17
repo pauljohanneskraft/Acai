@@ -7,8 +7,6 @@ import Testing
 @MainActor
 struct MermaidExportTests {
 
-    /// Builds an isolated view model whose store lives in a throwaway temp directory and holds
-    /// one codebase with a saved artifact.
     private func makeModel() -> (ProjectBrowserViewModel, UUID) {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("acai-mermaid-export-\(UUID().uuidString)", isDirectory: true)

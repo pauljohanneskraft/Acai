@@ -174,7 +174,6 @@ struct KotlinTypeResolutionTests {
         let artifact = parser.parse(source: source, fileName: "Dog.kt")
         let inheritance = artifact.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.app.Dog")
-        // "Animal" is not in this file, so it stays as is.
         #expect(inheritance?.target == "Animal")
     }
 
@@ -236,7 +235,6 @@ struct KotlinTypeResolutionTests {
 
         let inheritance = merged.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.Dog")
-        // Target is just "Animal" because it's not defined in Dog.kt.
         #expect(inheritance?.target == "Animal")
 
         #expect(merged.types.contains { $0.id == "com.example.Animal" })

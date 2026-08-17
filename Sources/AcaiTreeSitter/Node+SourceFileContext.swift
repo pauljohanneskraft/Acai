@@ -28,10 +28,8 @@ extension Node {
 
     // MARK: - Text-dependent child queries
 
-    /// Returns `true` if any **anonymous** (non-named) direct child's text equals `keyword`.
-    ///
-    /// Useful for detecting grammar keywords such as `val`, `var`, `interface` that
-    /// tree-sitter represents as anonymous nodes.
+    /// Useful for detecting grammar keywords such as `val`, `var`, `interface` that tree-sitter
+    /// represents as anonymous (non-named) nodes.
     public func hasAnonymousChild(_ keyword: String, in context: SourceFileContext) -> Bool {
         children().contains { !$0.isNamed && $0.text(in: context) == keyword }
     }

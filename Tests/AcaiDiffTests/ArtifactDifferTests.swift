@@ -35,7 +35,6 @@ struct ArtifactDifferTests {
     }
 
     @Test func detectsAddedAndRemovedRelationships() {
-        // User→Account inheritance removed; OrderService→PaymentGateway dependency added.
         let old = artifact(
             [type("User"), type("Account"), type("OrderService"), type("PaymentGateway")],
             [Relationship(kind: .inheritance, source: "User", target: "Account")])
@@ -135,7 +134,6 @@ struct ArtifactDifferTests {
     }
 
     @Test func reportsMetricDeltas() {
-        // Adding a cross-type dependency shifts fan-in/out and module coupling.
         let old = artifact([type("A"), type("B")])
         let new = artifact([type("A"), type("B")],
                            [Relationship(kind: .dependency, source: "A", target: "B")])

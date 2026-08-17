@@ -116,7 +116,6 @@ struct KotlinAccessLevelTests {
         let artifact = parser.parse(source: source, fileName: "Constants.kt")
         let companion = artifact.types[0].nestedTypes[0]
         let maxSize = companion.members.first { $0.name == "MAX_SIZE" }
-        // const val → both .const (from modifier) and .readonly (from val)
         #expect(maxSize?.modifiers.contains(.const) == true)
         #expect(maxSize?.modifiers.contains(.readonly) == true)
     }

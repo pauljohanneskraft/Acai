@@ -28,7 +28,6 @@ struct ThemingTests {
         #expect(!dot.contains("bgcolor"))
         #expect(!dot.contains("BGCOLOR"))
         #expect(!dot.contains("<FONT COLOR="))
-        // Structure is retained.
         #expect(dot.contains("digraph Acai"))
         #expect(dot.contains("<TABLE BORDER=\"1\""))
     }

@@ -5,8 +5,6 @@ import AcaiLibrary
 
 @Suite("Acai Library Tests")
 struct AcaiLibraryTests {
-    /// The broadened call-site capture (self-calls + static calls) must reach the generated
-    /// sequence diagram, making it denser than property-receiver calls alone would.
     @Test func sequenceDiagramIncludesSelfAndStaticCalls() {
         let source = """
         class Logger { static func log() {} }
@@ -23,7 +21,6 @@ struct AcaiLibraryTests {
         """
         let artifact = SwiftCodeParser().parse(source: source, fileName: "Worker.swift")
         let diagram = SequenceDiagramBuilder(entryPoint: ("Worker", "run")).build(from: artifact)
-        // Cross-type property call.
         #expect(diagram.messages.contains {
             $0.from == "Worker" && $0.to == "Helper" && $0.label == "process"
         })
@@ -31,21 +28,18 @@ struct AcaiLibraryTests {
         #expect(diagram.messages.contains {
             $0.from == "Worker" && $0.to == "Worker" && $0.label == "validate"
         })
-        // Static `TypeName.method()` call.
         #expect(diagram.messages.contains {
             $0.from == "Worker" && $0.to == "Logger" && $0.label == "log"
         })
     }
 
-    /// `parser(for:)` returns the registered parser, and `nil` (not a silent Swift fallback)
-    /// for an unregistered language — surfacing the "forgot to register a parser" bug.
+    /// Returns `nil` for an unregistered language rather than silently falling back to Swift.
     @Test func parserLookupReturnsNilForUnregisteredLanguage() {
         let service = AnalysisService(parsers: [SwiftCodeParser()])
         #expect(service.parser(for: .swift)?.language == .swift)
         #expect(service.parser(for: .kotlin) == nil)
     }
 
-    /// Dart previously produced no call sites, so its sequence diagrams were always empty.
     @Test func dartSequenceDiagramIsNoLongerEmpty() {
         let source = """
         class Helper {

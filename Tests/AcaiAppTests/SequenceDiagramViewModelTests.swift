@@ -118,7 +118,6 @@ struct SequenceDiagramViewModelTests {
 
     @Test func selectNodesInRectSelectsContainedParticipants() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
-        // A rect spanning the whole layout selects every participant.
         vm.selectNodes(in: CGRect(x: -10_000, y: -10_000, width: 20_000, height: 20_000))
         #expect(vm.selectedNodeIDs == ["Service", "Repository"])
     }

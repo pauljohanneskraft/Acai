@@ -2,8 +2,6 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Covers `HealthCheck`: a clean artifact scores 1.0; diagnostics lower the score, are counted by
-/// kind, and are sorted by location.
 @Suite("Core: HealthCheck")
 struct HealthCheckTests {
 

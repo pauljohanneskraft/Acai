@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// Thread-safe call counter for the coordinator's injectable fetch spy.
 private final class FetchSpy: @unchecked Sendable {
     private let lock = NSLock()
     private(set) var fetchedPaths: [String] = []

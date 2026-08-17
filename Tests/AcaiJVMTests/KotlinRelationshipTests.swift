@@ -33,7 +33,6 @@ struct KotlinRelationshipTests {
         #expect(animal.id == "com.example.domain.Animal")
         #expect(dog.id == "com.example.domain.Dog")
 
-        // Relationship source/target must use qualified IDs matching type.id.
         let inheritance = artifact.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.domain.Dog")
         #expect(inheritance?.target == "com.example.domain.Animal")

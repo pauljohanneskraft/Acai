@@ -17,7 +17,6 @@ struct SwiftParseErrorTests {
         #expect(artifact.metadata.hasParseErrors == true)
         let diagnostics = artifact.metadata.parseDiagnostics
         #expect(!diagnostics.isEmpty)
-        // SwiftSyntax gives a real location and a human-readable message.
         #expect(diagnostics.allSatisfy { $0.location.filePath == "Bad.swift" })
         #expect(diagnostics.allSatisfy { $0.location.line >= 1 })
         #expect(diagnostics.allSatisfy { !$0.message.isEmpty })

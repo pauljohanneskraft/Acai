@@ -2,8 +2,6 @@ import ArgumentParser
 import Testing
 @testable import AcaiCLI
 
-/// Verifies the `ExpressibleByArgument` option enums under `Sources/AcaiCLI/Options/`: valid raw
-/// values construct, map to the right domain value, and invalid raw values fail to parse.
 @Suite("Option Parsing")
 struct OptionParsingTests {
 

@@ -5,7 +5,6 @@ struct RelationshipExtractor {
 
     // MARK: - Composition Expansion
 
-    /// Expands a potentially composed type (`A & B & C`) into individual type names.
     private func expandTypeNames(_ typeSyntax: TypeSyntax) -> [String] {
         // Route through `extractTypeReference` so attributes and optional/array sugar are stripped,
         // keeping edge endpoints consistent with `TypeDeclaration.inheritedTypes`.
@@ -59,10 +58,10 @@ struct RelationshipExtractor {
     }
 
     func extract(from node: ExtensionDeclSyntax, typeId: String) -> [Relationship] {
-        // Extensions emit no relationships at parse time. `CodeArtifact.resolvingExtensions()`
-        // is the single source of truth: it merges in-codebase extension conformances (so the
-        // edge source is the real target id) and drops extensions of external types. Emitting
-        // here as well produced dangling `.extension` edges and duplicate conformances.
+        // Extensions emit no relationships at parse time. `CodeArtifact.resolvingExtensions()` is the
+        // single source of truth: it merges in-codebase extension conformances (so the edge source is
+        // the real target id) and drops extensions of external types. Emitting relationships here too
+        // would create dangling `.extension` edges and duplicate conformances.
         []
     }
 

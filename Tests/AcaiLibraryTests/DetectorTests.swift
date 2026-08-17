@@ -11,7 +11,6 @@ struct DetectorTests {
 
     // MARK: - Fixture helpers
 
-    /// Runs `body` against a fresh temporary directory, removed afterwards.
     private func withTempDir(_ body: (URL) throws -> Void) throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("detector-tests-\(UUID().uuidString)", isDirectory: true)
@@ -20,7 +19,6 @@ struct DetectorTests {
         try body(dir.standardizedFileURL)
     }
 
-    /// Writes `contents` to `relativePath` under `root`, creating intermediate directories.
     private func write(_ relativePath: String, in root: URL, contents: String = "// file") throws {
         let url = root.appendingPathComponent(relativePath)
         try FileManager.default.createDirectory(
@@ -42,14 +40,11 @@ struct DetectorTests {
             try write("Package.swift", in: root)
             #expect(detector.isPresent(at: root))
 
-            // No Sources/ → root.
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .swift)
                 == [root.lastPathComponent])
-            // With Sources/ → Sources.
             try write("Sources/A.swift", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .swift)
                 == ["Sources"])
-            // Language filter excludes Swift.
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin]).isEmpty)
         }
     }
@@ -82,7 +77,6 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(dirNames(specs, for: .kotlin) == ["kotlin"])
             #expect(dirNames(specs, for: .java) == ["java"])
-            // Filter to Kotlin only.
             let kotlinOnly = detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin])
             #expect(kotlinOnly.map(\.language) == [.kotlin])
         }
@@ -93,7 +87,6 @@ struct DetectorTests {
         try withTempDir { root in
             try write("pom.xml", in: root)
             #expect(detector.isPresent(at: root))
-            // Loose .java at root (no src/main/java) → root fallback.
             try write("Main.java", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .java)
                 == [root.lastPathComponent])
@@ -109,12 +102,11 @@ struct DetectorTests {
             try write("package.json", in: root, contents: "{}")
             #expect(detector.isPresent(at: root))
 
-            // TS present → TypeScript spec, JS suppressed unless explicitly requested.
+            // JS is suppressed by default when TS is present, unless explicitly requested.
             try write("src/a.ts", in: root)
             try write("src/b.js", in: root)
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.map(\.language) == [.typeScript])
-            // Explicitly requesting JS surfaces it alongside.
             let withJS = detector.discoverSourceSpecs(at: root, requestedLanguages: [.javaScript])
             #expect(withJS.contains { $0.language == .javaScript })
         }
@@ -138,9 +130,8 @@ struct DetectorTests {
             #expect(!detector.isPresent(at: root))
             try write("pubspec.yaml", in: root, contents: "name: app")
             #expect(detector.isPresent(at: root))
-            // No Dart files yet → no spec (file-existence verification).
+            // Manifest alone isn't enough — the detector verifies matching source files exist.
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).isEmpty)
-            // lib/ with Dart → lib.
             try write("lib/main.dart", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
                 == ["lib"])
@@ -155,9 +146,7 @@ struct DetectorTests {
             #expect(!detector.isPresent(at: root))
             try write("pyproject.toml", in: root, contents: "[project]")
             #expect(detector.isPresent(at: root))
-            // Manifest but no .py → no spec.
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).isEmpty)
-            // src/ layout preferred.
             try write("src/app.py", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .python)
                 == ["src"])
@@ -179,7 +168,6 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.contains { $0.language == .c })
             #expect(specs.contains { $0.language == .cpp })
-            // Filter to C++ only.
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.cpp]).map(\.language) == [.cpp])
         }
     }

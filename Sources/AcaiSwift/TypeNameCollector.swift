@@ -1,9 +1,7 @@
 import SwiftSyntax
 
-/// One pre-pass over a Swift source tree gathering the simple names of every declared type
-/// (class/struct/enum/protocol/actor, plus extended types). Run before ``DeclarationVisitor``
-/// so call-site resolution sees the *complete* set of type names up front — including
-/// forward-declared siblings — rather than only types visited so far.
+/// One pre-pass over a Swift source tree gathering the simple names of every declared type. Run before
+/// ``DeclarationVisitor`` so call-site resolution sees forward-declared siblings too.
 final class TypeNameCollector: SyntaxVisitor {
     private(set) var names: Set<String> = []
 

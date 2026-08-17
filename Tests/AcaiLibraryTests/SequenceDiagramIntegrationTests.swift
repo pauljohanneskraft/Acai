@@ -41,7 +41,6 @@ struct SequenceDiagramIntegrationTests {
             $0.from == "ProjectBrowserViewModel" && $0.to == "ProjectStore"
                 && $0.label == "save" && $0.kind == .synchronous
         })
-        // Every call gets a matching return.
         #expect(diagram.messages.contains { $0.kind == .return && $0.to == "ProjectBrowserViewModel" })
     }
 
@@ -88,8 +87,6 @@ struct SequenceDiagramIntegrationTests {
 
             for member in type.members where member.kind == .method && memberNameCounts[member.name] == 1 {
                 for site in member.callSites {
-                    // Only calls whose receiver is another uniquely-named parsed type that
-                    // actually declares the called method.
                     guard let receiver = site.receiverType,
                           receiver != type.name,
                           let receiverType = uniqueTypes[receiver],

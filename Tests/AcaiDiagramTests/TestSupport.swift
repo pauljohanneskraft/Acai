@@ -102,22 +102,18 @@ extension ClassDiagramOptions {
 }
 
 extension ClassDiagramDOTRenderer {
-    /// Test convenience: a generator with default options bound to the `.test` language fixture.
     init() { self.init(options: ClassDiagramOptions()) }
 }
 
 extension ClassDiagramMermaidRenderer {
-    /// Test convenience: a renderer with default options bound to the `.test` language fixture.
     init() { self.init(options: ClassDiagramOptions()) }
 }
 
 extension CodeArtifact {
-    /// Test convenience mirroring the former no-argument `enriched()` using the `.test` fixture.
     func enriched() -> CodeArtifact { enriched(configuration: .test) }
 }
 
 extension ClassDiagram {
-    /// Test convenience building a `ClassDiagram` with the `.test` language fixture.
     init(_ artifact: CodeArtifact) {
         self.init(artifact: artifact, options: EnrichmentOptions(
             languages: LanguageConfigurationResolver(single: .test)))

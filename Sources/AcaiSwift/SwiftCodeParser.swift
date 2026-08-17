@@ -21,8 +21,7 @@ public struct SwiftCodeParser: CodeParser {
             protocolProperties: protocolPropertyCollector.propertiesByProtocol)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
-        // Surface malformed input rather than silently returning a partial tree. SwiftSyntax
-        // gives human-readable diagnostics with positions, so report them concretely.
+        // Surface malformed input rather than silently returning a partial tree.
         if sourceFile.hasError {
             let converter = SourceLocationConverter(fileName: fileName, tree: sourceFile)
             artifact.metadata.parseDiagnostics = ParseDiagnosticsGenerator

@@ -23,7 +23,6 @@ struct SwiftParserFixesTests {
         let names = artifact.types.map(\.name).sorted()
         #expect(names == ["First", "Second"])
         let first = artifact.types.first { $0.name == "First" }
-        // The nested function must NOT be recorded as a member; only `outer` is.
         #expect(first?.members.filter { $0.kind == .method }.map(\.name) == ["outer"])
     }
 
@@ -127,7 +126,6 @@ struct SwiftParserFixesTests {
         """
         let artifact = parser.parse(source: source, fileName: "G.swift")
         #expect(artifact.globalVariables.map(\.name).sorted() == ["current", "maxCount"])
-        // Globals are not confused with type members.
         #expect(artifact.types.map(\.name) == ["Thing"])
     }
 

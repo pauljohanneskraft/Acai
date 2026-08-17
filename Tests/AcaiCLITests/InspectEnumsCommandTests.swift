@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai inspect --enums`: the enum-case inventory (cases, raw values, associated values),
-/// and an empty array when there are no enums.
 @Suite("Inspect Enums Command")
 struct InspectEnumsCommandTests {
 

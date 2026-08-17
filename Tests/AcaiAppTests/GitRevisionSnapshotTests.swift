@@ -21,7 +21,6 @@ struct GitRevisionSnapshotTests {
         try git(["add", "-A"], in: dir)
         try git(["commit", "-q", "-m", "initial"], in: dir)
 
-        // Edit the working tree (uncommitted): rename Foo → Bar.
         try "class Bar {}\n".write(to: source, atomically: true, encoding: .utf8)
 
         let old = try GitRevisionSnapshot(directory: dir, reference: "HEAD").artifact()

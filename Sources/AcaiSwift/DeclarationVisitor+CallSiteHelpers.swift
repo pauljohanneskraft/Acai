@@ -1,8 +1,6 @@
 import SwiftSyntax
 import AcaiCore
 
-// Stack management and call-site-resolution helpers — in a separate file so `DeclarationVisitor`'s
-// main declaration stays within SwiftLint's `file_length`/`type_body_length`.
 extension DeclarationVisitor {
 
     // MARK: - Stack Management
@@ -45,10 +43,9 @@ extension DeclarationVisitor {
         return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
 
-    /// Method names with more than one distinct return type among this type's own overloads, from the
-    /// same raw pre-pass as `returnTypeMap` — which silently drops these, indistinguishable from "not
-    /// declared here" unless tracked separately. Keeps a genuinely ambiguous overload dropped rather
-    /// than deferred to the post-merge pass, which resolves per-type and would otherwise guess.
+    /// Method names `returnTypeMap` silently drops for having more than one distinct return type among
+    /// overloads — tracked separately so such a name is never deferred to the post-merge pass, which
+    /// resolves per-type and would otherwise guess.
     func ambiguousReturnTypeMethodNames(from memberBlock: MemberBlockSyntax) -> Set<String> {
         var typesByName: [String: Set<String>] = [:]
         for item in memberBlock.members {
