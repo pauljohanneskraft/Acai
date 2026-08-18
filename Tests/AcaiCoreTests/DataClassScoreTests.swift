@@ -21,8 +21,6 @@ struct DataClassScoreTests {
     }
 
     @Test func computedPropertiesCountAsBehaviour() {
-        // A SwiftUI-View shape: one stored `let` + a computed `body`. The computed property is
-        // behaviour, so this is 1 stored of 2 → 0.5.
         let view = type("Row", kind: .struct, module: "App", members: [
             Member(name: "title", kind: .property, accessLevel: .internal),
             Member(name: "body", kind: .property, accessLevel: .internal, isComputed: true)
@@ -31,7 +29,6 @@ struct DataClassScoreTests {
     }
 
     @Test func pureDataTransferObjectStaysFullyData() {
-        // A DTO of stored `let`s only must still score 1.0 (pure data).
         let dto = type("Point", kind: .struct, module: "App", members: [
             Member(name: "x", kind: .property, accessLevel: .public),
             Member(name: "y", kind: .property, accessLevel: .public),
@@ -41,7 +38,6 @@ struct DataClassScoreTests {
     }
 
     @Test func computedOnlyTypeIsPureBehaviour() {
-        // A type whose only member is a computed property is pure behaviour → 0.0, never flagged as data.
         let gate = type("Gate", kind: .struct, module: "App", members: [
             Member(name: "isOpen", kind: .property, accessLevel: .public, isComputed: true)
         ])

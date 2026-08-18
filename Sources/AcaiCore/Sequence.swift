@@ -8,7 +8,6 @@ extension Sequence {
 }
 
 extension Sequence where Element: Hashable {
-    /// The elements with later duplicates removed, preserving first-seen order.
     public func uniqued() -> [Element] {
         removingDuplicates(by: { $0 })
     }

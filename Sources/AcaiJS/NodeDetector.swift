@@ -28,8 +28,6 @@ public struct NodeDetector: BuildSystemDetector {
         if hasTS, request.wants(.typeScript) {
             specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs))
         }
-        // Add JavaScript only when JS files exist AND the project isn't purely TypeScript,
-        // or the user explicitly requested JavaScript.
         if hasJS, request.wants(.javaScript), !hasTS || request.explicitlyWants(.javaScript) {
             specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs))
         }
@@ -39,8 +37,6 @@ public struct NodeDetector: BuildSystemDetector {
 
     // MARK: - tsconfig.json Parsing
 
-    /// Reads `tsconfig.json` and returns configured source directories.
-    /// Returns `nil` if the file is absent or provides no path information.
     private func tsConfigSourceDirs(in rootURL: URL) -> [URL]? {
         let tsconfigURL = rootURL.appendingPathComponent("tsconfig.json")
         guard

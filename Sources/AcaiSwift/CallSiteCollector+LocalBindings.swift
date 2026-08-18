@@ -1,8 +1,7 @@
 import SwiftSyntax
 import AcaiCore
 
-/// Local/guard-let binding type resolution — split out of `CallSiteCollector.swift` to keep that
-/// file under the project's length limits.
+/// Local/guard-let binding type resolution.
 extension CallSiteCollector {
     /// The type a `let`/`var` binding provably introduces for receiver resolution: read off an explicit
     /// annotation, a construction initializer, or a same-type method call (resolved via
@@ -20,8 +19,7 @@ extension CallSiteCollector {
             ambiguousMethodNames: ambiguousMethodNames)
     }
 
-    /// The `guard let x = …` / `if let x = …` analogue of ``localBinding(from:methodReturnTypes:)`` —
-    /// same provable shapes, read off `OptionalBindingConditionSyntax`'s equivalent fields.
+    /// The `guard let x = …` / `if let x = …` analogue of ``localBinding(from:methodReturnTypes:)``.
     func localBinding(
         from binding: OptionalBindingConditionSyntax, methodReturnTypes: [String: String] = [:],
         ambiguousMethodNames: Set<String> = []
@@ -33,8 +31,6 @@ extension CallSiteCollector {
             ambiguousMethodNames: ambiguousMethodNames)
     }
 
-    /// Shared resolution behind both `localBinding(from:)` overloads — see their docs for the provable
-    /// shapes.
     private func localBindingType(
         name: String, typeAnnotation: TypeSyntax?, initializerValue: ExprSyntax?,
         methodReturnTypes: [String: String], ambiguousMethodNames: Set<String>

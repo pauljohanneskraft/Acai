@@ -33,8 +33,8 @@ struct AbstractionLookupTests {
     @Test("Non-abstractions and unknown names resolve to nil")
     func nonAbstractionsAreNil() {
         let art = artifact()
-        #expect(art.abstractionType(named: "Impl") == nil)   // concrete type
-        #expect(art.abstractionType(named: "Nope") == nil)   // unknown
+        #expect(art.abstractionType(named: "Impl") == nil)
+        #expect(art.abstractionType(named: "Nope") == nil)
         #expect(art.abstractionType(named: "any Nope") == nil)
     }
 

@@ -1,7 +1,5 @@
 import AcaiCore
 
-/// Renders a `CodeArtifact` as a Mermaid `classDiagram`.
-///
 /// Mirrors `ClassDiagramDOTRenderer`: it builds the same `ClassDiagram` model and honours the
 /// member/visibility/relationship options, but emits Mermaid instead of DOT so the
 /// result embeds directly in Markdown.
@@ -14,12 +12,10 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         self.options = options
     }
 
-    /// Builds the `ClassDiagram` model from `artifact`, then renders it.
     public func generate(from artifact: CodeArtifact) -> String {
         generate(from: ClassDiagramBuilder(options: options).build(from: artifact))
     }
 
-    /// Renders a pre-built `ClassDiagram` model (built once via `CodeArtifact.classDiagram`).
     public func generate(from enriched: ClassDiagram) -> String {
         var lines: [String] = themePreamble
         lines.append("classDiagram")

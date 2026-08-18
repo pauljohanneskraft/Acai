@@ -3,16 +3,13 @@ import Foundation
 import ImageIO
 import XCTest
 
-/// Perceptually diffs an `XCUIScreenshot` against a golden committed under
-/// `App/AcaiUITests/__Snapshots__/`.
-///
 /// Duplicated from `Tests/AcaiAppTests/ViewSnapshot.swift`'s `SnapshotComparator` rather than
 /// shared: this is a standalone Xcode-project target, not SwiftPM, so there's no product boundary
 /// to import another test target's internal types through.
 @MainActor
 struct ScreenshotComparator {
-    /// iPad journeys capture both device rotations for states that plausibly lay out differently in
-    /// each; iPhone and macOS goldens are always a plain `<state>.png`.
+    /// iPad journeys capture both rotations for states that plausibly lay out differently in each;
+    /// iPhone and macOS goldens are always a plain `<state>.png`.
     enum Orientation: String {
         case portrait
         case landscape
@@ -21,8 +18,8 @@ struct ScreenshotComparator {
     let goldenDirectory: URL
     /// Looser than the render snapshot tests' default — a full captured window has real
     /// rendering/anti-aliasing drift. macOS is widened further still: ~2–2.3% drift measured between
-    /// separate real-window launches of the same state (window-server font hinting noise a simulator
-    /// doesn't have); iOS/iPad showed none of it, so their tighter default stays.
+    /// separate real-window launches of the same state (window-server font hinting noise a
+    /// simulator doesn't have); iOS/iPad showed none of it.
     var maxChangedFraction: Double
 
     init(goldenDirectory: URL, maxChangedFraction: Double? = nil) {
@@ -32,38 +29,22 @@ struct ScreenshotComparator {
 
     private let comparisonSide = 256
     private let perCellDelta = 16
-    /// Top rows of the 256×256 grid to always treat as matching, on iOS/iPad only — measured
-    /// empirically against a real CI failure (`ClassDiagram/populated` and `inspectorOpen` both
-    /// dropped from ~150 changed cells to exactly 0 once this band was excluded; a third state's
-    /// residual cells were a separate, smaller keyboard-warmup artifact, not this). `simulator_prepare.sh`
-    /// pins the status bar via `simctl status_bar override` specifically so goldens don't churn on
-    /// the wall clock/battery, but that override has been observed to not land on whichever
-    /// simulator instance a given CI run actually tests against — masking the band makes that
-    /// intermittent miss harmless instead of chasing its root cause. macOS has no status bar, so it
-    /// stays unmasked there.
+    /// Top rows of the 256×256 grid to always treat as matching, on iOS/iPad only.
+    /// `simulator_prepare.sh` pins the status bar via `simctl status_bar override` so goldens don't
+    /// churn on the wall clock/battery, but that override has been observed to intermittently not
+    /// land on whichever simulator a given CI run tests against — masking the band makes that miss
+    /// harmless instead of chasing its root cause. macOS has no status bar, so it stays unmasked.
     private let statusBarMaskRows = 12
 
     /// Where every `validate` call writes its capture — never `goldenDirectory` itself, which stays
-    /// read-only (`validate` only ever reads it, to decide whether a state can be copied forward
-    /// unchanged). Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>` layout, so a
-    /// human can review/copy the output over the committed goldens with no per-file renaming — same
-    /// convention `build-test.yml`'s "Upload UI test screenshots" step uses for its artifact.
-    ///
-    /// This is why there's no local "record mode" for this comparator (unlike the render snapshot
-    /// tests' `SnapshotComparator`, which has one): every run, anywhere, already leaves a
-    /// ready-to-drop-in folder behind, so getting new/updated goldens is always the same action —
-    /// push, let CI fail, download that platform's artifact, copy it over `__Snapshots__/`, commit.
-    /// A rendering-sensitive suite like this one benefits from that folder coming from CI's own
-    /// environment anyway, since a local machine's renderer won't reliably match it bit-for-bit.
-    ///
-    /// Not `FileManager.default.temporaryDirectory` on macOS: the UI test runner is sandboxed, so
-    /// that resolves inside the runner's own container (an opaque, per-run path) rather than a
-    /// fixed one a workflow/human can point at directly — see `Launch.swift`'s identical reasoning
-    /// for fixture staging. `/private/tmp` avoids that; `AcaiUITests-macOS.entitlements` already
-    /// grants write access to it. iOS's simulator has no such restriction (writing directly into
-    /// the checked-out source tree already worked before this existed), so it uses a plain sibling
-    /// of `goldenDirectory` instead — easier to find than a temp path, and `project.yml` already
-    /// excludes it from the test bundle's own sources.
+    /// read-only. Mirrors its `<platform>/<viewType>/<state>` layout, so a human can review/copy
+    /// the output over the committed goldens with no per-file renaming. There's no local "record
+    /// mode" (unlike the render snapshot tests' `SnapshotComparator`): every run already leaves a
+    /// ready-to-drop-in folder behind, since a local renderer won't reliably match CI's
+    /// bit-for-bit anyway. Not `FileManager.default.temporaryDirectory` on macOS: that resolves
+    /// inside the sandboxed UI test runner's own container (see `Launch.swift`'s identical
+    /// reasoning). iOS's simulator has no such restriction, so it uses a plain sibling of
+    /// `goldenDirectory` instead.
     private var outputDirectory: URL {
         #if os(macOS)
         URL(fileURLWithPath: "/private/tmp/AcaiUITestSnapshots", isDirectory: true)
@@ -73,8 +54,7 @@ struct ScreenshotComparator {
     }
 
     /// Fallback write target for macOS, in case even `outputDirectory`'s entitled `/private/tmp`
-    /// write unexpectedly fails. Mirrors `goldenDirectory`'s own `<platform>/<viewType>/<state>`
-    /// layout so `Scripts/sync_ui_snapshots.sh` can copy it into place with no per-file renaming.
+    /// write unexpectedly fails. `Scripts/sync_ui_snapshots.sh` copies it into place.
     private var stagingDirectory: URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("AcaiUITestSnapshots", isDirectory: true)
     }
@@ -111,16 +91,9 @@ struct ScreenshotComparator {
     }
 
     /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png`.
-    /// Platform comes first in the path so a CI job can upload just its own platform's subtree as a
-    /// self-contained artifact. Regardless of pass/fail, attaches the screenshot to `testCase`
-    /// (`.keepAlways`) so it's reviewable in the test report — this layer doubles as a
-    /// human-reviewable screenshot journey, not only an automated regression check. Every call also
-    /// writes its capture to `outputDirectory` (see its own doc comment for why that's the only,
-    /// always-on way to get a new/updated golden here) via `write`, which CI's `Build & Test` UI
-    /// jobs upload whenever a run fails.
     /// `maxChangedFraction` is a per-call override (not per-instance) since one comparator is
-    /// typically reused across a whole journey and only a state or two needs a looser bound (e.g. a
-    /// `Menu`'s translucent material doesn't render byte-identically across separate app launches).
+    /// typically reused across a whole journey and only a state or two needs a looser bound (e.g.
+    /// a `Menu`'s translucent material doesn't render byte-identically across separate launches).
     func validate(
         viewType: String, state: String, orientation: Orientation? = nil,
         screenshot: XCUIScreenshot, testCase: XCTestCase, maxChangedFraction overrideMaxChangedFraction: Double? = nil
@@ -138,8 +111,7 @@ struct ScreenshotComparator {
         let url = goldenDirectory.appendingPathComponent("\(name).png")
         let rendered = screenshot.pngRepresentation
 
-        // No golden yet — write the fresh capture as-is (there's nothing to compare against or
-        // keep byte-identical to) so it's still in the uploaded folder for this genuinely new state.
+        // No golden yet — write the fresh capture as-is so it's still in the uploaded folder.
         guard let committed = try? Data(contentsOf: url) else {
             write(rendered, name: name)
             XCTFail(
@@ -161,17 +133,13 @@ struct ScreenshotComparator {
             return
         }
 
-        // Writes `rendered` itself only when it drifted beyond `threshold` (a real change worth
-        // surfacing); otherwise writes the committed golden's own bytes — byte-identical to what's
-        // already committed, so an unchanged state produces no diff for a human dropping the output
-        // over `__Snapshots__/`, rather than churn from this capture's own rendering noise (the same
-        // noise `threshold` exists to tolerate in the first place).
+        // Below-threshold drift writes the committed golden's own bytes back, so an unchanged state
+        // produces no diff for a human dropping the output over `__Snapshots__/`.
         write(changed <= threshold ? committed : rendered, name: name)
 
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
-        // Logged unconditionally (pass or fail) so `maxChangedFraction` can be tightened from real
-        // measured noise floors across a run instead of trial-and-error — grep the console/activity
-        // log for "drift:" after a run to see every state's actual fraction.
+        // Logged unconditionally (pass or fail) — grep the console/activity log for "drift:" to see
+        // every state's actual fraction, for tightening `maxChangedFraction` from real measurements.
         XCTContext.runActivity(named: String(
             format: "drift: %@ = %.4f%% (%d/%d cells, threshold %.4f%%)",
             name, changed * 100, changedCells, comparisonSide * comparisonSide, threshold * 100
@@ -181,11 +149,9 @@ struct ScreenshotComparator {
         )
     }
 
-    /// Writes `data` to `outputDirectory`, falling back to `stagingDirectory` (see its own doc
-    /// comment) if that write unexpectedly fails. Runs on every `validate` call — see
-    /// `outputDirectory`'s doc comment for why. A write failure is logged rather than failing the
-    /// test: it's a best-effort extra on top of the real drift assertion, and an unrelated write
-    /// hiccup shouldn't obscure that assertion or turn an otherwise-passing run red.
+    /// Falls back to `stagingDirectory` if the `outputDirectory` write unexpectedly fails. A write
+    /// failure is logged, not thrown — an unrelated write hiccup shouldn't obscure the real drift
+    /// assertion in `validate`.
     private func write(_ data: Data, name: String) {
         let url = outputDirectory.appendingPathComponent("\(name).png")
         do {

@@ -2,13 +2,11 @@ import Foundation
 
 /// GitHub App device-flow sign-in: request a device code, show the user a short code plus a URL
 /// to visit, then poll until they've authorized it. No client secret and no redirect URL needed —
-/// device flow authenticates with the client ID alone (see `GitHubAppConfiguration` for the
-/// one-time app registration this depends on).
+/// device flow authenticates with the client ID alone.
 struct GitHubDeviceAuthFlow {
     let clientID: String
     var session: URLSession = .shared
 
-    /// A pending sign-in: the code to show the user, where to enter it, and how long it's valid.
     struct DeviceCode {
         var deviceCode: String
         var userCode: String
@@ -69,7 +67,6 @@ struct GitHubDeviceAuthFlow {
         }
     }
 
-    /// `POST /login/device/code` — the first step, before anything is shown to the user.
     func requestDeviceCode() async throws -> DeviceCode {
         var request = URLRequest(url: URL(string: "https://github.com/login/device/code")!)
         request.httpMethod = "POST"
@@ -90,9 +87,8 @@ struct GitHubDeviceAuthFlow {
         )
     }
 
-    /// Polls `POST /login/oauth/access_token` until the user authorizes (or it expires/is denied/
-    /// the `Task` is cancelled). Retries through any error that isn't a definitive GitHub outcome
-    /// (`Failure`) or cancellation — a transient network hiccup shouldn't abandon the sign-in.
+    /// Retries through any error that isn't a definitive GitHub outcome (`Failure`) or
+    /// cancellation — a transient network hiccup shouldn't abandon the sign-in.
     func pollForCredential(_ deviceCode: DeviceCode) async throws -> GitHubCredential {
         var interval = deviceCode.interval
         while Date() < deviceCode.expiresAt {

@@ -4,9 +4,8 @@ import MCP
 import AcaiLibrary
 import AcaiRender
 
-/// `acai_image` — renders a diagram to a PNG (base64 image content the agent can actually see), for
-/// every diagram kind. macOS-only: rendering uses SwiftUI's `ImageRenderer`. Mirrors `acai image`.
-/// Dispatches to the shared `AcaiRender` image exporters.
+/// `acai_image` — renders a diagram to a PNG (base64 image content the agent can actually see).
+/// macOS-only: rendering uses SwiftUI's `ImageRenderer`. Mirrors `acai image`.
 struct ImageTool: AnalysisTool {
     let name = "acai_image"
     let description = """

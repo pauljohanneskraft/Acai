@@ -2,9 +2,7 @@ import SwiftUI
 
 /// The project-level Findings view: every quality violation, dead-code candidate, and
 /// health-check parse diagnostic across every codebase in the project, aggregated into one
-/// sortable (severity first, then recency), filterable (kind, codebase) list — previously these
-/// lenses lived buried inside `CodebaseDetailView`'s scroll, one codebase at a time, each in its own
-/// collapsible section a user had to know to expand.
+/// sortable (severity first, then recency), filterable (kind, codebase) list.
 ///
 /// Every row is a `CodeElementReference`, so it gets the full "Open in…"/View Source treatment
 /// for free, plus a "Suppress" action writing to a project-level baseline file.
@@ -19,6 +17,7 @@ struct FindingsView: View {
     @State private var suppression = FindingsSuppressionBaseline()
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
+    @State private var suppressionSavePhase: AsyncOperationPhase = .idle
 
     private var project: Project? {
         model.store.projects.first { $0.id == projectID }
@@ -115,6 +114,7 @@ struct FindingsView: View {
         let visible = filteredAndSorted(allFindings)
         VStack(alignment: .leading, spacing: 0) {
             filterBar(project: project)
+            AsyncOperationStatusView(identifierPrefix: "findings.suppressionSave", phase: suppressionSavePhase)
             if !stillAnalyzing.isEmpty || !notIndexed.isEmpty {
                 statusNote(stillAnalyzing: stillAnalyzing, notIndexed: notIndexed)
             }
@@ -213,8 +213,6 @@ struct FindingsView: View {
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
-    /// Filters by kind/codebase/suppression, then sorts severity-first, then by recency (the
-    /// codebase's own last-indexed time — the freshest per-finding signal available today).
     private func filteredAndSorted(_ findings: [Finding]) -> [Finding] {
         findings
             .filter { selectedKinds.contains($0.kind) }
@@ -231,9 +229,8 @@ struct FindingsView: View {
 
     // MARK: - Loading analyses / suppression
 
-    /// Fires off a background analysis for every codebase that doesn't have one cached yet.
     /// `ProjectBrowserViewModel.analyses` is `@Published`, so the view refreshes progressively as
-    /// each one completes rather than blocking on all of them together.
+    /// each codebase's analysis completes rather than blocking on all of them together.
     private func requestAnalyses() {
         guard let project else { return }
         for codebase in project.codebases {
@@ -265,13 +262,16 @@ struct FindingsView: View {
         // boundary as an immutable copy, not a captured mutable variable — the same rebinding
         // `ViewSourceButton.resolve()` uses for its own detached-task capture.
         let toSave = updated
+        suppressionSavePhase = .loading("Saving…")
         Task {
             do {
                 try await Task.detached(priority: .userInitiated) {
                     try FindingsSuppressionStore(baseDir: baseDir).save(toSave, projectID: projectID)
                 }.value
+                suppressionSavePhase = .loaded
             } catch {
                 suppressionError = error.localizedDescription
+                suppressionSavePhase = .failed(error.localizedDescription)
             }
         }
     }

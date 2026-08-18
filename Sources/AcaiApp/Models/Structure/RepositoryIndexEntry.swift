@@ -10,13 +10,10 @@ struct RepositoryIndexEntry: Identifiable, Hashable {
 }
 
 /// Builds the repository → codebases reverse index off a plain list of projects — a pure
-/// computation over already-in-memory data (no filesystem or network access), so it's cheap to
-/// call from a view body and easy to unit test without touching disk.
+/// computation over already-in-memory data, cheap to call from a view body.
 struct RepositoryIndex {
     let projects: [Project]
 
-    /// One entry per distinct remote URL referenced by at least one codebase, sorted by remote URL
-    /// for a stable display order.
     func entries() -> [RepositoryIndexEntry] {
         var codebasesByRemote: [URL: [Codebase]] = [:]
         for codebase in projects.flatMap(\.codebases) {

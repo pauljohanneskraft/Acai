@@ -11,7 +11,6 @@ extension JSExtractor {
         for child in node.children() {
             visitTopLevelNode(child)
         }
-        // In JS mode, detect prototype patterns
         if !isTypeScript {
             detectPrototypePatterns(node)
         }
@@ -64,7 +63,6 @@ extension JSExtractor {
 
     // MARK: - Declaration Dispatch
 
-    /// Shared dispatch for top-level nodes, export children, and module body children.
     @discardableResult
     mutating func dispatchDeclaration(
         _ node: Node,
@@ -75,13 +73,11 @@ extension JSExtractor {
     ) -> (types: [TypeDeclaration], functions: [Member]) {
         guard let nodeType = node.nodeType else { return ([], []) }
 
-        // Handle ambient declarations (declare class, declare function, etc.)
         if nodeType == "ambient_declaration", isTypeScript {
             return dispatchAmbientDeclaration(node, isExported: isExported, isDefault: isDefault,
                                               decorators: decorators, namespace: namespace)
         }
 
-        // Handle class expressions assigned to variables (const MyClass = class { ... })
         if nodeType == "lexical_declaration" || nodeType == "variable_declaration" {
             return dispatchVariableClassExpressions(node, decorators: decorators, namespace: namespace)
         }

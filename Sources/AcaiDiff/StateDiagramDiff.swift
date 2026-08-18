@@ -3,8 +3,7 @@ import AcaiDiagram
 /// The delta between two `StateDiagram` revisions (same variable, two codebase versions).
 ///
 /// Transitions are identified by `(from, to, event)`; a guard/action change on the same trigger is
-/// *changed*. States are identified by `id`. The `union` merges both revisions so a renderer can
-/// draw every transition and tint it by `status(of:)`.
+/// *changed*. States are identified by `id`.
 public struct StateDiagramDiff: Sendable {
     public let union: StateDiagram
     private let statusByKey: [String: DeltaStatus]
@@ -25,7 +24,6 @@ public struct StateDiagramDiff: Sendable {
         for transition in removed { statusByKey[transition.diffKey] = .removed }
         self.statusByKey = statusByKey
 
-        // States: every state from both sides (new first, old-only appended).
         var states = new.states
         let seenStates = Set(new.states.map(\.id))
         states += old.states.filter { !seenStates.contains($0.id) }
@@ -43,8 +41,6 @@ public struct StateDiagramDiff: Sendable {
 }
 
 extension StateDiagram.Transition {
-    /// This transition's identity for diffing: `(from, to, event)`. A guard/action change on the
-    /// same trigger is reported as *changed*, not add+remove.
     var diffKey: String {
         "\(from)\u{1}\(to)\u{1}\(event ?? "")"
     }

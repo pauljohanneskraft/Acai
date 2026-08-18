@@ -43,11 +43,9 @@ extension CFamilyExtractor: CallSiteResolving {
         else { return nil }
         let methodName = text(field)
 
-        // `this->method()` / `this.method()` — a call on the enclosing instance.
         if receiver.nodeType == "this" {
             return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
         }
-        // Only a simple, provably-typed receiver is resolved.
         guard receiver.nodeType == "identifier" else { return nil }
         return scope.resolvedCallSite(
             receiverName: text(receiver), methodName: methodName, location: location

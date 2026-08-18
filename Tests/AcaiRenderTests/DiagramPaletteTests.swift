@@ -23,8 +23,6 @@ struct DiagramPaletteTests {
         #expect(DiagramPalette.forScheme(.light).canvasBackground == DiagramPalette.light.canvasBackground)
     }
 
-    /// A third party can theme the diagrams without modifying the library: copy-and-tweak a
-    /// bundled palette, or construct one from scratch through the public initializer.
     @Test func paletteIsConsumerExtensible() {
         var tweaked = DiagramPalette.light
         tweaked.canvasBackground = .black

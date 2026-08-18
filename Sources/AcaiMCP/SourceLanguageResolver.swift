@@ -1,7 +1,6 @@
 import AcaiLibrary
 
-/// Maps the `--language` names a user types (`swift`, `kotlin`, `typescript`, …) onto the engine's
-/// `SourceLanguage` constants, which reach here via `AcaiLibrary`'s re-exports.
+/// Maps language names (`swift`, `kotlin`, `typescript`, …) onto the engine's `SourceLanguage` constants.
 struct SourceLanguageResolver: Sendable {
     private let byName: [String: CodeArtifact.SourceLanguage] = [
         "swift": .swift,
@@ -15,8 +14,8 @@ struct SourceLanguageResolver: Sendable {
         "cpp": .cpp
     ]
 
-    /// The requested languages, unknown names dropped. An empty result means "no restriction" — the
-    /// same contract `AnalysisService.analyzeProject` uses for an empty `allowedLanguages`.
+    /// Unknown names are dropped. An empty result means "no restriction", matching the contract
+    /// `AnalysisService.analyzeProject` uses for an empty `allowedLanguages`.
     func resolve(names: [String]) -> [CodeArtifact.SourceLanguage] {
         names.compactMap { byName[$0.lowercased()] }
     }

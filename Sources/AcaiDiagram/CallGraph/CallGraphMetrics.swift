@@ -6,7 +6,6 @@ import AcaiCore
 /// render it. Recursion is computed from strongly-connected components, so it catches both self-calls
 /// and mutual recursion.
 public struct CallGraphMetrics: Sendable {
-    /// One method's call-graph position.
     public struct NodeMetric: Codable, Hashable, Sendable {
         public var id: String
         public var label: String
@@ -21,7 +20,6 @@ public struct CallGraphMetrics: Sendable {
         public var location: SourceLocation?
     }
 
-    /// The whole-graph metric report.
     public struct Report: Codable, Hashable, Sendable {
         public var coverage: CallGraph.Coverage
         public var nodeCount: Int

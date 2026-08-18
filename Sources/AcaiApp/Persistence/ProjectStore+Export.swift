@@ -2,9 +2,6 @@ import Foundation
 import AcaiQuality
 
 extension ProjectStore {
-    /// Packages every project, diagram layout, and managed quality-rule configuration currently
-    /// held into one versioned `ProjectStoreExport`. See its doc comment for what's deliberately
-    /// excluded (indexed artifacts, cloned repository contents).
     func exportAllData() -> ProjectStoreExport {
         var managedRules: [UUID: QualityRules] = [:]
         for project in projects {

@@ -31,7 +31,6 @@ public struct CallGraphBuilder: Sendable {
     }
 }
 
-/// Accumulates nodes, weighted edges and resolution coverage for a `CallGraph`.
 private struct CallGraphAccumulator {
     private let typesByName: [String: TypeDeclaration]
     private let methodKeys: Set<String>
@@ -104,7 +103,6 @@ private struct CallGraphAccumulator {
         }
     }
 
-    /// Resolves a call site to a target node identity, or `nil` when it can't be matched.
     private func resolve(
         site: CallSite, callerType: String, inScopeNames: Set<String>
     ) -> (typeName: String, methodName: String, inScope: Bool)? {

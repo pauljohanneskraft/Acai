@@ -2,7 +2,6 @@ import SwiftUI
 import AcaiRender
 
 struct LabelNodeView: View {
-    /// Which labelled role this node represents; drives the icon and the palette colours.
     enum Role {
         case actor, database
 

@@ -34,7 +34,6 @@ struct GitWorktreeSyncTests {
             at: hubStoreDirectory, includingPropertiesForKeys: nil)
         #expect(hubContents.count == 1)
 
-        // Each worktree reflects its own ref simultaneously.
         #expect(FileManager.default.fileExists(atPath: mainWorktree.appendingPathComponent("README.md").path))
         #expect(!FileManager.default.fileExists(atPath: mainWorktree.appendingPathComponent("Feature.swift").path))
         #expect(FileManager.default.fileExists(atPath: featureWorktree.appendingPathComponent("Feature.swift").path))

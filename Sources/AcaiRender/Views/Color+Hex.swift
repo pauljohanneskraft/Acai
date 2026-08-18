@@ -1,9 +1,7 @@
 import SwiftUI
 
 extension Color {
-    /// Creates a colour from a `#rrggbb` (or `rrggbb`) hex string, falling back to gray on a
-    /// malformed value. Used by the package snapshot to match the `zoneColorHex` tints shared
-    /// with the DOT/Mermaid exporters.
+    /// Falls back to gray on a malformed value.
     public init(hex: String) {
         let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
         var value: UInt64 = 0

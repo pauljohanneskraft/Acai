@@ -26,7 +26,6 @@ struct PagedSection {
     }
 }
 
-/// One page of the Atlas PDF, in the order they're written.
 enum AtlasPage {
     case title
     case diagram(GeneratedDiagram, AtlasDiagramRenderOutcome)
@@ -34,11 +33,6 @@ enum AtlasPage {
     case findings(items: [Finding], pageIndex: Int, totalPages: Int)
 }
 
-/// Bundles every diagram belonging to one codebase, its statistics, and its current findings into
-/// one paginated PDF — the "Export Codebase Atlas" action. Composes the existing diagram
-/// PNG-rendering pipeline (``CodebaseAtlasDiagramRenderer``) with a layout/pagination pass over
-/// ``PDFDocumentWriter`` (`AcaiRender`).
-///
 /// `@MainActor` because diagram PNG rendering goes through `ImageRenderer`, which requires it —
 /// this also makes the struct implicitly `Sendable` despite `Finding`/`Codebase` not being
 /// `Sendable` themselves, so it can be captured by `ActivityCenter.run`'s `@Sendable` closure.
@@ -62,7 +56,6 @@ struct CodebaseAtlasBuilder {
                width: Self.pageSize.width - Self.margin * 2, height: Self.pageSize.height - Self.margin * 2)
     }
 
-    /// Renders every diagram, lays out the stats/findings text pages, and assembles the whole PDF.
     func build() async throws -> Data {
         let pages = try await assemblePages()
         let writer = PDFDocumentWriter(

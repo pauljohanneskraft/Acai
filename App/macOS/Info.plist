@@ -26,10 +26,7 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>de.kraftsoftware.acai.viewDiagram</string>
-		<string>de.kraftsoftware.acai.viewCodebase</string>
-	</array>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
 </dict>
 </plist>

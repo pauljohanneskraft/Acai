@@ -1,11 +1,9 @@
 import AcaiDiagram
 
-/// A graph node identified by a canonical id.
 protocol IdentifiableGraphNode: Sendable {
     var id: String { get }
 }
 
-/// A directed, weighted graph edge.
 protocol WeightedGraphEdge: Sendable {
     var from: String { get }
     var to: String { get }
@@ -13,22 +11,18 @@ protocol WeightedGraphEdge: Sendable {
 }
 
 extension WeightedGraphEdge {
-    /// This edge's identity for diffing — `(from, to)`, weight excluded.
     var diffKey: GraphElementDiff.EdgeKey { GraphElementDiff.EdgeKey(from: from, to: to) }
 }
 
 extension Sequence where Element: WeightedGraphEdge {
-    /// These edges indexed by their diff key → weight (first weight wins on a duplicate key).
     var weightsByKey: [GraphElementDiff.EdgeKey: Int] {
         Dictionary(map { ($0.diffKey, $0.weight) }, uniquingKeysWith: { first, _ in first })
     }
 }
 
-/// The shared delta of the two "id-node + `(from, to)`-edge" diagram diffs (call graph, package
-/// dependency). Merges both revisions into one set of `nodes`/`edges` (new first, then old-only
-/// appended) and classifies each element's status — the logic `CallGraphDiff`/`PackageDiagramDiff`
-/// would otherwise duplicate. The per-diagram wrapper only re-assembles its concrete diagram type
-/// from `nodes`/`edges` (e.g. carrying a call graph's coverage).
+/// The delta logic shared by `CallGraphDiff` and `PackageDiagramDiff`: merges both revisions into
+/// one set of `nodes`/`edges` (new first, then old-only appended) and classifies each element's
+/// status, so each per-diagram wrapper only re-assembles its concrete diagram type from the result.
 struct GraphDelta<Node: IdentifiableGraphNode, Edge: WeightedGraphEdge>: Sendable {
     let nodes: [Node]
     let edges: [Edge]

@@ -22,7 +22,6 @@ extension CFamilyExtractor {
         "operator_cast", "template_function"
     ]
 
-    /// Recursively unwraps a declarator into its name + function/array facts.
     func parseDeclarator(_ node: Node?) -> CFamilyDeclarator {
         guard let node, let nodeType = node.nodeType else { return CFamilyDeclarator() }
         switch nodeType {
@@ -142,7 +141,6 @@ extension CFamilyExtractor {
 
     // MARK: - Template parameters
 
-    /// Generic parameters declared by a `template_declaration` (`template <typename T, class U>`).
     func templateParameters(_ node: Node) -> [GenericParameter] {
         guard let list = node.child(byFieldName: "parameters") else { return [] }
         var parameters: [GenericParameter] = []

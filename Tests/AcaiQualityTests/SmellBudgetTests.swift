@@ -3,9 +3,6 @@ import Foundation
 import AcaiCore
 @testable import AcaiQuality
 
-/// Evaluating the built-in `QualityRules.defaultQuality` (curated smell budgets) turns a threshold
-/// breach into a `budget` `Violation` carrying the metric, value, a location and a fix hint; a clean
-/// type produces nothing; a custom budget set is honoured; and breaches are ranked worst-first.
 @Suite("Quality: default smell budgets")
 struct SmellBudgetTests {
 
@@ -55,7 +52,6 @@ struct SmellBudgetTests {
     }
 
     @Test func rankedMostSevereFirst() {
-        // B overshoots the maxParameters budget further than A, so it ranks ahead of A.
         let ranked = findings(
             [wideMethodType("A", parameters: 7), wideMethodType("B", parameters: 12)],
             rules: QualityRules(budgets: [MetricBudget(metric: .maxParameters, max: 5)]))

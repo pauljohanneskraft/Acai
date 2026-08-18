@@ -2,12 +2,8 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// Configuration popup for a static call graph: pick the **scope** that bounds which methods are
-/// treated as callers — the whole codebase, a single type, or one build module. Resolved callees
-/// outside the scope still appear as leaf nodes.
 struct CallGraphConfigSheet: View {
     let artifact: CodeArtifact
-    /// Pre-fills the form when re-configuring an existing diagram.
     let initial: CallGraphScope
     let onCancel: () -> Void
     let onCreate: (CallGraphScope) -> Void
@@ -82,7 +78,6 @@ struct CallGraphConfigSheet: View {
 
     // MARK: - Lookups
 
-    /// Simple names of every type that declares at least one method (potential callers/callees).
     private var typeNames: [String] {
         artifact.types
             .filter { type in type.members.contains { $0.kind == .method } }
@@ -91,7 +86,6 @@ struct CallGraphConfigSheet: View {
             .sorted()
     }
 
-    /// Build modules present in the codebase, derived from each type's file path.
     private var moduleNames: [String] {
         artifact.types
             .map { ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") }

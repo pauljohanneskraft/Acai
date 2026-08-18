@@ -128,6 +128,7 @@ targets:
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         CFBundleDisplayName: Açaí
+        LSApplicationCategoryType: "public.app-category.developer-tools"
     settings:
       base:
         PRODUCT_NAME: Acai

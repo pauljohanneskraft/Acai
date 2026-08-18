@@ -2,8 +2,6 @@ import Testing
 @testable import AcaiCore
 @testable import AcaiDiagram
 
-/// Covers `DeadCodeScan`: an uncalled private method is a candidate; a called method, a public method,
-/// an override, and a marked entry point are all excluded; coverage is reported.
 @Suite("Dead-code scan")
 struct DeadCodeScanTests {
 
@@ -20,7 +18,6 @@ struct DeadCodeScanTests {
     }
 
     private func artifact() -> CodeArtifact {
-        // `entry` calls `used`; `unused` is called by nobody.
         let service = TypeDeclaration(
             id: "Service", name: "Service", qualifiedName: "Service", kind: .class, accessLevel: .public,
             members: [
@@ -47,8 +44,6 @@ struct DeadCodeScanTests {
     }
 
     @Test func markerlessScanStillExcludesUniversalEntryPoints() {
-        // Without the language markers, `lifecycle` (@Test) is no longer excluded, but public/override
-        // members still are.
         let report = DeadCodeScan(
             artifact: artifact(),
             languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
@@ -99,7 +94,6 @@ struct DeadCodeScanTests {
         let report = DeadCodeScan(
             artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [proto, tool]),
             languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
-        // `run` is a witness (excluded); only the genuinely-uncalled `orphan` is reported.
         #expect(report.candidates.map(\.id) == ["Tool.orphan"])
     }
 }

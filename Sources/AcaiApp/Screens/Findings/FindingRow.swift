@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// One row in the project-level Findings list: kind + severity badges, the codebase it came
-/// from, the finding's own title/message/location, the full "Open in…" resolution (default
-/// tap-through + context menu, Finder reveal kept as an additional macOS-only secondary action),
-/// "View Source", and — when suppression is available — a "Suppress"/"Un-suppress" action.
+/// One row in the project-level Findings list — kind/severity badges, the "Open in…" resolution,
+/// "View Source", and, when suppression is available, a "Suppress"/"Un-suppress" action.
 struct FindingRow: View {
     let finding: Finding
     let codebase: Codebase?
-    /// `nil` hides the suppression action entirely (not wired in, or this row is already shown
-    /// under "show suppressed too" without a store to act through).
+    /// `nil` hides the suppression action entirely — not wired in, or this row is already shown
+    /// under "show suppressed too" without a store to act through.
     var isSuppressed: Bool = false
     var onToggleSuppressed: (() -> Void)?
 
@@ -37,7 +35,7 @@ struct FindingRow: View {
         .opacity(isSuppressed ? 0.6 : 1)
         // Without `.contain`, this row's own `.accessibilityIdentifier` bleeds down onto every
         // nested button (`ViewSourceButton`, "Suppress") and overwrites each one's own identifier
-        // with this row's — confirmed via a live UI-test run before this fix, not just inspection.
+        // with this row's.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("findings.row.\(finding.id)")
     }

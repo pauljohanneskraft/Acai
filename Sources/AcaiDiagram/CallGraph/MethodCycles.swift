@@ -5,13 +5,11 @@ import AcaiCore
 /// clusters. A value you instantiate over an artifact (`MethodCycles(artifact:).clusters`); each
 /// member carries its `file:line`. Reuses `StronglyConnectedComponents` over the call-graph edges.
 public struct MethodCycles: Sendable {
-    /// One method participating in a cycle.
     public struct Method: Codable, Hashable, Sendable {
         public var id: String
         public var location: SourceLocation?
     }
 
-    /// A cluster of mutually-reachable methods.
     public struct Cluster: Codable, Hashable, Sendable {
         public var methods: [Method]
     }

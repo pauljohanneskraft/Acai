@@ -9,8 +9,8 @@ public struct TypeReference: Codable, Equatable, Hashable, Sendable {
     /// The referenced type's **simple** (unqualified) name. Used verbatim for primitive/collection
     /// classification and for resolving the reference to a declared type.
     public var name: String
-    /// Type arguments, recursively (`Dictionary<String, Foo>` → `[String, Foo]`). Only the top-level
-    /// ``name`` is classified; arguments carry their own references.
+    /// Recursive (`Dictionary<String, Foo>` → `[String, Foo]`). Only the top-level ``name`` is
+    /// classified; arguments carry their own references.
     public var genericArguments: [TypeReference]
     /// Whether the reference is optional/nullable (`Foo?`) — surfaces as `0..1` multiplicity.
     public var isOptional: Bool

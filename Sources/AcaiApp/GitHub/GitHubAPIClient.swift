@@ -1,14 +1,11 @@
 import Foundation
 
-/// A repository owner's login. Kept as a sibling of `GitHubAPIClient.Repository` rather than nested,
-/// so no declared type here nests more than one level deep.
 struct GitHubRepositoryOwner: Decodable, Hashable {
     var login: String
 }
 
-/// A branch or tag name. `kind` is attached after decoding (the endpoints don't return it) and
-/// folded into `id` so a branch and tag sharing a name don't collide as `Identifiable` ids when
-/// both lists are combined into one `ForEach`/`Picker`.
+/// `kind` is folded into `id` so a branch and tag sharing a name don't collide as `Identifiable`
+/// ids when both lists are combined into one `ForEach`/`Picker`.
 struct GitHubRef: Identifiable, Hashable {
     enum Kind: String, Hashable, Codable {
         case branch
@@ -20,9 +17,35 @@ struct GitHubRef: Identifiable, Hashable {
     var id: String { "\(kind.rawValue)-\(name)" }
 }
 
-/// The bare shape the branches/tags endpoints actually return.
 private struct GitHubRefResponse: Decodable {
     var name: String
+}
+
+struct GitHubPullRequest: Identifiable, Hashable {
+    var number: Int
+    var title: String
+    var authorLogin: String
+    /// The branch the PR targets (the "old" side of a three-dot comparison, via its merge-base
+    /// with `headRef`).
+    var baseRef: String
+    /// The branch/SHA carrying the PR's own commits (the "new" side).
+    var headRef: String
+    var state: String
+
+    var id: Int { number }
+}
+
+private struct GitHubPullRequestResponse: Decodable {
+    struct Branch: Decodable {
+        var ref: String
+    }
+
+    var number: Int
+    var title: String
+    var user: GitHubRepositoryOwner
+    var base: Branch
+    var head: Branch
+    var state: String
 }
 
 /// A thin, read-only `URLSession`-based client for the GitHub REST API — every endpoint here is a
@@ -57,16 +80,9 @@ struct GitHubAPIClient {
         }
     }
 
-    /// `authenticatedUserWithMetadata()`'s result: the signed-in user plus what GitHub's response
-    /// headers reveal about the token itself (the scope checklist, the expiry prompt).
     struct AuthenticatedUserInfo: Sendable {
         var user: User
-        /// Parsed from the `X-OAuth-Scopes` response header (comma-separated) — sent for classic
-        /// PATs and OAuth/device-flow tokens. `nil` when the header is absent (fine-grained PATs
-        /// don't currently send it), meaning "unknown," not "confirmed to have no scopes."
         var scopes: [String]?
-        /// Parsed from the `github-authentication-token-expiration` response header, when GitHub
-        /// sends it (fine-grained PATs report this; classic tokens generally don't).
         var tokenExpiresAt: Date?
     }
 
@@ -86,14 +102,12 @@ struct GitHubAPIClient {
         }
     }
 
-    /// `GET /user` — the signed-in account's login/avatar, for display.
     func authenticatedUser() async throws -> User {
         try await get("user", as: User.self)
     }
 
-    /// `GET /user`, plus what the response headers reveal about the token itself — the scope
-    /// checklist and expiry prompt both read this instead of the plain `authenticatedUser()`
-    /// above (kept as-is since nothing else needs the metadata).
+    /// Same endpoint as `authenticatedUser()`, plus what the response headers reveal about the
+    /// token itself — the scope checklist and expiry prompt both read this instead.
     func authenticatedUserWithMetadata() async throws -> AuthenticatedUserInfo {
         let (user, response) = try await getWithResponse("user", as: User.self)
         return AuthenticatedUserInfo(
@@ -103,11 +117,9 @@ struct GitHubAPIClient {
         )
     }
 
-    /// Page size for `repositories(page:)` — a response shorter than this is the last page.
+    /// A response shorter than this is the last page.
     static let repositoriesPerPage = 50
 
-    /// `GET /user/repos` — one page; the picker does client-side substring filtering over fetched
-    /// pages. Callers wanting every repository should page until a shorter response comes back.
     func repositories(page: Int = 1) async throws -> [Repository] {
         try await get(
             "user/repos",
@@ -120,7 +132,6 @@ struct GitHubAPIClient {
         )
     }
 
-    /// `GET /repos/{owner}/{repo}/branches` — for the ref picker.
     func branches(owner: String, repo: String) async throws -> [GitHubRef] {
         try await get(
             "repos/\(owner)/\(repo)/branches",
@@ -129,13 +140,24 @@ struct GitHubAPIClient {
         ).map { GitHubRef(name: $0.name, kind: .branch) }
     }
 
-    /// `GET /repos/{owner}/{repo}/tags` — for the ref picker.
     func tags(owner: String, repo: String) async throws -> [GitHubRef] {
         try await get(
             "repos/\(owner)/\(repo)/tags",
             query: [URLQueryItem(name: "per_page", value: "100")],
             as: [GitHubRefResponse].self
         ).map { GitHubRef(name: $0.name, kind: .tag) }
+    }
+
+    func pullRequests(owner: String, repo: String) async throws -> [GitHubPullRequest] {
+        try await get(
+            "repos/\(owner)/\(repo)/pulls",
+            query: [URLQueryItem(name: "per_page", value: "100")],
+            as: [GitHubPullRequestResponse].self
+        ).map {
+            GitHubPullRequest(
+                number: $0.number, title: $0.title, authorLogin: $0.user.login,
+                baseRef: $0.base.ref, headRef: $0.head.ref, state: $0.state)
+        }
     }
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], as type: T.Type) async throws -> T {
@@ -169,16 +191,13 @@ struct GitHubAPIClient {
 }
 
 extension HTTPURLResponse {
-    /// `X-OAuth-Scopes` is a comma-separated list GitHub sends for classic PATs and OAuth/device-flow
-    /// tokens; fine-grained PATs don't currently send it — absence means "unknown," not "none."
     var gitHubOAuthScopes: [String]? {
         guard let raw = value(forHTTPHeaderField: "X-OAuth-Scopes"), !raw.isEmpty else { return nil }
         return raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
-    /// `github-authentication-token-expiration`, when GitHub sends it (fine-grained PATs report
-    /// this). Parsed leniently (ISO 8601, falling back to an RFC-1123-ish format) — an unrecognized
-    /// format degrades to `nil` ("no known expiry"), never a crash on an unexpected header value.
+    /// Parsed leniently (ISO 8601, falling back to an RFC-1123-ish format) — an unrecognized
+    /// format degrades to `nil` rather than crashing.
     var gitHubTokenExpiresAt: Date? {
         guard let raw = value(forHTTPHeaderField: "github-authentication-token-expiration") else { return nil }
         if let date = ISO8601DateFormatter().date(from: raw) { return date }

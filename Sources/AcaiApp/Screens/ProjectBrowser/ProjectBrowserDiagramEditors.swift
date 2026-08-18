@@ -5,6 +5,7 @@ import AcaiDiagram
 import AcaiGit
 import AcaiLibrary
 import AcaiRender
+import AcaiQuality
 
 // Diagram-management collaborators carved out of `ProjectBrowserViewModel` (it had grown into a
 // god-object). Each is a thin value over the shared `ProjectStore` reference plus the owning view
@@ -12,17 +13,12 @@ import AcaiRender
 // = `objectWillChange` only. The view model exposes them as `diagrams` / `freeforms`; views call
 // e.g. `model.diagrams.rename(...)`.
 
-/// Create/update/delete operations for generated diagrams.
 @MainActor
 struct GeneratedDiagramEditor {
     let store: ProjectStore
-    /// Saves the project list and notifies (used when the diagram set changes).
     let persist: () -> Void
-    /// Notifies observers without re-saving the project list (used for in-place diagram edits, which
-    /// persist via `store.saveGeneratedDiagram`).
     let notify: () -> Void
 
-    /// Creates a generated diagram of any kind; `content` carries the type and its configuration.
     func add(to projectID: UUID, codebaseID: UUID, content: GeneratedDiagram.Content) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         var diagram = GeneratedDiagram(name: "", content: content, codebaseID: codebaseID)
@@ -44,7 +40,6 @@ struct GeneratedDiagramEditor {
         mutate(diagramID, clearPositions: true) { $0.callGraphScope = scope }
     }
 
-    /// Updates the variable configuration of a state diagram, clearing saved positions.
     func updateStateConfiguration(diagramID: UUID, configuration: StateDiagramConfiguration) {
         mutate(diagramID, clearPositions: true) { $0.stateConfiguration = configuration }
     }
@@ -53,6 +48,23 @@ struct GeneratedDiagramEditor {
     /// never alters the type set).
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
         mutate(diagramID, clearPositions: false) { $0.classConfiguration = configuration }
+    }
+
+    /// Updates a package diagram's selector filter. Positions are kept: filtering only removes
+    /// nodes/edges, it never changes what a surviving node's saved position means.
+    func updatePackageDiagramFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.packageDiagramFilter = filter }
+    }
+
+    func updateCallGraphFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.callGraphFilter = filter }
+    }
+
+    /// Updates a sequence diagram's selector filter, keeping the rest of the configuration and —
+    /// unlike `updateSequenceConfiguration` — the saved positions, since filtering only removes
+    /// participants/messages.
+    func updateSequenceFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.sequenceConfiguration?.filter = filter }
     }
 
     func updatePositions(
@@ -118,14 +130,10 @@ struct GeneratedDiagramEditor {
     }
 }
 
-/// Project/codebase lifecycle: CRUD, reindexing, and per-codebase quality-check rules. Carved
-/// out of `ProjectBrowserViewModel` for a single responsibility; shares the store + change hooks.
 @MainActor
 struct ProjectCodebaseEditor {
     let store: ProjectStore
-    /// Saves the whole store and notifies (used when the project/codebase set changes).
     let persist: () -> Void
-    /// Notifies observers without a full save.
     let notify: () -> Void
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
@@ -234,7 +242,6 @@ struct ProjectCodebaseEditor {
 
     // MARK: Quality-check rules
 
-    /// Points a codebase's code-quality check at an external YAML rules file.
     func setQualityCheckRulesPath(
         codebaseID: UUID, path: String, securityScopedBookmark: SecurityScopedBookmark? = nil
     ) {
@@ -244,7 +251,6 @@ struct ProjectCodebaseEditor {
         invalidateAnalysis(codebaseID)
     }
 
-    /// Persists UI-authored rules to the codebase's managed YAML file and points its check there.
     func saveAuthoredRules(codebaseID: UUID, rules: QualityRules) {
         do {
             let url = try store.saveManagedRules(rules, forCodebase: codebaseID)
@@ -307,7 +313,6 @@ struct ProjectCodebaseEditor {
     }
 }
 
-/// Create/update/delete operations for freeform diagrams.
 @MainActor
 struct FreeformDiagramEditor {
     let store: ProjectStore

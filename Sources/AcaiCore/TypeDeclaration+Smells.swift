@@ -3,13 +3,11 @@
 // ``CodeMetrics/TypeMetric``.
 extension TypeDeclaration {
 
-    /// Members at least as visible as `public` (public/open) — the type's outward API surface.
     var publicMemberCount: Int {
         members.visible(atLeast: .public).count
     }
 
-    /// Fraction of members that are public/open (0 when the type has no members). A high ratio on a
-    /// type with many members is a wide-surface / low-encapsulation smell.
+    /// A high ratio on a type with many members is a wide-surface / low-encapsulation smell.
     var publicMemberRatio: Double {
         members.isEmpty ? 0 : Double(publicMemberCount) / Double(members.count)
     }
@@ -21,22 +19,20 @@ extension TypeDeclaration {
         members.filter(\.isPubliclySettable).count
     }
 
-    /// The largest parameter count of any callable member (0 when the type has none). A wide signature
-    /// is the long-parameter-list smell — the reader decides "too wide"; no threshold is baked in.
+    /// The long-parameter-list smell — the reader decides "too wide"; no threshold is baked in.
     var maxParameters: Int {
         callableMembers.map(\.parameters.count).max() ?? 0
     }
 
-    /// Mean parameter count across the type's callable members (0 when it has none).
     var meanParameters: Double {
         let counts = callableMembers.map(\.parameters.count)
         return counts.isEmpty ? 0 : Double(counts.reduce(0, +)) / Double(counts.count)
     }
 
-    /// Data-class / anemic score: the share of behaviour-vs-data that is data, `stored properties /
-    /// (stored + behaviour)` (0 = pure behaviour, 1 = pure data; 0 when the type has neither). Computed
-    /// properties count as behaviour (their getter is code) — so a SwiftUI `View`'s `body` doesn't read
-    /// as data. A high score on a type others reach into is the anemic-domain-model smell.
+    /// Data-class / anemic score: `stored properties / (stored + behaviour)` (0 = pure behaviour,
+    /// 1 = pure data). Computed properties count as behaviour (their getter is code) — so a SwiftUI
+    /// `View`'s `body` doesn't read as data. A high score on a type others reach into is the
+    /// anemic-domain-model smell.
     var dataClassScore: Double {
         let stored = members.filter(\.isStoredProperty).count
         let behaviour = members.filter(\.isBehaviour).count
@@ -44,19 +40,16 @@ extension TypeDeclaration {
         return total == 0 ? 0 : Double(stored) / Double(total)
     }
 
-    /// Count of members that `override` an inherited member — refused-bequest candidates (a subclass
-    /// that overrides much of what it inherits may not truly be a subtype).
+    /// Refused-bequest candidates — a subclass that overrides much of what it inherits may not
+    /// truly be a subtype.
     var overrideCount: Int {
         members.filter { $0.modifiers.contains(.override) }.count
     }
 
-    /// Depth of the nested-type tree rooted at this type (0 when it declares no nested types). Deeply
-    /// nested types are a comprehension burden.
     var nestingDepth: Int {
         (nestedTypes.map(\.nestingDepth).max()).map { $0 + 1 } ?? 0
     }
 
-    /// Callable members (methods, initializers, subscripts) — the ones that carry a parameter list.
     private var callableMembers: [Member] {
         members.filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .subscript }
     }

@@ -1,7 +1,5 @@
 import AcaiCore
 
-/// A tree-sitter grammar paired with the source language it represents.
-///
 /// `setLanguage` only fails on an ABI mismatch with the linked `SwiftTreeSitter` runtime — a
 /// build/packaging error, not something a malformed source file can trigger. Rather than `try!` and
 /// crash, this degrades to an empty artifact carrying a parse diagnostic.
@@ -14,7 +12,6 @@ public struct TreeSitterGrammar {
         self.sourceLanguage = sourceLanguage
     }
 
-    /// A parser configured with this grammar, or `nil` if the grammar could not be loaded.
     public func makeParser() -> Parser? {
         let parser = Parser()
         do {
@@ -25,8 +22,6 @@ public struct TreeSitterGrammar {
         }
     }
 
-    /// An empty artifact for `fileName` carrying a single diagnostic explaining that the grammar
-    /// could not be loaded, so the failure surfaces in output instead of crashing the process.
     public func loadFailureArtifact(fileName: String) -> CodeArtifact {
         CodeArtifact(metadata: .init(
             sourceLanguage: sourceLanguage,

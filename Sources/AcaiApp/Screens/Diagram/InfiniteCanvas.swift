@@ -2,33 +2,24 @@ import SwiftUI
 import AcaiRender
 
 /// A reusable infinite canvas container that supports pan (trackpad), zoom (scroll wheel / pinch),
-/// a selection rectangle (click-drag), and edge auto-panning during node drags.
-///
-/// ## Auto-Pan
-/// The *caller* owns the `EdgeAutoPanController` (as `@State`) and passes it in.
-/// During a drag gesture the caller sets `autoPanDragLocation` and reads
-/// `autoPanController.accumulatedCanvasDelta` to keep nodes glued to the cursor.
+/// a selection rectangle (click-drag), and edge auto-panning during node drags. The caller owns
+/// the `EdgeAutoPanController` (as `@State`) and passes it in.
 struct InfiniteCanvas<Content: View>: View {
     @Binding var scale: CGFloat
     @Binding var offset: CGPoint
 
-    /// Called when user finishes a selection-rectangle drag on the background.
     /// The rectangle is in canvas coordinates (pre-scale, pre-offset).
     var onSelectionRect: ((CGRect) -> Void)?
 
-    /// Called when the user taps the empty canvas background (no drag).
     var onBackgroundTap: (() -> Void)?
 
-    /// Canvas-space location of an active node drag, or `nil` when idle.
-    /// Setting this to a non-nil value activates edge auto-panning.
+    /// Canvas-space. Setting this to a non-nil value activates edge auto-panning.
     var autoPanDragLocation: CGPoint?
 
-    /// Called each auto-pan tick with the *incremental* canvas delta.
-    /// Use this to move all selected nodes by the delta (the timer keeps
-    /// firing even when the cursor doesn't move).
+    /// Called each auto-pan tick with the *incremental* canvas delta — the timer keeps firing
+    /// even when the cursor doesn't move.
     var onAutoPanDelta: ((CGSize) -> Void)?
 
-    /// The auto-pan controller, owned by the parent view as `@State`.
     var autoPanController: EdgeAutoPanController
 
     /// Reports the real, measured canvas viewport size whenever it changes, so callers (e.g. a
@@ -105,7 +96,6 @@ struct InfiniteCanvas<Content: View>: View {
         .overlay(alignment: .bottomTrailing) { zoomIndicator }
     }
 
-    /// The current zoom level, read-only — scroll wheel/pinch already drive `scale` directly.
     private var zoomIndicator: some View {
         Text("\(Int((scale * 100).rounded()))%")
             .font(.caption.monospacedDigit())
@@ -141,8 +131,7 @@ struct InfiniteCanvas<Content: View>: View {
 
     // MARK: - Selection Rectangle Gesture
 
-    /// Click-drag on the canvas background draws a selection rectangle.
-    /// Panning is handled by the trackpad / scroll wheel event monitors.
+    /// Panning is handled by the trackpad / scroll wheel event monitors, not here.
     private var selectionGesture: some Gesture {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
@@ -172,7 +161,7 @@ struct InfiniteCanvas<Content: View>: View {
 
     // MARK: - Touch Pan & Zoom (iOS)
 
-    /// One-finger drag pans the canvas, matching the macOS trackpad two-finger pan.
+    /// One-finger drag, matching the macOS trackpad two-finger pan.
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 2)
             .onChanged { value in

@@ -4,17 +4,14 @@ import AcaiLibrary
 
 /// A cheap change-signature for a source tree: newest modification time, file count, and an
 /// order-independent digest folding each file's `(relativePath, mtime, size)` (skipping build/VCS
-/// output). Two signatures compare equal when nothing an analysis would read has changed. The
-/// digest is what catches a rename/move or content-swap — those preserve mtime and count alone.
+/// output). The digest is what catches a rename/move or content-swap — those preserve mtime and
+/// count alone.
 struct SourceTreeSignature: Equatable, Sendable {
     let latestModification: TimeInterval
     let fileCount: Int
-    /// Sum (commutative → enumeration-order-independent) of a stable per-file hash of
-    /// `(relativePath, mtime, size)`. Changes when a file is added, removed, edited, moved, or swapped.
+    /// Commutative sum, so it's enumeration-order-independent.
     let contentDigest: UInt64
 
-    /// Directories whose contents never affect an analysis — skipped wholesale so the walk stays cheap
-    /// and edits to build products don't invalidate the snapshot.
     private static let skippedDirectories: Set<String> = [
         ".build", ".git", ".swiftpm", "node_modules", "DerivedData", "build",
         ".gradle", "dist", "Pods", "__pycache__", ".venv", "venv"
@@ -27,8 +24,7 @@ struct SourceTreeSignature: Equatable, Sendable {
         var latest: TimeInterval = 0
         var count = 0
         var digest: UInt64 = 0
-        // A single file (e.g. a `.json` baseline) signs on its own identity — the directory walk below
-        // enumerates nothing for a non-directory.
+        // `root` may be a single `.json` baseline file rather than a directory.
         if let values = try? root.resourceValues(forKeys: keys), values.isRegularFile == true {
             let mtime = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
             self.latestModification = mtime
@@ -63,15 +59,12 @@ struct SourceTreeSignature: Equatable, Sendable {
     }
 }
 
-/// One file's identity — path, modification time, size — reduced to a stable hash the signature
-/// folds together.
 private struct FileFingerprint {
     let relativePath: String
     let mtime: TimeInterval
     let size: Int
 
-    /// A stable (seed-free) FNV-1a hash of the file's identity. Deterministic across the process's
-    /// lifetime so the in-process cache compares signatures reliably.
+    /// FNV-1a hash, seed-free so it's deterministic across the process's lifetime.
     var stableHash: UInt64 {
         var hash: UInt64 = 0xcbf2_9ce4_8422_2325
         for byte in "\(relativePath)|\(mtime.bitPattern)|\(size)".utf8 {
@@ -94,18 +87,15 @@ actor AnalysisSnapshotCache {
     private let languageResolver = SourceLanguageResolver()
     private var entries: [String: Entry] = [:]
 
-    /// How many times a real analysis has run (a cache miss). A cache *hit* does not increment it, so
-    /// this is the observable that proves the snapshot is being reused across a task.
+    /// Counts cache misses only, so this is the observable proof a snapshot is being reused.
     private(set) var analysisCount = 0
 
     init(service: AnalysisService = .standard) {
         self.service = service
     }
 
-    /// The enriched artifact for `path` — a source directory to analyze, or a `.json` artifact file to
-    /// decode (a stored baseline, used by `acai_diff`). Reuses the cached snapshot when the signature is
-    /// unchanged and `refresh` is false; otherwise (re)loads and caches. Throws `invalidParams` when the
-    /// path does not exist or a `.json` file can't be decoded.
+    /// `path` is a source directory to analyze, or a `.json` artifact file to decode (a stored
+    /// baseline, used by `acai_diff`).
     func artifact(path: String, languageNames: [String] = [], refresh: Bool = false) throws -> CodeArtifact {
         let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
         var isDirectory: ObjCBool = false
@@ -129,7 +119,6 @@ actor AnalysisSnapshotCache {
         return artifact
     }
 
-    /// Decodes a stored `CodeArtifact` JSON file (produced by `acai analyze`/`store`).
     private func decodeArtifact(at url: URL) throws -> CodeArtifact {
         do {
             return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))

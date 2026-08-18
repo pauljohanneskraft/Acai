@@ -1,11 +1,7 @@
 import XCTest
 
-/// Adds Package Diagram-specific accessors (canvas package boxes) to `DiagramScreenBase`'s shared
-/// toolbar accessors. No config sheet — a package diagram is added directly, spanning every build
-/// module in the codebase.
 final class PackageDiagramScreen: DiagramScreenBase {
-    /// A package's box, by its module name — mirrors `ClassDiagramScreen.typeNode`, same
-    /// "keyed by name, no stable id" caveat.
+    /// Keyed by module name — no separate stable id, same caveat as `ClassDiagramScreen.typeNode`.
     func containerNode(named name: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.containerNode.\(name)"]
     }

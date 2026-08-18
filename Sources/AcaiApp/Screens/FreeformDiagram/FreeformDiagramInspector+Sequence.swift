@@ -3,14 +3,9 @@ import AcaiCore
 import AcaiDiagram
 
 // MARK: - Sequence Inspectors (messages, fragments)
-//
-// The inspector sections for sequence-diagram elements: editing a message edge (endpoints,
-// label, kind, time order) and a combined fragment (operator + operands). Split from the main
-// inspector file, which hosts the node/relationship sections.
 
 extension FreeformDiagramInspector {
 
-    /// Inspector for a sequence message edge: endpoints, label, kind and time order.
     func messageSection(edge: FreeformDiagram.Edge) -> some View {
         Section {
             Picker("From", selection: Binding(
@@ -56,8 +51,7 @@ extension FreeformDiagramInspector {
         }
     }
 
-    /// Inspector for a combined fragment: operator kind plus its operands (guard condition and
-    /// the inclusive message-order span each operand covers).
+    /// Each operand's `firstOrder`/`lastOrder` span is inclusive.
     func fragmentSection(nodeID: String, content: FreeformDiagram.Node.FragmentContent) -> some View {
         Section {
             Picker("Operator", selection: Binding(

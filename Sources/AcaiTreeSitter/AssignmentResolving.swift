@@ -14,7 +14,7 @@ public protocol AssignmentResolving: TreeSitterExtracting {
 }
 
 /// The grammar node types a language uses for each literal kind, so the shared literal classifier
-/// stays language-agnostic. Each set lists the node-type names that map to that literal kind.
+/// stays language-agnostic.
 public struct LiteralNodeTypes: Sendable {
     public var boolean: Set<String>
     public var numeric: Set<String>
@@ -51,7 +51,6 @@ extension AssignmentResolving {
         return assignments
     }
 
-    /// Recursively walks AST nodes, collecting resolved assignments.
     private func walkForAssignments(
         _ node: Node,
         into assignments: inout [VariableAssignment]
@@ -64,8 +63,6 @@ extension AssignmentResolving {
         }
     }
 
-    /// Trims an expression's source text to a short snippet suitable for
-    /// ``VariableAssignment/Value-swift.struct`` with kind `.expression`.
     public func expressionSnippet(_ node: Node) -> String {
         let raw = text(node)
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -93,14 +90,13 @@ extension AssignmentResolving {
         }
     }
 
-    /// The node's source text, trimmed of surrounding whitespace and newlines.
     public func trimmedText(_ node: Node) -> String {
         text(node).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Classifies a node as a literal value using the language's `types`, or `nil` when not a
-    /// recognised literal — letting the caller apply language-specific fallbacks. The node type is
-    /// matched before source text is extracted, so the common non-literal path avoids that cost.
+    /// Returns `nil` when not a recognised literal, letting the caller apply language-specific
+    /// fallbacks. The node type is matched before source text is extracted, so the common
+    /// non-literal path avoids that cost.
     public func classifyLiteral(_ node: Node, _ types: LiteralNodeTypes) -> VariableAssignment.Value? {
         let nodeType = node.nodeType ?? ""
         if types.boolean.contains(nodeType) {

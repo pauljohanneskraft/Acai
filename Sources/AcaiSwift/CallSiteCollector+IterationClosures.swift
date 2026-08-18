@@ -2,11 +2,8 @@ import SwiftSyntax
 import AcaiCore
 
 /// Closure-`$0` receiver-type binding for implicit-parameter Sequence/Collection iteration closures
-/// (`addedRelationships.map { $0.reportPhrase() }`) — split out of `CallSiteCollector.swift` to keep
-/// that file under the project's length limits.
+/// (`addedRelationships.map { $0.reportPhrase() }`).
 extension CallSiteCollector {
-    /// Sequence/Collection methods whose (possibly-implicit) closure parameter is the receiver's
-    /// element type — the shape `iterationClosure(in:)` recognises for closure-`$0` receiver binding.
     private var iterationMethodNames: Set<String> {
         ["map", "compactMap", "flatMap", "filter", "forEach", "allSatisfy", "contains", "first", "sorted"]
     }
@@ -23,10 +20,8 @@ extension CallSiteCollector {
         return (base, closure)
     }
 
-    /// The element type of an array-typed receiver expression — resolves a bare `varName` to a
-    /// same-type stored property's array element, or defers to the post-merge pass via
-    /// `.ownPropertyElement` when declared in a sibling extension file. Used only for the
-    /// iteration-closure `$0` binding — an array's element is never a valid direct-call receiver.
+    /// The element type of an array-typed receiver expression, resolving a bare `varName` to a
+    /// same-type stored property's array element (or deferring post-merge via `.ownPropertyElement`).
     func arrayElementReceiverType(
         of expr: ExprSyntax, arrayElementPropertyMap: [String: String], enclosingTypeName: String?,
         knownLocalNames: Set<String>

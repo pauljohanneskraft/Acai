@@ -11,17 +11,14 @@ import UIKit
 public enum DiagramImageRenderError: Error {
     /// `ImageRenderer` produced no `CGImage` (e.g. zero-sized content or no window-server access).
     case renderingFailed
-    /// The rendered image could not be encoded as PNG.
     case encodingFailed
 }
 
-/// The shared PNG-rasterisation engine: it takes an already-laid-out SwiftUI snapshot view and turns
+/// The shared PNG-rasterisation engine: takes an already-laid-out SwiftUI snapshot view and turns
 /// it into PNG data, clamping the scale so neither output dimension exceeds `maxPixelDimension`.
-///
-/// The per-diagram-kind renderers (``ClassImageRenderer``, ``SequenceImageRenderer``,
-/// ``StateImageRenderer``, ``PackageImageRenderer``, ``CallGraphImageRenderer``) each build their
-/// own layout + snapshot view and hand it here, so this type stays free of diagram-model
-/// knowledge. Uses SwiftUI's `ImageRenderer`, which needs a macOS GUI/window-server session.
+/// Per-diagram-kind renderers build their own layout + snapshot view and hand it here, so this
+/// type stays free of diagram-model knowledge. Uses SwiftUI's `ImageRenderer`, which needs a
+/// macOS GUI/window-server session.
 @MainActor
 public struct DiagramImageRenderer {
 

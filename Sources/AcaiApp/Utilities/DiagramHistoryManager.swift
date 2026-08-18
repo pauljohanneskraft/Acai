@@ -14,12 +14,11 @@ final class DiagramHistoryManager<Snapshot: Equatable & Sendable> {
 
     // MARK: - State
 
-    /// Past states, most recent at the end.
     private var undoStack: [Snapshot] = []
-    /// Future states populated by undo; cleared on any new mutation.
+    /// Cleared on any new mutation.
     private var redoStack: [Snapshot] = []
-    /// Coalescing key of the most recent `checkpoint`. Consecutive checkpoints sharing a non-nil
-    /// key merge into one undo step; reset by `undo`/`redo`/`clear`.
+    /// Consecutive checkpoints sharing a non-nil key merge into one undo step; reset by
+    /// `undo`/`redo`/`clear`.
     private var lastCoalescingKey: AnyHashable?
 
     var canUndo: Bool { !undoStack.isEmpty }
@@ -33,12 +32,8 @@ final class DiagramHistoryManager<Snapshot: Equatable & Sendable> {
 
     // MARK: - Recording
 
-    /// Records `snapshot` as a checkpoint before applying a mutation.
-    ///
-    /// - Parameters:
-    ///   - snapshot: The state right now, before the change.
-    ///   - coalescingKey: When non-nil and equal to the previous checkpoint's key, merges into
-    ///     the same undo step (e.g. consecutive keystrokes in one text field).
+    /// - Parameter coalescingKey: When non-nil and equal to the previous checkpoint's key, merges
+    ///   into the same undo step (e.g. consecutive keystrokes in one text field).
     func checkpoint(_ snapshot: Snapshot, coalescingKey: AnyHashable? = nil) {
         let continuesGroup = coalescingKey != nil && coalescingKey == lastCoalescingKey
         lastCoalescingKey = coalescingKey
@@ -54,7 +49,6 @@ final class DiagramHistoryManager<Snapshot: Equatable & Sendable> {
 
     // MARK: - Undo / Redo
 
-    /// Pushes `current` onto the redo stack and returns the previous state, or `nil` if none.
     func undo(current: Snapshot) -> Snapshot? {
         lastCoalescingKey = nil
         guard let previous = undoStack.popLast() else { return nil }
@@ -62,7 +56,6 @@ final class DiagramHistoryManager<Snapshot: Equatable & Sendable> {
         return previous
     }
 
-    /// Pushes `current` onto the undo stack and returns the next state, or `nil` if none.
     func redo(current: Snapshot) -> Snapshot? {
         lastCoalescingKey = nil
         guard let next = redoStack.popLast() else { return nil }
@@ -81,11 +74,8 @@ final class DiagramHistoryManager<Snapshot: Equatable & Sendable> {
 
 // MARK: - DiagramHistoryHosting
 
-/// Adopted by view models that back undo/redo with a `DiagramHistoryManager`.
-///
-/// Conformers supply only `historySnapshot` (read = capture current state, write = apply a
-/// restored state) and, optionally, `persistAfterHistoryChange()`; the shared defaults provide
-/// `canUndo`/`canRedo`/`recordUndo`/`undo`/`redo`.
+/// Conformers supply only `historySnapshot` and, optionally, `persistAfterHistoryChange()`; the
+/// shared defaults provide `canUndo`/`canRedo`/`recordUndo`/`undo`/`redo`.
 @MainActor
 protocol DiagramHistoryHosting: AnyObject {
     associatedtype Snapshot: Equatable & Sendable
@@ -95,8 +85,7 @@ protocol DiagramHistoryHosting: AnyObject {
     /// The undoable state: reading captures the current state, writing applies a restored one.
     var historySnapshot: Snapshot { get set }
 
-    /// Hook invoked after `undo()`/`redo()` apply a restored snapshot. Defaults to a no-op;
-    /// override to self-persist.
+    /// Override to self-persist after `undo()`/`redo()` apply a restored snapshot.
     func persistAfterHistoryChange()
 }
 
@@ -106,11 +95,8 @@ extension DiagramHistoryHosting {
     var canUndo: Bool { history.canUndo }
     var canRedo: Bool { history.canRedo }
 
-    /// Captures the current state as a checkpoint before a mutation. Call at the start of every
-    /// undoable action (and once, before positions change, at the start of a drag/resize gesture).
-    ///
-    /// - Parameter coalescingKey: When non-nil and equal to the previous checkpoint's key, merges
-    ///   into the same undo step (e.g. consecutive keystrokes in one text field).
+    /// Call at the start of every undoable action (and once, before positions change, at the start
+    /// of a drag/resize gesture).
     func recordUndo(coalescingKey: AnyHashable? = nil) {
         history.checkpoint(historySnapshot, coalescingKey: coalescingKey)
     }

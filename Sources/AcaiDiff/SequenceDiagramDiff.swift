@@ -3,9 +3,7 @@ import AcaiDiagram
 /// The delta between two `SequenceDiagram` revisions (same entry point, two codebase versions).
 ///
 /// Messages are identified by `(from, to, label, kind)` — `order` is layout only — so a message
-/// present in both revisions is *unchanged* regardless of where it falls in the trace. The `union`
-/// merges both revisions (new flow first, then removed messages) so a renderer can draw every
-/// message and tint it by `status(of:)`.
+/// present in both revisions is *unchanged* regardless of where it falls in the trace.
 public struct SequenceDiagramDiff: Sendable {
     public let union: SequenceDiagram
     private let statusByKey: [String: DeltaStatus]
@@ -22,13 +20,11 @@ public struct SequenceDiagramDiff: Sendable {
         for message in removed { statusByKey[message.diffKey] = .removed }
         self.statusByKey = statusByKey
 
-        // Participants: every participant from both sides (new first, old-only appended).
         var participants = new.participants
         let seenParticipants = Set(new.participants.map(\.id))
         participants += old.participants.filter { !seenParticipants.contains($0.id) }
 
-        // Messages: the new flow in its order, then removed messages appended; order reassigned so
-        // the renderer lays them out in this sequence.
+        // order is reassigned below so the renderer lays messages out in this sequence.
         var messages = new.messages.sorted { $0.order < $1.order }
         messages += removed.sorted { $0.order < $1.order }
         for index in messages.indices { messages[index].order = index }
@@ -47,8 +43,7 @@ public struct SequenceDiagramDiff: Sendable {
 }
 
 extension SequenceDiagram.Message {
-    /// This message's identity for diffing: `(from, to, label, kind)` — `order` is layout only, so a
-    /// message present in both revisions is unchanged regardless of where it falls in the trace.
+    /// `order` is excluded — it's layout only.
     var diffKey: String {
         "\(from)\u{1}\(to)\u{1}\(label ?? "")\u{1}\(String(describing: kind))"
     }

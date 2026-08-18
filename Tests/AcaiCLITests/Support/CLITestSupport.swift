@@ -30,8 +30,7 @@ enum CLITestSupport {
     }
 
     #if os(macOS)
-    /// Parses `image`-subcommand `arguments` into the concrete `Image` command. macOS-only: the
-    /// `image` subcommand needs SwiftUI's `ImageRenderer`, so it is not compiled on Linux.
+    /// macOS-only: the `image` subcommand needs SwiftUI's `ImageRenderer`, so it is not compiled on Linux.
     static func parseImage(_ arguments: [String]) throws -> AcaiCommand.Image {
         let root = try AcaiCommand.parseAsRoot(["image"] + arguments)
         return try #require(root as? AcaiCommand.Image)
@@ -73,8 +72,7 @@ enum CLITestSupport {
 
     // MARK: - Filesystem fixtures
 
-    /// Creates a unique temporary directory and returns its URL. The caller is responsible for
-    /// removing it (see `withTempDirectory`).
+    /// The caller is responsible for removing the directory (see `withTempDirectory`).
     static func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiCLITests-\(UUID().uuidString)", isDirectory: true)
@@ -82,15 +80,13 @@ enum CLITestSupport {
         return url
     }
 
-    /// Runs `body` with a fresh temp directory that is removed afterwards.
     static func withTempDirectory<T>(_ body: (URL) throws -> T) throws -> T {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         return try body(dir)
     }
 
-    /// Writes a minimal two-type Swift source file (one type calls the other) into `directory`,
-    /// producing a codebase that yields non-trivial class/sequence/call-graph diagrams.
+    /// Produces a codebase that yields non-trivial class/sequence/call-graph diagrams.
     @discardableResult
     static func writeSampleSwiftSource(in directory: URL) throws -> URL {
         let source = """
@@ -110,7 +106,6 @@ enum CLITestSupport {
         return fileURL
     }
 
-    /// A path under the temp directory that is guaranteed not to exist yet.
     static func nonexistentPath() -> String {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiCLITests-missing-\(UUID().uuidString)")

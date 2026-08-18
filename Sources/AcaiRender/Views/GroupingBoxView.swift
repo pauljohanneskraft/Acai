@@ -1,8 +1,7 @@
 import SwiftUI
 
 /// Box drawn behind a group of type nodes that share the same grouping key (a directory
-/// or a compiled product/module). Rendered as a rounded rectangle with a small name tab
-/// in the top-left corner, echoing UML package notation.
+/// or a compiled product/module), echoing UML package notation.
 public struct GroupingBoxView: View {
     let label: String
 

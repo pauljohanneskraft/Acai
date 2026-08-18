@@ -4,21 +4,17 @@ import AcaiCore
 import AcaiDiagram
 import AcaiLibrary
 
-/// The code-quality check as its own collapsible section. An analysis produces a report, not a
-/// canvas, so it lives here rather than among the diagrams. It always evaluates — the configured
-/// `quality.yml` when one is set up, otherwise the built-in curated smell budgets — so god classes,
-/// feature envy, low cohesion and the like surface out of the box. Opens the rules editor from the
-/// header to attach or tighten a custom rules file.
+/// Always evaluates — the configured `quality.yml` when one is set up, otherwise the built-in
+/// curated smell budgets — so god classes, feature envy, low cohesion and the like surface out of
+/// the box.
 struct QualityCheckSection: View {
     let codebase: Codebase
     /// Still needed to seed the rules editor sheet.
     let artifact: CodeArtifact
-    /// The quality report, precomputed in the background — always present (default budgets when no
-    /// rules file is configured).
+    /// Precomputed in the background — always present (default budgets when no rules file is
+    /// configured).
     let report: QualityReport
-    /// Whether `report` came from a configured rules file (vs the built-in default smell budgets).
     let usesConfiguredRules: Bool
-    /// The rules-load failure message, when a check is configured but its file couldn't be read.
     let rulesError: String?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -113,11 +109,8 @@ struct QualityCheckSection: View {
     }
 }
 
-/// Dead-code candidates as their own collapsible section. The scan runs once here: its candidate
-/// count and call-graph coverage are shown in the header and the report is handed to the report view.
 struct DeadCodeSection: View {
     let codebase: Codebase
-    /// Needed for each candidate's "Open in…" resolution.
     let artifact: CodeArtifact
     /// Precomputed in the background (see ``CodebaseAnalysis``).
     let report: DeadCodeScan.Report
@@ -137,9 +130,8 @@ struct DeadCodeSection: View {
     }
 }
 
-/// Parse health as its own collapsible section. Kept unobtrusive on a clean codebase: collapsed by
-/// default with a compact score in the header, expanding only when there are diagnostics. The check
-/// runs once here and the report is handed to the report view.
+/// Kept unobtrusive on a clean codebase: collapsed by default, expanding only when there are
+/// diagnostics.
 struct ParseHealthSection: View {
     let codebase: Codebase
     /// Precomputed in the background (see ``CodebaseAnalysis``).
@@ -163,8 +155,6 @@ struct ParseHealthSection: View {
     }
 }
 
-/// A compact caption shown at the trailing edge of a collapsible section header, summarizing the
-/// section's contents (a count or score) so it reads at a glance even when collapsed.
 struct SectionCountBadge: View {
     let text: String
     var tint: Color = .secondary

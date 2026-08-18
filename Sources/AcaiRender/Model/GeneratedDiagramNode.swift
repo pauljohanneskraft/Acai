@@ -12,11 +12,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public let methods: [DiagramMember]
     public let enumCases: [DiagramEnumCase]
     public let genericParameters: [String]
-    /// The full relative directory path of this type's source file (e.g.
-    /// `Sources/AcaiCore/ClassDiagram`), used for hierarchical directory grouping.
+    /// e.g. `Sources/AcaiCore/ClassDiagram`.
     public let directoryPath: String?
-    /// The compiled product (build target / module) this type belongs to,
-    /// derived from its source-file path. Used for product grouping and package boxes.
     public let productGroup: String?
 
     public init(
@@ -40,8 +37,6 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         let props = type.members.filter(\.isProperty)
         let meths = type.members.filter(\.isMethod)
 
-        // Per-type overrides take precedence over the global defaults, letting a single type
-        // show or hide its members independently of the rest of the diagram.
         let showProps = config.propertyVisibility[type.id] ?? config.showProperties
         let showMeths = config.methodVisibility[type.id] ?? config.showMethods
         let showEnums = config.enumCaseVisibility[type.id] ?? config.showEnumCases
@@ -78,8 +73,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         }
     }
 
-    /// Whether `access` is at or above `minimum`, using the `AccessLevel.visibilityRank` ordering
-    /// shared with the DOT/Mermaid renderers. A `nil` minimum keeps everything.
+    /// Uses the `AccessLevel.visibilityRank` ordering shared with the DOT/Mermaid renderers.
     public static func passesAccessFilter(_ access: AccessLevel, minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
         return access.visibilityRank >= minimum.visibilityRank
@@ -91,6 +85,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
 public struct DiagramMember: Identifiable, Sendable {
     public let id: String
     public let accessSymbol: String
+    public let accessLevel: AccessLevel
     public let name: String
     public let displayText: String
     public let isStatic: Bool
@@ -99,6 +94,7 @@ public struct DiagramMember: Identifiable, Sendable {
     public init(from member: Member, isMethod: Bool, collectionTypeNames: Set<String> = []) {
         self.id = "\(member.name)_\(member.kind.rawValue)_\(member.type?.name ?? "")"
         self.accessSymbol = member.umlAccessSymbol
+        self.accessLevel = member.accessLevel
         self.name = member.name
         self.isStatic = member.modifiers.contains(.static) || member.modifiers.contains(.class)
         self.isAbstract = member.modifiers.contains(.abstract)
@@ -106,6 +102,13 @@ public struct DiagramMember: Identifiable, Sendable {
         self.displayText = isMethod
             ? member.umlMethodLine(collectionTypeNames: collectionTypeNames)
             : member.umlPropertyLine(collectionTypeNames: collectionTypeNames)
+    }
+}
+
+extension DiagramMember {
+    public var displayItem: MemberDisplayItem {
+        MemberDisplayItem(
+            id: id, text: displayText, isStatic: isStatic, isAbstract: isAbstract, accessLevel: accessLevel)
     }
 }
 
@@ -133,8 +136,6 @@ public struct GeneratedDiagramEdge: Identifiable, Sendable {
     /// Multiplicity shown at the target (head) end, e.g. `1` / `0..1` / `*`, or `nil`.
     public let targetLabel: String?
 
-    /// - Parameter showMultiplicities: when `false`, the source/target multiplicity labels
-    ///   are dropped so the edge renders without cardinality.
     public init(from rel: Relationship, showMultiplicities: Bool = true) {
         self.id = "\(rel.source)-\(rel.kind.rawValue)-\(rel.target)"
         self.sourceID = rel.source

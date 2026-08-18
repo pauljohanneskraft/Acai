@@ -96,7 +96,6 @@ struct CodableRoundTripTests {
     }
 
     @Test func memberBodyFactsRoundTrip() throws {
-        // Field reads and every `CallReceiver` case must survive the wire format.
         let original = Member(
             name: "run",
             kind: .method,
@@ -187,8 +186,7 @@ struct CodableRoundTripTests {
     }
 
     @Test func sourceLanguages() throws {
-        // `SourceLanguage` is an open struct (no `.allCases`); round-trip the built-in raw values
-        // plus an external one to prove the wire format is preserved for any language.
+        // `SourceLanguage` is an open struct with no `.allCases`, so raw values are round-tripped by hand.
         let rawValues = ["swift", "kotlin", "java", "typeScript", "javaScript", "dart", "python"]
         for raw in rawValues {
             let lang = CodeArtifact.SourceLanguage(rawValue: raw)
@@ -234,7 +232,6 @@ struct CodableRoundTripTests {
     }
 
     @Test func resolvingExtensionsDropsExternalBaseTypes() {
-        // `extension SIMD3` where SIMD3 isn't defined in the codebase must not appear.
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [

@@ -1,10 +1,7 @@
 import SwiftUI
 import AcaiDiagram
 
-/// A static rendering of a `PackageDiagram` from a pre-computed `PackageLayoutModel`:
-/// module boxes tinted by their distance from the main sequence, with weighted dependency
-/// arrows. Used by the CLI image export (`acai image --package`); the live app draws its own
-/// interactive canvas with the richer `ContainerNodeView`.
+/// Module boxes tinted by their distance from the main sequence, with weighted dependency arrows.
 public struct PackageDiagramSnapshotView: View {
     let layout: PackageLayoutModel
     let padding: CGFloat

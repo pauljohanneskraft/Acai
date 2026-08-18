@@ -1,13 +1,8 @@
 import Foundation
 import AcaiCore
 
-/// Detects JVM build systems (Gradle and Maven) and locates Kotlin / Java source directories.
-///
-/// A single type parameterised by the indicator files it looks for, so that Gradle
-/// and Maven detection share one implementation instead of two identical structs.
 public struct JVMBuildSystemDetector: BuildSystemDetector {
 
-    /// File names (relative to the project root) whose presence signals this build system.
     public let indicatorFiles: [String]
 
     private static let excludedDirs: Set<String> = [
@@ -18,12 +13,10 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         self.indicatorFiles = indicatorFiles
     }
 
-    /// Preset for Gradle projects.
     public static let gradle = JVMBuildSystemDetector(indicatorFiles: [
         "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"
     ])
 
-    /// Preset for Maven projects.
     public static let maven = JVMBuildSystemDetector(indicatorFiles: ["pom.xml"])
 
     public func isPresent(at root: URL) -> Bool {

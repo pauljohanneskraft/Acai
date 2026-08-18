@@ -4,18 +4,15 @@ import AcaiCore
 import AcaiDiagram
 import AcaiRender
 
-/// Backs the movement-only state diagram view. The `StateDiagram` is regenerated from the
-/// stored variable configuration (so it tracks the code); analysis failures are surfaced as
-/// a typed error rather than an empty canvas. The user may drag state nodes freely; those
-/// positions are the only editable, undoable state. Conforms to `CanvasInteraction` so it
-/// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
+/// Backs the movement-only state diagram view. The `StateDiagram` regenerates from the stored
+/// variable configuration, so it tracks the code; analysis failures surface as a typed error
+/// rather than an empty canvas. Dragged node positions are the only editable, undoable state.
 @MainActor
 final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let artifact: CodeArtifact
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
     @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
-    /// Per-state centre overrides, keyed by state id.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
@@ -60,7 +57,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         }
     }
 
-    /// Re-runs the analysis for a new configuration, dropping stale positions and history.
     func applyConfiguration(_ newConfiguration: StateDiagramConfiguration) {
         configuration = newConfiguration
         result = Self.generate(artifact: artifact, configuration: newConfiguration)
@@ -70,25 +66,19 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         history.clear()
     }
 
-    /// Clears the selected transition whenever the state selection is replaced (a secondary
-    /// selection, same rationale as `FreeformDiagramViewModel.selectedEdgeID`).
     func selectionWillReplace() {
         selectedTransitionID = nil
     }
 
-    /// A state's display name, or `nil` if it no longer exists (stale selection after a
-    /// configuration change, which always clears the selection anyway).
     func stateName(_ id: String) -> String? {
         diagram?.states.first { $0.id == id }?.name
     }
 
-    /// The generated diagram, when the analysis succeeded.
     var diagram: StateDiagram? {
         if case .success(let diagram) = result { return diagram }
         return nil
     }
 
-    /// The analysis failure, when there is one.
     var analysisError: StateDiagramAnalysisError? {
         if case .failure(let error) = result { return error }
         return nil
@@ -96,7 +86,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring node drags.
     var layout: StateLayoutModel {
         StateLayoutModel(diagram: diagram ?? StateDiagram(), positionOverrides: positionOverrides)
     }

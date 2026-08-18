@@ -5,7 +5,6 @@ import Testing
 @Suite("Module Resolution")
 struct ModuleResolverTests {
 
-    /// The standard resolver's product name for a path.
     private func product(_ path: String) -> String {
         ModuleResolver.standard.productName(forFilePath: path)
     }

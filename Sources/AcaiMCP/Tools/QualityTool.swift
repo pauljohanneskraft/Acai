@@ -3,11 +3,8 @@ import MCP
 import AcaiLibrary
 import Yams
 
-/// `acai_quality` — validate the codebase against a declarative code-quality rules file (forbidden
-/// dependencies, cycles, layering, metric budgets that subsume the code smells, stereotype contracts)
-/// and return the pass/fail verdict with each violation's file:line. Mirrors `acai quality --format
-/// json`. Omit `rules` for the built-in curated smell budgets; set `explore` for a non-failing ranking
-/// that also lists dependency cycles. Read-only: it returns the verdict rather than failing a process.
+/// `acai_quality` — validates the codebase against a declarative code-quality rules file and returns
+/// the pass/fail verdict with each violation's file:line. Mirrors `acai quality --format json`.
 struct QualityTool: AnalysisTool {
     let name = "acai_quality"
     let description = """
@@ -51,9 +48,7 @@ struct QualityTool: AnalysisTool {
         return .json(try Value(report))
     }
 
-    /// The rules file at `rules`, or the built-in curated smell budgets when omitted. Decodes the YAML
-    /// directly (the CLI's `.load` helper is AcaiCLI-internal), mapping read/parse failure onto
-    /// `invalidParams` rather than an opaque `internalError`.
+    /// Decodes the YAML directly since the CLI's `.load` helper is AcaiCLI-internal.
     private func loadRules(_ arguments: ToolArguments) throws -> QualityRules {
         guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
         do {
@@ -65,8 +60,6 @@ struct QualityTool: AnalysisTool {
         }
     }
 
-    /// Dependency cycles at the requested scope as `cycle` findings — the exploratory listing that
-    /// subsumes acai_cycles, used only in explore mode when the rules don't already gate cycles.
     private func cycleFindings(_ artifact: CodeArtifact, scope: String) -> [Violation] {
         let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
         let scopes: [CycleFinder.Scope] = scope == "types" ? [.types]

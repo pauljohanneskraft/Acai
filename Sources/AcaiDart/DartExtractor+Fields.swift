@@ -7,7 +7,6 @@ extension DartExtractor {
 
     // MARK: - Declaration Info
 
-    /// Collected declaration-level type and modifier information.
     struct DeclarationInfo {
         var type: TypeReference?
         var isNullable = false
@@ -17,7 +16,6 @@ extension DartExtractor {
         var isConst = false
     }
 
-    /// Applies a single child node to accumulate declaration info.
     private func applyDeclarationChild(
         _ child: Node, nodeType: String, to info: inout DeclarationInfo
     ) {

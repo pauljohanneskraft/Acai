@@ -1,13 +1,13 @@
 import Testing
 @testable import AcaiDiagram
 @testable import AcaiCore
+import AcaiQuality
 
 @Suite("Package Dependency Diagram")
 struct PackageDiagramTests {
 
     // MARK: - Fixtures
 
-    /// Two modules: `ModuleA` (two concrete classes) depends on `ModuleB` (one protocol).
     private func twoModuleArtifact() -> CodeArtifact {
         let typeA = TypeDeclaration(
             id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public,
@@ -76,6 +76,25 @@ struct PackageDiagramTests {
     @Test func singleModuleHasNoEdges() {
         let diagram = PackageDiagramBuilder().build(from: singleModuleArtifact())
         #expect(diagram.nodes.count == 1)
+        #expect(diagram.edges.isEmpty)
+    }
+
+    // MARK: - Filter
+
+    @Test func nilFilterKeepsEveryModule() {
+        let diagram = PackageDiagramBuilder().build(from: twoModuleArtifact())
+        #expect(Set(diagram.nodes.map(\.name)) == ["ModuleA", "ModuleB"])
+    }
+
+    @Test func filterKeepsOnlyMatchingModules() {
+        let diagram = PackageDiagramBuilder(filter: Selector(module: "ModuleA"))
+            .build(from: twoModuleArtifact())
+        #expect(diagram.nodes.map(\.name) == ["ModuleA"])
+    }
+
+    @Test func filterDropsEdgesTouchingFilteredOutModules() {
+        let diagram = PackageDiagramBuilder(filter: Selector(module: "ModuleA"))
+            .build(from: twoModuleArtifact())
         #expect(diagram.edges.isEmpty)
     }
 

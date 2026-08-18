@@ -73,8 +73,6 @@ struct JavaAssignmentTests {
     }
 
     @Test func unscopedEnumConstantAssignment() {
-        // A bare identifier naming a declared enum constant is classified as that enum case, even
-        // without the `Enum.` qualifier (`state = READY;`).
         let source = """
         enum State { READY, BUSY }
         class Loader {

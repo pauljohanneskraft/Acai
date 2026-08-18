@@ -51,7 +51,6 @@ struct QualityEvaluatorTests {
         let art = artifact(
             [type("A"), type("B")],
             [Relationship(kind: .dependency, source: "A", target: "B")])
-        // Only inheritance is forbidden; the actual edge is a dependency → no violation.
         let rules = QualityRules(forbidden: [
             DependencyRule(from: Selector(typeGlob: "A"), to: Selector(typeGlob: "B"), kinds: [.inheritance])
         ])
@@ -63,7 +62,6 @@ struct QualityEvaluatorTests {
             [type("UserRepo", module: "Data", annotations: ["@Repository"]),
              type("Logger", module: "Core")],
             [Relationship(kind: .dependency, source: "Logger", target: "UserRepo")])
-        // Logger (no stereotype) must not depend on a @Repository.
         let rules = QualityRules(forbidden: [
             DependencyRule(from: Selector(), to: Selector(stereotype: "repository"))
         ])
@@ -76,7 +74,6 @@ struct QualityEvaluatorTests {
     // MARK: Cycles
 
     @Test func moduleCycleIsDetected() {
-        // Core → Infra and Infra → Core : a two-module cycle.
         let art = artifact(
             [type("A", module: "Core"), type("B", module: "Infra")],
             [Relationship(kind: .dependency, source: "A", target: "B"),

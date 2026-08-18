@@ -22,11 +22,26 @@ optionalTargets.append(
             "AcaiCore",
             "AcaiDiagram",
             "AcaiDiff",
+            // For `GraphView`/`Selector` — the class-diagram Filter section reuses the quality
+            // engine's selector vocabulary instead of a second, diagram-specific one.
+            "AcaiQuality",
         ]
     )
 )
+
+// MARK: PNG golden-comparison math, shared by the render-snapshot tests in AcaiRenderTests and
+// AcaiAppTests. A pure leaf target — no swift-testing dependency (would need a license/privacy
+// pass for no real benefit) and no AcaiCore/AcaiLibrary dependency.
 optionalTargets.append(
-    .testTarget(name: "AcaiRenderTests", dependencies: ["AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram"])
+    .target(name: "AcaiPNGComparison", dependencies: [])
+)
+
+optionalTargets.append(
+    .testTarget(
+        name: "AcaiRenderTests",
+        dependencies: [
+            "AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality", "AcaiPNGComparison"
+        ])
 )
 cliOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
@@ -85,7 +100,7 @@ optionalTargets.append(
         // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
         // `ClassDiagramConfiguration` fixtures directly.
         dependencies: [
-            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram",
+            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison",
         ],
         // The render snapshot tests' committed goldens (read by file path, not `Bundle.module` — see
         // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
@@ -243,9 +258,11 @@ let package = Package(
         ),
 
         // MARK: DOT/Graphviz diagram generator
+        // Depends on AcaiQuality for `Selector` (diagram-filter configuration, e.g.
+        // `SequenceDiagramConfiguration.filter`) — still agnostic: `Selector` names no language.
         .target(
             name: "AcaiDiagram",
-            dependencies: ["AcaiCore"]
+            dependencies: ["AcaiCore", "AcaiQuality"]
         ),
 
         // MARK: Semantic architecture diffing — agnostic graph/metric comparison of two artifacts,
@@ -318,7 +335,7 @@ let package = Package(
         .testTarget(name: "AcaiDartTests", dependencies: ["AcaiDart", "AcaiCore"]),
         .testTarget(name: "AcaiPythonTests", dependencies: ["AcaiPython", "AcaiCore"]),
         .testTarget(name: "AcaiCFamilyTests", dependencies: ["AcaiCFamily", "AcaiCore"]),
-        .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore"]),
+        .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality"]),
         .testTarget(name: "AcaiDiffTests", dependencies: ["AcaiDiff", "AcaiCore", "AcaiDiagram"]),
         .testTarget(name: "AcaiQualityTests", dependencies: ["AcaiQuality", "AcaiCore"]),
         .testTarget(name: "AcaiLibraryTests", dependencies: ["AcaiLibrary", "AcaiDiagram"]),

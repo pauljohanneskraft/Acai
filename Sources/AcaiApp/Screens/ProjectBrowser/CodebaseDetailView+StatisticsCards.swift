@@ -1,8 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-// The statistics section and its stat-card builders. Kept in a separate file (same module) so
-// `CodebaseDetailView.swift` stays within SwiftLint's `file_length`.
 extension CodebaseDetailView {
 
     // MARK: - Statistics
@@ -22,7 +20,6 @@ extension CodebaseDetailView {
         }
     }
 
-    /// Per-module Robert Martin coupling metrics (Ca/Ce, instability, abstractness, distance, SDP).
     @ViewBuilder
     private func moduleMetricCards(metrics: CodeMetrics) -> some View {
         moduleMetricCard(
@@ -54,7 +51,6 @@ extension CodebaseDetailView {
             value: { Double($0.afferentCoupling) }, format: { String(Int($0)) })
     }
 
-    /// The classic per-type OO metrics (DIT/fan/WMC).
     @ViewBuilder
     private func classicMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
@@ -74,7 +70,6 @@ extension CodebaseDetailView {
             by: \.weightedMethods, descriptor: "Largest", types: metrics.types)
     }
 
-    /// The code-smell folds (issue #101).
     @ViewBuilder
     private func smellMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
@@ -122,7 +117,6 @@ extension CodebaseDetailView {
             by: \.featureEnvyMethods, descriptor: "Most", types: metrics.types)
     }
 
-    /// Complexity and structural-shape metrics.
     @ViewBuilder
     private func structuralMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
@@ -139,20 +133,16 @@ extension CodebaseDetailView {
             by: \.numberOfChildren, descriptor: "Most subclassed", types: metrics.types)
     }
 
-    /// Title, icon, family band, optional severity threshold, and explanation for a statistics card,
-    /// bundled so the card builders stay within the parameter limit. The card's tint is its family's.
+    /// Bundled so the card builders stay within the parameter limit.
     struct MetricVisual {
         let title: String
         let icon: String
         let family: MetricFamily
         let blurb: String
-        /// The amber/red guardrails for a directional metric; `nil` for a neutral metric (no dot).
         var threshold: MetricThreshold?
         var color: Color { family.color }
     }
 
-    /// A card for a per-type metric: max/avg with the types achieving the max named in the caption (up
-    /// to three, then "and N more"). Tapping opens the full ranked list (`typeDetail`).
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>,
@@ -176,8 +166,6 @@ extension CodebaseDetailView {
                 : nil)
     }
 
-    /// A card for a `Double`-valued per-type metric (a ratio or mean), formatted by `format`. Mirrors
-    /// the `Int` overload; tapping opens the full ranked list (`typeDetail`).
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>,
@@ -199,8 +187,6 @@ extension CodebaseDetailView {
                 : nil)
     }
 
-    /// A card for a per-module metric (`value`), formatted by `format`, with every top-ranked module
-    /// named. Tapping opens the ranked module list (`moduleDetail`).
     private func moduleMetricCard(
         _ visual: MetricVisual, descriptor: String, modules: [CodeMetrics.ModuleCoupling],
         value: @escaping (CodeMetrics.ModuleCoupling) -> Double, format: @escaping (Double) -> String

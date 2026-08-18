@@ -53,13 +53,10 @@ extension PythonExtractor {
         }
     }
 
-    /// Call-site scope for module-level functions: no instance properties, but declared types are
-    /// still resolvable for `TypeName.method()` static calls.
     func moduleScope() -> CallSiteScope {
         CallSiteScope(knownTypeNames: declaredTypeNames)
     }
 
-    /// A module-level `x = …` (optionally annotated `x: T = …`) becomes a global variable.
     func extractModuleVariable(_ assign: Node) -> Member? {
         guard let left = assign.child(byFieldName: "left"), left.nodeType == "identifier" else { return nil }
         let name = text(left)
@@ -77,9 +74,7 @@ extension PythonExtractor {
 
     // MARK: - Decorators
 
-    /// Bare decorator names (without the leading `@` and any call arguments), e.g. `@app.route(...)`
-    /// → `"app.route"`, `@dataclass` → `"dataclass"`. Works on either a `decorated_definition`
-    /// (whose `decorator` children are read) or any node carrying `decorator` children.
+    /// Bare decorator names, e.g. `@app.route(...)` → `"app.route"`, `@dataclass` → `"dataclass"`.
     func extractDecorators(_ node: Node) -> [String] {
         var result: [String] = []
         for child in node.children() where child.nodeType == "decorator" {

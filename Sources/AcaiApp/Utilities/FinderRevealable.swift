@@ -1,15 +1,13 @@
 import SwiftUI
 
 /// Reveals a codebase-relative file path in Finder (macOS only) — a value you instantiate and call
-/// `reveal()` on. The action itself, factored out of `FinderRevealable`'s button wrapper so the same
-/// action can also be offered as a **secondary** menu item alongside `CodeElementReferenceActions`'
-/// "Open in…" resolution — the fix for surfaces that used to have Finder-reveal as their
-/// *only* action, which is inert on iOS/iPadOS (see below).
+/// `reveal()` on, factored out of `FinderRevealable`'s button wrapper so the same action can also
+/// be offered as a **secondary** menu item alongside `CodeElementReferenceActions`' "Open in…"
+/// resolution.
 struct FinderReveal {
     let codebase: Codebase?
     let relativePath: String?
 
-    /// Whether there's anything to reveal — both a codebase and a relative path are known.
     var isAvailable: Bool { codebase != nil && relativePath != nil }
 
     func reveal() {
@@ -25,9 +23,7 @@ struct FinderReveal {
     }
 }
 
-/// Wraps `content` in a button that reveals `relativePath` (resolved against `codebase`'s directory)
-/// in Finder — disabled when either is `nil`, or the file no longer exists on disk. `codebase` is
-/// optional so a caller that doesn't (yet) have one on hand can still apply this unconditionally.
+/// Disabled when `codebase` or `relativePath` is `nil`, or the file no longer exists on disk.
 struct FinderRevealable: ViewModifier {
     let codebase: Codebase?
     let relativePath: String?
@@ -51,8 +47,6 @@ struct FinderRevealable: ViewModifier {
 }
 
 extension View {
-    /// Makes this view clickable to reveal `relativePath` (resolved against `codebase`'s directory)
-    /// in Finder. Not tappable when either argument is `nil`.
     func revealsInFinder(codebase: Codebase?, relativePath: String?) -> some View {
         modifier(FinderRevealable(codebase: codebase, relativePath: relativePath))
     }

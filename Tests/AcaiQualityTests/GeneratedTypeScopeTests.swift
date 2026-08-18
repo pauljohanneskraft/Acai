@@ -9,14 +9,12 @@ import AcaiQuality
 @Suite("Quality: generated-type scope")
 struct GeneratedTypeScopeTests {
 
-    /// A language whose generated-code filter marks `*.g.swift` files as generated.
     private var resolver: LanguageConfigurationResolver {
         LanguageConfigurationResolver(single: LanguageConfiguration(
             generatedCodeFilter: GeneratedCodeFilter(
                 displayName: "Test Generated", explanation: "", fileSuffixes: [".g.swift"])))
     }
 
-    /// One hand-written type and one generated type, each with a property.
     private func artifact() -> CodeArtifact {
         func type(_ name: String, file: String) -> TypeDeclaration {
             TypeDeclaration(

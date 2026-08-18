@@ -8,7 +8,6 @@ import AcaiRender
 // diagrams are an app-only concept, so this initializer stays here and delegates to the
 // shared view's primitive initializer.
 extension TypeNodeView {
-    /// Create from a freeform diagram node with type content.
     init(node: FreeformDiagram.Node, content: FreeformDiagram.Node.TypeContent, isSelected: Bool) {
         self.init(
             name: node.name,
@@ -20,7 +19,8 @@ extension TypeNodeView {
                     id: member.id.uuidString,
                     text: Self.formatFreeformMember(member, isMethod: false),
                     isStatic: member.isStatic,
-                    isAbstract: member.isAbstract
+                    isAbstract: member.isAbstract,
+                    accessLevel: member.accessLevel
                 )
             },
             methods: content.methods.map { member in
@@ -28,7 +28,8 @@ extension TypeNodeView {
                     id: member.id.uuidString,
                     text: Self.formatFreeformMember(member, isMethod: true),
                     isStatic: member.isStatic,
-                    isAbstract: member.isAbstract
+                    isAbstract: member.isAbstract,
+                    accessLevel: member.accessLevel
                 )
             },
             enumCases: content.enumCases.map { enumCase in

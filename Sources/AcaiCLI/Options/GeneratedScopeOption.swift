@@ -10,7 +10,6 @@ struct GeneratedScopeOption: ParsableArguments {
           help: "Include machine-generated types in the analysis (default: they are excluded).")
     var includeGenerated = false
 
-    /// `artifact` with generated types dropped, unless `--include-generated`.
     func applied(to artifact: CodeArtifact) -> CodeArtifact {
         includeGenerated
             ? artifact

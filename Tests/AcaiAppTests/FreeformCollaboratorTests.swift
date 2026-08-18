@@ -93,13 +93,11 @@ struct FreeformCollaboratorTests {
         ctx.edges = [existing]
         let editor = SequenceEditor(context: ctx)
 
-        // Two lifelines and no order yet ⇒ stamped with the next order + synchronous kind.
         var edge = FreeformDiagram.Edge(sourceNodeID: "B", targetNodeID: "A", kind: .dependency)
         editor.reclassify(&edge)
         #expect(edge.messageOrder == 4)
         #expect(edge.messageKind == .synchronous)
 
-        // Re-pointing onto a non-lifeline clears the message fields.
         edge.targetNodeID = "C"
         editor.reclassify(&edge)
         #expect(edge.messageOrder == nil)
@@ -117,39 +115,8 @@ struct FreeformCollaboratorTests {
         edge.messageKind = nil
         editor.reclassify(&edge)
 
-        // The order is preserved and the missing kind is backfilled.
         #expect(edge.messageOrder == 2)
         #expect(edge.messageKind == .synchronous)
-    }
-
-    // MARK: - Member parsing
-
-    @Test func memberPropertyTextParsing() {
-        #expect(FreeformDiagram.Node.Member(propertyText: "count: Int").name == "count")
-        #expect(FreeformDiagram.Node.Member(propertyText: "  count :  Int ").type == "Int")
-        // No colon ⇒ name only, empty type.
-        let bare = FreeformDiagram.Node.Member(propertyText: "flag")
-        #expect(bare.name == "flag")
-        #expect(bare.type.isEmpty)
-    }
-
-    @Test func memberMethodTextParsing() {
-        let full = FreeformDiagram.Node.Member(methodText: "doWork(input: Int): String")
-        #expect(full.name == "doWork")
-        #expect(full.parameters == "input: Int")
-        #expect(full.type == "String")
-
-        // Bare name, no parens / colon.
-        let bare = FreeformDiagram.Node.Member(methodText: "ping")
-        #expect(bare.name == "ping")
-        #expect(bare.parameters.isEmpty)
-        #expect(bare.type.isEmpty)
-
-        // Bare "name: Type" (no parens) — the unified parser now handles it for methods too.
-        let noParens = FreeformDiagram.Node.Member(methodText: "value: Int")
-        #expect(noParens.name == "value")
-        #expect(noParens.type == "Int")
-        #expect(noParens.parameters.isEmpty)
     }
 
     @Test func updateTypeContentIsNoOpForWrongKind() {
@@ -179,7 +146,6 @@ struct FreeformCollaboratorTests {
         #expect(dest.nodes.count == 1)
         #expect(dest.edges.isEmpty)
 
-        // Cut removes the node *and* the dangling edge touching it.
         clipboard.cutSelection()
         #expect(ctx.nodes.map(\.id) == ["B"])
         #expect(ctx.edges.isEmpty)
@@ -215,29 +181,96 @@ struct FreeformCollaboratorTests {
 
     // MARK: - TypeMemberEditor
 
-    @Test func addPropertyFromTextParsesNameAndType() {
+    @Test func addPropertySetsStructuredFields() {
         let ctx = StubContext()
         ctx.nodes = [typeNode("T")]
         let editor = TypeMemberEditor(context: ctx)
-        editor.addPropertyFromText(to: "T", text: "count: Int")
+        editor.addProperty(to: "T", draft: .init(
+            name: "count", type: "Int", accessLevel: .private, isStatic: true, isAbstract: false
+        ))
 
         guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
         #expect(content.properties.count == 1)
         #expect(content.properties[0].name == "count")
         #expect(content.properties[0].type == "Int")
+        #expect(content.properties[0].accessLevel == .private)
+        #expect(content.properties[0].isStatic)
+        #expect(ctx.undoCheckpoints == 1)
+        #expect(ctx.saves == 1)
     }
 
-    @Test func addMethodFromTextParsesSignature() {
+    @Test func addPropertyIsNoOpForBlankName() {
         let ctx = StubContext()
         ctx.nodes = [typeNode("T")]
         let editor = TypeMemberEditor(context: ctx)
-        editor.addMethodFromText(to: "T", text: "doWork(input: Int): String")
+        editor.addProperty(to: "T", draft: .init(
+            name: "   ", type: "Int", accessLevel: .internal, isStatic: false, isAbstract: false
+        ))
+
+        guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+        #expect(content.properties.isEmpty)
+        #expect(ctx.undoCheckpoints == 0)
+    }
+
+    @Test func updatePropertyMutatesExistingMember() {
+        let ctx = StubContext()
+        var node = typeNode("T")
+        let memberID = UUID()
+        node.content = .type(.init(typeKind: .class, properties: [
+            .init(id: memberID, name: "old", type: "Int")
+        ]))
+        ctx.nodes = [node]
+        let editor = TypeMemberEditor(context: ctx)
+
+        editor.updateProperty(in: "T", memberID: memberID, draft: .init(
+            name: "renamed", type: "String", accessLevel: .public, isStatic: true, isAbstract: true
+        ))
+
+        guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+        #expect(content.properties.count == 1)
+        #expect(content.properties[0].id == memberID)
+        #expect(content.properties[0].name == "renamed")
+        #expect(content.properties[0].type == "String")
+        #expect(content.properties[0].accessLevel == .public)
+        #expect(content.properties[0].isStatic)
+        #expect(content.properties[0].isAbstract)
+    }
+
+    @Test func addMethodSetsStructuredParameters() {
+        let ctx = StubContext()
+        ctx.nodes = [typeNode("T")]
+        let editor = TypeMemberEditor(context: ctx)
+        editor.addMethod(to: "T", draft: .init(
+            name: "doWork", type: "String", accessLevel: .internal, isStatic: false, isAbstract: false,
+            structuredParameters: [.init(name: "input", type: "Int")]
+        ))
 
         guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
         #expect(content.methods.count == 1)
         #expect(content.methods[0].name == "doWork")
-        #expect(content.methods[0].parameters == "input: Int")
+        #expect(content.methods[0].structuredParameters == [.init(name: "input", type: "Int")])
         #expect(content.methods[0].type == "String")
+        #expect(content.methods[0].displayString == "doWork(input: Int): String")
+    }
+
+    @Test func updateMethodReplacesParameterList() {
+        let ctx = StubContext()
+        var node = typeNode("T")
+        let memberID = UUID()
+        node.content = .type(.init(typeKind: .class, methods: [
+            .init(id: memberID, name: "old", structuredParameters: [.init(name: "a", type: "Int")])
+        ]))
+        ctx.nodes = [node]
+        let editor = TypeMemberEditor(context: ctx)
+
+        editor.updateMethod(in: "T", memberID: memberID, draft: .init(
+            name: "renamed", type: "Void", accessLevel: .internal, isStatic: false, isAbstract: false,
+            structuredParameters: [.init(name: "b", type: "String"), .init(name: "c", type: "Bool")]
+        ))
+
+        guard case .type(let content) = ctx.nodes[0].content else { Issue.record("not a type"); return }
+        #expect(content.methods[0].name == "renamed")
+        #expect(content.methods[0].structuredParameters.map(\.name) == ["b", "c"])
     }
 
     @Test func consecutiveNameEditsCoalesceIntoOneCheckpointPerField() {

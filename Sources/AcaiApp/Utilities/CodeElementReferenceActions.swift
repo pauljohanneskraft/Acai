@@ -2,28 +2,21 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// Wires `CodeElementReference` resolution into a row: every diagram type that can
-/// meaningfully show `reference` becomes a **context-menu action** (macOS/iPad right-click, iPhone
-/// long-press) *and* the row's **default tap-through action** (jumping to an already-open diagram
-/// that already contains the element, or creating one pre-scoped) — an "Open in…" action. This is
-/// the fix for every surface that used to have `.revealsInFinder` as its *only* action: that
-/// modifier's own `#else` branch is a bare
-/// pass-through on iOS/iPadOS ("No Finder on iOS"), so those rows did nothing at all when tapped on
-/// two of the app's three platforms.
+/// Wires `CodeElementReference` resolution into a row: every diagram type that can meaningfully
+/// show `reference` becomes a **context-menu action** (macOS/iPad right-click, iPhone long-press)
+/// *and* the row's **default tap-through action** (jumping to an already-open diagram that already
+/// contains the element, or creating one pre-scoped) — an "Open in…" action.
 ///
-/// Finder reveal is kept, not removed — it becomes an **additional**, macOS-only secondary item in
-/// the same context menu (`FinderReveal`), since some Mac users still want to jump into their real
-/// editor from there.
+/// Finder reveal is an **additional**, macOS-only secondary item in the same context menu
+/// (`FinderReveal`), since some Mac users still want to jump into their real editor from there.
 struct CodeElementReferenceActions: ViewModifier {
-    /// The element this row is about — `nil` when nothing resolvable was found (e.g. a health-check
-    /// parse diagnostic, which carries no type/method identity), in which case this becomes a
-    /// no-op passthrough for the "Open in…" part (Finder reveal, if available, still applies).
+    /// `nil` when nothing resolvable was found (e.g. a health-check parse diagnostic, which carries
+    /// no type/method identity) — this becomes a no-op passthrough for the "Open in…" part.
     let reference: CodeElementReference?
     /// `nil` when there's no codebase context to resolve against (e.g. the quality rules editor's
     /// live preview) — makes this whole modifier a passthrough.
     let codebase: Codebase?
-    /// The item's path relative to the codebase directory, if it resolves to a single file — drives
-    /// the secondary "Reveal in Finder" action. `nil` for e.g. a relationship spanning two files.
+    /// `nil` for e.g. a relationship spanning two files.
     var relativePath: String?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -90,10 +83,7 @@ struct CodeElementReferenceActions: ViewModifier {
 }
 
 extension View {
-    /// Attaches the full "Open in…" resolution (default tap-through action + context menu),
-    /// scoped to `codebase`'s diagrams, plus an additional macOS-only "Reveal in Finder" secondary
-    /// action when `relativePath` is known. A no-op passthrough when `reference` or `codebase` is
-    /// `nil`.
+    /// A no-op passthrough when `reference` or `codebase` is `nil`.
     func openInCodeElement(
         _ reference: CodeElementReference?, codebase: Codebase?, relativePath: String? = nil
     ) -> some View {

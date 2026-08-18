@@ -3,16 +3,14 @@ import XCTest
 import UIKit
 #endif
 
-/// An anchor purely so `Bundle(for:)` can resolve the UI test bundle — an Xcode-project target has
-/// no SwiftPM `Bundle.module`, unlike `Tests/AcaiAppTests`.
+/// So `Bundle(for:)` can resolve the UI test bundle — an Xcode-project target has no SwiftPM
+/// `Bundle.module`, unlike `Tests/AcaiAppTests`.
 private final class FixtureBundleAnchor {}
 
 @MainActor
 extension XCUIApplication {
-    /// Rotates the simulator to landscape before a screenshot-golden test launches, iPad only — the
-    /// wider canvas suits diagram/canvas content better there than portrait; iPhone and macOS
-    /// goldens are unaffected. Call before `launchWithFixture` (not after) so the app launches
-    /// already rotated, rather than racing an in-flight async rotation mid-test.
+    /// Call before `launchWithFixture` (not after) so the app launches already rotated, rather than
+    /// racing an in-flight async rotation mid-test.
     func rotateToLandscapeOnIPad() {
         #if os(iOS)
         if UIDevice.current.userInterfaceIdiom == .pad {
@@ -21,12 +19,10 @@ extension XCUIApplication {
         #endif
     }
 
-    /// Ensures portrait before a test that assumes it (e.g. iPad's narrower, stack-based push/pop
-    /// navigation with a `BackButton`) launches, iPad only. Device orientation is simulator-wide
-    /// state, not scoped to one test's app launch, so a test can't assume it starts in whatever
-    /// orientation the *previous* test left the simulator in. Every non-landscape test declares this
-    /// precondition itself rather than relying on landscape tests to clean up after themselves, so
-    /// each test stays correct regardless of run order.
+    /// Device orientation is simulator-wide state, not scoped to one test's app launch, so a test
+    /// can't assume it starts in whatever orientation the *previous* test left the simulator in —
+    /// every non-landscape test declares this precondition itself rather than relying on landscape
+    /// tests to clean up after themselves.
     func rotateToPortraitOnIPad() {
         #if os(iOS)
         if UIDevice.current.userInterfaceIdiom == .pad {
@@ -37,19 +33,13 @@ extension XCUIApplication {
 
     /// Launches the app pointed at a fresh, disposable copy of the named fixture
     /// (`Fixtures/<name>` in this UI test bundle) instead of the real user's persisted state.
-    ///
     /// Fixture JSON may reference its own eventual on-disk location via the literal placeholder
-    /// `$FIXTURE_ROOT` (unknown until after this copy lands in a freshly generated temp directory);
-    /// every occurrence in every file under the copy is substituted with the real destination path
-    /// before launch.
+    /// `$FIXTURE_ROOT`; every occurrence in every file under the copy is substituted with the real
+    /// destination path before launch.
     ///
     /// **The launch-argument name here must match `UITestFixtureResolver.launchArgument`**
     /// (`Sources/AcaiApp/UITestSupport.swift`) — the two can't share a constant across the SwiftPM
     /// package / Xcode-project boundary.
-    ///
-    /// `configure`, if given, runs after staging and before `launch()`, so it can edit the staged
-    /// fixture in place (e.g. turn a plain directory into a real git repo) and append further
-    /// `launchArguments` that only make sense once its own setup ran.
     func launchWithFixture(
         _ name: String,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
@@ -64,12 +54,9 @@ extension XCUIApplication {
         }
 
         #if os(macOS)
-        // Not `FileManager.default.temporaryDirectory`: the macOS UI test runner is sandboxed, so
-        // that resolves inside the runner's own container. Handing that path to the unsandboxed
-        // app-under-test then has it read fixture state out of a different app's sandbox, which
-        // triggers an "access data from other apps" prompt at every launch. `/private/tmp` avoids
-        // that; the runner still needs `App/AcaiUITests-macOS.entitlements` (via project.yml's
-        // `CODE_SIGN_ENTITLEMENTS`) to grant write access to it under its default sandbox.
+        // Not `FileManager.default.temporaryDirectory`: that resolves inside the sandboxed UI test
+        // runner's own container, and handing that path to the unsandboxed app-under-test triggers
+        // an "access data from other apps" prompt at every launch. `/private/tmp` avoids that.
         let tempRoot = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
         #else
         let tempRoot = FileManager.default.temporaryDirectory
@@ -92,11 +79,9 @@ extension XCUIApplication {
         launch()
     }
 
-    /// The color scheme every UI test launch forces via `-AcaiUITestColorScheme`, so a screenshot
-    /// golden's appearance never depends on the runner's or developer's own system default. Split
-    /// across platforms so both appearances get real coverage: macOS and iPhone run dark, iPad runs
-    /// light. `Acai-iOSUITests` is one shared binary for both destinations, so this is a runtime
-    /// idiom check, not a per-target build setting.
+    /// Forced via `-AcaiUITestColorScheme` so a screenshot golden's appearance never depends on the
+    /// runner's system default. Split across platforms so both appearances get real coverage:
+    /// macOS and iPhone run dark, iPad runs light.
     private var defaultUITestColorScheme: String {
         #if os(macOS)
         return "dark"
@@ -105,8 +90,6 @@ extension XCUIApplication {
         #endif
     }
 
-    /// Replaces every `$FIXTURE_ROOT` occurrence in every file under `root` with `root`'s own
-    /// path, in place.
     private func substituteFixtureRoot(in root: URL) throws {
         let fileManager = FileManager.default
         guard let enumerator = fileManager.enumerator(

@@ -35,7 +35,6 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
             scale = newScale
             offset = newOffset
         }
-        // Keep cached geometry fresh on every SwiftUI update.
         context.coordinator.cacheGeometry(from: nsView)
     }
 
@@ -57,16 +56,13 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
         private var scrollMonitor: Any?
         private var magnifyMonitor: Any?
 
-        /// Snapshots the view's geometry for use in event monitor callbacks.
-        /// Always called from @MainActor contexts (NSView lifecycle, updateNSView).
         @MainActor func cacheGeometry(from view: NSView) {
             cachedBounds = view.bounds
             let frameInWindow = view.convert(view.bounds, to: nil)
             cachedFrameOriginInWindow = frameInWindow.origin
         }
 
-        /// Converts a point in window coordinates to the view's local coordinate
-        /// system using cached geometry, then flips Y for SwiftUI (top-left origin).
+        /// `flipped` converts AppKit's bottom-left-origin Y to SwiftUI's top-left origin.
         private func viewLocation(fromWindowPoint windowPoint: CGPoint) -> (inView: CGPoint, flipped: CGPoint)? {
             let local = CGPoint(
                 x: windowPoint.x - cachedFrameOriginInWindow.x,
@@ -77,7 +73,6 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
             return (local, flipped)
         }
 
-        /// Installs app-level event monitors for scroll-wheel and magnify events.
         func installMonitors() {
             removeMonitors()
 
@@ -187,9 +182,6 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
 
     // MARK: - NSView
 
-    /// Invisible NSView that serves as an anchor for the event monitors.
-    /// Returns `nil` from `hitTest` so all mouse events pass straight through
-    /// to SwiftUI's gesture system. Updates cached geometry on layout changes.
     final class ZoomCaptureView: NSView {
         weak var coordinator: Coordinator?
 
@@ -209,7 +201,6 @@ struct ScrollWheelZoomHandler: NSViewRepresentable {
 
         override func layout() {
             super.layout()
-            // Keep cached geometry in sync when the window resizes.
             coordinator?.cacheGeometry(from: self)
         }
     }

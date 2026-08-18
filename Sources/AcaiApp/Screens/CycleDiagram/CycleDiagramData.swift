@@ -44,7 +44,6 @@ private struct CycleEdgeResolver {
     let members: Set<String>
     let artifact: CodeArtifact
 
-    /// Qualified names for `.types`-scope member ids, for friendlier node labels than a raw id.
     var typeNamesByID: [String: String] {
         Dictionary(artifact.flattened().map { ($0.id, $0.qualifiedName) }, uniquingKeysWith: { first, _ in first })
     }

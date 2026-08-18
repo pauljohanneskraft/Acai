@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AcaiGit
 import AcaiLibrary
 import AcaiCore
 import AcaiDiagram
@@ -9,9 +10,6 @@ import AcaiRender
 final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection?
-    /// A rendered image/DOT/Mermaid export waiting to be written, driving the single `.fileExporter`
-    /// modifier in `ProjectBrowserView` (cross-platform: `.fileExporter` replaces the old
-    /// macOS-only `NSSavePanel` calls). See `ProjectBrowserViewModel+Export.swift`.
     @Published var pendingExport: PendingExport?
 
     enum Selection: Hashable {
@@ -19,20 +17,50 @@ final class ProjectBrowserViewModel: ObservableObject {
         case codebase(UUID)
         case generatedDiagram(UUID)
         case freeformDiagram(UUID)
-        /// A shared `AcaiGit.GitRepository`, identified by its credential-free remote URL — the
-        /// Repositories sidebar section.
+        /// Identified by its credential-free remote URL.
         case repository(URL)
-        /// A project's aggregated Findings view — every quality violation, dead-code
-        /// candidate, and parse diagnostic across every codebase in the project, in one list.
         case findings(UUID)
     }
 
+    /// `[weak self]`: the coordinator outlives no particular `editing` snapshot, so it always
+    /// resolves a fresh one per reindex.
+    private(set) lazy var fileWatchCoordinator = FileWatchReindexCoordinator { [weak self] id in
+        await self?.editing.reindex(codebaseID: id)
+    }
+
+    /// macOS drives this with a periodic sweep (`startScheduledRefresh()`); iOS drives it one
+    /// codebase per `BGAppRefreshTask` wake instead (`ScheduledRefreshTaskRunner`, also started
+    /// from `startScheduledRefresh()`).
+    private(set) lazy var scheduledRefreshCoordinator = ScheduledRefreshCoordinator(store: store) { [weak self] id in
+        await self?.editing.pull(codebaseID: id)
+    }
+    #if os(iOS)
+    private(set) lazy var scheduledRefreshTaskRunner = ScheduledRefreshTaskRunner(
+        coordinator: scheduledRefreshCoordinator)
+    #endif
+    private var didStartScheduledRefresh = false
+
     init(store: ProjectStore = ProjectStore()) {
         self.store = store
+        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
+    }
+
+    /// Starts the scheduled-refresh mechanism appropriate to the current platform. Idempotent —
+    /// safe to call from a view's `.task`, which may run again if the view is recreated.
+    func startScheduledRefresh() {
+        guard !didStartScheduledRefresh else { return }
+        didStartScheduledRefresh = true
+        #if os(macOS)
+        scheduledRefreshCoordinator.startPeriodicSweep(interval: .seconds(15 * 60))
+        #else
+        scheduledRefreshTaskRunner.register()
+        scheduledRefreshTaskRunner.scheduleNext()
+        #endif
     }
 
     func persistChanges() {
         store.save()
+        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
@@ -69,8 +97,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Project / Codebase lifecycle
 
-    /// Project/codebase CRUD, reindexing, and per-codebase quality-check rules. Carved out of
-    /// this view model (see ``GeneratedDiagramEditor``); shares the store + change notifications.
     var editing: ProjectCodebaseEditor {
         ProjectCodebaseEditor(
             store: store,
@@ -82,8 +108,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Generated Diagram CRUD
 
-    /// Create/update/delete operations for generated diagrams. Carved out of this view model so it
-    /// keeps a single responsibility; shares the same store + change notifications.
     var diagrams: GeneratedDiagramEditor {
         GeneratedDiagramEditor(
             store: store,
@@ -92,61 +116,30 @@ final class ProjectBrowserViewModel: ObservableObject {
         )
     }
 
-    // MARK: - Delta comparison (git revision)
+    // MARK: - Delta comparison (git revision) — state; behavior in +Comparison.swift
 
-    /// Identity of a cached comparison snapshot: which directory at which git ref.
-    private struct ComparisonKey: Hashable {
-        let directory: String
-        let ref: String
-    }
-
-    /// Cached "old"-side artifacts for delta mode, keyed by codebase directory + git ref. Populated
-    /// asynchronously by `ensureComparisonLoaded`; read through `comparisonArtifact(for:)`.
-    @Published private var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+    /// Cached artifacts for delta mode, **semantic** (un-flattened, matching `semanticArtifact(for:)`
+    /// — flattening happens at read, in `displayArtifact(for:)`), keyed by codebase directory +
+    /// resolved git ref. Populated asynchronously by `ensureComparisonLoaded`.
+    @Published var comparisonArtifacts: [ComparisonKey: CodeArtifact] = [:]
+    /// Flattened, display-ready derivation of `comparisonArtifacts`, filled lazily on read — mirrors
+    /// `displayArtifactCache`'s "not `@Published`, pure derivation" reasoning below.
+    var comparisonDisplayCache: [ComparisonKey: CodeArtifact] = [:]
+    /// Resolved merge-base SHAs for pull-request comparisons, populated by `ensureComparisonLoaded`.
+    @Published var resolvedMergeBases: [MergeBaseKey: String] = [:]
 
     /// Most recent comparison load error, surfaced near the picker.
-    @Published private(set) var comparisonError: String?
+    @Published var comparisonError: String?
 
-    /// Sets (or clears, with `nil`) the git revision a diagram is compared against in delta mode,
-    /// dropping saved positions since the rendered element set changes between normal and union.
-    func updateComparisonGitRef(diagramID: UUID, ref: String?) {
-        comparisonError = nil
-        diagrams.mutate(diagramID, clearPositions: true) {
-            $0.comparisonGitRef = (ref?.isEmpty == true) ? nil : ref
-        }
-    }
+    /// Files the user has checked off in a diagram's Compare panel changed-files list, and findings
+    /// they've checked off in its "New findings" list — an in-memory, per-session reading aid, never
+    /// persisted, keyed by diagram id. Reset by `updateComparisonGitRef`/`selectComparisonPullRequest`.
+    @Published var comparisonReviewedFiles: [UUID: Set<String>] = [:]
+    @Published var comparisonReviewedFindings: [UUID: Set<String>] = [:]
 
-    /// Loads the "old" artifact for a diagram's comparison ref via a read-only `git archive`
-    /// snapshot, caching it. A no-op when delta mode is off or the snapshot is already cached.
-    func ensureComparisonLoaded(for diagram: GeneratedDiagram) async {
-        guard let codebase = codebase(for: diagram.codebaseID),
-              let ref = diagram.comparisonGitRef
-        else { return }
-        let directory = codebase.directoryPath
-        let fileFilter = codebase.fileFilter
-        let key = ComparisonKey(directory: directory, ref: ref)
-        guard comparisonArtifacts[key] == nil else { return }
-        let url = URL(fileURLWithPath: directory).standardizedFileURL
-        do {
-            let semantic = try await Task.detached(priority: .userInitiated) {
-                try GitRevisionSnapshot(directory: url, reference: ref).artifact(fileFilter: fileFilter)
-            }.value
-            // Flatten to the same diagram-ready form as the current-side artifact so delta mode
-            // diffs like-for-like (node ids must match the flattened display artifact).
-            comparisonArtifacts[key] = CodebaseAnalyzer().flattenedForDisplay(semantic)
-            comparisonError = nil
-        } catch {
-            comparisonError = error.localizedDescription
-        }
-    }
-
-    /// The cached "old" artifact for a diagram's current comparison ref, if already loaded.
-    func comparisonArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
-        guard let ref = diagram.comparisonGitRef,
-              let directory = codebase(for: diagram.codebaseID)?.directoryPath
-        else { return nil }
-        return comparisonArtifacts[ComparisonKey(directory: directory, ref: ref)]
-    }
+    /// Cached quality/dead-code/health analysis of `comparisonSemanticArtifact(for:)`, for the
+    /// Compare panel's findings delta. Populated asynchronously by `ensureComparisonAnalysisLoaded`.
+    @Published var comparisonAnalyses: [ComparisonKey: CodebaseAnalysis] = [:]
 
     /// Memoised diagram-ready (flattened) form of each codebase's stored semantic artifact, keyed by
     /// codebase and stamped with its `lastIndexed` so a reindex invalidates it. Not `@Published`: it
@@ -184,7 +177,6 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// change (an in-place managed-rules edit keeps the same rules path and reindex date).
     private var analysisRevisions: [UUID: Int] = [:]
 
-    /// The current analysis identity for a codebase — the detail view keys its `.task` on this value.
     func analysisToken(for codebaseID: UUID) -> AnalysisToken {
         let codebase = codebase(for: codebaseID)
         return AnalysisToken(
@@ -193,7 +185,6 @@ final class ProjectBrowserViewModel: ObservableObject {
             revision: analysisRevisions[codebaseID, default: 0])
     }
 
-    /// The cached analysis for a codebase, or `nil` while it is still being computed (or absent).
     func analysis(for codebaseID: UUID) -> CodebaseAnalysis? {
         if case .ready(_, let analysis) = analyses[codebaseID] { return analysis }
         return nil
@@ -233,7 +224,6 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     // MARK: - Freeform Diagram CRUD
 
-    /// Create/update/delete operations for freeform diagrams (see ``GeneratedDiagramEditor``).
     var freeforms: FreeformDiagramEditor {
         FreeformDiagramEditor(
             store: store,
@@ -254,8 +244,6 @@ final class ProjectBrowserViewModel: ObservableObject {
         }?.id
     }
 
-    /// The repository → codebases reverse index, built fresh from the current project list —
-    /// see `RepositoryIndex`.
     func repositoryIndex() -> [RepositoryIndexEntry] {
         RepositoryIndex(projects: store.projects).entries()
     }
@@ -294,13 +282,11 @@ final class ProjectBrowserViewModel: ObservableObject {
         store.artifact(for: codebaseID)
     }
 
-    /// All generated diagrams for a project.
     func generatedDiagramsForProject(_ projectID: UUID) -> [GeneratedDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
         return project.generatedDiagramIDs.compactMap { store.generatedDiagrams[$0] }
     }
 
-    /// All freeform diagrams for a project.
     func freeformDiagramsForProject(_ projectID: UUID) -> [FreeformDiagram] {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
         return project.freeformDiagramIDs.compactMap { store.freeformDiagrams[$0] }

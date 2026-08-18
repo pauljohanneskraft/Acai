@@ -2,7 +2,6 @@
 /// cleanly, and where it didn't. A low score means the parser stumbled, so any audit built on this
 /// artifact is correspondingly untrustworthy — surface it before interpreting cycles/metrics/dead-code.
 public struct HealthCheck: Sendable {
-    /// The rendered health verdict.
     public struct Report: Codable, Equatable, Sendable {
         /// Heuristic trust score in `0...1` (1 = no diagnostics). Defined as
         /// `1 - min(1, diagnostics / max(1, types))`: one diagnostic per type drives it to 0.

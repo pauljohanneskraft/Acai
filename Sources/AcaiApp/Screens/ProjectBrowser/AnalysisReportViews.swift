@@ -4,26 +4,18 @@ import AcaiCore
 import AcaiDiagram
 import AcaiLibrary
 
-/// A single finding row — a rule-kind capsule, subject, message and a selectable `file:line`. Shared
-/// by the quality-check report views so every finding renders identically. Offers the full "Open
-/// in…" resolution (default tap-through + context menu, with Finder reveal kept as an additional
-/// macOS-only secondary action) when `artifact`/`codebase` are supplied; also offers a "View Source"
-/// (Quick Look) action when both `codebase` and a source location are available.
+/// Shared by the quality-check report views so every finding renders identically.
 struct ViolationRowView: View {
     let violation: Violation
     var tint: Color = .red
     var codebase: Codebase?
-    /// Needed to resolve `violation.subject` into a `CodeElementReference` — `nil` in the rules
-    /// editor's live preview, which has no codebase context to resolve a diagram against either, so
-    /// "Open in…" is unavailable there just like Finder reveal already was.
+    /// `nil` in the rules editor's live preview, which has no codebase context to resolve a
+    /// reference against.
     var artifact: CodeArtifact?
-    /// The Cycle Diagram entry point for a `cycle`-kind violation: shown only when non-`nil` *and*
-    /// `violation.ruleKind == "cycle"`. A plain closure rather than an `@EnvironmentObject`
-    /// dependency on `ProjectBrowserViewModel` — this row is also rendered by the quality rules
-    /// editor's live preview, which has no project/codebase context to create a diagram in, so a
-    /// missing environment object there would be a hard crash rather than a degraded row. The one
-    /// call site that has both a `model` and a `codebase` builds this closure; everywhere else
-    /// passes `nil`.
+    /// A plain closure rather than an `@EnvironmentObject` dependency on `ProjectBrowserViewModel` —
+    /// this row is also rendered by the quality rules editor's live preview, which has no
+    /// project/codebase context to create a diagram in, so a missing environment object there would
+    /// be a hard crash rather than a degraded row.
     var onViewAsDiagram: (() -> Void)?
 
     private var reference: CodeElementReference? {
@@ -77,12 +69,9 @@ struct ViolationRowView: View {
     }
 }
 
-/// A `file:line` row shared by the dead-code and health reports. Offers the full "Open in…"
-/// resolution when `reference`/`codebase` are supplied (Finder reveal kept as an additional
-/// macOS-only secondary action), plus a "View Source" (Quick Look) action whenever `codebase` and
-/// `location` are both available — including a health-check diagnostic, which carries no resolvable
-/// `reference` at all (a line-level parse issue isn't a type/method/module), so View Source is its
-/// only action there.
+/// Shared by the dead-code and health reports. A health-check diagnostic carries no resolvable
+/// `reference` (a line-level parse issue isn't a type/method/module), so View Source is its only
+/// action.
 private struct LocationRow: View {
     let title: String
     let detail: String?
@@ -121,12 +110,8 @@ private struct LocationRow: View {
     }
 }
 
-/// The card body cap: report cards show the top findings inline, not an unbounded wall.
 let analysisReportLimit = 20
 
-/// Dead-code candidates with the call-graph coverage floor. The report is computed by the enclosing
-/// section (which also surfaces the counts in its header) and injected, so the scan runs once. Rows
-/// get the full "Open in…" resolution when `artifact`/`codebase` are supplied.
 struct DeadCodeReportView: View {
     let report: DeadCodeScan.Report
     /// Needed to resolve a candidate's `"TypeName.methodName"` id into a `CodeElementReference`.
@@ -154,10 +139,8 @@ struct DeadCodeReportView: View {
     }
 }
 
-/// Parse-health score and diagnostics. The report is computed by the enclosing section (which also
-/// surfaces the score in its header) and injected, so the check runs once. A `ParseDiagnostic`
-/// carries no type/method identity, so rows get only the "View Source" action (via `LocationRow`) —
-/// there's nothing for "Open in…" to resolve.
+/// A `ParseDiagnostic` carries no type/method identity, so rows get only the "View Source" action
+/// (via `LocationRow`) — there's nothing for "Open in…" to resolve.
 struct HealthReportView: View {
     let report: HealthCheck.Report
     var codebase: Codebase?

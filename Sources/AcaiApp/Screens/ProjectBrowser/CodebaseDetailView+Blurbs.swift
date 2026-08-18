@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Explanatory copy for the statistics cards, kept out of `CodebaseDetailView.swift` so it stays within
-// SwiftLint's `file_length`. Each blurb reads in the card's detail sheet.
 extension CodebaseDetailView {
 
     static let instabilityBlurb =

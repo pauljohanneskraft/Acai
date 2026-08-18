@@ -78,7 +78,6 @@ struct StateFreeformConversionTests {
         #expect(freeform.edges.allSatisfy { $0.transition != nil })
         // The intra-method chain keeps its event label.
         #expect(freeform.edges.contains { $0.transition?.event == "load()" })
-        // Edge endpoints all resolve to nodes.
         let nodeIDs = Set(freeform.nodes.map(\.id))
         for edge in freeform.edges {
             #expect(nodeIDs.contains(edge.sourceNodeID))

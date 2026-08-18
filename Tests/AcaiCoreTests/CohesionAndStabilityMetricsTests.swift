@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-/// Covers the LCOM4 *member partition* (the clusters a low-cohesion type splits into) and
-/// Stable-Dependencies-Principle breach detection (a module depending on a less-stable one).
 @Suite("Core: Cohesion partition & stable-dependencies")
 struct CohesionAndStabilityMetricsTests {
 
@@ -26,8 +24,8 @@ struct CohesionAndStabilityMetricsTests {
     }
 
     @Test func lcomComponentsReportTheMemberPartition() {
-        // Two independent responsibilities: {open, close} touch `file`; {connect, disconnect} touch
-        // `socket`. No shared field, no mutual call → two clusters that name *how* to split the type.
+        // No shared field, no mutual call between the two groups — the clusters this produces name
+        // *how* to split the type.
         let declared = type("Service", module: "App", members: [
             Member(name: "file", kind: .property, accessLevel: .internal),
             Member(name: "socket", kind: .property, accessLevel: .internal),

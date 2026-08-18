@@ -2,15 +2,12 @@
 /// associated-value shapes, each carrying its `SourceLocation` for a precise jump target. The
 /// read-only view the CLI's `enums` command and downstream tooling render.
 public struct EnumInventory: Sendable {
-    /// One enum-like type and its declared cases.
     public struct Entry: Codable, Equatable, Sendable {
         public var type: String
         public var location: SourceLocation?
         public var cases: [Case]
     }
 
-    /// One enum case, with its optional raw value and any associated-value parameters (rendered as
-    /// `label: Type` or bare `Type`).
     public struct Case: Codable, Equatable, Sendable {
         public var name: String
         public var rawValue: String?

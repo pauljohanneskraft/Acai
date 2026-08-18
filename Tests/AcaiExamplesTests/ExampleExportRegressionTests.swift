@@ -14,7 +14,6 @@ import AcaiDiagram
 /// on Linux too. The proof PNGs are validated separately (macOS-only) in `AcaiRenderTests`.
 enum ExampleExports {
 
-    /// `Tests/AcaiExamplesTests/<file>.swift` → repo root is three levels up.
     static let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
@@ -24,7 +23,6 @@ enum ExampleExports {
         components.reduce(repoRoot.appendingPathComponent("Examples")) { $0.appendingPathComponent($1) }
     }
 
-    /// Reads a golden file, failing with a clear message if it is missing.
     static func golden(_ url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
     }

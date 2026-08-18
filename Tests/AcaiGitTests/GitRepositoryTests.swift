@@ -25,10 +25,8 @@ struct GitRepositoryTests {
         #expect(first.localPath == second.localPath)
 
         try await first.sync(ref: "main")
-        // Reusing the same shared clone: the second `GitRepository` value sees what the first
-        // already synced without cloning again (a second full clone would fail anyway, since
-        // `GitClone` would try to move a scratch clone on top of a non-empty destination it didn't
-        // create — this only succeeds if `sync` here goes through the existing-repo fetch path).
+        // A second full clone would fail moving a scratch clone onto a non-empty destination it
+        // didn't create, so this only succeeds if `sync` here goes through the existing-repo fetch path.
         try await second.fetch()
 
         #expect(FileManager.default.fileExists(atPath: first.localPath.appendingPathComponent("README.md").path))
@@ -97,7 +95,6 @@ struct GitRepositoryTests {
 
         #expect(FileManager.default.fileExists(atPath: extracted.appendingPathComponent("README.md").path))
         #expect(!FileManager.default.fileExists(atPath: extracted.appendingPathComponent("Sub/Nested.swift").path))
-        // The shared clone's own working directory (at HEAD, the tagged commit) is untouched.
         #expect(FileManager.default.fileExists(
             atPath: repository.localPath.appendingPathComponent("Sub/Nested.swift").path))
     }
@@ -168,7 +165,6 @@ struct GitRepositoryTests {
         let repository = GitRepository(remoteURL: source, storeDirectory: store)
         try await repository.sync(ref: "main")
 
-        // Only the most recent commit ("edit readme twice") is walked.
         let churn = try repository.churnByFile(ref: "main", limit: 1)
         #expect(churn["README.md"] == 1)
         #expect(churn["Other.swift"] == nil)

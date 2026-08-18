@@ -89,8 +89,8 @@ extension CFamilyExtractor: AssignmentResolving {
         nilLiteral: ["null", "nullptr"]
     )
 
-    /// Classifies an assigned value node for static state analysis. Scoped enum accesses
-    /// (`State::ready`) and unscoped uppercase enum cases become `.enumCase` values.
+    /// Classifies an assigned value node for static state analysis: enum constant accesses
+    /// (scoped `State::ready` or unscoped) become `.enumCase` values.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
         let valueText = trimmedText(node)

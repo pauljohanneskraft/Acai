@@ -4,9 +4,6 @@ import Testing
 @testable import AcaiCLI
 import AcaiQuality
 
-/// Covers `acai quality`: rule/flag parsing, baseline drift, the pass/fail gate, `--explore`
-/// (non-failing) ranking, the built-in default smell budgets when no rules file is given, and
-/// lenient/robust YAML rule-file decoding.
 @Suite("CLI: quality command")
 struct QualityCommandTests {
 

@@ -144,7 +144,6 @@ extension AcaiCommand {
                 let exporter = ClassDiagramTextExporter(options: try classDiagramOptions(for: artifact))
                 export = exporter.export(from: artifact)
             }
-            // Single format-dispatch site for every diagram type.
             let rendered = export.render(diagramFormat)
             try rendered.writeOutput(to: output, label: "diagram")
         }

@@ -1,24 +1,22 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 
-/// Sidebar tab choices for the call graph, matching Class Diagram's closed vocabulary.
 enum CallGraphSidebarTab {
     case settings, inspector
 }
 
-/// Call Graph's sidebar: folds `CallGraphConfigSheet`'s scope picker into a live Settings
-/// tab (instead of a one-shot modal) plus Export actions moved off the toolbar, and makes the
-/// Inspector tab selection-scoped (`CallGraphInspector`).
-///
 /// Applying a new scope rebuilds the whole graph (`CallGraphView`'s `.id(scope)` gives the canvas a
-/// fresh identity, dropping positions/undo history), so — like Sequence/State — scope edits stage
-/// into a local draft applied only on an explicit "Apply" tap.
+/// fresh identity, dropping positions/undo history), so scope edits stage into a local draft
+/// applied only on an explicit "Apply" tap.
 struct CallGraphSidebar: View {
     let artifact: CodeArtifact
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
     let scope: CallGraphScope
+    @Binding var filter: AcaiQuality.Selector?
+    let codebaseID: UUID
     @Binding var tab: CallGraphSidebarTab
     let onSelect: (String) -> Void
     let onApplyScope: (CallGraphScope) -> Void
@@ -27,6 +25,7 @@ struct CallGraphSidebar: View {
     @Binding var showSaveAsFreeformOptions: Bool
     @Binding var includeMetricsNoteOnSave: Bool
 
+    @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var draftScope: CallGraphScope
     @State private var scopeQuery = ""
 
@@ -35,6 +34,8 @@ struct CallGraphSidebar: View {
         graph: CallGraph,
         selectedNodeIDs: Set<String>,
         scope: CallGraphScope,
+        filter: Binding<AcaiQuality.Selector?>,
+        codebaseID: UUID,
         tab: Binding<CallGraphSidebarTab>,
         onSelect: @escaping (String) -> Void,
         onApplyScope: @escaping (CallGraphScope) -> Void,
@@ -47,6 +48,8 @@ struct CallGraphSidebar: View {
         self.graph = graph
         self.selectedNodeIDs = selectedNodeIDs
         self.scope = scope
+        self._filter = filter
+        self.codebaseID = codebaseID
         self._tab = tab
         self.onSelect = onSelect
         self.onApplyScope = onApplyScope
@@ -124,6 +127,13 @@ struct CallGraphSidebar: View {
                     .accessibilityIdentifier("diagram.callGraphSettings.applyButton")
             }
 
+            DiagramFilterSection(
+                filter: $filter,
+                codebaseID: codebaseID,
+                projectID: model.projectID(for: codebaseID) ?? codebaseID,
+                artifact: artifact
+            )
+
             Section("Export") {
                 Button {
                     showSaveAsFreeformOptions = true
@@ -147,8 +157,9 @@ struct CallGraphSidebar: View {
         .formStyle(.grouped)
     }
 
-    // MARK: - Lookups (duplicated from `CallGraphConfigSheet`, kept independent since that type is
-    // also the creation-time flow presented from `CodebaseDetailView` and stays untouched)
+    // MARK: - Lookups
+    // Duplicated from `CallGraphConfigSheet`, kept independent since that type is also the
+    // creation-time flow presented from `CodebaseDetailView` and stays untouched.
 
     private var typeNames: [String] {
         artifact.types

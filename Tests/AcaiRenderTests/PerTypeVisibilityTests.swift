@@ -27,7 +27,6 @@ struct PerTypeVisibilityTests {
 
         #expect(!shown.properties.isEmpty)
         #expect(hidden.properties.isEmpty)
-        // Methods and enum cases are unaffected by the property override.
         #expect(!hidden.methods.isEmpty)
         #expect(!hidden.enumCases.isEmpty)
     }
@@ -50,6 +49,35 @@ struct PerTypeVisibilityTests {
         #expect(collapsed.properties.isEmpty)
         #expect(collapsed.methods.isEmpty)
         #expect(collapsed.enumCases.isEmpty)
+    }
+
+    @Test func bulkToggleHidesEveryIDWhenAllCurrentlyShowMembers() {
+        var config = ClassDiagramConfiguration()
+        let ids = ["A", "B"]
+        #expect(config.showsMembers(forTypeIDs: ids))
+
+        config.setMemberVisibility(!config.showsMembers(forTypeIDs: ids), forTypeIDs: ids)
+
+        #expect(!config.showsMembers(forTypeIDs: ids))
+        #expect(config.propertyVisibility["A"] == false)
+        #expect(config.propertyVisibility["B"] == false)
+        #expect(config.methodVisibility["A"] == false)
+        #expect(config.methodVisibility["B"] == false)
+    }
+
+    @Test func bulkToggleShowsEveryIDWhenAnySelectedIDIsHidden() {
+        var config = ClassDiagramConfiguration()
+        config.propertyVisibility["A"] = false
+        let ids = ["A", "B"]
+        #expect(!config.showsMembers(forTypeIDs: ids))
+
+        config.setMemberVisibility(!config.showsMembers(forTypeIDs: ids), forTypeIDs: ids)
+
+        #expect(config.showsMembers(forTypeIDs: ids))
+        #expect(config.propertyVisibility["A"] == true)
+        #expect(config.propertyVisibility["B"] == true)
+        #expect(config.methodVisibility["A"] == true)
+        #expect(config.methodVisibility["B"] == true)
     }
 
     @Test func configurationRoundTripsPerTypeOverrides() throws {

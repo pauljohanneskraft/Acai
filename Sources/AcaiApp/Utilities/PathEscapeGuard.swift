@@ -1,10 +1,8 @@
 import Foundation
 
-/// Validates that a relative path — as stored in `SourceLocation.filePath` or any other
-/// codebase-relative path sourced from parsed/analyzed content rather than typed by the user —
-/// resolves to a real location inside a given root directory, rejecting anything that would
-/// escape it. Any path resolved from external input (a GitHub-sourced codebase's tree is not fully
-/// user-controlled, but also not code the app wrote) must be validated before use.
+/// Validates that a codebase-relative path resolves to a real location inside a given root
+/// directory, rejecting anything that would escape it. Any path resolved from external input (a
+/// GitHub-sourced codebase's tree is not fully user-controlled) must be validated before use.
 struct PathEscapeGuard {
     let root: URL
 
@@ -22,8 +20,6 @@ struct PathEscapeGuard {
         }
     }
 
-    /// Resolves `relativePath` against `root`, rejecting it if it's given as an absolute path or if
-    /// (after standardizing and resolving symlinks on both sides) the result falls outside `root`.
     /// Both the candidate and `root` are symlink-resolved before comparison — on macOS `root` itself
     /// is frequently a symlink (e.g. `/var` → `/private/var`), so resolving only one side would make
     /// a legitimately in-bounds path fail this check.

@@ -5,7 +5,6 @@ import AcaiCore
 public struct StateDiagramConfiguration: Codable, Hashable, Sendable {
     /// The name of the type declaring the variable; `nil` for a global/top-level variable.
     public var typeName: String?
-    /// The variable's simple name.
     public var variableName: String
     /// The analysis fails with ``StateDiagramAnalysisError/tooManyStates(count:limit:)``
     /// when the variable takes more distinct values than this.
@@ -33,7 +32,6 @@ public enum StateDiagramAnalysisError: Error, Equatable, Hashable, Sendable {
 }
 
 extension StateDiagramAnalysisError {
-    /// A user-facing description of the failure.
     public var message: String {
         switch self {
         case .variableNotFound(let typeName, let variableName):

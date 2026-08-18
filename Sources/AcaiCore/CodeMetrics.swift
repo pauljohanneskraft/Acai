@@ -48,7 +48,6 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var stableDependencyViolations: [String]
     }
 
-    /// Per-type OO metrics.
     public struct TypeMetric: Codable, Equatable, Sendable {
         public var id: String
         public var name: String
@@ -78,7 +77,6 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var mutablePublicState: Int
         /// Largest parameter count of any callable member — the long-parameter-list smell.
         public var maxParameters: Int
-        /// Mean parameter count across the type's callable members.
         public var meanParameters: Double
         /// Data-class / anemic score: `properties / (properties + methods)` (1 = pure data).
         public var dataClassScore: Double
@@ -101,8 +99,7 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
 
 extension CodeArtifact {
 
-    /// Computes static-analysis metrics. Call on an `enriched()` artifact so
-    /// relationship endpoints are resolved to type ids.
+    /// Call on an `enriched()` artifact so relationship endpoints are resolved to type ids.
     public func computeMetrics() -> CodeMetrics {
         let flat = Self.allTypes(types)
         let identity = TypeIdentityResolver(types: types)
@@ -287,7 +284,6 @@ extension CodeArtifact {
         }
     }
 
-    /// Assembles a `ModuleCoupling` per module from the resolved coupling sets.
     private func moduleCouplings(
         moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets
     ) -> [CodeMetrics.ModuleCoupling] {

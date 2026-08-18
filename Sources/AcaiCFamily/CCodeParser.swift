@@ -25,8 +25,6 @@ public struct CCodeParser: CodeParser {
     }
 }
 
-/// The shared tree-sitter parse step for both C-family parsers: set up the grammar, walk the tree
-/// with a ``CFamilyExtractor`` for the given dialect, and surface parse diagnostics.
 struct CFamilyTreeSitterParse {
     let dialect: CFamilyDialect
     let grammar: Language

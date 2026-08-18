@@ -1,7 +1,5 @@
 import XCTest
 
-/// Accessors for Quick Open (`QuickOpenView`/`QuickOpenSheetHost`) — macOS's ⌘K, iPad's
-/// pinned search field, and iPhone's dedicated search button all open the same sheet this covers.
 @MainActor
 final class QuickOpenScreen {
     let app: XCUIApplication

@@ -26,22 +26,15 @@ final class DeleteConfirmationTests: XCTestCase {
         return codebaseRow
     }
 
-    /// Reveals the row's "Delete" action and taps it, starting the confirmation flow.
-    /// `.swipeActions` (iPhone's compact width) is a more reliable XCUITest target than a
-    /// long-press context menu where it's available — right-click's the macOS equivalent. iPad's
-    /// regular width has neither: `ProjectDetailView` renders its rows in a `LazyVStack` there
-    /// (`regularCodebasesAndDiagramsSection`), not a native `List`, so `.swipeActions` never
-    /// existed — the row's `.contextMenu` (the same one macOS's row carries) is the actual reveal
-    /// path there too, just triggered by a long press instead of a right-click.
+    /// iPad's regular width renders rows in a `LazyVStack`, not a native `List`, so
+    /// `.swipeActions` never existed there — `.contextMenu` (long-press) is the reveal path on
+    /// both iPad and macOS (right-click), while iPhone's compact width uses `.swipeActions`.
     private func tapDelete(on row: XCUIElement, app: XCUIApplication) {
         #if os(macOS)
         row.rightClick()
-        // Not a `.buttons` query — this is a native NSMenu item (from `.contextMenu`) after
-        // right-click on macOS, not an `XCUIElementType.button`. Scoped to the window (not
-        // `app.descendants`) because the system Edit menu's standard "Delete" menu item
-        // (identifier `delete:`) also matches on the unscoped query — our own item (identifier
-        // `trash`, from the `Label(_:systemImage: "trash")`) only lives under the window, not the
-        // app-wide menu bar.
+        // Window-scoped, not `app.descendants`: the system Edit menu's standard "Delete" item
+        // (identifier `delete:`) also matches an unscoped query, unlike our own `trash`-identified
+        // item, which only lives under the window.
         app.windows.firstMatch.descendants(matching: .any)["Delete"].tap()
         #else
         if UIDevice.current.userInterfaceIdiom == .pad {
@@ -59,20 +52,15 @@ final class DeleteConfirmationTests: XCTestCase {
         tapDelete(on: codebaseRow, app: app)
 
         #if os(macOS)
-        // On macOS, `.confirmationDialog` renders as a real `NSAlert`-style sheet with an actual
-        // "Cancel" button — confirmed by dumping the accessibility tree (`label: 'alert'`,
-        // `identifier: 'action-button-2', title: 'Cancel'`). Scoped to `app.sheets` rather than
-        // `app.buttons`/`app.descendants`: the Touch Bar exposes its own duplicate "Cancel"-titled
-        // button at the same time, which an unscoped query matches ambiguously.
+        // Scoped to `app.sheets`, not `app.buttons`/`app.descendants`: the Touch Bar exposes its
+        // own duplicate "Cancel"-titled button at the same time, which an unscoped query matches
+        // ambiguously.
         let cancelButton = app.sheets.buttons["Cancel"]
         XCTAssertTrue(cancelButton.waitForExistence(timeout: 5))
         cancelButton.tap()
         #else
-        // At this window size, `.confirmationDialog` renders as a **popover** anchored near the
-        // row, not a bottom action sheet — confirmed by dumping the accessibility tree: it has no
-        // "Cancel" button at all, only the destructive "Delete Codebase" action and a
-        // `PopoverDismissRegion` element (tap-outside-to-dismiss is the cancel affordance for a
-        // popover presentation). Tapping that region is this presentation's actual "Cancel".
+        // At this window size, `.confirmationDialog` renders as a popover with no "Cancel" button
+        // at all — tap-outside-to-dismiss (`PopoverDismissRegion`) is this presentation's Cancel.
         let dismissRegion = app.otherElements["PopoverDismissRegion"]
         XCTAssertTrue(dismissRegion.waitForExistence(timeout: 5))
         dismissRegion.tap()

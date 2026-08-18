@@ -22,8 +22,6 @@ struct HotspotChartData {
     let churnThreshold: Double
     let complexityThreshold: Double
 
-    /// Points in the top-right quadrant, ranked worst-first (highest churn × complexity product) —
-    /// the hotspot list.
     var hotspots: [Point] {
         points.filter(\.isHotspot).sorted { $0.churn * $0.complexity > $1.churn * $1.complexity }
     }

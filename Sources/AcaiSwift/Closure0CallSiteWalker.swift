@@ -2,10 +2,8 @@ import SwiftSyntax
 import AcaiCore
 
 /// Collects call sites made through a closure's implicit `$0` receiver (`addedRelationships.map { "+ "
-/// + $0.reportPhrase() }`) — the iteration-closure counterpart to `AccessorCallSiteWalker`. `$0`'s
-/// type is resolved once by the caller, from the *iterated* expression's own receiver resolution
-/// (`CallSiteCollector.receiverType`, via `iterationClosure(in:)`); this walker only binds it inside
-/// the closure body, so it stays a plain identifier-shape match rather than re-deriving the type.
+/// + $0.reportPhrase() }`). `$0`'s type is resolved once by the caller, via `iterationClosure(in:)`;
+/// this walker only binds it inside the closure body.
 final class Closure0CallSiteWalker: SyntaxVisitor {
     private let elementReceiver: CallReceiver
     private let fileName: String

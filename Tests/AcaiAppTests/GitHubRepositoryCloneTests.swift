@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-// Extension of `GitHubNetworkingTests`, not a separate suite — see that file's `.serialized`
-// comment for why these must share one suite.
 extension GitHubNetworkingTests {
     /// `GitHubRepositoryClone` just builds the authenticated remote URL; cloning itself goes
     /// through `AcaiGit`/libgit2, covered by `AcaiGitTests`.

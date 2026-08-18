@@ -145,7 +145,6 @@ struct QualityCheckEditorSheet: View {
         dismiss()
     }
 
-    /// The decoded rules at the chosen external path (or the load error), for the preview.
     private var externalRules: Result<QualityRules, Error> {
         Result {
             try QualityCheckConfiguration(rulesPath: externalPath, securityScopedBookmark: externalBookmark)

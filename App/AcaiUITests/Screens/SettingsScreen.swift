@@ -1,8 +1,5 @@
 import XCTest
 
-/// Accessors for the Settings surface — macOS's `Settings` scene (`SettingsView`) and iPad/
-/// iPhone's `SettingsSheet`, both hosting the same `GitHubAccountSection` content
-/// (`GitHubAccountScreen` covers that content itself; this covers the surrounding chrome).
 @MainActor
 final class SettingsScreen {
     let app: XCUIApplication

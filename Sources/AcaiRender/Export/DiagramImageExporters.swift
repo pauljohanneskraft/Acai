@@ -11,7 +11,6 @@ import AcaiDiff
 // a two-revision form, a delta with each element tinted by its diff status. Kinds that enrich (class,
 // package) take the artifact's `LanguageConfiguration` injected, so this target names no language.
 
-/// Class-diagram PNG rendering.
 public struct ClassImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
@@ -63,7 +62,6 @@ public struct ClassImageExporter: Sendable {
     }
 }
 
-/// Sequence-diagram PNG rendering traced from an entry point.
 public struct SequenceImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
@@ -112,7 +110,6 @@ public struct SequenceImageExporter: Sendable {
     }
 }
 
-/// Value-flow state-diagram PNG rendering for a variable.
 public struct StateImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
@@ -179,7 +176,6 @@ public struct PackageImageExporter: Sendable {
         }
     }
 
-    /// The union with each module node and dependency edge tinted by its diff status.
     public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = PackageDiagramRequest()
         let languages = languages
@@ -197,7 +193,6 @@ public struct PackageImageExporter: Sendable {
     }
 }
 
-/// Static call-graph PNG rendering for an optional scope.
 public struct CallGraphImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
@@ -218,7 +213,6 @@ public struct CallGraphImageExporter: Sendable {
         }
     }
 
-    /// The union with each method node and call edge tinted by its diff status.
     public func renderDelta(old: CodeArtifact, new: CodeArtifact) async throws -> Data {
         let request = CallGraphRequest(scope: scope)
         let diff = CallGraphDiff(old: try request.build(from: old), new: try request.build(from: new))

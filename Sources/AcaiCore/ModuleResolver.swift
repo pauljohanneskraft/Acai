@@ -16,9 +16,9 @@ public struct ModuleResolver: Sendable {
     /// component immediately `before` or `after` the anchor.
     public struct Anchor: Sendable {
         public enum Position: Sendable {
-            /// The module is the component just *after* the anchor (e.g. SwiftPM `Sources/<Target>`).
+            /// e.g. SwiftPM `Sources/<Target>`.
             case after
-            /// The module is the component just *before* the anchor (e.g. Gradle `<Module>/src`).
+            /// e.g. Gradle `<Module>/src`.
             case before
         }
 
@@ -34,7 +34,6 @@ public struct ModuleResolver: Sendable {
     /// Anchors tried in priority order; the first that matches wins.
     public let anchors: [Anchor]
 
-    /// The group name used when a file path carries no usable directory information.
     public let fallbackGroup: String
 
     public init(anchors: [Anchor], fallbackGroup: String = "root") {
@@ -51,10 +50,7 @@ public struct ModuleResolver: Sendable {
         Anchor("src", .before)
     ])
 
-    /// Returns the product/module name for a relative source-file path.
     public func productName(forFilePath filePath: String) -> String {
-        // Directory components only (drop the trailing file name), ignoring any leading slash or
-        // `./` so absolute and relative paths behave the same.
         let parts =
             filePath
             .split(separator: "/", omittingEmptySubsequences: true)
@@ -74,7 +70,6 @@ public struct ModuleResolver: Sendable {
             }
         }
 
-        // Fallback: the top-level directory.
         return dirs.first ?? fallbackGroup
     }
 }

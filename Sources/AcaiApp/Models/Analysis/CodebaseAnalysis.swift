@@ -4,11 +4,6 @@ import AcaiDiagram
 import AcaiLibrary
 
 /// Every whole-artifact report shown in the codebase detail pane, computed once and cached.
-///
-/// Each report is an expensive scan over the full artifact, recomputed only when the codebase is
-/// reindexed (or the quality rules change). Bundling them into one `Sendable` value lets the view
-/// model compute them on a background thread and hand the result to the UI without re-running on
-/// resize/scroll/expand.
 struct CodebaseAnalysis: Sendable {
     let metrics: CodeMetrics
     let deadCode: DeadCodeScan.Report
@@ -16,14 +11,10 @@ struct CodebaseAnalysis: Sendable {
     /// Always present: the configured `quality.yml` if a check is configured and its rules load,
     /// otherwise the built-in curated smell budgets.
     let quality: QualityReport
-    /// Whether `quality` came from a configured rules file (vs the built-in default budgets).
     let usesConfiguredRules: Bool
-    /// The rules-load failure message when a check is configured but its file couldn't be read.
     let qualityError: String?
 
-    /// Runs every report against `rawArtifact`. Pure and `nonisolated`, so callers run it off the
-    /// main actor. `configuration`'s rules, when present, are loaded from disk (load errors are
-    /// captured, not thrown, falling back to default budgets).
+    /// Pure and `nonisolated`, so callers run it off the main actor.
     ///
     /// The rules' `includeGeneratedTypes` (default `false`) governs the whole statistics pane —
     /// metrics, health, and dead-code are computed on the same filtered artifact the quality

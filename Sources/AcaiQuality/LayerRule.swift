@@ -12,9 +12,7 @@ public struct LayerRule: Codable, Equatable, Sendable {
         }
     }
 
-    /// Layers from top (index 0) to bottom; lower index = higher level.
     public var layers: [Layer]
-    /// When `false`, a layer may depend only on the immediately adjacent lower layer.
     public var allowSkip: Bool
 
     public init(layers: [Layer], allowSkip: Bool = true) {

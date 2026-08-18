@@ -2,16 +2,14 @@ import AcaiCore
 
 /// Options controlling how a `CodeArtifact` is enriched for class-diagram rendering.
 public struct EnrichmentOptions: Sendable {
-    /// When `true`, properties whose declared type matches a known type produce
-    /// composition/aggregation edges (collection properties → aggregation, scalar → composition).
+    /// When `true`, collection properties infer aggregation edges and scalar properties infer
+    /// composition edges.
     public var inferCompositionFromProperties: Bool
 
-    /// When `true`, method parameter and return types that match known types produce
-    /// dependency edges.
     public var inferDependencyFromMethods: Bool
 
-    /// When `true`, types referenced in relationships but not defined in the artifact
-    /// are included as lightweight "external" placeholder nodes rendered in gray.
+    /// When `true`, types referenced but not defined in the artifact appear as gray "external"
+    /// placeholder nodes.
     public var showExternalTypes: Bool
 
     /// When set, restricts the result to one type and its surrounding subgraph.
@@ -39,23 +37,12 @@ public struct EnrichmentOptions: Sendable {
 
 /// The built class-diagram model — enriched types, resolved relationships, external placeholders
 /// and directory groups, ready to hand to a renderer.
-///
-/// Constructing one from a `CodeArtifact` post-processes it:
-/// - Flattens nested types, giving them display names that include nesting context
-///   (e.g. `Outer.Inner`) while keeping fully-qualified IDs for unique identification.
-/// - Resolves relationship source/target strings to match actual type IDs so edges
-///   connect correctly even when parsers used short names.
-/// - Infers composition / aggregation edges from property types.
-/// - Infers dependency edges from method parameter/return types.
-/// - Identifies external types (referenced but not defined in the codebase).
 public struct ClassDiagram: Sendable {
-    /// All types (including flattened nested types).
+    /// All types, including flattened nested types.
     public var types: [TypeDeclaration]
-    /// Resolved and enriched relationships.
     public var relationships: [Relationship]
-    /// Types referenced but not defined in the codebase (external dependencies).
     public var externalTypes: [TypeDeclaration]
-    /// Maps each directory path to the type IDs it contains, for grouping.
+    /// Maps each directory path to the type IDs it contains.
     public var directoryGroups: [String: [String]]
 
     public init(
@@ -70,7 +57,6 @@ public struct ClassDiagram: Sendable {
         self.directoryGroups = directoryGroups
     }
 
-    /// Builds the class-diagram model from `artifact` using `options`.
     public init(artifact: CodeArtifact, options: EnrichmentOptions) {
         // Structural enrichment is owned by AcaiCore and runs exactly once here; it's idempotent,
         // so an already-enriched artifact (e.g. from AnalysisService) is unaffected.
@@ -80,7 +66,6 @@ public struct ClassDiagram: Sendable {
         let resolver = TypeResolver(types: flatTypes)
         var relationships = base.relationships.map { resolver.resolve($0) }
 
-        // Honour the inference toggles by filtering the kinds AcaiCore inferred.
         if !options.inferCompositionFromProperties {
             relationships.removeAll { $0.kind == .composition || $0.kind == .aggregation }
         }
@@ -156,7 +141,6 @@ public struct ClassDiagram: Sendable {
     // MARK: - Type Resolution
 
     private struct TypeResolver {
-        /// Maps various name forms to the canonical type ID.
         let nameToId: [String: String]
         let knownIds: Set<String>
 

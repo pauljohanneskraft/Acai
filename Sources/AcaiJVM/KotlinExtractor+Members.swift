@@ -115,7 +115,6 @@ extension KotlinExtractor {
         }
     }
 
-    /// Routes a nested type / companion / object declaration to its extractor.
     private mutating func handleNestedTypeChild(_ child: Node, into typeDecl: inout TypeDeclaration) {
         switch child.nodeType {
         case "companion_object":

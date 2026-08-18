@@ -1,8 +1,6 @@
 import Foundation
 import AcaiCore
 
-/// Detects Xcode projects (`.xcodeproj` / `.xcworkspace`).
-///
 /// Swift Package Manager takes priority: if both an Xcode project and a `Package.swift`
 /// are present, `SwiftPackageManagerDetector` claims Swift first and this detector's
 /// Swift spec is suppressed by the coordinator's language-deduplication.

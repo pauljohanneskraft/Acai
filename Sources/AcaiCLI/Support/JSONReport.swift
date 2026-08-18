@@ -1,8 +1,6 @@
 import ArgumentParser
 import Foundation
 
-/// A pretty-printed, key-sorted JSON rendering of a value — the shared output shape for every
-/// JSON-producing command.
 struct JSONReport {
     let text: String
 

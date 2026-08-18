@@ -1,14 +1,13 @@
 import AcaiCore
 
 /// Infers a *candidate* `quality.yml` from the current graph so adopting `acai quality` is "review
-/// and edit a draft" rather than "author from a blank page". A value you instantiate from a
-/// `GraphView` and ask for its `yaml`: the module-cycle invariant (or, when the graph already has
-/// cycles, those cycles as commented known-debt), plus metric budgets seeded from the *current*
-/// observed maxima so the file ratchets against regression from day one.
+/// and edit a draft" rather than "author from a blank page": the module-cycle invariant (or, when the
+/// graph already has cycles, those cycles as commented known-debt), plus metric budgets seeded from
+/// the *current* observed maxima so the file ratchets against regression from day one.
 ///
 /// Language-agnostic: it reads only the graph's metrics and provenance-aware module cycles, naming no
-/// language or framework. Output is authored as heavily-commented YAML in the house style; the active
-/// sections re-parse via `QualityRules.load`.
+/// language or framework. Output is authored as heavily-commented YAML; the active sections re-parse
+/// via `QualityRules.load`.
 public struct StarterQualityRules {
     private let graph: GraphView
     private let moduleCycles: [CycleFinder.Cycle]
@@ -18,7 +17,6 @@ public struct StarterQualityRules {
         self.moduleCycles = CycleFinder(graph: graph, moduleResolver: moduleResolver).cycles(scope: .modules)
     }
 
-    /// The generated draft as a YAML string.
     public var yaml: String {
         (header + cyclesSection + budgetsSection + smellHints).joined(separator: "\n") + "\n"
     }
@@ -91,7 +89,6 @@ public struct StarterQualityRules {
     }
 }
 
-/// A single seeded budget rendered as YAML lines.
 private struct SeededBudget {
     let metric: String
     let max: Int

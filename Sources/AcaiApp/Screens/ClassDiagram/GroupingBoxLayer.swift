@@ -1,8 +1,6 @@
 import SwiftUI
 import AcaiRender
 
-/// Canvas layer that draws a labelled box behind each group under the active grouping mode.
-/// Bound to the live view model; the reusable `GroupingBoxView` it renders lives in `AcaiRender`.
 struct GroupingBoxLayer: View {
     @ObservedObject var viewModel: ClassDiagramViewModel
 

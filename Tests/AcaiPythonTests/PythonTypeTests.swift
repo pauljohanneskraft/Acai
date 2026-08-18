@@ -105,8 +105,6 @@ struct PythonTypeTests {
         #expect(outer?.nestedTypes.map(\.name) == ["Inner"])
     }
 
-    /// A nested type's id is qualified with its enclosing type so it doesn't collide with a
-    /// top-level type sharing the same simple name.
     @Test func nestedTypeIDIsQualified() {
         let source = """
         class Inner:

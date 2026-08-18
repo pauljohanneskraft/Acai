@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai callgraph` and its three modes (metrics / cycles / deadcode): `--from`/`--source`
-/// validation, scope parsing, and the JSON output shape of each mode.
 @Suite("CallGraph Command")
 struct CallGraphCommandTests {
 

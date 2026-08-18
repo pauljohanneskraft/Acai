@@ -7,8 +7,7 @@ struct JavaAccessLevelTests {
     let parser = JavaCodeParser()
 
     @Test func defaultAccessIsPackagePrivate() {
-        // A type and member with no explicit modifier are package-private in Java; the parser
-        // resolves that default so the engine never sees a nil access level.
+        // No explicit modifier resolves to package-private, not nil, so the engine never sees a nil access level.
         let source = """
         class Helper {
             int value;

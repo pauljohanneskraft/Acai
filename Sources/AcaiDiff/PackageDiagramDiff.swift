@@ -4,9 +4,7 @@ extension PackageDiagram.Node: IdentifiableGraphNode {}
 extension PackageDiagram.Edge: WeightedGraphEdge {}
 
 /// The delta between two `PackageDiagram` revisions. Module nodes are identified by `id`;
-/// edges by `(from, to)`, with a weight change reported as *changed*. The `union` merges both
-/// revisions so a renderer can draw every module/edge and tint each by `status(ofNode:)` /
-/// `status(ofEdgeFrom:to:)`.
+/// edges by `(from, to)`, with a weight change reported as *changed*.
 public struct PackageDiagramDiff: Sendable {
     public let union: PackageDiagram
     private let delta: GraphDelta<PackageDiagram.Node, PackageDiagram.Edge>

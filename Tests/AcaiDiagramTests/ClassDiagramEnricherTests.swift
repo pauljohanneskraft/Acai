@@ -85,7 +85,7 @@ struct ClassDiagramEnricherTests {
         )
         let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
         #expect(dot.contains("ExternalBase"))
-        #expect(dot.contains("#E8E8E8")) // external node gray fill
+        #expect(dot.contains("#E8E8E8"))
     }
 
     @Test func externalTypesHiddenByDefault() {
@@ -107,14 +107,11 @@ struct ClassDiagramEnricherTests {
             ]
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
-        // Inheritance to ExternalBase is kept (parser-produced); composition to ExternalCollar is
-        // filtered (inferred, external target) — no separate node or edge for it.
         #expect(dot.contains("ExternalBase"))
         #expect(!dot.contains("\"ExternalCollar\""))
     }
 
     @Test func redundantEdgesRemoved() {
-        // If Dog inherits from Animal, a composition edge Dog→Animal should be suppressed.
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
             types: [
@@ -136,7 +133,6 @@ struct ClassDiagramEnricherTests {
         )
         let dot = ClassDiagramDOTRenderer().generate(from: artifact)
         #expect(dot.contains("arrowhead=empty"))
-        // No composition edge — redundant with inheritance.
         #expect(!dot.contains("arrowtail=diamond"))
     }
 
@@ -179,7 +175,6 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func qualifiedIdResolution() {
-        // Even when relationships use simple names, they should connect to types with qualified IDs.
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .kotlin, filePaths: ["Server.kt"]),
             types: [
@@ -253,8 +248,6 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func crossFileRelationshipsResolvedByEnricher() {
-        // Two Kotlin files parsed separately and merged: after merging, the relationship target
-        // "Animal" (simple name from source text) must resolve to "com.example.Animal" (qualified ID).
         let file1 = CodeArtifact(
             metadata: .init(sourceLanguage: .kotlin, filePaths: ["Animal.kt"]),
             types: [
@@ -296,7 +289,6 @@ struct ClassDiagramEnricherTests {
     }
 
     @Test func multiFilePropertyEdgesResolved() {
-        // A property type reference to a type from a different file.
         let file1 = CodeArtifact(
             metadata: .init(sourceLanguage: .java, filePaths: ["Engine.java"]),
             types: [

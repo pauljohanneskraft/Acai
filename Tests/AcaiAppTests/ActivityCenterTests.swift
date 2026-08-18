@@ -2,28 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// Polls a condition instead of sleeping a guessed duration before asserting on it — the two tests
-/// below assert on state set by an unstructured `Task { }`'s body, and nothing bounds how long that
-/// takes to even get scheduled onto the main actor under a loaded CI runner. A fixed sleep races
-/// that scheduling latency and flakes when it loses; polling only fails if the condition truly never
-/// becomes true within `timeout`, which is a real bug rather than a slow runner.
-///
-/// `@MainActor`, matching `ActivityCenterTests` below: the conditions it polls read `ActivityCenter`
-/// state directly, so `waitUntil` must run on the same actor as its caller rather than accepting a
-/// closure across an actor boundary.
-@MainActor
-private struct Eventually {
-    var timeout: Duration = .seconds(2)
-    var pollInterval: Duration = .milliseconds(5)
-
-    func waitUntil(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now + timeout
-        while !condition(), ContinuousClock.now < deadline {
-            try await Task.sleep(for: pollInterval)
-        }
-    }
-}
-
 /// The generic in-flight-operation registry. Covers the three contracts every call site
 /// (`reindex`, `pull`, `switchGitHubRef`, `addGitHubCodebase`, `RepositoryDetailView.fetchNow`)
 /// relies on: the row disappears once `run` returns, `isBusy(_:)` is true for exactly the right
@@ -45,15 +23,17 @@ struct ActivityCenterTests {
         let center = ActivityCenter()
         let codebaseID = UUID()
         let otherCodebaseID = UUID()
+        let gate = AsyncGate()
         let task = Task {
             try await center.run(title: "Indexing…", kind: .reindex, subject: .codebase(codebaseID)) {
-                try await Task.sleep(nanoseconds: 200_000_000)
+                await gate.wait()
                 return 1
             }
         }
         try await Eventually().waitUntil { center.isBusy(.codebase(codebaseID)) }
         #expect(center.isBusy(.codebase(codebaseID)))
         #expect(!center.isBusy(.codebase(otherCodebaseID)))
+        await gate.open()
         _ = try await task.value
         #expect(!center.isBusy(.codebase(codebaseID)))
     }
@@ -74,6 +54,29 @@ struct ActivityCenterTests {
         center.cancel(operation.id)
         let result = try await task.value
         #expect(result == nil)
+        #expect(center.operations.isEmpty)
+    }
+
+    @Test func progressOverloadPublishesReportedValuesOnTheRow() async throws {
+        let center = ActivityCenter()
+        let gate = AsyncGate()
+        let task = Task {
+            try await center.run(title: "Fetching…", kind: .gitFetch) { onProgress in
+                onProgress(0.5)
+                await gate.wait()
+                return 1
+            }
+        }
+        // Three actor hops sit between this poll and `onProgress` actually landing (the test's own
+        // `Task`, `run`'s work `Task`, and `onProgress`'s own reporting `Task`), each contending for
+        // the same `@MainActor` serial executor as every other suite running in parallel — a wider
+        // margin than `Eventually`'s default is needed here specifically, not because the condition
+        // is ever expected to take long, but because a fully-loaded parallel run can push all three
+        // hops out further than 2 seconds without any of them being individually stuck.
+        try await Eventually(timeout: .seconds(15)).waitUntil { center.operations.first?.progress == 0.5 }
+        #expect(center.operations.first?.progress == 0.5)
+        await gate.open()
+        _ = try await task.value
         #expect(center.operations.isEmpty)
     }
 

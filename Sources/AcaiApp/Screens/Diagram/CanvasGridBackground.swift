@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A subtle dot-grid background that provides visual feedback for the infinite canvas.
 struct CanvasGridBackground: View {
     let scale: CGFloat
     let offset: CGPoint

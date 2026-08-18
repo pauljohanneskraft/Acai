@@ -4,11 +4,10 @@ import AcaiDiagram
 import AcaiRender
 import UniformTypeIdentifiers
 
-/// Movement-only view for a generated state diagram. Regenerates the diagram from its stored
-/// variable configuration and lets the user drag state nodes; built on the shared canvas layer
-/// (`PannableCanvas`, drag gesture, undo/redo) like the sequence view. Analysis failures
-/// (unbounded variables, too many states) replace the canvas with an explanation and a path
-/// back to the configuration popup.
+/// Movement-only view for a generated state diagram: regenerates from the stored variable
+/// configuration and lets the user drag state nodes, built on the shared canvas layer
+/// (`PannableCanvas`, undo/redo) like the sequence view. Analysis failures replace the canvas
+/// with an explanation and a path back to the configuration popup.
 struct StateDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
@@ -100,8 +99,6 @@ struct StateDiagramView: View {
         #endif
     }
 
-    /// The config-sheet fields fold into the Settings tab (live draft + Apply, not a modal);
-    /// Save as Freeform/Export Image move here from the toolbar.
     private var sidebar: StateDiagramSidebar {
         StateDiagramSidebar(
             viewModel: viewModel, artifact: artifact, tab: $sidebarTab,

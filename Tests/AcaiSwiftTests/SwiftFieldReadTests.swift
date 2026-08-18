@@ -31,7 +31,6 @@ struct SwiftFieldReadTests {
     }
 
     @Test func nonPropertyIdentifiersAreNotCaptured() {
-        // Parameters that don't name a stored property must not surface as field reads.
         let source = """
         class Counter {
             var total: Int = 0

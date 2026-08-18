@@ -19,7 +19,6 @@ struct PythonMemberTests {
         let user = type(named: "User", in: source)
         let initializer = user?.members.first { $0.kind == .initializer }
         #expect(initializer?.name == "__init__")
-        // `self` is dropped; only name/age remain.
         #expect(initializer?.parameters.map(\.internalName) == ["name", "age"])
         #expect(initializer?.accessLevel == .public)
     }
@@ -42,8 +41,8 @@ struct PythonMemberTests {
         let analyzer = type(named: "Analyzer", in: source)
         let simple = analyzer?.members.first { $0.name == "simple" }
         let branchy = analyzer?.members.first { $0.name == "branchy" }
-        #expect(simple?.cyclomaticComplexity == 1)   // no branches → base complexity
-        #expect(branchy?.cyclomaticComplexity == 4)  // 1 + for + if + elif
+        #expect(simple?.cyclomaticComplexity == 1)
+        #expect(branchy?.cyclomaticComplexity == 4)
     }
 
     @Test func classmethodAndStaticmethodDropReceiver() {
@@ -61,7 +60,6 @@ struct PythonMemberTests {
         let create = factory?.members.first { $0.name == "create" }
         #expect(create?.modifiers.contains(.static) == true)
         let fromConfig = factory?.members.first { $0.name == "from_config" }
-        // `cls` is dropped.
         #expect(fromConfig?.parameters.map(\.internalName) == ["config"])
     }
 

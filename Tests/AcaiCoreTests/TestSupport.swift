@@ -2,9 +2,8 @@ import AcaiCore
 
 // AcaiCoreTests exercises the agnostic enrichment engine directly, without a parser or language
 // module. This fixture supplies a representative classification (the union of the built-in
-// languages, matching the engine's former global behaviour) so the generic `enriched()` tests keep
-// their expectations. Production never has an empty or implicit configuration; tests opt into this
-// one explicitly.
+// languages) so the generic `enriched()` tests have primitives/collections to classify against.
+// Production never has an empty or implicit configuration; tests opt into this one explicitly.
 extension CodeArtifact.SourceLanguage {
     static let swift = CodeArtifact.SourceLanguage(rawValue: "swift")
     static let java = CodeArtifact.SourceLanguage(rawValue: "java")
@@ -43,6 +42,5 @@ extension LanguageConfiguration {
 }
 
 extension CodeArtifact {
-    /// Test convenience mirroring the former no-argument `enriched()` using the `.test` fixture.
     func enriched() -> CodeArtifact { enriched(configuration: .test) }
 }

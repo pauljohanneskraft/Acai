@@ -2,11 +2,9 @@ import Foundation
 import SwiftGitX
 
 /// Resolves a revision string — `HEAD`, `HEAD~N`/`HEAD^` chains, a branch or tag name, or a full
-/// 40-character commit SHA — to a commit in a repository.
-///
-/// `SwiftGitX` only exposes typed lookups (`repository.show`, `.branch`, `.tag`), not libgit2's
-/// general `git rev-parse` grammar, so this covers the subset Acai actually produces rather than
-/// arbitrary revspecs.
+/// 40-character commit SHA — to a commit in a repository. `SwiftGitX` only exposes typed lookups
+/// (`repository.show`, `.branch`, `.tag`), not libgit2's general `git rev-parse` grammar, so this
+/// covers the subset Acai actually produces rather than arbitrary revspecs.
 struct GitReference {
     let name: String
 
@@ -21,7 +19,6 @@ struct GitReference {
         }
     }
 
-    /// Resolves `name` to a commit in `repository`.
     func resolve(in repository: Repository) throws -> Commit {
         let (base, parentSteps) = splitParentSuffix(from: name)
         let commit = try resolveBase(base, in: repository)

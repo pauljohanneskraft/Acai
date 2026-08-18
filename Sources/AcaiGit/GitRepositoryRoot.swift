@@ -14,9 +14,6 @@ public struct GitRepositoryRoot {
         self.directory = directory
     }
 
-    /// The nearest ancestor of `directory` (or `directory` itself) containing a `.git` entry, or
-    /// `nil` if none is found before reaching the filesystem root.
-    ///
     /// Walks upward using `NSString.deletingLastPathComponent` rather than
     /// `URL.deletingLastPathComponent()` — the latter never converges at `/` on Darwin (it keeps
     /// prepending `..` indefinitely), which would spin this loop forever for any non-git directory.

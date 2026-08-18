@@ -9,9 +9,7 @@ import AcaiRender
 final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
-    /// The "old" revision for delta mode, or `nil` for a normal diagram.
     private let comparisonArtifact: CodeArtifact?
-    /// The artifact-level diff when in delta mode; drives per-edge tinting.
     private var diff: ArtifactDiff?
     /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
     /// every SwiftUI render pass (vs. `ArtifactDiff.status(of:)`'s per-call linear scan).
@@ -22,7 +20,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     @Published var edges: [GeneratedDiagramEdge] = []
     @Published var nodePositions: [String: CGPoint] = [:]
     @Published var nodeSizes: [String: CGSize] = [:]
-    /// User-overridden sizes (from resize handles). These take priority over measured sizes.
     @Published var userNodeSizes: [String: CGSize] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
@@ -36,7 +33,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Undo / Redo
 
-    /// Snapshot type that captures the undoable portion of the generated diagram state.
     struct LayoutSnapshot: Equatable, Sendable {
         var nodePositions: [String: CGPoint]
         var userNodeSizes: [String: CGSize]
@@ -145,7 +141,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     // MARK: - Layout
 
     func performLayout() {
-        // Lay out using each node's *displayed* size (user-resized > measured > estimated).
         let sizes = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, effectiveSize(for: $0.id)) })
         nodePositions = model.performLayout(sizes: sizes)
     }
@@ -208,7 +203,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
     }
 
-    /// Whether the diagram is rendering a delta against a comparison revision.
     var isDeltaMode: Bool { diff != nil }
 
     /// The delta tint for an edge (added green / removed red / changed amber), or `nil` when the
@@ -251,8 +245,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Image Export
 
-    /// Renders the diagram exactly as currently laid out (including user drags and resizes)
-    /// to PNG data, via the shared `DiagramImageRenderer`.
     func exportPNGData(scale: CGFloat = 2) throws -> Data {
         let sizes = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, effectiveSize(for: $0.id)) })
         // In delta mode the exported PNG carries the same tints as the on-screen canvas. Precompute

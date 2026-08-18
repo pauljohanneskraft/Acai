@@ -1,6 +1,5 @@
 import AcaiCore
 
-/// Renders `TypeDeclaration` values as DOT node definitions with HTML table labels.
 struct DOTNodeRenderer {
     let options: ClassDiagramOptions
 
@@ -14,7 +13,6 @@ struct DOTNodeRenderer {
         return "  \(nodeId) [label=<\(label)>];\n"
     }
 
-    /// Renders external (not-in-codebase) types as light gray placeholder nodes.
     func renderExternal(types: [TypeDeclaration]) -> String {
         guard !types.isEmpty else { return "" }
         var output = "  // External dependencies\n"
@@ -98,7 +96,6 @@ struct DOTNodeRenderer {
         return html
     }
 
-    /// Builds a simplified gray HTML table label for an external dependency type.
     private func buildExternalHTMLLabel(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
         let fill = "#E8E8E8"
         let border = "#B0B0B0"
@@ -172,17 +169,14 @@ struct DOTNodeRenderer {
 
     // MARK: - Font color (structural when no theme)
 
-    /// `COLOR="…"` attribute fragment for a `<FONT>` tag, or empty when unthemed.
     private func colorAttr(_ color: String?) -> String {
         color.map { " COLOR=\"\($0)\"" } ?? ""
     }
 
-    /// Opening `<FONT COLOR="…">` when themed, else empty — so structural output carries no colour.
     private func fontOpen(_ color: String?) -> String {
         color.map { "<FONT COLOR=\"\($0)\">" } ?? ""
     }
 
-    /// Matching `</FONT>` for ``fontOpen(_:)`` (empty when unthemed).
     private func fontClose(_ color: String?) -> String {
         color != nil ? "</FONT>" : ""
     }

@@ -3,9 +3,6 @@ import AcaiDiagram
 import AcaiRender
 
 extension CodeElementReference {
-    /// Every diagram type that can meaningfully show this element, each resolved to an already-open
-    /// diagram containing it when one exists among `existingDiagrams` (expected to already be
-    /// scoped to one codebase), else a pre-scoped `GeneratedDiagram.Content` ready to create one.
     func resolutions(in artifact: CodeArtifact, existingDiagrams: [GeneratedDiagram]) -> [CodeElementResolution] {
         switch self {
         case .type(let id):
@@ -66,8 +63,7 @@ extension CodeElementReference {
     // MARK: - Module
 
     private func moduleResolutions(name: String, existingDiagrams: [GeneratedDiagram]) -> [CodeElementResolution] {
-        // Class Diagram's module filter doesn't exist yet — only Package Diagram is actually
-        // buildable today, so that's the only thing offered.
+        // Class Diagram's module filter doesn't exist yet — Package Diagram is the only offer.
         [.init(diagramType: .packageDiagram, target: packageDiagramTarget(in: existingDiagrams))]
     }
 
@@ -76,9 +72,7 @@ extension CodeElementReference {
     private func relationshipResolutions(
         source: String, existingDiagrams: [GeneratedDiagram]
     ) -> [CodeElementResolution] {
-        // Cycle Diagram doesn't exist yet, so Class Diagram is the only offer — focused on the
-        // source with a two-way, one-hop neighborhood, which for a real edge includes the target
-        // too (and, for a cycle's first member, its immediate neighbors).
+        // Cycle Diagram doesn't exist yet, so Class Diagram is the only offer.
         [.init(diagramType: .classDiagram, target: classDiagramTarget(focusedOn: source, in: existingDiagrams))]
     }
 
@@ -133,10 +127,8 @@ extension CodeElementReference {
 }
 
 extension CodeArtifact {
-    /// The first property of `type` whose declared type is a known `enum` elsewhere in this
-    /// artifact — a State Diagram's traceable-variable requirement, checked structurally (by
-    /// simple-name match) rather than requiring full identity resolution, since this only needs to
-    /// decide whether *offering* a State Diagram resolution is worthwhile, not to build one.
+    /// Checked structurally (by simple-name match) rather than requiring full identity resolution,
+    /// since this only needs to decide whether *offering* a State Diagram resolution is worthwhile.
     fileprivate func enumTypedProperty(of type: TypeDeclaration) -> Member? {
         let enumNames = Set(flattened().filter { $0.kind == .enum }.map(\.name))
         return type.members.first {

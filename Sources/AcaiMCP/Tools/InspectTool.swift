@@ -1,8 +1,8 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_inspect` — enumerate types and their members filtered by a selector + member facets, each row
-/// carrying `file:line`. The highest-leverage locator for an agent. Mirrors `acai inspect`.
+/// `acai_inspect` — enumerates types and their members filtered by a selector + member facets, each
+/// row carrying `file:line`. Mirrors `acai inspect`.
 struct InspectTool: AnalysisTool {
     let name = "acai_inspect"
     let description = """

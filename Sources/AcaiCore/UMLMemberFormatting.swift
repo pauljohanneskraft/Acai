@@ -2,7 +2,6 @@
 // the SwiftUI canvas) shares one definition of how a type reference and member line are spelled.
 
 extension Member {
-    /// The UML access symbol for this member.
     public var umlAccessSymbol: String { accessLevel.umlSymbol }
 
     /// The UML "attribute" compartment line: `<sym> name: Type`.

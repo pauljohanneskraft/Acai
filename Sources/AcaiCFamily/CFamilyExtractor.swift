@@ -188,9 +188,7 @@ struct CFamilyExtractor: TreeSitterExtracting {
         return names
     }
 
-    /// Collects the name of every `enumerator` in the file (the constants declared by each
-    /// `enum`/`enum class`), so an unscoped enum constant assigned to a variable is recognised as
-    /// an enumerable value for state-machine analysis.
+    /// Collects the name of every `enumerator` in the file.
     private func collectEnumConstantNames(from root: Node) -> Set<String> {
         var names: Set<String> = []
         func walk(_ node: Node) {

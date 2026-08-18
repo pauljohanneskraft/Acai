@@ -1,10 +1,9 @@
 import SwiftUI
 
 extension CanvasInteraction {
-    /// Shared, group-aware node-drag gesture used by every diagram canvas: records one undo
-    /// checkpoint at the start of a drag, moves the whole selection together, reports the dragged
-    /// node's location for edge auto-pan, and commits (persists) on release. Behaviour on the model
-    /// it drives (not a free function).
+    /// Shared, group-aware node-drag gesture: records one undo checkpoint at drag start, moves
+    /// the whole selection together, reports the dragged node's location for edge auto-pan, and
+    /// commits on release.
     func nodeDragGesture(
         id: String,
         dragStartPositions: Binding<[String: CGPoint]>,
@@ -41,9 +40,8 @@ extension CanvasInteraction {
 }
 
 extension View {
-    /// The shared node interaction for every layout-backed diagram canvas: cmd-click extends the
-    /// selection (a plain click replaces it), and a group-aware drag moves the whole selection,
-    /// committing on release.
+    /// Cmd-click extends the selection (a plain click replaces it); a group-aware drag moves the
+    /// whole selection, committing on release.
     @MainActor
     func diagramNodeInteraction<Model: CanvasInteraction>(
         id: String,
@@ -82,9 +80,8 @@ struct CanvasResizeHandle<Model: CanvasInteraction>: View {
     var minWidth: CGFloat = 80
     var minHeight: CGFloat = 50
     var handleSize: CGFloat = 16
-    /// The tappable hit area on touch platforms, larger than `handleSize` to clear Apple's ~44pt
-    /// minimum touch target — macOS keeps `handleSize` itself as the hit area, matching mouse
-    /// precision.
+    /// Larger than `handleSize` to clear Apple's ~44pt minimum touch target; macOS keeps
+    /// `handleSize` itself as the hit area, matching mouse precision.
     var touchTargetSize: CGFloat = 44
 
     var body: some View {

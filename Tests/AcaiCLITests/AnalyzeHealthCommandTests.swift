@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AcaiCLI
 
-/// Covers `acai analyze --health`: the parse-health JSON report, where a clean source scores 1.0
-/// with zero diagnostics.
 @Suite("Analyze Health Command")
 struct AnalyzeHealthCommandTests {
 

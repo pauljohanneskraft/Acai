@@ -1,7 +1,5 @@
 import XCTest
 
-/// Open a fixture-seeded project, index its (un-indexed, by design) local-folder codebase,
-/// generate a Class Diagram, and verify its nodes actually render.
 @MainActor
 final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"

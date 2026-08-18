@@ -3,18 +3,16 @@ import AcaiCore
 import AcaiDiagram
 import AcaiRender
 
-/// Sidebar tab choices for the state diagram, matching Class Diagram's closed vocabulary.
 enum StateDiagramSidebarTab {
     case settings, inspector
 }
 
 /// State Diagram's sidebar: folds `StateConfigSheet`'s variable-selection fields into a live
-/// Settings tab (instead of a one-shot modal), and adds an Inspector tab showing detail for the
-/// selected state or transition — neither existed before this pass.
+/// Settings tab, plus an Inspector tab for the selected state/transition.
 ///
-/// Like Sequence Diagram, applying a new variable re-runs the whole analysis and drops state
-/// positions/undo history (`StateDiagramViewModel.applyConfiguration`), so edits stage into a local
-/// draft applied only on an explicit "Apply" tap rather than live-binding on every change.
+/// Applying a new variable re-runs the whole analysis and drops state positions/undo history
+/// (`StateDiagramViewModel.applyConfiguration`), so edits stage into a local draft applied only
+/// on an explicit "Apply" tap rather than live-binding on every change.
 struct StateDiagramSidebar: View {
     @ObservedObject var viewModel: StateDiagramViewModel
     let artifact: CodeArtifact
@@ -23,9 +21,9 @@ struct StateDiagramSidebar: View {
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
 
-    /// Where the variable lives: a type, or the module/global scope. Mirrors `StateConfigSheet`'s
-    /// own private `Scope`, duplicated rather than shared since that sheet stays untouched (it's
-    /// also the creation-time flow presented from `CodebaseDetailView`).
+    /// Mirrors `StateConfigSheet`'s own private `Scope`, duplicated rather than shared since that
+    /// sheet stays untouched (it's also the creation-time flow presented from
+    /// `CodebaseDetailView`).
     private enum Scope: Hashable {
         case type(String)
         case globals
@@ -319,15 +317,22 @@ struct StateDiagramSidebar: View {
         .listStyle(.inset)
     }
 
+    private struct SelectableState: Identifiable {
+        let id: String
+        let name: String
+    }
+
     private var multiSelectionList: some View {
-        List {
-            Section("\(viewModel.selectedNodeIDs.count) States Selected") {
-                ForEach(Array(viewModel.selectedNodeIDs).sorted(), id: \.self) { id in
-                    Text(viewModel.stateName(id) ?? id)
-                        .font(.caption.monospaced())
-                }
-            }
-        }
-        .listStyle(.inset)
+        let selected = viewModel.selectedNodeIDs.sorted()
+            .map { SelectableState(id: $0, name: viewModel.stateName($0) ?? $0) }
+        return MultiSelectionInspector(
+            items: selected,
+            title: { Text("^[\($0) State](inflect: true) Selected") },
+            rowIcon: { _ in nil },
+            rowLabel: \.name,
+            rowDetail: nil,
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            bulkAction: nil
+        )
     }
 }

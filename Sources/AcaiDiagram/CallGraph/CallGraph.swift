@@ -12,9 +12,7 @@ public struct CallGraph: Codable, Hashable, Sendable {
 
     // MARK: - Node
 
-    /// One method (or free function) participating in the call graph (as a caller, a callee, or
-    /// both).
-    public struct Node: Codable, Hashable, Sendable {
+    public struct Node: Codable, Hashable, Sendable, Identifiable {
         /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions.
         public var id: String
         /// The owning type's simple name; empty for a free function.
@@ -31,19 +29,16 @@ public struct CallGraph: Codable, Hashable, Sendable {
             self.inScope = inScope
         }
 
-        /// `"TypeName.methodName"` for methods, `"methodName"` for free functions — the display label.
         public var label: String { typeName.isEmpty ? methodName : "\(typeName).\(methodName)" }
 
-        /// `true` for a free (top-level) function — it has no owning type.
         public var isFreeFunction: Bool { typeName.isEmpty }
     }
 
     // MARK: - Edge
 
-    /// A directed call from one method to another.
     public struct Edge: Codable, Hashable, Sendable {
-        public var from: String  // node id
-        public var to: String    // node id
+        public var from: String
+        public var to: String
         /// Number of distinct call sites from `from` to `to`.
         public var weight: Int
 
@@ -68,7 +63,7 @@ public struct CallGraph: Codable, Hashable, Sendable {
             self.total = total
         }
 
-        /// Resolved share in `0...1`; `1` when there were no call sites to resolve.
+        /// `1` when there were no call sites to resolve, so an empty graph reads as fully covered.
         public var fraction: Double { total == 0 ? 1 : Double(resolved) / Double(total) }
     }
 
@@ -95,10 +90,8 @@ public struct CallGraph: Codable, Hashable, Sendable {
 /// What the call graph is focused on. The scope bounds which methods are treated as
 /// *callers*; resolved callees outside the scope are still drawn as leaf nodes.
 public enum CallGraphScope: Codable, Hashable, Sendable {
-    /// Every type in the artifact.
     case wholeCodebase
-    /// Only methods declared on the type with this simple name.
     case type(String)
-    /// Only methods of types in this build module (see `ModuleResolver`).
+    /// Methods of types in this build module, per `ModuleResolver`.
     case module(String)
 }

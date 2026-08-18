@@ -5,13 +5,11 @@ import AcaiTreeSitter
 
 extension JavaExtractor {
 
-    /// Actions for top-level source-file child nodes.
     private enum SourceFileAction {
         case setPackage
         case extractType
     }
 
-    /// Dispatch table mapping source-file child node types to actions.
     private static let sourceFileDispatch: [String: SourceFileAction] = [
         "package_declaration": .setPackage,
         "class_declaration": .extractType,
@@ -34,7 +32,6 @@ extension JavaExtractor {
         }
     }
 
-    /// Dispatches a type-declaration node to the appropriate extractor.
     mutating func extractTopLevelType(_ node: Node, nodeType: String) -> TypeDeclaration? {
         switch nodeType {
         case "class_declaration":

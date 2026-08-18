@@ -2,8 +2,7 @@ import MCP
 import AcaiLibrary
 
 /// One read-only analysis tool: a `name`, a trigger-shaped `description` (what an agent reads when
-/// deciding to reach for it), a JSON input schema, and a `run` returning the report as a `Value`. The
-/// shared helpers below (`resolveArtifact`, schema fragments, selector mapping) keep each tool tiny.
+/// deciding to reach for it), a JSON input schema, and a `run` returning the report as a `Value`.
 protocol AnalysisTool: Sendable {
     var name: String { get }
     var description: String { get }
@@ -13,8 +12,6 @@ protocol AnalysisTool: Sendable {
 }
 
 extension AnalysisTool {
-    /// The cached, enriched artifact for this call's `path` (+ optional `languages` / `refresh`).
-    /// Every analysis tool shares these three inputs, so resolving them lives here once.
     func resolveArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
@@ -24,10 +21,9 @@ extension AnalysisTool {
             refresh: try arguments.bool("refresh") ?? false)
     }
 
-    /// Resolves the artifact and drops each language's generated types unless the call passes
-    /// `includeGenerated: true` — so the metric/inspection tools default to hand-written-only,
-    /// matching the CLI's `--include-generated` and the app's statistics pane. (The `quality` tool
-    /// filters via its rules' `includeGeneratedTypes` instead, so it uses `resolveArtifact` directly.)
+    /// Drops each language's generated types unless the call passes `includeGenerated: true`, matching
+    /// the CLI's `--include-generated`. (`QualityTool` filters via its rules' `includeGeneratedTypes`
+    /// instead, so it uses `resolveArtifact` directly rather than this.)
     func analysisArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
@@ -36,7 +32,6 @@ extension AnalysisTool {
         return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
-    /// The `includeGenerated` schema fragment for the tools that expose generated-type filtering.
     var generatedScopeProperty: [String: Value] {
         [
             "includeGenerated": [
@@ -46,7 +41,6 @@ extension AnalysisTool {
         ]
     }
 
-    /// The `path` / `languages` / `refresh` schema fragment every analysis tool shares.
     var baseProperties: [String: Value] {
         [
             "path": [
@@ -65,7 +59,6 @@ extension AnalysisTool {
         ]
     }
 
-    /// The type-`Selector` schema fragment shared by the type-filtering tools (`inspect`, `smells`).
     var selectorProperties: [String: Value] {
         [
             "module": ["type": "string", "description": "Only types whose module matches this glob (*, ?)."],
@@ -79,8 +72,6 @@ extension AnalysisTool {
         ]
     }
 
-    /// Builds an object schema from `baseProperties` plus any tool-specific `extraProperties`, marking
-    /// `required` keys. Keeps every tool's `inputSchema` a one-liner.
     func objectSchema(extraProperties: [String: Value] = [:], required: [String] = ["path"]) -> Value {
         var properties = baseProperties
         for (key, value) in extraProperties {
@@ -93,8 +84,8 @@ extension AnalysisTool {
         ]
     }
 
-    /// Resolves a `"type:Name"` / `"module:Name"` scope string (whole-codebase when absent) via the
-    /// shared diagram-layer parser, mapping its error onto `invalidParams`.
+    /// Parses a `"type:Name"` / `"module:Name"` scope string (whole-codebase when absent), mapping a
+    /// parse failure onto `invalidParams`.
     func resolvedCallGraphScope(_ raw: String?) throws -> CallGraphScope {
         do {
             return try CallGraphScopeOption(raw: raw).resolved()
@@ -103,9 +94,7 @@ extension AnalysisTool {
         }
     }
 
-    /// Maps the shared selector arguments onto the engine `Selector`. Absent facets stay `nil`, so a
-    /// call with no selector arguments matches every type; a present numeric facet of the wrong JSON
-    /// type throws `invalidParams`.
+    /// Absent facets stay `nil`, so a call with no selector arguments matches every type.
     func selector(from arguments: ToolArguments) throws -> Selector {
         Selector(
             module: arguments.string("module"),

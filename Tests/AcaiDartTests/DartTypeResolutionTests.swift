@@ -24,7 +24,6 @@ struct DartTypeResolutionTests {
         """
         let artifact = parser.parse(source: source, fileName: "Animals.dart")
         let dogRaw = artifact.types.first { $0.name == "Dog" }
-        // Before enrichment Dart leaves the supertype name as written.
         #expect(dogRaw?.inheritedTypes.first?.name == "Animal")
 
         let enriched = artifact.enriched(configuration: parser.configuration)

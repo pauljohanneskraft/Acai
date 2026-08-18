@@ -1,6 +1,5 @@
 import AcaiCore
 
-/// Which per-type metric to rank the human metrics table by.
 enum MetricsSortKey: String, CaseIterable {
     case fanOut
     case fanIn
@@ -47,8 +46,6 @@ enum MetricsSortKey: String, CaseIterable {
     ]
 }
 
-/// Renders `CodeMetrics` as a human-readable report: a counts summary, a module table sorted by
-/// distance from the main sequence, and a per-type table ranked by a chosen metric.
 struct MetricsTextReport {
     let metrics: CodeMetrics
     let sort: MetricsSortKey
@@ -83,7 +80,6 @@ struct MetricsTextReport {
         return (["Modules (by distance from main sequence):", header] + rows).joined(separator: "\n")
     }
 
-    /// Types sorted by the chosen metric (descending), limited to `top` when set.
     private var rankedTypes: [CodeMetrics.TypeMetric] {
         let ranked = metrics.types.sorted { sort.value($0) > sort.value($1) }
         return top.map { Array(ranked.prefix($0)) } ?? ranked

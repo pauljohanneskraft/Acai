@@ -2,7 +2,6 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// The four tints that make up a kind-styled node (class box, sequence participant header).
 public struct KindColors: Sendable {
     public var header: Color
     public var body: Color
@@ -17,7 +16,6 @@ public struct KindColors: Sendable {
     }
 }
 
-/// The fill / header / border of a container box.
 public struct ContainerColors: Sendable {
     public var fill: Color
     public var header: Color
@@ -36,8 +34,8 @@ public enum ContainerTint: Sendable {
     case package, boundary, subsystem
 }
 
-/// The single source of truth for every diagram node/edge colour, replacing the per-view
-/// hardcoded literals.
+/// The single source of truth for every diagram node/edge colour, replacing per-view hardcoded
+/// literals.
 ///
 /// `DiagramPalette` is an open value type: ``light`` / ``dark`` are just static instances, and
 /// third parties can add their own the same way stdlib extends `Color` or `Font` —
@@ -45,8 +43,7 @@ public enum ContainerTint: Sendable {
 /// are resolved through `@Sendable` closures, so a custom theme controls them too.
 ///
 /// Views read it from the environment (``EnvironmentValues/diagramPalette``); off-screen snapshot
-/// views take it as a parameter. ``exportTheme`` bridges it to the DOT/Mermaid ``DiagramTheme`` so
-/// the chosen theme also drives exports.
+/// views take it as a parameter.
 public struct DiagramPalette: Sendable {
 
     // MARK: Canvas & ink
@@ -206,7 +203,6 @@ public struct DiagramPalette: Sendable {
     public static let light = make(isDark: false)
     public static let dark = make(isDark: true)
 
-    /// The bundled palette matching a SwiftUI colour scheme.
     public static func forScheme(_ scheme: ColorScheme) -> DiagramPalette {
         scheme == .dark ? .dark : .light
     }

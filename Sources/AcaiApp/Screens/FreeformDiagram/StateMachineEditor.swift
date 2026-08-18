@@ -15,19 +15,17 @@ final class StateMachineEditor {
         self.context = context
     }
 
-    /// Whether a node is a state-machine state.
     func isStateNode(_ nodeID: String) -> Bool {
         if case .state = context.node(nodeID)?.content { return true }
         return false
     }
 
-    /// The selected state-node ids in click order (drives transition direction: first → second).
+    /// Drives transition direction: first → second.
     var orderedStateSelection: [String] {
         context.selectionOrder.filter { isStateNode($0) }
     }
 
-    /// Add a transition edge between two states and select it so the inspector opens
-    /// straight onto the event/guard/action fields. `sourceID == targetID` makes a self-loop.
+    /// `sourceID == targetID` makes a self-loop.
     func addTransition(from sourceID: String, to targetID: String) {
         context.recordUndo(coalescingKey: nil)
         var edge = FreeformDiagram.Edge(sourceNodeID: sourceID, targetNodeID: targetID, kind: .association)
@@ -37,7 +35,6 @@ final class StateMachineEditor {
         context.save()
     }
 
-    /// Update a transition edge's event, guard and/or action as one undoable step.
     func updateTransitionEdge(
         _ edgeID: String,
         event: String? = nil,
@@ -54,7 +51,6 @@ final class StateMachineEditor {
         context.save()
     }
 
-    /// Update a state node's UML flavour (normal, initial, final, choice, …).
     func updateStateKind(_ nodeID: String, kind: StateDiagram.State.Kind) {
         guard let idx = context.nodes.firstIndex(where: { $0.id == nodeID }),
               case .state = context.nodes[idx].content else { return }

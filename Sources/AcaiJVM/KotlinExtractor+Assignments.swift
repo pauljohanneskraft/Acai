@@ -70,7 +70,6 @@ extension KotlinExtractor: AssignmentResolving {
         interpolationChildTypes: ["interpolated_expression", "interpolated_identifier"]
     )
 
-    /// Classifies an assigned value node for static state analysis.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
         let valueText = trimmedText(node)

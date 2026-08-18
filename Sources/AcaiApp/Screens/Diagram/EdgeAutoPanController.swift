@@ -10,30 +10,25 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     // MARK: - Input State
 
-    /// Current canvas-space location of the active drag.
+    /// Canvas-space (not screen-space).
     var canvasLocation: CGPoint = .zero
 
-    /// Current canvas scale.
     var scale: CGFloat = 1
 
-    /// Current canvas offset (screen-space).
+    /// Screen-space (not canvas-space).
     var offset: CGPoint = .zero
 
-    /// Size of the viewport in screen points.
     var viewportSize: CGSize = .zero
 
     // MARK: - Output
 
     /// Called each tick with the *incremental* canvas delta for this frame.
-    /// Use this to move all selected nodes by the delta.
     var onPanTick: ((_ canvasDelta: CGSize) -> Void)?
 
     // MARK: - Configuration
 
-    /// How close (in screen points) to the viewport edge before panning begins.
     private let edgeMargin: CGFloat = 50
 
-    /// Base pan speed (screen points per tick) at the edge boundary.
     private let basePanSpeed: CGFloat = 8
 
     // MARK: - Lifecycle
@@ -89,13 +84,13 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
         guard dx != 0 || dy != 0 else { return }
 
-        // Update internal offset so next tick's screen conversion is accurate.
+        // Keep the internal offset in sync so the next tick's screen conversion stays accurate.
         offset.x += dx
         offset.y += dy
 
         let canvasDelta = CGSize(width: -dx / scale, height: -dy / scale)
 
-        // Move canvasLocation by the same amount so the node tracks the pan.
+        // Also move canvasLocation so the dragged node keeps tracking the pan.
         canvasLocation.x += canvasDelta.width
         canvasLocation.y += canvasDelta.height
 

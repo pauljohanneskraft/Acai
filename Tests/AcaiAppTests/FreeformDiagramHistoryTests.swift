@@ -46,7 +46,6 @@ struct FreeformDiagramHistoryTests {
         let vm = model()
         vm.addNode(kind: .type(.class), name: "A", at: .zero)
         vm.undo()
-        // After undo: nothing to undo, one state to redo.
         #expect(vm.canUndo == false)
         #expect(vm.canRedo == true)
 
@@ -67,13 +66,11 @@ struct FreeformDiagramHistoryTests {
         vm.addNode(kind: .type(.class), name: "A", at: .zero)
         let id = vm.nodes[0].id
 
-        // Simulate per-keystroke updates to the same name field.
         vm.members.updateNodeName(id, name: "Ab")
         vm.members.updateNodeName(id, name: "Abc")
         vm.members.updateNodeName(id, name: "Abcd")
         #expect(vm.nodes[0].name == "Abcd")
 
-        // One undo reverts the whole run of keystrokes back to the pre-edit name.
         vm.undo()
         #expect(vm.nodes[0].name == "A")
         #expect(vm.canUndo == true)
@@ -98,6 +95,28 @@ struct FreeformDiagramHistoryTests {
         #expect(vm.canRedo == true)
     }
 
+    @Test("Consecutive numeric position edits coalesce like the inspector's X field")
+    func numericPositionEditsCoalesce() {
+        // Mirrors `FreeformDiagramInspector.positionXBinding`'s exact sequence: a coalescing key
+        // per node+field, then `moveNode`/`save()` — proves the pattern the inspector's numeric
+        // fields rely on actually merges consecutive commits into one undo step.
+        let vm = model()
+        vm.addNode(kind: .type(.class), name: "A", at: .zero)
+        let id = vm.nodes[0].id
+        let key = "position.x.\(id)"
+
+        vm.recordUndo(coalescingKey: key)
+        vm.moveNode(id, to: CGPoint(x: 10, y: 0))
+        vm.recordUndo(coalescingKey: key)
+        vm.moveNode(id, to: CGPoint(x: 120, y: 0))
+        #expect(vm.nodes[0].positionX == 120)
+
+        vm.undo()
+        #expect(vm.nodes[0].positionX == 0)
+        vm.undo()
+        #expect(vm.nodes.isEmpty)
+    }
+
     @Test("Deleting a multi-node selection is a single undo step")
     func deleteSelectionIsSingleUndo() {
         let vm = model()
@@ -109,7 +128,6 @@ struct FreeformDiagramHistoryTests {
         vm.deleteSelection()
         #expect(vm.nodes.isEmpty)
 
-        // A single undo restores both nodes.
         vm.undo()
         #expect(vm.nodes.count == 2)
     }

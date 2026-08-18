@@ -1,9 +1,8 @@
 import SwiftSyntax
 
-/// Collects bare, type-like (capitalised) names referenced inside a syntax subtree — constructor calls
-/// (`Foo(...)`), static/enum access (`Foo.bar`, `Foo.self`), casts and type annotations. Used to
-/// surface construction/body dependencies for the coupling metrics; over-capture is harmless because
-/// the engine keeps only names that resolve to known types.
+/// Collects bare, type-like (capitalised) names referenced inside a syntax subtree — constructor calls,
+/// static/enum access, casts and type annotations. Over-capture is harmless: the engine keeps only
+/// names that resolve to known types.
 final class TypeReferenceCollector: SyntaxVisitor {
     private(set) var names: Set<String> = []
 

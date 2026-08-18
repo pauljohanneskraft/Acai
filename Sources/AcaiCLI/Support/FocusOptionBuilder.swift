@@ -1,7 +1,7 @@
 import AcaiCore
 
-/// Builds a `FocusConfiguration` from the shared `--focus*` CLI flags. `configuration` is `nil`
-/// when no root type was given, so the diagram falls back to rendering the whole codebase.
+/// `configuration` is `nil` when no root type was given, so the diagram falls back to rendering
+/// the whole codebase.
 struct FocusOptionBuilder {
     let rootTypeName: String?
     let depth: Int?

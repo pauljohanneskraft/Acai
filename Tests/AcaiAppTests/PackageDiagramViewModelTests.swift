@@ -3,6 +3,7 @@ import Testing
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 @testable import AcaiApp
 
 @Suite("Package Diagram View Model")
@@ -89,6 +90,27 @@ struct PackageDiagramViewModelTests {
         #expect(vm.historySnapshot == ["ModuleA": CGPoint(x: 1, y: 2)])
         vm.historySnapshot = ["ModuleB": CGPoint(x: 3, y: 4)]
         #expect(vm.positionOverrides == ["ModuleB": CGPoint(x: 3, y: 4)])
+    }
+
+    @Test func filterKeepsOnlyMatchingModulesAndKeepsPositions() {
+        let vm = PackageDiagramViewModel(artifact: artifact())
+        vm.positionOverrides = ["ModuleA": CGPoint(x: 1, y: 2)]
+
+        vm.applyFilter(Selector(module: "ModuleA"))
+
+        #expect(vm.diagram.nodes.map(\.name) == ["ModuleA"])
+        #expect(vm.diagram.edges.isEmpty)
+        #expect(vm.positionOverrides == ["ModuleA": CGPoint(x: 1, y: 2)])
+        #expect(vm.filter == Selector(module: "ModuleA"))
+    }
+
+    @Test func clearingFilterRestoresEveryModule() {
+        let vm = PackageDiagramViewModel(artifact: artifact(), filter: Selector(module: "ModuleA"))
+        #expect(vm.diagram.nodes.map(\.name) == ["ModuleA"])
+
+        vm.applyFilter(nil)
+
+        #expect(Set(vm.diagram.nodes.map(\.name)) == ["ModuleA", "ModuleB"])
     }
 
     @Test func exportsNonEmptyPNGData() throws {

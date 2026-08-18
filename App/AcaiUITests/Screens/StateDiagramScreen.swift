@@ -1,11 +1,8 @@
 import XCTest
 
-/// Adds State Diagram-specific accessors (canvas state nodes, the variable-selection config sheet,
-/// and the Settings tab's live variable-selection form and Inspector tab) to
-/// `DiagramScreenBase`'s shared toolbar/sidebar accessors.
 final class StateDiagramScreen: DiagramScreenBase {
-    /// A state box, by its `StateDiagram.State.name` — mirrors `ClassDiagramScreen.typeNode`, same
-    /// "keyed by name, no stable id" caveat.
+    /// Keyed by `StateDiagram.State.name` — no separate stable id, same caveat as
+    /// `ClassDiagramScreen.typeNode`.
     func stateNode(named name: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.stateNode.\(name)"]
     }
@@ -15,8 +12,7 @@ final class StateDiagramScreen: DiagramScreenBase {
     var scopePicker: XCUIElement { app.descendants(matching: .any)["stateConfig.scopePicker"] }
     var variablePicker: XCUIElement { app.descendants(matching: .any)["stateConfig.variablePicker"] }
     /// `.firstMatch`: a toolbar button's identifier resolves to more than one accessibility node
-    /// (the wrapping bar-item container and the nested button both carry it) — same class of issue
-    /// as `ProjectDetailScreen.deleteCodebaseConfirmButton`.
+    /// (the wrapping bar-item container and the nested button both carry it).
     var createButton: XCUIElement {
         app.descendants(matching: .any).matching(identifier: "stateConfig.createButton").firstMatch
     }

@@ -56,7 +56,6 @@ extension DartExtractor {
         }
     }
 
-    /// Some top-level constructs may be wrapped in container nodes.
     private mutating func extractTopLevelChildren(_ node: Node) {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }

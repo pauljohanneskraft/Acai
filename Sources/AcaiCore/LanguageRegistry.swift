@@ -7,7 +7,6 @@
 public struct LanguageRegistry: Sendable {
     private let configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration]
 
-    /// Builds a registry from a parser set, taking each parser's `configuration`.
     public init(parsers: [any CodeParser]) {
         var configurations: [CodeArtifact.SourceLanguage: LanguageConfiguration] = [:]
         for parser in parsers {
@@ -16,12 +15,10 @@ public struct LanguageRegistry: Sendable {
         self.configurations = configurations
     }
 
-    /// The configuration registered for `language`, or `nil` when none is registered.
     public func configuration(for language: CodeArtifact.SourceLanguage) -> LanguageConfiguration? {
         configurations[language]
     }
 
-    /// The union of every registered language's build-output directories.
     public var excludedDirectories: Set<String> {
         configurations.values.reduce(into: Set<String>()) { $0.formUnion($1.excludedDirectories) }
     }

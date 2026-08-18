@@ -8,8 +8,6 @@ public struct LanguageConfigurationResolver: Sendable {
     /// The configuration used for a type whose language is unknown to `registry` (or unstamped).
     public let defaultConfiguration: LanguageConfiguration
 
-    /// A per-language resolver backed by `registry`, falling back to `defaultConfiguration` for a
-    /// language the registry doesn't know.
     public init(registry: LanguageRegistry, default defaultConfiguration: LanguageConfiguration) {
         self.registry = registry
         self.defaultConfiguration = defaultConfiguration
@@ -21,7 +19,6 @@ public struct LanguageConfigurationResolver: Sendable {
         self.init(registry: LanguageRegistry(parsers: []), default: configuration)
     }
 
-    /// The configuration for `language`, or the default when the registry doesn't know it.
     public func configuration(for language: CodeArtifact.SourceLanguage) -> LanguageConfiguration {
         registry.configuration(for: language) ?? defaultConfiguration
     }

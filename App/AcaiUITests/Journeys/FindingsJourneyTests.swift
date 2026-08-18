@@ -1,11 +1,9 @@
 import XCTest
 
-/// End-to-end coverage for the project-level Findings view: reindexing the seeded fixture's
-/// codebase (wired to `Fixtures/seeded/quality.yml`'s always-tripping budget, exactly like
-/// `ViewSourceQuickLookTests`) produces a quality violation, and that finding surfaces in the
-/// project-level Findings view — reached via `ProjectDetailScreen.findingsButton` — rather than
-/// only inside `CodebaseDetailView`'s own buried section. Also exercises the suppress/unsuppress
-/// round trip.
+/// Reindexing the seeded fixture's codebase (wired to `Fixtures/seeded/quality.yml`'s
+/// always-tripping budget, exactly like `ViewSourceQuickLookTests`) produces a quality violation
+/// that should surface in the project-level Findings view, not just `CodebaseDetailView`'s own
+/// section. Also exercises the suppress/unsuppress round trip.
 @MainActor
 final class FindingsJourneyTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
@@ -29,13 +27,10 @@ final class FindingsJourneyTests: XCTestCase {
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
         codebaseDetail.reindexButton.tap()
 
-        // Back to the project's own detail pane to reach the Findings entry point. On iPhone
-        // (compact width), `ProjectDetailView` and `CodebaseDetailView` share one `NavigationSplitView`
-        // detail slot swapped by `Selection`, not a separate push per screen — so the *sidebar*
-        // itself (not "ProjectDetailView") is what's one level back from here; pop to it first
-        // (when there's a back chevron to pop with — iPad/Mac's regular width keeps the sidebar
-        // permanently visible, so there's nothing to pop there), then re-select the project, which
-        // is what actually lands on `ProjectDetailView`.
+        // On iPhone, `ProjectDetailView` and `CodebaseDetailView` share one `NavigationSplitView`
+        // detail slot swapped by `Selection`, not a separate push per screen, so the sidebar (not
+        // "ProjectDetailView") is one level back from here; pop to it (iPad/Mac's regular width
+        // keeps the sidebar visible, so there's nothing to pop there), then re-select the project.
         let backButton = app.navigationBars.firstMatch.buttons.element(boundBy: 0)
         if backButton.waitForExistence(timeout: 5) {
             backButton.tap()
@@ -51,13 +46,9 @@ final class FindingsJourneyTests: XCTestCase {
             findings.list.waitForExistence(timeout: 30),
             "Findings list never appeared after reindexing a codebase with an always-tripping budget.")
 
-        // Filter chips narrow to just violations — dead-code/health rows (if any) disappear.
         let violationFilter = findings.kindFilter("violation")
         XCTAssertTrue(violationFilter.waitForExistence(timeout: 5))
 
-        // Suppress the first row, verify it drops out of the default view, then confirm it
-        // comes back under "show suppressed too." Anchored to one captured row element throughout
-        // (see `FindingsScreen.firstViolationRow`), not re-resolved per access.
         let row = findings.firstViolationRow
         guard row.waitForExistence(timeout: 10) else {
             XCTFail("No finding row appeared.")

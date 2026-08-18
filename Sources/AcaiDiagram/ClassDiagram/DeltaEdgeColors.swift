@@ -3,11 +3,8 @@
 /// names no language and carries no diff logic. The caller maps each element's diff status to one
 /// of these and feeds it to a renderer's per-element colour override.
 public struct DeltaEdgeColors: Sendable {
-    /// Added in the new revision.
     public let added: String
-    /// Removed since the old revision.
     public let removed: String
-    /// Present in both but changed (multiplicity/label/weight).
     public let changed: String
 
     public init(added: String = "#2e7d32", removed: String = "#c62828", changed: String = "#f9a825") {
@@ -16,7 +13,6 @@ public struct DeltaEdgeColors: Sendable {
         self.changed = changed
     }
 
-    /// The conventional green/red/amber palette.
     public static let standard = DeltaEdgeColors()
 
     /// The hex for a status keyword (`added`/`removed`/`changed`), or `nil` for anything else

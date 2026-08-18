@@ -1,7 +1,6 @@
 import Testing
 @testable import AcaiCore
 
-/// Tests for `FocusedSubsetBuilder` — single-class focus traversal and edge selection.
 @Suite("Core: Single-Class Focus")
 struct FocusTests {
 

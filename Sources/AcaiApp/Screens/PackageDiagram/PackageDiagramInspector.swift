@@ -3,9 +3,9 @@ import AcaiDiagram
 import AcaiRender
 
 /// The package diagram's Inspector tab: selection-scoped, matching the Class/Freeform
-/// convention instead of the old "card for every module, re-sorted" behavior. Nothing selected
-/// shows a placeholder; one module selected shows its full metrics card plus a short cross-linked
-/// list of the modules it depends on / is depended on by, each tappable to jump the selection there.
+/// convention. Nothing selected shows a placeholder; one module selected shows its full metrics
+/// card plus a short cross-linked list of the modules it depends on / is depended on by, each
+/// tappable to jump the selection there.
 struct PackageDiagramInspector: View {
     let diagram: PackageDiagram
     let selectedNodeIDs: Set<String>
@@ -51,32 +51,15 @@ struct PackageDiagramInspector: View {
 
     private var multiSelectionList: some View {
         let selected = diagram.nodes.filter { selectedNodeIDs.contains($0.id) }.sorted { $0.name < $1.name }
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(selected.count) Modules Selected")
-                    .font(.headline)
-                ForEach(selected, id: \.id) { node in
-                    Button {
-                        onSelect(node.id)
-                    } label: {
-                        HStack(spacing: 8) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color(hex: node.zoneColorHex))
-                                .frame(width: 12, height: 12)
-                            Text(node.name)
-                                .font(.system(.subheadline, design: .monospaced))
-                            Spacer()
-                            Text("\(node.typeCount) types")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
+        return MultiSelectionInspector(
+            items: selected,
+            title: { Text("^[\($0) Module](inflect: true) Selected") },
+            rowIcon: { _ in nil },
+            rowLabel: \.name,
+            rowDetail: { "\($0.typeCount) types" },
+            onSelect: onSelect,
+            bulkAction: nil
+        )
     }
 
     private func moduleCard(_ node: PackageDiagram.Node, highlighted: Bool) -> some View {

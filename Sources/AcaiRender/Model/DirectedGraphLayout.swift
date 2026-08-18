@@ -3,22 +3,15 @@ import Foundation
 import AcaiDiagram
 
 /// Shared Sugiyama-backed placement for the directed-graph diagram kinds (call graph, package,
-/// state). Runs the layout engine, applies user position overrides, normalizes the result so the
-/// content's top-left sits at the origin, and exposes node frames keyed by id plus the overall
-/// content size. The per-kind models supply node sizes and edges and build their own typed
+/// state). The per-kind models supply node sizes and edges and build their own typed
 /// `NodeFrame`/`EdgeLayout` arrays from `framesByID`.
 struct DirectedGraphLayout {
-    /// Laid-out frame per node id (every supplied node gets a frame).
     let framesByID: [String: CGRect]
-    /// The bounding size of all frames (at least 1×1 so an empty graph still has a valid canvas).
+    /// At least 1×1 so an empty graph still has a valid canvas.
     let contentSize: CGSize
 
-    /// - Parameters:
-    ///   - nodeSizes: every node's id and rendered size.
-    ///   - edges: directed edges already oriented for `LayerAssignment` (which lifts edge *targets*
-    ///     toward the top), so callers reverse where needed.
-    ///   - positionOverrides: node-id → centre, taking precedence over computed positions (restores
-    ///     user drags).
+    /// `edges` must already be oriented for `LayerAssignment` (which lifts edge *targets* toward
+    /// the top) — callers reverse where needed.
     init(
         nodeSizes: [(id: String, size: CGSize)],
         edges: [(from: String, to: String)],
@@ -37,7 +30,6 @@ struct DirectedGraphLayout {
             positions[id] = point
         }
 
-        // Normalize so the content's top-left corner sits at the origin.
         var minX = CGFloat.greatestFiniteMagnitude
         var minY = CGFloat.greatestFiniteMagnitude
         for (id, size) in sizeByID {

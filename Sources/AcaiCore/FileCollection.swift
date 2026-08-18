@@ -1,9 +1,7 @@
 import Foundation
 
 extension FileManager {
-    /// Recursively collects files under `directory` whose extension is in `extensions`, skipping
-    /// any directory named in `excludedDirectories`. Public so language-target detectors (which now
-    /// live outside AcaiCore) can reuse it.
+    /// Public so language-target detectors, which live outside AcaiCore, can reuse it.
     public func fileURLs(
         in directory: URL,
         withExtensions extensions: Set<String>,

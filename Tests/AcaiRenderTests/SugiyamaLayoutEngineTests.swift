@@ -14,7 +14,6 @@ struct SugiyamaLayoutEngineTests {
         return SugiyamaLayoutEngine.NodeInput(id: id, size: size, group: group)
     }
 
-    /// Bounding box of all nodes belonging to `group`.
     private func boundingRect(
         ofGroup group: String,
         nodes: [SugiyamaLayoutEngine.NodeInput],
@@ -32,8 +31,6 @@ struct SugiyamaLayoutEngineTests {
         return result ?? .null
     }
 
-    /// Builds N groups, each an intra-group chain, plus cross-group edges — the case
-    /// that previously made connected components span products and boxes overlap.
     private func makeGraph(
         groups: [String],
         perGroup: Int
@@ -47,7 +44,6 @@ struct SugiyamaLayoutEngineTests {
                 edges.append(.init(sourceID: ids[i], targetID: ids[i + 1], kind: .dependency))
             }
         }
-        // Cross-group edges connecting otherwise separate products.
         for i in 0..<(groups.count - 1) {
             edges.append(.init(sourceID: "\(groups[i])0", targetID: "\(groups[i + 1])0", kind: .dependency))
         }
@@ -75,7 +71,7 @@ struct SugiyamaLayoutEngineTests {
                 edges.append(.init(sourceID: ids[i], targetID: ids[i + 1], kind: .dependency))
             }
         }
-        edges.append(.init(sourceID: "A/X#0", targetID: "B/Y#0", kind: .dependency))  // cross-tree edge
+        edges.append(.init(sourceID: "A/X#0", targetID: "B/Y#0", kind: .dependency))
 
         let positions = SugiyamaLayoutEngine().layoutByGroup(nodes: nodes, edges: edges).positions
 
@@ -91,13 +87,12 @@ struct SugiyamaLayoutEngineTests {
             }
             return result ?? .null
         }
-        // Leaf-level siblings are disjoint.
         for i in 0..<leaves.count {
             for j in (i + 1)..<leaves.count {
                 #expect(!bbox(prefix: leaves[i]).intersects(bbox(prefix: leaves[j])))
             }
         }
-        // Top-level parents (A vs B) are disjoint — so a box around `A/` won't overlap `B/`.
+        // A prefix bbox also captures the top-level grouping, so this checks A vs B are disjoint too.
         #expect(!bbox(prefix: "A/").intersects(bbox(prefix: "B/")))
     }
 
@@ -192,7 +187,6 @@ struct SugiyamaLayoutEngineTests {
     }
 
     @Test func largeGraphPositionsEveryNode() {
-        // A wide graph (many groups × many nodes) must still place every node without overlap.
         let (nodes, edges) = makeGraph(groups: (0..<10).map { "G\($0)" }, perGroup: 12)
         let result = SugiyamaLayoutEngine().layoutByGroup(nodes: nodes, edges: edges)
         #expect(result.positions.count == nodes.count)

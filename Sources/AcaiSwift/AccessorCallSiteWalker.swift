@@ -1,21 +1,14 @@
 import SwiftSyntax
 import AcaiCore
 
-/// Collects the resolvable call sites made inside a computed property's accessor bodies
-/// (`var body: some View { … }`, explicit `get`/`set`).
-///
+/// Collects call sites inside a computed property's accessor bodies (`var body: some View { … }`).
 /// Runs as a dedicated walk rather than having `DeclarationVisitor` descend into the accessor, so
-/// member extraction for a `var` stays a single `.skipChildren` step. Unresolvable receivers (SwiftUI
-/// modifier chains like `Text(…).padding()`) are dropped by the collector, so only real, resolvable
-/// calls are recorded.
+/// member extraction for a `var` stays a single `.skipChildren` step.
 final class AccessorCallSiteWalker: SyntaxVisitor {
     private let collector: CallSiteCollector
-    /// Stored properties seeded up front, plus locals declared in the accessor recorded as they're
-    /// visited — so `local.method()` inside a `body` resolves, just as in a function body.
+    /// Seeded with stored properties; locals are added as they're visited, so `local.method()`
+    /// inside a `body` resolves just as in a function body.
     private var receiverMap: [String: String]
-    /// Every local name declared so far, whether or not its type was provable — so a local whose type
-    /// inference failed isn't mistaken for the enclosing type's own property when `receiverMap` has no
-    /// entry for it (mirrors `DeclarationVisitor`'s `callSiteState.knownLocalNames`).
     private var knownLocalNames: Set<String>
     private let enclosingTypeName: String?
     private let methodReturnTypes: [String: String]

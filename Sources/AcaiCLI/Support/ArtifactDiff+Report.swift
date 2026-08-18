@@ -2,8 +2,6 @@ import AcaiCore
 import AcaiDiff
 
 extension ArtifactDiff {
-    /// A human-sized changelog of the architectural delta: added/removed types, edge changes
-    /// phrased in prose ("`A` now depends on `B`"), and notable metric movement.
     func humanReport() -> String {
         if isEmpty { return "No structural changes." }
 
@@ -41,7 +39,6 @@ extension ArtifactDiff {
     }
 }
 
-/// One titled, indented block of a `humanReport()`.
 private struct ReportSection {
     let title: String
     let lines: [String]
@@ -52,7 +49,6 @@ private struct ReportSection {
 }
 
 private extension TypeChange {
-    /// One `~ Id: …` line summarising a type's kind/access/member changes.
     var reportLine: String {
         var parts: [String] = []
         if let kind = kindChange {
@@ -69,7 +65,6 @@ private extension TypeChange {
 }
 
 private extension ModuleMetricDelta {
-    /// A `module: …` line of changed package metrics, or `nil` when nothing moved.
     var reportLine: String? {
         var parts: [String] = []
         if let d = distanceFromMainSequence { parts.append("distance \(d.twoDecimalArrow)") }
@@ -81,7 +76,6 @@ private extension ModuleMetricDelta {
 }
 
 private extension TypeMetricDelta {
-    /// An `id: …` line of changed type metrics, or `nil` when nothing moved.
     var reportLine: String? {
         var parts: [String] = []
         if let f = fanIn { parts.append("fan-in \(f.before) → \(f.after)") }
@@ -93,7 +87,6 @@ private extension TypeMetricDelta {
 }
 
 private extension Relationship {
-    /// Phrases this relationship as a sentence; `removed` flips the tense for a dropped edge.
     func reportPhrase(removed: Bool = false) -> String {
         let source = self.source.lastDottedComponent
         let target = self.target.lastDottedComponent
@@ -121,7 +114,6 @@ private extension Relationship {
 }
 
 private extension String {
-    /// The last `.`-separated component (a qualified id's simple name), or the whole string.
     var lastDottedComponent: String { components(separatedBy: ".").last ?? self }
 }
 
@@ -130,6 +122,5 @@ private extension Double {
 }
 
 private extension Change where T == Double {
-    /// `before → after`, each to two decimals.
     var twoDecimalArrow: String { "\(before.twoDecimals) → \(after.twoDecimals)" }
 }

@@ -1,30 +1,20 @@
 import SwiftUI
 
-/// A ranked drill-down for one statistics card: the items behind the metric, sorted by it. Each row
-/// offers the full "Open in…" resolution plus "View Source" (Finder reveal kept as an
-/// additional macOS-only secondary action). Built by the section, which owns the artifact/codebase
-/// needed for these actions.
 struct StatisticDetail: Identifiable {
     let id = UUID()
     let title: String
-    /// One- or two-sentence explanation of the metric and how to read it (good vs. smell).
     let description: String
     let rows: [Row]
 
     struct Row: Identifiable {
-        /// A type id or module name — stable within one list.
         let id: String
         let name: String
         let value: String
-        /// The item's path relative to the codebase directory, or `nil` when it can't be resolved.
         let relativePath: String?
-        /// The element this row is about — a type or a module, matching how the section built
-        /// this row (`typeDetail`/`moduleDetail`).
         let reference: CodeElementReference
     }
 }
 
-/// Presents a `StatisticDetail` as a sortable, actionable list.
 struct StatisticDetailSheet: View {
     let codebase: Codebase
     let detail: StatisticDetail

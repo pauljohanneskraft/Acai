@@ -47,7 +47,6 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The on-screen palette for this selection; `system` follows `systemScheme`.
     func palette(systemScheme: ColorScheme) -> DiagramPalette {
         switch self {
         case .system:
@@ -73,13 +72,10 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The current selection read straight from defaults, for call sites without a SwiftUI
-    /// environment (e.g. the export view model).
     static var current: DiagramThemeSelection {
         store.string(forKey: storageKey).flatMap(DiagramThemeSelection.init) ?? .system
     }
 
-    /// The export theme for the current selection (`nil` for `system`).
     static var currentExportTheme: DiagramTheme? {
         current.exportTheme
     }
@@ -104,8 +100,6 @@ struct DiagramThemeCommands: Commands {
     }
 }
 
-/// Injects the selected theme's `DiagramPalette` into the environment for every diagram view,
-/// and recolours when the OS appearance changes under the `system` option.
 struct DiagramThemeProvider: ViewModifier {
     @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
     private var selection: DiagramThemeSelection = .system

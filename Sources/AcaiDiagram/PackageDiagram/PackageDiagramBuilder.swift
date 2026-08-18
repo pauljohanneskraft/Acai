@@ -1,4 +1,5 @@
 import AcaiCore
+import AcaiQuality
 
 /// Builds a `PackageDiagram` (one node per build module) from a `CodeArtifact`.
 ///
@@ -12,9 +13,14 @@ import AcaiCore
 /// endpoints are resolved to type ids (as `computeMetrics()` requires).
 public struct PackageDiagramBuilder: Sendable {
     public var title: String?
+    /// When set, only modules this selector matches (via `Selector.matchesModule(named:)` — the
+    /// only facet that applies to a module node) are kept, along with edges between two kept
+    /// modules. `nil` (the default) keeps every module.
+    public var filter: AcaiQuality.Selector?
 
-    public init(title: String? = nil) {
+    public init(title: String? = nil, filter: AcaiQuality.Selector? = nil) {
         self.title = title
+        self.filter = filter
     }
 
     public func build(from artifact: CodeArtifact) -> PackageDiagram {
@@ -56,6 +62,12 @@ public struct PackageDiagramBuilder: Sendable {
             .sorted { ($0.key.from, $0.key.to) < ($1.key.from, $1.key.to) }
             .map { PackageDiagram.Edge(from: $0.key.from, to: $0.key.to, weight: $0.value) }
 
-        return PackageDiagram(title: title, nodes: nodes, edges: edges)
+        guard let filter else { return PackageDiagram(title: title, nodes: nodes, edges: edges) }
+        let keptNames = Set(nodes.filter { filter.matchesModule(named: $0.name) }.map(\.name))
+        return PackageDiagram(
+            title: title,
+            nodes: nodes.filter { keptNames.contains($0.name) },
+            edges: edges.filter { keptNames.contains($0.from) && keptNames.contains($0.to) }
+        )
     }
 }

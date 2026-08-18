@@ -7,7 +7,6 @@ struct SequenceDiagramTests {
 
     // MARK: - Fixtures
 
-    /// A method member whose body makes the given calls.
     private func method(_ name: String, calls: [CallSite] = []) -> Member {
         Member(name: name, kind: .method, accessLevel: .internal, callSites: calls)
     }
@@ -39,7 +38,6 @@ struct SequenceDiagramTests {
         let diagram = SequenceDiagramBuilder(entryPoint: ("LoginService", "login")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["LoginService", "AuthService"])
-        // Synchronous call out, then a return back.
         #expect(diagram.messages.count == 2)
         let call = diagram.messages[0]
         #expect(call.from == "LoginService")
@@ -50,14 +48,13 @@ struct SequenceDiagramTests {
         #expect(ret.from == "AuthService")
         #expect(ret.to == "LoginService")
         #expect(ret.kind == .return)
-        // Messages are strictly ordered top-to-bottom.
         #expect(diagram.messages.map(\.order) == [0, 1])
     }
 
     @Test func participantIDsMatchMessageEndpointsForNamespacedTypes() {
         // Kotlin/Java give types a qualified `id` (e.g. "shop.Checkout") distinct from the simple
-        // name. Participants must key on the simple name the messages use, or every message is
-        // orphaned (which previously left namespaced sequence diagrams empty in DOT/Mermaid).
+        // name; participants must key on the simple name the messages use, or every message ends up
+        // orphaned.
         let checkout = TypeDeclaration(
             id: "shop.Checkout", name: "Checkout", qualifiedName: "shop.Checkout", kind: .class,
             accessLevel: .public,
@@ -93,7 +90,6 @@ struct SequenceDiagramTests {
 
         let diagram = SequenceDiagramBuilder(entryPoint: ("Controller", "handle")).build(from: art)
 
-        // validate (+return) before persist (+return).
         let outbound = diagram.messages.filter { $0.kind == .synchronous }.map(\.label)
         #expect(outbound == ["validate", "persist"])
         #expect(diagram.messages.map(\.order) == Array(0..<diagram.messages.count))
@@ -149,7 +145,6 @@ struct SequenceDiagramTests {
         let diagram = SequenceDiagramBuilder(entryPoint: ("", "main")).build(from: art)
 
         #expect(diagram.participants.map(\.name) == ["main", "Service"])
-        // The free-function lifeline is marked `.control` to set it apart from object lifelines.
         #expect(diagram.participants.first?.kind == .control)
         let call = diagram.messages.first { $0.kind == .synchronous }
         #expect(participantName(call?.from, in: diagram) == "main")
@@ -158,8 +153,6 @@ struct SequenceDiagramTests {
     }
 
     @Test func callToFreeFunctionBecomesDistinctParticipant() {
-        // A method calling a top-level function used to render as a mislabeled self-call; now the
-        // function is its own lifeline.
         let art = artifact(
             types: [type("Worker", members: [
                 method("run", calls: [CallSite(receiver: .free, methodName: "log")])
@@ -261,7 +254,6 @@ struct SequenceDiagramTests {
     // MARK: - Depth / recursion
 
     @Test func maxDepthStopsExpansion() {
-        // A -> B -> C -> D, but maxDepth 2 should stop expanding at C (D never appears).
         let art = artifact(types: [
             type("A", members: [method("a", calls: [CallSite(receiver: .type("B"), methodName: "b")])]),
             type("B", members: [method("b", calls: [CallSite(receiver: .type("C"), methodName: "c")])]),
@@ -284,7 +276,6 @@ struct SequenceDiagramTests {
 
         let diagram = SequenceDiagramBuilder(entryPoint: ("A", "ping"), maxDepth: 50).build(from: art)
 
-        // Terminates and revisits A as a participant without looping forever.
         #expect(diagram.participants.map(\.name) == ["A", "B"])
         #expect(diagram.messages.contains { $0.label == "pong" })
     }
@@ -292,8 +283,6 @@ struct SequenceDiagramTests {
     // MARK: - Interface resolution (typeMapping)
 
     @Test func typeMappingRedirectsAbstractReceiverToConcreteType() {
-        // Service depends on a protocol; the body of the concrete impl is followed
-        // only when the protocol is mapped to it.
         let art = artifact(types: [
             type("Service", members: [
                 method("run", calls: [CallSite(receiver: .type("RepositoryProtocol"), methodName: "save")])
@@ -305,12 +294,10 @@ struct SequenceDiagramTests {
             type("Database", members: [method("commit")])
         ])
 
-        // Without mapping: the protocol lifeline appears, but its body isn't followed.
         let unmapped = SequenceDiagramBuilder(entryPoint: ("Service", "run")).build(from: art)
         #expect(unmapped.participants.map(\.name) == ["Service", "RepositoryProtocol"])
         #expect(!unmapped.messages.contains { $0.label == "commit" })
 
-        // With mapping: the lifeline becomes the concrete type and its body is traced.
         let mapped = SequenceDiagramBuilder(
             entryPoint: ("Service", "run"),
             typeMapping: ["RepositoryProtocol": "SQLRepository"]

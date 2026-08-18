@@ -3,8 +3,7 @@ import SwiftUI
 /// macOS's `Settings` scene content (⌘,) — a real Settings scene with Accounts, MCP, and Licenses
 /// sections. General (diagram theme) is a separate, not-yet-built pane (Repositories deliberately
 /// stays in the sidebar instead, to avoid duplicating scope), so a `TabView` isn't needed yet for
-/// a single scrolling pane — adding one is a small, additive change once a distinct pane actually
-/// exists.
+/// a single scrolling pane.
 struct SettingsView: View {
     var body: some View {
         Form {

@@ -22,8 +22,6 @@ struct DeclarationSignatureExtractor {
         return .internal
     }
 
-    /// The access level of the setter when narrowed via `private(set)` / `internal(set)`
-    /// / `fileprivate(set)` / `public(set)`. `nil` when no `(set)` modifier is present.
     func extractSetAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
         for modifier in modifiers where modifier.detail?.detail.text == "set" {
             if let level = accessLevel(for: modifier.name.tokenKind) {
@@ -93,8 +91,7 @@ struct DeclarationSignatureExtractor {
         }) ?? []
 
         guard let whereClause else { return params }
-        // Merge `where` constraints onto the matching parameter (by leading name),
-        // populating the previously-dead `.sameType` constraint kind.
+        // Merge `where` constraints onto the matching parameter, matched by leading name.
         for (name, constraint) in extractWhereConstraints(whereClause) {
             let base = name.components(separatedBy: ".").first ?? name
             if let idx = params.firstIndex(where: { $0.name == base }) {
@@ -106,7 +103,6 @@ struct DeclarationSignatureExtractor {
         return params
     }
 
-    /// Flattens a `where` clause into `(constrainedName, constraint)` pairs.
     func extractWhereConstraints(
         _ whereClause: GenericWhereClauseSyntax
     ) -> [(name: String, constraint: GenericConstraint)] {
@@ -132,8 +128,6 @@ struct DeclarationSignatureExtractor {
         return result
     }
 
-    /// Extracts a protocol `associatedtype` requirement as a `GenericParameter`
-    /// (its inheritance + `where` clause become constraints).
     func extractAssociatedType(from node: AssociatedTypeDeclSyntax) -> GenericParameter {
         var constraints: [GenericConstraint] = []
         if let inheritance = node.inheritanceClause {
@@ -154,7 +148,6 @@ struct DeclarationSignatureExtractor {
     func extractAttributes(from attributes: AttributeListSyntax) -> [String] {
         attributes.compactMap { element in
             if let attr = element.as(AttributeSyntax.self) {
-                // Full text incl. arguments, e.g. `@available(iOS 15, *)`.
                 return attr.trimmedDescription
             }
             return nil

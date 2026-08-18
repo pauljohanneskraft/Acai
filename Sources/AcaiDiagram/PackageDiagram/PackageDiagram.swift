@@ -8,8 +8,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Node
 
-    /// One build module, annotated with its coupling metrics.
-    public struct Node: Codable, Hashable, Sendable {
+    public struct Node: Codable, Hashable, Sendable, Identifiable {
         public var id: String
         public var name: String
         public var typeCount: Int
@@ -64,10 +63,9 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
 
     // MARK: - Edge
 
-    /// A directed dependency from one module to another.
     public struct Edge: Codable, Hashable, Sendable {
-        public var from: String  // node id
-        public var to: String    // node id
+        public var from: String
+        public var to: String
         /// Number of distinct cross-module type references along this edge.
         public var weight: Int
 

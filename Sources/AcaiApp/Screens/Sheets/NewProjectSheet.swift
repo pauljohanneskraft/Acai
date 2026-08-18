@@ -13,11 +13,9 @@ struct NewProjectSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    // `TextField(_:text:)`'s first parameter renders as a second, external label
-                    // ahead of the field's own box on macOS inside a `LabeledContent` row, so
-                    // "e.g. My Project" (longer than "Optional") would push the Title field's box to
-                    // a different position/width than Subtitle's. `prompt:` is internal placeholder
-                    // text instead, keeping both rows' field boxes the same width.
+                    // `TextField`'s first parameter renders as an extra label inside `LabeledContent`
+                    // on macOS, so a longer title (vs. "Optional") would misalign the two rows' field
+                    // boxes. Use `prompt:` instead — internal placeholder text, not a second label.
                     LabeledContent("Title") {
                         TextField("", text: $title, prompt: Text("e.g. My Project"))
                             .multilineTextAlignment(.trailing)
@@ -33,12 +31,9 @@ struct NewProjectSheet: View {
                 }
             }
             #if os(macOS)
-            // The Form's own bottom inset leaves almost no gap before the toolbar's Cancel/Create
-            // buttons on macOS — add a little breathing room explicitly. (Applied to the Form
-            // itself, not the Section — a Section-level padding is distributed per row instead of
-            // once at the bottom, which pushed the Title field's vertical centering off.) iOS's
-            // `.presentationDetents([.medium])` sheet already has enough room below the form, so
-            // this is scoped to macOS only.
+            // macOS's Form leaves almost no gap before the toolbar buttons; add padding here on
+            // the Form itself, not the Section (Section-level padding distributes per row and
+            // throws off the Title field's vertical centering). iOS already has enough room.
             .padding(.bottom, 8)
             .frame(maxWidth: 360)
             #else

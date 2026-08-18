@@ -29,8 +29,8 @@ struct CanvasInteractionDefaultsTests {
 
     private func stub() -> StubCanvas {
         StubCanvas(frames: [
-            "a": CGRect(x: 0, y: 0, width: 10, height: 20),     // center (5, 10)
-            "b": CGRect(x: 100, y: 100, width: 40, height: 60)  // center (120, 130)
+            "a": CGRect(x: 0, y: 0, width: 10, height: 20),
+            "b": CGRect(x: 100, y: 100, width: 40, height: 60)
         ])
     }
 
@@ -42,9 +42,9 @@ struct CanvasInteractionDefaultsTests {
         #expect(vm.selectedNodeIDs == ["a"])
         vm.selectNode("b", extending: true)
         #expect(vm.selectedNodeIDs == ["a", "b"])
-        vm.selectNode("b", extending: true)   // toggle off
+        vm.selectNode("b", extending: true)
         #expect(vm.selectedNodeIDs == ["a"])
-        vm.selectNode("b", extending: false)  // replace
+        vm.selectNode("b", extending: false)
         #expect(vm.selectedNodeIDs == ["b"])
     }
 
@@ -77,7 +77,7 @@ struct CanvasInteractionDefaultsTests {
         vm.moveNode("a", to: CGPoint(x: 7, y: 8))
         #expect(vm.positionOverrides["a"] == CGPoint(x: 7, y: 8))
         vm.resizeNode("a", width: 999, height: 999)
-        #expect(vm.positionOverrides["a"] == CGPoint(x: 7, y: 8))   // unchanged
+        #expect(vm.positionOverrides["a"] == CGPoint(x: 7, y: 8))
     }
 
     @Test func effectiveSizeFallsBackToDefaultWhenUnframed() {

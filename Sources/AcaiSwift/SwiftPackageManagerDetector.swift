@@ -1,7 +1,6 @@
 import Foundation
 import AcaiCore
 
-/// Detects Swift Package Manager projects (`Package.swift`).
 public struct SwiftPackageManagerDetector: BuildSystemDetector {
     public init() {}
 

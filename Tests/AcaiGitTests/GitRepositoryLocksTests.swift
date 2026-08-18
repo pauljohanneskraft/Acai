@@ -4,7 +4,6 @@ import Testing
 
 @Suite("GitRepositoryLocks")
 struct GitRepositoryLocksTests {
-    /// Records the order operations start and finish in, to prove non-overlap.
     private actor EventLog {
         private(set) var events: [String] = []
         func record(_ event: String) { events.append(event) }
@@ -61,7 +60,6 @@ struct GitRepositoryLocksTests {
         _ = try await (first, second)
 
         let events = await log.events
-        // "b" (no sleep) finishes well before "a" (long sleep) if they ran independently.
         #expect(events.firstIndex(of: "b-end")! < events.firstIndex(of: "a-end")!)
     }
 }

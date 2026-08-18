@@ -7,16 +7,13 @@
 /// same name — consumers filter by name and tolerate that ambiguity.
 public struct VariableAssignment: Codable, Equatable, Hashable, Sendable {
 
-    /// How the variable is written.
     public enum Operator: String, Codable, Equatable, Hashable, Sendable {
-        /// A plain assignment (`=`).
         case assign
         /// A compound mutation (`+=`, `-=`, `x++`, `--x`, …) whose result depends
         /// on the previous value and is therefore not statically enumerable.
         case compound
     }
 
-    /// The assigned value, classified for static state analysis.
     public struct Value: Codable, Equatable, Hashable, Sendable {
 
         public enum Kind: String, Codable, Equatable, Hashable, Sendable {
@@ -60,7 +57,6 @@ public struct VariableAssignment: Codable, Equatable, Hashable, Sendable {
 
     public var value: Value
 
-    /// Source location of the assignment expression.
     public var location: SourceLocation?
 
     public init(

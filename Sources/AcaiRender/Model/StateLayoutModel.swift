@@ -3,13 +3,8 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 
-/// Computes node frames and edge routes for a `StateDiagram`.
-///
-/// States and transitions form a plain directed graph, so layout delegates to
-/// the shared `SugiyamaLayoutEngine`: transitions are fed as `.inheritance`
-/// edges, which `LayerAssignment` layers along — the initial pseudo-state has no
-/// incoming edges and becomes the root, giving a top-down flow. Only node sizing
-/// and edge labels are state-specific.
+/// Computes node frames and edge routes for a `StateDiagram` via the shared
+/// `SugiyamaLayoutEngine`. Only node sizing and edge labels are state-specific.
 public struct StateLayoutModel: Sendable {
 
     public struct NodeFrame: Identifiable, Sendable {
@@ -31,12 +26,9 @@ public struct StateLayoutModel: Sendable {
 
     private let framesByID: [String: CGRect]
 
-    /// Lays out `diagram`, with `positionOverrides` (state-id → centre) taking
-    /// precedence over computed positions — used to restore user drags.
     public init(diagram: StateDiagram, positionOverrides: [String: CGPoint] = [:]) {
-        // `LayerAssignment` puts inheritance *targets* in the top layer, so feed each transition
-        // reversed (origin state as the "parent"), placing the initial pseudo-state at the top and
-        // flowing downward.
+        // `LayerAssignment` puts inheritance *targets* in the top layer, so transitions are fed
+        // reversed (origin state as "parent"), putting the initial pseudo-state at the top.
         let layout = DirectedGraphLayout(
             nodeSizes: diagram.states.map { ($0.id, Self.estimatedSize(for: $0)) },
             edges: diagram.transitions.map { ($0.to, $0.from) },
@@ -50,13 +42,10 @@ public struct StateLayoutModel: Sendable {
         }
     }
 
-    /// The laid-out frame for a state id, when the state exists.
     public func frame(for id: String) -> CGRect? {
         framesByID[id]
     }
 
-    /// Estimated render size per state kind; normal/composite states grow with
-    /// their title (mirroring `DiagramLayoutModel`'s text-based estimates).
     public static func estimatedSize(for state: StateDiagram.State) -> CGSize {
         switch state.kind {
         case .initial:

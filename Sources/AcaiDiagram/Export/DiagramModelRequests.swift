@@ -13,7 +13,6 @@ public struct CallGraphScopeOption: Sendable {
         self.raw = raw
     }
 
-    /// Resolves the raw value into a `CallGraphScope`, throwing on a malformed value.
     public func resolved() throws -> CallGraphScope {
         guard let raw else { return .wholeCodebase }
         let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
@@ -58,7 +57,6 @@ public struct SequenceDiagramRequest: Sendable {
         self.map = map
     }
 
-    /// Parses the mapping entries into an interface→concrete lookup, throwing on a malformed entry.
     public func typeMapping() throws -> [String: String] {
         var mapping: [String: String] = [:]
         for entry in map {

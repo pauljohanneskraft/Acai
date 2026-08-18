@@ -1,13 +1,12 @@
 import CoreGraphics
 import Foundation
 import AcaiCore
+import AcaiQuality
 
-/// Pure, view-independent core of a generated class diagram: it turns a `CodeArtifact`
-/// into laid-out nodes and edges. Shared by the macOS app's interactive view model and
-/// the CLI's headless image renderer so both produce the same diagram from the same input.
-///
-/// It holds the built `nodes`/`edges` and exposes the layout, size-estimation and grouping
-/// operations; callers own the mutable per-session state (measured sizes, user drags).
+/// Pure, view-independent core of a generated class diagram: turns a `CodeArtifact` into laid-out
+/// nodes and edges. Shared by the macOS app's interactive view model and the CLI's headless image
+/// renderer so both produce the same diagram from the same input; callers own the mutable
+/// per-session state (measured sizes, user drags).
 public struct DiagramLayoutModel: Sendable {
 
     /// A labelled box wrapping all nodes of one group (a directory level or a compiled
@@ -27,13 +26,8 @@ public struct DiagramLayoutModel: Sendable {
     /// and small size-estimate errors can't produce visual overlap.
     public static let layoutMargin: CGFloat = 28
 
-    /// Builds the nodes and edges for `artifact` under `configuration`: resolves extensions,
-    /// optionally filters the source language's machine-generated types, hides types below the
-    /// access floor, and keeps only the relationships enabled in the configuration.
-    ///
-    /// `language` is the source language's configuration, injected by the caller from the registry
-    /// keyed on `artifact.metadata.sourceLanguage`; it supplies the generated-code filter and the
-    /// annotation → stereotype map. The layout model never names a language itself.
+    /// `languages` is injected by the caller from the registry keyed on
+    /// `artifact.metadata.sourceLanguage`; this model never names a language itself.
     public init(
         artifact: CodeArtifact,
         configuration: ClassDiagramConfiguration,
@@ -56,8 +50,18 @@ public struct DiagramLayoutModel: Sendable {
             resolved.relationships = subset.relationships
         }
 
+        // Built only when a selector filter is configured — a `GraphView` computes the full metrics
+        // suite, which would otherwise become the cost of every unrelated Settings toggle (the Form
+        // live-binds and rebuilds this model on every edit).
+        let filterGraph = configuration.filter.map { _ in GraphView(artifact: resolved, languageResolver: languages) }
         let visibleTypes = resolved.types.filter {
             GeneratedDiagramNode.passesAccessFilter($0.accessLevel, minimum: configuration.minimumAccessLevel)
+        }.filter { type in
+            guard let selector = configuration.filter else { return true }
+            // A type absent from the filter graph (should not happen — both are derived from the
+            // same `resolved` set) fails open rather than silently vanishing from the diagram.
+            guard let node = filterGraph?.node(id: type.id) else { return true }
+            return selector.matches(node)
         }
         // Distinct types can share an id when a language doesn't qualify by module (e.g. two
         // top-level Python classes of the same name in different files); node ids must be unique
@@ -107,8 +111,8 @@ public struct DiagramLayoutModel: Sendable {
 
     // MARK: - Layout
 
-    /// Runs the Sugiyama engine using the given *displayed* node sizes (user-resized >
-    /// measured > estimated) inflated by a uniform margin, and returns node center positions.
+    /// `sizes` are the *displayed* node sizes (user-resized > measured > estimated), inflated by
+    /// a uniform margin.
     public func performLayout(sizes: [String: CGSize]) -> [String: CGPoint] {
         let engine = SugiyamaLayoutEngine()
         let margin = Self.layoutMargin
@@ -131,7 +135,6 @@ public struct DiagramLayoutModel: Sendable {
         return result.positions
     }
 
-    /// The clustering key for a node under the active grouping mode.
     public func groupKey(for node: GeneratedDiagramNode) -> String? {
         switch configuration.grouping {
         case .none:
@@ -145,9 +148,7 @@ public struct DiagramLayoutModel: Sendable {
 
     // MARK: - Grouping Boxes
 
-    /// Nested bounding boxes for the active grouping mode, computed from the given node
-    /// rects (center `positions` + `sizes`). One box per path prefix of every node's group
-    /// key, giving multi-layer nesting. Empty when grouping is `.none`.
+    /// One box per path prefix of every node's group key, giving multi-layer nesting.
     public func groupingBoxes(
         positions: [String: CGPoint],
         sizes: [String: CGSize]
@@ -191,8 +192,8 @@ public struct DiagramLayoutModel: Sendable {
 
     // MARK: - Size Estimation
 
-    /// Heuristic intrinsic size for a node, used before (or without) live SwiftUI measurement —
-    /// notably by the headless CLI renderer, where preference-key measurement never fires.
+    /// Used before (or without) live SwiftUI measurement — notably by the headless CLI renderer,
+    /// where preference-key measurement never fires.
     public static func estimateSize(for node: GeneratedDiagramNode) -> CGSize {
         let lineHeight: CGFloat = 18
         let headerHeight: CGFloat = node.stereotype != nil ? 48 : 32

@@ -4,7 +4,6 @@ import AcaiQuality
 import AcaiLibrary
 
 extension AcaiCommand {
-    /// Authoring helpers for the declarative code-quality rules file consumed by `acai quality`.
     struct Rules: ParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "rules",
@@ -12,7 +11,6 @@ extension AcaiCommand {
             subcommands: [Init.self]
         )
 
-        /// Generates a candidate `quality.yml` inferred from the current graph.
         struct Init: ParsableCommand {
             static let configuration = CommandConfiguration(
                 abstract: "Generate a candidate quality.yml from the current graph",

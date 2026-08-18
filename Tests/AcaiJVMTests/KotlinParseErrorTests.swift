@@ -29,7 +29,6 @@ struct KotlinParseErrorTests {
         let artifact = parser.parse(source: "class Broken { fun (", fileName: "Bad.kt")
         let diagnostics = artifact.metadata.parseDiagnostics
         #expect(!diagnostics.isEmpty)
-        // Tree-sitter gives a location and a kind (error/missing) for each problem.
         #expect(diagnostics.allSatisfy { $0.location.filePath == "Bad.kt" })
         #expect(diagnostics.allSatisfy { $0.location.line >= 1 && $0.location.column >= 1 })
         #expect(diagnostics.allSatisfy { [.error, .missing].contains($0.kind) })

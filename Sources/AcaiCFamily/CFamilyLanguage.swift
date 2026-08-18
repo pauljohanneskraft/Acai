@@ -28,7 +28,6 @@ enum CFamilyDialect: Sendable {
     case c
     case cpp
 
-    /// The agnostic engine's identity for this dialect.
     var sourceLanguage: CodeArtifact.SourceLanguage {
         switch self {
         case .c:
@@ -38,7 +37,6 @@ enum CFamilyDialect: Sendable {
         }
     }
 
-    /// The per-language reference data injected into the agnostic enrichment pipeline.
     var configuration: LanguageConfiguration {
         switch self {
         case .c:

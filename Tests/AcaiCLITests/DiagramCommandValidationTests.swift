@@ -7,7 +7,6 @@ import Testing
 @Suite("Diagram Command Validation")
 struct DiagramCommandValidationTests {
 
-    /// Asserts that parsing `arguments` fails with a message containing `expected`.
     private func expectValidationError(_ arguments: [String], contains expected: String) {
         #expect {
             _ = try AcaiCommand.parseAsRoot(["diagram"] + arguments)

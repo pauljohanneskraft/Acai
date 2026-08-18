@@ -1,9 +1,7 @@
 import SwiftUI
 
-// Carved out of `ProjectBrowserView` to keep that file under the project's file-length limit,
-// matching how `ProjectBrowserView+Repositories.swift` already does the same for the Repositories
-// section. `projectRow(project:)` is called from `sidebarContent` in the main file, so it (unlike
-// the other helpers here, only called from within this same extension) can't stay `fileprivate`.
+// `projectRow(project:)` is called from `sidebarContent` in the main file, so it (unlike the other
+// helpers here, only called from within this same extension) can't stay `fileprivate`.
 extension ProjectBrowserView {
     private func projectExpansionBinding(for project: Project) -> Binding<Bool> {
         Binding(

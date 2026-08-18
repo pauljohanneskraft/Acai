@@ -7,7 +7,6 @@ import AcaiCore
 @MainActor
 struct ProjectStoreTests {
 
-    /// Runs `body` with a fresh, isolated store directory that is cleaned up afterwards.
     private func withTempStoreDir<T>(_ body: (URL) throws -> T) rethrows -> T {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("acai-store-tests-\(UUID().uuidString)", isDirectory: true)
@@ -22,7 +21,6 @@ struct ProjectStoreTests {
             store.projects.append(project)
             store.saveProject(project)
 
-            // A fresh store over the same directory must load the saved project verbatim.
             let reloaded = ProjectStore(baseDir: dir)
             #expect(reloaded.projects.map(\.id) == [project.id])
             #expect(reloaded.projects.first?.title == "Demo")
@@ -66,13 +64,11 @@ struct ProjectStoreTests {
             store.saveProject(project)
             store.saveGeneratedDiagram(diagram)
 
-            // Corrupt the diagram file on disk.
             let diagramFile = dir.appendingPathComponent("diagrams")
                 .appendingPathComponent("generated_\(diagram.id.uuidString).json")
             try Data("not json".utf8).write(to: diagramFile)
 
             let reloaded = ProjectStore(baseDir: dir)
-            // The corrupt diagram is dropped, the project still loads, and the failure is reported.
             #expect(reloaded.projects.map(\.id) == [project.id])
             #expect(reloaded.generatedDiagrams[diagram.id] == nil)
             #expect(reloaded.lastError != nil)

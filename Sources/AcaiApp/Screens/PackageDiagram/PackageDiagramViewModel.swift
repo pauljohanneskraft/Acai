@@ -5,15 +5,21 @@ import AcaiDiagram
 import AcaiDiff
 import AcaiLibrary
 import AcaiRender
+import AcaiQuality
 
 /// Backs the movement-only package diagram view. The `PackageDiagram` is derived from
 /// the (enriched) artifact, so it always tracks the code — unlike sequence/state there is no
-/// configuration to choose and no analysis failure to surface. The user may drag module nodes;
-/// those positions are the only editable, undoable state. Conforms to `CanvasInteraction` so it
+/// entry-point/scope configuration to choose and no analysis failure to surface; only the
+/// (optional) selector `filter` is user-configurable. The user may drag module nodes; those
+/// positions are the only other editable, undoable state. Conforms to `CanvasInteraction` so it
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
 final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    let diagram: PackageDiagram
+    private let artifact: CodeArtifact
+    private let comparisonArtifact: CodeArtifact?
+
+    @Published private(set) var diagram: PackageDiagram
+    @Published private(set) var filter: AcaiQuality.Selector?
 
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
@@ -22,16 +28,34 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
-    /// The package-level diff when comparing against another revision; drives node/edge tinting.
-    private let diff: PackageDiagramDiff?
+    private var diff: PackageDiagramDiff?
 
     // MARK: - Init
 
-    init(artifact: CodeArtifact, restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil) {
-        let new = PackageDiagramBuilder().build(
+    init(
+        artifact: CodeArtifact, filter: AcaiQuality.Selector? = nil,
+        restoredPositions: [String: CGPoint] = [:], comparisonArtifact: CodeArtifact? = nil
+    ) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparisonArtifact
+        self.filter = filter
+        self.diagram = PackageDiagram()
+        self.positionOverrides = restoredPositions
+        rebuild()
+    }
+
+    /// Re-derives the diagram for a new filter, keeping node positions (filtering only removes
+    /// nodes/edges, it never repositions a surviving one).
+    func applyFilter(_ newFilter: AcaiQuality.Selector?) {
+        filter = newFilter
+        rebuild()
+    }
+
+    private func rebuild() {
+        let new = PackageDiagramBuilder(filter: filter).build(
             from: artifact.enriched(using: artifact.standardLanguageResolver))
         if let comparisonArtifact {
-            let old = PackageDiagramBuilder().build(
+            let old = PackageDiagramBuilder(filter: filter).build(
                 from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
             let diff = PackageDiagramDiff(old: old, new: new)
             self.diff = diff
@@ -40,19 +64,15 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
             self.diff = nil
             self.diagram = new
         }
-        self.positionOverrides = restoredPositions
     }
 
-    /// Whether the diagram is rendering a delta against a comparison revision.
     var isDeltaMode: Bool { diff != nil }
 
-    /// The delta fill for a module node, or `nil` when unchanged / not in delta mode.
     func nodeDeltaColor(id: String) -> Color? {
         guard let diff, let hex = diff.status(ofNode: id).deltaHex else { return nil }
         return Color(hex: hex)
     }
 
-    /// The delta stroke for a dependency edge, or `nil` when unchanged / not in delta mode.
     func edgeDeltaColor(from: String, to: String) -> Color? {
         guard let diff, let hex = diff.status(ofEdgeFrom: from, to: to).deltaHex else { return nil }
         return Color(hex: hex)
@@ -60,7 +80,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     // MARK: - Layout
 
-    /// Current geometry, honouring node drags.
     var layout: PackageLayoutModel {
         PackageLayoutModel(diagram: diagram, positionOverrides: positionOverrides)
     }

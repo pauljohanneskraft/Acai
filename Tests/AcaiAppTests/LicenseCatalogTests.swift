@@ -88,7 +88,6 @@ struct LicenseCatalogTests {
     }
 }
 
-/// Deletes its backing directory in `deinit`, so a test's temp bundle cleans up when it goes out of scope.
 private final class TemporaryBundle {
     let bundle: Bundle
     private let directory: URL

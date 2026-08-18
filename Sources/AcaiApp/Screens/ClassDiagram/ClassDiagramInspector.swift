@@ -4,13 +4,10 @@ import AcaiDiff
 import AcaiLibrary
 import AcaiRender
 
-/// Inspector tab choices for the generated diagram inspector.
 enum ClassDiagramSidebarTab {
     case settings, inspector
 }
 
-/// Inspector sidebar for the generated diagram view, showing configuration
-/// options and details of the currently-selected nodes.
 struct ClassDiagramSidebar: View {
     @ObservedObject var viewModel: ClassDiagramViewModel
     @EnvironmentObject private var model: ProjectBrowserViewModel
@@ -90,6 +87,13 @@ struct ClassDiagramSidebar: View {
                 }
             }
 
+            DiagramFilterSection(
+                filter: config.filter,
+                codebaseID: diagram.codebaseID,
+                projectID: model.projectID(for: diagram.codebaseID) ?? diagram.codebaseID,
+                artifact: artifact
+            )
+
             Section("Relationships") {
                 Toggle("Show Relationships", isOn: config.showRelationships)
                 if config.wrappedValue.showRelationships {
@@ -164,6 +168,8 @@ struct ClassDiagramSidebar: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if viewModel.selectedNodeIDs.count > 1 {
+            multiSelectionInspector
         } else {
             List {
                 ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
@@ -189,16 +195,14 @@ struct ClassDiagramSidebar: View {
                             if !node.properties.isEmpty {
                                 DisclosureGroup("Properties (\(node.properties.count))") {
                                     ForEach(node.properties) { prop in
-                                        Text(prop.displayText)
-                                            .font(.caption.monospaced())
+                                        MemberRowView(item: prop.displayItem, compact: false)
                                     }
                                 }
                             }
                             if !node.methods.isEmpty {
                                 DisclosureGroup("Methods (\(node.methods.count))") {
                                     ForEach(node.methods) { method in
-                                        Text(method.displayText)
-                                            .font(.caption.monospaced())
+                                        MemberRowView(item: method.displayItem, compact: false)
                                     }
                                 }
                             }
@@ -243,6 +247,39 @@ struct ClassDiagramSidebar: View {
             }
             .listStyle(.inset)
         }
+    }
+
+    private var selectedNodes: [GeneratedDiagramNode] {
+        viewModel.nodes.filter { viewModel.selectedNodeIDs.contains($0.id) }.sorted { $0.name < $1.name }
+    }
+
+    private var selectedNodesShowMembers: Bool {
+        viewModel.configuration.showsMembers(forTypeIDs: selectedNodes.map(\.id))
+    }
+
+    private var multiSelectionInspector: some View {
+        MultiSelectionInspector(
+            items: selectedNodes,
+            title: { Text("^[\($0) Node](inflect: true) Selected") },
+            rowIcon: { _ in "cube" },
+            rowLabel: \.name,
+            rowDetail: { $0.kind.rawValue },
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            bulkAction: .init(
+                label: selectedNodesShowMembers ? "Hide Members" : "Show Members",
+                systemImage: selectedNodesShowMembers ? "eye.slash" : "eye",
+                role: nil,
+                action: toggleSelectedNodesVisibility
+            )
+        )
+    }
+
+    /// Shows or hides properties+methods for every selected type in one mutation (one persist,
+    /// one live rebuild), reusing `ClassDiagramConfigEditor`'s per-type override mechanism —
+    /// the same one the single-node inspector's "Visibility" toggles write to.
+    private func toggleSelectedNodesVisibility() {
+        let ids = selectedNodes.map(\.id)
+        editor.mutate { $0.setMemberVisibility(!$0.showsMembers(forTypeIDs: ids), forTypeIDs: ids) }
     }
 
     @ViewBuilder
@@ -305,9 +342,6 @@ struct ClassDiagramSidebar: View {
     }
 }
 
-/// Class-diagram focus controls: enable focus, pick a root type, and tune depth, direction,
-/// relationship kinds, and edge inclusion. Mutations flow through the shared `configuration`
-/// binding, so the diagram rebuilds live.
 private struct FocusSection: View {
     @Binding var configuration: ClassDiagramConfiguration
     let typeNames: [String]

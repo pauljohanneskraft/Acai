@@ -3,6 +3,7 @@ import Testing
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 @testable import AcaiApp
 
 @Suite("Sequence Diagram View Model")
@@ -45,6 +46,28 @@ struct SequenceDiagramViewModelTests {
     @Test func untraceableEntryPointIsEmpty() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config(type: "Nope", method: "x"))
         #expect(vm.isEmpty)
+    }
+
+    @Test func filterDropsNonMatchingNonEntryParticipants() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.applyFilter(Selector(typeGlob: "Service"))
+        #expect(vm.diagram.participants.map(\.name) == ["Service"])
+        #expect(vm.diagram.messages.isEmpty)
+    }
+
+    @Test func filterNeverDropsTheEntryParticipant() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.applyFilter(Selector(typeGlob: "NoSuchType"))
+        #expect(vm.diagram.participants.map(\.name) == ["Service"])
+    }
+
+    @Test func clearingFilterRestoresEveryParticipant() {
+        var configured = config()
+        configured.filter = Selector(typeGlob: "Service")
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: configured)
+        #expect(vm.diagram.participants.map(\.name) == ["Service"])
+        vm.applyFilter(nil)
+        #expect(vm.diagram.participants.map(\.name) == ["Service", "Repository"])
     }
 
     @Test func restoredPositionsSeedStateAsIs() {
@@ -95,7 +118,6 @@ struct SequenceDiagramViewModelTests {
 
     @Test func selectNodesInRectSelectsContainedParticipants() {
         let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
-        // A rect spanning the whole layout selects every participant.
         vm.selectNodes(in: CGRect(x: -10_000, y: -10_000, width: 20_000, height: 20_000))
         #expect(vm.selectedNodeIDs == ["Service", "Repository"])
     }

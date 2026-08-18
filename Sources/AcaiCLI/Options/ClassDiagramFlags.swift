@@ -2,8 +2,6 @@ import ArgumentParser
 import AcaiCore
 import AcaiDiagram
 
-/// Class-diagram display flags, shared via `@OptionGroup` so `--direction`, `--min-access`, …
-/// parse as the command's own flags.
 struct ClassDiagramFlags: ParsableArguments {
     @Option(name: .long, help: "Graph layout direction: TB, LR, BT, RL.")
     var direction: DirectionOption?

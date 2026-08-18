@@ -67,8 +67,6 @@ struct ModuleCouplingChartData {
         }
     }
 
-    /// Modules ranked by distance from the main sequence, farthest first — the sidebar legend list
-    /// and the "worth a second look" ranking.
     var rankedByDistance: [Point] {
         points.sorted { $0.distance > $1.distance }
     }

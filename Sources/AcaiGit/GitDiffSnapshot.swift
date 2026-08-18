@@ -28,8 +28,6 @@ public struct GitDiffSnapshot {
         }
     }
 
-    /// Extracts `reference`'s tree, scoped to `directory`'s own subtree, into a fresh temporary
-    /// directory and returns its URL.
     public func extractedDirectory() throws -> URL {
         guard let root = GitRepositoryRoot(directory: directory).find() else {
             throw Failure.notAGitRepository(directory.path)
@@ -65,8 +63,6 @@ public struct GitDiffSnapshot {
         return destination
     }
 
-    /// Descends from `commit`'s root tree to the subtree at `directory`'s position relative to the
-    /// repository's working directory.
     private func subtree(of commit: Commit, in repository: Repository) throws -> Tree {
         let root = try commit.tree
         let standardizedDirectory = directory.standardizedFileURL.path

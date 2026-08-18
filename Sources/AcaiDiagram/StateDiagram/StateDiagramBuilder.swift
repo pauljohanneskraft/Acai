@@ -27,8 +27,6 @@ public struct StateDiagramBuilder: Sendable {
     }
 }
 
-/// Internal worker that locates the variable, validates its assignments, and
-/// assembles the diagram.
 private struct StateAnalysis {
     let configuration: StateDiagramConfiguration
     /// The variable's declaring member (for its initial value).

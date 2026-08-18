@@ -15,8 +15,6 @@ struct SwiftCyclomaticComplexity {
         return 1 + counter.decisions
     }
 
-    /// Walks a body counting decision-point syntax nodes. A private implementation detail of the value
-    /// above (SwiftSyntax's `SyntaxVisitor` is a class).
     private final class DecisionPointCounter: SyntaxVisitor {
         var decisions = 0
 

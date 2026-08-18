@@ -59,12 +59,10 @@ struct StateLayoutModelTests {
             diagram: diagram(),
             positionOverrides: ["state_loaded": CGPoint(x: 400, y: 300)]
         )
-        // Frames are normalized to the origin afterwards, so check relative
-        // placement: the overridden node must sit at the given offset from
-        // wherever the normalization shifted the content.
+        // Frames are normalized to the origin afterwards, so absolute position isn't checkable —
+        // only that re-laying out with the same override is stable.
         let overridden = layout.frame(for: "state_loaded")!
         #expect(overridden.width > 0)
-        // Re-laying out with the same override is stable.
         let second = StateLayoutModel(
             diagram: diagram(),
             positionOverrides: ["state_loaded": CGPoint(x: 400, y: 300)]

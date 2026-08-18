@@ -1,9 +1,6 @@
 import SwiftUI
 import AcaiDiagram
 
-/// A static rendering of a `CallGraph` from a pre-computed `CallGraphLayoutModel`: method boxes
-/// (in-scope solid, out-of-scope callee leaves dashed and lighter) joined by call arrows whose
-/// thickness encodes multiplicity. Used by the CLI image export (`acai image --call-graph`).
 public struct CallGraphSnapshotView: View {
     let layout: CallGraphLayoutModel
     let padding: CGFloat

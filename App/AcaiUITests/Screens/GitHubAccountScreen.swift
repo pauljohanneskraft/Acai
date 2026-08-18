@@ -1,7 +1,5 @@
 import XCTest
 
-/// Accessors for `GitHubAccountSection`, embedded in `NewCodebaseSheet`'s "From GitHub" tab — the
-/// only place it's reachable today.
 @MainActor
 final class GitHubAccountScreen {
     let app: XCUIApplication

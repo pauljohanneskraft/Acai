@@ -23,7 +23,6 @@ struct SequenceLayoutModelTests {
         )
     }
 
-    /// A full call/return pair: Alpha calls Beta, Beta returns.
     private func callReturnDiagram() -> SequenceDiagram {
         SequenceDiagram(
             participants: [
@@ -53,7 +52,6 @@ struct SequenceLayoutModelTests {
         #expect(abs(layout.messages[0].fromX - layout.participants[0].lifelineX) <= barWidth)
         #expect(abs(layout.messages[0].toX - layout.participants[1].lifelineX) <= barWidth)
 
-        // Lifelines drop below the header row; content is non-empty.
         #expect(layout.participants[0].lifelineTop == SequenceLayoutModel.headerHeight)
         #expect(layout.contentSize.width > 0)
         #expect(layout.contentSize.height > SequenceLayoutModel.headerHeight)
@@ -95,7 +93,6 @@ struct SequenceLayoutModelTests {
         #expect(betaBars.count == 1)
         let bar = betaBars[0]
 
-        // The bar straddles the callee's lifeline and spans the call row to the return row.
         #expect(abs(bar.rect.midX - beta.lifelineX) < 0.5)
         let callY = layout.messages[0].y
         let returnY = layout.messages[1].y
@@ -110,7 +107,6 @@ struct SequenceLayoutModelTests {
 
         let alphaBars = layout.activations.filter { $0.participantID == alpha.id }
         #expect(alphaBars.count == 1)
-        // The root bar covers all messages.
         let bar = alphaBars[0]
         #expect(bar.rect.minY <= layout.messages.first!.y)
         #expect(bar.rect.maxY >= layout.messages.last!.y)
@@ -145,10 +141,8 @@ struct SequenceLayoutModelTests {
         #expect(layout.fragments.count == 1)
         let frame = layout.fragments[0]
         #expect(frame.kind == .loop)
-        // Vertically spans both message rows.
         #expect(frame.rect.minY < layout.messages[0].y)
         #expect(frame.rect.maxY > layout.messages[1].y)
-        // Horizontally spans all three involved lifelines.
         let xs = layout.participants.map(\.lifelineX)
         #expect(frame.rect.minX < xs.min()!)
         #expect(frame.rect.maxX > xs.max()!)
@@ -168,7 +162,6 @@ struct SequenceLayoutModelTests {
 
         let frame = layout.fragments[0]
         #expect(frame.separatorYs.count == 1)
-        // Separator falls between the two message rows.
         #expect(frame.separatorYs[0] > layout.messages[0].y)
         #expect(frame.separatorYs[0] < layout.messages[1].y)
         #expect(frame.guards.count == 2)

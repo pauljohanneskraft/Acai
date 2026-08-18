@@ -16,8 +16,6 @@ public actor GitRepositorySerialAccess {
 
     public init() {}
 
-    /// Runs `operation`, excluding every other call made through this same instance — including
-    /// across `operation`'s own internal suspension points — until it finishes.
     @discardableResult
     public func run<T: Sendable>(_ operation: @Sendable () async throws -> T) async throws -> T {
         await acquire()
@@ -42,10 +40,8 @@ public actor GitRepositorySerialAccess {
     }
 }
 
-/// Vends one shared `GitRepositorySerialAccess` per repository (keyed by its on-disk `localPath`,
-/// which is itself derived deterministically from the repository's remote URL — see
-/// `GitRepository.storeKey(for:)`), so every caller touching the same shared clone — whether from
-/// different `Codebase`s or different call sites — serializes through the same actor instance
+/// Vends one shared `GitRepositorySerialAccess` per repository (keyed by its on-disk `localPath`),
+/// so every caller touching the same shared clone serializes through the same actor instance
 /// instead of racing directly against libgit2. Share one `GitRepositoryLocks` instance for the
 /// whole process; a fresh instance provides no exclusion against another fresh instance for the
 /// same clone.
@@ -54,8 +50,6 @@ public actor GitRepositoryLocks {
 
     public init() {}
 
-    /// Runs `operation` serialized against every other call for the same `repository` made through
-    /// this instance.
     @discardableResult
     public func run<T: Sendable>(
         for repository: GitRepository, _ operation: @Sendable () async throws -> T

@@ -30,7 +30,6 @@ struct SwiftTypeTests {
     }
 
     @Test func implicitTypeAccessDefaultsToInternal() {
-        // No access modifier in Swift means `internal`, not "unknown"/public.
         let source = """
         class Implicit {}
         public class Exposed {}
@@ -44,7 +43,6 @@ struct SwiftTypeTests {
     }
 
     @Test func protocolMembersInheritProtocolAccess() {
-        // Protocol requirements have no access modifier of their own; they take the protocol's.
         let source = """
         public protocol Service {
             var id: Int { get }
@@ -253,7 +251,6 @@ struct SwiftTypeTests {
         let container = artifact.types[0]
         let valueMember = container.members.first { $0.name == "value" }
         #expect(valueMember != nil)
-        // `String & CustomStringConvertible` is one composition type, not two separate arguments.
         let typeRef = valueMember?.type
         #expect(typeRef?.genericArguments.count == 2)
         #expect(typeRef?.genericArguments[0].name == "String & CustomStringConvertible")

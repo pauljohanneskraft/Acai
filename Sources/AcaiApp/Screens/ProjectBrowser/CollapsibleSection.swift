@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// A foldable section of the codebase detail pane: a clickable headline header with a rotating
-/// chevron and an optional trailing accessory, hiding its content when collapsed. Expansion state is
-/// in-memory only (seeded from `defaultExpanded`), so it resets when the pane is rebuilt.
+/// Expansion state is in-memory only (seeded from `defaultExpanded`), so it resets when the pane
+/// is rebuilt.
 struct CollapsibleSection<Accessory: View, Content: View>: View {
     let title: String
     var defaultExpanded: Bool = true

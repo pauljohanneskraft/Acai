@@ -127,7 +127,6 @@ extension KotlinExtractor {
             return CallSite(receiver: .selfDispatch, methodName: methodName, location: loc(node))
         }
 
-        // Resolve receiver variable / type name.
         var receiverName: String?
         if let firstId = navExpr.firstChild(withType: "simple_identifier") {
             // Pattern: receiver.method(args)

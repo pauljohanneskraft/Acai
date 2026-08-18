@@ -3,7 +3,6 @@ import AcaiCore
 import AcaiRender
 import UniformTypeIdentifiers
 
-/// View for a stored (generated) diagram that persists positions and supports re-generation.
 struct ClassDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
@@ -185,7 +184,11 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: { ids in
+                viewModel.selectedNodeIDs = ids
+                sidebarTab = .inspector
+                showSidebar = true
+            })
         }
     }
 

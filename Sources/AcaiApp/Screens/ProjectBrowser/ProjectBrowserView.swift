@@ -88,8 +88,6 @@ public struct ProjectBrowserView: View {
                             Label("Diagram Theme", systemImage: "paintbrush")
                         }
                     }
-                    // Visible on every platform this toolbar exists on, right next to the menu
-                    // above that already holds the Diagram Theme picker + Keyboard Shortcuts button.
                     ToolbarItem(placement: .topBarTrailing) {
                         ActivityIndicatorView(activityCenter: model.store.activityCenter)
                     }
@@ -133,6 +131,7 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         .onChange(of: handoffPresenter.pendingTarget) { _, target in resolveHandoffContinuation(target) }
+        .task { model.startScheduledRefresh() }
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()
@@ -194,10 +193,6 @@ public struct ProjectBrowserView: View {
     private var sidebarContent: some View {
         VStack(spacing: 0) {
             #if !os(macOS)
-            // iPad's pinned search field atop the Projects sidebar's List — new code, sits directly
-            // above the `List` (not inside the toolbar). iPhone gets a dedicated toolbar button
-            // instead (see the compact-width `ToolbarItem` above), so this only needs to render at
-            // regular width.
             if horizontalSizeClass != .compact {
                 quickOpenSearchFieldProxy
                 Divider()
@@ -267,7 +262,7 @@ public struct ProjectBrowserView: View {
     @ViewBuilder
     private func generatedDiagramDetail(diagramID: UUID) -> some View {
         if let diagram = model.generatedDiagram(for: diagramID),
-           let artifact = model.artifact(for: diagram.codebaseID),
+           let artifact = model.comparisonNewArtifact(for: diagram) ?? model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
             case .sequenceDiagram:

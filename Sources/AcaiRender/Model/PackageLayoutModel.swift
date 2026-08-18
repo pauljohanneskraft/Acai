@@ -3,12 +3,9 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 
-/// Computes node frames and edge routes for a `PackageDiagram`.
-///
-/// Modules and their dependencies form a plain directed graph, so layout delegates to the
-/// shared `SugiyamaLayoutEngine` — the same approach `StateLayoutModel` uses. Dependency
-/// edges are fed as `.inheritance` so `LayerAssignment` lifts the most depended-upon
-/// (foundational) modules toward the top and lays dependents out beneath them.
+/// Computes node frames and edge routes for a `PackageDiagram` via the shared
+/// `SugiyamaLayoutEngine`. Dependency edges are fed as `.inheritance` so `LayerAssignment` lifts
+/// the most depended-upon (foundational) modules toward the top.
 public struct PackageLayoutModel: Sendable {
 
     public struct NodeFrame: Identifiable, Sendable {
@@ -31,11 +28,7 @@ public struct PackageLayoutModel: Sendable {
 
     private let framesByID: [String: CGRect]
 
-    /// Lays out `diagram`, with `positionOverrides` (node-id → centre) taking precedence over
-    /// computed positions — used to restore user drags.
     public init(diagram: PackageDiagram, positionOverrides: [String: CGPoint] = [:]) {
-        // Feed each dependency as an inheritance edge to its target so depended-upon modules
-        // (e.g. a core module) rise to the top layer and dependents flow downward.
         let layout = DirectedGraphLayout(
             nodeSizes: diagram.nodes.map { ($0.id, Self.estimatedSize(for: $0)) },
             edges: diagram.edges.map { ($0.from, $0.to) },
@@ -49,7 +42,6 @@ public struct PackageLayoutModel: Sendable {
         }
     }
 
-    /// The laid-out frame for a module id, when the module exists.
     public func frame(for id: String) -> CGRect? {
         framesByID[id]
     }

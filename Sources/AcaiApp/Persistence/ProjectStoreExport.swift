@@ -37,14 +37,11 @@ struct ProjectStoreExport: Codable {
     }
 }
 
-/// How `ProjectStore.importAllData(_:mode:)` reconciles an import against what's already local.
 /// Deliberately coarse: this isn't sync, so there's no field-by-field conflict resolution — only
 /// "keep what's already here" vs. "start over."
 enum ProjectStoreImportMode: Equatable {
-    /// Every project/diagram already on this device is deleted first, then everything from the
-    /// import is added — the receiving device ends up an exact copy of the export.
     case replaceAll
     /// A project/diagram whose id isn't already present locally is added; one that already exists
-    /// locally (same id) is left completely untouched, import or no.
+    /// locally (same id) is left completely untouched.
     case merge
 }

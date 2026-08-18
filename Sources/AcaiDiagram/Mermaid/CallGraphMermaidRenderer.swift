@@ -1,5 +1,3 @@
-/// Renders a `CallGraph` to a Mermaid `flowchart`.
-///
 /// Each method is a node labelled `Type.method`; edges carry the call multiplicity when a
 /// caller hits the same target more than once. Out-of-scope callee leaves are styled lighter.
 public struct CallGraphMermaidRenderer: MermaidRenderer {

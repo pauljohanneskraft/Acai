@@ -1,13 +1,10 @@
 import Foundation
 
-/// Process-wide configuration values, read from `.standard`.
 public struct AcaiConstants: Sendable {
-    /// The shared configuration used throughout the tool.
     public static let standard = AcaiConstants()
 
     public init() {}
 
-    /// The tool's base directory for stored state.
     private var baseDirectory: URL {
         #if os(macOS)
         FileManager.default.homeDirectoryForCurrentUser
@@ -22,7 +19,6 @@ public struct AcaiConstants: Sendable {
         #endif
     }
 
-    /// Where stored analyses live.
     public var analysisDirectory: URL {
         baseDirectory.appendingPathComponent("analysis")
     }

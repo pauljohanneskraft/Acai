@@ -1,7 +1,5 @@
 import Foundation
 
-/// Identifies a specific ref of a GitHub repository to clone — bundles `owner`/`repo`/`ref` so call
-/// sites like `addGitHubCodebase` stay under the project's function-parameter-count limit.
 struct GitHubRepositoryRef: Hashable {
     var owner: String
     var repo: String

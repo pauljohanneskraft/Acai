@@ -4,22 +4,22 @@ import AcaiDiff
 
 // MARK: - Display Data Types
 
-/// A pre-formatted member line for display in a UML type box.
 public struct MemberDisplayItem: Identifiable {
     public let id: String
     public let text: String
     public let isStatic: Bool
     public let isAbstract: Bool
+    public let accessLevel: AccessLevel
 
-    public init(id: String, text: String, isStatic: Bool, isAbstract: Bool) {
+    public init(id: String, text: String, isStatic: Bool, isAbstract: Bool, accessLevel: AccessLevel) {
         self.id = id
         self.text = text
         self.isStatic = isStatic
         self.isAbstract = isAbstract
+        self.accessLevel = accessLevel
     }
 }
 
-/// A pre-formatted enum case line for display in a UML type box.
 public struct EnumCaseDisplayItem: Identifiable {
     public let id: String
     public let text: String
@@ -32,9 +32,6 @@ public struct EnumCaseDisplayItem: Identifiable {
 
 // MARK: - UML Type Box View
 
-/// Renders a code-type node as a three-compartment UML class box.
-/// Used by both generated diagrams (from `GeneratedDiagramNode`) and freeform diagrams
-/// (from `FreeformDiagram.Node` + `TypeNodeContent`).
 public struct TypeNodeView: View {
     let name: String
     let kind: TypeKind
@@ -196,12 +193,7 @@ public struct TypeNodeView: View {
     // MARK: - Member Row
 
     private func memberRow(_ member: MemberDisplayItem) -> some View {
-        Text(member.text)
-            .font(.system(size: 11, design: .monospaced))
-            .if(member.isStatic) { $0.underline() }
-            .if(member.isAbstract) { $0.italic() }
-            .foregroundColor(palette.secondaryInk)
-            .lineLimit(1)
+        MemberRowView(item: member, compact: true)
     }
 
     // MARK: - Divider
@@ -224,16 +216,8 @@ extension TypeNodeView {
             kind: node.kind,
             stereotype: node.stereotype,
             genericParameters: node.genericParameters,
-            properties: node.properties
-                .removingDuplicates(by: \.id)
-                .map { m in
-                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-                },
-            methods: node.methods
-                .removingDuplicates(by: \.id)
-                .map { m in
-                    MemberDisplayItem(id: m.id, text: m.displayText, isStatic: m.isStatic, isAbstract: m.isAbstract)
-                },
+            properties: node.properties.removingDuplicates(by: \.id).map(\.displayItem),
+            methods: node.methods.removingDuplicates(by: \.id).map(\.displayItem),
             enumCases: node.enumCases
                 .removingDuplicates(by: \.id)
                 .map { enumCase in

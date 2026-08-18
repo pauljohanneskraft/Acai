@@ -12,9 +12,8 @@ struct NewCodebaseSheet: View {
     let projectID: UUID
     private let repositoryService: GitHubRepositoryService
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    // Reads signed-in state from the shared store instead of loading its own copy — signing
-    // in/out in Settings is reflected here immediately, and this sheet no longer embeds its own
-    // sign-in UI when signed out (it points at Settings instead — see `gitHubSection` below).
+    // Reads signed-in state from the shared store, so signing in/out in Settings is reflected
+    // here immediately — see `gitHubSection` for the signed-out prompt.
     @EnvironmentObject private var accountStore: GitHubAccountStore
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
     @Environment(\.dismiss) private var dismiss
@@ -33,16 +32,13 @@ struct NewCodebaseSheet: View {
     @State private var name = ""
     @FocusState private var isNameFieldFocused: Bool
 
-    // Local-folder state
     @State private var directoryURL: URL?
     @State private var securityScopedBookmark: SecurityScopedBookmark?
     @State private var isChoosingDirectory = false
     /// Set when the picked folder turns out to already be a git working directory with an
-    /// `origin` remote — the transparent local-folder upgrade. `nil` for a plain folder, which
-    /// keeps today's behavior unchanged.
+    /// `origin` remote — the transparent local-folder upgrade. `nil` for a plain folder.
     @State private var repositoryReference: CodebaseRepositoryReference?
 
-    // GitHub state
     @State private var repositories: [GitHubAPIClient.Repository] = []
     @State private var repositorySearch = ""
     @State private var selectedRepository: GitHubAPIClient.Repository?
@@ -50,7 +46,7 @@ struct NewCodebaseSheet: View {
     @State private var selectedRef: GitHubRef?
     @State private var isLoadingRepositories = false
     @State private var isLoadingRefs = false
-    @State private var isCloning = false
+    @State private var clonePhase: AsyncOperationPhase = .idle
     @State private var gitHubErrorMessage: String?
 
     private var account: GitHubTokenStore.StoredAccount? { accountStore.account }
@@ -106,12 +102,10 @@ struct NewCodebaseSheet: View {
                 // inside this same security-scoped access window.
                 repositoryReference = LocalGitRepositoryDetector(directory: url).detect()
             }
-            // `.task(id:)`, not `.onChange(of:)`: now that sign-in moved to Settings, `account` is
-            // typically already non-nil the *first* time this sheet appears (signed in earlier,
-            // in a different sheet) rather than transitioning from nil→non-nil while this view is
-            // on-screen — `.onChange` only fires on a later transition, so it would never fire for
-            // the now-common "already signed in" case. `.task(id:)` runs for the current value
-            // immediately on appear *and* re-runs on change, covering both cases.
+            // `.task(id:)`, not `.onChange(of:)`: `account` is typically already non-nil the
+            // *first* time this sheet appears, so `.onChange` (which only fires on a later
+            // transition) would never fire. `.task(id:)` runs immediately on appear and re-runs
+            // on change, covering both cases.
             .task(id: account?.login) {
                 guard account != nil else { return }
                 await loadRepositories()
@@ -166,9 +160,8 @@ struct NewCodebaseSheet: View {
     private var gitHubSection: some View {
         Section {
             if let account {
-                // Read-only summary here — the full sign-in/scopes/expiry UI lives in Settings now;
-                // this just confirms who's signed in and lets you jump there for anything more
-                // (sign out, re-authorize, check scopes).
+                // Read-only summary — the full sign-in/scopes/expiry UI lives in Settings; this
+                // just confirms who's signed in and lets you jump there for anything more.
                 HStack {
                     Text("Signed in as \(account.login)")
                         .accessibilityIdentifier("newCodebase.signedInAsLabel")
@@ -279,10 +272,9 @@ struct NewCodebaseSheet: View {
             // "Add" once the repository already has a local hub clone (this will attach a
             // worktree, not start a fresh network clone) — "Clone" the first time.
             Button(isSelectedRepositoryAlreadyCloned ? "Add" : "Clone") {
-                guard let repository = selectedRepository, let ref = selectedRef, let account, !isCloning else {
-                    return
-                }
-                isCloning = true
+                guard let repository = selectedRepository, let ref = selectedRef, let account,
+                      !clonePhase.isInFlight else { return }
+                clonePhase = .loading("Cloning…")
                 Task {
                     await model.editing.addGitHubCodebase(
                         to: projectID,
@@ -291,19 +283,18 @@ struct NewCodebaseSheet: View {
                         target: GitHubRepositoryRef(
                             owner: repository.owner.login, repo: repository.name, ref: ref.name, kind: ref.kind)
                     )
-                    isCloning = false
+                    clonePhase = .loaded
                     dismiss()
                 }
             }
-            .disabled(selectedRepository == nil || selectedRef == nil || account == nil || isCloning)
+            .disabled(selectedRepository == nil || selectedRef == nil || account == nil || clonePhase.isInFlight)
             .accessibilityIdentifier("newCodebase.cloneButton")
+            AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: clonePhase)
         }
     }
 
-    /// Whether the selected GitHub repository already has a shared hub clone on disk — drives the
-    /// "Already cloned locally" hint and the confirm button's label above. Checked
-    /// against the plain (credential-free) remote URL `GitHubRepositoryClone` would build for this
-    /// repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
+    /// Checked against the plain (credential-free) remote URL `GitHubRepositoryClone` would build
+    /// for this repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
     private var isSelectedRepositoryAlreadyCloned: Bool {
         guard let repository = selectedRepository, account != nil else { return false }
         var plainRemoteURLComponents = URLComponents()

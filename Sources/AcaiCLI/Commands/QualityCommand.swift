@@ -6,9 +6,6 @@ import AcaiDiff
 import AcaiLibrary
 
 extension AcaiCommand {
-    /// Validates the relationship graph and metrics against a `quality.yml` (forbidden dependencies,
-    /// cycles, layering, metric budgets, stereotype contracts) and fails the build on any violation.
-    /// With `--explore` it never fails and also lists dependency cycles, for exploratory ranking.
     struct Quality: ParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "quality",
@@ -84,8 +81,7 @@ extension AcaiCommand {
             }
         }
 
-        /// Dependency cycles at the requested scope as `cycle` findings. Only used in `--explore`
-        /// mode when the rules file doesn't already gate cycles.
+        /// Only used in `--explore` mode when the rules file doesn't already gate cycles.
         private func cycleFindings(_ artifact: CodeArtifact) -> [Violation] {
             let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
             let scopes: [CycleFinder.Scope] = scope == .all ? [.modules, .types]
@@ -102,8 +98,6 @@ extension AcaiCommand {
             }
         }
 
-        /// Structural drift of the current artifact since a stored baseline (just a stored
-        /// `CodeArtifact`, reusing the diff engine).
         private func driftDiff(current: CodeArtifact, baselineRef: String) throws -> ArtifactDiff {
             let base = try ArtifactSource.loadStored(baselineRef)
             return ArtifactDiffer().diff(old: base, new: current)
@@ -124,8 +118,7 @@ extension AcaiCommand {
     }
 }
 
-/// JSON envelope for `acai quality`: the quality verdict plus optional baseline drift. `drift` is
-/// omitted entirely when no `--baseline` was given.
+/// `drift` is omitted entirely from the JSON when no `--baseline` was given.
 private struct QualityPayload: Encodable {
     var quality: QualityReport
     var drift: ArtifactDiff?

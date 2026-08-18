@@ -5,7 +5,6 @@ import Testing
 
 @Suite("AcaiGit", .serialized)
 struct AcaiGitTests {
-    /// A fresh scratch directory per test, removed afterward.
     private func scratchDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -91,7 +90,6 @@ struct AcaiGitTests {
 
         #expect(FileManager.default.fileExists(atPath: extracted.appendingPathComponent("README.md").path))
         #expect(!FileManager.default.fileExists(atPath: extracted.appendingPathComponent("Sub/Nested.swift").path))
-        // The real working directory (at HEAD, the tagged commit) is untouched.
         #expect(FileManager.default.fileExists(atPath: destination.appendingPathComponent("Sub/Nested.swift").path))
     }
 

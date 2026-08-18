@@ -50,9 +50,7 @@ protocol FreeformConversion {
     /// fixed horizontal line, so only `x` is ever data-driven, and there's no stored-position tier).
     func resolvedPosition(for item: Item, sourceID: String, index: Int) -> CGPoint
 
-    /// Builds the one freeform node for `item`, at its already-resolved `position`.
     func makeNode(for item: Item, id: String, position: CGPoint) -> FreeformDiagram.Node
-    /// Builds every edge, once every item's freeform node id is known (`idsBySourceID`).
     func makeEdges(idsBySourceID: [String: String]) -> [FreeformDiagram.Edge]
 
     /// Grouping/container nodes drawn behind `memberNodes` (Class diagram's directory/product

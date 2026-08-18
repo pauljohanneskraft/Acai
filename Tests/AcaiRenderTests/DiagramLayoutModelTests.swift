@@ -2,6 +2,7 @@ import Testing
 import CoreGraphics
 @testable import AcaiRender
 @testable import AcaiCore
+import AcaiQuality
 
 @Suite("Diagram Layout Model Tests")
 struct DiagramLayoutModelTests {
@@ -80,5 +81,33 @@ struct DiagramLayoutModelTests {
         let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
         let boxes = model.groupingBoxes(positions: [:], sizes: [:])
         #expect(boxes.isEmpty)
+    }
+
+    // MARK: - Selector filter
+
+    @Test func nilFilterShowsEveryType() {
+        let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: .init())
+        #expect(model.nodes.count == 2)
+    }
+
+    @Test func filterKeepsOnlyMatchingTypes() {
+        var config = ClassDiagramConfiguration()
+        config.filter = AcaiQuality.Selector(typeGlob: "Dog")
+        let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
+        #expect(model.nodes.map(\.id) == ["Dog"])
+    }
+
+    @Test func filterDropsRelationshipsToFilteredOutTypes() {
+        var config = ClassDiagramConfiguration()
+        config.filter = AcaiQuality.Selector(typeGlob: "Dog")
+        let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
+        #expect(model.edges.isEmpty)
+    }
+
+    @Test func filterMatchingNothingProducesNoNodes() {
+        var config = ClassDiagramConfiguration()
+        config.filter = AcaiQuality.Selector(typeGlob: "NoSuchType")
+        let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
+        #expect(model.nodes.isEmpty)
     }
 }

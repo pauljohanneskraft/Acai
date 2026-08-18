@@ -2,14 +2,8 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 
-/// Identifies the kind of element in a freeform diagram.
-///
-/// Used for **catalog selection** (picking which element to add) and **display logic**
-/// (icons, colours, labels). The actual per-node data lives in ``NodeContent``.
 enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
-    /// A code-analysis type (class, struct, enum, protocol, …).
-    /// The associated `TypeKind` carries the specific kind.
     case type(TypeKind)
 
     // MARK: - UML Use-Case Diagram Elements
@@ -94,7 +88,6 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     // MARK: - Display Helpers
 
-    /// A human-readable display name.
     var displayName: String {
         switch self {
         case .type(let tk):
@@ -174,7 +167,6 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         }
     }
 
-    /// SF Symbol name for catalog / toolbar display.
     var systemImage: String {
         switch self {
         case .type(let tk):
@@ -261,7 +253,6 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
 
     // MARK: - Catalog Grouping
 
-    /// The catalog section this element kind belongs to.
     enum CatalogGroup: String, CaseIterable {
         case classDiagram = "Class Diagram"
         case sequenceDiagram = "Sequence Diagram"
@@ -307,7 +298,6 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         return items
     }()
 
-    /// Catalog items belonging to a given group.
     static func cases(in group: CatalogGroup) -> [FreeformDiagramNodeKind] {
         allCases.filter { $0.catalogGroup == group }
     }

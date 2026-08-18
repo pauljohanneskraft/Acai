@@ -2,6 +2,7 @@ import Foundation
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 
 struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
@@ -17,9 +18,25 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
     /// When set, the diagram renders in delta mode: the working-tree analysis is compared against
     /// its source at this git revision and added/removed/changed elements are colour-coded.
     /// `nil` renders normally.
+    ///
+    /// When `comparisonBaseRef` is also set (a pull-request comparison), this instead names the
+    /// "new" side — the PR's head — and both sides are historical revisions rather than one
+    /// revision vs. the live working tree.
     var comparisonGitRef: String?
+    /// The PR's base branch for a pull-request comparison — `comparisonGitRef`'s "old" side is
+    /// resolved as their merge-base (three-dot semantics), not this branch's own tip. `nil` for the
+    /// two pre-existing modes (one ref vs. the live working tree).
+    var comparisonBaseRef: String?
+    /// Selector filter for a package diagram — kept as a sibling field (rather than folded into
+    /// `content`'s `.packageDiagram` case, which carries no payload today) so already-persisted
+    /// diagrams keep decoding under `Content`'s synthesized `Codable`: adding an associated value
+    /// to an existing no-payload case would change that case's JSON shape. `nil` (the default)
+    /// shows every module, identical to behavior before this existed.
+    var packageDiagramFilter: AcaiQuality.Selector?
+    /// Selector filter for a call graph — same rationale as `packageDiagramFilter`: kept outside
+    /// `content` so `.callGraph(CallGraphScope)`'s existing JSON shape never changes.
+    var callGraphFilter: AcaiQuality.Selector?
     var nodePositions: [String: NodePosition] = [:]
-    /// User-overridden node sizes (from resize handles).
     var nodeSizes: [String: NodeSize] = [:]
     var canvasScale: Double = 1.0
     var canvasOffsetX: Double = 0
@@ -29,7 +46,6 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension GeneratedDiagram {
-    /// The diagram's type paired with its type-specific configuration.
     enum Content: Codable, Hashable, Sendable {
         case classDiagram(ClassDiagramConfiguration)
         case sequenceDiagram(SequenceDiagramConfiguration)
@@ -49,8 +65,6 @@ extension GeneratedDiagram {
         /// .CycleFinder` already reported for it — see `CycleDiagramReference`.
         case cycleDiagram(CycleDiagramReference)
 
-        /// Default content for a freshly created diagram of the given type: each kind gets its
-        /// own default configuration (none is privileged over the others).
         init(type: DiagramType) {
             switch type {
             case .classDiagram:
@@ -100,7 +114,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The diagram type, derived from `content`.
     var type: DiagramType { content.type }
 
     /// The name derived from the diagram's configuration, e.g. `"MyApp — Sequence: Foo.bar"`.
@@ -135,7 +148,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The class-diagram configuration, when this is a class diagram.
     var classConfiguration: ClassDiagramConfiguration? {
         get {
             if case .classDiagram(let config) = content { config } else { nil }
@@ -145,7 +157,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The sequence configuration, when this is a sequence diagram.
     var sequenceConfiguration: SequenceDiagramConfiguration? {
         get {
             if case .sequenceDiagram(let config) = content { config } else { nil }
@@ -155,7 +166,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The state configuration, when this is a (configured) state diagram.
     var stateConfiguration: StateDiagramConfiguration? {
         get {
             if case .stateDiagram(let config) = content { config } else { nil }
@@ -165,7 +175,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The call-graph scope, when this is a call graph.
     var callGraphScope: CallGraphScope? {
         get {
             if case .callGraph(let scope) = content { scope } else { nil }
@@ -175,7 +184,6 @@ extension GeneratedDiagram {
         }
     }
 
-    /// The isolated cycle's scope/members, when this is a cycle diagram.
     var cycleDiagramReference: CycleDiagramReference? {
         if case .cycleDiagram(let reference) = content { reference } else { nil }
     }

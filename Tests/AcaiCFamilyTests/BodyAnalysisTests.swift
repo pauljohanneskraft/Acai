@@ -32,8 +32,8 @@ struct CppBodyAnalysisTests {
         #expect(calls.contains { $0.receiverType == nil && $0.methodName == "charge" })
     }
 
-    /// A bare `foo()` inside a member function is an implicit `this->foo()` sibling call, captured
-    /// as `.selfDispatch` (not `.free`, which the call-graph builder would drop as a non-member).
+    /// A bare `foo()` inside a member function is captured as `.selfDispatch`, not `.free` (which
+    /// the call-graph builder would drop as a non-member).
     @Test func capturesBareSiblingMethodCall() {
         let source = """
         class Worker {
@@ -51,8 +51,6 @@ struct CppBodyAnalysisTests {
         #expect(calls.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
     }
 
-    /// Calls in a member-initializer list (`: x(helper())`) or a default member initializer
-    /// (`int y = compute();`) are recorded so their targets aren't false-flagged as dead.
     @Test func capturesMemberInitializerListAndDefaultInitializerCalls() {
         let source = """
         class Worker {
@@ -72,8 +70,6 @@ struct CppBodyAnalysisTests {
         #expect(allSites.contains { $0.methodName == "compute" })
     }
 
-    /// A local declared with an explicit type (`Helper h;`) or a pointer to a `new`-constructed type
-    /// (`Helper* p = new Helper();`) resolves the receiver of `h.method()` / `p->method()`.
     @Test func resolvesLocalAndPointerReceivers() {
         let source = """
         class Helper {
@@ -98,8 +94,6 @@ struct CppBodyAnalysisTests {
         #expect(sites.filter { $0.methodName == "doThing" && $0.receiverType == "Helper" }.count == 2)
     }
 
-    /// A typed parameter (by value, pointer, or reference) is a provable call-site receiver, just
-    /// like a stored field.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -121,9 +115,8 @@ struct CppBodyAnalysisTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
     }
 
-    /// A local initialized from a same-type method call (`auto x = compute();`) resolves its receiver
-    /// type from the method's unambiguous return type, the same way `auto p = new Helper();` already
-    /// does — including when the method is declared *after* the caller.
+    /// Resolves receiver type from the method's return type even when the method is declared
+    /// *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {
@@ -192,8 +185,7 @@ struct CBodyAnalysisTests {
     let parser = CCodeParser()
 
     @Test func structPointerMutationResolvesToReceiverTypeAndEnumCase() {
-        // C has no methods: a free function mutates the struct through a typed pointer parameter,
-        // and the unscoped enum constant on the right is an enumerable value.
+        // C has no methods, so the struct is mutated through a typed pointer parameter instead.
         let source = """
         typedef enum { REQUESTED, DOWNLOADING, FINISHED } DownloadState;
 
@@ -214,8 +206,7 @@ struct CBodyAnalysisTests {
     }
 
     @Test func nonParameterFieldMutationIsNotMisattributed() {
-        // A field write through an unknown receiver (not a typed parameter) is dropped, so it can't
-        // pollute a struct's state machine.
+        // A field write through an unknown (non-parameter) receiver is dropped.
         let source = """
         void touch(void) {
             other->state = 1;

@@ -6,7 +6,6 @@ struct MermaidIDAllocatorTests {
 
     @Test func distinctSourcesCollidingUnderSafeIDGetUniqueIDs() {
         var allocator = MermaidIDAllocator()
-        // Both map to "A_B" under mermaidSafeID; they must not collapse to one node.
         let first = allocator.id(for: "A.B")
         let second = allocator.id(for: "A-B")
         #expect(first == "A_B")
@@ -16,8 +15,8 @@ struct MermaidIDAllocatorTests {
 
     @Test func suffixedIDDoesNotCollideWithALaterBase() {
         var allocator = MermaidIDAllocator()
-        #expect(allocator.id(for: "A.B") == "A_B")        // base
-        #expect(allocator.id(for: "A-B") == "A_B_2")      // disambiguated
+        #expect(allocator.id(for: "A.B") == "A_B")
+        #expect(allocator.id(for: "A-B") == "A_B_2")
         #expect(allocator.id(for: "A_B_2") == "A_B_2_2")  // would have collided with the suffixed id
     }
 

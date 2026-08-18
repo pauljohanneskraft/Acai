@@ -3,7 +3,6 @@ import AcaiCore
 
 /// Turns a SwiftSyntax `TypeSyntax` into a AcaiCore `TypeReference`, normalising sugar spellings
 /// (`T?`/`[T]`/`[K: V]`) and unwrapping wrappers (`some`/`any`, attributed, implicitly-unwrapped).
-/// Owns all the per-syntax-node type-shape knowledge so the higher-level extractors don't have to.
 struct TypeReferenceExtractor {
 
     func extractTypeReference(from typeSyntax: TypeSyntax) -> TypeReference {
@@ -58,12 +57,9 @@ struct TypeReferenceExtractor {
             return TypeReference(name: "Void")
         }
 
-        // Fallback: use the source text representation
         return TypeReference(name: typeSyntax.trimmedDescription)
     }
 
-    /// Expands a `CompositionTypeSyntax` (e.g. `A & B & C`) into individual
-    /// type references. Non-composition types are returned as a single-element array.
     func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
             return composition.elements.map { extractTypeReference(from: $0.type) }

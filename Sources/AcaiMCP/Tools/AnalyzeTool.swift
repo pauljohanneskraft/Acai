@@ -1,8 +1,8 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_analyze` — index a project once and return a compact snapshot summary (not the full model,
-/// which is too large for context). Populates the shared cache so every other tool reuses this parse.
+/// `acai_analyze` — indexes a project once and returns a compact snapshot summary (not the full
+/// model, which is too large for context). Populates the shared cache so every other tool reuses this parse.
 struct AnalyzeTool: AnalysisTool {
     let name = "acai_analyze"
     let description = """

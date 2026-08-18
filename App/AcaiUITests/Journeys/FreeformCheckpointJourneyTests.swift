@@ -1,10 +1,7 @@
 import XCTest
 
-/// The real gap this closes: the checkpoint model/persistence/restore logic was already
-/// unit-tested, but the save→mutate→restore journey had never actually been driven through the
-/// UI. Also exercises point-and-place insertion (tap a catalog entry, then the canvas, to commit a
-/// node) as the way this journey adds nodes — both share this screen object because both land in
-/// the same `FreeformDiagramView.swift` change.
+/// Drives the checkpoint save→mutate→restore journey through the UI, using point-and-place
+/// catalog insertion (tap a catalog entry, then the canvas, to commit a node) to add nodes.
 @MainActor
 final class FreeformCheckpointJourneyTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
@@ -35,19 +32,16 @@ final class FreeformCheckpointJourneyTests: XCTestCase {
         XCTAssertTrue(newClass.waitForExistence(timeout: 10), "committing a placement should insert the node")
         XCTAssertFalse(screen.cancelPlacementButton.exists, "committing a placement should leave placement mode")
 
-        // Save a checkpoint capturing this one-node state.
         screen.saveCheckpoint(named: "Baseline")
         XCTAssertTrue(screen.checkpointRow(named: "Baseline").waitForExistence(timeout: 5))
         screen.checkpointsDoneButton.tap()
 
-        // Mutate: place a second node that is *not* part of the saved checkpoint.
         screen.placeNodeViaCatalog(kindID: "type.enum")
 
         let newEnum = screen.typeNode(named: "NewEnum")
         XCTAssertTrue(newEnum.waitForExistence(timeout: 10))
         XCTAssertTrue(newClass.exists, "the baseline node should still be present right after the mutation")
 
-        // Restore the checkpoint: the mutation is undone, the baseline node comes back.
         screen.tapCheckpoints()
         let restoreButton = screen.checkpointRestoreButton(named: "Baseline")
         XCTAssertTrue(restoreButton.waitForExistence(timeout: 10))

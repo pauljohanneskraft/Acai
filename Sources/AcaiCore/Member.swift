@@ -4,7 +4,6 @@
 /// sequence/call-graph/state diagrams and the coupling metrics. Downstream treats absent body data
 /// as "not analysed", never as "none present".
 public struct Member: Codable, Equatable, Hashable, Sendable {
-    /// The member's source name (without any type qualifier).
     public var name: String
     /// What kind of member this is — selects the diagram compartment (see `isProperty`/`isMethod`).
     public var kind: MemberKind
@@ -21,11 +20,8 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     public var type: TypeReference?
     /// The formal parameters, for methods/initializers/subscripts; empty for properties.
     public var parameters: [Parameter]
-    /// The member's own generic parameters (e.g. a generic method's `<T>`).
     public var genericParameters: [GenericParameter]
-    /// Whether this is a computed property (no stored backing) rather than a stored one.
     public var isComputed: Bool
-    /// Raw annotation/attribute markers on the declaration (e.g. `@Published`, `@Override`).
     public var annotations: [String]
     /// Where the member is declared. Drives provenance-aware module attribution (a cross-module
     /// extension's members attribute to the extension's file).
@@ -104,7 +100,6 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// and subscripts. The complement of ``isStoredProperty`` — the two partition all members.
     public var isBehaviour: Bool { isMethod || (kind == .property && isComputed) || kind == .subscript }
 
-    /// Whether this member is at least as visible as `minimum`. A `nil` `minimum` keeps everything.
     public func isVisible(atLeast minimum: AccessLevel?) -> Bool {
         guard let minimum else { return true }
         return accessLevel.visibilityRank >= minimum.visibilityRank
@@ -120,7 +115,6 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
 }
 
 extension Sequence where Element == Member {
-    /// The members at least as visible as `minimum` (see ``Member/isVisible(atLeast:)``).
     public func visible(atLeast minimum: AccessLevel?) -> [Member] {
         filter { $0.isVisible(atLeast: minimum) }
     }

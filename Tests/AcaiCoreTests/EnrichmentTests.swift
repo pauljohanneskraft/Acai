@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Regression tests for the AcaiCore enrichment passes.
 @Suite("Core: Enrichment Passes")
 struct EnrichmentTests {
 
@@ -65,7 +64,6 @@ struct EnrichmentTests {
         user.annotations = ["@Entity"]
         // The annotation → stereotype map is injected (it lives in a language's configuration now).
         #expect(user.stereotype(annotationStereotypes: ["entity": "entity"]) == "entity")
-        // With no annotation map, falls back to the kind (a class has none).
         #expect(user.stereotype(annotationStereotypes: [:]) == nil)
     }
 
@@ -76,7 +74,6 @@ struct EnrichmentTests {
     }
 
     @Test func annotationStereotypeToleratesWhitespaceNewlinesAndQualifiers() {
-        // Leading whitespace/newlines, package qualifiers and argument lists must still match.
         var user = type("User", kind: .class, accessLevel: .public)
         user.annotations = ["\n  @jakarta.persistence.Table(name = \"users\")"]
         #expect(user.stereotype(annotationStereotypes: ["table": "entity"]) == "entity")
@@ -94,12 +91,10 @@ struct EnrichmentTests {
 
         let resolved = artifact([base, extWithConformance, proto]).enriched()
 
-        // Extension node is gone; its members merged into Foo.
         #expect(resolved.types.filter { $0.kind == .extension }.isEmpty)
         let foo = resolved.types.first { $0.name == "Foo" }
         #expect(foo?.members.contains { $0.name == "extra" } == true)
 
-        // Exactly one conformance edge Foo→Bar; no dangling `extension.*` source.
         let confs = resolved.relationships.filter { $0.kind == .conformance }
         #expect(confs.filter { $0.target == "Bar" }.count == 1)
         #expect(resolved.relationships.allSatisfy { !$0.source.hasPrefix("extension.") })
@@ -120,8 +115,6 @@ struct EnrichmentTests {
         #expect(names.isSuperset(of: ["Baseline", "Bar"]))
     }
 
-    /// The same conformance, appearing on both the base declaration and an extension, must not be
-    /// duplicated after merge.
     @Test func extensionConformanceAlreadyOnBaseIsNotDuplicated() {
         let base = type("Foo", kind: .struct, accessLevel: .public, inherited: ["Bar"])
         var ext = type("Foo", extensionOf: "Foo")
@@ -133,13 +126,11 @@ struct EnrichmentTests {
     }
 
     @Test func externalTypeExtensionIsDroppedEntirely() {
-        // `extension Array: CustomThing` where Array is not in the codebase.
         let ext = type("Array", extensionOf: "Array")
         var extWithConf = ext
         extWithConf.inheritedTypes = [TypeReference(name: "CustomThing")]
         let resolved = artifact([extWithConf]).enriched()
         #expect(resolved.types.isEmpty)
-        // No leaked conformance edge with an external source.
         #expect(resolved.relationships.filter { $0.kind == .conformance }.isEmpty)
     }
 
@@ -191,12 +182,9 @@ struct EnrichmentTests {
 
         let mergedNode = resolved.types.first { $0.name == "FreeformDiagram" }?.nestedTypes.first
         #expect(mergedNode?.members.contains { $0.name == "allChildren" } == false)
-        // Dropped like any other external-type extension: no leftover extension node either.
         #expect(resolved.types.filter { $0.kind == .extension }.isEmpty)
     }
 
-    /// The bare-name fallback still works when the extension and its nested target genuinely share a
-    /// module.
     @Test func bareNameExtensionMergesIntoSameModuleNestedType() {
         var nestedNode = type(
             "Node", kind: .struct, accessLevel: .public,

@@ -1,8 +1,6 @@
 import SwiftUI
 import AcaiCore
 
-/// Section view displaying a codebase's top-level (module-scope) variables and constants — globals
-/// that, like top-level functions, belong to no type and so never appear in the type list or diagrams.
 struct CodebaseGlobalsSection: View {
     let codebase: Codebase
     let artifact: CodeArtifact

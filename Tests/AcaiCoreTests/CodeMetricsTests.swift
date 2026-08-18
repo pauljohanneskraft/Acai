@@ -14,21 +14,16 @@ struct CodeMetricsTests {
             location: SourceLocation(filePath: "Sources/\(module)/\(name).swift", line: 1, column: 1))
     }
 
-    /// A method whose body writes the stored property `field` (via `self`) — for cohesion tests.
     private func method(_ name: String, writes field: String) -> Member {
         Member(name: name, kind: .method, accessLevel: .internal, assignments: [
             VariableAssignment(targetName: field, op: .assign, value: .init(kind: .expression, text: "0"))
         ])
     }
 
-    /// A method whose body only *reads* the stored property `field` (via `self`) — for cohesion and
-    /// feature-envy tests exercising read-capture.
     private func method(_ name: String, reads field: String) -> Member {
         Member(name: name, kind: .method, accessLevel: .internal, fieldReads: [FieldAccess(name: field)])
     }
 
-    /// Two modules: `Core` (a protocol + conforming struct) and `App` (a class that
-    /// depends on `Shape` through a stored property → cross-module composition).
     private func sampleArtifact() -> CodeArtifact {
         let drawable = type("Drawable", kind: .protocol, accessLevel: .public, module: "Core")
         let shape = type("Shape", kind: .struct, accessLevel: .public, module: "Core",
@@ -60,13 +55,10 @@ struct CodeMetricsTests {
         let metrics = sampleArtifact().computeMetrics()
         let core = metrics.modules.first { $0.name == "Core" }
         let app = metrics.modules.first { $0.name == "App" }
-        // App depends on Core (View → Shape), so Core has afferent and App efferent coupling.
         #expect((core?.afferentCoupling ?? 0) >= 1)
         #expect((app?.efferentCoupling ?? 0) >= 1)
-        // Core has a protocol among 2 types → abstractness 0.5; App has none → 0.
         #expect(core?.abstractness == 0.5)
         #expect(app?.abstractness == 0.0)
-        // App depends outward and nothing depends on it → fully unstable.
         #expect(app?.instability == 1.0)
     }
 
@@ -83,10 +75,9 @@ struct CodeMetricsTests {
 
         let core = metrics.modules.first { $0.name == "Core" }
         let app = metrics.modules.first { $0.name == "App" }
-        #expect((core?.afferentCoupling ?? 0) >= 1)   // Widget is now depended upon …
-        #expect(core?.instability == 0.0)             // … so Core is no longer 100% unstable.
+        #expect((core?.afferentCoupling ?? 0) >= 1)
+        #expect(core?.instability == 0.0)
         #expect((app?.efferentCoupling ?? 0) >= 1)
-        // The construction also shows up in the per-type fan metrics.
         #expect((metrics.types.first { $0.name == "Factory" }?.fanOut ?? 0) >= 1)
         #expect((metrics.types.first { $0.name == "Widget" }?.fanIn ?? 0) >= 1)
     }
@@ -109,7 +100,6 @@ struct CodeMetricsTests {
         ).enriched().computeMetrics()
 
         #expect((metrics.modules.first { $0.name == "Leaf" }?.afferentCoupling ?? 0) >= 1)
-        // Core must NOT gain efferent coupling from a member declared in Wiring.
         #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
     }
 
@@ -129,11 +119,10 @@ struct CodeMetricsTests {
             metadata: .init(sourceLanguage: .swift), types: [widget, base], relationships: []
         ).enriched()
 
-        // The inferred edge carries its declaring (extension) file as provenance.
         let edge = artifact.relationships.first { $0.source == "Base" && $0.target == "Widget" }
         #expect(edge?.origin == "Sources/Diagram/Base+Widget.swift")
 
-        // Without provenance this would read as Core → Diagram (efferent 1) and a phantom edge.
+        // Without `origin` tracking this would read as Core → Diagram (efferent 1) and a phantom edge.
         let metrics = artifact.computeMetrics()
         #expect((metrics.modules.first { $0.name == "Core" }?.efferentCoupling ?? 0) == 0)
     }
@@ -167,8 +156,8 @@ struct CodeMetricsTests {
     // MARK: - Code-smell metrics (issue #101)
 
     @Test func responseForClassCountsMethodsPlusDistinctCallTargets() {
-        // `Service` declares 2 methods and its bodies call 3 distinct targets — one repeated call
-        // (`log`) must be de-duplicated, and a same-name call on a different receiver counts separately.
+        // A repeated call (`log`) must be de-duplicated, and a same-name call on a different receiver
+        // counts separately — 2 methods + 3 distinct targets (Logger.log, Store.save, Store.log) = 5.
         let service = type("Service", kind: .class, module: "App", members: [
             Member(name: "run", kind: .method, accessLevel: .public, callSites: [
                 CallSite(receiver: .type("Logger"), methodName: "log"),
@@ -176,13 +165,12 @@ struct CodeMetricsTests {
                 CallSite(receiver: .type("Store"), methodName: "save")
             ]),
             Member(name: "reset", kind: .method, accessLevel: .public, callSites: [
-                CallSite(receiver: .type("Store"), methodName: "log")   // same method, different receiver
+                CallSite(receiver: .type("Store"), methodName: "log")
             ])
         ])
         let metrics = CodeArtifact(
             metadata: .init(sourceLanguage: .swift), types: [service], relationships: []
         ).enriched().computeMetrics()
-        // 2 methods + 3 distinct targets (Logger.log, Store.save, Store.log).
         #expect(metrics.types.first { $0.name == "Service" }?.responseForClass == 5)
     }
 
@@ -193,15 +181,14 @@ struct CodeMetricsTests {
             Member(name: "cache", kind: .property, accessLevel: .private),
             Member(name: "helper", kind: .method, accessLevel: .internal)
         ])
-        // The fold is exposed on the type itself (behaviour on a value).
         #expect(widget.publicMemberCount == 2)
         #expect(widget.publicMemberRatio == 0.5)
         let metrics = CodeArtifact(
             metadata: .init(sourceLanguage: .swift), types: [widget], relationships: []
         ).enriched().computeMetrics()
         let m = metrics.types.first { $0.name == "Widget" }
-        #expect(m?.publicMemberCount == 2)          // public property + open method
-        #expect(m?.publicMemberRatio == 0.5)        // 2 of 4 members
+        #expect(m?.publicMemberCount == 2)
+        #expect(m?.publicMemberRatio == 0.5)
         // Module surface sums the type surfaces.
         #expect(metrics.modules.first { $0.name == "App" }?.publicMemberCount == 2)
     }
@@ -277,7 +264,7 @@ struct CodeMetricsTests {
         let m = CodeArtifact(
             metadata: .init(sourceLanguage: .swift), types: [outer], relationships: []
         ).enriched().computeMetrics().types.first { $0.name == "Outer" }
-        #expect(m?.nestingDepth == 2)   // Outer → Middle → Inner
+        #expect(m?.nestingDepth == 2)
     }
 
     @Test func deepAndWideIsDepthTimesChildren() {
@@ -298,8 +285,7 @@ struct CodeMetricsTests {
     }
 
     @Test func lackOfCohesionCountsDisjointMethodGroups() {
-        // Two method pairs that never share a field or call each other → 2 cohesion components.
-        // `a`/`b` both write `x`; `c`/`d` both write `y`; the two groups are disconnected.
+        // `a`/`b` both write `x`; `c`/`d` both write `y` — the two groups never touch, so 2 components.
         let split = type("Split", kind: .class, module: "App", members: [
             Member(name: "x", kind: .property, accessLevel: .private),
             Member(name: "y", kind: .property, accessLevel: .private),
@@ -313,7 +299,6 @@ struct CodeMetricsTests {
     }
 
     @Test func cohesiveTypeHasSingleComponent() {
-        // Every method touches the shared field `state`, so the type is a single cohesive component.
         let cohesive = type("Cohesive", kind: .class, module: "App", members: [
             Member(name: "state", kind: .property, accessLevel: .private),
             method("start", writes: "state"), method("stop", writes: "state"), method("reset", writes: "state")
@@ -334,10 +319,10 @@ struct CodeMetricsTests {
             Member(name: "shuffle", kind: .method, accessLevel: .public, callSites: [
                 CallSite(receiver: .type("Ledger"), methodName: "credit"),
                 CallSite(receiver: .type("Ledger"), methodName: "debit"),
-                CallSite(receiver: .selfDispatch, methodName: "local")   // one self call
+                CallSite(receiver: .selfDispatch, methodName: "local")
             ]),
             Member(name: "local", kind: .method, accessLevel: .public, callSites: [
-                CallSite(receiver: .selfDispatch, methodName: "shuffle")   // self only → not envious
+                CallSite(receiver: .selfDispatch, methodName: "shuffle")
             ])
         ])
         let m = CodeArtifact(
@@ -362,7 +347,6 @@ struct CodeMetricsTests {
         // Shape conforms to Drawable: Shape DIT 1, Drawable has one child (NOC 1).
         #expect(shape?.depthOfInheritance == 1)
         #expect(drawable?.numberOfChildren == 1)
-        // View depends on Shape via its stored property (composition → fanOut ≥ 1).
         #expect(view?.depthOfInheritance == 0)
         #expect((view?.fanOut ?? 0) >= 1)
     }

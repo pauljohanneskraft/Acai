@@ -1,10 +1,8 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_diff` — the structural delta between two revisions of a codebase: added/removed types,
-/// added/removed/changed relationships, and notable metric movement. Mirrors `acai diff --format json`.
-/// Each side is a source directory to analyze or a `.json` artifact baseline (both go through the
-/// shared snapshot cache).
+/// `acai_diff` — the structural delta between two revisions of a codebase. Mirrors
+/// `acai diff --format json`. Each side is a source directory to analyze or a `.json` artifact baseline.
 struct DiffTool: AnalysisTool {
     let name = "acai_diff"
     let description = """

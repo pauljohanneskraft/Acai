@@ -38,13 +38,11 @@ struct JSCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
-        // A local `const local = new Helper()` resolves its receiver type.
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
-    /// A field with no type annotation, initialized by a direct `new Foo()` construction, must still
-    /// get its type inferred — from either JS or untyped TS — so a call through it resolves instead
-    /// of looking uncalled.
+    /// An unannotated field initialized by `new Foo()` must still infer its type — from either JS or
+    /// untyped TS — so a call through it resolves instead of looking uncalled.
     @Test func unannotatedFieldInfersTypeFromConstructionInitializer() {
         let source = """
         class Helper {
@@ -68,7 +66,6 @@ struct JSCallSiteBroadeningTests {
         }
     }
 
-    /// A TypeScript-typed method parameter is a provable call-site receiver, just like a typed field.
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
@@ -86,9 +83,8 @@ struct JSCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
     }
 
-    /// A local initialized from a same-type method call (`const x = compute()`) resolves its receiver
-    /// type from the method's unambiguous TypeScript return-type annotation, the same way a `new
-    /// Foo()` construction already does — including when the method is declared *after* the caller.
+    /// Resolves receiver type from the method's TypeScript return-type annotation even when the
+    /// method is declared *after* the caller.
     @Test func resolvesLocalFromSameTypeMethodCallReturnType() {
         let source = """
         class Widget {

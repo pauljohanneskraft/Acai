@@ -1,9 +1,5 @@
-/// The node/edge delta shared by the id-node + `(from,to)`-edge diagram diffs (package, call
-/// graph). Construct it with both revisions' node ids and weighted edges, then ask it for each
-/// element's status. A node is added/removed by id-set difference; a weighted edge is *changed*
-/// when its weight moved.
+/// A node is added/removed by id-set difference; a weighted edge is *changed* when its weight moved.
 struct GraphElementDiff: Sendable {
-    /// A directed edge's identity for diffing.
     struct EdgeKey: Hashable, Sendable {
         let from: String
         let to: String

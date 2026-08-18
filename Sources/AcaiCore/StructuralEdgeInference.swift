@@ -7,7 +7,6 @@
 struct StructuralEdgeInference {
     /// Classifies primitive/collection type names (injected, language-supplied).
     let configuration: LanguageConfiguration
-    /// Maps a referenced type name to its canonical id.
     let resolveId: (String) -> String
 
     init(configuration: LanguageConfiguration, resolveId: @escaping (String) -> String) {
@@ -15,12 +14,10 @@ struct StructuralEdgeInference {
         self.resolveId = resolveId
     }
 
-    /// Every inferred structural edge originating at `type`.
     func edges(for type: TypeDeclaration) -> [Relationship] {
         propertyEdges(for: type) + methodEdges(for: type) + typeAliasEdges(for: type)
     }
 
-    /// Properties/subscripts → composition (scalar) or aggregation (collection).
     private func propertyEdges(for type: TypeDeclaration) -> [Relationship] {
         var edges: [Relationship] = []
         for member in type.members where member.kind == .property || member.kind == .subscript {
@@ -40,7 +37,6 @@ struct StructuralEdgeInference {
         return edges
     }
 
-    /// Method/initializer parameter & return types → dependency (deduped per type).
     private func methodEdges(for type: TypeDeclaration) -> [Relationship] {
         var edges: [Relationship] = []
         var seen = Set<String>()
@@ -59,7 +55,6 @@ struct StructuralEdgeInference {
         return edges
     }
 
-    /// `typealias` → dependency on its underlying type.
     private func typeAliasEdges(for type: TypeDeclaration) -> [Relationship] {
         guard type.kind == .typeAlias else { return [] }
         var edges: [Relationship] = []

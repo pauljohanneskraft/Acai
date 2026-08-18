@@ -1,9 +1,8 @@
 import Foundation
 
 extension ProjectBrowserViewModel {
-    /// Applies a `QuickOpenEntry` the same way a Quick Open row tap applies its default (first)
-    /// resolution — unlike `QuickOpenView.apply(_:entry:)`, never offers the alternate resolutions,
-    /// since a Spotlight tap has no context menu to pick from.
+    /// Unlike `QuickOpenView.apply(_:entry:)`, always applies the first resolution — a Spotlight
+    /// tap has no context menu to pick an alternate from.
     func applyQuickOpenEntryDefault(_ entry: QuickOpenEntry) {
         switch entry.kind {
         case .project:

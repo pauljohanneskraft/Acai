@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import AcaiQuality
 import UniformTypeIdentifiers
 
 /// Movement-only view for a generated package (module-dependency) diagram. Derives the diagram
@@ -51,6 +52,7 @@ struct PackageDiagramView: View {
         self.isComparePresented = isComparePresented
         self._viewModel = StateObject(wrappedValue: PackageDiagramViewModel(
             artifact: artifact,
+            filter: diagram.packageDiagramFilter,
             restoredPositions: diagram.nodePositions.mapValues(\.cgPoint),
             comparisonArtifact: comparisonArtifact
         ))
@@ -115,12 +117,25 @@ struct PackageDiagramView: View {
         PackageDiagramSidebar(
             diagram: viewModel.diagram,
             selectedNodeIDs: viewModel.selectedNodeIDs,
+            filter: filterBinding,
+            codebaseID: codebase.id,
+            artifact: artifact,
             tab: $sidebarTab,
             onSelect: { viewModel.selectNode($0, extending: false) },
             onSaveAsFreeform: confirmSaveAsFreeform,
             onExportImage: exportImage,
             showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
             includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+        )
+    }
+
+    private var filterBinding: Binding<AcaiQuality.Selector?> {
+        Binding(
+            get: { viewModel.filter },
+            set: { newValue in
+                model.diagrams.updatePackageDiagramFilter(diagramID: diagram.id, filter: newValue)
+                viewModel.applyFilter(newValue)
+            }
         )
     }
 
@@ -168,7 +183,6 @@ struct PackageDiagramView: View {
         }
     }
 
-    /// A coloured delta outline overlaid on a node, or nothing when the node is unchanged.
     @ViewBuilder
     private func deltaBorder(_ color: Color?) -> some View {
         if let color {
@@ -202,7 +216,6 @@ struct PackageDiagramView: View {
         )
     }
 
-    /// Maps a dependency's weight to a line-width multiplier, clamped so the heaviest edges stay legible.
     private static func lineWidthScale(forWeight weight: Int) -> CGFloat {
         min(1 + CGFloat(weight - 1) * 0.35, 3)
     }

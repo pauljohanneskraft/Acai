@@ -1,8 +1,6 @@
 import CoreGraphics
 import Foundation
 
-/// Document-level metadata for a written PDF (the "version marker" a format's own reader can key
-/// off later, alongside whatever a page draws). Pure data — a value, not a namespace.
 public struct PDFDocumentMetadata: Sendable {
     public var title: String?
     public var creator: String?

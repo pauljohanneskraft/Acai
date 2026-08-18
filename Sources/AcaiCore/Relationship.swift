@@ -2,18 +2,14 @@
 /// …). Produced by parsers and resolved/deduplicated during enrichment; consumed by the diagram and
 /// metrics layers.
 public struct Relationship: Codable, Equatable, Hashable, Sendable {
-    /// The semantic edge kind — selects the arrowhead/line style the diagram draws and the
-    /// precedence used when redundant edges between the same pair are collapsed (see `Kind`).
     public var kind: Kind
     /// Identity of the edge's tail type. Parsers may emit a name; enrichment resolves it to a type
     /// `id` via the name→id index. An endpoint that resolves to no known type stays as the bare name
     /// and renders as an external node.
     public var source: String
-    /// Identity of the edge's head type. Resolved the same way as `source`.
     public var target: String
-    /// Optional multiplicity/role label shown at the `source` end (e.g. `1`, `0..*`).
+    /// Optional multiplicity/role label shown at the `source`/`target` end (e.g. `1`, `0..*`).
     public var sourceLabel: String?
-    /// Optional multiplicity/role label shown at the `target` end.
     public var targetLabel: String?
     /// Optional label shown along the edge (e.g. the member name behind an association).
     public var label: String?
@@ -59,9 +55,8 @@ public struct Relationship: Codable, Equatable, Hashable, Sendable {
         hasher.combine(label)
     }
 
-    /// The semantic kinds of edge the engine distinguishes. Redundant-edge collapsing keeps the
-    /// strongest kind between a pair, in roughly this order: inheritance/conformance/extension >
-    /// composition/aggregation > association > dependency.
+    /// Redundant-edge collapsing keeps the strongest kind between a pair, in roughly this order:
+    /// inheritance/conformance/extension > composition/aggregation > association > dependency.
     public enum Kind: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
         /// Class/`extends` inheritance (solid line, hollow triangle).
         case inheritance

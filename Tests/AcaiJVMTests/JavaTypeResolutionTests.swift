@@ -55,7 +55,6 @@ struct JavaTypeResolutionTests {
         let artifact = parser.parse(source: source, fileName: "Dog.java")
         let inheritance = artifact.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.app.Dog")
-        // "Animal" is not in this file, stays as-is.
         #expect(inheritance?.target == "Animal")
     }
 
@@ -232,7 +231,6 @@ struct JavaTypeResolutionTests {
 
         let inheritance = merged.relationships.first { $0.kind == .inheritance }
         #expect(inheritance?.source == "com.example.Dog")
-        // Target is just "Animal" because it's not defined in Dog.java.
         #expect(inheritance?.target == "Animal")
 
         #expect(merged.types.contains { $0.id == "com.example.Animal" })
