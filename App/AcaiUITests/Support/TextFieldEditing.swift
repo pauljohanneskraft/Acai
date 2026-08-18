@@ -21,10 +21,20 @@ extension XCUIElement {
     /// `timeout` across attempts. Works around an intermittent XCUITest synthesis race observed
     /// empirically: a tap landing right after a `GeometryReader`-driven layout pass can silently
     /// not reach the intended control on the first attempt, with no error.
+    ///
+    /// Skips an attempt's tap (rather than firing it and recording a hard "Not hittable" failure
+    /// via `pollUntilHittable`) if `self` hasn't settled into a hittable frame yet — the same
+    /// stale-zero-size-frame race `tapWhenHittable` exists for, just reached from a different call
+    /// path here. A `tap()` that fires anyway on a non-hittable element records an XCTest failure
+    /// immediately, even if a later attempt in this same loop would have succeeded — so this must
+    /// stay a *skip*, not a call to `tapWhenHittable` itself, or the retry loop below would never
+    /// get a real chance to recover.
     func tapUntil(_ destination: XCUIElement, timeout: TimeInterval = 9, attempts: Int = 3) {
         let perAttempt = timeout / Double(attempts)
         for _ in 0..<attempts {
-            tap()
+            if pollUntilHittable(timeout: perAttempt) {
+                tap()
+            }
             if destination.waitForExistence(timeout: perAttempt) { return }
         }
     }
@@ -32,16 +42,25 @@ extension XCUIElement {
     /// Waits for `self` to be hittable, not just present, before tapping. Confirmed empirically: an
     /// element can already `exist` while still reporting a stale zero-size, off-screen frame from
     /// before a layout pass lands, failing a plain `tap()` with "Not hittable" even though
-    /// `waitForExistence` already returned true. Polls with a real `Thread.sleep` between reads
-    /// rather than `XCTNSPredicateExpectation`: `XCUIElement` isn't KVO-compliant, so a predicate
-    /// expectation on `isHittable` latches its first evaluation instead of re-querying (confirmed
-    /// empirically too).
+    /// `waitForExistence` already returned true.
     func tapWhenHittable(timeout: TimeInterval = 5, pollInterval: TimeInterval = 0.2) {
+        _ = pollUntilHittable(timeout: timeout, pollInterval: pollInterval)
+        tap()
+    }
+
+    /// Polls `isHittable` without tapping, so a caller can decide what to do if the deadline passes
+    /// without `self` ever settling — `tapWhenHittable` taps regardless (preserving today's normal,
+    /// loud failure for a genuine "the control never appears" bug), while `tapUntil` skips the tap
+    /// and lets its own retry loop keep going instead. Polls with a real `Thread.sleep` between
+    /// reads rather than `XCTNSPredicateExpectation`: `XCUIElement` isn't KVO-compliant, so a
+    /// predicate expectation on `isHittable` latches its first evaluation instead of re-querying
+    /// (confirmed empirically).
+    private func pollUntilHittable(timeout: TimeInterval, pollInterval: TimeInterval = 0.2) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while !isHittable && Date() < deadline {
             Thread.sleep(forTimeInterval: pollInterval)
         }
-        tap()
+        return isHittable
     }
 
     /// Picks an option from a `Picker`-rendered popup/menu (`self`) by its literal text — the

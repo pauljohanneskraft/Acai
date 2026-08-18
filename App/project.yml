@@ -171,3 +171,12 @@ schemes:
       config: Debug
       targets:
         - Acai-macOSUITests
+  AcaiPackageTests-iOS:
+    build:
+      targets:
+        Acai-iOS: [test]
+    test:
+      config: Debug
+      targets:
+        - package: Acai/AcaiCoreTests
+        - package: Acai/AcaiAppTests

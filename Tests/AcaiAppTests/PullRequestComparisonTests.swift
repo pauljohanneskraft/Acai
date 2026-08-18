@@ -6,6 +6,11 @@ import Testing
 /// `ensureComparisonLoaded` resolving `GitCheckout.mergeBase` and loading both sides as historical
 /// snapshots — proving three-dot semantics (the base branch's own unrelated later commits don't
 /// leak into the diff) through the real view model, not just `GitCheckout` in isolation.
+///
+/// iOS's Foundation has no `Process`/`Pipe` (see `App/project.yml`'s comment on why
+/// `GitFixtureRepository` needs `SwiftGitX` instead) — this suite's fixture helper shells out to
+/// real `git` directly, so it only compiles/runs on platforms where that's available.
+#if os(macOS)
 @Suite("ProjectBrowserViewModel pull-request comparison")
 @MainActor
 struct PullRequestComparisonTests {
@@ -118,3 +123,4 @@ struct PullRequestComparisonTests {
         #expect(!model.isComparisonFileReviewed(diagramID: diagramID, filePath: "Widget.swift"))
     }
 }
+#endif
