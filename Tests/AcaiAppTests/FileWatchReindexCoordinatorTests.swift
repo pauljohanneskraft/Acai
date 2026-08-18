@@ -15,7 +15,10 @@ private final class ReindexSpy: @unchecked Sendable {
 
 /// `FileWatchReindexCoordinator` on macOS routes through the real `DirectoryChangeWatcher`
 /// (`DispatchSource.makeFileSystemObjectSource`) — these are lightweight filesystem integration
-/// tests, not pure unit tests, but a short debounce keeps them fast.
+/// tests, not pure unit tests, but a short debounce keeps them fast. iOS routes through
+/// `DirectoryPollingWatcher` instead (coarser directory-mtime polling, by design), which these
+/// short-debounce/15s-timeout tests aren't tuned for — macOS-only.
+#if os(macOS)
 @MainActor
 @Suite("FileWatchReindexCoordinator")
 struct FileWatchReindexCoordinatorTests {
@@ -108,3 +111,4 @@ struct FileWatchReindexCoordinatorTests {
         coordinator.stopAll()
     }
 }
+#endif
