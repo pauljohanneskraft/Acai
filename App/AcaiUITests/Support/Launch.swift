@@ -77,16 +77,6 @@ extension XCUIApplication {
             "-AcaiUITestColorScheme", defaultUITestColorScheme
         ]
         launch()
-        #if os(macOS)
-        // On this CI runner, a launch's WindowGroup occasionally never surfaces a window at all —
-        // confirmed empirically: waiting up to 30s in a single launch does not recover it, so this
-        // isn't a slow-render race. Retry with one fresh process/automation-session attachment.
-        if !windows.firstMatch.waitForExistence(timeout: 8) {
-            terminate()
-            launch()
-            _ = windows.firstMatch.waitForExistence(timeout: 15)
-        }
-        #endif
     }
 
     /// Forced via `-AcaiUITestColorScheme` so a screenshot golden's appearance never depends on the

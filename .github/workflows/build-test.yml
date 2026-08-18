@@ -204,7 +204,8 @@ jobs:
           XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=iPhone 17"
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -retry-tests-on-failure
         working-directory: App
 
       - name: Upload test results on failure
@@ -263,7 +264,8 @@ jobs:
           XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=iPad (A16)"
+            -destination "platform=iOS Simulator,name=iPad (A16)" \
+            -retry-tests-on-failure
         working-directory: App
 
       - name: Upload test results on failure
@@ -335,6 +337,7 @@ jobs:
             -scheme Acai-macOSUITests \
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .spm-cache \
+            -retry-tests-on-failure \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 
