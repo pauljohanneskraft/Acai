@@ -16,7 +16,7 @@ private final class ProgressCollector: @unchecked Sendable {
     }
 }
 
-@Suite("GitFetch", .serialized)
+@Suite("GitFetch")
 struct GitFetchTests {
     private func scratchDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

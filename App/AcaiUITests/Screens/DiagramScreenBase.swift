@@ -86,14 +86,18 @@ class DiagramScreenBase {
         _ = button.waitForExistence(timeout: 10)
         button.tap()
         #else
-        if button.waitForExistence(timeout: 10) {
-            button.tap()
-            return
-        }
+        // Polls both `button` and the overflow item together instead of waiting out `button`'s
+        // full 10s budget first — on a toolbar that's already collapsed into "More", `button` was
+        // never going to appear, so the old sequential wait paid a deterministic 10s tax every time.
         let overflowButton = app.buttons["OverflowBarButtonItem"]
-        guard overflowButton.waitForExistence(timeout: 2) else {
-            return
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            if button.exists { button.tap(); return }
+            if overflowButton.exists { break }
+            Thread.sleep(forTimeInterval: 0.1)
         }
+        if button.exists { button.tap(); return }
+        guard overflowButton.waitForExistence(timeout: 1) else { return }
         overflowButton.tap()
         let overflowItem = app.buttons[label]
         _ = overflowItem.waitForExistence(timeout: 5)

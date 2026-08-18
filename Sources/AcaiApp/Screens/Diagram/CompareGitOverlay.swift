@@ -139,11 +139,7 @@ struct DeltaHostedDiagramView<Content: View>: View {
                     isComparePresented = false
                     DispatchQueue.main.async { isComparePresented = true }
                 }
-                // `content`'s `.id()` also includes `loaded`, so the same tear-down/rebuild this
-                // file's own doc comment describes for a ref change happens again right when loading
-                // finishes — and that transition needs the identical false→true forcing, or the
-                // freshly mounted button/sheet can silently fail to re-present exactly as the
-                // "Loaded" state (and its `delta.loaded` identifier) would otherwise appear.
+                // Same false→true forcing as above, for the `loaded` half of `content`'s `.id()`.
                 .onChange(of: loaded) { _, newValue in
                     guard newValue, isComparePresented else { return }
                     isComparePresented = false

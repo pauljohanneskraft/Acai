@@ -23,9 +23,9 @@ jobs:
         run: swiftlint lint --strict
 
   build-test-ios:
-    name: Unit Test iOS
+    name: Build iOS + Unit Test iOS
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,15 +51,43 @@ jobs:
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
           restore-keys: spm-xcode-${{ runner.os }}-
 
-      - name: Build for iOS Simulator
+      # Builds the UI-test bundle once here; ui-test-iphone/ui-test-ipad run it via
+      # test-without-building against the uploaded artifact below, instead of each recompiling the
+      # whole package from scratch.
+      - name: Build for testing (UI test bundle)
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project Acai.xcodeproj \
-            -scheme Acai-iOS \
+            -scheme Acai-iOSUITests \
             -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
+
+      # Runs the SPM package's own unit tests (AcaiCoreTests, AcaiAppTests) on an actual iOS
+      # Simulator, not just macOS/Linux — a real coverage gap this closes, since AcaiApp ships on
+      # iOS and some code (e.g. Foundation's Process/Pipe availability) genuinely differs by platform.
+      - name: Run SPM unit tests on iOS Simulator
+        run: |
+          xcodebuild test \
+            -project Acai.xcodeproj \
+            -scheme AcaiPackageTests-iOS \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -derivedDataPath DerivedData \
+            -clonedSourcePackagesDirPath .spm-cache \
+            CODE_SIGNING_ALLOWED=NO
+        working-directory: App
+
+      - name: Package build-for-testing artifact
+        run: tar -czf ui-test-products.tar.gz -C DerivedData Build
+        working-directory: App
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ui-test-products
+          path: App/ui-test-products.tar.gz
+          retention-days: 1
 
   build-test-macos:
     name: Unit Test macOS
@@ -144,7 +172,7 @@ jobs:
     name: UI Test iPhone
     needs: [lint, build-test-ios]
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -152,26 +180,20 @@ jobs:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
 
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.5"
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        run: xcodegen generate --spec project.yml
-        working-directory: App
-
-      - name: Cache SPM dependencies
-        uses: actions/cache@v4
+      - uses: actions/download-artifact@v4
         with:
-          path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          name: ios-ui-test-products
+          path: App
+
+      - name: Unpack build-for-testing artifact
+        run: |
+          mkdir -p DerivedData
+          tar -xzf ui-test-products.tar.gz -C DerivedData
+        working-directory: App
 
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
@@ -179,12 +201,10 @@ jobs:
       - name: Run UI tests
         id: run-tests
         run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
-            -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
+          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
+            -destination "platform=iOS Simulator,name=iPhone 17"
         working-directory: App
 
       - name: Upload test results on failure
@@ -211,7 +231,7 @@ jobs:
     name: UI Test iPad
     needs: [lint, build-test-ios]
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -219,26 +239,20 @@ jobs:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
 
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.5"
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        run: xcodegen generate --spec project.yml
-        working-directory: App
-
-      - name: Cache SPM dependencies
-        uses: actions/cache@v4
+      - uses: actions/download-artifact@v4
         with:
-          path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          name: ios-ui-test-products
+          path: App
+
+      - name: Unpack build-for-testing artifact
+        run: |
+          mkdir -p DerivedData
+          tar -xzf ui-test-products.tar.gz -C DerivedData
+        working-directory: App
 
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPad (A16)"
@@ -246,12 +260,10 @@ jobs:
       - name: Run UI tests
         id: run-tests
         run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "platform=iOS Simulator,name=iPad (A16)" \
-            -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
+          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
+            -destination "platform=iOS Simulator,name=iPad (A16)"
         working-directory: App
 
       - name: Upload test results on failure
@@ -276,7 +288,9 @@ jobs:
 
   ui-test-macos:
     name: UI Test macOS
-    needs: [lint, build-test-macos]
+    # Only `lint`, not `build-test-macos`: that job runs plain SPM (`swift build`), a different
+    # build graph than this job's Xcode project — its output was never consumed here.
+    needs: [lint]
     runs-on: macos-26
     timeout-minutes: 45
     steps:

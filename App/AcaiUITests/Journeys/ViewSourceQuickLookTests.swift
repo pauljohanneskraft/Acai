@@ -12,7 +12,12 @@ final class ViewSourceQuickLookTests: XCTestCase {
 
     func testViewSourceOpensQuickLook() throws {
         let app = XCUIApplication()
-        app.launchWithFixture("seeded")
+        app.launchWithFixture("seeded") { app, destination in
+            app.launchArguments += [
+                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
+                destination.appendingPathComponent("artifacts/seeded.json").path
+            ]
+        }
 
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)

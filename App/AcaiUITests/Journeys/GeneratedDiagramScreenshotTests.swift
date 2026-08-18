@@ -20,7 +20,12 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
 
     private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
         app.rotateToLandscapeOnIPad()
-        app.launchWithFixture("seeded")
+        app.launchWithFixture("seeded") { app, destination in
+            app.launchArguments += [
+                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
+                destination.appendingPathComponent("artifacts/seeded.json").path
+            ]
+        }
 
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)

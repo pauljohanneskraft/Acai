@@ -88,7 +88,8 @@ struct PackageFreeformConversionTests {
         let freeform = packageDiagram().convertToFreeform(
             artifact: artifact(), positions: [:], scale: 1, offset: .zero
         )
-        let positions = Set(freeform.nodes.map { CGPoint(x: $0.positionX, y: $0.positionY) })
+        // `CGPoint: Hashable` needs iOS 18, newer than this package's floor.
+        let positions = Set(freeform.nodes.map { [$0.positionX, $0.positionY] })
         #expect(positions.count == 2)
     }
 

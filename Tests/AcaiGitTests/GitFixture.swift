@@ -2,6 +2,12 @@ import Foundation
 
 /// Shells out to `/usr/bin/git` (fixture setup only; the types under test never shell out).
 /// `Process` is safe to use here because this target only ever builds on macOS.
+///
+/// `make()`/`makeWithRepeatedTouches()` build their fixture content once per process (`static let`
+/// templates, computed via the real `git` command sequence below), then `directory` gets a plain
+/// filesystem copy of that template — every call produced byte-identical content anyway (nothing
+/// here varies per call site), so the ~13 real `git` subprocesses per call were pure waste across
+/// the ~22 call sites in this test target.
 struct GitFixture {
     let directory: URL
 
@@ -29,8 +35,52 @@ struct GitFixture {
         let feature: String
     }
 
+    private static func copyTree(from source: URL, to destination: URL) throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.removeItem(at: destination)
+        }
+        try fileManager.createDirectory(
+            at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try fileManager.copyItem(at: source, to: destination)
+    }
+
+    private static func makeTemplateDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("AcaiGitFixture-template-\(UUID().uuidString)", isDirectory: true)
+    }
+
+    // A fixture template that fails to build makes every test in this target meaningless — fail
+    // loudly and immediately, not per-test.
+    private static let template: (directory: URL, commits: Commits) = {
+        let directory = makeTemplateDirectory()
+        // swiftlint:disable:next force_try
+        let commits = try! GitFixture(directory: directory).buildTemplate()
+        return (directory, commits)
+    }()
+
+    private static let repeatedTouchesTemplate: (directory: URL, headSHA: String) = {
+        let directory = makeTemplateDirectory()
+        // swiftlint:disable:next force_try
+        let headSHA = try! GitFixture(directory: directory).buildRepeatedTouchesTemplate()
+        return (directory, headSHA)
+    }()
+
     @discardableResult
     func make() throws -> Commits {
+        try Self.copyTree(from: Self.template.directory, to: directory)
+        return Self.template.commits
+    }
+
+    /// Independent of `make()`; gives `README.md` a churn count of 2 (the root commit contributes no
+    /// touches — see `GitChurn`'s doc comment) and `Other.swift` a churn count of 1.
+    @discardableResult
+    func makeWithRepeatedTouches() throws -> String {
+        try Self.copyTree(from: Self.repeatedTouchesTemplate.directory, to: directory)
+        return Self.repeatedTouchesTemplate.headSHA
+    }
+
+    private func buildTemplate() throws -> Commits {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try run(["init", "--initial-branch=main"])
 
@@ -60,10 +110,7 @@ struct GitFixture {
         return Commits(initial: initial, tagged: tagged, feature: feature)
     }
 
-    /// Independent of `make()`; gives `README.md` a churn count of 2 (the root commit contributes no
-    /// touches — see `GitChurn`'s doc comment) and `Other.swift` a churn count of 1.
-    @discardableResult
-    func makeWithRepeatedTouches() throws -> String {
+    private func buildRepeatedTouchesTemplate() throws -> String {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try run(["init", "--initial-branch=main"])
 

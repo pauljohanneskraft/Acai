@@ -28,7 +28,12 @@ final class AccessibilityAuditTests: XCTestCase {
     func testSeededJourneyScreensAreAccessible() throws {
         let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded")
+        app.launchWithFixture("seeded") { app, destination in
+            app.launchArguments += [
+                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
+                destination.appendingPathComponent("artifacts/seeded.json").path
+            ]
+        }
 
         let browser = ProjectBrowserScreen(app: app)
         XCTAssertTrue(browser.newProjectButton.waitForExistence(timeout: 10))

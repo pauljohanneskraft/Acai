@@ -58,6 +58,31 @@ struct UITestFixtureResolver {
         return result
     }
 
+    static let comparisonArtifactLaunchArgument = "-AcaiUITestComparisonArtifact"
+
+    struct ComparisonArtifactKey: Hashable {
+        let codebaseID: UUID
+        let ref: String
+    }
+
+    /// Every `-AcaiUITestComparisonArtifact <codebaseID> <ref> <path>` triple (repeatable) — see
+    /// `ComparisonArtifactResolver`. A `(codebaseID, ref)` pair with no entry still gets a real
+    /// `GitRevisionSnapshot`.
+    func resolveComparisonArtifactURLs() -> [ComparisonArtifactKey: URL] {
+        var result: [ComparisonArtifactKey: URL] = [:]
+        var index = arguments.startIndex
+        while index < arguments.endIndex {
+            defer { index += 1 }
+            guard arguments[index] == Self.comparisonArtifactLaunchArgument,
+                  arguments.indices.contains(index + 3),
+                  let codebaseID = UUID(uuidString: arguments[index + 1])
+            else { continue }
+            let ref = arguments[index + 2]
+            result[.init(codebaseID: codebaseID, ref: ref)] = URL(fileURLWithPath: arguments[index + 3])
+        }
+        return result
+    }
+
     static let colorSchemeLaunchArgument = "-AcaiUITestColorScheme"
 
     /// A forced `light`/`dark` appearance passed via `-AcaiUITestColorScheme <light|dark>`, so

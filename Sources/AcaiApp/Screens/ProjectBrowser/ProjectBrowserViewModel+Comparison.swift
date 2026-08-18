@@ -81,7 +81,8 @@ extension ProjectBrowserViewModel {
         let url = URL(fileURLWithPath: directory).standardizedFileURL
 
         guard let baseRef = diagram.comparisonBaseRef else {
-            await loadComparisonSnapshot(directory: directory, url: url, ref: ref, fileFilter: fileFilter)
+            await loadComparisonSnapshot(
+                codebaseID: diagram.codebaseID, directory: directory, url: url, ref: ref, fileFilter: fileFilter)
             return
         }
 
@@ -98,16 +99,22 @@ extension ProjectBrowserViewModel {
             }
         }
         guard let mergeBaseSHA = resolvedMergeBases[mergeBaseKey] else { return }
-        await loadComparisonSnapshot(directory: directory, url: url, ref: mergeBaseSHA, fileFilter: fileFilter)
-        await loadComparisonSnapshot(directory: directory, url: url, ref: ref, fileFilter: fileFilter)
+        await loadComparisonSnapshot(
+            codebaseID: diagram.codebaseID, directory: directory, url: url, ref: mergeBaseSHA, fileFilter: fileFilter)
+        await loadComparisonSnapshot(
+            codebaseID: diagram.codebaseID, directory: directory, url: url, ref: ref, fileFilter: fileFilter)
     }
 
-    private func loadComparisonSnapshot(directory: String, url: URL, ref: String, fileFilter: FileFilter?) async {
+    private func loadComparisonSnapshot(
+        codebaseID: UUID, directory: String, url: URL, ref: String, fileFilter: FileFilter?
+    ) async {
         let key = ComparisonKey(directory: directory, ref: ref)
         guard comparisonArtifacts[key] == nil else { return }
         do {
+            let provider = ComparisonArtifactResolver().resolve(codebaseID: codebaseID, ref: ref, directory: url)
+            let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
             let semantic = try await Task.detached(priority: .userInitiated) {
-                try GitRevisionSnapshot(directory: url, reference: ref).artifact(fileFilter: fileFilter)
+                try provider.artifact(analyzer: analyzer, fileFilter: fileFilter)
             }.value
             comparisonArtifacts[key] = semantic
             comparisonError = nil

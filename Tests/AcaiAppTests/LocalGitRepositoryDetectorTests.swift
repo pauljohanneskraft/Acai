@@ -2,9 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-// iOS's Foundation has no `Process`/`Pipe` (see `App/project.yml`'s comment on why
-// `GitFixtureRepository` needs `SwiftGitX` instead) — this suite's fixture helper shells out to
-// real `git` directly, so it only compiles/runs on platforms where that's available.
+// Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
 @Suite("Local-folder git detection")
 struct LocalGitRepositoryDetectorTests {

@@ -32,7 +32,7 @@ enum ExampleExports {
     }
 }
 
-@Suite("Class diagram DOT exports", .serialized)
+@Suite("Class diagram DOT exports")
 struct ClassDiagramExportTests {
 
     /// (golden file stem, language) for every language the class-diagram sample covers.
@@ -78,7 +78,7 @@ struct ClassDiagramExportTests {
     }
 }
 
-@Suite("Sequence diagram DOT exports", .serialized)
+@Suite("Sequence diagram DOT exports")
 struct SequenceDiagramExportTests {
 
     /// Sequence tracing needs callable receivers. Plain JavaScript carries none, so it stays out;
@@ -132,7 +132,7 @@ struct SequenceDiagramExportTests {
     }
 }
 
-@Suite("Package diagram DOT exports", .serialized)
+@Suite("Package diagram DOT exports")
 struct PackageDiagramExportTests {
 
     /// The package sample is multi-module by directory (`Core` and `Banking`), so unlike the
@@ -183,7 +183,7 @@ struct PackageDiagramExportTests {
     }
 }
 
-@Suite("Call graph DOT exports", .serialized)
+@Suite("Call graph DOT exports")
 struct CallGraphExportTests {
 
     /// The call-graph sample (an order-submission fan-out) carries typed call receivers in
@@ -230,7 +230,7 @@ struct CallGraphExportTests {
     }
 }
 
-@Suite("State diagram DOT exports", .serialized)
+@Suite("State diagram DOT exports")
 struct StateDiagramExportTests {
 
     /// Every language expresses the same `Download.state` machine, so the state-from spec is

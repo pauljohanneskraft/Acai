@@ -21,8 +21,30 @@ enum ExamplePNGs {
         components.reduce(repoRoot.appendingPathComponent("Examples")) { $0.appendingPathComponent($1) }
     }
 
+    private struct CacheKey: Hashable {
+        let directory: URL
+        let languages: [CodeArtifact.SourceLanguage]
+    }
+
+    // Every suite below parametrizes over a theme that doesn't affect parsing, only the final
+    // render — caching here avoids re-parsing the same fixture once per theme.
+    private static let cacheLock = NSLock()
+    // Synchronized entirely through `cacheLock`, never accessed without holding it.
+    nonisolated(unsafe) private static var cache: [CacheKey: CodeArtifact] = [:]
+
     static func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) throws -> CodeArtifact {
-        try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
+        let key = CacheKey(directory: directory, languages: languages)
+        cacheLock.lock()
+        if let cached = cache[key] {
+            cacheLock.unlock()
+            return cached
+        }
+        cacheLock.unlock()
+        let artifact = try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
+        cacheLock.lock()
+        cache[key] = artifact
+        cacheLock.unlock()
+        return artifact
     }
 
     /// The committed palettes: each suite is parametrised over these so the same assertions run

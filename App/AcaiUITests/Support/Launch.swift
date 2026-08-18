@@ -74,7 +74,7 @@ extension XCUIApplication {
 
         launchArguments += [
             "-AcaiUITestFixtureBaseDir", destination.path,
-            "-AcaiUITestColorScheme", defaultUITestColorScheme,
+            "-AcaiUITestColorScheme", defaultUITestColorScheme
         ]
         launch()
     }

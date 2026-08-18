@@ -2,15 +2,12 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
+// Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
+#if os(macOS)
 /// End-to-end coverage of the pull-request comparison path: `selectComparisonPullRequest` +
 /// `ensureComparisonLoaded` resolving `GitCheckout.mergeBase` and loading both sides as historical
 /// snapshots — proving three-dot semantics (the base branch's own unrelated later commits don't
 /// leak into the diff) through the real view model, not just `GitCheckout` in isolation.
-///
-/// iOS's Foundation has no `Process`/`Pipe` (see `App/project.yml`'s comment on why
-/// `GitFixtureRepository` needs `SwiftGitX` instead) — this suite's fixture helper shells out to
-/// real `git` directly, so it only compiles/runs on platforms where that's available.
-#if os(macOS)
 @Suite("ProjectBrowserViewModel pull-request comparison")
 @MainActor
 struct PullRequestComparisonTests {
@@ -121,6 +118,101 @@ struct PullRequestComparisonTests {
         #expect(diagram.comparisonGitRef == "HEAD")
         #expect(diagram.comparisonBaseRef == nil)
         #expect(!model.isComparisonFileReviewed(diagramID: diagramID, filePath: "Widget.swift"))
+    }
+
+    /// Neither existing test above exercises `ensureComparisonLoaded`'s plain-ref branch
+    /// (`updateComparisonGitRef` + no `comparisonBaseRef`) — both go through
+    /// `selectComparisonPullRequest`'s merge-base branch instead. This covers the plain "compare
+    /// against HEAD" path `CompareGitRevisionTests` (an XCUITest journey) also exercises, at the
+    /// ViewModel layer.
+    @Test func comparingAgainstHEADExcludesAnUncommittedAddition() async throws {
+        let repoDir = try makeTempDirectory("repo")
+        let storeDir = try makeTempDirectory("store")
+        defer {
+            try? FileManager.default.removeItem(at: repoDir)
+            try? FileManager.default.removeItem(at: storeDir)
+        }
+        try git(["init", "-q", "--initial-branch=main"], in: repoDir)
+        try "class Foo {}\n".write(to: repoDir.appendingPathComponent("Foo.swift"), atomically: true, encoding: .utf8)
+        try git(["add", "-A"], in: repoDir)
+        try git(["commit", "-q", "-m", "initial"], in: repoDir)
+        try "class Added {}\n".write(
+            to: repoDir.appendingPathComponent("Added.swift"), atomically: true, encoding: .utf8)
+
+        let store = ProjectStore(baseDir: storeDir)
+        let model = ProjectBrowserViewModel(store: store)
+        let projectID = model.editing.addProject(title: "Demo", subtitle: "")
+        model.editing.addCodebase(to: projectID, name: "Demo", directoryURL: repoDir)
+        let codebaseID = try #require(store.projects.first?.codebases.first?.id)
+        let diagramID = try #require(
+            model.diagrams.add(to: projectID, codebaseID: codebaseID, content: .packageDiagram))
+
+        model.updateComparisonGitRef(diagramID: diagramID, ref: "HEAD")
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+        #expect(diagram.comparisonBaseRef == nil)
+
+        await model.ensureComparisonLoaded(for: diagram)
+
+        let oldNames = Set((model.comparisonArtifact(for: diagram)?.types ?? []).map(\.name))
+        #expect(oldNames == ["Foo"], "the uncommitted Added.swift should not appear in the HEAD snapshot")
+        #expect(model.comparisonError == nil)
+    }
+
+    /// The findings-delta half of the Compare panel — `ensureComparisonAnalysisLoaded`/
+    /// `comparisonAnalysis(for:)` and the finding-review toggle — reached only from
+    /// `CompareGitOverlay`'s findings tab, which no XCUITest journey opens.
+    @Test func comparisonAnalysisLoadsAgainstTheOldSideOnceItsArtifactIsAvailable() async throws {
+        let repoDir = try makeTempDirectory("repo")
+        let storeDir = try makeTempDirectory("store")
+        defer {
+            try? FileManager.default.removeItem(at: repoDir)
+            try? FileManager.default.removeItem(at: storeDir)
+        }
+        try git(["init", "-q", "--initial-branch=main"], in: repoDir)
+        try "class Foo {}\n".write(to: repoDir.appendingPathComponent("Foo.swift"), atomically: true, encoding: .utf8)
+        try git(["add", "-A"], in: repoDir)
+        try git(["commit", "-q", "-m", "initial"], in: repoDir)
+
+        let store = ProjectStore(baseDir: storeDir)
+        let model = ProjectBrowserViewModel(store: store)
+        let projectID = model.editing.addProject(title: "Demo", subtitle: "")
+        model.editing.addCodebase(to: projectID, name: "Demo", directoryURL: repoDir)
+        let codebaseID = try #require(store.projects.first?.codebases.first?.id)
+        let diagramID = try #require(
+            model.diagrams.add(to: projectID, codebaseID: codebaseID, content: .packageDiagram))
+
+        model.updateComparisonGitRef(diagramID: diagramID, ref: "HEAD")
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+        #expect(model.comparisonAnalysis(for: diagram) == nil, "nothing to analyze before the artifact loads")
+
+        await model.ensureComparisonLoaded(for: diagram)
+        await model.ensureComparisonAnalysisLoaded(for: diagram)
+
+        #expect(model.comparisonAnalysis(for: diagram) != nil)
+    }
+
+    @Test func togglingAComparisonFindingReviewedFlipsItBackAndForth() throws {
+        let repoDir = try makeTempDirectory("repo")
+        let storeDir = try makeTempDirectory("store")
+        defer {
+            try? FileManager.default.removeItem(at: repoDir)
+            try? FileManager.default.removeItem(at: storeDir)
+        }
+        try makePullRequestFixture(in: repoDir)
+
+        let store = ProjectStore(baseDir: storeDir)
+        let model = ProjectBrowserViewModel(store: store)
+        let projectID = model.editing.addProject(title: "Demo", subtitle: "")
+        model.editing.addCodebase(to: projectID, name: "Demo", directoryURL: repoDir)
+        let codebaseID = try #require(store.projects.first?.codebases.first?.id)
+        let diagramID = try #require(
+            model.diagrams.add(to: projectID, codebaseID: codebaseID, content: .packageDiagram))
+
+        #expect(!model.isComparisonFindingReviewed(diagramID: diagramID, findingID: "finding-1"))
+        model.toggleComparisonFindingReviewed(diagramID: diagramID, findingID: "finding-1")
+        #expect(model.isComparisonFindingReviewed(diagramID: diagramID, findingID: "finding-1"))
+        model.toggleComparisonFindingReviewed(diagramID: diagramID, findingID: "finding-1")
+        #expect(!model.isComparisonFindingReviewed(diagramID: diagramID, findingID: "finding-1"))
     }
 }
 #endif

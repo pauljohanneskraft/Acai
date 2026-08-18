@@ -8,7 +8,7 @@ import AcaiDiff
 // Delta (diff) golden-export regression tests. Each suite mirrors a `acai diff --diagram` code path
 // for one diagram type and asserts the regenerated `.delta.dot` / `.delta.mmd` still matches byte-for-byte.
 
-@Suite("Class delta diagram exports", .serialized)
+@Suite("Class delta diagram exports")
 struct ClassDiagramDeltaExportTests {
 
     /// JavaScript omitted — no type annotations. Each language's Before/After shows a change natural
@@ -66,7 +66,7 @@ struct ClassDiagramDeltaExportTests {
     }
 }
 
-@Suite("Sequence delta diagram exports", .serialized)
+@Suite("Sequence delta diagram exports")
 struct SequenceDiagramDeltaExportTests {
 
     /// One language's sequence-delta case. A struct (not a 4-tuple) to keep both the language's
@@ -127,7 +127,7 @@ struct SequenceDiagramDeltaExportTests {
     }
 }
 
-@Suite("State delta diagram exports", .serialized)
+@Suite("State delta diagram exports")
 struct StateDiagramDeltaExportTests {
 
     /// Every language expresses the same `Download.state` machine (all 9, JS included). `Before`
@@ -177,7 +177,7 @@ struct StateDiagramDeltaExportTests {
     }
 }
 
-@Suite("Package delta diagram exports", .serialized)
+@Suite("Package delta diagram exports")
 struct PackageDiagramDeltaExportTests {
 
     /// Mirrors the package coverage (no JavaScript). `After` adds a new `Reporting` module that
@@ -233,7 +233,7 @@ struct PackageDiagramDeltaExportTests {
     }
 }
 
-@Suite("Call graph delta diagram exports", .serialized)
+@Suite("Call graph delta diagram exports")
 struct CallGraphDeltaExportTests {
 
     /// Mirrors the call-graph coverage (no plain JavaScript). `Before` drops the

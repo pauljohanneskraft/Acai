@@ -80,14 +80,14 @@ struct ScreenshotComparator {
     }
 
     private func changedCellFraction(_ lhs: Data, _ rhs: Data) -> Double? {
-        guard let a = luminanceGrid(lhs), let b = luminanceGrid(rhs) else { return nil }
+        guard let lhsGrid = luminanceGrid(lhs), let rhsGrid = luminanceGrid(rhs) else { return nil }
         let maskedRows = SnapshotPlatform().name == "macOS" ? 0 : statusBarMaskRows
-        let changed = zip(a, b).enumerated().reduce(0) { count, indexed in
+        let changed = zip(lhsGrid, rhsGrid).enumerated().reduce(0) { count, indexed in
             let (index, pair) = indexed
             guard index / comparisonSide >= maskedRows else { return count }
             return abs(Int(pair.0) - Int(pair.1)) > perCellDelta ? count + 1 : count
         }
-        return Double(changed) / Double(a.count)
+        return Double(changed) / Double(lhsGrid.count)
     }
 
     /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png`.

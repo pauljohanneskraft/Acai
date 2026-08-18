@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiGit
 
-@Suite("GitCheckout.mergeBase", .serialized)
+@Suite("GitCheckout.mergeBase")
 struct GitCheckoutMergeBaseTests {
     private func scratchDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

@@ -8,7 +8,7 @@ import AcaiDiagram
 /// codebase with `AnalysisService`, then trace call graphs from real entry points. This is the
 /// "universally works" check the synthetic-fixture tests can't give — the parsers' `callSites`
 /// must line up with what the generator expects.
-@Suite("Sequence Diagram Integration (own sources)", .serialized)
+@Suite("Sequence Diagram Integration (own sources)")
 struct SequenceDiagramIntegrationTests {
 
     /// Parse the repo's `Sources/` once and share across tests (parsing is the expensive part).

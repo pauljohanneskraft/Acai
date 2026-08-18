@@ -23,6 +23,8 @@ struct QuickOpenView: View {
     @State private var filteredEntries: [QuickOpenEntry] = []
     @FocusState private var isFieldFocused: Bool
 
+    private var controller: QuickOpenController { QuickOpenController(model: model) }
+
     var body: some View {
         VStack(spacing: 0) {
             searchField
@@ -77,8 +79,11 @@ struct QuickOpenView: View {
                 .accessibilityIdentifier("quickOpen.noResultsState")
         } else {
             List(filteredEntries) { entry in
-                QuickOpenResultRow(entry: entry, onSelect: { resolution in apply(resolution, entry: entry) })
-                    .accessibilityIdentifier("quickOpen.result.\(entry.id)")
+                QuickOpenResultRow(entry: entry, onSelect: { resolution in
+                    controller.apply(resolution, entry: entry)
+                    dismissAction?()
+                })
+                .accessibilityIdentifier("quickOpen.result.\(entry.id)")
             }
             #if os(macOS)
             .listStyle(.plain)
@@ -115,43 +120,9 @@ struct QuickOpenView: View {
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
-            let needle = text
-            let matches = allEntries.filter { $0.name.localizedCaseInsensitiveContains(needle) }
+            let matches = controller.filtered(allEntries, matching: text)
             guard !Task.isCancelled else { return }
             filteredEntries = matches
-        }
-    }
-
-    private func apply(_ resolution: CodeElementResolution?, entry: QuickOpenEntry) {
-        defer { dismissAction?() }
-        switch entry.kind {
-        // Filtered out of `allEntries` in `buildIndex()`, but `ProjectBrowserViewModel
-        // .applyQuickOpenEntryDefault` reaches these same cases for a Spotlight continuation.
-        case .project:
-            model.selection = .project(entry.projectID)
-        case .codebase:
-            guard let id = entry.codebaseID else { return }
-            model.selection = .codebase(id)
-        case .generatedDiagram:
-            guard let id = entry.generatedDiagramID else { return }
-            model.selection = .generatedDiagram(id)
-        case .freeformDiagram:
-            guard let id = entry.freeformDiagramID else { return }
-            model.selection = .freeformDiagram(id)
-        case .type, .method, .module:
-            applyResolution(resolution, entry: entry)
-        }
-    }
-
-    private func applyResolution(_ resolution: CodeElementResolution?, entry: QuickOpenEntry) {
-        guard let resolution, let codebaseID = entry.codebaseID else { return }
-        switch resolution.target {
-        case .existing(let diagramID):
-            model.selection = .generatedDiagram(diagramID)
-        case .create(let content):
-            if let newID = model.diagrams.add(to: entry.projectID, codebaseID: codebaseID, content: content) {
-                model.selection = .generatedDiagram(newID)
-            }
         }
     }
 }
