@@ -76,18 +76,16 @@ extension XCUIApplication {
             "-AcaiUITestFixtureBaseDir", destination.path,
             "-AcaiUITestColorScheme", defaultUITestColorScheme
         ]
-        #if os(macOS)
-        // Guards against launch-time state restoration reopening zero windows (a prior test's app
-        // instance can persist "all windows closed" to ~/Library/Saved Application State/).
-        launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
-        #endif
         launch()
         #if os(macOS)
-        // On this CI runner, the very first element query after `launch()` occasionally races the
-        // WindowGroup's window actually opening — observed as every element lookup in the test
-        // timing out with zero windows in the accessibility tree. Absorb that here once, centrally,
-        // rather than inflating every journey's own per-element timeouts.
-        _ = windows.firstMatch.waitForExistence(timeout: 20)
+        // On this CI runner, a launch's WindowGroup occasionally never surfaces a window at all —
+        // confirmed empirically: waiting up to 30s in a single launch does not recover it, so this
+        // isn't a slow-render race. Retry with one fresh process/automation-session attachment.
+        if !windows.firstMatch.waitForExistence(timeout: 8) {
+            terminate()
+            launch()
+            _ = windows.firstMatch.waitForExistence(timeout: 15)
+        }
         #endif
     }
 
