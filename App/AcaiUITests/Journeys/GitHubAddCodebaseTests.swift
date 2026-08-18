@@ -3,44 +3,28 @@ import XCTest
 import UIKit
 #endif
 
-/// Real `libgit2` clone/fetch mechanics are covered by `GitWorktreeSyncTests`; this journey uses
-/// the git-free `FastFixtureGitHubRepositoryService` and only proves the UI/ViewModel wiring.
+/// Adding a GitHub-backed codebase does a real `libgit2` clone, and switching its branch does a
+/// real incremental fetch into the *same* clone directory — verified behaviorally by asserting the
+/// Class Diagram's node set actually changes after the switch, plus that Compare works.
+///
+/// Stays on real git deliberately: `FastFixtureGitHubRepositoryService` is git-free (a plain
+/// directory copy, no `.git` at all), but Compare's `GitDiffSnapshot.extractedDirectory()` needs an
+/// actual git repository to extract a historical ref from — it isn't a candidate for that fixture.
+///
+/// No real network access: `FixtureGitHubRepositoryService` clones/fetches from a local repository
+/// `GitFixtureRepository` builds fresh at launch — `main` with two commits (`Widget`, `Gadget`),
+/// `feature` one commit further ahead (`Extra`) — instead of github.com.
 @MainActor
 final class GitHubAddCodebaseTests: XCTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 
-    private static let packageManifest = """
-        // swift-tools-version: 6.0
-        import PackageDescription
-
-        let package = Package(
-            name: "FixtureRepo",
-            targets: [
-                .target(name: "FixtureRepo")
-            ]
-        )
-
-        """
-
-    func testAddingSwitchingBranchAndComparingAGitHubCodebaseAllWorkCorrectly() throws {
+    func testAddingSwitchingBranchAndComparingAGitHubCodebaseAllWorkAgainstARealLocalClone() throws {
         let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded") { app, destination in
-            let remoteRoot = destination.appendingPathComponent("GitHubRemote")
-            try GitFixtureRepository(directory: remoteRoot).makeCannedRemote(refs: [
-                "main": [
-                    "Package.swift": Self.packageManifest,
-                    "Sources/FixtureRepo/Widget.swift": "public class Widget {}\n",
-                    "Sources/FixtureRepo/Gadget.swift": "public class Gadget {}\n"
-                ],
-                "feature": [
-                    "Package.swift": Self.packageManifest,
-                    "Sources/FixtureRepo/Widget.swift": "public class Widget {}\n",
-                    "Sources/FixtureRepo/Gadget.swift": "public class Gadget {}\n",
-                    "Sources/FixtureRepo/Extra.swift": "public class Extra {}\n"
-                ]
-            ])
-            app.launchArguments += ["-AcaiUITestGitHubFastFixtureRoot", remoteRoot.path]
+            let remoteDir = destination.appendingPathComponent("GitHubRemote")
+            try GitFixtureRepository(directory: remoteDir).makeRemote()
+            app.launchArguments += ["-AcaiUITestGitHubRemoteURL", remoteDir.path]
         }
 
         let browser = ProjectBrowserScreen(app: app)
@@ -80,7 +64,7 @@ final class GitHubAddCodebaseTests: XCTestCase {
 
         XCTAssertTrue(diagram.typeNode(named: "Widget").waitForExistence(timeout: 10))
         XCTAssertTrue(diagram.typeNode(named: "Gadget").exists)
-        XCTAssertFalse(diagram.typeNode(named: "Extra").exists, "feature-only content leaked into main")
+        XCTAssertFalse(diagram.typeNode(named: "Extra").exists, "feature-only content leaked into the main clone")
 
         switchBranchAndCompare(app: app, browser: browser, diagram: diagram, codebaseDetail: codebaseDetail)
     }
@@ -115,14 +99,16 @@ final class GitHubAddCodebaseTests: XCTestCase {
         classDiagramButtonAfterSwitch.tapUntil(featureBranchDiagram.typeNode(named: "Extra"))
 
         XCTAssertTrue(featureBranchDiagram.typeNode(named: "Extra").waitForExistence(timeout: 10),
-                      "switching branches should have picked up feature's new content")
+                      "switching branches should have fetched feature's new content into the same clone")
 
         XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
         featureBranchDiagram.chooseCompareRef("main")
-        // `compareLoadingIndicator` distinguishes a genuine still-loading timeout from never
-        // reaching a recognizable comparison state at all.
-        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: UITestWaits.standard.long)
+        // 90s: CI's iPad runner is measurably slower/more contended than its iPhone counterpart for
+        // the same job, and the fixture repo is trivially small, so this isn't a data-volume
+        // problem. `compareLoadingIndicator` distinguishes a genuine still-loading timeout from
+        // never reaching a recognizable comparison state at all.
+        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 90)
         let errorExists = featureBranchDiagram.compareErrorIndicator.exists
         let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
         XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage) "

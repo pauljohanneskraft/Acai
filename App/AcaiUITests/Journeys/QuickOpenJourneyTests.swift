@@ -16,6 +16,10 @@ final class QuickOpenJourneyTests: XCTestCase {
 
         let quickOpen = QuickOpenScreen(app: app)
         XCTAssertTrue(quickOpen.searchField.waitForExistence(timeout: 10))
+        // Search filters `allEntries` reactively only on query changes, not once the index finishes
+        // building — typing before `buildIndex()` completes would filter against an empty list and
+        // never re-run, permanently showing zero results.
+        XCTAssertTrue(quickOpen.loadingState.waitForNonExistence(timeout: 10))
         quickOpen.search("SampleSwiftPackage")
 
         let result = quickOpen.result(id: "codebase:\(Self.codebaseID)")
