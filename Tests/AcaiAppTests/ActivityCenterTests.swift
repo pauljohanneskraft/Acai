@@ -72,7 +72,14 @@ struct ActivityCenterTests {
                 return 1
             }
         }
-        try await Eventually().waitUntil("progress is reported") { center.operations.first?.progress == 0.5 }
+        // Three actor hops sit between this poll and `onProgress` actually landing (the test's own
+        // `Task`, `run`'s work `Task`, and `onProgress`'s own reporting `Task`), each contending for
+        // the same `@MainActor` serial executor as every other suite running in parallel — a wider
+        // margin than the default is needed here specifically, not because the condition is ever
+        // expected to take long, but because a fully-loaded parallel run can push all three hops out
+        // without any of them being individually stuck.
+        try await Eventually(timeout: .seconds(15))
+            .waitUntil("progress is reported") { center.operations.first?.progress == 0.5 }
         #expect(center.operations.first?.progress == 0.5)
         await gate.open()
         _ = try await task.value

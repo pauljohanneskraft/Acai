@@ -28,8 +28,9 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
 
         let browser = ProjectBrowserScreen(app: app)
 
-        // `GitHubTokenStore` is Keychain-backed and not fixture-redirected — always sign back out
-        // via `defer`, even on assertion failure, so this never leaves a stale entry behind.
+        // A fixture launch redirects `GitHubTokenStore` into this run's disposable directory, so
+        // the sign-out below is tidiness rather than isolation — and it would not run on an
+        // assertion failure anyway, since XCTest aborts via an exception that skips `defer`.
         let github = GitHubAccountScreen(app: app)
         defer { if github.signedInRow.exists { github.signOutButton.tap() } }
         signIn(app: app, browser: browser, github: github)

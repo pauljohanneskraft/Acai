@@ -5,7 +5,7 @@ import AcaiCore
 
 /// Not run by default (`ACAI_RECORD_FIXTURE_ARTIFACTS` gates it) — regenerates the pre-baked
 /// `CodeArtifact` JSON fixtures `CompareGitRevisionTests` and friends decode via
-/// `-AcaiUITestCodebaseArtifacts`/`-AcaiUITestComparisonArtifacts`, instead of driving a real parse
+/// `ACAI_UITEST_CODEBASE_ARTIFACTS`/`ACAI_UITEST_COMPARISON_ARTIFACTS`, instead of driving a real parse
 /// through the UI. Re-run this whenever `Fixtures/seeded/SampleSwiftPackage` changes; never hand-edit
 /// the generated JSON.
 @Suite("Fixture CodeArtifact generation (record mode)")

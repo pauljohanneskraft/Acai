@@ -11,10 +11,15 @@ struct AccessibilityAudit {
     let testCase: XCTestCase
     var minimumTapTarget: CGFloat = 44
 
+    /// Waits rather than reading `exists` outright: a toolbar control can materialize a beat after
+    /// the content the caller navigated to, and an instantaneous query would fail on the gap.
     func assertAccessible(
-        _ element: XCUIElement, name: String, file: StaticString = #filePath, line: UInt = #line
+        _ element: XCUIElement, name: String, timeout: TimeInterval = 10,
+        file: StaticString = #filePath, line: UInt = #line
     ) {
-        XCTAssertTrue(element.exists, "\(name) does not exist", file: file, line: line)
+        XCTAssertTrue(
+            element.waitForExistence(timeout: timeout), "\(name) does not exist", file: file, line: line
+        )
         XCTAssertFalse(element.label.isEmpty, "\(name) has no accessibility label", file: file, line: line)
         logIfBelowMinimumTapTarget(element, name: name)
     }

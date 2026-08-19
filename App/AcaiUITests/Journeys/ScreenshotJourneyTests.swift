@@ -11,6 +11,9 @@ import XCTest
 /// of the identical path.
 @MainActor
 final class ScreenshotJourneyTests: UIJourneyTestCase {
+
+    /// Several states are captured per run; see `UIJourneyTestCase.stopsAtFirstFailure`.
+    override var stopsAtFirstFailure: Bool { false }
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 

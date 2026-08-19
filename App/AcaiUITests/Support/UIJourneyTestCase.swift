@@ -6,12 +6,17 @@ import XCTest
 class UIJourneyTestCase: XCTestCase {
     let app = XCUIApplication()
 
+    /// `false` for journeys that validate several screenshot states in one method: aborting at the
+    /// first over-threshold state would leave the later states uncaptured, and those captures are
+    /// exactly what `Scripts/snapshots_accept.sh` consumes to refresh goldens.
+    var stopsAtFirstFailure: Bool { true }
+
     override func setUp() {
         super.setUp()
-        // Without this, a failed wait doesn't end the test — every later `waitForExistence` runs out
-        // its full timeout too, so one real failure costs a minute of dead wall-clock and reports
-        // four cascading assertions instead of the one that matters.
-        continueAfterFailure = false
+        // Otherwise a failed wait doesn't end the test — every later `waitForExistence` runs out its
+        // full timeout too, so one real failure costs a minute of dead wall-clock and reports four
+        // cascading assertions instead of the one that matters.
+        continueAfterFailure = !stopsAtFirstFailure
     }
 
     override func tearDown() {

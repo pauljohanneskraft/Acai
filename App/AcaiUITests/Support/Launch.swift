@@ -110,7 +110,7 @@ extension XCUIApplication {
         records.map { $0.joined(separator: "\t") }.joined(separator: "\n")
     }
 
-    /// Forced via `-AcaiUITestColorScheme` so a screenshot golden's appearance never depends on the
+    /// Forced via `ACAI_UITEST_COLOR_SCHEME` so a screenshot golden's appearance never depends on the
     /// runner's system default. Split across platforms so both appearances get real coverage:
     /// macOS and iPhone run dark, iPad runs light.
     private var defaultUITestColorScheme: String {

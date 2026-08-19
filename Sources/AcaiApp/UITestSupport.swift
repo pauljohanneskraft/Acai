@@ -28,8 +28,16 @@ struct UITestFixtureResolver {
         self.environment = environment
     }
 
+    /// The master switch, and `#if DEBUG` because it is one: every other hook here is gated on this
+    /// returning non-`nil`. An environment variable is inherited by any child process, so unlike the
+    /// launch arguments this replaced it could be set on a real user's session by accident — a
+    /// release build must not be able to redirect `ProjectStore` away from its real data at all.
     func resolveBaseDir() -> URL? {
-        url(Self.fixtureBaseDirVariable)
+        #if DEBUG
+        return url(Self.fixtureBaseDirVariable)
+        #else
+        return nil
+        #endif
     }
 
     static let gitHubRemoteVariable = "ACAI_UITEST_GITHUB_REMOTE_URL"

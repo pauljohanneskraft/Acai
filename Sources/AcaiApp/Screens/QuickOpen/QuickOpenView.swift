@@ -103,10 +103,7 @@ struct QuickOpenView: View {
             generatedDiagrams: model.store.generatedDiagrams,
             freeformDiagrams: model.store.freeformDiagrams
         )
-        // `.project`/`.codebase` entries exist on the shared list only for Spotlight's benefit.
-        allEntries = await Task.detached(priority: .userInitiated) {
-            builder.entries().filter { $0.kind != .project && $0.kind != .codebase }
-        }.value
+        allEntries = await Task.detached(priority: .userInitiated) { builder.entries() }.value
     }
 
     /// Debounces to the trailing edge of a short pause rather than filtering on every keystroke —
@@ -188,6 +185,10 @@ private struct QuickOpenResultRow: View {
                 }
                 Spacer()
             }
+            // Without this the trailing `Spacer()` is not hit-testable, so a row whose text is
+            // shorter than the row is only tappable over the text itself — visible as a dead right
+            // half on regular width, where rows are widest.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .contextMenu {

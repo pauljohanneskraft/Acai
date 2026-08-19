@@ -9,15 +9,16 @@ import AcaiDiagram
 
 /// Path/pipeline conveniences for the proof PNGs committed under `Examples/`. The actual
 /// PNG-comparison math lives in `ExampleGoldenComparator` below, not here.
-enum ExamplePNGs {
+struct ExamplePNGs {
+    static let standard = ExamplePNGs()
 
     /// `Tests/AcaiRenderTests/<file>.swift` → repo root is three levels up.
-    static let repoRoot = URL(fileURLWithPath: #filePath)
+    let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
 
-    static func examples(_ components: String...) -> URL {
+    func examples(_ components: String...) -> URL {
         components.reduce(repoRoot.appendingPathComponent("Examples")) { $0.appendingPathComponent($1) }
     }
 
@@ -32,18 +33,21 @@ enum ExamplePNGs {
     // Synchronized entirely through `cacheLock`, never accessed without holding it.
     nonisolated(unsafe) private static var cache: [CacheKey: CodeArtifact] = [:]
 
-    static func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) throws -> CodeArtifact {
+    /// The lock is deliberately released around `analyzeProject`: two suites racing the same key
+    /// duplicate one parse, whereas holding it would serialize every *distinct* fixture's analysis
+    /// too — the opposite of what this cache is for.
+    func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) throws -> CodeArtifact {
         let key = CacheKey(directory: directory, languages: languages)
-        cacheLock.lock()
-        if let cached = cache[key] {
-            cacheLock.unlock()
+        Self.cacheLock.lock()
+        if let cached = Self.cache[key] {
+            Self.cacheLock.unlock()
             return cached
         }
-        cacheLock.unlock()
+        Self.cacheLock.unlock()
         let artifact = try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
-        cacheLock.lock()
-        cache[key] = artifact
-        cacheLock.unlock()
+        Self.cacheLock.lock()
+        Self.cache[key] = artifact
+        Self.cacheLock.unlock()
         return artifact
     }
 
@@ -143,9 +147,11 @@ struct ClassDiagramPNGTests {
         _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
     ) throws {
-        let png = ExamplePNGs.examples("ClassDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
+        let png = ExamplePNGs.standard.examples("ClassDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
         try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("ClassDiagram"), languages: [entry.language])
+            let artifact = try ExamplePNGs.standard.analyze(
+                ExamplePNGs.standard.examples("ClassDiagram"), languages: [entry.language]
+            )
             var configuration = ClassDiagramConfiguration()
             configuration.grouping = .none  // matches `acai image --grouping none`
             return try ClassImageRenderer().renderPNG(
@@ -178,8 +184,10 @@ struct SequenceDiagramPNGTests {
         _ theme: (suffix: String, palette: DiagramPalette)
     ) throws {
         let name = "\(entry.stem)\(theme.suffix).png"
-        try Self.comparator.validate(ExamplePNGs.examples("SequenceDiagram", "Exports", name)) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("SequenceDiagram"), languages: [entry.language])
+        try Self.comparator.validate(ExamplePNGs.standard.examples("SequenceDiagram", "Exports", name)) {
+            let artifact = try ExamplePNGs.standard.analyze(
+                ExamplePNGs.standard.examples("SequenceDiagram"), languages: [entry.language]
+            )
             let diagram = SequenceDiagramBuilder(entryPoint: entry.entry, maxDepth: 5, typeMapping: [:])
                 .build(from: artifact)
             return try SequenceImageRenderer().renderPNG(
@@ -203,9 +211,11 @@ struct StateDiagramPNGTests {
         _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
     ) throws {
-        let png = ExamplePNGs.examples("StateDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
+        let png = ExamplePNGs.standard.examples("StateDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
         try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.analyze(ExamplePNGs.examples("StateDiagram"), languages: [entry.language])
+            let artifact = try ExamplePNGs.standard.analyze(
+                ExamplePNGs.standard.examples("StateDiagram"), languages: [entry.language]
+            )
             let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
             let diagram = try StateDiagramBuilder(configuration: configuration)
                 .build(from: artifact.resolvingExtensions())
@@ -231,9 +241,9 @@ struct PackageDiagramPNGTests {
         _ theme: (suffix: String, palette: DiagramPalette)
     ) throws {
         let name = "\(entry.stem)\(theme.suffix).png"
-        try Self.comparator.validate(ExamplePNGs.examples("PackageDiagram", "Exports", name)) {
-            let artifact = try ExamplePNGs.analyze(
-                ExamplePNGs.examples("PackageDiagram", entry.dir), languages: [entry.language]
+        try Self.comparator.validate(ExamplePNGs.standard.examples("PackageDiagram", "Exports", name)) {
+            let artifact = try ExamplePNGs.standard.analyze(
+                ExamplePNGs.standard.examples("PackageDiagram", entry.dir), languages: [entry.language]
             )
             let diagram = PackageDiagramBuilder().build(
                 from: artifact.enriched(using: artifact.standardLanguageResolver))
@@ -258,10 +268,10 @@ struct CallGraphPNGTests {
         _ entry: (stem: String, dir: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
     ) throws {
-        let png = ExamplePNGs.examples("CallGraph", "Exports", "\(entry.stem)\(theme.suffix).png")
+        let png = ExamplePNGs.standard.examples("CallGraph", "Exports", "\(entry.stem)\(theme.suffix).png")
         try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.analyze(
-                ExamplePNGs.examples("CallGraph", entry.dir), languages: [entry.language]
+            let artifact = try ExamplePNGs.standard.analyze(
+                ExamplePNGs.standard.examples("CallGraph", entry.dir), languages: [entry.language]
             )
             let graph = CallGraphBuilder(scope: .wholeCodebase).build(from: artifact)
             return try CallGraphImageRenderer().renderPNG(

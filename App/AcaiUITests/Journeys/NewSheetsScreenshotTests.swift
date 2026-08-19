@@ -8,6 +8,9 @@ import XCTest
 /// empty state, not a "directory chosen" state.
 @MainActor
 final class NewSheetsScreenshotTests: UIJourneyTestCase {
+
+    /// Several states are captured per run; see `UIJourneyTestCase.stopsAtFirstFailure`.
+    override var stopsAtFirstFailure: Bool { false }
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 
     private var comparator: ScreenshotComparator {
