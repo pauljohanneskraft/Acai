@@ -303,6 +303,11 @@ struct ProjectCodebaseEditor {
     /// Rebuilds the on-device Spotlight index, off the main actor. Best-effort: a failure here
     /// never surfaces to the user. Not `private`: `ProjectBrowserDiagramEditors+GitHubSync.swift` calls it too.
     func triggerSpotlightReindex() {
+        // `CSSearchableIndex.default()` is system-wide and outlives the process, so a UI-test run
+        // would leave the fixture's items in the real index — on a developer's own Mac as much as a
+        // runner — and a later launch could be handed a continuation for them. The fixture
+        // redirects storage, not Spotlight, so this has to opt out explicitly.
+        guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
         let builder = QuickOpenIndexBuilder(
             projects: store.projects, artifacts: store.artifacts,
             generatedDiagrams: store.generatedDiagrams, freeformDiagrams: store.freeformDiagrams

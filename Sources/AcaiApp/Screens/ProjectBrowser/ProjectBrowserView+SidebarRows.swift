@@ -139,6 +139,7 @@ extension ProjectBrowserView {
                 Label(diagram.name, systemImage: diagram.type.systemImage)
                     .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
                     .help(diagram.name)
+                    .accessibilityIdentifier("sidebar.generatedDiagram.\(diagram.id)")
                     .contextMenu {
                         Button {
                             renamingText = diagram.name

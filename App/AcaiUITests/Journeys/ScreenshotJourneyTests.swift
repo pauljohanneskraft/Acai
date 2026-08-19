@@ -84,6 +84,14 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         classDiagramButton.tapUntilItDisappears()
 
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 30))
+        // The journey generates exactly one diagram, so a second row means something else created
+        // one — which silently changes this screenshot and is otherwise only visible as golden
+        // churn between runs. Only checkable where the sidebar is on screen: compact width has
+        // pushed it away by now.
+        if browser.projectRow(id: Self.projectID).exists {
+            XCTAssertEqual(browser.generatedDiagramRows(named: "SampleSwiftPackage").count, 1,
+                           "something created a second generated diagram")
+        }
         XCTAssertTrue(diagram.undoButton.waitForExistence(timeout: 15))
         audit.assertAccessible(diagram.undoButton, name: "Undo button")
         audit.assertAccessible(diagram.redoButton, name: "Redo button")
