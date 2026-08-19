@@ -223,6 +223,10 @@ jobs:
           tar -xzf ui-test-products.tar.gz -C DerivedData
         working-directory: App
 
+      # Deliberately serial. Cloning simulators for `-parallel-testing-enabled` makes each test
+      # 3-8x slower on a runner this size and starts failing app launches outright ("Failed to
+      # launch"), so the suite took longer *and* flaked; iPhone and iPad already run concurrently as
+      # separate jobs. It is still worth passing locally, where there are cores to spare.
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
@@ -234,8 +238,6 @@ jobs:
             -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPhone 17" \
             -resultBundlePath TestResults.xcresult \
-            -parallel-testing-enabled YES \
-            -maximum-parallel-testing-workers 3 \
             -retry-tests-on-failure \
             -test-iterations 2
         working-directory: App
@@ -302,8 +304,6 @@ jobs:
             -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPad (A16)" \
             -resultBundlePath TestResults.xcresult \
-            -parallel-testing-enabled YES \
-            -maximum-parallel-testing-workers 3 \
             -retry-tests-on-failure \
             -test-iterations 2
         working-directory: App

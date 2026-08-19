@@ -28,10 +28,14 @@ ONLY_ARGS=()
 [ -n "$ONLY_TESTING" ] && ONLY_ARGS=("-only-testing:$ONLY_TESTING")
 
 echo "▸ xcodebuild test -scheme Acai-iOSUITests -destination platform=iOS Simulator,name=$DEVICE ${ONLY_TESTING:+(only: $ONLY_TESTING)} (log: $LOG_PATH)"
+# Parallel here but not in CI: simulator clones halve the wall time on a developer Mac, while on a
+# CI runner they make each test several times slower and start failing app launches outright.
 xcodebuild test \
     -project Acai.xcodeproj \
     -scheme Acai-iOSUITests \
     -destination "platform=iOS Simulator,name=$DEVICE" \
+    -parallel-testing-enabled YES \
+    -maximum-parallel-testing-workers 3 \
     CODE_SIGNING_ALLOWED=NO \
     "${ONLY_ARGS[@]}" \
     > "$LOG_PATH" 2>&1
