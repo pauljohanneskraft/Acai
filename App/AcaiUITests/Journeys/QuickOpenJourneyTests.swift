@@ -10,9 +10,14 @@ final class QuickOpenJourneyTests: XCTestCase {
         let app = XCUIApplication()
         app.launchWithFixture("seeded")
 
+        #if os(macOS)
+        // macOS's only Quick Open entry point is ⌘K (`QuickOpenCommands`) — no toolbar button exists.
+        app.typeKey("k", modifierFlags: .command)
+        #else
         let browser = ProjectBrowserScreen(app: app)
         XCTAssertTrue(browser.quickOpenButton.waitForExistence(timeout: 10))
         browser.quickOpenButton.tap()
+        #endif
 
         let quickOpen = QuickOpenScreen(app: app)
         XCTAssertTrue(quickOpen.searchField.waitForExistence(timeout: 10))

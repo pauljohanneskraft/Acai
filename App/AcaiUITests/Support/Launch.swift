@@ -77,6 +77,15 @@ extension XCUIApplication {
             "-AcaiUITestColorScheme", defaultUITestColorScheme
         ]
         launch()
+        #if os(macOS)
+        // `launch()` doesn't guarantee frontmost on macOS — that's a separate driver-side request.
+        activate()
+        // Absorbs this Debug build's cold-launch cost once, instead of it eating per-test timeouts.
+        XCTAssertTrue(
+            windows.firstMatch.waitForExistence(timeout: 60), "No window appeared after launch",
+            file: file, line: line
+        )
+        #endif
     }
 
     /// Forced via `-AcaiUITestColorScheme` so a screenshot golden's appearance never depends on the

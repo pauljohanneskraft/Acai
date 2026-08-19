@@ -41,7 +41,6 @@ final class AccessibilityAuditTests: XCTestCase {
 
         let projectRow = browser.projectRow(id: Self.projectID)
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
 
         // `addCodebaseButton`/`addDiagramButton` aren't audited here: on compact width they live
         // inside a toolbar `Menu`, not as directly-reachable buttons, and auditing them needs a
@@ -49,6 +48,8 @@ final class AccessibilityAuditTests: XCTestCase {
         let detail = ProjectDetailScreen(app: app)
 
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
+        // A sidebar re-render racing this tap can invalidate `projectRow` between find and tap.
+        projectRow.tapUntil(codebaseRow)
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
         codebaseRow.tap()
 

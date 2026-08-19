@@ -36,10 +36,11 @@ final class CompareGitRevisionTests: XCTestCase {
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
 
         let detail = ProjectDetailScreen(app: app)
         let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
+        // A sidebar re-render racing this tap can invalidate `projectRow` between find and tap.
+        projectRow.tapUntil(codebaseRow)
         XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
         codebaseRow.tap()
 

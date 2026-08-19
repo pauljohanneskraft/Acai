@@ -41,7 +41,8 @@ final class FindingsJourneyTests: XCTestCase {
             backButton.tap()
         }
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
+        // In-flight reindex completion can rebuild the sidebar and invalidate `projectRow` mid-tap.
+        projectRow.tapUntil(detail.findingsButton)
         let findingsButton = detail.findingsButton
         XCTAssertTrue(findingsButton.waitForExistence(timeout: 10))
         findingsButton.tap()
