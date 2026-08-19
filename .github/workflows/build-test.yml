@@ -63,8 +63,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
-  prepare-ui-tests-ios:
-    name: Prepare UI Tests iOS
+  prepare-ui-test-ios:
+    name: Prepare UI Test iOS
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -195,7 +195,7 @@ jobs:
 
   ui-test-iphone:
     name: UI Test iPhone
-    needs: [lint, prepare-ui-tests-ios]
+    needs: [lint, prepare-ui-test-ios]
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -255,7 +255,7 @@ jobs:
 
   ui-test-ipad:
     name: UI Test iPad
-    needs: [lint, prepare-ui-tests-ios]
+    needs: [lint, prepare-ui-test-ios]
     runs-on: macos-26
     timeout-minutes: 30
     steps:
