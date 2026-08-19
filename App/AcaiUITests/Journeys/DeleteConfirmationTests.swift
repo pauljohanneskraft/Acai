@@ -7,7 +7,7 @@ import UIKit
 /// never just closing the sheet without acting or acting without asking. Each test launches its own
 /// fresh copy of the fixture, so a confirmed deletion in one test never affects another.
 @MainActor
-final class DeleteConfirmationTests: XCTestCase {
+final class DeleteConfirmationTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
@@ -47,7 +47,6 @@ final class DeleteConfirmationTests: XCTestCase {
     }
 
     func testCancellingTheConfirmationKeepsTheCodebase() throws {
-        let app = XCUIApplication()
         let codebaseRow = openSeededCodebaseRow(app)
         tapDelete(on: codebaseRow, app: app)
 
@@ -70,7 +69,6 @@ final class DeleteConfirmationTests: XCTestCase {
     }
 
     func testConfirmingTheConfirmationRemovesTheCodebase() throws {
-        let app = XCUIApplication()
         let codebaseRow = openSeededCodebaseRow(app)
         tapDelete(on: codebaseRow, app: app)
 
@@ -78,6 +76,6 @@ final class DeleteConfirmationTests: XCTestCase {
         XCTAssertTrue(detail.deleteCodebaseConfirmButton.waitForExistence(timeout: 5))
         detail.deleteCodebaseConfirmButton.tap()
 
-        XCTAssertFalse(codebaseRow.waitForExistence(timeout: 5), "confirming the deletion must remove the codebase")
+        XCTAssertTrue(codebaseRow.waitForNonExistence(timeout: 5), "confirming the deletion must remove the codebase")
     }
 }

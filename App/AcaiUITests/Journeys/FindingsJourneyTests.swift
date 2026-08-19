@@ -5,17 +5,15 @@ import XCTest
 /// that should surface in the project-level Findings view, not just `CodebaseDetailView`'s own
 /// section. Also exercises the suppress/unsuppress round trip.
 @MainActor
-final class FindingsJourneyTests: XCTestCase {
+final class FindingsJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testFindingsViewSurfacesViolationAfterReindex() throws {
-        let app = XCUIApplication()
         app.launchWithFixture("seeded") { app, destination in
-            app.launchArguments += [
-                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
-                destination.appendingPathComponent("artifacts/seeded.json").path
-            ]
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
         }
 
         let browser = ProjectBrowserScreen(app: app)

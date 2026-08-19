@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -43,9 +44,9 @@ struct GitHubNetworkingTests {
     }
 
     @Test func branchesRequestsExpectedPathAndPageSize() async throws {
-        nonisolated(unsafe) var capturedRequest: URLRequest?
+        let capturedRequest = Locked<URLRequest?>(nil)
         MockURLProtocol.handler = { request in
-            capturedRequest = request
+            capturedRequest.value = request
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             return (response, try JSONEncoder().encode([["name": "main"], ["name": "develop"]]))
         }
@@ -55,15 +56,15 @@ struct GitHubNetworkingTests {
         let refs = try await client.branches(owner: "acme", repo: "widgets")
 
         #expect(refs.map(\.name) == ["main", "develop"])
-        #expect(capturedRequest?.url?.path == "/repos/acme/widgets/branches")
-        #expect(capturedRequest?.url?.query?.contains("per_page=100") == true)
-        #expect(capturedRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
+        #expect(capturedRequest.value?.url?.path == "/repos/acme/widgets/branches")
+        #expect(capturedRequest.value?.url?.query?.contains("per_page=100") == true)
+        #expect(capturedRequest.value?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
     }
 
     @Test func repositoriesRequestsRequestedPageAtSharedPageSize() async throws {
-        nonisolated(unsafe) var capturedRequest: URLRequest?
+        let capturedRequest = Locked<URLRequest?>(nil)
         MockURLProtocol.handler = { request in
-            capturedRequest = request
+            capturedRequest.value = request
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             return (response, Data("[]".utf8))
         }
@@ -72,16 +73,16 @@ struct GitHubNetworkingTests {
         let client = makeClient(credential: .personalAccessToken("t"))
         _ = try await client.repositories(page: 2)
 
-        #expect(capturedRequest?.url?.query?.contains("page=2") == true)
+        #expect(capturedRequest.value?.url?.query?.contains("page=2") == true)
         #expect(
-            capturedRequest?.url?.query?.contains("per_page=\(GitHubAPIClient.repositoriesPerPage)") == true
+            capturedRequest.value?.url?.query?.contains("per_page=\(GitHubAPIClient.repositoriesPerPage)") == true
         )
     }
 
     @Test func pullRequestsRequestsExpectedPathAndDecodesEachField() async throws {
-        nonisolated(unsafe) var capturedRequest: URLRequest?
+        let capturedRequest = Locked<URLRequest?>(nil)
         MockURLProtocol.handler = { request in
-            capturedRequest = request
+            capturedRequest.value = request
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             let body: [[String: Any]] = [[
                 "number": 42,
@@ -106,9 +107,9 @@ struct GitHubNetworkingTests {
         #expect(pullRequest.baseRef == "main")
         #expect(pullRequest.headRef == "feature/widget")
         #expect(pullRequest.state == "open")
-        #expect(capturedRequest?.url?.path == "/repos/acme/widgets/pulls")
-        #expect(capturedRequest?.url?.query?.contains("per_page=100") == true)
-        #expect(capturedRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
+        #expect(capturedRequest.value?.url?.path == "/repos/acme/widgets/pulls")
+        #expect(capturedRequest.value?.url?.query?.contains("per_page=100") == true)
+        #expect(capturedRequest.value?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
     }
 
     @Test func httpErrorStatusSurfacesAsFailure() async throws {

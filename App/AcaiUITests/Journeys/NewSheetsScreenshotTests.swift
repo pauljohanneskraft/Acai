@@ -7,7 +7,7 @@ import XCTest
 /// picker), which XCUITest can't drive without further plumbing — this only captures the tab's
 /// empty state, not a "directory chosen" state.
 @MainActor
-final class NewSheetsScreenshotTests: XCTestCase {
+final class NewSheetsScreenshotTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 
     private var comparator: ScreenshotComparator {
@@ -18,7 +18,6 @@ final class NewSheetsScreenshotTests: XCTestCase {
     }
 
     func testNewProjectSheetScreenshot() throws {
-        let app = XCUIApplication()
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 
@@ -35,7 +34,6 @@ final class NewSheetsScreenshotTests: XCTestCase {
     }
 
     func testNewCodebaseSheetLocalTabScreenshot() throws {
-        let app = XCUIApplication()
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded")
 

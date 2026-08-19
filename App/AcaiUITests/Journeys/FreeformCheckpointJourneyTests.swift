@@ -3,12 +3,11 @@ import XCTest
 /// Drives the checkpoint save→mutate→restore journey through the UI, using point-and-place
 /// catalog insertion (tap a catalog entry, then the canvas, to commit a node) to add nodes.
 @MainActor
-final class FreeformCheckpointJourneyTests: XCTestCase {
+final class FreeformCheckpointJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let freeformDiagramID = "33333333-3333-3333-3333-333333333333"
 
     func testAddNodeSaveCheckpointMutateThenRestore() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 

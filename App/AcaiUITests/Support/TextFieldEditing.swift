@@ -63,15 +63,18 @@ extension XCUIElement {
     /// empty (the opposite of most other control types here) — a plain `label == %@` predicate
     /// matched nothing on macOS even though the item was genuinely present.
     @discardableResult
-    func choose(_ label: String, in app: XCUIApplication, timeout: TimeInterval = 10) -> XCUIElement {
+    func choose(
+        _ label: String, in app: XCUIApplication, timeout: TimeInterval = 10,
+        file: StaticString = #filePath, line: UInt = #line
+    ) -> XCUIElement {
         // A caller typically only confirmed `self` existed via an earlier, separate wait — by the
         // time control reaches here, a still-settling sheet/config screen can have re-rendered it
         // under a stale reference. One more short wait gives it a chance to resolve again.
-        _ = waitForExistence(timeout: 5)
+        waitOrFail("the control offering '\(label)'", file: file, line: line)
         tap()
         let option = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@ OR title == %@", label, label)).firstMatch
-        _ = option.waitForExistence(timeout: timeout)
+        option.waitOrFail("option '\(label)'", timeout: timeout, file: file, line: line)
         option.tap()
         return option
     }

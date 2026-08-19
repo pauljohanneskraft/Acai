@@ -9,7 +9,7 @@ import XCTest
 /// `PullRequestComparisonTests.comparingAgainstHEADExcludesAnUncommittedAddition`; this journey only
 /// verifies the panel renders and interacts correctly once that state exists.
 @MainActor
-final class CompareGitRevisionTests: XCTestCase {
+final class CompareGitRevisionTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
@@ -21,16 +21,15 @@ final class CompareGitRevisionTests: XCTestCase {
     }
 
     func testComparingAgainstHEADShowsAnAddedTypeAfterAnUncommittedEdit() throws {
-        let app = XCUIApplication()
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded") { app, destination in
             let artifactsDir = destination.appendingPathComponent("artifacts")
-            app.launchArguments += [
-                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
-                artifactsDir.appendingPathComponent("seeded-with-added.json").path,
-                "-AcaiUITestComparisonArtifact", Self.codebaseID, "HEAD",
-                artifactsDir.appendingPathComponent("comparison-HEAD.json").path
-            ]
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, artifactsDir.appendingPathComponent("seeded-with-added.json").path]
+            ])
+            app.launchEnvironment["ACAI_UITEST_COMPARISON_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, "HEAD", artifactsDir.appendingPathComponent("comparison-HEAD.json").path]
+            ])
         }
 
         let browser = ProjectBrowserScreen(app: app)

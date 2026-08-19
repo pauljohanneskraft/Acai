@@ -7,7 +7,7 @@ import XCTest
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
 /// content.
 @MainActor
-final class GeneratedDiagramScreenshotTests: XCTestCase {
+final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
@@ -21,10 +21,9 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded") { app, destination in
-            app.launchArguments += [
-                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
-                destination.appendingPathComponent("artifacts/seeded.json").path
-            ]
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
         }
 
         let browser = ProjectBrowserScreen(app: app)
@@ -47,7 +46,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testSequenceDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let sequence = SequenceDiagramScreen(app: app)
@@ -70,7 +68,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testStateDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let state = StateDiagramScreen(app: app)
@@ -96,7 +93,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testPackageDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let package = PackageDiagramScreen(app: app)
@@ -113,7 +109,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testCallGraphScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let callGraph = CallGraphScreen(app: app)

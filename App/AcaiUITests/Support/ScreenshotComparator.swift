@@ -8,13 +8,6 @@ import XCTest
 /// to import another test target's internal types through.
 @MainActor
 struct ScreenshotComparator {
-    /// iPad journeys capture both rotations for states that plausibly lay out differently in each;
-    /// iPhone and macOS goldens are always a plain `<state>.png`.
-    enum Orientation: String {
-        case portrait
-        case landscape
-    }
-
     let goldenDirectory: URL
     /// Looser than the render snapshot tests' default — a full captured window has real
     /// rendering/anti-aliasing drift. macOS is widened further still: ~2–2.3% drift measured between
@@ -90,17 +83,15 @@ struct ScreenshotComparator {
         return Double(changed) / Double(lhsGrid.count)
     }
 
-    /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>[_<orientation>].png`.
+    /// Validates `screenshot` against `<goldenDirectory>/<platform>/<viewType>/<state>.png`.
     /// `maxChangedFraction` is a per-call override (not per-instance) since one comparator is
     /// typically reused across a whole journey and only a state or two needs a looser bound (e.g.
     /// a `Menu`'s translucent material doesn't render byte-identically across separate launches).
     func validate(
-        viewType: String, state: String, orientation: Orientation? = nil,
+        viewType: String, state: String,
         screenshot: XCUIScreenshot, testCase: XCTestCase, maxChangedFraction overrideMaxChangedFraction: Double? = nil
     ) {
-        var fileName = state
-        if let orientation { fileName += "_\(orientation.rawValue)" }
-        let name = "\(SnapshotPlatform().name)/\(viewType)/\(fileName)"
+        let name = "\(SnapshotPlatform().name)/\(viewType)/\(state)"
         let threshold = overrideMaxChangedFraction ?? maxChangedFraction
 
         let attachment = XCTAttachment(screenshot: screenshot)
@@ -138,12 +129,16 @@ struct ScreenshotComparator {
         write(changed <= threshold ? committed : rendered, name: name)
 
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
-        // Logged unconditionally (pass or fail) — grep the console/activity log for "drift:" to see
-        // every state's actual fraction, for tightening `maxChangedFraction` from real measurements.
-        XCTContext.runActivity(named: String(
-            format: "drift: %@ = %.4f%% (%d/%d cells, threshold %.4f%%)",
-            name, changed * 100, changedCells, comparisonSide * comparisonSide, threshold * 100
-        )) { _ in }
+        // Recorded unconditionally (pass or fail), both as an activity and as a file beside the
+        // capture. The activity is for reading one test's result in Xcode; the file is what
+        // `Scripts/snapshot_drift_summary.sh` turns into the CI job summary — neither an activity
+        // nor stdout survives a `-parallel-testing-enabled` run's log. One file per state rather
+        // than one shared log, so parallel workers never write to the same path.
+        let drift = String(
+            format: "%@ %.4f %.4f %d", name, changed * 100, threshold * 100, changedCells
+        )
+        XCTContext.runActivity(named: "drift: \(drift)") { _ in }
+        write(Data(drift.utf8), name: name, extension: "drift")
         XCTAssertLessThanOrEqual(
             changed, threshold, "\(name).png content drifted (\(changedCells) cells)"
         )
@@ -152,15 +147,15 @@ struct ScreenshotComparator {
     /// Falls back to `stagingDirectory` if the `outputDirectory` write unexpectedly fails. A write
     /// failure is logged, not thrown — an unrelated write hiccup shouldn't obscure the real drift
     /// assertion in `validate`.
-    private func write(_ data: Data, name: String) {
-        let url = outputDirectory.appendingPathComponent("\(name).png")
+    private func write(_ data: Data, name: String, extension pathExtension: String = "png") {
+        let url = outputDirectory.appendingPathComponent("\(name).\(pathExtension)")
         do {
             try FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true
             )
             try data.write(to: url)
         } catch {
-            let stagedURL = stagingDirectory.appendingPathComponent("\(name).png")
+            let stagedURL = stagingDirectory.appendingPathComponent("\(name).\(pathExtension)")
             do {
                 try FileManager.default.createDirectory(
                     at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true

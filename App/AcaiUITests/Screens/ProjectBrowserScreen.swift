@@ -33,10 +33,26 @@ final class ProjectBrowserScreen {
 
     // MARK: - Quick Open
 
+    /// Compact width only — regular width pins `quickOpenFieldProxy` atop the sidebar instead.
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
     /// iPad's pinned search-field proxy atop the sidebar `List` — tapping it opens the same Quick
     /// Open sheet `quickOpenButton`/⌘K do.
     var quickOpenFieldProxy: XCUIElement { app.descendants(matching: .any)["sidebar.quickOpenField"] }
+
+    /// Opens Quick Open through whichever entry point this platform and width actually has.
+    func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — neither affordance exists there.
+        app.typeKey("k", modifierFlags: .command)
+        #else
+        if quickOpenButton.waitForExistence(timeout: 5) {
+            quickOpenButton.tap()
+        } else {
+            quickOpenFieldProxy.waitOrFail("a Quick Open entry point", file: file, line: line)
+            quickOpenFieldProxy.tap()
+        }
+        #endif
+    }
 
     // MARK: - Settings
 

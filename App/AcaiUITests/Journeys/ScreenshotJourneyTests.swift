@@ -5,10 +5,16 @@ import XCTest
 /// human review and diffs it via `ScreenshotComparator` — this is the real screen-level visual
 /// regression mechanism, since `ImageRenderer`-based rendering structurally can't render full
 /// interactive screens.
+///
+/// The accessibility audit rides along on the same walk rather than in its own test: it asserts on
+/// exactly the screens this already visits, so a separate journey only bought a second cold launch
+/// of the identical path.
 @MainActor
-final class ScreenshotJourneyTests: XCTestCase {
+final class ScreenshotJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
+
+    private var audit: AccessibilityAudit { AccessibilityAudit(testCase: self) }
 
     private var comparator: ScreenshotComparator {
         ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
@@ -18,18 +24,17 @@ final class ScreenshotJourneyTests: XCTestCase {
     }
 
     func testSeededJourneyScreenshots() throws {
-        let app = XCUIApplication()
         app.rotateToLandscapeOnIPad()
         app.launchWithFixture("seeded") { app, destination in
-            app.launchArguments += [
-                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
-                destination.appendingPathComponent("artifacts/seeded.json").path
-            ]
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
         }
 
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
+        audit.assertAccessible(browser.newProjectButton, name: "New Project button")
         projectRow.tap()
 
         // Waiting on the codebase row itself, not `addCodebaseButton`, reaches this screen
@@ -64,6 +69,7 @@ final class ScreenshotJourneyTests: XCTestCase {
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tapUntil(codebaseDetail.reindexButton)
         XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
+        audit.assertAccessible(codebaseDetail.reindexButton, name: "Reindex button")
         codebaseDetail.reindexButton.tap()
 
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
@@ -72,6 +78,9 @@ final class ScreenshotJourneyTests: XCTestCase {
         classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
 
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
+        XCTAssertTrue(diagram.undoButton.waitForExistence(timeout: 15))
+        audit.assertAccessible(diagram.undoButton, name: "Undo button")
+        audit.assertAccessible(diagram.redoButton, name: "Redo button")
         comparator.validate(
             viewType: "ClassDiagram", state: "populated",
             screenshot: app.screenshotAfterAnimationsIdle(), testCase: self

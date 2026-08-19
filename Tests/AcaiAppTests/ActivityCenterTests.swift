@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -30,7 +31,7 @@ struct ActivityCenterTests {
                 return 1
             }
         }
-        try await Eventually().waitUntil { center.isBusy(.codebase(codebaseID)) }
+        try await Eventually().waitUntil("the codebase is busy") { center.isBusy(.codebase(codebaseID)) }
         #expect(center.isBusy(.codebase(codebaseID)))
         #expect(!center.isBusy(.codebase(otherCodebaseID)))
         await gate.open()
@@ -40,18 +41,22 @@ struct ActivityCenterTests {
 
     @Test func cancellingDiscardsTheResultRatherThanThrowingOrApplyingIt() async throws {
         let center = ActivityCenter()
+        let gate = AsyncGate()
         let task = Task {
             try await center.run(title: "Test", kind: .gitFetch) {
-                try await Task.sleep(nanoseconds: 500_000_000)
+                await gate.wait()
                 return 1
             }
         }
-        try await Eventually().waitUntil { !center.operations.isEmpty }
+        try await Eventually().waitUntil("the operation is registered") { !center.operations.isEmpty }
         guard let operation = center.operations.first else {
             Issue.record("expected an in-flight operation to be registered")
             return
         }
         center.cancel(operation.id)
+        // Only now may the work produce its value, so "cancelled before it finished" is a fact of
+        // the test rather than a race it has to win.
+        await gate.open()
         let result = try await task.value
         #expect(result == nil)
         #expect(center.operations.isEmpty)
@@ -67,13 +72,7 @@ struct ActivityCenterTests {
                 return 1
             }
         }
-        // Three actor hops sit between this poll and `onProgress` actually landing (the test's own
-        // `Task`, `run`'s work `Task`, and `onProgress`'s own reporting `Task`), each contending for
-        // the same `@MainActor` serial executor as every other suite running in parallel — a wider
-        // margin than `Eventually`'s default is needed here specifically, not because the condition
-        // is ever expected to take long, but because a fully-loaded parallel run can push all three
-        // hops out further than 2 seconds without any of them being individually stuck.
-        try await Eventually(timeout: .seconds(15)).waitUntil { center.operations.first?.progress == 0.5 }
+        try await Eventually().waitUntil("progress is reported") { center.operations.first?.progress == 0.5 }
         #expect(center.operations.first?.progress == 0.5)
         await gate.open()
         _ = try await task.value

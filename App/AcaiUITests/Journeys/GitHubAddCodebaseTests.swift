@@ -15,16 +15,15 @@ import UIKit
 /// `GitFixtureRepository` builds fresh at launch — `main` with two commits (`Widget`, `Gadget`),
 /// `feature` one commit further ahead (`Extra`) — instead of github.com.
 @MainActor
-final class GitHubAddCodebaseTests: XCTestCase {
+final class GitHubAddCodebaseTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
 
     func testAddingSwitchingBranchAndComparingAGitHubCodebaseAllWorkAgainstARealLocalClone() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded") { app, destination in
             let remoteDir = destination.appendingPathComponent("GitHubRemote")
             try GitFixtureRepository(directory: remoteDir).makeRemote()
-            app.launchArguments += ["-AcaiUITestGitHubRemoteURL", remoteDir.path]
+            app.launchEnvironment["ACAI_UITEST_GITHUB_REMOTE_URL"] = remoteDir.path
         }
 
         let browser = ProjectBrowserScreen(app: app)

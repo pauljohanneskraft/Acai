@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -10,9 +11,10 @@ extension GitHubNetworkingTests {
         return GitHubDeviceAuthFlow(clientID: "client-id", session: URLSession(configuration: configuration))
     }
 
-    /// A short-lived code so tests don't actually wait out `interval`s.
+    /// A near-instant `interval` so tests don't wait out real poll delays, and an expiry far enough
+    /// out that it never bounds them — expiry is its own test's subject, not a budget these share.
     private func makeDeviceCode(
-        interval: TimeInterval = 0.01, expiresIn: TimeInterval = 5
+        interval: TimeInterval = 0.01, expiresIn: TimeInterval = 600
     ) -> GitHubDeviceAuthFlow.DeviceCode {
         GitHubDeviceAuthFlow.DeviceCode(
             deviceCode: "device-code",
@@ -32,10 +34,10 @@ extension GitHubNetworkingTests {
     }
 
     @Test func pollForCredentialRetriesThroughAuthorizationPendingThenSucceeds() async throws {
-        nonisolated(unsafe) var attempt = 0
+        let attempt = Locked(0)
         MockURLProtocol.handler = { _ in
-            attempt += 1
-            if attempt < 3 {
+            let count = attempt.withValue { $0 += 1; return $0 }
+            if count < 3 {
                 return try self.tokenResponse(["error": "authorization_pending"])
             }
             return try self.tokenResponse(["access_token": "abc123"])
@@ -46,14 +48,14 @@ extension GitHubNetworkingTests {
         let credential = try await flow.pollForCredential(makeDeviceCode())
 
         #expect(credential == .gitHubApp(accessToken: "abc123", expiresAt: nil, refreshToken: nil))
-        #expect(attempt == 3)
+        #expect(attempt.value == 3)
     }
 
     @Test func pollForCredentialRetriesThroughTransientNetworkErrorThenSucceeds() async throws {
-        nonisolated(unsafe) var attempt = 0
+        let attempt = Locked(0)
         MockURLProtocol.handler = { _ in
-            attempt += 1
-            if attempt == 1 {
+            let count = attempt.withValue { $0 += 1; return $0 }
+            if count == 1 {
                 throw URLError(.networkConnectionLost)
             }
             return try self.tokenResponse(["access_token": "abc123"])
@@ -64,13 +66,13 @@ extension GitHubNetworkingTests {
         let credential = try await flow.pollForCredential(makeDeviceCode())
 
         #expect(credential == .gitHubApp(accessToken: "abc123", expiresAt: nil, refreshToken: nil))
-        #expect(attempt == 2)
+        #expect(attempt.value == 2)
     }
 
     @Test func pollForCredentialStopsImmediatelyOnTerminalOutcome() async throws {
-        nonisolated(unsafe) var attempt = 0
+        let attempt = Locked(0)
         MockURLProtocol.handler = { _ in
-            attempt += 1
+            attempt.withValue { $0 += 1 }
             return try self.tokenResponse(["error": "access_denied"])
         }
         defer { MockURLProtocol.handler = nil }
@@ -79,7 +81,7 @@ extension GitHubNetworkingTests {
         await #expect(throws: GitHubDeviceAuthFlow.Failure.self) {
             _ = try await flow.pollForCredential(makeDeviceCode())
         }
-        #expect(attempt == 1)
+        #expect(attempt.value == 1)
     }
 
     @Test func pollForCredentialPropagatesPromptlyWhenCancelled() async throws {

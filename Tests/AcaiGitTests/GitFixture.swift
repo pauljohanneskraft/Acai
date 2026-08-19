@@ -17,16 +17,38 @@ struct GitFixture {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
         process.arguments = arguments
         process.currentDirectoryURL = directory
+        // `GIT_CONFIG_*=/dev/null`: the runner carries a global git config (CI rewrites
+        // `git@github.com:` to HTTPS), and a fixture repository must not inherit it.
         process.environment = [
             "GIT_AUTHOR_NAME": "Test", "GIT_AUTHOR_EMAIL": "test@example.com",
-            "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com"
+            "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com",
+            "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"
         ]
         let stdout = Pipe()
+        let stderr = Pipe()
         process.standardOutput = stdout
+        process.standardError = stderr
         try process.run()
         let data = stdout.fileHandleForReading.readDataToEndOfFile()
+        let errorData = stderr.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw CommandFailed(
+                arguments: arguments, status: process.terminationStatus,
+                output: String(data: errorData, encoding: .utf8) ?? ""
+            )
+        }
         return String(data: data, encoding: .utf8) ?? ""
+    }
+
+    struct CommandFailed: Error, CustomStringConvertible {
+        let arguments: [String]
+        let status: Int32
+        let output: String
+
+        var description: String {
+            "git \(arguments.joined(separator: " ")) exited \(status): \(output)"
+        }
     }
 
     struct Commits {
@@ -50,34 +72,33 @@ struct GitFixture {
             .appendingPathComponent("AcaiGitFixture-template-\(UUID().uuidString)", isDirectory: true)
     }
 
-    // A fixture template that fails to build makes every test in this target meaningless — fail
-    // loudly and immediately, not per-test.
-    private static let template: (directory: URL, commits: Commits) = {
+    // Built once per process, but the failure is carried rather than trapped: these are lazily
+    // forced from whichever test touches them first, and a `try!` there would take down the entire
+    // merged test process instead of failing the tests that actually need the fixture.
+    private static let template: Result<(directory: URL, commits: Commits), Error> = Result {
         let directory = makeTemplateDirectory()
-        // swiftlint:disable:next force_try
-        let commits = try! GitFixture(directory: directory).buildTemplate()
-        return (directory, commits)
-    }()
+        return (directory, try GitFixture(directory: directory).buildTemplate())
+    }
 
-    private static let repeatedTouchesTemplate: (directory: URL, headSHA: String) = {
+    private static let repeatedTouchesTemplate: Result<(directory: URL, headSHA: String), Error> = Result {
         let directory = makeTemplateDirectory()
-        // swiftlint:disable:next force_try
-        let headSHA = try! GitFixture(directory: directory).buildRepeatedTouchesTemplate()
-        return (directory, headSHA)
-    }()
+        return (directory, try GitFixture(directory: directory).buildRepeatedTouchesTemplate())
+    }
 
     @discardableResult
     func make() throws -> Commits {
-        try Self.copyTree(from: Self.template.directory, to: directory)
-        return Self.template.commits
+        let template = try Self.template.get()
+        try Self.copyTree(from: template.directory, to: directory)
+        return template.commits
     }
 
     /// Independent of `make()`; gives `README.md` a churn count of 2 (the root commit contributes no
     /// touches — see `GitChurn`'s doc comment) and `Other.swift` a churn count of 1.
     @discardableResult
     func makeWithRepeatedTouches() throws -> String {
-        try Self.copyTree(from: Self.repeatedTouchesTemplate.directory, to: directory)
-        return Self.repeatedTouchesTemplate.headSHA
+        let template = try Self.repeatedTouchesTemplate.get()
+        try Self.copyTree(from: template.directory, to: directory)
+        return template.headSHA
     }
 
     private func buildTemplate() throws -> Commits {

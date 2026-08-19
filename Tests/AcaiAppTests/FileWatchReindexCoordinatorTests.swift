@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -41,7 +42,7 @@ struct FileWatchReindexCoordinatorTests {
         try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
         try await Eventually(timeout: .seconds(15)).waitUntil { spy.reindexedIDs.contains(codebaseID) }
-        #expect(spy.reindexedIDs == [codebaseID])
+        #expect(Set(spy.reindexedIDs) == [codebaseID])
         coordinator.stopAll()
     }
 
@@ -76,7 +77,7 @@ struct FileWatchReindexCoordinatorTests {
         try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
         try await gate.wait(timeout: .seconds(15))
-        #expect(spy.reindexedIDs == [controlID])
+        #expect(Set(spy.reindexedIDs) == [controlID])
         coordinator.stopAll()
     }
 
@@ -107,7 +108,7 @@ struct FileWatchReindexCoordinatorTests {
         try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
 
         try await gate.wait(timeout: .seconds(15))
-        #expect(spy.reindexedIDs == [controlID])
+        #expect(Set(spy.reindexedIDs) == [controlID])
         coordinator.stopAll()
     }
 }

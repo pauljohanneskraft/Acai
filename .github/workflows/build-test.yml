@@ -13,6 +13,7 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: ghcr.io/realm/swiftlint:0.57.1
     steps:
@@ -117,6 +118,7 @@ jobs:
   build-test-macos:
     name: Unit Test macOS
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -166,6 +168,7 @@ jobs:
   build-test-linux:
     name: Unit Test Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: swift:latest
     steps:
@@ -197,7 +200,7 @@ jobs:
     name: UI Test iPhone
     needs: [prepare-ui-test-ios]
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -230,15 +233,23 @@ jobs:
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPhone 17" \
-            -retry-tests-on-failure
+            -resultBundlePath TestResults.xcresult \
+            -parallel-testing-enabled YES \
+            -maximum-parallel-testing-workers 3 \
+            -retry-tests-on-failure \
+            -test-iterations 2
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xcresult-iphone
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          path: App/TestResults.xcresult
           if-no-files-found: warn
 
       # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
@@ -246,7 +257,7 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: iPhone
@@ -257,7 +268,7 @@ jobs:
     name: UI Test iPad
     needs: [prepare-ui-test-ios]
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -290,15 +301,23 @@ jobs:
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPad (A16)" \
-            -retry-tests-on-failure
+            -resultBundlePath TestResults.xcresult \
+            -parallel-testing-enabled YES \
+            -maximum-parallel-testing-workers 3 \
+            -retry-tests-on-failure \
+            -test-iterations 2
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xcresult-ipad
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          path: App/TestResults.xcresult
           if-no-files-found: warn
 
       # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
@@ -306,7 +325,7 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: iPad
@@ -360,11 +379,16 @@ jobs:
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .spm-cache \
             -retry-tests-on-failure \
+            -test-iterations 2 \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xcresult-macos
@@ -378,11 +402,11 @@ jobs:
       # the sandboxed runner's own container (see ScreenshotComparator.write's doc comment) — a
       # no-op the rest of the time.
       - name: Sync staged snapshots
-        if: failure()
+        if: always()
         run: Scripts/sync_ui_snapshots.sh
 
       - name: Upload UI test screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: macOS

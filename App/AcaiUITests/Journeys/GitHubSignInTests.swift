@@ -8,7 +8,7 @@ import XCTest
 /// always signs back out via `defer`, even if an assertion above it fails, so it never leaves a
 /// stale entry for the next run on a reused simulator/host.
 @MainActor
-final class GitHubSignInTests: XCTestCase {
+final class GitHubSignInTests: UIJourneyTestCase {
     /// Must match `FixtureGitHubAccountService.login` (`Sources/AcaiApp/GitHub/GitHubAccountService.swift`)
     /// — this UI test target is a separate, out-of-process Xcode-project target with no access to
     /// `AcaiApp`'s internal symbols, unlike `Tests/AcaiAppTests`'s `@testable import`, so the two
@@ -16,7 +16,6 @@ final class GitHubSignInTests: XCTestCase {
     private static let fixtureLogin = "octocat"
 
     func testSigningInWithATokenShowsTheAccountRowThenSigningOutRemovesIt() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
@@ -42,6 +41,6 @@ final class GitHubSignInTests: XCTestCase {
         XCTAssertTrue(app.staticTexts[Self.fixtureLogin].firstMatch.exists)
 
         github.signOutButton.tap()
-        XCTAssertFalse(github.signedInRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(github.signedInRow.waitForNonExistence(timeout: 5))
     }
 }

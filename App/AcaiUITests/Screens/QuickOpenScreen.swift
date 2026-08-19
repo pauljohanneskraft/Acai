@@ -19,11 +19,15 @@ final class QuickOpenScreen {
         app.descendants(matching: .any)["quickOpen.result.\(id)"]
     }
 
-    /// Types into the search field and waits past Quick Open's ~250ms debounce so a result row has
-    /// actually had a chance to appear before a caller asserts on it.
-    func search(_ text: String) {
-        searchField.tap()
-        searchField.typeText(text)
-        Thread.sleep(forTimeInterval: 0.4)
+    /// Types `text` and waits for `expected`, retyping if it never arrives. Quick Open re-filters on
+    /// query *changes* only, so a query landing before the index finished building filters an empty
+    /// list and never re-runs — retyping is what recovers from that, which a plain wait can't do.
+    @discardableResult
+    func search(_ text: String, until expected: XCUIElement, attempts: Int = 3, timeout: TimeInterval = 5) -> Bool {
+        for _ in 0..<attempts {
+            searchField.clearAndTypeText(text)
+            if expected.waitForExistence(timeout: timeout) { return true }
+        }
+        return false
     }
 }

@@ -6,17 +6,15 @@ import XCTest
 /// that trips on any method at all), guaranteeing at least one Quality Check finding to exercise
 /// this against, without needing a bespoke non-seeded fixture just to produce a violation.
 @MainActor
-final class ViewSourceQuickLookTests: XCTestCase {
+final class ViewSourceQuickLookTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testViewSourceOpensQuickLook() throws {
-        let app = XCUIApplication()
         app.launchWithFixture("seeded") { app, destination in
-            app.launchArguments += [
-                "-AcaiUITestCodebaseArtifact", Self.codebaseID,
-                destination.appendingPathComponent("artifacts/seeded.json").path
-            ]
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
         }
 
         let browser = ProjectBrowserScreen(app: app)
