@@ -51,29 +51,54 @@ jobs:
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
           restore-keys: spm-xcode-${{ runner.os }}-
 
-      # Builds the UI-test bundle once here; ui-test-iphone/ui-test-ipad run it via
-      # test-without-building against the uploaded artifact below, instead of each recompiling the
-      # whole package from scratch.
-      - name: Build for testing (UI test bundle)
-        run: |
-          xcodebuild build-for-testing \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "generic/platform=iOS Simulator" \
-            -derivedDataPath DerivedData \
-            -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
-        working-directory: App
-
-      # Runs the SPM package's own unit tests (AcaiCoreTests, AcaiAppTests) on an actual iOS
-      # Simulator, not just macOS/Linux — a real coverage gap this closes, since AcaiApp ships on
-      # iOS and some code (e.g. Foundation's Process/Pipe availability) genuinely differs by platform.
+      # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
       - name: Run SPM unit tests on iOS Simulator
         run: |
           xcodebuild test \
             -project Acai.xcodeproj \
             -scheme AcaiPackageTests-iOS \
             -destination "platform=iOS Simulator,name=iPhone 17" \
+            -derivedDataPath DerivedData \
+            -clonedSourcePackagesDirPath .spm-cache \
+            CODE_SIGNING_ALLOWED=NO
+        working-directory: App
+
+  prepare-ui-tests-ios:
+    name: Prepare UI Tests iOS
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
+      # ui-test-iphone/ui-test-ipad reuse this via test-without-building instead of recompiling.
+      - name: Build for testing (UI test bundle)
+        run: |
+          xcodebuild build-for-testing \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOSUITests \
+            -destination "generic/platform=iOS Simulator" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
@@ -170,7 +195,7 @@ jobs:
 
   ui-test-iphone:
     name: UI Test iPhone
-    needs: [lint, build-test-ios]
+    needs: [lint, prepare-ui-tests-ios]
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -230,7 +255,7 @@ jobs:
 
   ui-test-ipad:
     name: UI Test iPad
-    needs: [lint, build-test-ios]
+    needs: [lint, prepare-ui-tests-ios]
     runs-on: macos-26
     timeout-minutes: 30
     steps:
