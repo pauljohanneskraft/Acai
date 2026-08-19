@@ -100,11 +100,10 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
 
         let package = PackageDiagramScreen(app: app)
         let packageButton = codebaseDetail.diagramButton(type: "package")
-        // A single tap, never `tapUntil`: this button calls `diagrams.add`, so a retried tap
-        // creates a *second* diagram. `tapUntil` allows the canvas only 3s to render before
-        // retrying, which a loaded CI runner loses — the duplicate then shows up as an extra
-        // sidebar row and a screenshot that differs run to run.
-        packageButton.tapWhenHittable()
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        packageButton.tapUntilItDisappears()
 
         XCTAssertTrue(package.containerNode(named: "SampleSwiftPackage").waitForExistence(timeout: 30))
 

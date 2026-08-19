@@ -60,11 +60,10 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
 
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 10))
         let diagram = ClassDiagramScreen(app: app)
-        // A single tap, never `tapUntil`: this button calls `diagrams.add`, so a retried tap
-        // creates a *second* diagram. `tapUntil` allows the canvas only 3s to render before
-        // retrying, which a loaded CI runner loses — the duplicate then shows up as an extra
-        // sidebar row and a screenshot that differs run to run.
-        classDiagramButton.tapWhenHittable()
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        classDiagramButton.tapUntilItDisappears()
 
         XCTAssertTrue(diagram.typeNode(named: "Widget").waitForExistence(timeout: 30))
         XCTAssertTrue(diagram.typeNode(named: "Gadget").exists)
@@ -100,11 +99,10 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
             "the branch switch never finished")
         let classDiagramButtonAfterSwitch = codebaseDetail.diagramButton(type: "class")
         let featureBranchDiagram = ClassDiagramScreen(app: app)
-        // A single tap, never `tapUntil`: this button calls `diagrams.add`, so a retried tap
-        // creates a *second* diagram. `tapUntil` allows the canvas only 3s to render before
-        // retrying, which a loaded CI runner loses — the duplicate then shows up as an extra
-        // sidebar row and a screenshot that differs run to run.
-        classDiagramButtonAfterSwitch.tapWhenHittable()
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        classDiagramButtonAfterSwitch.tapUntilItDisappears()
 
         XCTAssertTrue(featureBranchDiagram.typeNode(named: "Extra").waitForExistence(timeout: 10),
                       "switching branches should have fetched feature's new content into the same clone")

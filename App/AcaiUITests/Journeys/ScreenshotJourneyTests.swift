@@ -78,11 +78,10 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30))
         let diagram = ClassDiagramScreen(app: app)
-        // A single tap, never `tapUntil`: this button calls `diagrams.add`, so a retried tap
-        // creates a *second* diagram. `tapUntil` allows the canvas only 3s to render before
-        // retrying, which a loaded CI runner loses — the duplicate then shows up as an extra
-        // sidebar row and a screenshot that differs run to run.
-        classDiagramButton.tapWhenHittable()
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        classDiagramButton.tapUntilItDisappears()
 
         XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 30))
         XCTAssertTrue(diagram.undoButton.waitForExistence(timeout: 15))
