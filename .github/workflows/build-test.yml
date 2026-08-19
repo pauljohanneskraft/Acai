@@ -17,7 +17,7 @@ jobs:
       image: ghcr.io/realm/swiftlint:0.57.1
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run SwiftLint
         run: swiftlint lint --strict
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
@@ -45,7 +45,7 @@ jobs:
         working-directory: App
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: App/.spm-cache
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
@@ -86,7 +86,7 @@ jobs:
         working-directory: App
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: App/.spm-cache
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
@@ -108,7 +108,7 @@ jobs:
         run: tar -czf ui-test-products.tar.gz -C DerivedData Build
         working-directory: App
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ios-ui-test-products
           path: App/ui-test-products.tar.gz
@@ -119,7 +119,7 @@ jobs:
     runs-on: macos-26
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked PNGs so the Examples/ image regression tests see real bytes.
           lfs: true
@@ -132,7 +132,7 @@ jobs:
           xcode-version: "26.5"
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .build/checkouts
@@ -170,13 +170,13 @@ jobs:
       image: swift:latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .build/checkouts
@@ -200,7 +200,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
@@ -209,7 +209,7 @@ jobs:
         with:
           xcode-version: "26.5"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ios-ui-test-products
           path: App
@@ -235,7 +235,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-iphone
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
@@ -247,7 +247,7 @@ jobs:
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: iPhone
           path: App/AcaiUITests/__RecordedSnapshots__/iPhone/
@@ -260,7 +260,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
@@ -269,7 +269,7 @@ jobs:
         with:
           xcode-version: "26.5"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ios-ui-test-products
           path: App
@@ -295,7 +295,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-ipad
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
@@ -307,7 +307,7 @@ jobs:
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: iPad
           path: App/AcaiUITests/__RecordedSnapshots__/iPad/
@@ -319,7 +319,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
@@ -339,7 +339,7 @@ jobs:
         working-directory: App
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: App/.spm-cache
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
@@ -365,7 +365,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-macos
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
@@ -383,7 +383,7 @@ jobs:
 
       - name: Upload UI test screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macOS
           path: /private/tmp/AcaiUITestSnapshots/macOS/
