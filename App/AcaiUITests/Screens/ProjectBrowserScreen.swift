@@ -33,19 +33,6 @@ final class ProjectBrowserScreen {
 
     // MARK: - Quick Open
 
-    /// Sidebar rows for generated diagrams whose name contains `name`.
-    ///
-    /// Filtered by label as well as identifier: `.accessibilityIdentifier` on a `Label` lands on its
-    /// icon *and* its text, so matching the identifier alone counts every row twice.
-    func generatedDiagramRows(named name: String) -> XCUIElementQuery {
-        app.descendants(matching: .any).matching(
-            NSPredicate(
-                format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
-                "sidebar.generatedDiagram.", name
-            )
-        )
-    }
-
     /// Compact width only — regular width pins `quickOpenFieldProxy` atop the sidebar instead.
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
     /// iPad's pinned search-field proxy atop the sidebar `List` — tapping it opens the same Quick
