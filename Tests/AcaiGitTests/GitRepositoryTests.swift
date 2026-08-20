@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiGit
 
-@Suite("GitRepository", .serialized)
+@Suite("GitRepository")
 struct GitRepositoryTests {
     private func scratchDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

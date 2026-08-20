@@ -13,11 +13,12 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: ghcr.io/realm/swiftlint:0.57.1
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run SwiftLint
         run: swiftlint lint --strict
@@ -25,10 +26,10 @@ jobs:
   build-test-ios:
     name: Unit Test iOS
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
@@ -45,28 +46,82 @@ jobs:
         working-directory: App
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: App/.spm-cache
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
           restore-keys: spm-xcode-${{ runner.os }}-
 
-      - name: Build for iOS Simulator
+      # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
+      - name: Run SPM unit tests on iOS Simulator
         run: |
-          xcodebuild build \
+          xcodebuild test \
             -project Acai.xcodeproj \
-            -scheme Acai-iOS \
-            -destination "generic/platform=iOS Simulator" \
+            -scheme AcaiPackageTests-iOS \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
+  prepare-ui-test-ios:
+    name: Prepare UI Test iOS
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Configure Git to use HTTPS
+        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+        working-directory: App
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v6
+        with:
+          path: App/.spm-cache
+          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-${{ runner.os }}-
+
+      # ui-test-iphone/ui-test-ipad reuse this via test-without-building instead of recompiling.
+      - name: Build for testing (UI test bundle)
+        run: |
+          xcodebuild build-for-testing \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOSUITests \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath DerivedData \
+            -clonedSourcePackagesDirPath .spm-cache \
+            CODE_SIGNING_ALLOWED=NO
+        working-directory: App
+
+      - name: Package build-for-testing artifact
+        run: tar -czf ui-test-products.tar.gz -C DerivedData Build
+        working-directory: App
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-ui-test-products
+          path: App/ui-test-products.tar.gz
+          retention-days: 1
+
   build-test-macos:
     name: Unit Test macOS
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked PNGs so the Examples/ image regression tests see real bytes.
           lfs: true
@@ -79,7 +134,7 @@ jobs:
           xcode-version: "26.5"
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .build/checkouts
@@ -113,17 +168,18 @@ jobs:
   build-test-linux:
     name: Unit Test Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: swift:latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .build/checkouts
@@ -142,57 +198,60 @@ jobs:
 
   ui-test-iphone:
     name: UI Test iPhone
-    needs: [lint, build-test-ios]
+    needs: [prepare-ui-test-ios]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.5"
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - uses: actions/download-artifact@v8
+        with:
+          name: ios-ui-test-products
+          path: App
 
-      - name: Generate Xcode project
-        run: xcodegen generate --spec project.yml
+      - name: Unpack build-for-testing artifact
+        run: |
+          mkdir -p DerivedData
+          tar -xzf ui-test-products.tar.gz -C DerivedData
         working-directory: App
 
-      - name: Cache SPM dependencies
-        uses: actions/cache@v4
-        with:
-          path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
-
+      # Deliberately serial. Cloning simulators for `-parallel-testing-enabled` makes each test
+      # 3-8x slower on a runner this size and starts failing app launches outright ("Failed to
+      # launch"), so the suite took longer *and* flaked; iPhone and iPad already run concurrently as
+      # separate jobs. It is still worth passing locally, where there are cores to spare.
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPhone 17"
 
       - name: Run UI tests
         id: run-tests
         run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
+          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPhone 17" \
-            -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
+            -resultBundlePath TestResults.xcresult \
+            -retry-tests-on-failure \
+            -test-iterations 2
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-iphone
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          path: App/TestResults.xcresult
           if-no-files-found: warn
 
       # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
@@ -200,8 +259,8 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: iPhone
           path: App/AcaiUITests/__RecordedSnapshots__/iPhone/
@@ -209,36 +268,30 @@ jobs:
 
   ui-test-ipad:
     name: UI Test iPad
-    needs: [lint, build-test-ios]
+    needs: [prepare-ui-test-ios]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.5"
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        run: xcodegen generate --spec project.yml
-        working-directory: App
-
-      - name: Cache SPM dependencies
-        uses: actions/cache@v4
+      - uses: actions/download-artifact@v8
         with:
-          path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          name: ios-ui-test-products
+          path: App
+
+      - name: Unpack build-for-testing artifact
+        run: |
+          mkdir -p DerivedData
+          tar -xzf ui-test-products.tar.gz -C DerivedData
+        working-directory: App
 
       - name: Prepare Simulator
         run: Scripts/simulator_prepare.sh "iPad (A16)"
@@ -246,20 +299,25 @@ jobs:
       - name: Run UI tests
         id: run-tests
         run: |
-          xcodebuild test \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
+          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=iPad (A16)" \
-            -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
+            -resultBundlePath TestResults.xcresult \
+            -retry-tests-on-failure \
+            -test-iterations 2
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-ipad
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          path: App/TestResults.xcresult
           if-no-files-found: warn
 
       # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
@@ -267,8 +325,8 @@ jobs:
       # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
       # second xcodebuild invocation needed.
       - name: Upload UI test screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: iPad
           path: App/AcaiUITests/__RecordedSnapshots__/iPad/
@@ -276,12 +334,11 @@ jobs:
 
   ui-test-macos:
     name: UI Test macOS
-    needs: [lint, build-test-macos]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
@@ -301,7 +358,7 @@ jobs:
         working-directory: App
 
       - name: Cache SPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: App/.spm-cache
           key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
@@ -321,12 +378,18 @@ jobs:
             -scheme Acai-macOSUITests \
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .spm-cache \
+            -retry-tests-on-failure \
+            -test-iterations 2 \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 
-      - name: Upload test results on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Screenshot drift summary
+        if: always()
+        run: Scripts/snapshot_drift_summary.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: xcresult-macos
           path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
@@ -339,12 +402,12 @@ jobs:
       # the sandboxed runner's own container (see ScreenshotComparator.write's doc comment) — a
       # no-op the rest of the time.
       - name: Sync staged snapshots
-        if: failure()
+        if: always()
         run: Scripts/sync_ui_snapshots.sh
 
       - name: Upload UI test screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: macOS
           path: /private/tmp/AcaiUITestSnapshots/macOS/

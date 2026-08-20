@@ -2,6 +2,8 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
+// Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
+#if os(macOS)
 @Suite("Local-folder git detection")
 struct LocalGitRepositoryDetectorTests {
     @Test func plainNonGitFolderDetectsNothing() throws {
@@ -86,3 +88,4 @@ struct LocalGitRepositoryDetectorTests {
         process.waitUntilExit()
     }
 }
+#endif

@@ -34,6 +34,7 @@ final class ProjectDetailScreen {
     private func openAddMenuIfNeeded(target: String) {
         guard !app.buttons[target].exists else { return }
         let menuButton = app.buttons["projectDetail.addMenuButton"]
+        // Absence is the regular-width answer, not a failure, so this one wait stays unchecked.
         guard menuButton.waitForExistence(timeout: 10) else { return }
         menuButton.tap()
     }

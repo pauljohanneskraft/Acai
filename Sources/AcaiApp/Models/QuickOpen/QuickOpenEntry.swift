@@ -5,8 +5,7 @@ import AcaiCore
 /// module, or existing diagram, from any project. Resolves either directly (a project/codebase/
 /// diagram opens by selecting it) or through `CodeElementReference`'s resolution mechanism (a
 /// type/method/module). Also the on-device Core Spotlight index's source of truth — see
-/// `SpotlightIndexer`. `QuickOpenView` itself still only displays the type/method/module/diagram
-/// kinds; `.project`/`.codebase` exist on this shared list for Spotlight's benefit.
+/// `SpotlightIndexer`.
 struct QuickOpenEntry: Identifiable, Hashable {
     enum Kind: Hashable {
         case project

@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -15,7 +16,11 @@ private final class ReindexSpy: @unchecked Sendable {
 
 /// `FileWatchReindexCoordinator` on macOS routes through the real `DirectoryChangeWatcher`
 /// (`DispatchSource.makeFileSystemObjectSource`) — these are lightweight filesystem integration
-/// tests, not pure unit tests, but a short debounce keeps them fast.
+/// tests, not pure unit tests, but a short debounce keeps them fast. iOS routes through
+/// `DirectoryPollingWatcher` instead (coarser directory-mtime polling, by design), which these
+/// short-debounce/15s-timeout tests aren't tuned for — so they are macOS-only, and the iOS polling
+/// watcher has **no** coverage here or anywhere else.
+#if os(macOS)
 @MainActor
 @Suite("FileWatchReindexCoordinator")
 struct FileWatchReindexCoordinatorTests {
@@ -35,7 +40,11 @@ struct FileWatchReindexCoordinatorTests {
 
         coordinator.sync(codebases: [Codebase(id: codebaseID, name: "local", directoryPath: root.path)])
 
-        try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
+        // Not `atomically:` — that writes a temp file and renames it, which is two or more
+        // filesystem events, and the debounce legitimately may or may not coalesce them. A plain
+        // write is one event, so "exactly one reindex" stays a real assertion about the debounce
+        // rather than something a `Set` has to paper over.
+        try Data("content".utf8).write(to: root.appendingPathComponent("New.swift"))
 
         try await Eventually(timeout: .seconds(15)).waitUntil { spy.reindexedIDs.contains(codebaseID) }
         #expect(spy.reindexedIDs == [codebaseID])
@@ -69,8 +78,8 @@ struct FileWatchReindexCoordinatorTests {
         let control = Codebase(id: controlID, name: "control", directoryPath: controlRoot.path)
         coordinator.sync(codebases: [codebase, control])
 
-        try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
-        try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
+        try Data("content".utf8).write(to: root.appendingPathComponent("New.swift"))
+        try Data("content".utf8).write(to: controlRoot.appendingPathComponent("New.swift"))
 
         try await gate.wait(timeout: .seconds(15))
         #expect(spy.reindexedIDs == [controlID])
@@ -100,11 +109,12 @@ struct FileWatchReindexCoordinatorTests {
         coordinator.sync(codebases: [Codebase(id: codebaseID, name: "local", directoryPath: root.path), control])
         coordinator.sync(codebases: [control])
 
-        try "content".write(to: root.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
-        try "content".write(to: controlRoot.appendingPathComponent("New.swift"), atomically: true, encoding: .utf8)
+        try Data("content".utf8).write(to: root.appendingPathComponent("New.swift"))
+        try Data("content".utf8).write(to: controlRoot.appendingPathComponent("New.swift"))
 
         try await gate.wait(timeout: .seconds(15))
         #expect(spy.reindexedIDs == [controlID])
         coordinator.stopAll()
     }
 }
+#endif

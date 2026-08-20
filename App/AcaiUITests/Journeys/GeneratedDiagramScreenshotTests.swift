@@ -7,7 +7,10 @@ import XCTest
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
 /// content.
 @MainActor
-final class GeneratedDiagramScreenshotTests: XCTestCase {
+final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
+
+    /// Several states are captured per run; see `UIJourneyTestCase.stopsAtFirstFailure`.
+    override var stopsAtFirstFailure: Bool { false }
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
@@ -20,7 +23,11 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
 
     private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
         app.rotateToLandscapeOnIPad()
-        app.launchWithFixture("seeded")
+        app.launchWithFixture("seeded") { app, destination in
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
+        }
 
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)
@@ -42,7 +49,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testSequenceDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let sequence = SequenceDiagramScreen(app: app)
@@ -65,7 +71,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testStateDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let state = StateDiagramScreen(app: app)
@@ -91,14 +96,16 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testPackageDiagramScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let package = PackageDiagramScreen(app: app)
         let packageButton = codebaseDetail.diagramButton(type: "package")
-        packageButton.tapUntil(package.containerNode(named: "SampleSwiftPackage"))
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        packageButton.tapUntilItDisappears()
 
-        XCTAssertTrue(package.containerNode(named: "SampleSwiftPackage").waitForExistence(timeout: 10))
+        XCTAssertTrue(package.containerNode(named: "SampleSwiftPackage").waitForExistence(timeout: 30))
 
         package.fitToViewButton.tap()
         comparator.validate(
@@ -108,7 +115,6 @@ final class GeneratedDiagramScreenshotTests: XCTestCase {
     }
 
     func testCallGraphScreenshot() throws {
-        let app = XCUIApplication()
         let codebaseDetail = launchReindexedCodebase(app)
 
         let callGraph = CallGraphScreen(app: app)

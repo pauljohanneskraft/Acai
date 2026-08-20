@@ -130,6 +130,10 @@ struct FreeformCollaboratorTests {
 
     // MARK: - SelectionClipboard
 
+    // `UIPasteboard` reads can block indefinitely on iOS Simulator waiting for a paste-permission
+    // prompt nobody can answer in CI — confirmed by this test hanging a full 30-minute job timeout.
+    // `NSPasteboard` has no such gate, so this only needs to skip iOS.
+    #if os(macOS)
     @Test func partialEdgeIsRemovedByCutButNotCopied() {
         let ctx = StubContext()
         ctx.nodes = [typeNode("A"), typeNode("B")]
@@ -150,6 +154,7 @@ struct FreeformCollaboratorTests {
         #expect(ctx.nodes.map(\.id) == ["B"])
         #expect(ctx.edges.isEmpty)
     }
+    #endif
 
     // MARK: - StateMachineEditor
 

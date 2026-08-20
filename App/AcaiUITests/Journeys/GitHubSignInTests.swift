@@ -3,12 +3,13 @@ import XCTest
 /// Verifies GitHub sign-in/out through `GitHubAccountSection`'s personal-access-token path using
 /// `FixtureGitHubAccountService`'s canned identity.
 ///
-/// `GitHubTokenStore` is Keychain-backed and not fixture-redirected, so a successful stubbed
-/// sign-in still writes to the real keychain item under `de.kraftsoftware.Acai.github` — this test
-/// always signs back out via `defer`, even if an assertion above it fails, so it never leaves a
-/// stale entry for the next run on a reused simulator/host.
+/// A fixture launch redirects `GitHubTokenStore` to a JSON file under the run's own disposable
+/// directory (see its `fixtureFileURL`), so nothing here can reach the real keychain and the
+/// `defer` below is belt-and-braces rather than the isolation mechanism. It also would not run on
+/// an assertion failure — XCTest aborts the test with an Objective-C exception, which does not
+/// unwind Swift `defer`.
 @MainActor
-final class GitHubSignInTests: XCTestCase {
+final class GitHubSignInTests: UIJourneyTestCase {
     /// Must match `FixtureGitHubAccountService.login` (`Sources/AcaiApp/GitHub/GitHubAccountService.swift`)
     /// — this UI test target is a separate, out-of-process Xcode-project target with no access to
     /// `AcaiApp`'s internal symbols, unlike `Tests/AcaiAppTests`'s `@testable import`, so the two
@@ -16,7 +17,6 @@ final class GitHubSignInTests: XCTestCase {
     private static let fixtureLogin = "octocat"
 
     func testSigningInWithATokenShowsTheAccountRowThenSigningOutRemovesIt() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
@@ -42,6 +42,6 @@ final class GitHubSignInTests: XCTestCase {
         XCTAssertTrue(app.staticTexts[Self.fixtureLogin].firstMatch.exists)
 
         github.signOutButton.tap()
-        XCTAssertFalse(github.signedInRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(github.signedInRow.waitForNonExistence(timeout: 5))
     }
 }

@@ -64,6 +64,7 @@ optionalTargets.append(
         name: "AcaiGitTests",
         dependencies: [
             "AcaiGit",
+            "AcaiTestSupport",
             .product(name: "SwiftGitX", package: "SwiftGitX"),
             .product(name: "libgit2", package: "libgit2"),
         ]
@@ -100,7 +101,7 @@ optionalTargets.append(
         // `AcaiApp` views via `AcaiRender`'s `DiagramImageRenderer` and construct
         // `ClassDiagramConfiguration` fixtures directly.
         dependencies: [
-            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison",
+            "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison", "AcaiTestSupport",
         ],
         // The render snapshot tests' committed goldens (read by file path, not `Bundle.module` — see
         // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
@@ -328,6 +329,9 @@ let package = Package(
         ),
 
         // MARK: Tests
+        // Async waiting primitives shared by every test target that drives concurrent code. A pure
+        // leaf — no swift-testing/XCTest dependency, so it stays usable from both.
+        .target(name: "AcaiTestSupport", dependencies: []),
         .testTarget(name: "AcaiCoreTests", dependencies: ["AcaiCore"]),
         .testTarget(name: "AcaiSwiftTests", dependencies: ["AcaiSwift", "AcaiCore"]),
         .testTarget(name: "AcaiJSTests", dependencies: ["AcaiJS", "AcaiCore"]),

@@ -1,12 +1,11 @@
 import XCTest
 
 @MainActor
-final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
+final class OpenSeededProjectGenerateDiagramTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testGenerateClassDiagramFromSeededCodebase() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
@@ -27,9 +26,12 @@ final class OpenSeededProjectGenerateDiagramTests: XCTestCase {
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
         let diagram = ClassDiagramScreen(app: app)
-        classDiagramButton.tapUntil(diagram.typeNode(named: "Base"))
+        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
+        // keyed on the canvas appearing creates a second diagram whenever the first is still
+        // rendering — an extra sidebar row and a screenshot that differs run to run.
+        classDiagramButton.tapUntilItDisappears()
 
-        XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 10))
+        XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 30))
         XCTAssertTrue(diagram.typeNode(named: "Derived").exists)
     }
 }

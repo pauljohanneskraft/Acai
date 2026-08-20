@@ -3,7 +3,7 @@ import SwiftGitX
 import Testing
 @testable import AcaiGit
 
-@Suite("AcaiGit", .serialized)
+@Suite("AcaiGit")
 struct AcaiGitTests {
     private func scratchDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

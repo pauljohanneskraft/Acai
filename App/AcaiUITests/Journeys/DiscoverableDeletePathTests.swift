@@ -4,12 +4,11 @@ import XCTest
 /// `ProjectDetailView`/`CodebaseDetailView`, a second path to the same action
 /// `DeleteConfirmationTests` covers via the sidebar/row context menu.
 @MainActor
-final class DiscoverableDeletePathTests: XCTestCase {
+final class DiscoverableDeletePathTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testDeleteCodebaseButtonOnItsOwnDetailScreenRemovesIt() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
@@ -30,14 +29,13 @@ final class DiscoverableDeletePathTests: XCTestCase {
         XCTAssertTrue(codebaseDetail.deleteCodebaseConfirmButton.waitForExistence(timeout: 5))
         codebaseDetail.deleteCodebaseConfirmButton.tap()
 
-        XCTAssertFalse(
-            codebaseRow.waitForExistence(timeout: 5),
+        XCTAssertTrue(
+            codebaseRow.waitForNonExistence(timeout: 5),
             "confirming the codebase's own delete button must remove it, same as the row's context menu"
         )
     }
 
     func testDeleteProjectButtonOnItsOwnDetailScreenRemovesIt() throws {
-        let app = XCUIApplication()
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
 
@@ -53,8 +51,8 @@ final class DiscoverableDeletePathTests: XCTestCase {
         XCTAssertTrue(detail.deleteProjectConfirmButton.waitForExistence(timeout: 5))
         detail.deleteProjectConfirmButton.tap()
 
-        XCTAssertFalse(
-            projectRow.waitForExistence(timeout: 5),
+        XCTAssertTrue(
+            projectRow.waitForNonExistence(timeout: 5),
             "confirming the project's own delete button must remove it, same as the sidebar's context menu"
         )
     }

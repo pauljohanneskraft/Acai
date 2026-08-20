@@ -5,13 +5,16 @@ import XCTest
 /// that should surface in the project-level Findings view, not just `CodebaseDetailView`'s own
 /// section. Also exercises the suppress/unsuppress round trip.
 @MainActor
-final class FindingsJourneyTests: XCTestCase {
+final class FindingsJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testFindingsViewSurfacesViolationAfterReindex() throws {
-        let app = XCUIApplication()
-        app.launchWithFixture("seeded")
+        app.launchWithFixture("seeded") { app, destination in
+            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
+            ])
+        }
 
         let browser = ProjectBrowserScreen(app: app)
         let projectRow = browser.projectRow(id: Self.projectID)
@@ -36,7 +39,8 @@ final class FindingsJourneyTests: XCTestCase {
             backButton.tap()
         }
         XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
+        // In-flight reindex completion can rebuild the sidebar and invalidate `projectRow` mid-tap.
+        projectRow.tapUntil(detail.findingsButton)
         let findingsButton = detail.findingsButton
         XCTAssertTrue(findingsButton.waitForExistence(timeout: 10))
         findingsButton.tap()

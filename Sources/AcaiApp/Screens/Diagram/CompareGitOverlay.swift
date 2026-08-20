@@ -139,6 +139,12 @@ struct DeltaHostedDiagramView<Content: View>: View {
                     isComparePresented = false
                     DispatchQueue.main.async { isComparePresented = true }
                 }
+                // Same false→true forcing as above, for the `loaded` half of `content`'s `.id()`.
+                .onChange(of: loaded) { _, newValue in
+                    guard newValue, isComparePresented else { return }
+                    isComparePresented = false
+                    DispatchQueue.main.async { isComparePresented = true }
+                }
         }
         .task(id: comparisonTaskID) {
             await model.ensureComparisonLoaded(for: diagram)

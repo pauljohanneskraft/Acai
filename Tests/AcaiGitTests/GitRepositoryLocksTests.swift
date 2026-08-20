@@ -1,3 +1,4 @@
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiGit
@@ -48,14 +49,19 @@ struct GitRepositoryLocksTests {
         let locks = GitRepositoryLocks()
         let log = EventLog()
 
+        // A holds its own lock until B has finished. If the two repositories shared a lock, B could
+        // never run and `wait(timeout:)` would throw — so independence is proven by the test
+        // completing at all, rather than by B beating a sleep A happens to be in.
+        let bFinished = AsyncGate()
         async let first: Void = locks.run(for: repositoryA) {
             await log.record("a-start")
-            try await Task.sleep(nanoseconds: 50_000_000)
+            try await bFinished.wait(timeout: .seconds(10))
             await log.record("a-end")
         }
         async let second: Void = locks.run(for: repositoryB) {
             await log.record("b-start")
             await log.record("b-end")
+            await bFinished.open()
         }
         _ = try await (first, second)
 

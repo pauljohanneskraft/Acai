@@ -1,73 +1,98 @@
 import Foundation
 import SwiftUI
 
-/// Resolves a UI-test fixture's base directory from a launch argument, so `ProjectStore` can be
-/// pointed at deterministic, disposable state instead of the real user's Application
+/// Resolves a UI-test fixture's base directory from the process environment, so `ProjectStore` can
+/// be pointed at deterministic, disposable state instead of the real user's Application
 /// Support/Documents directory. Fully inert (`resolveBaseDir()` returns `nil`) unless
-/// `-AcaiUITestFixtureBaseDir <path>` is actually present — a real user's launch never carries it.
+/// `ACAI_UITEST_FIXTURE_BASE_DIR` is actually present — a real user's launch never carries it.
 ///
-/// The path itself is resolved and staged by the test process, not this one: `App/AcaiUITests` (a
-/// separate Xcode-project target — no shared internal API) copies its bundled `Fixtures/<name>`
-/// resource to a fresh temporary directory before launch and passes that directory's absolute path
-/// here (see `XCUIApplication.launchWithFixture(_:)` in `App/AcaiUITests/Support/Launch.swift`).
-/// **The launch-argument name below and the one in `Launch.swift` must match** — they can't share
-/// a constant across the SwiftPM package / Xcode-project boundary.
+/// **Environment, not launch arguments.** A launch argument that isn't part of a `-key value` pair
+/// is read as a file to open, and an app launched to open files gets no automatic untitled window —
+/// measured directly: launching this app with one stray bare token yields zero windows, the same
+/// launch without it yields one. The repeatable multi-field values here can't be expressed as a
+/// single `-key value` pair, so nothing goes through argv at all rather than relying on every
+/// future call site getting the pairing right.
+///
+/// The values themselves are staged by the test process, not this one: `App/AcaiUITests` (a separate
+/// Xcode-project target — no shared internal API) copies its bundled `Fixtures/<name>` resource to a
+/// fresh temporary directory before launch and passes that directory's absolute path here (see
+/// `XCUIApplication.launchWithFixture(_:)` in `App/AcaiUITests/Support/Launch.swift`). **The
+/// variable names below and the ones in `Launch.swift` must match** — they can't share a constant
+/// across the SwiftPM package / Xcode-project boundary.
 struct UITestFixtureResolver {
-    static let launchArgument = "-AcaiUITestFixtureBaseDir"
+    static let fixtureBaseDirVariable = "ACAI_UITEST_FIXTURE_BASE_DIR"
 
-    private let arguments: [String]
+    private let environment: [String: String]
 
-    init(arguments: [String] = ProcessInfo.processInfo.arguments) {
-        self.arguments = arguments
+    init(environment: [String: String] = ProcessInfo.processInfo.environment) {
+        self.environment = environment
     }
 
+    /// The master switch, and `#if DEBUG` because it is one: every other hook here is gated on this
+    /// returning non-`nil`. An environment variable is inherited by any child process, so unlike the
+    /// launch arguments this replaced it could be set on a real user's session by accident — a
+    /// release build must not be able to redirect `ProjectStore` away from its real data at all.
     func resolveBaseDir() -> URL? {
-        resolve(Self.launchArgument)
+        #if DEBUG
+        return url(Self.fixtureBaseDirVariable)
+        #else
+        return nil
+        #endif
     }
 
-    static let gitHubRemoteLaunchArgument = "-AcaiUITestGitHubRemoteURL"
+    static let gitHubRemoteVariable = "ACAI_UITEST_GITHUB_REMOTE_URL"
 
-    /// A local git repository passed via `-AcaiUITestGitHubRemoteURL <path>`, to clone/fetch from
-    /// instead of real github.com.
+    /// A local git repository to clone/fetch from instead of real github.com.
     func resolveGitHubRemoteURL() -> URL? {
-        resolve(Self.gitHubRemoteLaunchArgument)
+        url(Self.gitHubRemoteVariable)
     }
 
-    static let gitHubFastFixtureRootLaunchArgument = "-AcaiUITestGitHubFastFixtureRoot"
+    static let gitHubFastFixtureRootVariable = "ACAI_UITEST_GITHUB_FAST_FIXTURE_ROOT"
 
     /// Selects `FastFixtureGitHubRepositoryService` over the real-git `FixtureGitHubRepositoryService`.
     func resolveGitHubFastFixtureRoot() -> URL? {
-        resolve(Self.gitHubFastFixtureRootLaunchArgument)
+        url(Self.gitHubFastFixtureRootVariable)
     }
 
-    static let codebaseArtifactLaunchArgument = "-AcaiUITestCodebaseArtifact"
+    static let codebaseArtifactsVariable = "ACAI_UITEST_CODEBASE_ARTIFACTS"
 
-    /// Every `-AcaiUITestCodebaseArtifact <codebaseID> <path>` pair (repeatable) — see
-    /// `CodebaseAnalyzingResolver`. A codebase with no entry still gets the real analyzer.
+    /// Newline-separated `<codebaseID>\t<path>` records — see `CodebaseAnalyzingResolver`. A
+    /// codebase with no entry still gets the real analyzer. Tab and newline are the separators
+    /// because a path may legally contain anything else.
     func resolveCodebaseArtifactURLs() -> [UUID: URL] {
         var result: [UUID: URL] = [:]
-        var index = arguments.startIndex
-        while index < arguments.endIndex {
-            defer { index += 1 }
-            guard arguments[index] == Self.codebaseArtifactLaunchArgument,
-                  arguments.indices.contains(index + 2),
-                  let codebaseID = UUID(uuidString: arguments[index + 1])
-            else { continue }
-            result[codebaseID] = URL(fileURLWithPath: arguments[index + 2])
+        for fields in records(Self.codebaseArtifactsVariable, fieldCount: 2) {
+            guard let codebaseID = UUID(uuidString: fields[0]) else { continue }
+            result[codebaseID] = URL(fileURLWithPath: fields[1])
         }
         return result
     }
 
-    static let colorSchemeLaunchArgument = "-AcaiUITestColorScheme"
+    static let comparisonArtifactsVariable = "ACAI_UITEST_COMPARISON_ARTIFACTS"
 
-    /// A forced `light`/`dark` appearance passed via `-AcaiUITestColorScheme <light|dark>`, so
-    /// snapshot-test screenshots are deterministic regardless of the runner's or developer's own
-    /// system appearance default (an unpinned mismatch flips nearly every pixel, not just the few
-    /// percent of AA/font-hinting noise this suite already tolerates).
+    struct ComparisonArtifactKey: Hashable {
+        let codebaseID: UUID
+        let ref: String
+    }
+
+    /// Newline-separated `<codebaseID>\t<ref>\t<path>` records — see `ComparisonArtifactResolver`.
+    /// A `(codebaseID, ref)` pair with no entry still gets a real `GitRevisionSnapshot`.
+    func resolveComparisonArtifactURLs() -> [ComparisonArtifactKey: URL] {
+        var result: [ComparisonArtifactKey: URL] = [:]
+        for fields in records(Self.comparisonArtifactsVariable, fieldCount: 3) {
+            guard let codebaseID = UUID(uuidString: fields[0]) else { continue }
+            result[.init(codebaseID: codebaseID, ref: fields[1])] = URL(fileURLWithPath: fields[2])
+        }
+        return result
+    }
+
+    static let colorSchemeVariable = "ACAI_UITEST_COLOR_SCHEME"
+
+    /// A forced `light`/`dark` appearance, so snapshot-test screenshots are deterministic regardless
+    /// of the runner's or developer's own system appearance default (an unpinned mismatch flips
+    /// nearly every pixel, not just the few percent of AA/font-hinting noise this suite tolerates).
     func resolveColorScheme() -> ColorScheme? {
-        guard let flagIndex = arguments.firstIndex(of: Self.colorSchemeLaunchArgument),
-              arguments.indices.contains(flagIndex + 1) else { return nil }
-        switch arguments[flagIndex + 1] {
+        switch environment[Self.colorSchemeVariable] {
         case "dark":
             return .dark
         case "light":
@@ -77,9 +102,21 @@ struct UITestFixtureResolver {
         }
     }
 
-    private func resolve(_ flag: String) -> URL? {
-        guard let flagIndex = arguments.firstIndex(of: flag),
-              arguments.indices.contains(flagIndex + 1) else { return nil }
-        return URL(fileURLWithPath: arguments[flagIndex + 1], isDirectory: true)
+    private func url(_ variable: String) -> URL? {
+        guard let path = environment[variable], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    /// Records with the wrong field count are dropped rather than partially applied — a malformed
+    /// entry should leave the real implementation in place, not a half-built fixture.
+    private func records(_ variable: String, fieldCount: Int) -> [[String]] {
+        guard let value = environment[variable], !value.isEmpty else { return [] }
+        return value.split(separator: "\n")
+            .map { record in
+                record
+                    .split(separator: "\t", maxSplits: fieldCount - 1, omittingEmptySubsequences: false)
+                    .map(String.init)
+            }
+            .filter { $0.count == fieldCount }
     }
 }

@@ -28,26 +28,26 @@ class DiagramScreenBase {
 
     /// Precondition for reaching `relayoutButton`/`configureButton`/`saveAsFreeformButton`/
     /// `exportImageButton`/any type-specific Settings control, all of which live in this tab.
-    func openSettingsTab() {
+    func openSettingsTab(file: StaticString = #filePath, line: UInt = #line) {
         if !settingsContent.exists && !inspectorContent.exists {
             sidebarToggleButton.tap()
         }
         if !settingsContent.exists {
             settingsTabButton.tap()
         }
-        _ = settingsContent.waitForExistence(timeout: 5)
+        settingsContent.waitOrFail("the diagram's Settings tab", file: file, line: line)
     }
 
     /// Most journeys reach the Inspector by double-tapping a canvas element instead; this is for
     /// the cases that need it without an element to double-tap yet.
-    func openInspectorTab() {
+    func openInspectorTab(file: StaticString = #filePath, line: UInt = #line) {
         if !settingsContent.exists && !inspectorContent.exists {
             sidebarToggleButton.tap()
         }
         if !inspectorContent.exists {
             inspectorTabButton.tap()
         }
-        _ = inspectorContent.waitForExistence(timeout: 5)
+        inspectorContent.waitOrFail("the diagram's Inspector tab", file: file, line: line)
     }
 
     /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — call
@@ -69,9 +69,11 @@ class DiagramScreenBase {
 
     /// Class/Sequence/State screens have no confirmation step — call `saveAsFreeformButton.tap()`
     /// directly there instead.
-    func saveAsFreeform(includeMetricsNote: Bool) {
+    func saveAsFreeform(includeMetricsNote: Bool, file: StaticString = #filePath, line: UInt = #line) {
         saveAsFreeformButton.tap()
-        _ = saveAsFreeformIncludeMetricsToggle.waitForExistence(timeout: 5)
+        saveAsFreeformIncludeMetricsToggle.waitOrFail(
+            "the Save as Freeform confirmation", file: file, line: line
+        )
         // The toggle only needs tapping when its current state doesn't already match the request.
         if let isOn = saveAsFreeformIncludeMetricsToggle.value as? String, (isOn == "1") != includeMetricsNote {
             saveAsFreeformIncludeMetricsToggle.tap()
@@ -81,28 +83,35 @@ class DiagramScreenBase {
 
     /// Falls back to iOS's "More" toolbar overflow item if `button` itself never appears — macOS's
     /// `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only.
-    func tapToolbarButton(_ button: XCUIElement, label: String) {
+    func tapToolbarButton(
+        _ button: XCUIElement, label: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
         #if os(macOS)
-        _ = button.waitForExistence(timeout: 10)
+        button.waitOrFail("toolbar button \(label)", timeout: 10, file: file, line: line)
         button.tap()
         #else
-        if button.waitForExistence(timeout: 10) {
-            button.tap()
-            return
-        }
+        // Polls both `button` and the overflow item together instead of waiting out `button`'s
+        // full 10s budget first — on a toolbar that's already collapsed into "More", `button` was
+        // never going to appear, so the old sequential wait paid a deterministic 10s tax every time.
         let overflowButton = app.buttons["OverflowBarButtonItem"]
-        guard overflowButton.waitForExistence(timeout: 2) else {
-            return
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            if button.exists { button.tap(); return }
+            if overflowButton.exists { break }
+            Thread.sleep(forTimeInterval: 0.1)
         }
+        if button.exists { button.tap(); return }
+        overflowButton.waitOrFail("toolbar button \(label), directly or in overflow", timeout: 1, file: file, line: line)
+        guard overflowButton.exists else { return }
         overflowButton.tap()
         let overflowItem = app.buttons[label]
-        _ = overflowItem.waitForExistence(timeout: 5)
+        overflowItem.waitOrFail("overflow item \(label)", file: file, line: line)
         overflowItem.tap()
         #endif
     }
 
-    func tapFitToView() {
-        tapToolbarButton(fitToViewButton, label: "Fit to View")
+    func tapFitToView(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(fitToViewButton, label: "Fit to View", file: file, line: line)
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
@@ -118,15 +127,15 @@ class DiagramScreenBase {
     var compareLoadingIndicator: XCUIElement { app.descendants(matching: .any)["delta.loading"] }
 
     /// The panel's controls aren't in the accessibility tree until this opens it.
-    func openCompare() {
+    func openCompare(file: StaticString = #filePath, line: UInt = #line) {
         compareButton.tap()
-        _ = compareRefRow("HEAD").waitForExistence(timeout: 5)
+        compareRefRow("HEAD").waitOrFail("the compare panel's HEAD row", file: file, line: line)
     }
 
     @discardableResult
-    func chooseCompareRef(_ name: String) -> XCUIElement {
+    func chooseCompareRef(_ name: String, file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
         let row = compareRefRow(name)
-        _ = row.waitForExistence(timeout: 5)
+        row.waitOrFail("compare ref row \(name)", file: file, line: line)
         row.tap()
         return row
     }

@@ -37,9 +37,10 @@ extension XCUIApplication {
     /// `$FIXTURE_ROOT`; every occurrence in every file under the copy is substituted with the real
     /// destination path before launch.
     ///
-    /// **The launch-argument name here must match `UITestFixtureResolver.launchArgument`**
-    /// (`Sources/AcaiApp/UITestSupport.swift`) — the two can't share a constant across the SwiftPM
-    /// package / Xcode-project boundary.
+    /// Everything is handed over through `launchEnvironment`; see `UITestFixtureResolver`
+    /// (`Sources/AcaiApp/UITestSupport.swift`) for why never through `launchArguments`, and for the
+    /// variable names, which the two can't share a constant for across the SwiftPM package /
+    /// Xcode-project boundary.
     func launchWithFixture(
         _ name: String,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
@@ -72,14 +73,44 @@ extension XCUIApplication {
             return
         }
 
-        launchArguments += [
-            "-AcaiUITestFixtureBaseDir", destination.path,
-            "-AcaiUITestColorScheme", defaultUITestColorScheme,
-        ]
+        launchEnvironment["ACAI_UITEST_FIXTURE_BASE_DIR"] = destination.path
+        launchEnvironment["ACAI_UITEST_COLOR_SCHEME"] = defaultUITestColorScheme
+        assertNoLaunchArguments(file: file, line: line)
         launch()
+        #if os(macOS)
+        // `launch()` doesn't guarantee frontmost on macOS — that's a separate driver-side request.
+        activate()
+        // Absorbs this Debug build's cold-launch cost once, instead of it eating per-test timeouts.
+        guard windows.firstMatch.waitForExistence(timeout: 30) else {
+            let tree = XCTAttachment(string: debugDescription)
+            tree.name = "no window after launch — element tree"
+            tree.lifetime = .keepAlways
+            XCTContext.runActivity(named: "No window appeared") { $0.add(tree) }
+            XCTFail("No window appeared after launch", file: file, line: line)
+            return
+        }
+        #endif
     }
 
-    /// Forced via `-AcaiUITestColorScheme` so a screenshot golden's appearance never depends on the
+    /// Guards the reason everything goes through `launchEnvironment` — see `UITestFixtureResolver`:
+    /// a launch argument outside a `-key value` pair is read as a file to open, and an app launched
+    /// to open files comes up with a menu bar and no window at all.
+    private func assertNoLaunchArguments(file: StaticString, line: UInt) {
+        XCTAssertTrue(
+            launchArguments.isEmpty,
+            "UI-test configuration must go through launchEnvironment, not launchArguments "
+            + "(got \(launchArguments)) — see UITestFixtureResolver",
+            file: file, line: line
+        )
+    }
+
+    /// Encodes a repeatable multi-field value into one environment variable. Mirrors the decoding in
+    /// `UITestFixtureResolver` (`Sources/AcaiApp/UITestSupport.swift`).
+    func environmentRecords(_ records: [[String]]) -> String {
+        records.map { $0.joined(separator: "\t") }.joined(separator: "\n")
+    }
+
+    /// Forced via `ACAI_UITEST_COLOR_SCHEME` so a screenshot golden's appearance never depends on the
     /// runner's system default. Split across platforms so both appearances get real coverage:
     /// macOS and iPhone run dark, iPad runs light.
     private var defaultUITestColorScheme: String {

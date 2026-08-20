@@ -3,6 +3,8 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
+// Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
+#if os(macOS)
 @Suite("Git revision snapshot")
 struct GitRevisionSnapshotTests {
 
@@ -63,3 +65,4 @@ struct GitRevisionSnapshotTests {
         process.waitUntilExit()
     }
 }
+#endif
