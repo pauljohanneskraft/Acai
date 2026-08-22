@@ -14,8 +14,8 @@
 # --- CONFIGURATION ---
 readonly HOSTING_BASE_PATH="Acai"
 readonly LANDING_PATH="documentation/acailibrary"
-# Every documentable module. AcaiRender is macOS-only and AcaiApp is a GUI executable
-# with no public API, so the app is intentionally omitted.
+# Every documentable module. The executables (AcaiCLI, AcaiMCP, AcaiApp) have no public
+# API and are omitted; AcaiRender needs a macOS runner, which the workflow provides.
 readonly TARGETS=(
     AcaiCore
     AcaiTreeSitter
@@ -26,6 +26,8 @@ readonly TARGETS=(
     AcaiPython
     AcaiCFamily
     AcaiDiagram
+    AcaiDiff
+    AcaiQuality
     AcaiLibrary
     AcaiRender
 )
