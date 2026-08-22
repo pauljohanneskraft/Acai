@@ -11,6 +11,7 @@ public struct ModuleAttribution: Sendable {
     private let resolver: ModuleResolver
     private let idToModule: [String: String]
 
+    /// - Parameter resolver: derives a type's declaring module from its file path.
     /// - Parameter idToModule: each in-codebase type id mapped to its declaring module. Edge
     ///   endpoints not in the map are external and resolve to `nil`.
     public init(resolver: ModuleResolver = .standard, idToModule: [String: String]) {

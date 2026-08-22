@@ -34,7 +34,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     public var assignments: [VariableAssignment]
     /// Statically-observable reads of stored properties inside this member's body: a bare identifier
     /// or explicit `self`/`this` access to a known stored property (`receiver == nil`), plus
-    /// `Type.field` static reads. Best-effort; feeds ``LcomAnalysis``/``FeatureEnvy``.
+    /// `Type.field` static reads. Best-effort; feeds ``LcomAnalysis``/`FeatureEnvy`.
     public var fieldReads: [FieldAccess] = []
     /// For stored properties: the declaration initializer's classified value, when captured.
     public var initialValue: VariableAssignment.Value?

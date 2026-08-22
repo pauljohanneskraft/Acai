@@ -30,7 +30,7 @@ public enum PDFDocumentWriterError: Error {
 
 /// Generic multi-page PDF assembly: give it a page size and a page count, and a closure to draw
 /// each page's content into a `CGContext`. Knows nothing about diagrams, findings, or stats — the
-/// "layout/pagination pass" that ``CodebaseAtlasBuilder`` (in `AcaiApp`) composes rendered diagram
+/// "layout/pagination pass" that `CodebaseAtlasBuilder` (in `AcaiApp`) composes rendered diagram
 /// images and text pages through; reusable by any future multi-page PDF export. Pure CoreGraphics
 /// (a `CGDataConsumer`-backed PDF context), so it behaves identically on macOS and iOS rather than
 /// reaching for a platform-specific `NSPrintOperation`/`UIGraphicsPDFRenderer` API.

@@ -8,8 +8,9 @@ import AcaiCore
 /// for any identifier or `this.<field>` target — no scope tracking, consumers filter by name later.
 public protocol AssignmentResolving: TreeSitterExtracting {
 
-    /// Resolves a single AST node to a ``AcaiCore/VariableAssignment`` if it represents an assignment
-    /// or increment/decrement whose target is a plain identifier or a `this`-qualified field access.
+    /// Resolves a single AST node to a
+    /// [VariableAssignment](/documentation/acaicore/variableassignment) if it represents an
+    /// assignment or increment/decrement whose target is a plain identifier or a `this`-qualified field access.
     func resolveAssignment(_ node: Node) -> VariableAssignment?
 }
 

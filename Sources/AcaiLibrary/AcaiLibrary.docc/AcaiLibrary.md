@@ -58,10 +58,47 @@ Each plugin is self-contained: it owns its parser, its `SourceLanguage`, its
 
 Turn a [AcaiCore](/documentation/acaicore/) model into something you can look at.
 
-- **[AcaiDiagram](/documentation/acaidiagram/)** — generates Graphviz **DOT** from a model, with options
-  for inferred composition, dependency edges, external types, and grouping.
-- **[AcaiRender](/documentation/acairender/)** — on Apple platforms, lays out and renders a model
-  straight to a **PNG**, no Graphviz required.
+- **[AcaiDiagram](/documentation/acaidiagram/)** — generates Graphviz **DOT** and **Mermaid** from a
+  model: class, package, sequence, state and call-graph diagrams, with options for inferred
+  composition, dependency edges, external types, and grouping.
+- **[AcaiRender](/documentation/acairender/)** — on Apple platforms, lays out a model with a Sugiyama
+  hierarchical layout and renders it straight to a **PNG**, no Graphviz required.
+
+### Analysis
+
+Higher-level questions asked of a parsed model.
+
+- **[AcaiDiff](/documentation/acaidiff/)** — the structural delta between two revisions: which types,
+  members, relationships and metrics changed. Also produces the renderable union behind
+  colour-coded delta diagrams.
+- **[AcaiQuality](/documentation/acaiquality/)** — the architecture fitness function: selectors, metric
+  budgets, forbidden dependencies, layering, stereotype contracts and cycle detection.
+
+### Applications
+
+The three entry points built on everything above. They ship as executables rather than APIs you
+link against, so these pages document their internals — for *using* them, see the guides in the
+repository.
+
+- **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool.
+- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server, exposing the
+  read-only engine as tools an AI agent can call.
+- **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps.
+
+### Supporting modules
+
+Internal building blocks. You would not normally depend on these directly, but they are documented
+so nothing in the package is a blank spot.
+
+- **[AcaiGit](/documentation/acaigit/)** — a libgit2 wrapper (clone, fetch, checkout, worktrees, diff,
+  churn) used by the app for repository cloning, revision comparison and hotspot charts. Built only
+  on Apple platforms, and not a package product.
+- **[CPythonScanner](/documentation/cpythonscanner/)** — vendors the Python grammar's external C
+  scanner; see `Package.swift` for why it must be pinned to the grammar version.
+- **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by
+  the render and app snapshot tests.
+- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives shared by the test
+  targets.
 
 ## Topics
 

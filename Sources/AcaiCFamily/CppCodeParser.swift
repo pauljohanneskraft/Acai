@@ -6,7 +6,7 @@ import TreeSitterCPP
 ///
 /// Owns the unambiguous C++ extensions (`.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`, `.h++`,
 /// `.ipp`, `.tpp`). The shared `.h` extension is owned by ``CCodeParser``, which routes C++ headers
-/// here by content. C++ is a near-superset of C, so the shared ``CFamilyExtractor`` handles both;
+/// here by content. C++ is a near-superset of C, so the shared `CFamilyExtractor` handles both;
 /// the C++-only constructs (classes, namespaces, templates, access specifiers, base classes) simply
 /// do not appear in a C tree.
 public struct CppCodeParser: CodeParser {

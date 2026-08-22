@@ -289,8 +289,17 @@ Every public module has full API docs. Follow a link for the complete surface:
 | **AcaiPython** | Python. Vendors the grammar's external scanner (see `Package.swift`). | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaipython/) |
 | **AcaiCFamily** | C **and** C++ — shared build systems and grammar family, with `.h` content routing. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaicfamily/) |
 
-**Executables:** `AcaiCLI` → [`Documentation/CLI.md`](Documentation/CLI.md) · `AcaiMCP` → [`Documentation/MCP.md`](Documentation/MCP.md) · `AcaiApp` (no public API).
-**Internal:** `AcaiGit` is a libgit2 wrapper built only on Apple platforms as a dependency of the app — it is not a package product, so it can't be imported by consumers. `AcaiPNGComparison` and `AcaiTestSupport` are test-only.
+**Entry points** — executables rather than APIs you link against, so their pages document internals; the usage guides are the links on the right:
+
+| Module | | Guide |
+| --- | --- | --- |
+| **AcaiCLI** | the `acai` tool · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) | [`Documentation/CLI.md`](Documentation/CLI.md) |
+| **AcaiMCP** | the `acai-mcp` server · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/) | [`Documentation/MCP.md`](Documentation/MCP.md) |
+| **AcaiApp** | the SwiftUI app, macOS + iOS · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaiapp/) | this README |
+
+**Supporting modules** — internal building blocks you wouldn't normally depend on, documented so nothing in the package is a blank spot: [AcaiGit](https://pauljohanneskraft.github.io/Acai/documentation/acaigit/) (libgit2 wrapper for cloning, revision comparison and churn — Apple platforms only, and **not** a package product, so consumers can't import it), [CPythonScanner](https://pauljohanneskraft.github.io/Acai/documentation/cpythonscanner/) (the vendored Python grammar scanner), and [AcaiPNGComparison](https://pauljohanneskraft.github.io/Acai/documentation/acaipngcomparison/) / [AcaiTestSupport](https://pauljohanneskraft.github.io/Acai/documentation/acaitestsupport/) (test-only helpers).
+
+Every non-test target in `Package.swift` gets a documentation page — `Scripts/docs_generate.sh` reads the target list from the manifest, so a new module is published without touching the script.
 
 ### The language-agnostic boundary
 

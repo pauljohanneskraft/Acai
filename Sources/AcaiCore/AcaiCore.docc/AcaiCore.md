@@ -48,7 +48,7 @@ no thresholds and no language configuration (raw values only — judgement is le
   signals.
 - **Cohesion** (``CodeMetrics/TypeMetric/lackOfCohesion``, see ``LcomAnalysis``) — an LCOM4-style count
   of the connected components among a type's methods (1 = cohesive; higher = several unrelated jobs).
-- **Feature envy** (``CodeMetrics/TypeMetric/featureEnvyMethods``, see ``FeatureEnvy``) — methods more
+- **Feature envy** (``CodeMetrics/TypeMetric/featureEnvyMethods``, see `FeatureEnvy`) — methods more
   interested in another declared type than their own.
 
 **Known limitation:** ``SourceLocation`` records only a start line, so true method length and

@@ -4,7 +4,7 @@ import Foundation
 import ImageIO
 
 /// Draws into an already-flipped (top-left origin, y-down) `CGContext`. Knows nothing about
-/// `Finding`/`CodeMetrics`/`GeneratedDiagram` — ``CodebaseAtlasBuilder`` owns turning those into the
+/// `Finding`/`CodeMetrics`/`GeneratedDiagram` — `CodebaseAtlasBuilder` owns turning those into the
 /// strings and images handed here.
 struct AtlasPageCanvas {
     let context: CGContext

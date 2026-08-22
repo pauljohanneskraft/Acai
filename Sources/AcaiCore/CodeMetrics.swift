@@ -67,7 +67,7 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var fanIn: Int
         public var fanOut: Int
         /// Response For a Class: declared methods + distinct call targets in member bodies (see
-        /// ``ResponseForClass``). High RFC = a large response set, costly to test and reason about.
+        /// `ResponseForClass`). High RFC = a large response set, costly to test and reason about.
         public var responseForClass: Int
         /// Public/open members — the type's outward API surface.
         public var publicMemberCount: Int
@@ -88,7 +88,7 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         /// higher = several unrelated responsibilities). See ``LcomAnalysis``.
         public var lackOfCohesion: Int
         /// Methods more interested in another declared type than their own — feature envy. See
-        /// ``FeatureEnvy``.
+        /// `FeatureEnvy`.
         public var featureEnvyMethods: Int
 
         /// Deep-and-wide inheritance shape (`DIT × NOC`): deeply derived and widely subclassed marks a

@@ -104,7 +104,7 @@ extension CallSiteResolving {
 
     public func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] { [:] }
 
-    /// A language's ``localBindings(in:)`` uses this so it only writes a per-node recogniser, not the
+    /// A language's ``localBindings(in:scope:)`` uses this so it only writes a per-node recogniser, not the
     /// traversal. A later binding for the same name wins.
     public func collectLocalBindings(
         in body: Node, binding: (Node) -> (name: String, type: String)?
@@ -145,8 +145,9 @@ extension CallSiteResolving {
         }
     }
 
-    /// Resolves a member call's `receiver` to a ``AcaiCore/CallSite`` using the receiver decision tree
-    /// shared by field-name-based grammars: `this.method()` → unqualified self-call; `receiver.method()`
+    /// Resolves a member call's `receiver` to a [CallSite](/documentation/acaicore/callsite) using
+    /// the receiver decision tree shared by field-name-based grammars: `this.method()` →
+    /// unqualified self-call; `receiver.method()`
     /// / `this.prop.method()` → resolved against `scope`; a deeper chain where `a`'s type is known but
     /// `b` isn't a property here → deferred `.propertyChain`, resolved post-merge. Grammar-specific
     /// call-node unwrapping stays with the caller.

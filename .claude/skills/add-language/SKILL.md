@@ -53,4 +53,12 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
 
 8. **Tests** — add fixtures under `Tests/Acai<Lang>Tests/`, mirroring an existing plugin's layout.
 
+9. **Documentation** — add a `Sources/Acai<Lang>/Acai<Lang>.docc/Acai<Lang>.md` catalog page (copy an
+   existing plugin's), then **link it from the module map** in
+   `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` under "Language parsers":
+   `- **[Acai<Lang>](/documentation/acai<lang>/)** — <language> (`.ext`, …).`
+   The page itself is published automatically (`Scripts/docs_generate.sh` reads the manifest), but
+   nothing links to it until you add that line, so this step is what makes it reachable. Also add the
+   language to the table in `README.md` under "Supported languages".
+
 Then run `swift build`, `swift test --filter Acai<Lang>Tests`, and `swiftlint lint --strict`.
