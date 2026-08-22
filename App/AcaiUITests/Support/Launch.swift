@@ -56,8 +56,8 @@ extension XCUIApplication {
 
         #if os(macOS)
         // Not `FileManager.default.temporaryDirectory`: that resolves inside the sandboxed UI test
-        // runner's own container, and handing that path to the unsandboxed app-under-test triggers
-        // an "access data from other apps" prompt at every launch. `/private/tmp` avoids that.
+        // runner's own container, and handing that path to the app-under-test triggers an "access
+        // data from other apps" prompt at every launch. `/private/tmp` avoids that.
         let tempRoot = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
         #else
         let tempRoot = FileManager.default.temporaryDirectory

@@ -181,23 +181,23 @@ extension ProjectCodebaseEditor {
                 title: "Indexing \(codebase.name)…", kind: .reindex, subject: .codebase(codebaseID)
             ) {
                 let detached = Task.detached(priority: .userInitiated) {
-                    var refreshedBookmark: SecurityScopedBookmark?
+                    var refreshed: ScopedResourceAccess.Refreshed?
                     let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
-                        onRefresh: { refreshedBookmark = $0 },
+                        onRefresh: { refreshed = $0 },
                         { url in try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter) }
                     )
-                    return (artifact, refreshedBookmark)
+                    return (artifact, refreshed)
                 }
-                let (artifact, refreshedBookmark) = try await withTaskCancellationHandler {
+                let (artifact, refreshed) = try await withTaskCancellationHandler {
                     try await detached.value
                 } onCancel: {
                     detached.cancel()
                 }
                 try await store.saveArtifactAndWait(artifact, for: codebaseID)
-                return (artifact, refreshedBookmark)
+                return (artifact, refreshed)
             }
             // Cancelled before finishing: don't apply a result we discarded.
-            guard let (newArtifact, refreshedBookmark) = reindexResult else { return }
+            guard let (newArtifact, refreshed) = reindexResult else { return }
             // Re-resolve indices after the suspension — the user may have mutated the project/codebase
             // list during the (potentially long) analysis, invalidating any pre-`await` indices.
             guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
@@ -207,13 +207,19 @@ extension ProjectCodebaseEditor {
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
             store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
             store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
-            if let refreshedBookmark {
-                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshedBookmark
+            // A bookmark follows a folder that was moved or renamed, so the stored path has to
+            // move with it — it's what the UI shows and what the file watcher opens.
+            if let refreshed {
+                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshed.bookmark
+                store.projects[pIndex].codebases[cIndex].directoryPath = refreshed.url.path
             }
             persistProject(store.projects[pIndex].id)
             triggerSpotlightReindex()
         } catch {
-            store.report("Reindex failed: \(error.localizedDescription)")
+            // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
+            // folder of the user's choosing — only a codebase they picked themselves.
+            let relocatable = error is ScopedResourceAccess.Failure && codebase.githubSource == nil
+            store.report("Reindex failed: \(error.localizedDescription)", relocating: relocatable ? codebaseID : nil)
         }
     }
 }

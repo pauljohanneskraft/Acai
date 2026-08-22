@@ -5,8 +5,8 @@ import Testing
 /// `Codebase.resolvedFileURL(relativePath:)` — the one accessor `ViolationRowView`'s "View Source"
 /// button resolves a `SourceLocation.filePath` through. These exercise the same
 /// path-escape guarantees as `PathEscapeGuardTests`, but through the actual public entry point
-/// (macOS is the passthrough `ScopedResourceAccess` branch — no bookmark involved here) plus the
-/// file-existence check `resolvedFileURL` adds on top of `PathEscapeGuard`.
+/// (no bookmark, so `ScopedResourceAccess` takes its plain-path fallback) plus the file-existence
+/// check `resolvedFileURL` adds on top of `PathEscapeGuard`.
 @Suite("Codebase.resolvedFileURL")
 struct CodebaseSourceViewerTests {
 

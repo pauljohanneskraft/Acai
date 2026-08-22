@@ -1,8 +1,8 @@
 import Foundation
 
 /// A security-scoped bookmark for a directory or file the user granted access to via a system file
-/// picker (`.fileImporter`), so that access survives relaunch under App Sandbox rules. macOS isn't
-/// sandboxed and never mints one, so it stays `nil` there.
+/// picker (`.fileImporter`), so that access survives relaunch under App Sandbox rules. Both the
+/// macOS and the iOS app are sandboxed.
 struct SecurityScopedBookmark: Codable, Hashable, Sendable {
     var data: Data
 
@@ -17,53 +17,100 @@ struct SecurityScopedBookmark: Codable, Hashable, Sendable {
     }
 }
 
-/// On macOS (unsandboxed) this is a thin passthrough to the plain path; on iOS the bookmark is
-/// required to regain access to a location picked in an earlier session — without one (e.g. a path
-/// entered before bookmarking existed), it falls back to the plain path too, which works only
-/// within whatever access the sandbox still happens to grant.
+/// Re-establishes access to a location picked in an earlier session. Without a bookmark (an
+/// app-managed directory, or a codebase added before bookmarking existed) it falls back to the
+/// plain path, which works only within whatever access the sandbox still happens to grant — a
+/// picker grant from the current session, or a location inside the app's own container.
 struct ScopedResourceAccess {
     let path: String
     let bookmark: SecurityScopedBookmark?
 
-    enum Failure: LocalizedError {
+    /// What `onRefresh` hands back for the caller to persist: the bookmark resolved to a location
+    /// that no longer matches `path` (the folder was moved or renamed), so both need updating.
+    struct Refreshed: Sendable {
+        var bookmark: SecurityScopedBookmark
+        var url: URL
+    }
+
+    enum Failure: LocalizedError, Equatable {
         case accessDenied(String)
+        case directoryUnavailable(String)
 
         var errorDescription: String? {
             switch self {
             case .accessDenied(let path):
-                "Access to \"\(path)\" was denied. Remove and re-add it to restore access."
+                "Access to \"\(path)\" was denied."
+            case .directoryUnavailable(let path):
+                "\"\(path)\" is no longer available."
             }
         }
     }
 
-    /// When the stored bookmark has gone stale, mints a fresh one and hands it to `onRefresh` (still
-    /// inside the access scope) so the caller can persist it.
+    /// Mints a fresh bookmark and hands it to `onRefresh` (still inside the access scope) when the
+    /// stored one has gone stale or resolved to a different location than `path`.
     func withResolvedURL<T>(
-        onRefresh: ((SecurityScopedBookmark) -> Void)? = nil,
+        onRefresh: ((Refreshed) -> Void)? = nil,
         _ body: (URL) throws -> T
     ) throws -> T {
-        #if os(macOS)
-        return try body(URL(fileURLWithPath: path).standardizedFileURL)
-        #else
-        guard let bookmark else {
-            return try body(URL(fileURLWithPath: path).standardizedFileURL)
+        if let scoped = try? resolvedScopedURL() {
+            defer { scoped.url.stopAccessingSecurityScopedResource() }
+            try probe(scoped.url)
+            let moved = scoped.url.path != URL(fileURLWithPath: path).standardizedFileURL.path
+            if scoped.isStale || moved, let refreshed = try? SecurityScopedBookmark(resolving: scoped.url) {
+                onRefresh?(Refreshed(bookmark: refreshed, url: scoped.url))
+            }
+            return try body(scoped.url)
         }
+        // No bookmark, or one that no longer resolves: the plain path still works while the
+        // sandbox grants access some other way (a picker grant from this session, or the app's
+        // own container), so try it before giving up.
+        let plain = URL(fileURLWithPath: path).standardizedFileURL
+        try probe(plain)
+        return try body(plain)
+    }
+
+    /// A resolved bookmark whose security scope is open — the caller owns balancing it with
+    /// `stopAccessingSecurityScopedResource()`.
+    private struct Scoped {
+        var url: URL
+        var isStale: Bool
+    }
+
+    /// A `nil` bookmark and a failed `startAccessingSecurityScopedResource()` are the same answer
+    /// to the caller: no scoped URL, fall back to the plain path.
+    private func resolvedScopedURL() throws -> Scoped {
+        guard let bookmark else { throw Failure.accessDenied(path) }
         var isStale = false
+        #if os(macOS)
+        let options: URL.BookmarkResolutionOptions = [.withSecurityScope]
+        #else
+        let options: URL.BookmarkResolutionOptions = []
+        #endif
         let url = try URL(
             resolvingBookmarkData: bookmark.data,
-            options: [],
+            options: options,
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
         )
-        guard url.startAccessingSecurityScopedResource() else {
+        guard url.startAccessingSecurityScopedResource() else { throw Failure.accessDenied(path) }
+        return Scoped(url: url, isStale: isStale)
+    }
+
+    /// `FileManager.fileURLs`' `enumerator(at:)` answers a denial by handing back an enumerator
+    /// that yields nothing, so the denial reaches `AnalysisService` as an empty file list and
+    /// surfaces as "no source files could be parsed". `contentsOfDirectory` throws instead, which
+    /// is the whole point of probing before handing the URL on.
+    private func probe(_ url: URL) throws {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            throw Failure.directoryUnavailable(path)
+        }
+        guard isDirectory.boolValue else { return }
+        do {
+            _ = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+        } catch {
             throw Failure.accessDenied(path)
         }
-        defer { url.stopAccessingSecurityScopedResource() }
-        if isStale, let refreshed = try? SecurityScopedBookmark(resolving: url) {
-            onRefresh?(refreshed)
-        }
-        return try body(url)
-        #endif
     }
 
     /// Holds this resource's security scope open for as long as the instance is alive, for callers
@@ -72,21 +119,17 @@ struct ScopedResourceAccess {
     /// object lifetime rather than a `close()` contract a caller could forget to invoke — keep this
     /// alive (e.g. as `@State` in the presenting view) for as long as the URL needs to stay readable.
     ///
-    /// Only meaningful on iOS with a bookmarked local folder: macOS and app-managed codebases (no
-    /// bookmark) both take the no-op path below.
+    /// A no-op for an app-managed directory, which has no bookmark and needs no scope.
     @MainActor
     final class LongLivedAccess {
         private var scopedURL: URL?
 
+        /// `nil` when the scope couldn't be opened — the caller keeps whatever access it already
+        /// had rather than treating this as a failure.
+        var url: URL? { scopedURL }
+
         init(_ access: ScopedResourceAccess) {
-            #if os(iOS)
-            guard let bookmark = access.bookmark else { return }
-            var isStale = false
-            guard let url = try? URL(
-                resolvingBookmarkData: bookmark.data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale
-            ), url.startAccessingSecurityScopedResource() else { return }
-            scopedURL = url
-            #endif
+            scopedURL = (try? access.resolvedScopedURL())?.url
         }
 
         deinit {

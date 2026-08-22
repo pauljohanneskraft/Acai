@@ -9,10 +9,13 @@
 	access. -->
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<!-- `NewCodebaseSheet`'s local-folder `.fileImporter` picker: the sandbox only grants
-	continued access to a user-picked file/folder across launches via a security-scoped
-	bookmark (`SecurityScopedBookmark`), which itself requires this entitlement. -->
+	<!-- `NewCodebaseSheet`'s local-folder `.fileImporter` picker: grants access to whatever the
+	user picks, for this process's lifetime. -->
 	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Access to a picked folder only survives relaunch via an app-scoped security-scoped
+	bookmark (`SecurityScopedBookmark`), which macOS refuses to mint or resolve without this. -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
 	<!-- Debug-only, mirroring `AcaiUITests-macOS.entitlements`: `UITestFixtureResolver` points
 	`ProjectStore`/`GitHubTokenStore` at a disposable fixture directory under real, non-container

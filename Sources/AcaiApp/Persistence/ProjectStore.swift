@@ -30,11 +30,14 @@ final class ProjectStore: ObservableObject {
     struct StoreError: Identifiable {
         let id = UUID()
         let message: String
+        /// Set when the failure was "this codebase's folder can't be reached", which the user can
+        /// fix by pointing it at another folder — the alert then offers that instead of just "OK".
+        var relocatableCodebaseID: UUID?
     }
 
-    func report(_ message: String) {
+    func report(_ message: String, relocating codebaseID: UUID? = nil) {
         print(message)
-        lastError = StoreError(message: message)
+        lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
     }
 
     let baseDir: URL
