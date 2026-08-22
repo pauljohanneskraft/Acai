@@ -6,11 +6,12 @@ import AcaiCore
 /// Deliberately best-effort and grammar-light: it records every identifier-like node whose text
 /// matches a known stored-property name as a bare/`self`-qualified read. No scope tracking — a local
 /// shadowing a property is recorded under the same name; consumers filter by name and tolerate that
-/// ambiguity, as they do for ``AcaiCore/VariableAssignment``.
+/// ambiguity, as they do for [VariableAssignment](/documentation/acaicore/variableassignment).
 public struct FieldReadResolver {
     private let context: SourceFileContext
     private let identifierTypes: Set<String>
 
+    /// - Parameter context: the file being parsed, used to read node text and source locations.
     /// - Parameter identifierTypes: the grammar's node types that denote a readable identifier or
     ///   member name (e.g. `"identifier"`, `"property_identifier"`, `"simple_identifier"`).
     ///   Over-inclusion is harmless — the text is filtered against the known-property set.

@@ -42,7 +42,7 @@ public enum ContainerTint: Sendable {
 /// `extension DiagramPalette { static let solarized = DiagramPalette(...) }`. Per-kind families
 /// are resolved through `@Sendable` closures, so a custom theme controls them too.
 ///
-/// Views read it from the environment (``EnvironmentValues/diagramPalette``); off-screen snapshot
+/// Views read it from the environment (`EnvironmentValues.diagramPalette`); off-screen snapshot
 /// views take it as a parameter.
 public struct DiagramPalette: Sendable {
 
