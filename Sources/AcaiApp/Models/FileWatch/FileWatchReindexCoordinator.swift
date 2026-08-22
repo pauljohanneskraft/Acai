@@ -10,7 +10,23 @@ import Foundation
 /// (only re-parsing changed files) is out of scope — every trigger is a full `reindex(codebaseID:)`.
 @MainActor
 final class FileWatchReindexCoordinator {
-    private var watchers: [UUID: DirectoryWatch] = [:]
+    /// The watcher opens the directory directly (`open(_:O_EVTONLY)`), which the sandbox refuses
+    /// unless the codebase's security scope is held open for as long as the watch lasts — hence
+    /// the `access` alongside it.
+    private struct Watch {
+        var watcher: DirectoryWatch
+        var access: ScopedResourceAccess.LongLivedAccess
+        var key: Key
+    }
+
+    /// A watch survives a `sync` only while it still points at the same location: a relocated or
+    /// re-bookmarked codebase needs its scope and file descriptor re-opened.
+    private struct Key: Equatable {
+        var path: String
+        var bookmark: SecurityScopedBookmark?
+    }
+
+    private var watchers: [UUID: Watch] = [:]
     private let debounce: Duration
     private let didFinishDebounceWindow: (@Sendable () -> Void)?
     private let reindex: @Sendable (UUID) async -> Void
@@ -32,20 +48,30 @@ final class FileWatchReindexCoordinator {
     /// have changed.
     func sync(codebases: [Codebase]) {
         let localFolders = Dictionary(
-            uniqueKeysWithValues: codebases.filter { $0.githubSource == nil }.map { ($0.id, $0.directoryPath) })
+            uniqueKeysWithValues: codebases.filter { $0.githubSource == nil }
+                .map { ($0.id, Key(path: $0.directoryPath, bookmark: $0.securityScopedBookmark)) })
 
-        for (id, watcher) in watchers where localFolders[id] == nil {
-            watcher.stop()
+        for (id, watch) in watchers where localFolders[id] != watch.key {
+            watch.watcher.stop()
             watchers.removeValue(forKey: id)
         }
-        for (id, path) in localFolders where watchers[id] == nil {
-            watchers[id] = makeWatcher(directoryPath: path, codebaseID: id)
+        for (id, key) in localFolders where watchers[id] == nil {
+            watchers[id] = makeWatch(key: key, codebaseID: id)
         }
     }
 
     func stopAll() {
-        for watcher in watchers.values { watcher.stop() }
+        for watch in watchers.values { watch.watcher.stop() }
         watchers.removeAll()
+    }
+
+    private func makeWatch(key: Key, codebaseID: UUID) -> Watch {
+        let access = ScopedResourceAccess.LongLivedAccess(
+            ScopedResourceAccess(path: key.path, bookmark: key.bookmark))
+        // The bookmark may resolve the folder somewhere else entirely (it was moved); the open
+        // scope covers that URL, not the stored path.
+        let watcher = makeWatcher(directoryPath: access.url?.path ?? key.path, codebaseID: codebaseID)
+        return Watch(watcher: watcher, access: access, key: key)
     }
 
     private func makeWatcher(directoryPath: String, codebaseID: UUID) -> DirectoryWatch {

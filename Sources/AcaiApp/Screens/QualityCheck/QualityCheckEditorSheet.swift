@@ -55,10 +55,20 @@ struct QualityCheckEditorSheet: View {
             .onAppear(perform: loadInitialState)
             .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.yaml]) { result in
                 guard let url = try? result.get() else { return }
-                guard url.startAccessingSecurityScopedResource() else { return }
+                guard url.startAccessingSecurityScopedResource() else {
+                    model.store.report("Access to \"\(url.path)\" was denied.")
+                    return
+                }
                 defer { url.stopAccessingSecurityScopedResource() }
                 externalPath = url.path
-                externalBookmark = try? SecurityScopedBookmark(resolving: url)
+                // A bookmark that silently failed to mint is what breaks access after relaunch,
+                // so report it rather than storing `nil`.
+                do {
+                    externalBookmark = try SecurityScopedBookmark(resolving: url)
+                } catch {
+                    externalBookmark = nil
+                    model.store.report("Couldn't keep access to \"\(url.path)\": \(error.localizedDescription)")
+                }
             }
         }
     }

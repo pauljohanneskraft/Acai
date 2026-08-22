@@ -94,10 +94,20 @@ struct NewCodebaseSheet: View {
             }
             .fileImporter(isPresented: $isChoosingDirectory, allowedContentTypes: [.folder]) { result in
                 guard let url = try? result.get() else { return }
-                guard url.startAccessingSecurityScopedResource() else { return }
+                guard url.startAccessingSecurityScopedResource() else {
+                    model.store.report("Access to \"\(url.path)\" was denied.")
+                    return
+                }
                 defer { url.stopAccessingSecurityScopedResource() }
                 directoryURL = url
-                securityScopedBookmark = try? SecurityScopedBookmark(resolving: url)
+                // A bookmark that silently failed to mint is what breaks access after relaunch,
+                // so report it rather than storing `nil`.
+                do {
+                    securityScopedBookmark = try SecurityScopedBookmark(resolving: url)
+                } catch {
+                    securityScopedBookmark = nil
+                    model.store.report("Couldn't keep access to \"\(url.path)\": \(error.localizedDescription)")
+                }
                 // Detecting a `.git` root reads the repository's config/HEAD, so it must happen
                 // inside this same security-scoped access window.
                 repositoryReference = LocalGitRepositoryDetector(directory: url).detect()

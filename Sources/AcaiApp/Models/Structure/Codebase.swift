@@ -4,8 +4,9 @@ struct Codebase: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var name: String
     var directoryPath: String
-    /// `nil` on macOS (not sandboxed — `directoryPath` alone is authoritative there) and for
-    /// codebases added before this field existed.
+    /// What re-establishes access to `directoryPath` after relaunch under the sandbox. `nil` for an
+    /// app-managed directory (see `githubSource`) and for codebases added before this field existed
+    /// — those fall back to the plain path, which the sandbox may refuse.
     var securityScopedBookmark: SecurityScopedBookmark?
     /// Set when this codebase was cloned in-app from GitHub rather than pointed at a user-picked
     /// local folder — see `GitHubSource`. When present, `directoryPath` is the app-managed clone

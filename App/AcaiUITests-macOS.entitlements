@@ -15,8 +15,8 @@
 	<!-- Added on top of Xcode's auto-generated UI-test entitlements (captured via `codesign -d
 	--entitlements` and preserved above/below): lets fixture staging (`Launch.swift`'s
 	`launchWithFixture`) write to real, non-container `/private/tmp` instead of this sandboxed
-	runner's own `~/Library/Containers/.../Data/tmp/`. Without this, the app-under-test (itself
-	unsandboxed) ends up reading fixture state out of a *different* app's private sandbox
+	runner's own `~/Library/Containers/.../Data/tmp/`. Without this, the app-under-test ends up
+	reading fixture state out of a *different* app's private sandbox
 	container, which is the leading suspect for a "would like to access data from other apps"
 	prompt observed at launch on every macOS UI test run — see `launchWithFixture`'s own comment. -->
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>

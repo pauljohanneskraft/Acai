@@ -7,6 +7,9 @@ import SwiftUI
 struct FinderReveal {
     let codebase: Codebase?
     let relativePath: String?
+    /// Reveal can now fail for a reason worth telling the user about (the codebase's folder is
+    /// gone, or the sandbox denies it) rather than silently doing nothing.
+    var onFailure: ((Error) -> Void)?
 
     var isAvailable: Bool { codebase != nil && relativePath != nil }
 
@@ -17,8 +20,11 @@ struct FinderReveal {
         // (same test-only gate `GitHubTokenStore`/`ProjectStore` use), since no test asserts on
         // Finder actually opening.
         guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
-        guard let url = try? codebase.resolvedFileURL(relativePath: relativePath) else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([url])
+        do {
+            try codebase.revealInFinder(relativePath: relativePath)
+        } catch {
+            onFailure?(error)
+        }
         #endif
     }
 }
@@ -28,17 +34,28 @@ struct FinderRevealable: ViewModifier {
     let codebase: Codebase?
     let relativePath: String?
 
-    private var reveal: FinderReveal { FinderReveal(codebase: codebase, relativePath: relativePath) }
+    @State private var errorMessage: String?
 
     func body(content: Content) -> some View {
         #if os(macOS)
         Button {
-            reveal.reveal()
+            FinderReveal(
+                codebase: codebase, relativePath: relativePath,
+                onFailure: { errorMessage = $0.localizedDescription }
+            ).reveal()
         } label: {
             content.contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!reveal.isAvailable)
+        .disabled(!FinderReveal(codebase: codebase, relativePath: relativePath).isAvailable)
+        .alert(
+            "Couldn't Reveal in Finder",
+            isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        ) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
         #else
         // No Finder on iOS — pass through unwrapped rather than a tappable button that does nothing.
         content

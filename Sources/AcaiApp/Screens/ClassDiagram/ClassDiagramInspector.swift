@@ -327,13 +327,17 @@ struct ClassDiagramSidebar: View {
     @ViewBuilder
     private func revealInFinderButton(node: GeneratedDiagramNode) -> some View {
         #if os(macOS)
+        // Resolved in the action, not the body: resolution touches the filesystem and opens a
+        // security scope, which a view body must not do on every pass.
         if let type = artifact.types.first(where: { $0.id == node.id }),
-           let filePath = type.location?.filePath,
-           let url = try? viewModel.codebase.resolvedFileURL(relativePath: filePath) {
+           let filePath = type.location?.filePath {
             Button {
-                // Sends a real Apple Event to Finder — skip under UI tests.
-                guard UITestFixtureResolver().resolveBaseDir() == nil else { return }
-                NSWorkspace.shared.activateFileViewerSelecting([url])
+                FinderReveal(
+                    codebase: viewModel.codebase, relativePath: filePath,
+                    onFailure: { [store = model.store] in
+                        store.report("Couldn't reveal in Finder: \($0.localizedDescription)")
+                    }
+                ).reveal()
             } label: {
                 Label("Reveal in Finder", systemImage: "finder")
             }

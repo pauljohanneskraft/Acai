@@ -198,6 +198,24 @@ struct ProjectCodebaseEditor {
         }
     }
 
+    /// Re-points an existing codebase at another folder — the recovery from a directory that was
+    /// deleted, moved off a bookmark, or that the sandbox no longer grants access to. Updates the
+    /// codebase in place rather than adding one, so its diagrams and artifact survive.
+    func relocateCodebase(id: UUID, directoryURL: URL, securityScopedBookmark: SecurityScopedBookmark?) {
+        mutateCodebase(id) {
+            $0.directoryPath = directoryURL.path
+            $0.securityScopedBookmark = securityScopedBookmark
+            // The indexed artifact describes the *old* folder. Drop it up front rather than after
+            // the reindex, so a reindex that fails leaves the codebase honestly un-indexed instead
+            // of resolving diagrams against a path it no longer points at. The artifact *file*
+            // stays until the reindex overwrites it.
+            $0.hasArtifact = false
+        }
+        store.artifacts.removeValue(forKey: id)
+        invalidateAnalysis(id)
+        Task { await reindex(codebaseID: id) }
+    }
+
     func removeCodebase(_ codebaseID: UUID) {
         let removedCodebase = codebase(for: codebaseID)
         for i in store.projects.indices {

@@ -28,7 +28,12 @@ struct CodeElementReferenceActions: ViewModifier {
     }
 
     private var finderReveal: FinderReveal {
-        FinderReveal(codebase: codebase, relativePath: relativePath)
+        FinderReveal(
+            codebase: codebase, relativePath: relativePath,
+            onFailure: { [store = model.store] in
+                store.report("Couldn't reveal in Finder: \($0.localizedDescription)")
+            }
+        )
     }
 
     func body(content: Content) -> some View {

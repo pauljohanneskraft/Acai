@@ -155,7 +155,7 @@ public struct ProjectBrowserView: View {
             }
             model.pendingExport = nil
         }
-        .modifier(StoreErrorAlert(store: model.store))
+        .modifier(StoreErrorAlert(store: model.store, model: model))
         .confirmationDialog(
             "Delete \"\(projectPendingDeletion?.title ?? "")\"?",
             isPresented: Binding(
@@ -352,14 +352,53 @@ public struct ProjectBrowserView: View {
 /// doesn't re-render on its changes) and presents the latest persistence/export failure.
 private struct StoreErrorAlert: ViewModifier {
     @ObservedObject var store: ProjectStore
+    @ObservedObject var model: ProjectBrowserViewModel
+
+    /// Drives the picker from view state rather than from the alert's own action: presenting a
+    /// `.fileImporter` while the alert is still dismissing silently does nothing. The target is
+    /// held separately from the presentation flag, which SwiftUI clears on dismissal — before the
+    /// completion handler that needs it runs.
+    @State private var isChoosingFolder = false
+    @State private var relocationTarget: UUID?
 
     func body(content: Content) -> some View {
-        content.alert(item: $store.lastError) { error in
-            Alert(
-                title: Text("Something went wrong"),
-                message: Text(error.message),
-                dismissButton: .default(Text("OK"))
-            )
+        content
+            .alert(item: $store.lastError) { error in
+                guard let codebaseID = error.relocatableCodebaseID else {
+                    return Alert(
+                        title: Text("Something went wrong"),
+                        message: Text(error.message),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
+                return Alert(
+                    title: Text("Something went wrong"),
+                    message: Text(error.message),
+                    primaryButton: .default(Text("Choose Folder…")) {
+                        relocationTarget = codebaseID
+                        isChoosingFolder = true
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
+            .fileImporter(isPresented: $isChoosingFolder, allowedContentTypes: [.folder]) { result in
+                relocate(result: result)
+            }
+    }
+
+    private func relocate(result: Result<URL, Error>) {
+        guard let codebaseID = relocationTarget else { return }
+        relocationTarget = nil
+        guard let url = try? result.get() else { return }
+        do {
+            guard url.startAccessingSecurityScopedResource() else {
+                throw ScopedResourceAccess.Failure.accessDenied(url.path)
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+            let bookmark = try SecurityScopedBookmark(resolving: url)
+            model.editing.relocateCodebase(id: codebaseID, directoryURL: url, securityScopedBookmark: bookmark)
+        } catch {
+            store.report("Couldn't use that folder: \(error.localizedDescription)")
         }
     }
 }
