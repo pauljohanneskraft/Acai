@@ -57,7 +57,11 @@ This separation is load-bearing — keep it:
 
 **A generated page is not a reachable page.** When you add a module, also add it to the module map in `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` — that file is the site's landing page (`docs_generate.sh` redirects the root to it), and it is the only thing linking the per-module pages together. Skipping this leaves the docs reachable only by guessing the URL. Cross-module links there are written `[AcaiFoo](/documentation/acaifoo/)`, lowercased, no hosting base path (the renderer prepends it).
 
-Prose that explains a module belongs in its `.docc` catalog, not in a `README.md` beside the source — there are no per-module READMEs. The exceptions are the two user-facing guides for the binaries, `Documentation/CLI.md` and `Documentation/MCP.md`, which stay repo markdown so they render on GitHub; their `.docc` pages link out to them rather than duplicating them. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
+**All prose lives in `.docc` catalogs** — there are no per-module `README.md` files and no `Documentation/` folder. That includes the user-facing guides for the binaries: the full `acai` flag reference is `Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md`, the MCP tool/schema reference is `Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md`, and the app's is `Sources/AcaiApp/AcaiApp.docc/AcaiApp.md`. The root `README.md` links to their published pages rather than restating them; the only other markdown in the repo is `Examples/README.md`. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
+
+**In-page anchor links follow DocC's convention, not GitHub's.** DocC keeps the heading's case and turns spaces into hyphens (`## The mental model` → `#The-mental-model`); GitHub lowercases. A table of contents copied from GitHub-style markdown will silently fail to resolve, so match the heading exactly.
+
+README screenshots live in `.github/images/`.
 
 ## Adding a language
 

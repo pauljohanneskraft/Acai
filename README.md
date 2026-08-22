@@ -14,7 +14,7 @@ One engine, three ways to use it: a **SwiftUI app** for macOS and iPadOS/iOS, th
 > 📚 **Full API documentation lives at [pauljohanneskraft.github.io/Acai](https://pauljohanneskraft.github.io/Acai/)** — every module, every public type. If you're here to build on Açaí rather than use it, start with the [Getting Started](https://pauljohanneskraft.github.io/Acai/documentation/acailibrary/gettingstarted) guide.
 
 <p align="center">
-  <img src="Documentation/Images/app-hero.png" alt="The Açaí macOS app: project sidebar, class diagram on the canvas, and the toolbar" width="100%">
+  <img src=".github/images/app-hero.png" alt="The Açaí macOS app: project sidebar, class diagram on the canvas, and the toolbar" width="100%">
 </p>
 
 <sub>☝️ The macOS app exploring the bundled <a href="Examples/ClassDiagram"><code>Examples/ClassDiagram</code></a> sample.</sub>
@@ -67,7 +67,7 @@ Açaí ships a Claude Code plugin that wires up the MCP server and a code-audit 
 /plugin install code-quality@acai
 ```
 
-Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See [`Documentation/MCP.md`](Documentation/MCP.md).
+Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
 
 No config file required for any of the three.
 
@@ -116,7 +116,7 @@ Full detail on every sample — per-language coverage, the exact regeneration co
 ### 🖥 The app — macOS and iOS
 
 <p align="center">
-  <img src="Documentation/Images/app-custom-diagram.png" alt="The Açaí app's freeform diagram editor with the node catalog open" width="100%">
+  <img src=".github/images/app-custom-diagram.png" alt="The Açaí app's freeform diagram editor with the node catalog open" width="100%">
 </p>
 
 Generated diagrams are the fast path; the app is where you go when you want to *work* with them.
@@ -147,7 +147,7 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 
 ### ⌨️ The `acai` CLI
 
-Twelve commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **[`Documentation/CLI.md`](Documentation/CLI.md) is the complete reference.**
+Twelve commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
 
 ```sh
 # Look around
@@ -181,7 +181,7 @@ An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine a
 }
 ```
 
-Reach for it when an agent needs to reason about an unfamiliar or large codebase: it sees what reading files one at a time cannot — global fan-in/out, whole-graph cycles, layering breaches — and returns `file:line` for everything. Bundled with the `code-quality` Claude Code plugin, which pairs the tools with an `audit` methodology skill. Full schemas in **[`Documentation/MCP.md`](Documentation/MCP.md)**.
+Reach for it when an agent needs to reason about an unfamiliar or large codebase: it sees what reading files one at a time cannot — global fan-in/out, whole-graph cycles, layering breaches — and returns `file:line` for everything. Bundled with the `code-quality` Claude Code plugin, which pairs the tools with an `audit` methodology skill. Full schemas in the **[`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/)**.
 
 ---
 
@@ -265,9 +265,10 @@ Sources/
   AcaiGit/          libgit2 wrapper — internal to the app       (Apple only)
 App/                XcodeGen project, entry points, UI tests + golden screenshots
 Examples/           one sample per diagram type, per language, with checked-in exports
-Documentation/      CLI + MCP reference, README images
 Scripts/            build, install, docs, verify, audit
 ```
+
+Every module carries its prose in a `<Module>.docc` catalog beside its source — that's where the CLI and MCP references live too, so documentation travels with the code it describes rather than in a separate folder that drifts.
 
 ### Module map
 
@@ -289,13 +290,13 @@ Every public module has full API docs. Follow a link for the complete surface:
 | **AcaiPython** | Python. Vendors the grammar's external scanner (see `Package.swift`). | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaipython/) |
 | **AcaiCFamily** | C **and** C++ — shared build systems and grammar family, with `.h` content routing. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaicfamily/) |
 
-**Entry points** — executables rather than APIs you link against, so their pages document internals; the usage guides are the links on the right:
+**Entry points** — executables rather than APIs you link against. Each has a full reference on the documentation site:
 
-| Module | | Guide |
+| Module | | Docs |
 | --- | --- | --- |
-| **AcaiCLI** | the `acai` tool · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) | [`Documentation/CLI.md`](Documentation/CLI.md) |
-| **AcaiMCP** | the `acai-mcp` server · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/) | [`Documentation/MCP.md`](Documentation/MCP.md) |
-| **AcaiApp** | the SwiftUI app, macOS + iOS · [internals →](https://pauljohanneskraft.github.io/Acai/documentation/acaiapp/) | this README |
+| **AcaiCLI** | the `acai` command-line tool | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) |
+| **AcaiMCP** | the `acai-mcp` MCP server | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/) |
+| **AcaiApp** | the SwiftUI app, macOS + iOS | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaiapp/) |
 
 **Supporting modules** — internal building blocks you wouldn't normally depend on, documented so nothing in the package is a blank spot: [AcaiGit](https://pauljohanneskraft.github.io/Acai/documentation/acaigit/) (libgit2 wrapper for cloning, revision comparison and churn — Apple platforms only, and **not** a package product, so consumers can't import it), [CPythonScanner](https://pauljohanneskraft.github.io/Acai/documentation/cpythonscanner/) (the vendored Python grammar scanner), and [AcaiPNGComparison](https://pauljohanneskraft.github.io/Acai/documentation/acaipngcomparison/) / [AcaiTestSupport](https://pauljohanneskraft.github.io/Acai/documentation/acaitestsupport/) (test-only helpers).
 

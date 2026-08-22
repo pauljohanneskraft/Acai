@@ -76,14 +76,15 @@ Higher-level questions asked of a parsed model.
 
 ### Applications
 
-The three entry points built on everything above. They ship as executables rather than APIs you
-link against, so these pages document their internals — for *using* them, see the guides in the
-repository.
+The three entry points built on everything above. Each page is that tool's complete user guide, not
+just its API.
 
-- **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool.
-- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server, exposing the
-  read-only engine as tools an AI agent can call.
-- **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps.
+- **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool: every command and flag,
+  plus recipes for CI gating, drift checks and dead-code sweeps.
+- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all nine
+  tools with their input schemas, the snapshot-cache contract, and how to wire it into a client.
+- **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps:
+  what it does, and how the pieces fit.
 
 ### Supporting modules
 
