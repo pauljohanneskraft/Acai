@@ -14,24 +14,30 @@
 # --- CONFIGURATION ---
 readonly HOSTING_BASE_PATH="Acai"
 readonly LANDING_PATH="documentation/acailibrary"
-# Every documentable module. AcaiRender is macOS-only and AcaiApp is a GUI executable
-# with no public API, so the app is intentionally omitted.
-readonly TARGETS=(
-    AcaiCore
-    AcaiTreeSitter
-    AcaiSwift
-    AcaiJVM
-    AcaiJS
-    AcaiDart
-    AcaiPython
-    AcaiCFamily
-    AcaiDiagram
-    AcaiLibrary
-    AcaiRender
-)
 # ---------------------
 
 OUTPUT_DIR="${1:-.build/docs}"
+
+# Every non-test target in the manifest, read from the package itself so a newly added
+# module is documented without touching this script. Test targets are the only exclusion:
+# DocC handles library, executable and C targets alike (an executable renders as a
+# "Command-line Tool"), and a target with no public API simply yields an empty page —
+# which is still better than having no page at all.
+#
+# Platform-conditional targets (AcaiRender, AcaiApp, AcaiGit, AcaiPNGComparison, gated on
+# `canImport(SwiftUI)` in Package.swift) appear here only when the manifest compiles on a
+# SwiftUI-capable host — the docs workflow runs on macOS, so they are included there.
+TARGETS=("${(@f)$(swift package dump-package | python3 -c '
+import json, sys
+for target in json.load(sys.stdin)["targets"]:
+    if target["type"] != "test":
+        print(target["name"])
+')}")
+
+if [[ ${#TARGETS[@]} -eq 0 ]]; then
+    print "❌ Could not read any targets from the package manifest."
+    exit 1
+fi
 
 # Build the repeated --target flags from the TARGETS array.
 target_flags=()
@@ -40,6 +46,7 @@ for target in "${TARGETS[@]}"; do
 done
 
 print "📚 Generating DocC site for ${#TARGETS[@]} modules into $OUTPUT_DIR ..."
+print "   ${TARGETS[*]}"
 
 if ! swift package --allow-writing-to-directory "$OUTPUT_DIR" \
     generate-documentation \

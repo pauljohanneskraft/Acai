@@ -7,7 +7,7 @@ import TreeSitterCPP
 ///
 /// Owns `.c` and the shared `.h` extension. Because `.h` is claimed by both C and C++ but the engine
 /// routes each extension to a single parser, this parser content-sniffs every `.h` file
-/// (``CFamilyHeaderClassifier``) and, when the header is actually C++, parses it with the C++ grammar
+/// (`CFamilyHeaderClassifier`) and, when the header is actually C++, parses it with the C++ grammar
 /// and reports `cpp` — the agnostic engine then labels and enriches that file as C++ even though a C
 /// source-spec discovered it. Plain C headers and `.c` files are parsed as C.
 public struct CCodeParser: CodeParser {
