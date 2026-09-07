@@ -1,4 +1,3 @@
-import Foundation
 import AcaiCore
 
 // MARK: - Diagram Node

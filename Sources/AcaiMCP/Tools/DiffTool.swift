@@ -1,4 +1,5 @@
 import MCP
+// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import AcaiLibrary
 
 /// `acai_diff` — the structural delta between two revisions of a codebase. Mirrors

@@ -1,4 +1,3 @@
-import AcaiGit
 import Foundation
 
 /// Periodically checks each tracked GitHub-backed codebase's remote for a moved `HEAD` and, only

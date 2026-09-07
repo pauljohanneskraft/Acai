@@ -1,5 +1,4 @@
 import Foundation
-import AcaiCore
 
 extension FreeformDiagram.Node.Member {
     /// The legacy `parameters` string is cleared (structured editing always writes

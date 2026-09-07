@@ -1,5 +1,3 @@
-import SwiftUI
-
 extension CodebaseDetailView {
 
     static let instabilityBlurb =

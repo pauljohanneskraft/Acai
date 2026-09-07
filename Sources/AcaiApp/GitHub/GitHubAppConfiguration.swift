@@ -1,5 +1,3 @@
-import Foundation
-
 /// The registered GitHub App's client ID, used by `GitHubDeviceAuthFlow` for sign-in.
 ///
 /// One-time manual setup on github.com (requires an interactive login, can't be automated):

@@ -1,6 +1,4 @@
 import CoreGraphics
-import Foundation
-import AcaiDiagram
 
 /// Shared Sugiyama-backed placement for the directed-graph diagram kinds (call graph, package,
 /// state). The per-kind models supply node sizes and edges and build their own typed

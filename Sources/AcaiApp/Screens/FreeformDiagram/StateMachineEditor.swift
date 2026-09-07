@@ -1,4 +1,3 @@
-import Foundation
 import AcaiDiagram
 
 /// State-machine editing for the freeform diagram: states and labeled transitions.

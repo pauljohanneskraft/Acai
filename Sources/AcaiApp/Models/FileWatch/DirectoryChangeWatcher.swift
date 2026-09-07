@@ -1,6 +1,5 @@
 #if os(macOS)
 import Dispatch
-import Foundation
 
 /// Not recursive: a directory file descriptor's `DispatchSourceFileSystemObject` reports events for
 /// that directory's own entries, not its whole subtree. Acceptable here because every trigger this

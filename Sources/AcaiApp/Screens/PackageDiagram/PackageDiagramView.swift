@@ -3,7 +3,6 @@ import AcaiCore
 import AcaiDiagram
 import AcaiRender
 import AcaiQuality
-import UniformTypeIdentifiers
 
 /// Movement-only view for a generated package (module-dependency) diagram. Derives the diagram
 /// from the artifact and lets the user drag module nodes, on the shared canvas layer

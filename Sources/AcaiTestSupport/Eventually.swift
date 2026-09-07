@@ -1,5 +1,3 @@
-import Foundation
-
 /// Polls a condition instead of sleeping a guessed duration before asserting on it — many async unit
 /// tests assert on state set by an unstructured `Task { }`'s body, and nothing bounds how long that
 /// takes to even get scheduled under a loaded CI runner. A fixed sleep races that scheduling latency

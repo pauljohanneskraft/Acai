@@ -1,5 +1,3 @@
-import AcaiDiagram
-
 protocol IdentifiableGraphNode: Sendable {
     var id: String { get }
 }

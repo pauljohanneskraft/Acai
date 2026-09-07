@@ -1,5 +1,4 @@
 import ArgumentParser
-import Foundation
 import AcaiQuality
 import AcaiCore
 import AcaiDiff

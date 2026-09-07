@@ -1,6 +1,5 @@
 import SwiftUI
 import AcaiCore
-import AcaiDiagram
 
 struct CodebaseDetailView: View {
     let codebaseID: UUID

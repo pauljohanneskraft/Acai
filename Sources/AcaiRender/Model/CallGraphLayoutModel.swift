@@ -1,6 +1,4 @@
 import CoreGraphics
-import Foundation
-import AcaiCore
 import AcaiDiagram
 
 /// Computes node frames and edge routes for a `CallGraph` via the shared `SugiyamaLayoutEngine`.

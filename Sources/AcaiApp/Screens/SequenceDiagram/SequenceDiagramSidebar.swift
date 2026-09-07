@@ -2,7 +2,6 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiQuality
-import AcaiRender
 
 /// Sidebar tab choices for the sequence diagram, matching Class Diagram's closed vocabulary.
 enum SequenceDiagramSidebarTab {

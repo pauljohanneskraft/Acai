@@ -1,5 +1,4 @@
 import Foundation
-import AcaiGit
 
 // `codebase(for:)`/`projectID(for:)`/`mutateCodebase`/`persistProject` (defined in the main file)
 // are no longer `private` so this extension can call them.

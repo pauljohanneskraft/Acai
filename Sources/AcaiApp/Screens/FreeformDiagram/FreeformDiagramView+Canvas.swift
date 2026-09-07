@@ -1,5 +1,4 @@
 import SwiftUI
-import AcaiCore
 import AcaiDiagram
 import AcaiRender
 

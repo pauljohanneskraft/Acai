@@ -1,5 +1,3 @@
-import Foundation
-
 extension ProjectBrowserView {
     func resolveHandoffContinuation(_ target: HandoffContinuationPresenter.Target?) {
         guard let target else { return }

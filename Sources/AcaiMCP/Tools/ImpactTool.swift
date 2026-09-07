@@ -1,4 +1,5 @@
 import MCP
+// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import AcaiLibrary
 
 /// `acai_impact` — the blast radius of a type. Mirrors `acai impact <Type>`.

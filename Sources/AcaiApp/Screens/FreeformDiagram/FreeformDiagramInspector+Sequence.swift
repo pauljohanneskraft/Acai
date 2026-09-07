@@ -1,5 +1,4 @@
 import SwiftUI
-import AcaiCore
 import AcaiDiagram
 
 // MARK: - Sequence Inspectors (messages, fragments)

@@ -1,10 +1,7 @@
 import Foundation
 import SwiftUI
-import AcaiGit
 import AcaiLibrary
 import AcaiCore
-import AcaiDiagram
-import AcaiRender
 
 @MainActor
 final class ProjectBrowserViewModel: ObservableObject {

@@ -1,5 +1,3 @@
-import Foundation
-
 extension Sequence {
     public func removingDuplicates<H: Hashable>(by property: (Element) -> H) -> [Element] {
         var existing = Set<H>()

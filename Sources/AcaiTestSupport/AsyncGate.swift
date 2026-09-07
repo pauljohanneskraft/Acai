@@ -1,5 +1,3 @@
-import Foundation
-
 /// A one-shot signal an in-flight operation can `wait()` on, so a test can hold an operation open
 /// until it has actually observed the state it's asserting on — a fixed `Task.sleep` races the
 /// scheduling latency `Eventually` is designed to avoid, and flakes under a loaded parallel test run

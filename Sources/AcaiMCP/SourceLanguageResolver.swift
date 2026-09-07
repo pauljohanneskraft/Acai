@@ -1,3 +1,4 @@
+// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import AcaiLibrary
 
 /// Maps language names (`swift`, `kotlin`, `typescript`, …) onto the engine's `SourceLanguage` constants.

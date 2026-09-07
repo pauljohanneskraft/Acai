@@ -2,7 +2,6 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
-import UniformTypeIdentifiers
 
 /// Movement-only view for a generated state diagram: regenerates from the stored variable
 /// configuration and lets the user drag state nodes, built on the shared canvas layer

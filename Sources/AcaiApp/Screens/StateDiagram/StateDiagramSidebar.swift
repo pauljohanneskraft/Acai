@@ -1,7 +1,6 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
-import AcaiRender
 
 enum StateDiagramSidebarTab {
     case settings, inspector
