@@ -1,5 +1,8 @@
 {
   "enabledPlugins": {
     "code-quality@acai": true
+  },
+  "attribution": {
+    "commit": ""
   }
 }
