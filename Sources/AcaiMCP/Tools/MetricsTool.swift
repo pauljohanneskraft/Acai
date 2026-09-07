@@ -1,4 +1,5 @@
 import MCP
+import AcaiLibrary
 
 /// `acai_metrics` — the full static-analysis metric set. Mirrors `acai metrics --format json`.
 struct MetricsTool: AnalysisTool {

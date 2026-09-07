@@ -1,3 +1,5 @@
+import Foundation
+
 /// Deliberately a plain, diffable, versioned file rather than hidden app state or `UserDefaults`,
 /// so a suppression is a visible, git-reviewable decision, not a silent client-side toggle.
 struct FindingsSuppressionBaseline: Codable, Equatable, Sendable {

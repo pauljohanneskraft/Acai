@@ -1,6 +1,7 @@
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import CoreGraphics
 import Foundation
 
 /// How one diagram's Atlas page turned out — always exactly one outcome per diagram, so the Atlas's

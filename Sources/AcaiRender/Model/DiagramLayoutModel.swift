@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import AcaiCore
 import AcaiQuality
 

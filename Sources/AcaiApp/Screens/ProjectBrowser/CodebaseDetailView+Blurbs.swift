@@ -1,3 +1,5 @@
+import SwiftUI
+
 extension CodebaseDetailView {
 
     static let instabilityBlurb: LocalizedStringResource = .app("View.CodebaseDetailView.InstabilityBlurb")

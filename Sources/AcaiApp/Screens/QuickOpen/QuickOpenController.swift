@@ -1,3 +1,5 @@
+import AcaiCore
+
 /// The selection/creation logic behind Quick Open, extracted from `QuickOpenView` so it's testable
 /// without a SwiftUI hosting environment — same shape as the app's other ViewModels.
 @MainActor

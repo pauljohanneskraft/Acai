@@ -1,3 +1,5 @@
+import Foundation
+
 /// A package/module **dependency diagram**: one node per build module (SwiftPM
 /// target, Gradle/Maven module, JS package — see `ModuleResolver`), with a weighted
 /// edge for every cross-module reference. Each node carries Robert Martin's

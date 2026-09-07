@@ -1,5 +1,4 @@
 import MCP
-// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import AcaiLibrary
 
 /// `acai_analyze` — indexes a project once and returns a compact snapshot summary (not the full

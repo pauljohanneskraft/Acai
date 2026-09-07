@@ -1,5 +1,9 @@
+import CoreGraphics
 import Foundation
+import AcaiCore
 import AcaiDiagram
+import AcaiGit
+import AcaiLibrary
 import AcaiRender
 import AcaiQuality
 

@@ -1,4 +1,5 @@
 @preconcurrency import CoreSpotlight
+import Foundation
 import UniformTypeIdentifiers
 
 /// Keeps the on-device Core Spotlight index in sync with Quick Open's own entry list, resolved

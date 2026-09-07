@@ -1,4 +1,6 @@
 import SwiftUI
+import AcaiCore
+import AcaiDiagram
 
 /// Wires `CodeElementReference` resolution into a row: every diagram type that can meaningfully
 /// show `reference` becomes a **context-menu action** (macOS/iPad right-click, iPhone long-press)

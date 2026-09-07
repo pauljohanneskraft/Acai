@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiQuality
 import AcaiCore
 import AcaiDiagram
+import AcaiLibrary
 
 /// Always evaluates — the configured `quality.yml` when one is set up, otherwise the built-in
 /// curated smell budgets — so god classes, feature envy, low cohesion and the like surface out of

@@ -13,56 +13,15 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest
-    # Raised from 10: this job now compiles every target for the analyzer rules (see below).
-    # The whole job runs in about six minutes under emulation locally, so this is generous.
-    timeout-minutes: 30
-    # Was ghcr.io/realm/swiftlint, which is a bare ubuntu runtime carrying only the swiftlint
-    # binary — no `swift`, so `analyze` could not build anything there. This is the same image the
-    # Linux test job uses, with SwiftLint installed into it at the version that image pinned.
+    timeout-minutes: 10
     container:
-      image: swift:latest
+      image: ghcr.io/realm/swiftlint:0.57.1
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      # The analyzer pass builds every target, so dependency sources are worth caching. Build
-      # artifacts deliberately are not: analyze reads a compiler log, and a target SwiftPM skips
-      # contributes no compile jobs, which would make it pass unchecked.
-      - name: Cache SPM dependencies
-        uses: actions/cache@v6
-        with:
-          path: |
-            .build/checkouts
-            .build/repositories
-          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
-          restore-keys: spm-${{ runner.os }}-
-
-      # 0.57.1 matches the container tag this job used before, so the rules do not shift. The asset
-      # name is version-specific: 0.57.1 ships swiftlint_linux.zip, 0.64+ split into
-      # swiftlint_linux_amd64.zip / _arm64.zip.
-      - name: Install SwiftLint
-        run: |
-          # swift:latest carries neither curl nor unzip.
-          apt-get update -qq
-          apt-get install -y -qq --no-install-recommends curl unzip
-          curl -fsSL --retry 3 -o /tmp/swiftlint.zip \
-            https://github.com/realm/SwiftLint/releases/download/0.57.1/swiftlint_linux.zip
-          unzip -q -o /tmp/swiftlint.zip -d /usr/local/bin
-          chmod +x /usr/local/bin/swiftlint
-          swiftlint version
-
       - name: Run SwiftLint
         run: swiftlint lint --strict
-
-      # Analyzer rules (unused_import, unused_declaration) run only under `analyze`, which needs a
-      # compiler log. Scripts/analyze.sh builds one target at a time, because analyze reads every
-      # compile job in the log it is given: against a whole-package log it runs for over half an
-      # hour, against one target's log about 17 seconds.
-      - name: Run SwiftLint analyzer rules
-        run: Scripts/analyze.sh
 
   build-test-ios:
     name: Unit Test iOS

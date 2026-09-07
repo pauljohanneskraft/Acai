@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import AcaiDiagram
 
 /// Pure, headless-friendly layout for a `SequenceDiagram`: turns participants and time-ordered

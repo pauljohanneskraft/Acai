@@ -1,6 +1,8 @@
 import ArgumentParser
+import Foundation
 import AcaiCore
 import AcaiDiagram
+import AcaiLibrary
 import Yams
 
 extension ClassDiagramOptions {

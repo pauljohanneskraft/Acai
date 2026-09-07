@@ -1,3 +1,5 @@
+import AcaiCore
+
 struct MetricSummary<Element> {
     let average: Double
     let maximum: Double

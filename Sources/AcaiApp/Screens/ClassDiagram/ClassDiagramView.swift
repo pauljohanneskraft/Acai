@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiRender
+import UniformTypeIdentifiers
 
 struct ClassDiagramView: View {
     let diagram: GeneratedDiagram

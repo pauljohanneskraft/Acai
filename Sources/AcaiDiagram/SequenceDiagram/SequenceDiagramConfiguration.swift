@@ -1,3 +1,4 @@
+import AcaiCore
 import AcaiQuality
 
 /// Describes how a sequence diagram is traced from a codebase: the starting method, how deep

@@ -1,3 +1,5 @@
+import Foundation
+
 /// A generic undo/redo history manager that stores snapshots of `Equatable & Sendable` state.
 ///
 /// Call `checkpoint(_:)` before each meaningful mutation to record the current state, then

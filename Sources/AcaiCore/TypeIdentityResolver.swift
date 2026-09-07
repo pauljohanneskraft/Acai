@@ -1,3 +1,5 @@
+import Foundation
+
 /// A resolved, canonical type identity — a declared type's fully-qualified id (equal to its
 /// ``TypeDeclaration/qualifiedName``). A distinct type from a bare simple name so the two identity
 /// formats can't be silently confused at a resolution boundary.

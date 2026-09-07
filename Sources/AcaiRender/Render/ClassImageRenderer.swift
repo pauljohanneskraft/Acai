@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import SwiftUI
 import AcaiCore
+import AcaiDiagram
 
 #if canImport(AppKit)
 import AppKit

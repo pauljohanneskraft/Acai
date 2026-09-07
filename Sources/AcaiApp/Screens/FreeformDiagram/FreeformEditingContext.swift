@@ -1,3 +1,5 @@
+import Foundation
+
 /// The slice of `FreeformDiagramViewModel` that the freeform editing collaborators
 /// (``SequenceEditor``, ``StateMachineEditor``, ``TypeMemberEditor``, ``SelectionClipboard``)
 /// operate on. Keeping them behind this seam means each owns one editing domain without depending

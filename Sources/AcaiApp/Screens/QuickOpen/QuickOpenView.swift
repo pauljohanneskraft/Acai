@@ -1,4 +1,5 @@
 import SwiftUI
+import AcaiCore
 
 /// Quick Open: one search box over every project's types/modules/methods/diagrams, resolving
 /// a chosen result through the same `CodeElementReference` mechanism `CodeElementReference

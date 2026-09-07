@@ -1,4 +1,3 @@
-// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import Foundation
 
 // Reusable, language-agnostic building blocks that build-system detectors compose. Keeping these

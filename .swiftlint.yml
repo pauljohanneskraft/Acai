@@ -6,15 +6,9 @@ disabled_rules:
   - todo
   - blanket_disable_command
 
-# Run by Scripts/analyze.sh (the SwiftLint CI job), not by `swiftlint lint`.
 analyzer_rules:
   - unused_import
-
-# unused_declaration is deliberately off: it cannot see a call made through a protocol witness, so
-# every `CallSiteResolving` conformance in the language plugins — resolveCallSite, localBindings in
-# AcaiJS/AcaiJVM/AcaiPython — is reported unused. Deleting one is worse than a build break, because
-# the protocol supplies a default `localBindings` returning [:], so it would still compile and
-# silently stop resolving call sites.
+  - unused_declaration
 
 opt_in_rules:
   - empty_count

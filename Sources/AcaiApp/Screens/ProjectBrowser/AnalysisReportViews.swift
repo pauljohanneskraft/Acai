@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiQuality
 import AcaiCore
 import AcaiDiagram
+import AcaiLibrary
 
 /// Shared by the quality-check report views so every finding renders identically.
 struct ViolationRowView: View {

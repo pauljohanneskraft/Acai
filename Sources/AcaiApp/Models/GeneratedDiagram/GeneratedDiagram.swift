@@ -1,4 +1,5 @@
 import Foundation
+import AcaiCore
 import AcaiDiagram
 import AcaiRender
 import AcaiQuality

@@ -1,4 +1,5 @@
 #if os(macOS)
+import CoreGraphics
 import Foundation
 import SwiftUI
 import AcaiCore

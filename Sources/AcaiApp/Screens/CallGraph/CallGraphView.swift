@@ -3,6 +3,7 @@ import AcaiCore
 import AcaiDiagram
 import AcaiRender
 import AcaiQuality
+import UniformTypeIdentifiers
 
 struct CallGraphView: View {
     let diagram: GeneratedDiagram

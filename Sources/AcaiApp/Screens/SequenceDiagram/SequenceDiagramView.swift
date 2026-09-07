@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
+import UniformTypeIdentifiers
 
 /// Movement-only view for a generated sequence diagram. Regenerates the diagram from its stored
 /// entry-point configuration and lets the user slide participant lifelines horizontally; built on

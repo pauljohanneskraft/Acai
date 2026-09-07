@@ -1,7 +1,9 @@
 import ArgumentParser
+import Foundation
 import AcaiCore
 import AcaiDiagram
 import AcaiDiff
+import AcaiLibrary
 
 extension AcaiCommand {
     struct Diff: ParsableCommand {

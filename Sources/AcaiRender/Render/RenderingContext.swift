@@ -1,4 +1,6 @@
+import CoreGraphics
 import SwiftUI
+import AcaiDiagram
 import AcaiDiff
 
 // Grouped parameter objects for the image renderers: the output-tuning knobs (scale/padding/palette)

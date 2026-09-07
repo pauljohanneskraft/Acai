@@ -1,4 +1,3 @@
-// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import Foundation
 
 /// A UML sequence diagram model: participants and time-ordered messages between them.

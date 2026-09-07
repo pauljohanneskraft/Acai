@@ -1,3 +1,5 @@
+import Foundation
+
 /// A static **call graph**: one node per method, a directed edge for every statically
 /// resolvable call between them. Built from `Member.callSites`, scoped to a single type or
 /// build module so the graph stays legible on large codebases.

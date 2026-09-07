@@ -1,4 +1,3 @@
-// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import Foundation
 
 /// An invalid diagram request: a malformed scope/entry-point string, or an input from which nothing

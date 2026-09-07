@@ -1,3 +1,5 @@
+import AcaiCore
+
 /// A declarative description of the intended architecture and code quality, validated against the
 /// relationship graph and metrics to turn design intent into an executable contract. Decoded from a
 /// YAML rules file (`quality.yml`).

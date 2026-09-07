@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-// swiftlint:disable:next unused_import - required on macOS; the Linux analyzer disagrees
 import AcaiLibrary
 
 extension AcaiCommand {
