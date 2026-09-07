@@ -7,15 +7,15 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         Form {
-            Section("GitHub Account") {
+            Section(.app("View.SettingsView.GitHubAccount")) {
                 GitHubAccountSection()
             }
             #if os(macOS)
-            Section("Connect via MCP") {
+            Section(.app("View.SettingsView.ConnectViaMCP")) {
                 MCPConnectionSection()
             }
             #endif
-            Section("Licenses") {
+            Section(.app("View.SettingsView.Licenses")) {
                 LicensesSection()
             }
         }

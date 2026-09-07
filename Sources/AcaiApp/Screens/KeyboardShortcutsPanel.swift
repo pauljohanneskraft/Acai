@@ -9,23 +9,25 @@ struct KeyboardShortcutsPanel: View {
         NavigationStack {
             List {
                 ForEach(KeyboardShortcutReference.groups) { group in
-                    Section(group.title) {
+                    Section {
                         ForEach(group.shortcuts) { shortcut in
                             HStack {
-                                Text(shortcut.name)
+                                Text(localized: shortcut.name)
                                 Spacer()
-                                Text(shortcut.symbol)
+                                Text(verbatim: shortcut.symbol)
                                     .foregroundStyle(.secondary)
                                     .monospaced()
                             }
                         }
+                    } header: {
+                        Text(localized: group.title)
                     }
                 }
             }
-            .navigationTitle("Keyboard Shortcuts")
+            .navigationTitle(.app("View.KeyboardShortcutsPanel.KeyboardShortcuts"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(.app("View.KeyboardShortcutsPanel.Done")) { dismiss() }
                 }
             }
         }
@@ -54,7 +56,7 @@ private struct KeyboardShortcutsHelpMenuButton: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("Keyboard Shortcuts") {
+        Button(.app("View.KeyboardShortcutsHelpMenuButton.KeyboardShortcuts")) {
             openWindow(id: KeyboardShortcutCommands.windowID)
         }
         .keyboardShortcut("/", modifiers: [.command, .shift])

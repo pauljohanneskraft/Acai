@@ -39,7 +39,7 @@ extension FreeformDiagramView {
         if let kind = viewModel.pendingPlacement {
             HStack(spacing: 6) {
                 Image(systemName: kind.systemImage)
-                Text(kind.displayName)
+                Text(verbatim: kind.displayName)
             }
             .font(.callout.weight(.medium))
             .padding(.horizontal, 10)
@@ -59,7 +59,7 @@ extension FreeformDiagramView {
             Button {
                 viewModel.cancelPlacement()
             } label: {
-                Label("Cancel Placement", systemImage: "xmark.circle.fill")
+                Label(.app("View.FreeformDiagramView.CancelPlacement"), systemImage: "xmark.circle.fill")
                     .labelStyle(.iconOnly)
                     .font(.title2)
             }
@@ -68,7 +68,7 @@ extension FreeformDiagramView {
             .background(.regularMaterial, in: Circle())
             .padding(10)
             .accessibilityIdentifier("freeform.cancelPlacementButton")
-            .accessibilityLabel("Cancel Placement")
+            .accessibilityLabel(.app("View.FreeformDiagramView.CancelPlacement"))
         }
     }
 }

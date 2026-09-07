@@ -11,11 +11,11 @@ struct NoteNodeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if !name.isEmpty {
-                Text(name)
+                Text(verbatim: name)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(palette.primaryInk)
             }
-            Text(text.isEmpty ? "(empty note)" : text)
+            (text.isEmpty ? Text(.app("View.NoteNodeView.EmptyNote")) : Text(verbatim: text))
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(text.isEmpty ? palette.mutedInk : palette.secondaryInk)
                 .lineLimit(8)

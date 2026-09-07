@@ -13,6 +13,18 @@ struct Finding: Identifiable, Hashable {
 
         var id: String { rawValue }
 
+        /// `displayName` stays English: it is written into the exported codebase atlas.
+        var title: LocalizedStringResource {
+            switch self {
+            case .violation:
+                .app("Finding.Kind.QualityViolation")
+            case .deadCode:
+                .app("Finding.Kind.DeadCode")
+            case .health:
+                .app("Finding.Kind.ParseDiagnostic")
+            }
+        }
+
         var displayName: String {
             switch self {
             case .violation:
@@ -45,6 +57,18 @@ struct Finding: Identifiable, Hashable {
         case critical
 
         static func < (lhs: Severity, rhs: Severity) -> Bool { lhs.rawValue < rhs.rawValue }
+
+        /// `label` stays English: it is written into the exported codebase atlas.
+        var title: LocalizedStringResource {
+            switch self {
+            case .info:
+                .app("Finding.Severity.Info")
+            case .warning:
+                .app("Finding.Severity.Warning")
+            case .critical:
+                .app("Finding.Severity.Critical")
+            }
+        }
 
         var label: String {
             switch self {

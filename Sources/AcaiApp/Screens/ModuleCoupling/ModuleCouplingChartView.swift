@@ -55,11 +55,11 @@ struct ModuleCouplingChartView: View {
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
                         legendList
-                            .navigationTitle("Modules")
+                            .navigationTitle(.app("View.ModuleCouplingChartView.Modules"))
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.ModuleCouplingChartView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -96,7 +96,7 @@ struct ModuleCouplingChartView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "chart.xyaxis.line").font(.system(size: 28)).foregroundStyle(.secondary)
-            Text("No modules to plot yet — reindex the codebase first.")
+            Text(.app("View.ModuleCouplingChartView.NoModulesPlotYet"))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -120,8 +120,8 @@ struct ModuleCouplingChartView: View {
         }
         .chartXScale(domain: 0...1)
         .chartYScale(domain: 0...1)
-        .chartXAxisLabel("Instability")
-        .chartYAxisLabel("Abstractness")
+        .chartXAxisLabel { Text(.app("View.ModuleCouplingChartView.InstabilityAxis")) }
+        .chartYAxisLabel { Text(.app("View.ModuleCouplingChartView.AbstractnessAxis")) }
         .chartForegroundStyleScale([
             ModuleCouplingChartData.Zone.painful.rawValue: Color.red,
             ModuleCouplingChartData.Zone.useless.rawValue: Color.orange,
@@ -163,7 +163,9 @@ struct ModuleCouplingChartView: View {
         60 + distance * 140
     }
 
-    private func percent(_ value: Double) -> String { String(format: "%.0f%%", value * 100) }
+    private func percent(_ value: Double) -> String {
+        value.formatted(.percent.precision(.fractionLength(0)))
+    }
 
     // MARK: - Legend / sidebar
 
@@ -172,12 +174,13 @@ struct ModuleCouplingChartView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Image(systemName: point.zone.symbolName)
-                    Text(point.name).font(.callout.bold())
+                    Text(verbatim: point.name).font(.callout.bold())
                     Spacer()
-                    Text(percent(point.distance)).font(.caption.monospaced()).foregroundStyle(.secondary)
+                    Text(verbatim: percent(point.distance)).font(.caption.monospaced()).foregroundStyle(.secondary)
                 }
-                Text("\(point.zone.rawValue) — instability \(percent(point.instability)), "
-                     + "abstractness \(percent(point.abstractness))")
+                let instability = percent(point.instability)
+                let abstractness = percent(point.abstractness)
+                Text(.app("View.ModuleCouplingChartView.Zone \(point.zone.rawValue) \(instability) \(abstractness)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -196,9 +199,9 @@ struct ModuleCouplingChartView: View {
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.ModuleCouplingChartView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the ranked module list")
+            .help(.app("View.ModuleCouplingChartView.ToggleRankedModuleList"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }

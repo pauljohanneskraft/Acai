@@ -25,14 +25,14 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
             ?? UserDefaults(suiteName: "de.kraftsoftware.Acai.uitest.fallback")!
     }
 
-    var label: String {
+    var label: LocalizedStringResource {
         switch self {
         case .system:
-            "System"
+            .app("DiagramThemeSelection.System")
         case .light:
-            "Light"
+            .app("DiagramThemeSelection.Light")
         case .dark:
-            "Dark"
+            .app("DiagramThemeSelection.Dark")
         }
     }
 
@@ -90,7 +90,7 @@ struct DiagramThemeCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
-            Picker("Diagram Theme", selection: $selection) {
+            Picker(.app("View.DiagramThemeCommands.DiagramTheme"), selection: $selection) {
                 ForEach(DiagramThemeSelection.allCases) { option in
                     Label(option.label, systemImage: option.symbol).tag(option)
                 }

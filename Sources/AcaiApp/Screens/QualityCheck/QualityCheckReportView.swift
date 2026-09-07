@@ -43,8 +43,8 @@ struct QualityCheckReportView: View {
         if report.isPassing {
             QualityCheckPlaceholder(
                 text: report.checkedRuleCount == 0
-                    ? "No rules defined yet — add at least one rule to check this codebase."
-                    : "Quality OK — \(report.checkedRuleCount) rule(s) checked, no violations.",
+                    ? .app("View.QualityCheckReportView.NoRulesDefined")
+                    : .app("View.QualityCheckReportView.QualityOK \(report.checkedRuleCount)"),
                 systemImage: report.checkedRuleCount == 0 ? "doc.text.magnifyingglass" : "checkmark.seal")
         } else {
             violationList(report)
@@ -54,7 +54,9 @@ struct QualityCheckReportView: View {
     private func violationList(_ report: QualityReport) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if showsSummary {
-                Text("\(report.violations.count) finding(s) across \(report.checkedRuleCount) rule(s)")
+                let findings = report.violations.count
+                let rules = report.checkedRuleCount
+                Text(.app("View.QualityCheckReportView.FindingSAcrossRule \(findings) \(rules)"))
                     .font(.subheadline.bold())
                     .foregroundStyle(tint)
             }
@@ -70,13 +72,13 @@ struct QualityCheckReportView: View {
 
 /// Shared empty/status placeholder for the quality-check surfaces.
 struct QualityCheckPlaceholder: View {
-    let text: String
+    let text: LocalizedStringResource
     var systemImage: String = "doc.text.magnifyingglass"
 
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: systemImage).font(.system(size: 28)).foregroundStyle(.secondary)
-            Text(text).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(localized: text).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(24)

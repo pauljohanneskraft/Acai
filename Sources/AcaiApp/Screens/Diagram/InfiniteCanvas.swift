@@ -97,7 +97,7 @@ struct InfiniteCanvas<Content: View>: View {
     }
 
     private var zoomIndicator: some View {
-        Text("\(Int((scale * 100).rounded()))%")
+        Text(.app("View.InfiniteCanvas.ZoomPercent \(Int((scale * 100).rounded()))"))
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
             .padding(.horizontal, 8)

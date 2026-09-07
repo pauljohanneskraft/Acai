@@ -25,10 +25,9 @@ struct QualityRulesEditor: View {
     @ViewBuilder
     private var scopeEditor: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Include generated types", isOn: $rules.includeGeneratedTypes)
+            Toggle(.app("View.QualityRulesEditor.IncludeGeneratedTypes"), isOn: $rules.includeGeneratedTypes)
                 .font(.headline)
-            Text("When off (the default), machine-generated types are excluded from metrics, code "
-                + "smells and cycles — matching the CLI (`--include-generated`) and MCP defaults.")
+            Text(.app("View.QualityRulesEditor.WhenOffDefaultMachine"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -38,12 +37,12 @@ struct QualityRulesEditor: View {
     @ViewBuilder
     private var cyclesEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Detect dependency cycles", isOn: cyclesEnabled)
+            Toggle(.app("View.QualityRulesEditor.DetectDependencyCycles"), isOn: cyclesEnabled)
                 .font(.headline)
             if let binding = Binding($rules.cycles) {
-                Picker("Scope", selection: binding.scope) {
+                Picker(.app("View.QualityRulesEditor.Scope"), selection: binding.scope) {
                     ForEach(CycleRule.Scope.allCases, id: \.self) { scope in
-                        Text(scope.rawValue).tag(scope)
+                        Text(verbatim: scope.rawValue).tag(scope)
                     }
                 }
                 .pickerStyle(.segmented)

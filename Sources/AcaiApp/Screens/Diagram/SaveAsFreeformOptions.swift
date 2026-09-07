@@ -20,13 +20,13 @@ struct SaveAsFreeformOptionsModifier: ViewModifier {
         #if os(macOS)
         content.popover(isPresented: $isPresented) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Save as Freeform").font(.headline)
+                Text(.app("View.SaveAsFreeformOptionsModifier.SaveFreeform")).font(.headline)
                 metricsToggle
                 HStack {
                     Spacer()
-                    Button("Cancel") { isPresented = false }
+                    Button(.app("View.SaveAsFreeformOptionsModifier.Cancel")) { isPresented = false }
                         .accessibilityIdentifier("diagram.saveAsFreeform.cancelButton")
-                    Button("Save") {
+                    Button(.app("View.SaveAsFreeformOptionsModifier.Save")) {
                         isPresented = false
                         onConfirm()
                     }
@@ -43,15 +43,15 @@ struct SaveAsFreeformOptionsModifier: ViewModifier {
                 Form {
                     metricsToggle
                 }
-                .navigationTitle("Save as Freeform")
+                .navigationTitle(.app("View.SaveAsFreeformOptionsModifier.SaveFreeform"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { isPresented = false }
+                        Button(.app("View.SaveAsFreeformOptionsModifier.Cancel")) { isPresented = false }
                             .accessibilityIdentifier("diagram.saveAsFreeform.cancelButton")
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
+                        Button(.app("View.SaveAsFreeformOptionsModifier.Save")) {
                             isPresented = false
                             onConfirm()
                         }
@@ -65,7 +65,7 @@ struct SaveAsFreeformOptionsModifier: ViewModifier {
     }
 
     private var metricsToggle: some View {
-        Toggle("Include current coupling/coverage figures as read-only notes", isOn: $includeMetricsNote)
+        Toggle(.app("View.SaveAsFreeformOptionsModifier.IncludeCurrentCouplingCoverage"), isOn: $includeMetricsNote)
             .accessibilityIdentifier("diagram.saveAsFreeform.includeMetricsToggle")
     }
 }

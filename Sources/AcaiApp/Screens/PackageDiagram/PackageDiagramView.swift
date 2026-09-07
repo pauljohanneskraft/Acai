@@ -81,11 +81,11 @@ struct PackageDiagramView: View {
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
                         sidebar
-                            .navigationTitle("Package Diagram")
+                            .navigationTitle(.app("View.PackageDiagramView.PackageDiagram"))
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.PackageDiagramView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -232,17 +232,17 @@ struct PackageDiagramView: View {
             Button {
                 centerDiagram()
             } label: {
-                Label("Fit to View", systemImage: "rectangle.dashed")
+                Label(.app("View.PackageDiagramView.FitView"), systemImage: "rectangle.dashed")
             }
-            .help("Fit the diagram to the visible canvas (⌘0)")
+            .help(.app("View.PackageDiagramView.FitDiagramVisibleCanvas"))
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.PackageDiagramView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the sidebar")
+            .help(.app("View.PackageDiagramView.ToggleSidebar"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }

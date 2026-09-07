@@ -1,3 +1,5 @@
+import Foundation
+
 enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case classDiagram = "class"
     case sequenceDiagram = "sequence"
@@ -12,6 +14,29 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case cycleDiagram = "cycleDiagram"
 
     var id: String { rawValue }
+
+    /// The interface's name for the kind. `displayName` stays English: it seeds persisted diagram
+    /// names and exported atlas text, which must not change with the reader's language.
+    var title: LocalizedStringResource {
+        switch self {
+        case .classDiagram:
+            .app("DiagramType.ClassDiagram")
+        case .sequenceDiagram:
+            .app("DiagramType.SequenceDiagram")
+        case .stateDiagram:
+            .app("DiagramType.StateDiagram")
+        case .packageDiagram:
+            .app("DiagramType.PackageDiagram")
+        case .callGraph:
+            .app("DiagramType.CallGraph")
+        case .moduleCoupling:
+            .app("DiagramType.ModuleCoupling")
+        case .hotspot:
+            .app("DiagramType.Hotspots")
+        case .cycleDiagram:
+            .app("DiagramType.CycleDiagram")
+        }
+    }
 
     var displayName: String {
         switch self {

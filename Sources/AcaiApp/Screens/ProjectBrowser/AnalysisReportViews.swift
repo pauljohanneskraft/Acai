@@ -34,7 +34,7 @@ struct ViolationRowView: View {
                 }
                 if violation.ruleKind == "cycle", let onViewAsDiagram {
                     Button(action: onViewAsDiagram) {
-                        Label("View as Diagram", systemImage: "arrow.triangle.2.circlepath")
+                        Label(.app("View.ViolationRowView.ViewDiagram"), systemImage: "arrow.triangle.2.circlepath")
                     }
                     .accessibilityIdentifier("violation.viewAsDiagramButton")
                 }
@@ -49,16 +49,16 @@ struct ViolationRowView: View {
     private var findingSummary: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Text(violation.ruleKind)
+                Text(verbatim: violation.ruleKind)
                     .font(.caption.monospaced())
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(tint.opacity(0.12))
                     .clipShape(Capsule())
-                Text(violation.subject).font(.callout.bold())
+                Text(verbatim: violation.subject).font(.callout.bold())
             }
-            Text(violation.message).font(.callout)
+            Text(verbatim: violation.message).font(.callout)
             if let source = violation.source {
-                Text("\(source.filePath):\(source.line)")
+                Text(verbatim: "\(source.filePath):\(source.line)")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -94,12 +94,12 @@ private struct LocationRow: View {
 
     private var summary: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.callout)
+            Text(verbatim: title).font(.callout)
             if let detail {
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+                Text(verbatim: detail).font(.caption).foregroundStyle(.secondary)
             }
             if let location {
-                Text("\(location.filePath):\(location.line)")
+                Text(verbatim: "\(location.filePath):\(location.line)")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -121,11 +121,11 @@ struct DeadCodeReportView: View {
         let coverage = Int((report.coverage.fraction * 100).rounded())
         if report.candidates.isEmpty {
             QualityCheckPlaceholder(
-                text: "No dead-code candidates (call-graph coverage \(coverage)%).",
+                text: .app("View.DeadCodeSection.NoCandidates \(coverage)"),
                 systemImage: "checkmark.seal")
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Candidates below this coverage floor may be false positives.")
+                Text(.app("View.DeadCodeReportView.CandidatesBelowCoverageFloor"))
                     .font(.caption).foregroundStyle(.secondary)
                 let candidates = Array(report.candidates.prefix(analysisReportLimit).enumerated())
                 ForEach(candidates, id: \.offset) { _, candidate in
@@ -147,8 +147,9 @@ struct HealthReportView: View {
     var body: some View {
         let percent = Int((report.score * 100).rounded())
         if report.diagnostics.isEmpty {
+            let types = String(localized: .app("View.ParseHealthSection.Types \(report.typeCount)"))
             QualityCheckPlaceholder(
-                text: "Parse health \(percent)% — no diagnostics across \(report.typeCount) type(s).",
+                text: .app("View.ParseHealthSection.NoDiagnostics \(percent) \(types)"),
                 systemImage: "checkmark.seal")
         } else {
             VStack(alignment: .leading, spacing: 8) {

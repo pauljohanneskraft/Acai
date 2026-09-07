@@ -70,8 +70,8 @@ struct SequenceDiagramSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(SequenceDiagramSidebarTab.settings)
-                Text("Inspector").tag(SequenceDiagramSidebarTab.inspector)
+                Text(.app("View.SequenceDiagramSidebar.Settings")).tag(SequenceDiagramSidebarTab.settings)
+                Text(.app("View.SequenceDiagramSidebar.Inspector")).tag(SequenceDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -106,18 +106,21 @@ struct SequenceDiagramSidebar: View {
 
     private var settingsContent: some View {
         Form {
-            Section("Entry Point") {
-                Text("Choose where the trace begins. Applying re-runs the trace and resets any "
-                     + "lifeline drags and undo history.")
+            Section(.app("View.SequenceDiagramSidebar.EntryPoint")) {
+                Text(.app("View.SequenceDiagramSidebar.ChooseWhereTraceBegins"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                LabeledContent("Type") {
+                LabeledContent {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $typeQuery)
-                        Picker("Type", selection: $draftEntryTypeName) {
-                            Text(freeFunctionNames.isEmpty ? "Select…" : "None (top-level functions)").tag("")
-                            ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) { Text($0).tag($0) }
+                        Picker(.app("View.SequenceDiagramSidebar.Type"), selection: $draftEntryTypeName) {
+                            Text(localized: freeFunctionNames.isEmpty
+                                ? .app("View.SequenceDiagramSidebar.SelectEllipsis")
+                                : .app("View.SequenceDiagramSidebar.NoneTopLevelFunctions")).tag("")
+                            ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) {
+                                Text(verbatim: $0).tag($0)
+                            }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("diagram.sequenceSettings.typePicker")
@@ -127,14 +130,18 @@ struct SequenceDiagramSidebar: View {
                             }
                         }
                     }
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.Type"))
                 }
 
                 LabeledContent(draftEntryTypeName.isEmpty ? "Function" : "Method") {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $methodQuery)
-                        Picker("Method", selection: $draftEntryMethodName) {
-                            Text("Select…").tag("")
-                            ForEach(draftMethodNames.filtered(by: methodQuery), id: \.self) { Text($0).tag($0) }
+                        Picker(.app("View.SequenceDiagramSidebar.Method"), selection: $draftEntryMethodName) {
+                            Text(.app("View.SequenceDiagramSidebar.Select")).tag("")
+                            ForEach(draftMethodNames.filtered(by: methodQuery), id: \.self) {
+                                Text(verbatim: $0).tag($0)
+                            }
                         }
                         .labelsHidden()
                         .disabled(draftMethodNames.isEmpty)
@@ -142,33 +149,34 @@ struct SequenceDiagramSidebar: View {
                     }
                 }
 
-                LabeledContent("Max depth") {
+                LabeledContent {
                     Stepper(value: $draftMaxDepth, in: 1...20) {
-                        Text("\(draftMaxDepth)")
+                        Text(draftMaxDepth, format: .number)
                     }
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.MaxDepth"))
                 }
 
-                Button("Apply", action: apply)
+                Button(.app("View.SequenceDiagramSidebar.Apply"), action: apply)
                     .disabled(isDraftUnchanged || draftEntryMethodName.isEmpty)
                     .accessibilityIdentifier("diagram.sequenceSettings.applyButton")
             }
 
             if !pendingMappingRows.isEmpty {
-                Section("Resolve Interfaces") {
-                    Text("These abstractions appear along the call path. Pick a concrete type to "
-                         + "follow its implementation, or leave it abstract.")
+                Section(.app("View.SequenceDiagramSidebar.ResolveInterfaces")) {
+                    Text(.app("View.SequenceDiagramSidebar.TheseAbstractionsAppearAlong"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     ForEach($pendingMappingRows) { $row in
                         LabeledContent(row.protocolName) {
                             Picker(row.protocolName, selection: $row.selection) {
-                                Text("Leave abstract").tag(String?.none)
-                                ForEach(row.candidates, id: \.self) { Text($0).tag(String?.some($0)) }
+                                Text(.app("View.SequenceDiagramSidebar.LeaveAbstract")).tag(String?.none)
+                                ForEach(row.candidates, id: \.self) { Text(verbatim: $0).tag(String?.some($0)) }
                             }
                             .labelsHidden()
                         }
                     }
-                    Button("Apply Resolved Mapping", action: applyResolvedMapping)
+                    Button(.app("View.SequenceDiagramSidebar.ApplyResolvedMapping"), action: applyResolvedMapping)
                         .accessibilityIdentifier("diagram.sequenceSettings.applyResolvedMappingButton")
                 }
             }
@@ -180,17 +188,17 @@ struct SequenceDiagramSidebar: View {
                 artifact: artifact
             )
 
-            Section("Export") {
+            Section(.app("View.SequenceDiagramSidebar.Export")) {
                 Button(action: onSaveAsFreeform) {
-                    Label("Save as Freeform", systemImage: "document.on.document")
+                    Label(.app("View.SequenceDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
-                .help("Save a copy as an editable Freeform diagram")
+                .help(.app("View.SequenceDiagramSidebar.SaveCopyEditableFreeform"))
                 .disabled(viewModel.isEmpty)
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
                 Button(action: onExportImage) {
-                    Label("Export Image", systemImage: "photo")
+                    Label(.app("View.SequenceDiagramSidebar.ExportImage"), systemImage: "photo")
                 }
-                .help("Export the diagram as an image")
+                .help(.app("View.SequenceDiagramSidebar.ExportDiagramImage"))
                 .disabled(viewModel.isEmpty)
                 .accessibilityIdentifier("diagram.exportImageButton")
             }

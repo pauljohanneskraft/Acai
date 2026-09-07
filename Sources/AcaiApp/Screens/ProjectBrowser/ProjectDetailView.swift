@@ -36,7 +36,7 @@ struct ProjectDetailView: View {
                             Button {
                                 addingCodebase = true
                             } label: {
-                                Label("Add Codebase", systemImage: "folder.badge.plus")
+                                Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
                             addDiagramButton
@@ -45,7 +45,7 @@ struct ProjectDetailView: View {
                         } label: {
                             Image(systemName: "plus")
                         }
-                        .accessibilityLabel("Add")
+                        .accessibilityLabel(.app("View.ProjectDetailView.Add"))
                         .accessibilityIdentifier("projectDetail.addMenuButton")
                     }
                 } else {
@@ -55,7 +55,7 @@ struct ProjectDetailView: View {
                         Button {
                             addingCodebase = true
                         } label: {
-                            Label("Add Codebase", systemImage: "folder.badge.plus")
+                            Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
                         addDiagramButton
@@ -69,30 +69,30 @@ struct ProjectDetailView: View {
                     .environmentObject(model)
             }
             .confirmationDialog(
-                "Delete \"\(codebasePendingDeletion?.name ?? "")\"?",
+                .app("View.ProjectDetailView.ConfirmDeleteCodebase \(codebasePendingDeletion?.name ?? "")"),
                 isPresented: Binding(
                     get: { codebasePendingDeletion != nil },
                     set: { if !$0 { codebasePendingDeletion = nil } }
                 ),
                 presenting: codebasePendingDeletion
             ) { codebase in
-                Button("Delete Codebase", role: .destructive) {
+                Button(.app("View.ProjectDetailView.DeleteCodebase"), role: .destructive) {
                     model.editing.removeCodebase(codebase.id)
                 }
                 .accessibilityIdentifier("projectDetail.codebase.delete.confirmButton")
             } message: { _ in
-                Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+                Text(.app("View.ProjectDetailView.DeletesDiagramsCachedAnalysis"))
             }
             .confirmationDialog(
-                "Delete \"\(project.title)\"?",
+                .app("View.ProjectDetailView.ConfirmDeleteProject \(project.title)"),
                 isPresented: $showDeleteProjectConfirmation
             ) {
-                Button("Delete Project", role: .destructive) {
+                Button(.app("View.ProjectDetailView.DeleteProject"), role: .destructive) {
                     model.editing.removeProject(project.id)
                 }
                 .accessibilityIdentifier("projectDetail.project.delete.confirmButton")
             } message: {
-                Text("This deletes all of its codebases and diagrams. This cannot be undone.")
+                Text(.app("View.ProjectDetailView.DeletesAllCodebasesDiagrams"))
             }
         } else {
             emptyProjectPlaceholder
@@ -134,9 +134,9 @@ struct ProjectDetailView: View {
         if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
             emptyProjectContentState
         } else {
-            sectionHeader(title: "Codebases")
+            sectionHeader(title: .app("View.ProjectDetailView.Codebases"))
             if sortedCodebases.isEmpty {
-                Text("No codebases yet. Add one above.")
+                Text(.app("View.ProjectDetailView.NoCodebasesYetAdd"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
@@ -152,9 +152,9 @@ struct ProjectDetailView: View {
 
             Divider()
 
-            sectionHeader(title: "Diagrams")
+            sectionHeader(title: .app("View.ProjectDetailView.Diagrams"))
             if freeformDiagrams.isEmpty {
-                Text("No freeform diagrams yet. Create one above.")
+                Text(.app("View.ProjectDetailView.NoFreeformDiagramsYet"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
@@ -190,9 +190,9 @@ struct ProjectDetailView: View {
         let sortedCodebases = project.codebases.sorted(by: {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         })
-        Section("Codebases") {
+        Section(.app("View.ProjectDetailView.Codebases")) {
             if sortedCodebases.isEmpty {
-                Text("No codebases yet. Tap **+** to add one.")
+                Text(.app("View.ProjectDetailView.NoCodebasesYetTap"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -209,14 +209,14 @@ struct ProjectDetailView: View {
                         Button(role: .destructive) {
                             codebasePendingDeletion = codebase
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(.app("View.ProjectDetailView.Delete"), systemImage: "trash")
                         }
                     }
                     .swipeActions(edge: .leading) {
                         Button {
                             Task { await model.editing.reindex(codebaseID: codebase.id) }
                         } label: {
-                            Label("Reindex", systemImage: "arrow.clockwise")
+                            Label(.app("View.ProjectDetailView.Reindex"), systemImage: "arrow.clockwise")
                         }
                         .tint(.blue)
                     }
@@ -229,9 +229,9 @@ struct ProjectDetailView: View {
     private func compactDiagramsSection() -> some View {
         let freeformDiagrams = model.freeformDiagramsForProject(projectID)
             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
-        Section("Diagrams") {
+        Section(.app("View.ProjectDetailView.Diagrams")) {
             if freeformDiagrams.isEmpty {
-                Text("No freeform diagrams yet. Tap **+** to add one.")
+                Text(.app("View.ProjectDetailView.NoFreeformDiagramsYetTouch"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -247,7 +247,7 @@ struct ProjectDetailView: View {
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(.app("View.ProjectDetailView.Delete"), systemImage: "trash")
                         }
                     }
                 }
@@ -260,7 +260,7 @@ struct ProjectDetailView: View {
             Image(systemName: "tray.full")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            Text("Select a project or diagram")
+            Text(.app("View.ProjectDetailView.SelectProjectDiagram"))
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -269,9 +269,9 @@ struct ProjectDetailView: View {
 
     // MARK: - Section Header
 
-    private func sectionHeader(title: String) -> some View {
+    private func sectionHeader(title: LocalizedStringResource) -> some View {
         HStack {
-            Text(title).font(.headline)
+            Text(localized: title).font(.headline)
             Spacer()
         }
         .padding(.horizontal)
@@ -299,7 +299,7 @@ struct ProjectDetailView: View {
                 Button {
                     addingCodebase = true
                 } label: {
-                    Label("Add codebase", systemImage: "plus")
+                    Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "plus")
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
@@ -312,29 +312,37 @@ struct ProjectDetailView: View {
         .padding()
     }
 
-    private func projectTitleFields(index: Int) -> some View {
+}
+
+// MARK: - Project Title Fields
+
+private extension ProjectDetailView {
+    func projectTitleFields(index: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            TextField("Project Name", text: Binding(
+            TextField(text: Binding(
                 get: { model.store.projects[safe: index]?.title ?? "" },
                 set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
-            ))
+            )) {
+                Text(.app("View.ProjectDetailView.ProjectName"))
+            }
             .font(.title2.bold())
             .textFieldStyle(.plain)
 
-            TextField("Project Description", text: Binding(
+            TextField(text: Binding(
                 get: { model.store.projects[safe: index]?.subtitle ?? "" },
                 set: {
                     model.store.projects[index].subtitle = $0
                     model.store.save()
                     model.objectWillChange.send()
                 }
-            ))
+            )) {
+                Text(.app("View.ProjectDetailView.ProjectDescription"))
+            }
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .textFieldStyle(.plain)
         }
     }
-
 }
 
 // MARK: - Codebase Row
@@ -365,9 +373,9 @@ extension ProjectDetailView {
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(codebase.name)
+                Text(verbatim: codebase.name)
                     .fontWeight(.medium)
-                Text(URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
+                Text(verbatim: URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -387,22 +395,22 @@ extension ProjectDetailView {
         Button {
             Task { await model.editing.reindex(codebaseID: codebase.id) }
         } label: {
-            Label("Reindex", systemImage: "arrow.clockwise")
+            Label(.app("View.ProjectDetailView.ReindexMenu"), systemImage: "arrow.clockwise")
         }
         Button { model.exportDOT(for: codebase.id) } label: {
-            Label("Export DOT", systemImage: "square.and.arrow.up")
+            Label(.app("View.ProjectDetailView.ExportDOT"), systemImage: "square.and.arrow.up")
         }
         Button { model.exportMermaid(for: codebase.id) } label: {
-            Label("Export Mermaid", systemImage: "square.and.arrow.up")
+            Label(.app("View.ProjectDetailView.ExportMermaid"), systemImage: "square.and.arrow.up")
         }
         Button { Task { await model.exportAtlas(for: codebase.id) } } label: {
-            Label("Export Codebase Atlas", systemImage: "doc.richtext")
+            Label(.app("View.ProjectDetailView.ExportCodebaseAtlas"), systemImage: "doc.richtext")
         }
         Divider()
         Button(role: .destructive) {
             codebasePendingDeletion = codebase
         } label: {
-            Label("Delete", systemImage: "trash")
+            Label(.app("View.ProjectDetailView.DeleteMenu"), systemImage: "trash")
         }
     }
 }
@@ -417,9 +425,9 @@ extension ProjectDetailView {
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(diagram.name)
+                Text(verbatim: diagram.name)
                     .fontWeight(.medium)
-                Text("Freeform Diagram")
+                Text(.app("View.ProjectDetailView.FreeformDiagram"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -447,7 +455,7 @@ extension ProjectDetailView {
             Button(role: .destructive) {
                 model.freeforms.remove(diagram.id)
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label(.app("View.ProjectDetailView.DeleteMenu"), systemImage: "trash")
             }
         }
     }

@@ -25,7 +25,8 @@ extension ProjectCodebaseEditor {
         let activityCenter = store.activityCenter
         do {
             let cloneResult = try await activityCenter.run(
-                title: "Cloning \(target.owner)/\(target.repo)…", kind: .gitClone, subject: .codebase(codebaseID)
+                title: .app("Activity.Cloning \(target.owner)/\(target.repo)"),
+                kind: .gitClone, subject: .codebase(codebaseID)
             ) { onProgress in
                 let repositoryTarget = GitHubRepositoryTarget(
                     credential: credential, owner: target.owner, repo: target.repo, ref: target.ref)
@@ -51,7 +52,7 @@ extension ProjectCodebaseEditor {
             persist()
             await reindex(codebaseID: codebaseID)
         } catch {
-            store.report("Clone failed: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.CloneFailed \(error.localizedDescription)"))
         }
     }
 
@@ -61,7 +62,7 @@ extension ProjectCodebaseEditor {
     func pull(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
-            store.report("Sign in to GitHub to pull \(source.owner)/\(source.repo).")
+            store.report(.app("Error.ProjectBrowserViewModel.SignInToPull \(source.owner)/\(source.repo)"))
             return
         }
         // Extracted into locals before the `@Sendable` closure below — see `addGitHubCodebase`'s
@@ -72,7 +73,8 @@ extension ProjectCodebaseEditor {
         let legacyCloneURL = store.githubCloneURL(for: codebaseID)
         do {
             let fetchResult = try await store.activityCenter.run(
-                title: "Fetching \(source.owner)/\(source.repo)…", kind: .gitFetch, subject: .codebase(codebaseID)
+                title: .app("Activity.Fetching \(source.owner)/\(source.repo)"),
+                kind: .gitFetch, subject: .codebase(codebaseID)
             ) { onProgress throws -> String in
                 let target = GitHubRepositoryTarget(
                     credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref)
@@ -96,7 +98,7 @@ extension ProjectCodebaseEditor {
             }
             await reindex(codebaseID: codebaseID)
         } catch {
-            store.report("Pull failed: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.PullFailed \(error.localizedDescription)"))
         }
     }
 
@@ -108,7 +110,7 @@ extension ProjectCodebaseEditor {
     func switchGitHubRef(codebaseID: UUID, ref: String, kind: GitHubRef.Kind) async {
         guard let codebase = codebase(for: codebaseID), let source = codebase.githubSource else { return }
         guard let account = GitHubTokenStore().load() else {
-            store.report("Sign in to GitHub to switch branches.")
+            store.report(.app("Error.ProjectBrowserViewModel.SignInToSwitchBranches"))
             return
         }
         // Extracted into locals before the `@Sendable` closure below — see `addGitHubCodebase`'s
@@ -119,7 +121,7 @@ extension ProjectCodebaseEditor {
         let legacyCloneURL = store.githubCloneURL(for: codebaseID)
         do {
             let switchResult = try await store.activityCenter.run(
-                title: "Switching \(source.owner)/\(source.repo) to \(ref)…",
+                title: .app("Activity.Switching \(source.owner)/\(source.repo) \(ref)"),
                 kind: .gitFetch, subject: .codebase(codebaseID)
             ) { onProgress throws -> String in
                 let target = GitHubRepositoryTarget(
@@ -143,7 +145,7 @@ extension ProjectCodebaseEditor {
             }
             await reindex(codebaseID: codebaseID)
         } catch {
-            store.report("Branch switch failed: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.BranchSwitchFailed \(error.localizedDescription)"))
         }
     }
 
@@ -177,7 +179,8 @@ extension ProjectCodebaseEditor {
             // The artifact is saved to disk (awaited) *inside* this closure, before `run` returns —
             // otherwise `isBusy`/the row's spinner would flip to "done" before the write lands.
             let reindexResult = try await store.activityCenter.run(
-                title: "Indexing \(codebase.name)…", kind: .reindex, subject: .codebase(codebaseID)
+                title: .app("Activity.Indexing \(codebase.name)"),
+                kind: .reindex, subject: .codebase(codebaseID)
             ) {
                 let detached = Task.detached(priority: .userInitiated) {
                     var refreshed: ScopedResourceAccess.Refreshed?
@@ -218,7 +221,9 @@ extension ProjectCodebaseEditor {
             // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
             // folder of the user's choosing — only a codebase they picked themselves.
             let relocatable = error is ScopedResourceAccess.Failure && codebase.githubSource == nil
-            store.report("Reindex failed: \(error.localizedDescription)", relocating: relocatable ? codebaseID : nil)
+            store.report(
+                .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
+                relocating: relocatable ? codebaseID : nil)
         }
     }
 }

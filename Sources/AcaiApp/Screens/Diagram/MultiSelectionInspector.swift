@@ -12,7 +12,7 @@ struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String
     }
 
     let items: [Item]
-    /// The section header for the given selection count — e.g. `Text("^[\(count) Method](inflect: true) Selected")`.
+    /// The section header for the given selection count, e.g. an inflected "3 Methods Selected".
     let title: (Int) -> Text
     let rowIcon: (Item) -> String?
     let rowLabel: (Item) -> String
@@ -66,13 +66,13 @@ struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String
                 Image(systemName: systemImage)
                     .foregroundStyle(.secondary)
             }
-            Text(rowLabel(item))
+            Text(verbatim: rowLabel(item))
                 .font(.system(.caption, design: .monospaced))
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer()
             if let detail = rowDetail?(item) {
-                Text(detail)
+                Text(verbatim: detail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

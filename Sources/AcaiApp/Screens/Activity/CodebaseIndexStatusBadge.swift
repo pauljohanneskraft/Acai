@@ -18,14 +18,14 @@ struct CodebaseIndexStatusBadge: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.caption)
-                    .accessibilityLabel("Indexed")
-                    .help("Indexed")
+                    .accessibilityLabel(.app("View.CodebaseIndexStatusBadge.Indexed"))
+                    .help(.app("View.CodebaseIndexStatusBadge.Indexed"))
             } else {
                 Image(systemName: "circle.dashed")
                     .foregroundStyle(.secondary)
                     .font(.caption)
-                    .accessibilityLabel("Not yet indexed")
-                    .help("Not yet indexed")
+                    .accessibilityLabel(.app("View.CodebaseIndexStatusBadge.NotYetIndexed"))
+                    .help(.app("View.CodebaseIndexStatusBadge.NotYetIndexed"))
             }
         }
     }

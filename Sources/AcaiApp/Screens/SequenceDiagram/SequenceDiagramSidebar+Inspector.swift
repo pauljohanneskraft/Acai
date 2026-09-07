@@ -23,7 +23,7 @@ extension SequenceDiagramSidebar {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)
-            Text("Select a lifeline or message to inspect")
+            Text(.app("View.SequenceDiagramSidebar.SelectLifelineMessageInspect"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -37,17 +37,21 @@ extension SequenceDiagramSidebar {
         return List {
             Section(name) {
                 if !sent.isEmpty {
-                    DisclosureGroup("Sends (\(sent.count))") {
+                    DisclosureGroup {
                         ForEach(Array(sent.enumerated()), id: \.offset) { _, message in
                             messageRow(message)
                         }
+                    } label: {
+                        Text(.app("View.SequenceDiagramSidebar.Sends \(sent.count)"))
                     }
                 }
                 if !received.isEmpty {
-                    DisclosureGroup("Receives (\(received.count))") {
+                    DisclosureGroup {
                         ForEach(Array(received.enumerated()), id: \.offset) { _, message in
                             messageRow(message)
                         }
+                    } label: {
+                        Text(.app("View.SequenceDiagramSidebar.Receives \(received.count)"))
                     }
                 }
             }
@@ -57,10 +61,10 @@ extension SequenceDiagramSidebar {
 
     func messageRow(_ message: SequenceDiagram.Message) -> some View {
         HStack {
-            Text(message.label ?? message.kind.rawValue)
+            Text(verbatim: message.label ?? message.kind.rawValue)
                 .font(.caption.monospaced())
             Spacer()
-            Text("\(viewModel.participantName(message.from) ?? message.from) → "
+            Text(verbatim: "\(viewModel.participantName(message.from) ?? message.from) → "
                  + "\(viewModel.participantName(message.to) ?? message.to)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -69,11 +73,30 @@ extension SequenceDiagramSidebar {
 
     func messageDetail(_ message: SequenceDiagram.Message) -> some View {
         List {
-            Section(message.label ?? "Message") {
-                LabeledContent("From", value: viewModel.participantName(message.from) ?? message.from)
-                LabeledContent("To", value: viewModel.participantName(message.to) ?? message.to)
-                LabeledContent("Kind", value: message.kind.rawValue)
-                LabeledContent("Order", value: "\(message.order)")
+            Section {
+                LabeledContent {
+                    Text(verbatim: viewModel.participantName(message.from) ?? message.from)
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.From"))
+                }
+                LabeledContent {
+                    Text(verbatim: viewModel.participantName(message.to) ?? message.to)
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.To"))
+                }
+                LabeledContent {
+                    Text(verbatim: message.kind.rawValue)
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.Kind"))
+                }
+                LabeledContent {
+                    Text(message.order, format: .number)
+                } label: {
+                    Text(.app("View.SequenceDiagramSidebar.Order"))
+                }
+            } header: {
+                message.label.map { Text(verbatim: $0) }
+                    ?? Text(.app("View.SequenceDiagramSidebar.Message"))
             }
         }
         .listStyle(.inset)
@@ -89,7 +112,7 @@ extension SequenceDiagramSidebar {
             .map { SelectableLifeline(id: $0, name: viewModel.participantName($0) ?? $0) }
         return MultiSelectionInspector(
             items: selected,
-            title: { Text("^[\($0) Lifeline](inflect: true) Selected") },
+            title: { Text(.app("View.SequenceDiagramSidebar.LifelineInflectTrueSelected \($0)")) },
             rowIcon: { _ in nil },
             rowLabel: \.name,
             rowDetail: nil,

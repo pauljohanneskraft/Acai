@@ -33,9 +33,9 @@ struct LicenseCatalog {
         var errorDescription: String? {
             switch self {
             case .resourceMissing:
-                return "Licenses.json wasn't found in the app bundle, so the licenses pane has nothing to show."
+                return String(localized: .app("Error.LicenseCatalog.ResourceMissing"))
             case .unsupportedSchemaVersion(let version):
-                return "Licenses.json declares schema version \(version), which this build doesn't know how to read."
+                return String(localized: .app("Error.LicenseCatalog.UnsupportedSchemaVersion \(version)"))
             }
         }
     }

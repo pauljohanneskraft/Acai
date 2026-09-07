@@ -27,8 +27,7 @@ extension ProjectStore {
         var errorDescription: String? {
             switch self {
             case .unsupportedFormatVersion(let version):
-                return "This export (format \(version)) is newer than this version of Acai " +
-                    "understands. Update the app and try again."
+                return String(localized: .app("Error.ProjectStore.UnsupportedFormatVersion \(version)"))
             }
         }
     }

@@ -41,8 +41,13 @@ extension XCUIApplication {
     /// (`Sources/AcaiApp/UITestSupport.swift`) for why never through `launchArguments`, and for the
     /// variable names, which the two can't share a constant for across the SwiftPM package /
     /// Xcode-project boundary.
+    /// `language` runs the app in that localization. It has to go through `launchArguments` — the
+    /// `AppleLanguages` default is what decides `Locale.current`, and nothing in the environment
+    /// reaches it — so it is passed as a `-key value` pair, which `assertLaunchArgumentsAreDefaults`
+    /// permits.
     func launchWithFixture(
         _ name: String,
+        language: String? = nil,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
         file: StaticString = #filePath, line: UInt = #line
     ) {
@@ -75,7 +80,10 @@ extension XCUIApplication {
 
         launchEnvironment["ACAI_UITEST_FIXTURE_BASE_DIR"] = destination.path
         launchEnvironment["ACAI_UITEST_COLOR_SCHEME"] = defaultUITestColorScheme
-        assertNoLaunchArguments(file: file, line: line)
+        if let language {
+            launchArguments += ["-AppleLanguages", "(\(language))", "-AppleLocale", language]
+        }
+        assertLaunchArgumentsAreDefaults(file: file, line: line)
         launch()
         #if os(macOS)
         // `launch()` doesn't guarantee frontmost on macOS — that's a separate driver-side request.
@@ -94,12 +102,14 @@ extension XCUIApplication {
 
     /// Guards the reason everything goes through `launchEnvironment` — see `UITestFixtureResolver`:
     /// a launch argument outside a `-key value` pair is read as a file to open, and an app launched
-    /// to open files comes up with a menu bar and no window at all.
-    private func assertNoLaunchArguments(file: StaticString, line: UInt) {
+    /// to open files comes up with a menu bar and no window at all. `UserDefaults` overrides, which
+    /// *are* `-key value` pairs, are the one thing that has to travel this way.
+    private func assertLaunchArgumentsAreDefaults(file: StaticString, line: UInt) {
+        let keys = stride(from: 0, to: launchArguments.count, by: 2).map { launchArguments[$0] }
         XCTAssertTrue(
-            launchArguments.isEmpty,
-            "UI-test configuration must go through launchEnvironment, not launchArguments "
-            + "(got \(launchArguments)) — see UITestFixtureResolver",
+            launchArguments.count.isMultiple(of: 2) && keys.allSatisfy { $0.hasPrefix("-") },
+            "UI-test configuration must go through launchEnvironment, or a `-key value` UserDefaults "
+            + "override (got \(launchArguments)) — see UITestFixtureResolver",
             file: file, line: line
         )
     }

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Purely a display+bookkeeping value; the actual work lives wherever `ActivityCenter.run` was
 /// called from.
@@ -30,7 +31,7 @@ struct ActivityOperation: Identifiable, Sendable {
     }
 
     var id = UUID()
-    var title: String
+    var title: LocalizedStringResource
     var kind: Kind
     var subject: Subject
     /// `nil` = indeterminate.

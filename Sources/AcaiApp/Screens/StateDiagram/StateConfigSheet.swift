@@ -44,24 +44,22 @@ struct StateConfigSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("Pick a variable. Its possible values (\"states\") are inferred from "
-                         + "assignments across the codebase; values that can't be enumerated "
-                         + "statically make the analysis fail with an explanation.")
+                    Text(.app("View.StateConfigSheet.PickVariablePossibleValues"))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
                 Section {
-                    LabeledContent("Scope") {
+                    LabeledContent {
                         VStack(alignment: .leading, spacing: 4) {
                             PickerFilterField(text: $scopeQuery)
-                            Picker("Scope", selection: $scope) {
-                                Text("Select…").tag(Scope?.none)
+                            Picker(.app("View.StateConfigSheet.Scope"), selection: $scope) {
+                                Text(.app("View.StateConfigSheet.Select")).tag(Scope?.none)
                                 if !artifact.globalVariables.isEmpty {
-                                    Text("Global Variables").tag(Scope?.some(.globals))
+                                    Text(.app("View.StateConfigSheet.GlobalVariables")).tag(Scope?.some(.globals))
                                 }
                                 ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
-                                    Text(name).tag(Scope?.some(.type(name)))
+                                    Text(verbatim: name).tag(Scope?.some(.type(name)))
                                 }
                             }
                             .labelsHidden()
@@ -72,38 +70,46 @@ struct StateConfigSheet: View {
                                 }
                             }
                         }
+                    } label: {
+                        Text(.app("View.StateConfigSheet.Scope"))
                     }
 
-                    LabeledContent("Variable") {
+                    LabeledContent {
                         VStack(alignment: .leading, spacing: 4) {
                             PickerFilterField(text: $variableQuery)
-                            Picker("Variable", selection: $variableName) {
-                                Text("Select…").tag("")
-                                ForEach(variableNames.filtered(by: variableQuery), id: \.self) { Text($0).tag($0) }
+                            Picker(.app("View.StateConfigSheet.Variable"), selection: $variableName) {
+                                Text(.app("View.StateConfigSheet.Select")).tag("")
+                                ForEach(variableNames.filtered(by: variableQuery), id: \.self) {
+                                Text(verbatim: $0).tag($0)
+                            }
                             }
                             .labelsHidden()
                             .disabled(scope == nil)
                             .accessibilityIdentifier("stateConfig.variablePicker")
                         }
+                    } label: {
+                        Text(.app("View.StateConfigSheet.Variable"))
                     }
 
-                    LabeledContent("Max states") {
+                    LabeledContent {
                         Stepper(value: $maxStates, in: 5...100, step: 5) {
-                            Text("\(maxStates)")
+                            Text(maxStates, format: .number)
                         }
+                    } label: {
+                        Text(.app("View.StateConfigSheet.MaxStates"))
                     }
                 }
             }
             #if os(macOS)
             .frame(maxWidth: 460)
             #endif
-            .navigationTitle("New State Diagram")
+            .navigationTitle(.app("View.StateConfigSheet.NewStateDiagram"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", role: .cancel, action: onCancel)
+                    Button(.app("View.StateConfigSheet.Cancel"), role: .cancel, action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create", action: create)
+                    Button(.app("View.StateConfigSheet.Create"), action: create)
                         .keyboardShortcut(.defaultAction)
                         .disabled(scope == nil || variableName.isEmpty)
                         .accessibilityIdentifier("stateConfig.createButton")

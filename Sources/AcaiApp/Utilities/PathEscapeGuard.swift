@@ -13,9 +13,9 @@ struct PathEscapeGuard {
         var errorDescription: String? {
             switch self {
             case .absolutePath(let path):
-                "\"\(path)\" is an absolute path; only paths relative to the codebase root are allowed."
+                String(localized: .app("Error.PathEscapeGuard.AbsolutePath \(path)"))
             case .escapesRoot(let path):
-                "\"\(path)\" resolves outside the codebase's directory and was rejected."
+                String(localized: .app("Error.PathEscapeGuard.EscapesRoot \(path)"))
             }
         }
     }

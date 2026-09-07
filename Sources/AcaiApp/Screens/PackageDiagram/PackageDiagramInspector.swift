@@ -13,6 +13,8 @@ struct PackageDiagramInspector: View {
     /// list so tapping a dependency jumps straight to it instead of making the user scroll to find it.
     let onSelect: (String) -> Void
 
+    private static let ratio = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(2))
+
     var body: some View {
         content
     }
@@ -42,7 +44,7 @@ struct PackageDiagramInspector: View {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)
-            Text("Select a module to inspect")
+            Text(.app("View.PackageDiagramInspector.SelectModuleInspect"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -53,7 +55,7 @@ struct PackageDiagramInspector: View {
         let selected = diagram.nodes.filter { selectedNodeIDs.contains($0.id) }.sorted { $0.name < $1.name }
         return MultiSelectionInspector(
             items: selected,
-            title: { Text("^[\($0) Module](inflect: true) Selected") },
+            title: { Text(.app("View.PackageDiagramInspector.ModuleInflectTrueSelected \($0)")) },
             rowIcon: { _ in nil },
             rowLabel: \.name,
             rowDetail: { "\($0.typeCount) types" },
@@ -69,18 +71,20 @@ struct PackageDiagramInspector: View {
                     .fill(Color(hex: node.zoneColorHex))
                     .frame(width: 14, height: 14)
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color(white: 0.7), lineWidth: 0.5))
-                Text(node.name)
+                Text(verbatim: node.name)
                     .font(.system(.subheadline, design: .monospaced).weight(.semibold))
                 Spacer()
-                Text("\(node.typeCount) types")
+                Text(.app("View.PackageDiagramInspector.Types \(node.typeCount)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            MetricRow("Instability (I)", String(format: "%.2f", node.instability))
-            MetricRow("Abstractness (A)", String(format: "%.2f", node.abstractness))
-            MetricRow("Afferent (Ca)", "\(node.afferentCoupling)")
-            MetricRow("Efferent (Ce)", "\(node.efferentCoupling)")
-            MetricRow("Distance from main seq.", String(format: "%.2f", node.distanceFromMainSequence))
+            MetricRow(.app("View.PackageDiagramInspector.InstabilityI"), node.instability.formatted(Self.ratio))
+            MetricRow(.app("View.PackageDiagramInspector.AbstractnessA"), node.abstractness.formatted(Self.ratio))
+            MetricRow(.app("View.PackageDiagramInspector.AfferentCa"), node.afferentCoupling.formatted())
+            MetricRow(.app("View.PackageDiagramInspector.EfferentCe"), node.efferentCoupling.formatted())
+            MetricRow(
+                .app("View.PackageDiagramInspector.DistanceFromMainSeq"),
+                node.distanceFromMainSequence.formatted(Self.ratio))
         }
         .inspectorCard(highlighted: highlighted)
     }
@@ -97,17 +101,21 @@ struct PackageDiagramInspector: View {
 
         return VStack(alignment: .leading, spacing: 8) {
             if !dependsOn.isEmpty {
-                relatedList(title: "Depends On (\(dependsOn.count))", nodes: dependsOn)
+                relatedList(
+                    title: .app("View.PackageDiagramInspector.DependsOn \(dependsOn.count)"),
+                    nodes: dependsOn)
             }
             if !dependedOnBy.isEmpty {
-                relatedList(title: "Depended On By (\(dependedOnBy.count))", nodes: dependedOnBy)
+                relatedList(
+                    title: .app("View.PackageDiagramInspector.DependedOnBy \(dependedOnBy.count)"),
+                    nodes: dependedOnBy)
             }
         }
     }
 
-    private func relatedList(title: String, nodes: [PackageDiagram.Node]) -> some View {
+    private func relatedList(title: LocalizedStringResource, nodes: [PackageDiagram.Node]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            Text(localized: title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             ForEach(nodes.sorted { $0.name < $1.name }, id: \.id) { related in
@@ -115,7 +123,7 @@ struct PackageDiagramInspector: View {
                     onSelect(related.id)
                 } label: {
                     HStack {
-                        Text(related.name)
+                        Text(verbatim: related.name)
                             .font(.system(.caption, design: .monospaced))
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -130,10 +138,10 @@ struct PackageDiagramInspector: View {
 
     private var legend: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Fill = distance from the main sequence")
+            Text(.app("View.PackageDiagramInspector.FillDistanceMainSequence"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-            Text("green = balanced · red = zone of pain / uselessness")
+            Text(.app("View.PackageDiagramInspector.GreenBalancedRedZone"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

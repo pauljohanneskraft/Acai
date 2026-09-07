@@ -46,27 +46,31 @@ enum MetricFamily {
 }
 
 struct MetricStatCard: View {
-    let title: String
+    let title: LocalizedStringResource
     let icon: String
     let color: Color
-    let primary: String
-    var secondary: String?
-    var exemplar: String?
+    let primary: LocalizedStringResource
+    var secondary: LocalizedStringResource?
+    var exemplar: LocalizedStringResource?
     var severity: MetricSeverity?
     var uniformHeight: CGFloat = 0
     /// Shown as a hover tooltip; reuses the same copy already shown in the tap-through drill-down.
-    var blurb: String?
+    var blurb: LocalizedStringResource?
     var onTap: (() -> Void)?
 
     var body: some View {
         if let onTap {
             Button(action: onTap) { cardBody }
                 .buttonStyle(.plain)
-                .help(blurb ?? "")
+                .help(helpText)
         } else {
             cardBody
-                .help(blurb ?? "")
+                .help(helpText)
         }
+    }
+
+    private var helpText: Text {
+        blurb.map(Text.init) ?? Text(verbatim: "")
     }
 
     private var cardBody: some View {
@@ -75,23 +79,23 @@ struct MetricStatCard: View {
                 Image(systemName: icon)
                     .font(.title3.bold())
                     .foregroundStyle(color)
-                Text(title)
+                Text(localized: title)
                     .font(.subheadline.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(primary)
+                Text(localized: primary)
                     .font(.title2.bold())
                     .foregroundStyle(.primary)
                 if let secondary {
-                    Text(secondary)
+                    Text(localized: secondary)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
             }
             if let exemplar {
-                Text(exemplar)
+                Text(localized: exemplar)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)

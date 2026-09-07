@@ -21,7 +21,7 @@ extension ProjectBrowserView {
         Button(role: .destructive) {
             projectPendingDeletion = project
         } label: {
-            Label("Delete Project", systemImage: "trash")
+            Label(.app("View.ProjectBrowserView.DeleteProjectMenu"), systemImage: "trash")
         }
     }
 
@@ -92,13 +92,13 @@ extension ProjectBrowserView {
                     Button {
                         Task { await model.editing.reindex(codebaseID: codebase.id) }
                     } label: {
-                        Label("Reindex", systemImage: "arrow.clockwise")
+                        Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
                     }
                     Divider()
                     Button(role: .destructive) {
                         codebasePendingDeletion = codebase
                     } label: {
-                        Label("Delete", systemImage: "trash")
+                        Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                     }
                 }
                 .swipeActions(edge: .leading) {
@@ -106,7 +106,7 @@ extension ProjectBrowserView {
                         Button {
                             Task { await model.editing.reindex(codebaseID: codebase.id) }
                         } label: {
-                            Label("Reindex", systemImage: "arrow.clockwise")
+                            Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
                         }
                         .tint(.blue)
                     }
@@ -116,7 +116,7 @@ extension ProjectBrowserView {
                         Button(role: .destructive) {
                             codebasePendingDeletion = codebase
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                         }
                     }
                 }
@@ -129,10 +129,13 @@ extension ProjectBrowserView {
             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
         ForEach(generatedDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
-                TextField("Name", text: $renamingText, onCommit: {
+                TextField(text: $renamingText) {
+                    Text(.app("View.ProjectBrowserView.Name"))
+                }
+                .onSubmit {
                     model.diagrams.rename(diagram.id, name: renamingText)
                     renamingDiagramID = nil
-                })
+                }
                 .textFieldStyle(.roundedBorder)
                 .font(.callout)
             } else {
@@ -144,12 +147,12 @@ extension ProjectBrowserView {
                             renamingText = diagram.name
                             renamingDiagramID = diagram.id
                         } label: {
-                            Label("Rename", systemImage: "pencil")
+                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
                         }
                         Button(role: .destructive) {
                             model.diagrams.remove(diagram.id)
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                         }
                     }
                     .swipeActions(edge: .trailing) {
@@ -157,7 +160,7 @@ extension ProjectBrowserView {
                             Button(role: .destructive) {
                                 model.diagrams.remove(diagram.id)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                             }
                         }
                     }
@@ -171,10 +174,13 @@ extension ProjectBrowserView {
             .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
         ForEach(freeformDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
-                TextField("Name", text: $renamingText, onCommit: {
+                TextField(text: $renamingText) {
+                    Text(.app("View.ProjectBrowserView.Name"))
+                }
+                .onSubmit {
                     model.freeforms.rename(diagram.id, name: renamingText)
                     renamingDiagramID = nil
-                })
+                }
                 .textFieldStyle(.roundedBorder)
                 .font(.callout)
             } else {
@@ -186,12 +192,12 @@ extension ProjectBrowserView {
                             renamingText = diagram.name
                             renamingDiagramID = diagram.id
                         } label: {
-                            Label("Rename", systemImage: "pencil")
+                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
                         }
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                         }
                     }
                     .swipeActions(edge: .trailing) {
@@ -199,7 +205,7 @@ extension ProjectBrowserView {
                             Button(role: .destructive) {
                                 model.freeforms.remove(diagram.id)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                             }
                         }
                     }

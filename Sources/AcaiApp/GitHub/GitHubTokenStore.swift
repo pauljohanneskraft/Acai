@@ -37,7 +37,7 @@ struct GitHubTokenStore {
         var errorDescription: String? {
             switch self {
             case .keychain(let status):
-                "Keychain error \(status)."
+                String(localized: .app("Error.GitHubTokenStore.Keychain \(status)"))
             }
         }
     }

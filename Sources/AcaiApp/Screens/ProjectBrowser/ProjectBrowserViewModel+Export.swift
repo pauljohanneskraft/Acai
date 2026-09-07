@@ -49,7 +49,7 @@ extension ProjectBrowserViewModel {
             let data = try exporter.exportPNGData(scale: 2)
             pendingExport = PendingExport(filename: "\(name).png", contentType: .png, data: data)
         } catch {
-            store.report("Image export failed: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.ImageExportFailed \(error.localizedDescription)"))
         }
     }
 
@@ -71,7 +71,7 @@ extension ProjectBrowserViewModel {
                     .generate(from: hidingGeneratedTypes(artifact))
             }
         } catch {
-            store.report("Could not analyze project for DOT export: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.DOTAnalysisFailed \(error.localizedDescription)"))
             return "digraph Acai { label=\"No analysis available\" }"
         }
     }
@@ -111,7 +111,8 @@ extension ProjectBrowserViewModel {
                     .generate(from: hidingGeneratedTypes(artifact))
             }
         } catch {
-            store.report("Could not analyze project for Mermaid export: \(error.localizedDescription)")
+            store.report(
+                .app("Error.ProjectBrowserViewModel.MermaidAnalysisFailed \(error.localizedDescription)"))
             return "classDiagram\n"
         }
     }
@@ -129,12 +130,12 @@ extension ProjectBrowserViewModel {
     func exportAtlas(for codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
         guard let artifact = artifact(for: codebaseID) else {
-            store.report("Could not export Atlas: \"\(codebase.name)\" hasn't been indexed yet.")
+            store.report(.app("Error.ProjectBrowserViewModel.AtlasNotIndexed \(codebase.name)"))
             return
         }
         await ensureAnalysisLoaded(codebaseID: codebaseID)
         guard let analysis = analysis(for: codebaseID) else {
-            store.report("Could not export Atlas: analysis for \"\(codebase.name)\" isn't ready yet.")
+            store.report(.app("Error.ProjectBrowserViewModel.AtlasAnalysisNotReady \(codebase.name)"))
             return
         }
         guard let projectID = projectID(for: codebaseID),
@@ -149,7 +150,8 @@ extension ProjectBrowserViewModel {
 
         do {
             let data = try await store.activityCenter.run(
-                title: "Exporting \(codebase.name) atlas…", kind: .other(systemImage: "doc.richtext"),
+                title: .app("Activity.ExportingAtlas \(codebase.name)"),
+                kind: .other(systemImage: "doc.richtext"),
                 subject: .codebase(codebaseID)
             ) {
                 try await builder.build()
@@ -158,7 +160,7 @@ extension ProjectBrowserViewModel {
             guard let data else { return }
             pendingExport = PendingExport(filename: "\(codebase.name).pdf", contentType: .pdf, data: data)
         } catch {
-            store.report("Atlas export failed: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.AtlasExportFailed \(error.localizedDescription)"))
         }
     }
 

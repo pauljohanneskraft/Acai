@@ -26,38 +26,38 @@ struct CallGraphConfigSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("New Call Graph")
+            Text(.app("View.CallGraphConfigSheet.NewCallGraph"))
                 .font(.title2.bold())
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Pick a scope. Every method (and free function) in scope becomes a caller; "
-                     + "each statically-resolvable call is an edge. A narrower scope keeps large "
-                     + "codebases legible — calls out of scope still show their target as a leaf.")
+                Text(.app("View.CallGraphConfigSheet.PickScopeEveryMethod"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                LabeledContent("Scope") {
+                LabeledContent {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker("Scope", selection: $scope) {
-                            Text("Whole Codebase").tag(CallGraphScope.wholeCodebase)
+                        Picker(.app("View.CallGraphConfigSheet.Scope"), selection: $scope) {
+                            Text(.app("View.CallGraphConfigSheet.WholeCodebase")).tag(CallGraphScope.wholeCodebase)
                             let modules = moduleNames.filtered(by: scopeQuery)
                             if !modules.isEmpty {
-                                Section("Modules") {
+                                Section(.app("View.CallGraphConfigSheet.Modules")) {
                                     ForEach(modules, id: \.self) { name in
-                                        Text(name).tag(CallGraphScope.module(name))
+                                        Text(verbatim: name).tag(CallGraphScope.module(name))
                                     }
                                 }
                             }
-                            Section("Types") {
+                            Section(.app("View.CallGraphConfigSheet.Types")) {
                                 ForEach(typeNames.filtered(by: scopeQuery), id: \.self) { name in
-                                    Text(name).tag(CallGraphScope.type(name))
+                                    Text(verbatim: name).tag(CallGraphScope.type(name))
                                 }
                             }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("callGraphConfig.scopePicker")
                     }
+                } label: {
+                    Text(.app("View.CallGraphConfigSheet.Scope"))
                 }
             }
 
@@ -65,9 +65,9 @@ struct CallGraphConfigSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel, action: onCancel)
+                Button(.app("View.CallGraphConfigSheet.Cancel"), role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("Create") { onCreate(scope) }
+                Button(.app("View.CallGraphConfigSheet.Create")) { onCreate(scope) }
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("callGraphConfig.createButton")
             }

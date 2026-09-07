@@ -12,8 +12,8 @@ struct CodebaseTypesSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Types", defaultExpanded: false) {
-            SectionCountBadge(text: "\(artifact.types.count)")
+        CollapsibleSection(title: .app("View.CodebaseTypesSection.Types"), defaultExpanded: false) {
+            SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.types.count)"))
         } content: {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
@@ -33,10 +33,10 @@ struct CodebaseTypesSection: View {
             HStack(spacing: 8) {
                 typeKindBadge(type.kind)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(type.name)
+                    Text(verbatim: type.name)
                         .fontWeight(.medium)
                     if !type.inheritedTypes.isEmpty {
-                        Text(type.inheritedTypes.map { displayName(for: $0.name) }.joined(separator: ", "))
+                        Text(verbatim: type.inheritedTypes.map { displayName(for: $0.name) }.joined(separator: ", "))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -44,11 +44,11 @@ struct CodebaseTypesSection: View {
                 }
                 Spacer()
                 if !type.members.isEmpty {
-                    Text("\(type.members.count) members")
+                    Text(.app("View.CodebaseTypesSection.Members \(type.members.count)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text(type.accessLevel.rawValue)
+                Text(verbatim: type.accessLevel.rawValue)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 4)
@@ -77,7 +77,7 @@ struct CodebaseTypesSection: View {
 
     private func typeKindBadge(_ kind: TypeKind) -> some View {
         let info = Self.badgeInfo[kind] ?? ("?", .gray)
-        return Text(info.letter)
+        return Text(verbatim: info.letter)
             .font(.caption.bold())
             .foregroundStyle(.white)
             .frame(width: 22, height: 22)

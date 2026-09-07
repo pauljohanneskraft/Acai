@@ -12,8 +12,8 @@ struct CodebaseRelationshipsSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Relationships", defaultExpanded: false) {
-            SectionCountBadge(text: "\(artifact.relationships.count)")
+        CollapsibleSection(title: .app("View.CodebaseRelationshipsSection.Relationships"), defaultExpanded: false) {
+            SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.relationships.count)"))
         } content: {
             let sortedRelationships = artifact.relationships
                 // Key on kind and labels too — distinct relationships between the same pair
@@ -36,15 +36,15 @@ struct CodebaseRelationshipsSection: View {
     private func relationshipRow(rel: Relationship) -> some View {
         HStack(spacing: 8) {
             relationshipKindBadge(rel.kind)
-            Text(displayName(for: rel.source))
+            Text(verbatim: displayName(for: rel.source))
                 .fontWeight(.medium)
             Image(systemName: relationshipArrow(rel.kind))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(displayName(for: rel.target))
+            Text(verbatim: displayName(for: rel.target))
                 .fontWeight(.medium)
             Spacer()
-            Text(rel.kind.rawValue)
+            Text(verbatim: rel.kind.rawValue)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

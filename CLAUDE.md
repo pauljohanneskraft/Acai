@@ -137,11 +137,12 @@ animation curves, not a bespoke spring per surface. Every custom colour has an e
 dark-appearance value. Haptics for a small, consistent set of events. One loading-placeholder style
 app-wide.
 
-**Localization readiness.** No hardcoded user-facing strings — every one goes into a string catalog
-as it is written. No manual pluralization, and no hand-built date, number or byte-size formatting.
-Diagram *content* — type names, signatures, paths, quoted identifiers — is never translated; only
-the app's own chrome is. Layouts tolerate strings longer than the English source, and use
-leading/trailing rather than left/right throughout.
+**Localization.** The app ships in English, German and French. No hardcoded user-facing strings — every
+one goes into `Sources/AcaiApp/Resources/Localizable.xcstrings` as it is written, in all three
+languages, and reaches the interface as `.app("Identifier")`, never as a bare literal. No manual
+pluralization, and no hand-built date, number or byte-size formatting. Layouts tolerate strings longer
+than the English source, and use leading/trailing rather than left/right throughout. The rules are in
+[Writing a user-facing string](#Writing-a-user-facing-string).
 
 **Network.** Debounce anything that triggers a request from typing. Handle rate limiting explicitly,
 stating when it resets. Every call has a timeout and a bounded, backoff-based retry policy, and
@@ -158,6 +159,52 @@ inspector layouts at narrow multitasking widths, and verify that any shortcut de
 also fires with an external keyboard. macOS: every toolbar action, context-menu action and "open
 elsewhere" action has a menu-bar equivalent; settings live in the `Settings` scene; every icon-only
 button has a tooltip.
+
+## Writing a user-facing string
+
+Every string the interface shows is an identifier resolved against `AcaiApp`'s String Catalog:
+
+```swift
+Text(.app("View.ClassDiagramSidebar.ShowProperties"))
+Button(.app("View.ProjectDetailView.Delete"), role: .destructive) { … }
+.help(.app("View.CallGraphSidebar.ExportDiagramImage"))
+```
+
+`.app(_:)` (`Sources/AcaiApp/Localization/LocalizedStringResource+App.swift`) binds `Bundle.module`,
+which a bare `LocalizedStringKey` would not: `AcaiApp` is a package library, so an unbound key looks
+in the *app* bundle and silently renders the identifier.
+
+- **Identifiers are `View.<TypeName>.<ShortTitle>`** in PascalCase — `View.` only for a `View`,
+  `ViewModifier` or `Scene`; a model or error type uses `<TypeName>.<Case>` (`DiagramType.CallGraph`,
+  `Finding.Severity.Critical`). They are stable: rewording the English never changes the identifier,
+  and the same English word in two places gets two identifiers so it can be translated two ways.
+- **The English lives in the catalog, not at the call site.** `Localizable.xcstrings` is the single
+  source of truth for `en`, `de` and `fr`, and every identifier carries all three — an identifier
+  with a missing language reaches users as raw text, which is what `LocalizationCatalogTests` fails
+  on.
+- **Interpolate after the identifier**, in argument order: `.app("View.Foo.Found \(count)")` looks up
+  `View.Foo.Found %lld`, whose value places the `%lld` wherever that language needs it.
+- **Plurals are catalog `variations`**, never `count == 1 ? … : …` and never `"item(s)"`. German is
+  `one`/`other`; French puts 0 *and* 1 in `one`. A string carrying two counts needs `substitutions`,
+  one per count, so each agrees independently.
+- **One term per concept, per language.** The same English string gets the same translation
+  everywhere, and a family of related names is translated as a family — all the `DiagramType` names
+  are German, so `Call Graph` is `Aufrufgraph`, not left English beside `Klassendiagramm`. Keeping
+  an English word is fine when it is what developers in that language actually say (`Codebase`,
+  `Repository`, `Hotspots`), as long as every sibling makes the same choice.
+  `LocalizationCatalogTests` enforces both rules; a deliberate loanword diagram name is declared in
+  its `loanwordDiagramNames` list.
+- **Content is not chrome.** Type names, member signatures, file paths, coordinates, sizes, metric
+  readouts and anything else the parser produced are never translated: write `Text(verbatim:)`, or a
+  `format:` initializer for a number. So are strings that leave the app — persisted diagram names,
+  the exported codebase atlas, CLI/MCP output — which is why `DiagramType` and `Finding` keep an
+  English `displayName`/`label` alongside their localized `title`.
+- **`AcaiCore`, `AcaiGit`, `AcaiDiagram` are not localized** — they are shared with the CLI and MCP
+  server. An error thrown from them is presented in a localized frame with its own text shown
+  untranslated as detail.
+- Only Swift Build (Xcode) compiles `.xcstrings`, so a plain `swift build`/`swift test` leaves
+  identifiers unresolved. Don't put a chrome view in a `Tests/AcaiAppTests` render snapshot; screens
+  are covered by the journey tests, which run the real, Xcode-built app.
 
 ## Testing
 

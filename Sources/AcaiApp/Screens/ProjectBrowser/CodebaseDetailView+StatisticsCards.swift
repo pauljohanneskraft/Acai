@@ -6,7 +6,7 @@ extension CodebaseDetailView {
     // MARK: - Statistics
 
     func statisticsSection(metrics: CodeMetrics) -> some View {
-        CollapsibleSection(title: "Statistics") {
+        CollapsibleSection(title: .app("View.CodebaseDetailView.Statistics")) {
             LazyVGrid(columns: cardColumns(count: 4), spacing: 12) {
                 moduleMetricCards(metrics: metrics)
                 classicMetricCards(metrics: metrics)
@@ -23,122 +23,140 @@ extension CodebaseDetailView {
     @ViewBuilder
     private func moduleMetricCards(metrics: CodeMetrics) -> some View {
         moduleMetricCard(
-            MetricVisual(title: "Instability", icon: "tornado", family: .coupling, blurb: Self.instabilityBlurb),
-            descriptor: "Most unstable", modules: metrics.modules, value: { $0.instability }, format: percent)
+            MetricVisual(title: .app("View.CodebaseDetailView.Instability"), icon: "tornado",
+                         family: .coupling, blurb: Self.instabilityBlurb),
+            descriptor: .app("View.CodebaseDetailView.MostUnstable"), modules: metrics.modules,
+            value: { $0.instability }, format: percent)
         moduleMetricCard(
-            MetricVisual(title: "Abstractness", icon: "cube.transparent", family: .coupling,
+            MetricVisual(title: .app("View.CodebaseDetailView.Abstractness"),
+                         icon: "cube.transparent", family: .coupling,
                          blurb: Self.abstractnessBlurb),
-            descriptor: "Most abstract", modules: metrics.modules, value: { $0.abstractness }, format: percent)
+            descriptor: .app("View.CodebaseDetailView.MostAbstract"), modules: metrics.modules,
+            value: { $0.abstractness }, format: percent)
         moduleMetricCard(
-            MetricVisual(title: "Distance (Main Seq.)", icon: "ruler", family: .coupling,
+            MetricVisual(title: .app("View.CodebaseDetailView.DistanceMainSeq"), icon: "ruler", family: .coupling,
                          blurb: Self.distanceBlurb, threshold: MetricThreshold(amber: 0.3, red: 0.5)),
-            descriptor: "Farthest", modules: metrics.modules,
+            descriptor: .app("View.CodebaseDetailView.Farthest"), modules: metrics.modules,
             value: { $0.distanceFromMainSequence }, format: percent)
         moduleMetricCard(
-            MetricVisual(title: "SDP Breaches", icon: "arrow.down.forward.and.arrow.up.backward",
+            MetricVisual(title: .app("View.CodebaseDetailView.SDPBreaches"),
+                         icon: "arrow.down.forward.and.arrow.up.backward",
                          family: .coupling, blurb: Self.sdpBlurb, threshold: MetricThreshold(amber: 1, red: 3)),
-            descriptor: "Most", modules: metrics.modules,
-            value: { Double($0.stableDependencyViolations.count) }, format: { String(Int($0)) })
+            descriptor: .app("View.CodebaseDetailView.Most"), modules: metrics.modules,
+            value: { Double($0.stableDependencyViolations.count) }, format: { Int($0).formatted() })
         moduleMetricCard(
-            MetricVisual(title: "Efferent (Ce)", icon: "arrow.up.right.square", family: .coupling,
+            MetricVisual(title: .app("View.CodebaseDetailView.EfferentCe"),
+                         icon: "arrow.up.right.square", family: .coupling,
                          blurb: Self.efferentBlurb),
-            descriptor: "Most", modules: metrics.modules,
-            value: { Double($0.efferentCoupling) }, format: { String(Int($0)) })
+            descriptor: .app("View.CodebaseDetailView.Most"), modules: metrics.modules,
+            value: { Double($0.efferentCoupling) }, format: { Int($0).formatted() })
         moduleMetricCard(
-            MetricVisual(title: "Afferent (Ca)", icon: "arrow.down.right.square", family: .coupling,
+            MetricVisual(title: .app("View.CodebaseDetailView.AfferentCa"),
+                         icon: "arrow.down.right.square", family: .coupling,
                          blurb: Self.afferentBlurb),
-            descriptor: "Most depended-on", modules: metrics.modules,
-            value: { Double($0.afferentCoupling) }, format: { String(Int($0)) })
+            descriptor: .app("View.CodebaseDetailView.MostDependedOn"), modules: metrics.modules,
+            value: { Double($0.afferentCoupling) }, format: { Int($0).formatted() })
     }
 
     @ViewBuilder
     private func classicMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
-            MetricVisual(title: "Inheritance Depth", icon: "arrow.down.to.line", family: .oo,
+            MetricVisual(title: .app("View.CodebaseDetailView.InheritanceDepth"),
+                         icon: "arrow.down.to.line", family: .oo,
                          blurb: Self.inheritanceDepthBlurb, threshold: MetricThreshold(amber: 4, red: 6)),
-            by: \.depthOfInheritance, descriptor: "Deepest", types: metrics.types)
+            by: \.depthOfInheritance, descriptor: .app("View.CodebaseDetailView.Deepest"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Fan-out", icon: "arrow.up.right", family: .oo, blurb: Self.fanOutBlurb,
+            MetricVisual(title: .app("View.CodebaseDetailView.FanOut"), icon: "arrow.up.right", family: .oo,
+                         blurb: Self.fanOutBlurb,
                          threshold: MetricThreshold(amber: 10, red: 20)),
-            by: \.fanOut, descriptor: "Most coupled", types: metrics.types)
+            by: \.fanOut, descriptor: .app("View.CodebaseDetailView.MostCoupled"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Fan-in", icon: "arrow.down.left", family: .oo, blurb: Self.fanInBlurb),
-            by: \.fanIn, descriptor: "Hotspot", types: metrics.types)
+            MetricVisual(title: .app("View.CodebaseDetailView.FanIn"), icon: "arrow.down.left", family: .oo,
+                         blurb: Self.fanInBlurb),
+            by: \.fanIn, descriptor: .app("View.CodebaseDetailView.Hotspot"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Methods", icon: "function", family: .oo,
+            MetricVisual(title: .app("View.CodebaseDetailView.Methods"), icon: "function", family: .oo,
                          blurb: Self.weightedMethodsBlurb, threshold: MetricThreshold(amber: 20, red: 40)),
-            by: \.weightedMethods, descriptor: "Largest", types: metrics.types)
+            by: \.weightedMethods, descriptor: .app("View.CodebaseDetailView.Largest"), types: metrics.types)
     }
 
     @ViewBuilder
     private func smellMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
-            MetricVisual(title: "Response (RFC)", icon: "arrow.triangle.branch", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.ResponseRFC"),
+                         icon: "arrow.triangle.branch", family: .smell,
                          blurb: Self.responseForClassBlurb, threshold: MetricThreshold(amber: 30, red: 50)),
-            by: \.responseForClass, descriptor: "Largest", types: metrics.types)
+            by: \.responseForClass, descriptor: .app("View.CodebaseDetailView.Largest"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Public API", icon: "lock.open", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.PublicAPI"), icon: "lock.open", family: .smell,
                          blurb: Self.publicSurfaceBlurb, threshold: MetricThreshold(amber: 0.5, red: 0.75)),
-            by: \.publicMemberRatio, descriptor: "Widest", types: metrics.types,
-            format: { String(format: "%.0f%%", $0 * 100) })
+            by: \.publicMemberRatio, descriptor: .app("View.CodebaseDetailView.Widest"), types: metrics.types,
+            format: percent)
         typeMetricCard(
-            MetricVisual(title: "Mutable Public State", icon: "pencil.and.outline", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.MutablePublicState"),
+                         icon: "pencil.and.outline", family: .smell,
                          blurb: Self.mutablePublicStateBlurb, threshold: MetricThreshold(amber: 1, red: 3)),
-            by: \.mutablePublicState, descriptor: "Most", types: metrics.types)
+            by: \.mutablePublicState, descriptor: .app("View.CodebaseDetailView.Most"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Parameters", icon: "slider.horizontal.3", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.Parameters"), icon: "slider.horizontal.3", family: .smell,
                          blurb: Self.parametersBlurb, threshold: MetricThreshold(amber: 4, red: 6)),
-            by: \.maxParameters, descriptor: "Widest", types: metrics.types)
+            by: \.maxParameters, descriptor: .app("View.CodebaseDetailView.Widest"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Data-class Score", icon: "tablecells", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.DataClassScore"), icon: "tablecells", family: .smell,
                          blurb: Self.dataClassScoreBlurb, threshold: MetricThreshold(amber: 0.7, red: 0.9)),
-            by: \.dataClassScore, descriptor: "Most data", types: metrics.types,
-            format: { String(format: "%.0f%%", $0 * 100) })
+            by: \.dataClassScore, descriptor: .app("View.CodebaseDetailView.MostData"), types: metrics.types,
+            format: percent)
         typeMetricCard(
-            MetricVisual(title: "Nesting Depth", icon: "square.stack.3d.down.right", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.NestingDepth"),
+                         icon: "square.stack.3d.down.right", family: .smell,
                          blurb: Self.nestingDepthBlurb, threshold: MetricThreshold(amber: 3, red: 4)),
-            by: \.nestingDepth, descriptor: "Deepest", types: metrics.types)
+            by: \.nestingDepth, descriptor: .app("View.CodebaseDetailView.Deepest"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Overrides", icon: "arrow.uturn.down", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.Overrides"), icon: "arrow.uturn.down", family: .smell,
                          blurb: Self.overrideCountBlurb, threshold: MetricThreshold(amber: 4, red: 8)),
-            by: \.overrideCount, descriptor: "Most", types: metrics.types)
+            by: \.overrideCount, descriptor: .app("View.CodebaseDetailView.Most"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Deep & Wide", icon: "arrow.up.and.down.and.arrow.left.and.right",
+            MetricVisual(title: .app("View.CodebaseDetailView.DeepWide"),
+                         icon: "arrow.up.and.down.and.arrow.left.and.right",
                          family: .smell, blurb: Self.deepAndWideBlurb,
                          threshold: MetricThreshold(amber: 6, red: 12)),
-            by: \.deepAndWide, descriptor: "Hub", types: metrics.types)
+            by: \.deepAndWide, descriptor: .app("View.CodebaseDetailView.Hub"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Cohesion (LCOM)", icon: "puzzlepiece", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.CohesionLCOM"), icon: "puzzlepiece", family: .smell,
                          blurb: Self.lackOfCohesionBlurb, threshold: MetricThreshold(amber: 2, red: 4)),
-            by: \.lackOfCohesion, descriptor: "Least cohesive", types: metrics.types)
+            by: \.lackOfCohesion, descriptor: .app("View.CodebaseDetailView.LeastCohesive"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Feature Envy", icon: "person.2", family: .smell,
+            MetricVisual(title: .app("View.CodebaseDetailView.FeatureEnvy"), icon: "person.2", family: .smell,
                          blurb: Self.featureEnvyBlurb, threshold: MetricThreshold(amber: 1, red: 3)),
-            by: \.featureEnvyMethods, descriptor: "Most", types: metrics.types)
+            by: \.featureEnvyMethods, descriptor: .app("View.CodebaseDetailView.Most"), types: metrics.types)
     }
 
     @ViewBuilder
     private func structuralMetricCards(metrics: CodeMetrics) -> some View {
         typeMetricCard(
-            MetricVisual(title: "Cyclomatic Complexity", icon: "arrow.triangle.branch", family: .structural,
+            MetricVisual(title: .app("View.CodebaseDetailView.CyclomaticComplexity"),
+                         icon: "arrow.triangle.branch", family: .structural,
                          blurb: Self.cyclomaticComplexityBlurb, threshold: MetricThreshold(amber: 10, red: 20)),
-            by: \.maxCyclomaticComplexity, descriptor: "Most branchy", types: metrics.types)
+            by: \.maxCyclomaticComplexity,
+            descriptor: .app("View.CodebaseDetailView.MostBranchy"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Properties", icon: "list.bullet.rectangle", family: .structural,
+            MetricVisual(title: .app("View.CodebaseDetailView.Properties"),
+                         icon: "list.bullet.rectangle", family: .structural,
                          blurb: Self.numberOfPropertiesBlurb, threshold: MetricThreshold(amber: 15, red: 25)),
-            by: \.numberOfProperties, descriptor: "Most", types: metrics.types)
+            by: \.numberOfProperties, descriptor: .app("View.CodebaseDetailView.Most"), types: metrics.types)
         typeMetricCard(
-            MetricVisual(title: "Children", icon: "arrow.triangle.pull", family: .structural,
+            MetricVisual(title: .app("View.CodebaseDetailView.Children"),
+                         icon: "arrow.triangle.pull", family: .structural,
                          blurb: Self.numberOfChildrenBlurb),
-            by: \.numberOfChildren, descriptor: "Most subclassed", types: metrics.types)
+            by: \.numberOfChildren, descriptor: .app("View.CodebaseDetailView.MostSubclassed"), types: metrics.types)
     }
 
     /// Bundled so the card builders stay within the parameter limit.
     struct MetricVisual {
-        let title: String
+        let title: LocalizedStringResource
         let icon: String
         let family: MetricFamily
-        let blurb: String
+        let blurb: LocalizedStringResource
         var threshold: MetricThreshold?
         var color: Color { family.color }
     }
@@ -146,7 +164,7 @@ extension CodebaseDetailView {
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>,
-        descriptor: String, types: [CodeMetrics.TypeMetric]
+        descriptor: LocalizedStringResource, types: [CodeMetrics.TypeMetric]
     ) -> MetricStatCard {
         let summary = MetricSummary(types) { Double($0[keyPath: keyPath]) }
         // Build the ranked drill-down lazily on tap — it sorts every type and resolves each row's
@@ -155,8 +173,10 @@ extension CodebaseDetailView {
             title: visual.title,
             icon: visual.icon,
             color: visual.color,
-            primary: "max \(Int(summary.maximum))",
-            secondary: String(format: "avg %.1f", summary.average),
+            primary: .app(
+                "View.CodebaseDetailView.Max \(summary.maximum.formatted(.number.precision(.fractionLength(0))))"),
+            secondary: .app(
+                "View.CodebaseDetailView.Avg \(summary.average.formatted(.number.precision(.fractionLength(1))))"),
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
@@ -169,15 +189,15 @@ extension CodebaseDetailView {
     private func typeMetricCard(
         _ visual: MetricVisual,
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>,
-        descriptor: String, types: [CodeMetrics.TypeMetric], format: @escaping (Double) -> String
+        descriptor: LocalizedStringResource, types: [CodeMetrics.TypeMetric], format: @escaping (Double) -> String
     ) -> MetricStatCard {
         let summary = MetricSummary(types) { $0[keyPath: keyPath] }
         return MetricStatCard(
             title: visual.title,
             icon: visual.icon,
             color: visual.color,
-            primary: "max \(format(summary.maximum))",
-            secondary: "avg \(format(summary.average))",
+            primary: .app("View.CodebaseDetailView.Max \(format(summary.maximum))"),
+            secondary: .app("View.CodebaseDetailView.Avg \(format(summary.average))"),
             exemplar: caption(descriptor, summary.exemplars.map { shortName($0.name) }),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
@@ -188,7 +208,7 @@ extension CodebaseDetailView {
     }
 
     private func moduleMetricCard(
-        _ visual: MetricVisual, descriptor: String, modules: [CodeMetrics.ModuleCoupling],
+        _ visual: MetricVisual, descriptor: LocalizedStringResource, modules: [CodeMetrics.ModuleCoupling],
         value: @escaping (CodeMetrics.ModuleCoupling) -> Double, format: @escaping (Double) -> String
     ) -> MetricStatCard {
         let summary = MetricSummary(modules, value: value)
@@ -196,8 +216,8 @@ extension CodebaseDetailView {
             title: visual.title,
             icon: visual.icon,
             color: visual.color,
-            primary: "max \(format(summary.maximum))",
-            secondary: "avg \(format(summary.average))",
+            primary: .app("View.CodebaseDetailView.Max \(format(summary.maximum))"),
+            secondary: .app("View.CodebaseDetailView.Avg \(format(summary.average))"),
             exemplar: caption(descriptor, summary.exemplars.map(\.name)),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
@@ -207,16 +227,20 @@ extension CodebaseDetailView {
                 : nil)
     }
 
-    private func percent(_ value: Double) -> String { String(format: "%.0f%%", value * 100) }
+    private func percent(_ value: Double) -> String {
+        value.formatted(.percent.precision(.fractionLength(0)))
+    }
 
-    /// "`descriptor.lowercased()`: name, name, name and N more" — or `nil` when there are no exemplars.
-    /// Names beyond the first three are folded into a trailing count so a large tie stays one short line.
-    private func caption(_ descriptor: String, _ names: [String]) -> String? {
+    /// "`descriptor`: name, name, name and N more" — or `nil` when there are no exemplars. Names
+    /// beyond the first three are folded into a trailing count so a large tie stays one short line.
+    private func caption(_ descriptor: LocalizedStringResource, _ names: [String]) -> LocalizedStringResource? {
         guard !names.isEmpty else { return nil }
-        let shown = names.prefix(3)
+        var shown = Array(names.prefix(3))
         let remaining = names.count - shown.count
-        var list = shown.joined(separator: ", ")
-        if remaining > 0 { list += " and \(remaining) more" }
-        return "\(descriptor.lowercased()): \(list)"
+        if remaining > 0 {
+            shown.append(String(localized: .app("View.CodebaseDetailView.More \(remaining)")))
+        }
+        let list = shown.formatted(.list(type: .and))
+        return .app("View.CodebaseDetailView.Exemplars \(String(localized: descriptor)) \(list)")
     }
 }

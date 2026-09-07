@@ -30,8 +30,8 @@ struct PackageDiagramSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(PackageDiagramSidebarTab.settings)
-                Text("Inspector").tag(PackageDiagramSidebarTab.inspector)
+                Text(.app("View.PackageDiagramSidebar.Settings")).tag(PackageDiagramSidebarTab.settings)
+                Text(.app("View.PackageDiagramSidebar.Inspector")).tag(PackageDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -65,13 +65,13 @@ struct PackageDiagramSidebar: View {
                 artifact: artifact
             )
 
-            Section("Export") {
+            Section(.app("View.PackageDiagramSidebar.Export")) {
                 Button {
                     showSaveAsFreeformOptions = true
                 } label: {
-                    Label("Save as Freeform", systemImage: "document.on.document")
+                    Label(.app("View.PackageDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
-                .help("Save a copy as an editable Freeform diagram")
+                .help(.app("View.PackageDiagramSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
                 .saveAsFreeformOptions(
                     isPresented: $showSaveAsFreeformOptions,
@@ -79,9 +79,9 @@ struct PackageDiagramSidebar: View {
                     onConfirm: onSaveAsFreeform
                 )
                 Button(action: onExportImage) {
-                    Label("Export Image", systemImage: "photo")
+                    Label(.app("View.PackageDiagramSidebar.ExportImage"), systemImage: "photo")
                 }
-                .help("Export the diagram as an image")
+                .help(.app("View.PackageDiagramSidebar.ExportDiagramImage"))
                 .accessibilityIdentifier("diagram.exportImageButton")
             }
         }

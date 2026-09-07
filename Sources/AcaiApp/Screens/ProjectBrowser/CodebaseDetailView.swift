@@ -108,18 +108,18 @@ struct CodebaseDetailView: View {
                     .environmentObject(model)
             }
             .confirmationDialog(
-                "Delete \"\(codebase.name)\"?",
+                .app("View.CodebaseDetailView.ConfirmDeleteCodebase \(codebase.name)"),
                 isPresented: $showDeleteConfirmation
             ) {
-                Button("Delete Codebase", role: .destructive) {
+                Button(.app("View.CodebaseDetailView.DeleteCodebase"), role: .destructive) {
                     model.editing.removeCodebase(codebaseID)
                 }
                 .accessibilityIdentifier("codebaseDetail.codebase.delete.confirmButton")
             } message: {
-                Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+                Text(.app("View.CodebaseDetailView.DeletesDiagramsCachedAnalysis"))
             }
         } else {
-            Text("Codebase not found")
+            Text(.app("View.CodebaseDetailView.CodebaseNotFound"))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -158,22 +158,24 @@ struct CodebaseDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                TextField("Codebase Name", text: Binding(
+                TextField(text: Binding(
                     get: { codebase.name },
                     set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
-                ))
+                )) {
+                    Text(.app("View.CodebaseDetailView.CodebaseName"))
+                }
                 .font(.title2.bold())
                 .textFieldStyle(.plain)
 
                 if let source = codebase.githubSource {
-                    Text("\(source.owner)/\(source.repo) @ \(source.ref)")
+                    Text(verbatim: "\(source.owner)/\(source.repo) @ \(source.ref)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                 } else {
-                    Text((codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
+                    Text(verbatim: (codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -194,13 +196,13 @@ struct CodebaseDetailView: View {
                 githubActions(codebase: codebase, source: source)
             } else {
                 Button {
-                    reindexPhase = .loading("Indexing…")
+                    reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                     Task {
                         await model.editing.reindex(codebaseID: codebase.id)
                         reindexPhase = .loaded
                     }
                 } label: {
-                    Label("Reindex", systemImage: "arrow.clockwise")
+                    Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
                 }
                 .disabled(reindexPhase.isInFlight)
                 .accessibilityIdentifier("codebaseDetail.reindexButton")
@@ -211,12 +213,12 @@ struct CodebaseDetailView: View {
 
     @ViewBuilder
     private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
-        Picker("Branch/Tag", selection: Binding(
+        Picker(.app("View.CodebaseDetailView.BranchTag"), selection: Binding(
             get: { GitHubRef(name: source.ref, kind: source.refKind).id },
             set: { newID in
                 let currentRef = GitHubRef(name: source.ref, kind: source.refKind)
                 guard let selected = (availableRefs + [currentRef]).first(where: { $0.id == newID }) else { return }
-                refSwitchPhase = .loading("Switching to \(selected.name)…")
+                refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(selected.name)"))
                 Task {
                     await model.editing.switchGitHubRef(
                         codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
@@ -225,10 +227,10 @@ struct CodebaseDetailView: View {
             }
         )) {
             if !availableRefs.contains(where: { $0.name == source.ref && $0.kind == source.refKind }) {
-                Text(source.ref).tag(GitHubRef(name: source.ref, kind: source.refKind).id)
+                Text(verbatim: source.ref).tag(GitHubRef(name: source.ref, kind: source.refKind).id)
             }
             ForEach(availableRefs) { ref in
-                Text(ref.name).tag(ref.id)
+                Text(verbatim: ref.name).tag(ref.id)
             }
         }
         .labelsHidden()
@@ -239,13 +241,13 @@ struct CodebaseDetailView: View {
         AsyncOperationStatusView(identifierPrefix: "codebaseDetail.refSwitch", phase: refSwitchPhase)
 
         Button {
-            pullPhase = .loading("Pulling…")
+            pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
             Task {
                 await model.editing.pull(codebaseID: codebase.id)
                 pullPhase = .loaded
             }
         } label: {
-            Label("Pull", systemImage: "arrow.triangle.2.circlepath")
+            Label(.app("View.CodebaseDetailView.Pull"), systemImage: "arrow.triangle.2.circlepath")
         }
         .disabled(pullPhase.isInFlight)
         .accessibilityIdentifier("codebaseDetail.pullButton")
@@ -261,18 +263,19 @@ struct CodebaseDetailView: View {
     private func indexStatus(codebase: Codebase) -> some View {
         VStack(alignment: .trailing, spacing: 2) {
             if let date = codebase.lastIndexed {
-                Text("Last indexed: \(date.formatted(date: .abbreviated, time: .shortened))")
+                let formatted = date.formatted(date: .abbreviated, time: .shortened)
+                Text(.app("View.CodebaseDetailView.LastIndexed \(formatted)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             if codebase.hasParseErrors {
                 Label(
-                    "\(codebase.parseDiagnosticCount) syntax issue(s) detected",
+                    .app("View.CodebaseDetailView.SyntaxIssues \(codebase.parseDiagnosticCount)"),
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
-                .help("Some files could not be fully parsed; the diagram may be incomplete.")
+                .help(.app("View.CodebaseDetailView.SomeFilesCouldNot"))
             }
         }
     }
@@ -302,7 +305,7 @@ struct CodebaseDetailView: View {
     private var analyzingPlaceholder: some View {
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)
-            Text("Analyzing codebase…")
+            Text(.app("View.CodebaseDetailView.AnalyzingCodebase"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -325,17 +328,17 @@ extension CodebaseDetailView {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text("This codebase has not been indexed yet.")
+            Text(.app("View.CodebaseDetailView.CodebaseHasNotBeen"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button {
-                reindexPhase = .loading("Indexing…")
+                reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                 Task {
                     await model.editing.reindex(codebaseID: codebase.id)
                     reindexPhase = .loaded
                 }
             } label: {
-                Label("Index Now", systemImage: "arrow.clockwise")
+                Label(.app("View.CodebaseDetailView.IndexNow"), systemImage: "arrow.clockwise")
             }
             .disabled(reindexPhase.isInFlight)
             AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)

@@ -37,7 +37,7 @@ struct FreeformBottomToolbar: View {
             VStack(spacing: 4) {
                 Image(systemName: kind.systemImage)
                     .font(.title3)
-                Text(kind.displayName)
+                Text(verbatim: kind.displayName)
                     .font(.caption2)
                     .lineLimit(1)
             }

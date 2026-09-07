@@ -26,26 +26,32 @@ struct QualityCheckSection: View {
     }
 
     var body: some View {
-        CollapsibleSection(title: "Code Quality Check") {
+        let findings = report.violations.count
+        let rules = report.checkedRuleCount
+        CollapsibleSection(title: .app("View.QualityCheckSection.CodeQualityCheck")) {
             HStack(spacing: 8) {
                 if !report.isPassing {
                     SectionCountBadge(
-                        text: "\(report.violations.count) finding(s) across \(report.checkedRuleCount) rule(s)",
+                        text: .app("View.QualityCheckSection.FindingsAcrossRules \(findings) \(rules)"),
                         tint: .orange)
                 }
-                Button(configuration == nil ? "Set Up…" : "Edit…") { editing = true }
+                Button(
+                    configuration == nil
+                        ? .app("View.QualityCheckSection.SetUp")
+                        : .app("View.QualityCheckSection.Edit")
+                ) { editing = true }
             }
         } content: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Text(statusLine)
+                    Text(localized: statusLine)
                         .font(.caption).foregroundStyle(.secondary)
                         .lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: 8)
                     // Kept out of the collapsible header (shared with the count badge and
                     // Set Up…/Edit…) so it doesn't crowd or truncate on iPhone-width layouts.
                     if configuration != nil {
-                        Button("Export CI Check…") { exportingCICheck = true }
+                        Button(.app("View.QualityCheckSection.ExportCICheck")) { exportingCICheck = true }
                             .font(.caption)
                             .accessibilityIdentifier("qualityCheck.exportCICheckButton")
                     }
@@ -73,7 +79,7 @@ struct QualityCheckSection: View {
     private var reportBody: some View {
         if let rulesError {
             QualityCheckPlaceholder(
-                text: "Could not load rules: \(rulesError) — showing the built-in smell budgets instead.",
+                text: .app("View.QualityCheckSection.CouldNotLoadRulesBuiltIn \(rulesError)"),
                 systemImage: "exclamationmark.triangle")
         }
         QualityCheckReportView(
@@ -97,14 +103,15 @@ struct QualityCheckSection: View {
         }
     }
 
-    private var statusLine: String {
+    private var statusLine: LocalizedStringResource {
+        let rules = String(localized: .app("View.QualityCheckSection.Rules \(report.checkedRuleCount)"))
         guard usesConfiguredRules, let config = configuration else {
-            return "Built-in smell budgets · \(report.checkedRuleCount) rule(s)"
+            return .app("View.QualityCheckSection.BuiltInBudgets \(rules)")
         }
         let origin = model.store.isManaged(path: config.rulesPath)
-            ? "Defined in app"
+            ? String(localized: .app("View.QualityCheckSection.DefinedInApp"))
             : (config.rulesPath as NSString).abbreviatingWithTildeInPath
-        return "\(origin) · \(report.checkedRuleCount) rule(s)"
+        return .app("View.QualityCheckSection.OriginRules \(origin) \(rules)")
     }
 }
 
@@ -116,11 +123,11 @@ struct DeadCodeSection: View {
 
     var body: some View {
         let coverage = Int((report.coverage.fraction * 100).rounded())
-        CollapsibleSection(title: "Dead Code") {
+        CollapsibleSection(title: .app("View.DeadCodeSection.DeadCode")) {
             SectionCountBadge(
                 text: report.candidates.isEmpty
-                    ? "none · call-graph coverage \(coverage)%"
-                    : "\(report.candidates.count) candidate(s) · call-graph coverage \(coverage)%",
+                    ? .app("View.DeadCodeSection.NoneWithCoverage \(coverage)")
+                    : .app("View.DeadCodeSection.CandidatesWithCoverage \(report.candidates.count) \(coverage)"),
                 tint: report.candidates.isEmpty ? .secondary : .orange)
         } content: {
             DeadCodeReportView(report: report, artifact: artifact, codebase: codebase)
@@ -139,13 +146,13 @@ struct ParseHealthSection: View {
     var body: some View {
         let percent = Int((report.score * 100).rounded())
         CollapsibleSection(
-            title: "Parse Health",
+            title: .app("View.ParseHealthSection.ParseHealth"),
             defaultExpanded: !report.diagnostics.isEmpty
         ) {
             SectionCountBadge(
                 text: report.diagnostics.isEmpty
-                    ? "\(percent)%"
-                    : "\(percent)% · \(report.diagnosticCount) diagnostic(s)",
+                    ? .app("View.ParseHealthSection.Score \(percent)")
+                    : .app("View.ParseHealthSection.ScoreWithDiagnostics \(percent) \(report.diagnosticCount)"),
                 tint: percent >= 90 ? .secondary : .red)
         } content: {
             HealthReportView(report: report, codebase: codebase)
@@ -155,11 +162,11 @@ struct ParseHealthSection: View {
 }
 
 struct SectionCountBadge: View {
-    let text: String
+    let text: LocalizedStringResource
     var tint: Color = .secondary
 
     var body: some View {
-        Text(text)
+        Text(localized: text)
             .font(.caption)
             .foregroundStyle(tint)
     }

@@ -6,8 +6,11 @@ struct CodebaseGlobalsSection: View {
     let artifact: CodeArtifact
 
     var body: some View {
-        CollapsibleSection(title: "Global Variables & Constants", defaultExpanded: false) {
-            SectionCountBadge(text: "\(artifact.globalVariables.count)")
+        CollapsibleSection(
+            title: .app("View.CodebaseGlobalsSection.GlobalVariablesConstants"),
+            defaultExpanded: false
+        ) {
+            SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.globalVariables.count)"))
         } content: {
             let sortedGlobals = artifact.globalVariables
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -26,10 +29,10 @@ struct CodebaseGlobalsSection: View {
     private func globalRow(global: Member) -> some View {
         HStack(spacing: 8) {
             kindBadge(global)
-            Text(global.name)
+            Text(verbatim: global.name)
                 .fontWeight(.medium)
             if let type = global.type {
-                Text(": \(type.name)")
+                Text(.app("View.CodebaseGlobalsSection.TypeAnnotation \(type.name)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -47,7 +50,7 @@ struct CodebaseGlobalsSection: View {
     }
 
     private func kindBadge(_ global: Member) -> some View {
-        Text(isConstant(global) ? "k" : "=")
+        Text(verbatim: isConstant(global) ? "k" : "=")
             .font(.caption.bold())
             .foregroundStyle(.white)
             .frame(width: 22, height: 22)
@@ -56,7 +59,7 @@ struct CodebaseGlobalsSection: View {
     }
 
     private func tagBadge(_ text: String) -> some View {
-        Text(text)
+        Text(verbatim: text)
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 4)

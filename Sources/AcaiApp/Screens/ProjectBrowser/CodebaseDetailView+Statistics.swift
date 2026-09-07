@@ -3,7 +3,8 @@ import AcaiCore
 extension CodebaseDetailView {
 
     func typeDetail(
-        _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
+        _ title: LocalizedStringResource, _ description: LocalizedStringResource,
+        _ types: [CodeMetrics.TypeMetric],
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Int>
     ) -> StatisticDetail {
         let rows = types
@@ -15,14 +16,15 @@ extension CodebaseDetailView {
             .map { metric in
                 StatisticDetail.Row(
                     id: metric.id, name: shortName(metric.name),
-                    value: "\(metric[keyPath: keyPath])", relativePath: typeRelativePath(metric.id),
+                    value: metric[keyPath: keyPath].formatted(), relativePath: typeRelativePath(metric.id),
                     reference: .type(id: metric.id))
             }
         return StatisticDetail(title: title, description: description, rows: rows)
     }
 
     func typeDetail(
-        _ title: String, _ description: String, _ types: [CodeMetrics.TypeMetric],
+        _ title: LocalizedStringResource, _ description: LocalizedStringResource,
+        _ types: [CodeMetrics.TypeMetric],
         by keyPath: KeyPath<CodeMetrics.TypeMetric, Double>, format: (Double) -> String
     ) -> StatisticDetail {
         let rows = types
@@ -41,7 +43,8 @@ extension CodebaseDetailView {
     }
 
     func moduleDetail(
-        _ title: String, _ description: String, _ modules: [CodeMetrics.ModuleCoupling],
+        _ title: LocalizedStringResource, _ description: LocalizedStringResource,
+        _ modules: [CodeMetrics.ModuleCoupling],
         value: (CodeMetrics.ModuleCoupling) -> Double, format: (Double) -> String
     ) -> StatisticDetail {
         let rows = modules

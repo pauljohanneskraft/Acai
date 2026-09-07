@@ -39,7 +39,7 @@ public struct ProjectBrowserView: View {
     public var body: some View {
         NavigationSplitView {
             sidebarContent
-                .navigationTitle("Projects")
+                .navigationTitle(.app("View.ProjectBrowserView.Projects"))
                 .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
                 #if !os(macOS)
                 .toolbar {
@@ -48,7 +48,7 @@ public struct ProjectBrowserView: View {
                             Button {
                                 newProjectPresented = true
                             } label: {
-                                Label("New project", systemImage: "plus")
+                                Label(.app("View.ProjectBrowserView.NewProject"), systemImage: "plus")
                             }
                             .accessibilityIdentifier("sidebar.newProjectButton")
                         }
@@ -59,7 +59,7 @@ public struct ProjectBrowserView: View {
                             Button {
                                 quickOpenPresenter.isPresented = true
                             } label: {
-                                Label("Quick Open", systemImage: "magnifyingglass")
+                                Label(.app("View.ProjectBrowserView.QuickOpen"), systemImage: "magnifyingglass")
                             }
                             .accessibilityIdentifier("sidebar.quickOpenButton")
                         }
@@ -73,7 +73,7 @@ public struct ProjectBrowserView: View {
                     // button instead.
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
-                            Picker("Diagram Theme", selection: $diagramTheme) {
+                            Picker(.app("View.ProjectBrowserView.DiagramTheme"), selection: $diagramTheme) {
                                 ForEach(DiagramThemeSelection.allCases) { option in
                                     Label(option.label, systemImage: option.symbol).tag(option)
                                 }
@@ -81,11 +81,11 @@ public struct ProjectBrowserView: View {
                             Button {
                                 showKeyboardShortcuts = true
                             } label: {
-                                Label("Keyboard Shortcuts", systemImage: "keyboard")
+                                Label(.app("View.ProjectBrowserView.KeyboardShortcuts"), systemImage: "keyboard")
                             }
                             .accessibilityIdentifier("sidebar.keyboardShortcutsButton")
                         } label: {
-                            Label("Diagram Theme", systemImage: "paintbrush")
+                            Label(.app("View.ProjectBrowserView.DiagramTheme"), systemImage: "paintbrush")
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
@@ -97,7 +97,7 @@ public struct ProjectBrowserView: View {
                         Button {
                             settingsPresenter.isPresented = true
                         } label: {
-                            Label("Settings", systemImage: "gear")
+                            Label(.app("View.ProjectBrowserView.Settings"), systemImage: "gear")
                         }
                         .accessibilityIdentifier("sidebar.settingsButton")
                     }
@@ -151,40 +151,40 @@ public struct ProjectBrowserView: View {
             defaultFilename: model.pendingExport?.filename
         ) { result in
             if case .failure(let error) = result {
-                model.store.report("Export failed: \(error.localizedDescription)")
+                model.store.report(.app("Error.ProjectBrowserView.ExportFailed \(error.localizedDescription)"))
             }
             model.pendingExport = nil
         }
         .modifier(StoreErrorAlert(store: model.store, model: model))
         .confirmationDialog(
-            "Delete \"\(projectPendingDeletion?.title ?? "")\"?",
+            .app("View.ProjectBrowserView.ConfirmDeleteProject \(projectPendingDeletion?.title ?? "")"),
             isPresented: Binding(
                 get: { projectPendingDeletion != nil },
                 set: { if !$0 { projectPendingDeletion = nil } }
             ),
             presenting: projectPendingDeletion
         ) { project in
-            Button("Delete Project", role: .destructive) {
+            Button(.app("View.ProjectBrowserView.DeleteProject"), role: .destructive) {
                 model.editing.removeProject(project.id)
             }
             .accessibilityIdentifier("sidebar.project.delete.confirmButton")
         } message: { _ in
-            Text("This deletes all of its codebases and diagrams. This cannot be undone.")
+            Text(.app("View.ProjectBrowserView.DeletesAllCodebasesDiagrams"))
         }
         .confirmationDialog(
-            "Delete \"\(codebasePendingDeletion?.name ?? "")\"?",
+            .app("View.ProjectBrowserView.ConfirmDeleteCodebase \(codebasePendingDeletion?.name ?? "")"),
             isPresented: Binding(
                 get: { codebasePendingDeletion != nil },
                 set: { if !$0 { codebasePendingDeletion = nil } }
             ),
             presenting: codebasePendingDeletion
         ) { codebase in
-            Button("Delete Codebase", role: .destructive) {
+            Button(.app("View.ProjectBrowserView.DeleteCodebase"), role: .destructive) {
                 model.editing.removeCodebase(codebase.id)
             }
             .accessibilityIdentifier("sidebar.codebase.delete.confirmButton")
         } message: { _ in
-            Text("This deletes its diagrams and cached analysis. This cannot be undone.")
+            Text(.app("View.ProjectBrowserView.DeletesDiagramsCachedAnalysis"))
         }
     }
 
@@ -218,7 +218,7 @@ public struct ProjectBrowserView: View {
                 Button {
                     newProjectPresented = true
                 } label: {
-                    Label("New project", systemImage: "plus")
+                    Label(.app("View.ProjectBrowserView.NewProject"), systemImage: "plus")
                         .font(.headline)
                 }
                 .buttonStyle(.plain)
@@ -306,7 +306,7 @@ public struct ProjectBrowserView: View {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                Text("No analysis available. Reindex the codebase first.")
+                Text(.app("View.ProjectBrowserView.NoAnalysisAvailableReindex"))
                     .foregroundStyle(.secondary)
             }
         }
@@ -329,7 +329,7 @@ public struct ProjectBrowserView: View {
                 .id(diagramID)
                 .environmentObject(model)
         } else {
-            Text("Diagram not found")
+            Text(.app("View.ProjectBrowserView.DiagramNotFound"))
                 .foregroundStyle(.secondary)
         }
     }
@@ -339,7 +339,7 @@ public struct ProjectBrowserView: View {
             Image(systemName: "rectangle.3.group")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            Text("Select a project or diagram")
+            Text(.app("View.ProjectBrowserView.SelectProjectDiagram"))
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -366,15 +366,15 @@ private struct StoreErrorAlert: ViewModifier {
             .alert(item: $store.lastError) { error in
                 guard let codebaseID = error.relocatableCodebaseID else {
                     return Alert(
-                        title: Text("Something went wrong"),
-                        message: Text(error.message),
-                        dismissButton: .default(Text("OK"))
+                        title: Text(.app("View.StoreErrorAlert.SomethingWentWrong")),
+                        message: Text(verbatim: error.message),
+                        dismissButton: .default(Text(.app("View.StoreErrorAlert.OK")))
                     )
                 }
                 return Alert(
-                    title: Text("Something went wrong"),
-                    message: Text(error.message),
-                    primaryButton: .default(Text("Choose Folder…")) {
+                    title: Text(.app("View.StoreErrorAlert.SomethingWentWrong")),
+                    message: Text(verbatim: error.message),
+                    primaryButton: .default(Text(.app("View.StoreErrorAlert.ChooseFolder"))) {
                         relocationTarget = codebaseID
                         isChoosingFolder = true
                     },
@@ -398,7 +398,7 @@ private struct StoreErrorAlert: ViewModifier {
             let bookmark = try SecurityScopedBookmark(resolving: url)
             model.editing.relocateCodebase(id: codebaseID, directoryURL: url, securityScopedBookmark: bookmark)
         } catch {
-            store.report("Couldn't use that folder: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserView.FolderUnusable \(error.localizedDescription)"))
         }
     }
 }

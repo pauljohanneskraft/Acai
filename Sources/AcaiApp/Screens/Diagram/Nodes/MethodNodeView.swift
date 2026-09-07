@@ -10,7 +10,7 @@ struct MethodNodeView: View {
     @Environment(\.diagramPalette) private var palette
 
     var body: some View {
-        Text(name)
+        Text(verbatim: name)
             .font(.system(.caption, design: .monospaced))
             .foregroundColor(palette.primaryInk)
             .lineLimit(1)

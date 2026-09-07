@@ -123,11 +123,11 @@ private struct CallGraphCanvasView: View {
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
                         sidebar
-                            .navigationTitle("Call Graph")
+                            .navigationTitle(.app("View.CallGraphCanvasView.CallGraph"))
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.CallGraphCanvasView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -188,7 +188,7 @@ private struct CallGraphCanvasView: View {
         let percent = Int((coverage.fraction * 100).rounded())
         return HStack(spacing: 6) {
             Image(systemName: percent == 100 ? "checkmark.seal" : "exclamationmark.triangle")
-            Text("Resolved \(coverage.resolved)/\(coverage.total) call sites (\(percent)%)")
+            Text(.app("View.CallGraphCanvasView.ResolvedCallSites \(coverage.resolved) \(coverage.total) \(percent)"))
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -288,17 +288,17 @@ private struct CallGraphCanvasView: View {
             Button {
                 centerDiagram()
             } label: {
-                Label("Fit to View", systemImage: "rectangle.dashed")
+                Label(.app("View.CallGraphCanvasView.FitView"), systemImage: "rectangle.dashed")
             }
-            .help("Fit the diagram to the visible canvas (⌘0)")
+            .help(.app("View.CallGraphCanvasView.FitDiagramVisibleCanvas"))
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.CallGraphCanvasView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the sidebar")
+            .help(.app("View.CallGraphCanvasView.ToggleSidebar"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
@@ -357,7 +357,7 @@ private struct CallGraphNodeView: View {
     }
 
     var body: some View {
-        Text(node.label)
+        Text(verbatim: node.label)
             .font(.system(.caption, design: .monospaced))
             .lineLimit(1)
             .truncationMode(.middle)

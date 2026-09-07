@@ -2,12 +2,17 @@ import SwiftUI
 
 struct GitHubScope: Hashable, Sendable {
     var rawValue: String
-    var displayName: String
+    var displayName: LocalizedStringResource
 
-    static let contentsRead = GitHubScope(rawValue: "contents:read", displayName: "Contents")
-    static let metadataRead = GitHubScope(rawValue: "metadata:read", displayName: "Metadata")
+    static func == (lhs: GitHubScope, rhs: GitHubScope) -> Bool { lhs.rawValue == rhs.rawValue }
+
+    func hash(into hasher: inout Hasher) { hasher.combine(rawValue) }
+
+    static let contentsRead = GitHubScope(rawValue: "contents:read", displayName: .app("GitHubScope.ContentsRead"))
+    static let metadataRead = GitHubScope(rawValue: "metadata:read", displayName: .app("GitHubScope.MetadataRead"))
     /// Not required by anything shipped yet — the future PR picker feature is the planned consumer.
-    static let pullRequestsRead = GitHubScope(rawValue: "pull_requests:read", displayName: "Pull Requests")
+    static let pullRequestsRead = GitHubScope(
+        rawValue: "pull_requests:read", displayName: .app("GitHubScope.PullRequestsRead"))
 }
 
 /// A value you construct with the scopes a feature requires and ask `status(given:)` about.
@@ -68,8 +73,8 @@ private struct GitHubScopeGateModifier: ViewModifier {
 
     private var explanation: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(explanationText)
-            Button("Re-authorize") {
+            Text(localized: explanationText)
+            Button(.app("View.GitHubScopeGateModifier.ReAuthorize")) {
                 showExplanation = false
                 onReauthorize()
             }
@@ -79,14 +84,15 @@ private struct GitHubScopeGateModifier: ViewModifier {
         .frame(maxWidth: 280)
     }
 
-    private var explanationText: String {
+    private var explanationText: LocalizedStringResource {
         switch status {
         case .satisfied:
-            ""
+            return ""
         case .missing(let scopes):
-            "Your current token is missing: " + scopes.map(\.displayName).joined(separator: ", ") + "."
+            let joined = scopes.map { String(localized: $0.displayName) }.joined(separator: ", ")
+            return .app("View.GitHubScopeGateModifier.MissingScopes \(joined)")
         case .unknown:
-            "Acai couldn't confirm which scopes your token has. Re-authorize to check again."
+            return .app("View.GitHubScopeGateModifier.UnknownScopes")
         }
     }
 }

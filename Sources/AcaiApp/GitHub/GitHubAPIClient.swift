@@ -63,9 +63,9 @@ struct GitHubAPIClient {
         var errorDescription: String? {
             switch self {
             case .http(let status, let message):
-                "GitHub API error \(status): \(message)"
+                String(localized: .app("Error.GitHubAPIClient.Http \(status) \(message)"))
             case .decoding(let message):
-                "Couldn't parse GitHub's response: \(message)"
+                String(localized: .app("Error.GitHubAPIClient.Decoding \(message)"))
             }
         }
     }

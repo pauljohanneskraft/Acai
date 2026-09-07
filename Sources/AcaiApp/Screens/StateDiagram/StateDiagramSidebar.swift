@@ -62,8 +62,8 @@ struct StateDiagramSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(StateDiagramSidebarTab.settings)
-                Text("Inspector").tag(StateDiagramSidebarTab.inspector)
+                Text(.app("View.StateDiagramSidebar.Settings")).tag(StateDiagramSidebarTab.settings)
+                Text(.app("View.StateDiagramSidebar.Inspector")).tag(StateDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -100,23 +100,21 @@ struct StateDiagramSidebar: View {
 
     private var settingsContent: some View {
         Form {
-            Section("Variable") {
-                Text("Pick a variable. Its possible values (\"states\") are inferred from "
-                     + "assignments across the codebase. Applying re-runs the analysis and resets "
-                     + "any state drags and undo history.")
+            Section(.app("View.StateDiagramSidebar.Variable")) {
+                Text(.app("View.StateDiagramSidebar.PickVariablePossibleValues"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                LabeledContent("Scope") {
+                LabeledContent {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker("Scope", selection: $draftScope) {
-                            Text("Select…").tag(Scope?.none)
+                        Picker(.app("View.StateDiagramSidebar.Scope"), selection: $draftScope) {
+                            Text(.app("View.StateDiagramSidebar.Select")).tag(Scope?.none)
                             if !artifact.globalVariables.isEmpty {
-                                Text("Global Variables").tag(Scope?.some(.globals))
+                                Text(.app("View.StateDiagramSidebar.GlobalVariables")).tag(Scope?.some(.globals))
                             }
                             ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
-                                Text(name).tag(Scope?.some(.type(name)))
+                                Text(verbatim: name).tag(Scope?.some(.type(name)))
                             }
                         }
                         .labelsHidden()
@@ -127,43 +125,51 @@ struct StateDiagramSidebar: View {
                             }
                         }
                     }
+                } label: {
+                    Text(.app("View.StateDiagramSidebar.Scope"))
                 }
 
-                LabeledContent("Variable") {
+                LabeledContent {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $variableQuery)
-                        Picker("Variable", selection: $draftVariableName) {
-                            Text("Select…").tag("")
-                            ForEach(draftVariableNames.filtered(by: variableQuery), id: \.self) { Text($0).tag($0) }
+                        Picker(.app("View.StateDiagramSidebar.Variable"), selection: $draftVariableName) {
+                            Text(.app("View.StateDiagramSidebar.Select")).tag("")
+                            ForEach(draftVariableNames.filtered(by: variableQuery), id: \.self) {
+                                Text(verbatim: $0).tag($0)
+                            }
                         }
                         .labelsHidden()
                         .disabled(draftScope == nil)
                         .accessibilityIdentifier("diagram.stateSettings.variablePicker")
                     }
+                } label: {
+                    Text(.app("View.StateDiagramSidebar.Variable"))
                 }
 
-                LabeledContent("Max states") {
+                LabeledContent {
                     Stepper(value: $draftMaxStates, in: 5...100, step: 5) {
-                        Text("\(draftMaxStates)")
+                        Text(draftMaxStates, format: .number)
                     }
+                } label: {
+                    Text(.app("View.StateDiagramSidebar.MaxStates"))
                 }
 
-                Button("Apply", action: apply)
+                Button(.app("View.StateDiagramSidebar.Apply"), action: apply)
                     .disabled(isDraftUnchanged || draftScope == nil || draftVariableName.isEmpty)
                     .accessibilityIdentifier("diagram.stateSettings.applyButton")
             }
 
-            Section("Export") {
+            Section(.app("View.StateDiagramSidebar.Export")) {
                 Button(action: onSaveAsFreeform) {
-                    Label("Save as Freeform", systemImage: "document.on.document")
+                    Label(.app("View.StateDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
-                .help("Save a copy as an editable Freeform diagram")
+                .help(.app("View.StateDiagramSidebar.SaveCopyEditableFreeform"))
                 .disabled(viewModel.diagram == nil)
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
                 Button(action: onExportImage) {
-                    Label("Export Image", systemImage: "photo")
+                    Label(.app("View.StateDiagramSidebar.ExportImage"), systemImage: "photo")
                 }
-                .help("Export the diagram as an image")
+                .help(.app("View.StateDiagramSidebar.ExportDiagramImage"))
                 .disabled(viewModel.diagram == nil)
                 .accessibilityIdentifier("diagram.exportImageButton")
             }
@@ -234,6 +240,11 @@ struct StateDiagramSidebar: View {
         return names
     }
 
+}
+
+/// Split into an extension to stay under the file's own type-body-length limit — same pattern
+/// used for `SequenceDiagramSidebar+Inspector.swift`.
+extension StateDiagramSidebar {
     // MARK: - Selection Inspector
 
     @ViewBuilder
@@ -255,7 +266,7 @@ struct StateDiagramSidebar: View {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)
-            Text("Select a state or transition to inspect")
+            Text(.app("View.StateDiagramSidebar.SelectStateTransitionInspect"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -268,35 +279,73 @@ struct StateDiagramSidebar: View {
         let incoming = viewModel.diagram?.transitions.filter { $0.to == stateID } ?? []
         return List {
             Section(state?.name ?? stateID) {
-                LabeledContent("Kind", value: state?.kind.rawValue ?? "")
-                if let entryAction = state?.entryAction { LabeledContent("Entry", value: entryAction) }
-                if let exitAction = state?.exitAction { LabeledContent("Exit", value: exitAction) }
-                if let doActivity = state?.doActivity { LabeledContent("Do", value: doActivity) }
-                if !outgoing.isEmpty {
-                    DisclosureGroup("Outgoing (\(outgoing.count))") {
-                        ForEach(Array(outgoing.enumerated()), id: \.offset) { _, transition in
-                            transitionRow(transition)
-                        }
-                    }
-                }
-                if !incoming.isEmpty {
-                    DisclosureGroup("Incoming (\(incoming.count))") {
-                        ForEach(Array(incoming.enumerated()), id: \.offset) { _, transition in
-                            transitionRow(transition)
-                        }
-                    }
-                }
+                stateFields(state)
+                stateTransitionGroups(outgoing: outgoing, incoming: incoming)
             }
         }
         .listStyle(.inset)
     }
 
+    @ViewBuilder
+    private func stateFields(_ state: StateDiagram.State?) -> some View {
+        LabeledContent {
+            Text(verbatim: state?.kind.rawValue ?? "")
+        } label: {
+            Text(.app("View.StateDiagramSidebar.Kind"))
+        }
+        if let entryAction = state?.entryAction {
+            LabeledContent {
+                Text(verbatim: entryAction)
+            } label: {
+                Text(.app("View.StateDiagramSidebar.Entry"))
+            }
+        }
+        if let exitAction = state?.exitAction {
+            LabeledContent {
+                Text(verbatim: exitAction)
+            } label: {
+                Text(.app("View.StateDiagramSidebar.Exit"))
+            }
+        }
+        if let doActivity = state?.doActivity {
+            LabeledContent {
+                Text(verbatim: doActivity)
+            } label: {
+                Text(.app("View.StateDiagramSidebar.Do"))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func stateTransitionGroups(
+        outgoing: [StateDiagram.Transition], incoming: [StateDiagram.Transition]
+    ) -> some View {
+        if !outgoing.isEmpty {
+            DisclosureGroup {
+                ForEach(Array(outgoing.enumerated()), id: \.offset) { _, transition in
+                    transitionRow(transition)
+                }
+            } label: {
+                Text(.app("View.StateDiagramSidebar.Outgoing \(outgoing.count)"))
+            }
+        }
+        if !incoming.isEmpty {
+            DisclosureGroup {
+                ForEach(Array(incoming.enumerated()), id: \.offset) { _, transition in
+                    transitionRow(transition)
+                }
+            } label: {
+                Text(.app("View.StateDiagramSidebar.Incoming \(incoming.count)"))
+            }
+        }
+    }
+
     private func transitionRow(_ transition: StateDiagram.Transition) -> some View {
         HStack {
-            Text(transition.label ?? "(no label)")
+            transition.label.map { Text(verbatim: $0) } ?? Text(.app("View.StateDiagramSidebar.NoLabel"))
                 .font(.caption.monospaced())
             Spacer()
-            Text("\(viewModel.stateName(transition.from) ?? transition.from) → "
+            Text(verbatim: "\(viewModel.stateName(transition.from) ?? transition.from) → "
                  + "\(viewModel.stateName(transition.to) ?? transition.to)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -305,12 +354,38 @@ struct StateDiagramSidebar: View {
 
     private func transitionDetail(_ transition: StateDiagram.Transition) -> some View {
         List {
-            Section("Transition") {
-                LabeledContent("From", value: viewModel.stateName(transition.from) ?? transition.from)
-                LabeledContent("To", value: viewModel.stateName(transition.to) ?? transition.to)
-                if let event = transition.event { LabeledContent("Event", value: event) }
-                if let guardCondition = transition.guardCondition { LabeledContent("Guard", value: guardCondition) }
-                if let action = transition.action { LabeledContent("Action", value: action) }
+            Section(.app("View.StateDiagramSidebar.Transition")) {
+                LabeledContent {
+                    Text(verbatim: viewModel.stateName(transition.from) ?? transition.from)
+                } label: {
+                    Text(.app("View.StateDiagramSidebar.From"))
+                }
+                LabeledContent {
+                    Text(verbatim: viewModel.stateName(transition.to) ?? transition.to)
+                } label: {
+                    Text(.app("View.StateDiagramSidebar.To"))
+                }
+                if let event = transition.event {
+                    LabeledContent {
+                        Text(verbatim: event)
+                    } label: {
+                        Text(.app("View.StateDiagramSidebar.Event"))
+                    }
+                }
+                if let guardCondition = transition.guardCondition {
+                    LabeledContent {
+                        Text(verbatim: guardCondition)
+                    } label: {
+                        Text(.app("View.StateDiagramSidebar.Guard"))
+                    }
+                }
+                if let action = transition.action {
+                    LabeledContent {
+                        Text(verbatim: action)
+                    } label: {
+                        Text(.app("View.StateDiagramSidebar.Action"))
+                    }
+                }
             }
         }
         .listStyle(.inset)
@@ -326,7 +401,7 @@ struct StateDiagramSidebar: View {
             .map { SelectableState(id: $0, name: viewModel.stateName($0) ?? $0) }
         return MultiSelectionInspector(
             items: selected,
-            title: { Text("^[\($0) State](inflect: true) Selected") },
+            title: { Text(.app("View.StateDiagramSidebar.StateInflectTrueSelected \($0)")) },
             rowIcon: { _ in nil },
             rowLabel: \.name,
             rowDetail: nil,

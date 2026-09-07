@@ -7,7 +7,7 @@ struct BudgetsEditor: View {
 
     var body: some View {
         RuleSection(
-            title: "Metric budgets",
+            title: .app("View.BudgetsEditor.MetricBudgets"),
             total: budgets.count,
             onAdd: { budgets.append(MetricBudget(metric: .distance)) },
             content: {
@@ -19,21 +19,27 @@ struct BudgetsEditor: View {
 
     private func row(_ index: Int) -> some View {
         RuleCard(onRemove: { budgets.remove(at: index) }, content: {
-            Picker("Metric", selection: $budgets[index].metric) {
+            Picker(.app("View.BudgetsEditor.Metric"), selection: $budgets[index].metric) {
                 ForEach(MetricBudget.Metric.allCases, id: \.self) { metric in
-                    Text(metric.rawValue).tag(metric)
+                    Text(verbatim: metric.rawValue).tag(metric)
                 }
             }
             HStack(spacing: 8) {
-                Text("Min").font(.caption).foregroundStyle(.secondary)
-                TextField("none", text: $budgets[index].min.asText)
-                Text("Max").font(.caption).foregroundStyle(.secondary)
-                TextField("none", text: $budgets[index].max.asText)
+                Text(.app("View.BudgetsEditor.Min")).font(.caption).foregroundStyle(.secondary)
+                TextField(text: $budgets[index].min.asText) {
+                    Text(.app("View.BudgetsEditor.None"))
+                }
+                Text(.app("View.BudgetsEditor.Max")).font(.caption).foregroundStyle(.secondary)
+                TextField(text: $budgets[index].max.asText) {
+                    Text(.app("View.BudgetsEditor.None"))
+                }
             }
             .textFieldStyle(.roundedBorder)
-            SelectorEditor(title: "Applies to (optional)", selector: $budgets[index].target)
-            TextField("Custom message (optional)", text: $budgets[index].message.orEmpty)
-                .textFieldStyle(.roundedBorder)
+            SelectorEditor(title: .app("View.BudgetsEditor.AppliesToOptional"), selector: $budgets[index].target)
+            TextField(text: $budgets[index].message.orEmpty) {
+                Text(.app("View.BudgetsEditor.CustomMessageOptional"))
+            }
+            .textFieldStyle(.roundedBorder)
         })
     }
 }

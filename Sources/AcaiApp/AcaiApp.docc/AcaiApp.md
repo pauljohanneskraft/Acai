@@ -86,6 +86,22 @@ are checked for a moved remote `HEAD` on a schedule. Types, diagrams and codebas
 through quick-open (⌘K on macOS) and are mirrored into Spotlight, and Handoff lets you continue a
 diagram on another device.
 
+## Languages
+
+The app ships in English, German and French, following the system language — there is no in-app
+language setting, so switching language means switching it for Acai in System Settings (macOS) or
+Settings › Acai (iOS).
+
+Every interface string is an identifier (`View.<Type>.<ShortTitle>`) resolved through
+`LocalizedStringResource.app(_:)` against `Resources/Localizable.xcstrings`, which holds all three
+languages. Adding a string means adding it there in all three at the same time: `LocalizationCatalogTests`
+fails on an identifier that is missing, unused, or untranslated, so translations cannot fall behind
+the app. Content the parser produced — type names, signatures, paths, metric readouts — and anything
+written into an export or a persisted name stays English in every language.
+
+`GermanLayoutJourneyTests` walks the densest screens with the app launched in German, the longest of
+the three, and fails on any label the layout truncates.
+
 ## Structure
 
 Screens live under `Screens/`, one directory per feature area, each pairing a SwiftUI view with an

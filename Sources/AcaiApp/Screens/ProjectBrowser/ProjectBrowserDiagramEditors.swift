@@ -271,7 +271,7 @@ struct ProjectCodebaseEditor {
             mutateCodebase(codebaseID) { $0.qualityCheck = QualityCheckConfiguration(rulesPath: url.path) }
             invalidateAnalysis(codebaseID)
         } catch {
-            store.report("Failed to save quality rules: \(error.localizedDescription)")
+            store.report(.app("Error.ProjectBrowserViewModel.SaveQualityRulesFailed \(error.localizedDescription)"))
         }
     }
 

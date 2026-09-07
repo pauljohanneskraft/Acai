@@ -9,17 +9,17 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("GitHub Account") {
+                Section(.app("View.SettingsSheet.GitHubAccount")) {
                     GitHubAccountSection()
                 }
-                Section("Licenses") {
+                Section(.app("View.SettingsSheet.Licenses")) {
                     LicensesSection()
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(.app("View.SettingsSheet.Settings"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(.app("View.SettingsSheet.Done")) { dismiss() }
                         .accessibilityIdentifier("settings.doneButton")
                 }
             }

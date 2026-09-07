@@ -10,7 +10,7 @@ extension Codebase {
         var errorDescription: String? {
             switch self {
             case .fileNotFound(let path):
-                "\"\(path)\" could not be found in this codebase."
+                String(localized: .app("Error.Codebase.FileNotFound \(path)"))
             }
         }
     }

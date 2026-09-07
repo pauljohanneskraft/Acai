@@ -168,8 +168,11 @@ struct CodebaseAtlasBuilder {
         return line
     }
 
+    /// Pinned, not the reader's locale: this date is written into the exported atlas, which stays
+    /// the same document whatever language the app is running in.
     private static let generatedAtFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter

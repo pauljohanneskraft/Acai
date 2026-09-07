@@ -54,11 +54,11 @@ struct CycleDiagramView: View {
                 .sheet(isPresented: $showSidebar) {
                     NavigationStack {
                         edgeList
-                            .navigationTitle("Cycle Members")
+                            .navigationTitle(.app("View.CycleDiagramView.CycleMembers"))
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.CycleDiagramView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -112,9 +112,7 @@ struct CycleDiagramView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "checkmark.seal").font(.system(size: 28)).foregroundStyle(.secondary)
-            Text("This cycle no longer has any members — it may have been resolved since this "
-                 + "diagram was created. Reindexing the codebase and reopening the Quality Check "
-                 + "report will confirm.")
+            Text(.app("View.CycleDiagramView.CycleNoLongerHas"))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -123,7 +121,7 @@ struct CycleDiagramView: View {
     }
 
     private func cycleNodeBubble(_ node: CycleDiagramData.Node, radius: CGFloat) -> some View {
-        Text(node.label)
+        Text(verbatim: node.label)
             .font(.caption.bold())
             .lineLimit(2)
             .multilineTextAlignment(.center)
@@ -140,16 +138,16 @@ struct CycleDiagramView: View {
 
     private var edgeList: some View {
         List {
-            Section("Members (\(data.nodes.count))") {
+            Section(.app("View.CycleDiagramView.Members \(data.nodes.count)")) {
                 ForEach(data.nodes) { node in
-                    Text(node.label).font(.callout)
+                    Text(verbatim: node.label).font(.callout)
                 }
             }
-            Section("Dependencies (\(data.edges.count))") {
+            Section(.app("View.CycleDiagramView.Dependencies \(data.edges.count)")) {
                 ForEach(data.edges) { edge in
                     let fromLabel = data.nodes.first { $0.id == edge.from }?.label ?? edge.from
                     let toLabel = data.nodes.first { $0.id == edge.to }?.label ?? edge.to
-                    Text("\(fromLabel) → \(toLabel)")
+                    Text(verbatim: "\(fromLabel) → \(toLabel)")
                         .font(.caption.monospaced())
                 }
             }
@@ -167,9 +165,9 @@ struct CycleDiagramView: View {
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.CycleDiagramView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the member/dependency list")
+            .help(.app("View.CycleDiagramView.ToggleMemberDependencyList"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }

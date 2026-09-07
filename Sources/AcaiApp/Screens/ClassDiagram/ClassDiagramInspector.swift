@@ -27,8 +27,8 @@ struct ClassDiagramSidebar: View {
     private var content: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(ClassDiagramSidebarTab.settings)
-                Text("Inspector").tag(ClassDiagramSidebarTab.inspector)
+                Text(.app("View.ClassDiagramSidebar.Settings")).tag(ClassDiagramSidebarTab.settings)
+                Text(.app("View.ClassDiagramSidebar.Inspector")).tag(ClassDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -68,21 +68,21 @@ struct ClassDiagramSidebar: View {
         let typeNames = Array(Set(artifact.flattened().map(\.name))).sorted()
 
         return Form {
-            Section("Visibility") {
-                Toggle("Show Properties", isOn: editor.globalVisibility(
+            Section(.app("View.ClassDiagramSidebar.Visibility")) {
+                Toggle(.app("View.ClassDiagramSidebar.ShowProperties"), isOn: editor.globalVisibility(
                     \.showProperties, override: \.propertyVisibility))
-                Toggle("Show Methods", isOn: editor.globalVisibility(
+                Toggle(.app("View.ClassDiagramSidebar.ShowMethods"), isOn: editor.globalVisibility(
                     \.showMethods, override: \.methodVisibility))
-                Toggle("Show Enum Cases", isOn: editor.globalVisibility(
+                Toggle(.app("View.ClassDiagramSidebar.ShowEnumCases"), isOn: editor.globalVisibility(
                     \.showEnumCases, override: \.enumCaseVisibility))
-                Text("Toggling resets any per-type overrides set from a node's inspector or menu.")
+                Text(.app("View.ClassDiagramSidebar.TogglingResetsPerType"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("Min Access Level", selection: config.minimumAccessLevel) {
-                    Text("All").tag(AccessLevel?.none)
+                Picker(.app("View.ClassDiagramSidebar.MinAccessLevel"), selection: config.minimumAccessLevel) {
+                    Text(.app("View.ClassDiagramSidebar.All")).tag(AccessLevel?.none)
                     ForEach([AccessLevel.public, .internal, .private], id: \.self) { level in
-                        Text(level.rawValue).tag(AccessLevel?.some(level))
+                        Text(verbatim: level.rawValue).tag(AccessLevel?.some(level))
                     }
                 }
             }
@@ -94,34 +94,34 @@ struct ClassDiagramSidebar: View {
                 artifact: artifact
             )
 
-            Section("Relationships") {
-                Toggle("Show Relationships", isOn: config.showRelationships)
+            Section(.app("View.ClassDiagramSidebar.Relationships")) {
+                Toggle(.app("View.ClassDiagramSidebar.ShowRelationships"), isOn: config.showRelationships)
                 if config.wrappedValue.showRelationships {
-                    Toggle("Inheritance", isOn: config.showInheritance)
-                    Toggle("Composition", isOn: config.showComposition)
-                    Toggle("Dependency", isOn: config.showDependency)
-                    Toggle("Multiplicities", isOn: config.showMultiplicities)
+                    Toggle(.app("View.ClassDiagramSidebar.Inheritance"), isOn: config.showInheritance)
+                    Toggle(.app("View.ClassDiagramSidebar.Composition"), isOn: config.showComposition)
+                    Toggle(.app("View.ClassDiagramSidebar.Dependency"), isOn: config.showDependency)
+                    Toggle(.app("View.ClassDiagramSidebar.Multiplicities"), isOn: config.showMultiplicities)
                 }
             }
 
-            Section("Stereotypes") {
-                Toggle("Annotation Stereotypes", isOn: config.showAnnotationStereotypes)
-                Text("Shows «entity» and similar stereotypes derived from type annotations.")
+            Section(.app("View.ClassDiagramSidebar.Stereotypes")) {
+                Toggle(.app("View.ClassDiagramSidebar.AnnotationStereotypes"), isOn: config.showAnnotationStereotypes)
+                Text(.app("View.ClassDiagramSidebar.ShowsEntitySimilarStereotypes"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Layout") {
-                Picker("Grouping", selection: config.grouping) {
-                    Text("None").tag(ClassDiagramConfiguration.Grouping.none)
-                    Text("Directory").tag(ClassDiagramConfiguration.Grouping.directory)
-                    Text("Product").tag(ClassDiagramConfiguration.Grouping.product)
+            Section(.app("View.ClassDiagramSidebar.Layout")) {
+                Picker(.app("View.ClassDiagramSidebar.Grouping"), selection: config.grouping) {
+                    Text(.app("View.ClassDiagramSidebar.None")).tag(ClassDiagramConfiguration.Grouping.none)
+                    Text(.app("View.ClassDiagramSidebar.Directory")).tag(ClassDiagramConfiguration.Grouping.directory)
+                    Text(.app("View.ClassDiagramSidebar.Product")).tag(ClassDiagramConfiguration.Grouping.product)
                 }
-                Toggle("Show External Types", isOn: config.showExternalTypes)
+                Toggle(.app("View.ClassDiagramSidebar.ShowExternalTypes"), isOn: config.showExternalTypes)
                 Button(action: onRelayout) {
-                    Label("Re-layout", systemImage: "rectangle.3.group")
+                    Label(.app("View.ClassDiagramSidebar.ReLayout"), systemImage: "rectangle.3.group")
                 }
-                .help("Re-run automatic layout")
+                .help(.app("View.ClassDiagramSidebar.ReRunAutomaticLayout"))
                 .accessibilityIdentifier("diagram.relayoutButton")
             }
 
@@ -131,23 +131,23 @@ struct ClassDiagramSidebar: View {
             // explanation come from that filter, so the app names no language itself.
             if let filter = artifact.standardLanguageResolver.defaultConfiguration.generatedCodeFilter {
                 Section(filter.displayName) {
-                    Toggle("Hide Generated Types", isOn: config.hideGeneratedTypes)
-                    Text(filter.explanation)
+                    Toggle(.app("View.ClassDiagramSidebar.HideGeneratedTypes"), isOn: config.hideGeneratedTypes)
+                    Text(verbatim: filter.explanation)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("Export") {
+            Section(.app("View.ClassDiagramSidebar.Export")) {
                 Button(action: onSaveAsFreeform) {
-                    Label("Save as Freeform", systemImage: "document.on.document")
+                    Label(.app("View.ClassDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
-                .help("Save a copy as an editable Freeform diagram")
+                .help(.app("View.ClassDiagramSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
                 Button(action: onExportImage) {
-                    Label("Export Image", systemImage: "photo")
+                    Label(.app("View.ClassDiagramSidebar.ExportImage"), systemImage: "photo")
                 }
-                .help("Export the diagram as an image")
+                .help(.app("View.ClassDiagramSidebar.ExportDiagramImage"))
                 .accessibilityIdentifier("diagram.exportImageButton")
             }
         }
@@ -163,7 +163,7 @@ struct ClassDiagramSidebar: View {
                 Image(systemName: "cursorarrow.click")
                     .font(.title)
                     .foregroundStyle(.secondary)
-                Text("Select a node to inspect")
+                Text(.app("View.ClassDiagramSidebar.SelectNodeInspect"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -175,67 +175,83 @@ struct ClassDiagramSidebar: View {
                 ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
                     if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
                         Section(node.name) {
-                            LabeledContent("Kind", value: node.kind.rawValue)
+                            LabeledContent {
+                                Text(verbatim: node.kind.rawValue)
+                            } label: {
+                                Text(.app("View.ClassDiagramSidebar.Kind"))
+                            }
 
                             if let change = viewModel.typeChange(for: node) {
                                 whatChangedSection(change)
                             }
 
-                            DisclosureGroup("Visibility") {
-                                Toggle("Show Properties", isOn: editor.typeVisibility(
+                            DisclosureGroup {
+                                Toggle(.app("View.ClassDiagramSidebar.ShowProperties"), isOn: editor.typeVisibility(
                                     nodeID, override: \.propertyVisibility, default: \.showProperties))
-                                Toggle("Show Methods", isOn: editor.typeVisibility(
+                                Toggle(.app("View.ClassDiagramSidebar.ShowMethods"), isOn: editor.typeVisibility(
                                     nodeID, override: \.methodVisibility, default: \.showMethods))
                                 if node.kind == .enum {
-                                    Toggle("Show Enum Cases", isOn: editor.typeVisibility(
+                                    Toggle(.app("View.ClassDiagramSidebar.ShowEnumCases"), isOn: editor.typeVisibility(
                                         nodeID, override: \.enumCaseVisibility, default: \.showEnumCases))
                                 }
+                            } label: {
+                                Text(.app("View.ClassDiagramSidebar.Visibility"))
                             }
 
                             if !node.properties.isEmpty {
-                                DisclosureGroup("Properties (\(node.properties.count))") {
+                                DisclosureGroup {
                                     ForEach(node.properties) { prop in
                                         MemberRowView(item: prop.displayItem, compact: false)
                                     }
+                                } label: {
+                                    Text(.app("View.ClassDiagramSidebar.Properties \(node.properties.count)"))
                                 }
                             }
                             if !node.methods.isEmpty {
-                                DisclosureGroup("Methods (\(node.methods.count))") {
+                                DisclosureGroup {
                                     ForEach(node.methods) { method in
                                         MemberRowView(item: method.displayItem, compact: false)
                                     }
+                                } label: {
+                                    Text(.app("View.ClassDiagramSidebar.Methods \(node.methods.count)"))
                                 }
                             }
 
                             if let pos = viewModel.nodePositions[nodeID] {
-                                LabeledContent("Position") {
-                                    Text("(\(Int(pos.x)), \(Int(pos.y)))")
+                                LabeledContent {
+                                    Text(verbatim: "(\(Int(pos.x)), \(Int(pos.y)))")
                                         .font(.caption.monospaced())
+                                } label: {
+                                    Text(.app("View.ClassDiagramSidebar.Position"))
                                 }
                             }
                             let size = viewModel.effectiveSize(for: nodeID)
-                            LabeledContent("Size") {
-                                Text("\(Int(size.width)) x \(Int(size.height))")
+                            LabeledContent {
+                                Text(verbatim: "\(Int(size.width)) x \(Int(size.height))")
                                     .font(.caption.monospaced())
+                            } label: {
+                                Text(.app("View.ClassDiagramSidebar.Size"))
                             }
 
                             let relatedEdges = viewModel.edges.filter {
                                 $0.sourceID == nodeID || $0.targetID == nodeID
                             }
                             if !relatedEdges.isEmpty {
-                                DisclosureGroup("Relationships (\(relatedEdges.count))") {
+                                DisclosureGroup {
                                     ForEach(relatedEdges) { edge in
                                         HStack {
-                                            Text(edge.kind.rawValue)
+                                            Text(verbatim: edge.kind.rawValue)
                                                 .font(.caption)
                                             Spacer()
                                             let otherID = edge.sourceID == nodeID
                                                 ? edge.targetID : edge.sourceID
-                                            Text(otherID)
+                                            Text(verbatim: otherID)
                                                 .font(.caption.monospaced())
                                                 .foregroundStyle(.secondary)
                                         }
                                     }
+                                } label: {
+                                    Text(.app("View.ClassDiagramSidebar.RelationshipsCount \(relatedEdges.count)"))
                                 }
                             }
                             VStack(alignment: .center) {
@@ -260,7 +276,7 @@ struct ClassDiagramSidebar: View {
     private var multiSelectionInspector: some View {
         MultiSelectionInspector(
             items: selectedNodes,
-            title: { Text("^[\($0) Node](inflect: true) Selected") },
+            title: { Text(.app("View.ClassDiagramSidebar.NodeInflectTrueSelected \($0)")) },
             rowIcon: { _ in "cube" },
             rowLabel: \.name,
             rowDetail: { $0.kind.rawValue },
@@ -282,50 +298,59 @@ struct ClassDiagramSidebar: View {
         editor.mutate { $0.setMemberVisibility(!$0.showsMembers(forTypeIDs: ids), forTypeIDs: ids) }
     }
 
+}
+
+private extension ClassDiagramSidebar {
     @ViewBuilder
-    private func whatChangedSection(_ change: TypeChange) -> some View {
-        DisclosureGroup("What Changed") {
+    func whatChangedSection(_ change: TypeChange) -> some View {
+        DisclosureGroup {
             if let kindChange = change.kindChange {
-                LabeledContent("Kind") {
-                    Text("\(kindChange.before.rawValue) → \(kindChange.after.rawValue)")
+                LabeledContent {
+                    Text(verbatim: "\(kindChange.before.rawValue) → \(kindChange.after.rawValue)")
                         .font(.caption.monospaced())
+                } label: {
+                    Text(.app("View.ClassDiagramSidebar.Kind"))
                 }
             }
             if let accessChange = change.accessChange {
-                LabeledContent("Access") {
-                    Text("\(accessChange.before.rawValue) → \(accessChange.after.rawValue)")
+                LabeledContent {
+                    Text(verbatim: "\(accessChange.before.rawValue) → \(accessChange.after.rawValue)")
                         .font(.caption.monospaced())
+                } label: {
+                    Text(.app("View.ClassDiagramSidebar.Access"))
                 }
             }
             ForEach(change.changedMembers, id: \.name) { memberChange in
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("~ \(memberChange.name)")
+                    Text(verbatim: "~ \(memberChange.name)")
                         .font(.caption.monospaced())
-                    Text(memberChange.before)
+                    Text(verbatim: memberChange.before)
                         .font(.caption2.monospaced())
                         .foregroundStyle(.secondary)
                         .strikethrough()
-                    Text(memberChange.after)
+                    Text(verbatim: memberChange.after)
                         .font(.caption2.monospaced())
                         .foregroundStyle(.secondary)
                 }
             }
             ForEach(change.addedMembers, id: \.self) { member in
-                Text("+ \(member)")
+                Text(verbatim: "+ \(member)")
                     .font(.caption.monospaced())
                     .foregroundStyle(.green)
             }
             ForEach(change.removedMembers, id: \.self) { member in
-                Text("− \(member)")
+                Text(verbatim: "− \(member)")
                     .font(.caption.monospaced())
                     .foregroundStyle(.red)
             }
+        } label: {
+            Text(.app("View.ClassDiagramSidebar.WhatChanged"))
         }
         .accessibilityIdentifier("diagram.inspector.whatChanged")
     }
 
     @ViewBuilder
-    private func revealInFinderButton(node: GeneratedDiagramNode) -> some View {
+    func revealInFinderButton(node: GeneratedDiagramNode) -> some View {
         #if os(macOS)
         // Resolved in the action, not the body: resolution touches the filesystem and opens a
         // security scope, which a view body must not do on every pass.
@@ -335,11 +360,11 @@ struct ClassDiagramSidebar: View {
                 FinderReveal(
                     codebase: viewModel.codebase, relativePath: filePath,
                     onFailure: { [store = model.store] in
-                        store.report("Couldn't reveal in Finder: \($0.localizedDescription)")
+                        store.report(.app("Error.FinderReveal.Failed \($0.localizedDescription)"))
                     }
                 ).reveal()
             } label: {
-                Label("Reveal in Finder", systemImage: "finder")
+                Label(.app("View.ClassDiagramSidebar.RevealFinder"), systemImage: "finder")
             }
         }
         #endif
@@ -351,32 +376,37 @@ private struct FocusSection: View {
     let typeNames: [String]
 
     var body: some View {
-        Section("Focus") {
-            Toggle("Focus on a class", isOn: focusEnabled)
+        Section(.app("View.FocusSection.Focus")) {
+            Toggle(.app("View.FocusSection.FocusClass"), isOn: focusEnabled)
 
             if configuration.focus != nil {
-                Picker("Root Type", selection: rootType) {
-                    ForEach(typeNames, id: \.self) { Text($0).tag($0) }
+                Picker(.app("View.FocusSection.RootType"), selection: rootType) {
+                    ForEach(typeNames, id: \.self) { Text(verbatim: $0).tag($0) }
                 }
 
-                Toggle("Limit Depth", isOn: depthLimited)
+                Toggle(.app("View.FocusSection.LimitDepth"), isOn: depthLimited)
                 if configuration.focus?.maxDepth != nil {
-                    Stepper("Depth: \(configuration.focus?.maxDepth ?? 1)", value: depthValue, in: 1...20)
+                    Stepper(
+                        .app("View.FocusSection.Depth \(configuration.focus?.maxDepth ?? 1)"),
+                        value: depthValue, in: 1...20
+                    )
                 }
 
-                Picker("Direction", selection: direction) {
-                    Text("Dependencies").tag(FocusConfiguration.Direction.dependencies)
-                    Text("Dependents").tag(FocusConfiguration.Direction.dependents)
-                    Text("Both").tag(FocusConfiguration.Direction.both)
+                Picker(.app("View.FocusSection.Direction"), selection: direction) {
+                    Text(.app("View.FocusSection.Dependencies")).tag(FocusConfiguration.Direction.dependencies)
+                    Text(.app("View.FocusSection.Dependents")).tag(FocusConfiguration.Direction.dependents)
+                    Text(.app("View.FocusSection.Both")).tag(FocusConfiguration.Direction.both)
                 }
 
-                DisclosureGroup("Relationship Kinds") {
+                DisclosureGroup {
                     ForEach(Relationship.Kind.allCases, id: \.self) { kind in
                         Toggle(kind.rawValue.capitalized, isOn: kindBinding(kind))
                     }
+                } label: {
+                    Text(.app("View.FocusSection.RelationshipKinds"))
                 }
 
-                Toggle("Include Interconnections", isOn: interconnections)
+                Toggle(.app("View.FocusSection.IncludeInterconnections"), isOn: interconnections)
             }
         }
     }

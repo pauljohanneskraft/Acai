@@ -9,7 +9,7 @@ struct RelationshipKindPicker: View {
     var body: some View {
         Menu {
             Button { kinds = nil } label: {
-                Label("All kinds", systemImage: kinds == nil ? "checkmark" : "")
+                Label(.app("View.RelationshipKindPicker.AllKinds"), systemImage: kinds == nil ? "checkmark" : "")
             }
             Divider()
             ForEach(Relationship.Kind.allCases, id: \.self) { kind in
@@ -18,14 +18,14 @@ struct RelationshipKindPicker: View {
                 }
             }
         } label: {
-            Text(summary)
+            Text(localized: summary)
         }
         .fixedSize()
     }
 
-    private var summary: String {
-        guard let kinds, !kinds.isEmpty else { return "All kinds" }
-        return "\(kinds.count) kind(s)"
+    private var summary: LocalizedStringResource {
+        guard let kinds, !kinds.isEmpty else { return .app("View.RelationshipKindPicker.AllKinds") }
+        return .app("View.RelationshipKindPicker.Kinds \(kinds.count)")
     }
 
     private func isOn(_ kind: Relationship.Kind) -> Bool {

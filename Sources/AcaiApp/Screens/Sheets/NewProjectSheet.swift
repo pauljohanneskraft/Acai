@@ -16,17 +16,21 @@ struct NewProjectSheet: View {
                     // `TextField`'s first parameter renders as an extra label inside `LabeledContent`
                     // on macOS, so a longer title (vs. "Optional") would misalign the two rows' field
                     // boxes. Use `prompt:` instead — internal placeholder text, not a second label.
-                    LabeledContent("Title") {
-                        TextField("", text: $title, prompt: Text("e.g. My Project"))
+                    LabeledContent {
+                        TextField("", text: $title, prompt: Text(.app("View.NewProjectSheet.EGMyProject")))
                             .multilineTextAlignment(.trailing)
                             .focused($focusedField, equals: .title)
                             .accessibilityIdentifier("newProjectSheet.titleField")
+                    } label: {
+                        Text(.app("View.NewProjectSheet.Title"))
                     }
-                    LabeledContent("Subtitle") {
-                        TextField("", text: $subtitle, prompt: Text("Optional"))
+                    LabeledContent {
+                        TextField("", text: $subtitle, prompt: Text(.app("View.NewProjectSheet.Optional")))
                             .multilineTextAlignment(.trailing)
                             .focused($focusedField, equals: .subtitle)
                             .accessibilityIdentifier("newProjectSheet.subtitleField")
+                    } label: {
+                        Text(.app("View.NewProjectSheet.Subtitle"))
                     }
                 }
             }
@@ -40,14 +44,14 @@ struct NewProjectSheet: View {
             .presentationDetents([.medium])
             #endif
             .onAppear { focusedField = .title }
-            .navigationTitle("New Project")
+            .navigationTitle(.app("View.NewProjectSheet.NewProject"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(.app("View.NewProjectSheet.Cancel")) { dismiss() }
                         .accessibilityIdentifier("newProjectSheet.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button(.app("View.NewProjectSheet.Create")) {
                         onCreate(title, subtitle)
                         dismiss()
                     }

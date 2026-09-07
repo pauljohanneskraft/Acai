@@ -5,7 +5,7 @@ extension ProjectDetailView {
         Button {
             model.selection = .findings(projectID)
         } label: {
-            Label("Findings", systemImage: "list.bullet.clipboard")
+            Label(.app("View.ProjectDetailView.Findings"), systemImage: "list.bullet.clipboard")
         }
         .accessibilityIdentifier("projectDetail.findingsButton")
     }

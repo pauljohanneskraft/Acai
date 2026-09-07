@@ -35,6 +35,12 @@ final class ProjectStore: ObservableObject {
         var relocatableCodebaseID: UUID?
     }
 
+    func report(_ message: LocalizedStringResource, relocating codebaseID: UUID? = nil) {
+        report(String(localized: message), relocating: codebaseID)
+    }
+
+    /// The `String` overload carries text the app did not write — an engine or system error's own
+    /// `localizedDescription`, which is shown untranslated rather than guessed at.
     func report(_ message: String, relocating codebaseID: UUID? = nil) {
         print(message)
         lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
@@ -119,11 +125,12 @@ final class ProjectStore: ObservableObject {
                         loadArtifact(for: codebase.id)
                     }
                 } catch {
-                    report("Failed to load project at \(projectURL.lastPathComponent): \(error.localizedDescription)")
+                    let name = projectURL.lastPathComponent
+                    report(.app("Error.ProjectStore.LoadProject \(name) \(error.localizedDescription)"))
                 }
             }
         } catch {
-            report("Failed to load project directory: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.LoadProjectDirectory \(error.localizedDescription)"))
         }
     }
 
@@ -134,7 +141,7 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             generatedDiagrams[id] = try JSONDecoder().decode(GeneratedDiagram.self, from: data)
         } catch {
-            report("Failed to load a generated diagram: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.LoadGeneratedDiagram \(error.localizedDescription)"))
         }
     }
 
@@ -145,7 +152,7 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             freeformDiagrams[id] = try JSONDecoder().decode(FreeformDiagram.self, from: data)
         } catch {
-            report("Failed to load a freeform diagram: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.LoadFreeformDiagram \(error.localizedDescription)"))
         }
     }
 
@@ -178,7 +185,7 @@ final class ProjectStore: ObservableObject {
             // UI offers Reindex rather than a decode error the user can't act on.
             markCodebaseNotIndexed(codebaseID)
         } catch {
-            report("Failed to load a stored analysis: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.LoadStoredAnalysis \(error.localizedDescription)"))
         }
     }
 
@@ -223,7 +230,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(project).write(to: url, options: .atomic)
         } catch {
-            report("Failed to save project “\(project.title)”: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.SaveProject \(project.title) \(error.localizedDescription)"))
         }
     }
 
@@ -234,7 +241,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            report("Failed to save diagram “\(diagram.name)”: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
         }
     }
 
@@ -245,7 +252,7 @@ final class ProjectStore: ObservableObject {
         do {
             try encoder.encode(diagram).write(to: url, options: .atomic)
         } catch {
-            report("Failed to save diagram “\(diagram.name)”: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
         }
     }
 
@@ -259,7 +266,7 @@ final class ProjectStore: ObservableObject {
             do {
                 try await writeArtifactToDisk(artifact, for: codebaseID)
             } catch {
-                report("Failed to save analysis: \(error.localizedDescription)")
+                report(.app("Error.ProjectStore.SaveAnalysis \(error.localizedDescription)"))
             }
         }
     }
@@ -311,7 +318,7 @@ final class ProjectStore: ObservableObject {
         do {
             try JSONEncoder().encode(recentlyViewed).write(to: recentlyViewedURL, options: .atomic)
         } catch {
-            report("Failed to save recently viewed: \(error.localizedDescription)")
+            report(.app("Error.ProjectStore.SaveRecentlyViewed \(error.localizedDescription)"))
         }
     }
 

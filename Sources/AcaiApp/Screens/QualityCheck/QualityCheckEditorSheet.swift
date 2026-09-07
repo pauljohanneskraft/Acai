@@ -28,9 +28,9 @@ struct QualityCheckEditorSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("Rules", selection: $source) {
-                    Text("Defined here").tag(Source.definedHere)
-                    Text("External YAML file").tag(Source.externalFile)
+                Picker(.app("View.QualityCheckEditorSheet.Rules"), selection: $source) {
+                    Text(.app("View.QualityCheckEditorSheet.DefinedHere")).tag(Source.definedHere)
+                    Text(.app("View.QualityCheckEditorSheet.ExternalYAMLFile")).tag(Source.externalFile)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -41,13 +41,13 @@ struct QualityCheckEditorSheet: View {
             #if os(macOS)
             .frame(maxWidth: 640, maxHeight: 560)
             #endif
-            .navigationTitle("Code Quality Check")
+            .navigationTitle(.app("View.QualityCheckEditorSheet.CodeQualityCheck"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(.app("View.QualityCheckEditorSheet.Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save)
+                    Button(.app("View.QualityCheckEditorSheet.Save"), action: save)
                         .keyboardShortcut(.defaultAction)
                         .disabled(source == .externalFile && externalPath.isEmpty)
                 }
@@ -56,7 +56,7 @@ struct QualityCheckEditorSheet: View {
             .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.yaml]) { result in
                 guard let url = try? result.get() else { return }
                 guard url.startAccessingSecurityScopedResource() else {
-                    model.store.report("Access to \"\(url.path)\" was denied.")
+                    model.store.report(.app("Error.ScopedResourceAccess.Denied \(url.path)"))
                     return
                 }
                 defer { url.stopAccessingSecurityScopedResource() }
@@ -67,7 +67,8 @@ struct QualityCheckEditorSheet: View {
                     externalBookmark = try SecurityScopedBookmark(resolving: url)
                 } catch {
                     externalBookmark = nil
-                    model.store.report("Couldn't keep access to \"\(url.path)\": \(error.localizedDescription)")
+                    model.store.report(
+                        .app("Error.ScopedResourceAccess.BookmarkFailed \(url.path) \(error.localizedDescription)"))
                 }
             }
         }
@@ -83,7 +84,7 @@ struct QualityCheckEditorSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     QualityRulesEditor(rules: $rules)
                     Divider()
-                    Text("Preview").font(.headline)
+                    Text(.app("View.QualityCheckEditorSheet.Preview")).font(.headline)
                     QualityCheckReportView(report: rules.report(for: artifact))
                 }
                 .padding()
@@ -97,12 +98,13 @@ struct QualityCheckEditorSheet: View {
     private var externalContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(externalPath.isEmpty ? "No file selected"
-                     : (externalPath as NSString).abbreviatingWithTildeInPath)
+                (externalPath.isEmpty
+                    ? Text(.app("View.QualityCheckEditorSheet.NoFileSelected"))
+                    : Text(verbatim: (externalPath as NSString).abbreviatingWithTildeInPath))
                     .foregroundStyle(externalPath.isEmpty ? .secondary : .primary)
                     .lineLimit(1).truncationMode(.middle)
                 Spacer()
-                Button("Choose…") { isChoosingFile = true }
+                Button(.app("View.QualityCheckEditorSheet.Choose")) { isChoosingFile = true }
             }
             Divider()
             externalPreview
@@ -114,14 +116,14 @@ struct QualityCheckEditorSheet: View {
     @ViewBuilder
     private var externalPreview: some View {
         if externalPath.isEmpty {
-            QualityCheckPlaceholder(text: "Choose a YAML rules file to validate this codebase against.")
+            QualityCheckPlaceholder(text: .app("View.QualityCheckEditorSheet.ChooseYAMLRulesFile"))
         } else {
             switch externalRules {
             case .success(let rules):
                 ScrollView { QualityCheckReportView(report: rules.report(for: artifact)) }
             case .failure(let error):
                 QualityCheckPlaceholder(
-                    text: "Could not load rules: \(error.localizedDescription)",
+                    text: .app("View.QualityCheckEditorSheet.CouldNotLoadRules \(error.localizedDescription)"),
                     systemImage: "exclamationmark.triangle")
             }
         }

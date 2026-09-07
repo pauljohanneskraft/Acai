@@ -75,17 +75,17 @@ struct ClassDiagramView: View {
                     Button {
                         centerDiagram()
                     } label: {
-                        Label("Fit to View", systemImage: "rectangle.dashed")
+                        Label(.app("View.ClassDiagramView.FitView"), systemImage: "rectangle.dashed")
                     }
-                    .help("Fit the diagram to the visible canvas (⌘0)")
+                    .help(.app("View.ClassDiagramView.FitDiagramVisibleCanvas"))
                     .keyboardShortcut("0", modifiers: .command)
                     .accessibilityIdentifier("diagram.fitToViewButton")
                     Button {
                         showSidebar.toggle()
                     } label: {
-                        Label("Sidebar", systemImage: "sidebar.trailing")
+                        Label(.app("View.ClassDiagramView.Sidebar"), systemImage: "sidebar.trailing")
                     }
-                    .help("Toggle the sidebar")
+                    .help(.app("View.ClassDiagramView.ToggleSidebar"))
                     .accessibilityIdentifier("diagram.sidebarToggleButton")
                 }
             }
@@ -114,7 +114,7 @@ struct ClassDiagramView: View {
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.ClassDiagramView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -261,15 +261,15 @@ struct ClassDiagramView: View {
                         sidebarTab = .inspector
                         showSidebar = true
                     } label: {
-                        Label("Details", systemImage: "info")
+                        Label(.app("View.ClassDiagramView.Details"), systemImage: "info")
                     }
                     Divider()
-                    Toggle("Show Members", isOn: editor.typeVisibility(
+                    Toggle(.app("View.ClassDiagramView.ShowMembers"), isOn: editor.typeVisibility(
                         node.id, override: \.propertyVisibility, default: \.showProperties))
-                    Toggle("Show Functions", isOn: editor.typeVisibility(
+                    Toggle(.app("View.ClassDiagramView.ShowFunctions"), isOn: editor.typeVisibility(
                         node.id, override: \.methodVisibility, default: \.showMethods))
                     if node.kind == .enum {
-                        Toggle("Show Enum Cases", isOn: editor.typeVisibility(
+                        Toggle(.app("View.ClassDiagramView.ShowEnumCases"), isOn: editor.typeVisibility(
                             node.id, override: \.enumCaseVisibility, default: \.showEnumCases))
                     }
                 }

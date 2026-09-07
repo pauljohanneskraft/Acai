@@ -63,8 +63,8 @@ struct CallGraphSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                Text("Settings").tag(CallGraphSidebarTab.settings)
-                Text("Inspector").tag(CallGraphSidebarTab.inspector)
+                Text(.app("View.CallGraphSidebar.Settings")).tag(CallGraphSidebarTab.settings)
+                Text(.app("View.CallGraphSidebar.Inspector")).tag(CallGraphSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -91,38 +91,38 @@ struct CallGraphSidebar: View {
 
     private var settingsContent: some View {
         Form {
-            Section("Scope") {
-                Text("Every method (and free function) in scope becomes a caller; each "
-                     + "statically-resolvable call is an edge. Applying re-derives the graph and "
-                     + "resets positions and undo history.")
+            Section(.app("View.CallGraphSidebar.Scope")) {
+                Text(.app("View.CallGraphSidebar.EveryMethodFreeFunction"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                LabeledContent("Scope") {
+                LabeledContent {
                     VStack(alignment: .leading, spacing: 4) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker("Scope", selection: $draftScope) {
-                            Text("Whole Codebase").tag(CallGraphScope.wholeCodebase)
+                        Picker(.app("View.CallGraphSidebar.Scope"), selection: $draftScope) {
+                            Text(.app("View.CallGraphSidebar.WholeCodebase")).tag(CallGraphScope.wholeCodebase)
                             let modules = moduleNames.filtered(by: scopeQuery)
                             if !modules.isEmpty {
-                                Section("Modules") {
+                                Section(.app("View.CallGraphSidebar.Modules")) {
                                     ForEach(modules, id: \.self) { name in
-                                        Text(name).tag(CallGraphScope.module(name))
+                                        Text(verbatim: name).tag(CallGraphScope.module(name))
                                     }
                                 }
                             }
-                            Section("Types") {
+                            Section(.app("View.CallGraphSidebar.Types")) {
                                 ForEach(typeNames.filtered(by: scopeQuery), id: \.self) { name in
-                                    Text(name).tag(CallGraphScope.type(name))
+                                    Text(verbatim: name).tag(CallGraphScope.type(name))
                                 }
                             }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("diagram.callGraphSettings.scopePicker")
                     }
+                } label: {
+                    Text(.app("View.CallGraphSidebar.Scope"))
                 }
 
-                Button("Apply") { onApplyScope(draftScope) }
+                Button(.app("View.CallGraphSidebar.Apply")) { onApplyScope(draftScope) }
                     .disabled(draftScope == scope)
                     .accessibilityIdentifier("diagram.callGraphSettings.applyButton")
             }
@@ -134,13 +134,13 @@ struct CallGraphSidebar: View {
                 artifact: artifact
             )
 
-            Section("Export") {
+            Section(.app("View.CallGraphSidebar.Export")) {
                 Button {
                     showSaveAsFreeformOptions = true
                 } label: {
-                    Label("Save as Freeform", systemImage: "document.on.document")
+                    Label(.app("View.CallGraphSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
-                .help("Save a copy as an editable Freeform diagram")
+                .help(.app("View.CallGraphSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
                 .saveAsFreeformOptions(
                     isPresented: $showSaveAsFreeformOptions,
@@ -148,9 +148,9 @@ struct CallGraphSidebar: View {
                     onConfirm: onSaveAsFreeform
                 )
                 Button(action: onExportImage) {
-                    Label("Export Image", systemImage: "photo")
+                    Label(.app("View.CallGraphSidebar.ExportImage"), systemImage: "photo")
                 }
-                .help("Export the diagram as an image")
+                .help(.app("View.CallGraphSidebar.ExportDiagramImage"))
                 .accessibilityIdentifier("diagram.exportImageButton")
             }
         }

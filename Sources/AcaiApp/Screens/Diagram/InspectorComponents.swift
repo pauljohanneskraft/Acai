@@ -2,21 +2,21 @@ import SwiftUI
 
 /// A label/value row used in the package and call-graph metric sidebars.
 struct MetricRow: View {
-    let label: String
+    let label: LocalizedStringResource
     let value: String
 
-    init(_ label: String, _ value: String) {
+    init(_ label: LocalizedStringResource, _ value: String) {
         self.label = label
         self.value = value
     }
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(localized: label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
-            Text(value)
+            Text(verbatim: value)
                 .font(.system(.caption, design: .monospaced))
         }
     }

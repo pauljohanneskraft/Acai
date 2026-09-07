@@ -62,7 +62,7 @@ extension CodebaseDetailView {
             HStack(spacing: 12) {
                 Image(systemName: type.systemImage)
                     .font(.title2.bold())
-                Text(type.displayName)
+                Text(localized: type.title)
                     .font(.title3.bold())
                     .lineLimit(1)
             }

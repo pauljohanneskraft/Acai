@@ -38,7 +38,7 @@ struct LabelNodeView: View {
             Image(systemName: role.systemImageName)
                 .font(.system(size: 28))
                 .foregroundColor(icon)
-            Text(name)
+            Text(verbatim: name)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundColor(palette.primaryInk)
         }

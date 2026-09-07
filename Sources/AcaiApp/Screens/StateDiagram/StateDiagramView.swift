@@ -74,7 +74,7 @@ struct StateDiagramView: View {
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.StateDiagramView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -206,7 +206,10 @@ struct StateDiagramView: View {
             .frame(width: 44, height: 44)
             .position(midpoint)
             .accessibilityElement()
-            .accessibilityLabel("Transition" + (edge.label.map { ": \($0)" } ?? ""))
+            .accessibilityLabel(
+                edge.label.map { Text(.app("View.StateDiagramView.TransitionLabel \($0)")) }
+                    ?? Text(.app("View.StateDiagramView.Transition"))
+            )
             .accessibilityAddTraits(.isButton)
             .onTapGesture(count: 2) {
                 viewModel.clearSelection()
@@ -215,7 +218,7 @@ struct StateDiagramView: View {
                 showSidebar = true
             }
             .onTapGesture(count: 1) {
-                let newSelection = (viewModel.selectedTransitionID == edge.id) ? nil : edge.id
+                let newSelection: Int? = (viewModel.selectedTransitionID == edge.id) ? nil : edge.id
                 viewModel.clearSelection()
                 viewModel.selectedTransitionID = newSelection
             }
@@ -234,17 +237,17 @@ struct StateDiagramView: View {
             Button {
                 centerDiagram()
             } label: {
-                Label("Fit to View", systemImage: "rectangle.dashed")
+                Label(.app("View.StateDiagramView.FitView"), systemImage: "rectangle.dashed")
             }
-            .help("Fit the diagram to the visible canvas (⌘0)")
+            .help(.app("View.StateDiagramView.FitDiagramVisibleCanvas"))
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.StateDiagramView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the sidebar")
+            .help(.app("View.StateDiagramView.ToggleSidebar"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
@@ -256,9 +259,9 @@ struct StateDiagramView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text("This variable's states can't be enumerated.")
+            Text(.app("View.StateDiagramView.VariableSStatesCan"))
                 .foregroundStyle(.secondary)
-            Text(error.message)
+            Text(verbatim: error.message)
                 .font(.callout)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -267,7 +270,7 @@ struct StateDiagramView: View {
                 sidebarTab = .settings
                 showSidebar = true
             } label: {
-                Label("Edit Configuration", systemImage: "slider.horizontal.3")
+                Label(.app("View.StateDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -278,13 +281,13 @@ struct StateDiagramView: View {
             Image(systemName: "circle.hexagonpath")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text("This state diagram has no variable selected yet.")
+            Text(.app("View.StateDiagramView.StateDiagramHasNo"))
                 .foregroundStyle(.secondary)
             Button {
                 sidebarTab = .settings
                 showSidebar = true
             } label: {
-                Label("Configure", systemImage: "slider.horizontal.3")
+                Label(.app("View.StateDiagramView.Configure"), systemImage: "slider.horizontal.3")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

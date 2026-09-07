@@ -8,7 +8,7 @@ struct UseCaseNodeView: View {
     @Environment(\.diagramPalette) private var palette
 
     var body: some View {
-        Text(name)
+        Text(verbatim: name)
             .font(.system(size: 12, weight: .medium, design: .monospaced))
             .foregroundColor(palette.primaryInk)
             .padding(.horizontal, 24)

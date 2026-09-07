@@ -16,23 +16,25 @@ struct LicensesSection: View {
                         licenseDetail(dependency)
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(dependency.name)
-                            Text(dependency.licenseIdentifier)
+                            Text(verbatim: dependency.name)
+                            Text(verbatim: dependency.licenseIdentifier)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityIdentifier("licenses.row.\(dependency.name)")
-                    .accessibilityLabel("\(dependency.name), \(dependency.licenseIdentifier) license")
+                    .accessibilityLabel(
+                        .app("View.LicensesSection.License \(dependency.name) \(dependency.licenseIdentifier)")
+                    )
                 }
             }
         }
         .task { await load() }
         .alert(item: $loadError) { failure in
             Alert(
-                title: Text("Something went wrong"),
-                message: Text(failure.message),
-                dismissButton: .default(Text("OK"))
+                title: Text(.app("View.LicensesSection.SomethingWentWrong")),
+                message: Text(verbatim: failure.message),
+                dismissButton: .default(Text(.app("View.LicensesSection.OK")))
             )
         }
     }
@@ -41,13 +43,13 @@ struct LicensesSection: View {
     private func licenseDetail(_ dependency: DependencyLicense) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if let notes = dependency.notes {
-                Text(notes)
+                Text(verbatim: notes)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("licenses.notes.\(dependency.name)")
             }
             ScrollView {
-                Text(dependency.licenseText)
+                Text(verbatim: dependency.licenseText)
                     .font(.caption.monospaced())
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)

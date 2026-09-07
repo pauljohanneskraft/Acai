@@ -1,6 +1,7 @@
 name: Acai
 options:
   bundleIdPrefix: de.kraftsoftware
+  developmentLanguage: en
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -25,6 +26,10 @@ targets:
     platform: iOS
     sources:
       - path: iOS
+      # Localizes the bundle's own Info.plist keys, and is what puts `de.lproj`/`fr.lproj` into the
+      # app bundle — without them the system never hands the process a language other than English,
+      # so `AcaiApp`'s own catalog would never be consulted.
+      - path: Shared/InfoPlist.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp
@@ -120,6 +125,7 @@ targets:
     platform: macOS
     sources:
       - path: macOS
+      - path: Shared/InfoPlist.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp

@@ -75,7 +75,7 @@ struct SequenceDiagramView: View {
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showSidebar = false }
+                                    Button(.app("View.SequenceDiagramView.Done")) { showSidebar = false }
                                         .accessibilityIdentifier("diagram.sidebarDoneButton")
                                 }
                             }
@@ -239,17 +239,17 @@ struct SequenceDiagramView: View {
             Button {
                 centerDiagram()
             } label: {
-                Label("Fit to View", systemImage: "rectangle.dashed")
+                Label(.app("View.SequenceDiagramView.FitView"), systemImage: "rectangle.dashed")
             }
-            .help("Fit the diagram to the visible canvas (⌘0)")
+            .help(.app("View.SequenceDiagramView.FitDiagramVisibleCanvas"))
             .keyboardShortcut("0", modifiers: .command)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()
             } label: {
-                Label("Sidebar", systemImage: "sidebar.trailing")
+                Label(.app("View.SequenceDiagramView.Sidebar"), systemImage: "sidebar.trailing")
             }
-            .help("Toggle the sidebar")
+            .help(.app("View.SequenceDiagramView.ToggleSidebar"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
         }
     }
@@ -261,10 +261,9 @@ struct SequenceDiagramView: View {
             Image(systemName: "arrow.triangle.branch")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text("No calls could be traced from this entry point.")
+            Text(.app("View.SequenceDiagramView.NoCallsCouldTraced"))
                 .foregroundStyle(.secondary)
-            Text("Calls are followed through explicitly-typed property receivers; "
-                 + "try a different starting method or resolve its interfaces.")
+            Text(.app("View.SequenceDiagramView.CallsAreFollowedThrough"))
                 .font(.callout)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -273,7 +272,7 @@ struct SequenceDiagramView: View {
                 sidebarTab = .settings
                 showSidebar = true
             } label: {
-                Label("Edit Configuration", systemImage: "slider.horizontal.3")
+                Label(.app("View.SequenceDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

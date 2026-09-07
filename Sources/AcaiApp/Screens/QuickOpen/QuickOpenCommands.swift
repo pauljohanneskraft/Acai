@@ -9,7 +9,7 @@ struct QuickOpenCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
-            Button("Quick Open…") {
+            Button(.app("View.QuickOpenCommands.QuickOpen")) {
                 presenter.isPresented = true
             }
             .keyboardShortcut("k", modifiers: .command)

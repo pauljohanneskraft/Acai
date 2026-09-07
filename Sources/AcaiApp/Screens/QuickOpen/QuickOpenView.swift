@@ -40,11 +40,13 @@ struct QuickOpenView: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search types, modules, methods, diagrams…", text: $query)
-                .textFieldStyle(.plain)
-                .focused($isFieldFocused)
-                .accessibilityIdentifier("quickOpen.searchField")
-                .onAppear { isFieldFocused = true }
+            TextField(text: $query) {
+                Text(.app("View.QuickOpenView.SearchTypesModulesMethods"))
+            }
+            .textFieldStyle(.plain)
+            .focused($isFieldFocused)
+            .accessibilityIdentifier("quickOpen.searchField")
+            .onAppear { isFieldFocused = true }
             if !query.isEmpty {
                 Button {
                     query = ""
@@ -53,7 +55,7 @@ struct QuickOpenView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel("Clear search")
+                .accessibilityLabel(.app("View.QuickOpenView.ClearSearch"))
             }
         }
         .padding(10)
@@ -62,15 +64,15 @@ struct QuickOpenView: View {
     @ViewBuilder
     private var resultsList: some View {
         if isBuildingIndex {
-            ProgressView("Indexing…")
+            ProgressView(.app("View.QuickOpenView.Indexing"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("quickOpen.loadingState")
         } else if query.isEmpty {
-            ContentUnavailableView(
-                "Search Everything",
-                systemImage: "magnifyingglass",
-                description: Text("Find a type, module, method, or diagram by name across every project.")
-            )
+            ContentUnavailableView {
+                Label(.app("View.QuickOpenView.SearchEverything"), systemImage: "magnifyingglass")
+            } description: {
+                Text(.app("View.QuickOpenView.FindTypeModuleMethod"))
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("quickOpen.emptyState")
         } else if filteredEntries.isEmpty {
@@ -134,11 +136,11 @@ struct QuickOpenSheetHost: View {
     var body: some View {
         NavigationStack {
             QuickOpenView(dismissAction: { dismiss() })
-                .navigationTitle("Quick Open")
+                .navigationTitle(.app("View.QuickOpenSheetHost.QuickOpen"))
                 #if os(iOS)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
+                        Button(.app("View.QuickOpenSheetHost.Cancel")) { dismiss() }
                             .accessibilityIdentifier("quickOpen.cancelButton")
                     }
                 }
@@ -177,8 +179,8 @@ private struct QuickOpenResultRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.name)
-                    Text(entry.subtitle)
+                    Text(verbatim: entry.name)
+                    Text(verbatim: entry.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -196,7 +198,7 @@ private struct QuickOpenResultRow: View {
                     onSelect(resolution)
                 } label: {
                     Label(
-                        "Open in \(resolution.diagramType.displayName)",
+                        .app("View.QuickOpenView.OpenIn \(String(localized: resolution.diagramType.title))"),
                         systemImage: resolution.diagramType.systemImage)
                 }
             }

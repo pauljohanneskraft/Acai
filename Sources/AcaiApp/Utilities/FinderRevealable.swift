@@ -49,12 +49,12 @@ struct FinderRevealable: ViewModifier {
         .buttonStyle(.plain)
         .disabled(!FinderReveal(codebase: codebase, relativePath: relativePath).isAvailable)
         .alert(
-            "Couldn't Reveal in Finder",
+            .app("View.FinderRevealable.CouldNotRevealInFinder"),
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
         ) {
-            Button("OK", role: .cancel) { errorMessage = nil }
+            Button(.app("View.FinderRevealable.OK"), role: .cancel) { errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "")
+            Text(verbatim: errorMessage ?? "")
         }
         #else
         // No Finder on iOS — pass through unwrapped rather than a tappable button that does nothing.

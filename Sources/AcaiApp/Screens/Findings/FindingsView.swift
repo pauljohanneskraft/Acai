@@ -28,13 +28,13 @@ struct FindingsView: View {
             if let project {
                 content(project: project)
             } else {
-                Text("Project not found")
+                Text(.app("View.FindingsView.ProjectNotFound"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("findings.projectNotFoundState")
             }
         }
-        .navigationTitle("Findings")
+        .navigationTitle(.app("View.FindingsView.Findings"))
         .task(id: projectID) {
             await loadSuppression()
         }
@@ -42,12 +42,12 @@ struct FindingsView: View {
             requestAnalyses()
         }
         .alert(
-            "Couldn't Save Suppression",
+            .app("View.FindingsView.CouldNotSaveSuppression"),
             isPresented: Binding(get: { suppressionError != nil }, set: { if !$0 { suppressionError = nil } })
         ) {
-            Button("OK", role: .cancel) { suppressionError = nil }
+            Button(.app("View.FindingsView.OK"), role: .cancel) { suppressionError = nil }
         } message: {
-            Text(suppressionError ?? "")
+            Text(verbatim: suppressionError ?? "")
         }
     }
 
@@ -55,15 +55,14 @@ struct FindingsView: View {
     private func content(project: Project) -> some View {
         if project.codebases.isEmpty {
             emptyState(
-                text: "This project has no codebases yet. Add one to see its findings here.",
+                text: .app("View.FindingsView.NoCodebasesYet"),
                 identifier: "findings.noCodebasesState")
         } else {
             let aggregator = FindingsAggregator(project: project, model: model)
             let notIndexed = aggregator.codebasesNotIndexed()
             if notIndexed.count == project.codebases.count {
                 emptyState(
-                    text: "No codebase in this project has been indexed yet. "
-                        + "Reindex a codebase to see its findings here.",
+                    text: .app("View.FindingsView.NoCodebaseIndexedYet"),
                     identifier: "findings.notIndexedState")
             } else {
                 let allFindings = aggregator.findings()
@@ -79,12 +78,12 @@ struct FindingsView: View {
         }
     }
 
-    private func emptyState(text: String, identifier: String) -> some View {
+    private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "checkmark.seal")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text(text)
+            Text(localized: text)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -97,7 +96,7 @@ struct FindingsView: View {
     private func loadingState(count: Int) -> some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text("Analyzing \(count) codebase(s)…")
+            Text(.app("View.FindingsView.AnalyzingCodebaseS \(count)"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -122,8 +121,8 @@ struct FindingsView: View {
             if visible.isEmpty {
                 emptyState(
                     text: allFindings.isEmpty
-                        ? "No findings — every indexed codebase in this project is clean."
-                        : "No findings match the current filters.",
+                        ? .app("View.FindingsView.NoFindingsClean")
+                        : .app("View.FindingsView.NoFindingsMatchFilters"),
                     identifier: "findings.emptyState")
             } else {
                 List(visible) { finding in
@@ -151,13 +150,13 @@ struct FindingsView: View {
             if !stillAnalyzing.isEmpty {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
-                    Text("Still analyzing \(stillAnalyzing.count) more codebase(s)…")
+                    Text(.app("View.FindingsView.StillAnalyzingMoreCodebase \(stillAnalyzing.count)"))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
             if !notIndexed.isEmpty {
-                Text("\(notIndexed.count) codebase(s) not indexed — reindex to include their findings.")
+                Text(.app("View.FindingsView.CodebaseSNotIndexed \(notIndexed.count)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -176,15 +175,15 @@ struct FindingsView: View {
                 }
             }
             HStack {
-                Picker("Codebase", selection: $selectedCodebaseID) {
-                    Text("All Codebases").tag(UUID?.none)
+                Picker(.app("View.FindingsView.Codebase"), selection: $selectedCodebaseID) {
+                    Text(.app("View.FindingsView.AllCodebases")).tag(UUID?.none)
                     ForEach(project.codebases.sorted { $0.name < $1.name }) { codebase in
-                        Text(codebase.name).tag(Optional(codebase.id))
+                        Text(verbatim: codebase.name).tag(Optional(codebase.id))
                     }
                 }
                 .accessibilityIdentifier("findings.codebaseFilter")
                 Spacer()
-                Toggle("Show suppressed too", isOn: $showSuppressed)
+                Toggle(.app("View.FindingsView.ShowSuppressedToo"), isOn: $showSuppressed)
                     .toggleStyle(.button)
                     .accessibilityIdentifier("findings.showSuppressedToggle")
             }
@@ -202,7 +201,7 @@ struct FindingsView: View {
                 selectedKinds.insert(kind)
             }
         } label: {
-            Label(kind.displayName, systemImage: kind.systemImage)
+            Label(kind.title, systemImage: kind.systemImage)
                 .font(.caption.weight(isSelected ? .semibold : .regular))
                 .padding(.horizontal, 10).padding(.vertical, 5)
                 .background(isSelected ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08))
@@ -262,7 +261,7 @@ struct FindingsView: View {
         // boundary as an immutable copy, not a captured mutable variable — the same rebinding
         // `ViewSourceButton.resolve()` uses for its own detached-task capture.
         let toSave = updated
-        suppressionSavePhase = .loading("Saving…")
+        suppressionSavePhase = .loading(.app("View.FindingsView.Saving"))
         Task {
             do {
                 try await Task.detached(priority: .userInitiated) {

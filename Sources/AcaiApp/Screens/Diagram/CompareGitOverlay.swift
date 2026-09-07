@@ -41,8 +41,12 @@ struct CompareOverlayButton: View {
         .padding(8)
         .background(isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.thinMaterial), in: Circle())
         .padding(10)
-        .help(isOn ? "Comparing vs \(diagram.comparisonGitRef ?? "")" : "Compare vs git")
-        .accessibilityLabel(isOn ? "Compare vs git, comparison active" : "Compare vs git")
+        .help(isOn
+            ? .app("View.CompareGitOverlay.ComparingVs \(diagram.comparisonGitRef ?? "")")
+            : .app("View.CompareGitOverlay.CompareVsGit"))
+        .accessibilityLabel(isOn
+            ? .app("View.CompareGitOverlay.CompareVsGitActive")
+            : .app("View.CompareGitOverlay.CompareVsGit"))
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
         .popover(isPresented: $isPresented) {
@@ -51,7 +55,7 @@ struct CompareOverlayButton: View {
             // window's own toolbar instead of inside the popover.
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("Compare vs git").font(.headline)
+                    Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
                     Spacer()
                     clearButton
                 }
@@ -67,12 +71,12 @@ struct CompareOverlayButton: View {
             // correctly here).
             NavigationStack {
                 CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: onSelectChangedFileTypes)
-                    .navigationTitle("Compare vs git")
+                    .navigationTitle(.app("View.CompareOverlayButton.CompareVsGit"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { clearButton }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { isPresented = false }
+                            Button(.app("View.CompareOverlayButton.Done")) { isPresented = false }
                                 .accessibilityIdentifier("delta.doneButton")
                         }
                     }
@@ -86,7 +90,7 @@ struct CompareOverlayButton: View {
     /// lives in the panel's header chrome rather than at the top of the scrollable content
     /// underneath.
     private var clearButton: some View {
-        Button("Clear") {
+        Button(.app("View.CompareOverlayButton.Clear")) {
             model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
         }
         .disabled(diagram.comparisonGitRef == nil)
@@ -253,10 +257,10 @@ struct CompareGitPanel: View {
                     select(row)
                 } label: {
                     HStack {
-                        Text(row.name)
+                        Text(verbatim: row.name)
                         Spacer()
                         if let kindLabel = row.kindLabel {
-                            Text(kindLabel)
+                            Text(verbatim: kindLabel)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -284,10 +288,12 @@ struct CompareGitPanel: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 if isEditingCustomRef {
-                    TextField("ref (a SHA, HEAD~3, …)", text: $customRefText)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { model.updateComparisonGitRef(diagramID: diagram.id, ref: customRefText) }
-                        .accessibilityIdentifier("delta.customRefField")
+                    TextField(text: $customRefText) {
+                        Text(.app("View.CompareGitPanel.RefPlaceholder"))
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { model.updateComparisonGitRef(diagramID: diagram.id, ref: customRefText) }
+                    .accessibilityIdentifier("delta.customRefField")
                 }
 
                 if diagram.comparisonGitRef != nil {
@@ -340,7 +346,9 @@ struct CompareGitPanel: View {
         } else if !isFullyLoaded {
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
-                Text("Loading \(diagram.comparisonGitRef ?? "")…").font(.caption).foregroundStyle(.secondary)
+                Text(.app("View.CompareGitPanel.Loading \(diagram.comparisonGitRef ?? "")"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             // Distinguishes, for a UI test that times out waiting for "delta.loaded", "the panel is
             // genuinely still loading" (a real timing issue) from "the panel never reached a
@@ -348,7 +356,7 @@ struct CompareGitPanel: View {
             // identically as a bare timeout with `comparisonError` unset.
             .accessibilityIdentifier("delta.loading")
         } else {
-            Text("Loaded").font(.caption).foregroundStyle(.secondary)
+            Text(.app("View.CompareGitPanel.Loaded")).font(.caption).foregroundStyle(.secondary)
                 .accessibilityIdentifier("delta.loaded")
         }
     }
@@ -366,7 +374,7 @@ struct CompareGitPanel: View {
     }
 
     private var changedFilesSection: some View {
-        DisclosureGroup("Changed Files (\(changedFiles.count))") {
+        DisclosureGroup(.app("View.CompareGitPanel.ChangedFiles \(changedFiles.count)")) {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(changedFiles) { entry in
                     changedFileRow(entry)
@@ -394,7 +402,7 @@ struct CompareGitPanel: View {
                 reviewed ? "Mark \(entry.filePath) as not reviewed" : "Mark \(entry.filePath) as reviewed")
             .accessibilityIdentifier("delta.changedFile.reviewToggle.\(entry.filePath)")
 
-            Text(entry.filePath)
+            Text(verbatim: entry.filePath)
                 .font(.caption.monospaced())
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -409,8 +417,8 @@ struct CompareGitPanel: View {
                     Image(systemName: "scope")
                 }
                 .buttonStyle(.plain)
-                .help("Select the changed node(s) in this file")
-                .accessibilityLabel("Select changed nodes in \(entry.filePath)")
+                .help(.app("View.CompareGitPanel.SelectChangedNodeS"))
+                .accessibilityLabel(.app("View.CompareGitPanel.SelectChangedNodes \(entry.filePath)"))
                 .accessibilityIdentifier("delta.changedFile.select.\(entry.filePath)")
             }
         }
@@ -433,7 +441,7 @@ struct CompareGitPanel: View {
     }
 
     private var findingsDeltaSection: some View {
-        DisclosureGroup("New Findings (\(newFindings.count))") {
+        DisclosureGroup(.app("View.CompareGitPanel.NewFindings \(newFindings.count)")) {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(newFindings) { finding in
                     findingDeltaRow(finding)
@@ -453,7 +461,9 @@ struct CompareGitPanel: View {
                     .foregroundStyle(reviewed ? Color.accentColor : .secondary)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(reviewed ? "Mark finding as not reviewed" : "Mark finding as reviewed")
+            .accessibilityLabel(reviewed
+                ? .app("View.CompareGitOverlay.MarkNotReviewed")
+                : .app("View.CompareGitOverlay.MarkReviewed"))
             .accessibilityIdentifier("delta.finding.reviewToggle.\(finding.id)")
 
             FindingRow(finding: finding, codebase: model.codebase(for: diagram.codebaseID))
@@ -477,20 +487,5 @@ struct CompareGitPanel: View {
         else { return }
         pullRequests = (try? await GitHubRepositoryServiceResolver().resolve().pullRequests(
             credential: credential, owner: source.owner, repo: source.repo)) ?? []
-    }
-
-    private var legend: some View {
-        HStack(spacing: 10) {
-            swatch(Color(hex: DeltaEdgeColors.standard.added), "added")
-            swatch(Color(hex: DeltaEdgeColors.standard.removed), "removed")
-            swatch(Color(hex: DeltaEdgeColors.standard.changed), "changed")
-        }
-    }
-
-    private func swatch(_ color: Color, _ label: String) -> some View {
-        HStack(spacing: 3) {
-            Circle().fill(color).frame(width: 8, height: 8)
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-        }
     }
 }

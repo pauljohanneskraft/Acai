@@ -32,7 +32,7 @@ struct SourceViewerSheet: View {
                 #endif
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
+                        Button(.app("View.SourceViewerSheet.Done")) { dismiss() }
                             .accessibilityIdentifier("sourceViewer.dismissButton")
                     }
                 }

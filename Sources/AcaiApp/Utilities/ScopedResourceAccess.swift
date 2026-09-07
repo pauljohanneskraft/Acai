@@ -39,9 +39,9 @@ struct ScopedResourceAccess {
         var errorDescription: String? {
             switch self {
             case .accessDenied(let path):
-                "Access to \"\(path)\" was denied."
+                String(localized: .app("Error.ScopedResourceAccess.AccessDenied \(path)"))
             case .directoryUnavailable(let path):
-                "\"\(path)\" is no longer available."
+                String(localized: .app("Error.ScopedResourceAccess.DirectoryUnavailable \(path)"))
             }
         }
     }

@@ -23,7 +23,7 @@ final class ActivityCenter: ObservableObject {
     /// Returns the operation's result, or `nil` if it was cancelled before finishing — callers must
     /// treat `nil` as "don't apply/persist/report anything," not as a failure worth surfacing.
     func run<T: Sendable>(
-        title: String,
+        title: LocalizedStringResource,
         kind: ActivityOperation.Kind,
         subject: ActivityOperation.Subject = .none,
         priority: TaskPriority = .userInitiated,
@@ -37,7 +37,7 @@ final class ActivityCenter: ObservableObject {
     /// `ActivityProgressGate` so a callback firing on every packet doesn't queue a flood of
     /// main-actor hops.
     func run<T: Sendable>(
-        title: String,
+        title: LocalizedStringResource,
         kind: ActivityOperation.Kind,
         subject: ActivityOperation.Subject = .none,
         priority: TaskPriority = .userInitiated,

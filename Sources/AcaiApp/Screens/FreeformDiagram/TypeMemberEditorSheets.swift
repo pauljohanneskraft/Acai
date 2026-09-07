@@ -26,10 +26,14 @@ struct PropertyEditorSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $draft.name)
-                        .accessibilityIdentifier("memberEditor.property.nameField")
-                    TextField("Type", text: $draft.type)
-                        .accessibilityIdentifier("memberEditor.property.typeField")
+                    TextField(text: $draft.name) {
+                        Text(.app("View.PropertyEditorSheet.Name"))
+                    }
+                    .accessibilityIdentifier("memberEditor.property.nameField")
+                    TextField(text: $draft.type) {
+                        Text(.app("View.PropertyEditorSheet.Type"))
+                    }
+                    .accessibilityIdentifier("memberEditor.property.typeField")
                 }
                 MemberFlagsSection(
                     accessLevel: $draft.accessLevel, isStatic: $draft.isStatic, isAbstract: $draft.isAbstract
@@ -41,11 +45,11 @@ struct PropertyEditorSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(.app("View.PropertyEditorSheet.Cancel")) { dismiss() }
                         .accessibilityIdentifier("memberEditor.property.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(.app("View.PropertyEditorSheet.Save")) {
                         onSave(draft)
                         dismiss()
                     }
@@ -76,10 +80,14 @@ struct MethodEditorSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $draft.name)
-                        .accessibilityIdentifier("memberEditor.method.nameField")
-                    TextField("Return Type", text: $draft.type)
-                        .accessibilityIdentifier("memberEditor.method.returnTypeField")
+                    TextField(text: $draft.name) {
+                        Text(.app("View.MethodEditorSheet.Name"))
+                    }
+                    .accessibilityIdentifier("memberEditor.method.nameField")
+                    TextField(text: $draft.type) {
+                        Text(.app("View.MethodEditorSheet.ReturnType"))
+                    }
+                    .accessibilityIdentifier("memberEditor.method.returnTypeField")
                 }
                 MemberFlagsSection(
                     accessLevel: $draft.accessLevel, isStatic: $draft.isStatic, isAbstract: $draft.isAbstract
@@ -89,7 +97,7 @@ struct MethodEditorSheet: View {
                         parameters: $draft.structuredParameters, accessibilityPrefix: "memberEditor.method"
                     )
                 } header: {
-                    Text("Parameters")
+                    Text(.app("View.MethodEditorSheet.Parameters"))
                 }
             }
             .navigationTitle(existing == nil ? "Add Method" : "Edit Method")
@@ -98,11 +106,11 @@ struct MethodEditorSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(.app("View.MethodEditorSheet.Cancel")) { dismiss() }
                         .accessibilityIdentifier("memberEditor.method.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(.app("View.MethodEditorSheet.Save")) {
                         onSave(draft)
                         dismiss()
                     }
@@ -121,15 +129,15 @@ struct MemberFlagsFields: View {
     @Binding var isAbstract: Bool
 
     var body: some View {
-        Picker("Access Level", selection: $accessLevel) {
+        Picker(.app("View.MemberFlagsFields.AccessLevel"), selection: $accessLevel) {
             ForEach(AccessLevel.allCases, id: \.self) { level in
-                Text(level.rawValue.capitalized).tag(level)
+                Text(verbatim: level.rawValue.capitalized).tag(level)
             }
         }
         .accessibilityIdentifier("memberEditor.accessLevelPicker")
-        Toggle("Static", isOn: $isStatic)
+        Toggle(.app("View.MemberFlagsFields.Static"), isOn: $isStatic)
             .accessibilityIdentifier("memberEditor.staticToggle")
-        Toggle("Abstract", isOn: $isAbstract)
+        Toggle(.app("View.MemberFlagsFields.Abstract"), isOn: $isAbstract)
             .accessibilityIdentifier("memberEditor.abstractToggle")
     }
 }
@@ -154,15 +162,19 @@ struct ParameterListEditor: View {
     var body: some View {
         ForEach(parameters.indices, id: \.self) { index in
             HStack {
-                TextField("Name", text: Binding(
+                TextField(text: Binding(
                     get: { parameters[index].name },
                     set: { parameters[index].name = $0 }
-                ))
+                )) {
+                    Text(.app("View.ParameterListEditor.Name"))
+                }
                 .accessibilityIdentifier("\(accessibilityPrefix).parameterNameField.\(index)")
-                TextField("Type", text: Binding(
+                TextField(text: Binding(
                     get: { parameters[index].type },
                     set: { parameters[index].type = $0 }
-                ))
+                )) {
+                    Text(.app("View.ParameterListEditor.Type"))
+                }
                 .accessibilityIdentifier("\(accessibilityPrefix).parameterTypeField.\(index)")
                 Button(role: .destructive) {
                     parameters.remove(at: index)
@@ -176,7 +188,7 @@ struct ParameterListEditor: View {
         Button {
             parameters.append(.init(name: "", type: ""))
         } label: {
-            Label("Add Parameter", systemImage: "plus.circle")
+            Label(.app("View.ParameterListEditor.AddParameter"), systemImage: "plus.circle")
         }
         .accessibilityIdentifier("\(accessibilityPrefix).addParameterButton")
     }

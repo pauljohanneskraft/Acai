@@ -8,7 +8,7 @@ struct LayersEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Enforce layering", isOn: enabled)
+            Toggle(.app("View.LayersEditor.EnforceLayering"), isOn: enabled)
                 .font(.headline)
             if let binding = Binding($rule) {
                 enabledBody(binding)
@@ -26,23 +26,25 @@ struct LayersEditor: View {
 
     @ViewBuilder
     private func enabledBody(_ rule: Binding<LayerRule>) -> some View {
-        Text("Layers from top (highest level) to bottom.").font(.caption).foregroundStyle(.secondary)
+        Text(.app("View.LayersEditor.LayersTopHighestLevel")).font(.caption).foregroundStyle(.secondary)
         ForEach(rule.layers.indices, id: \.self) { index in
             RuleCard(onRemove: { rule.wrappedValue.layers.remove(at: index) }, content: {
-                TextField("Layer name (e.g. UI)", text: rule.layers[index].name)
-                    .textFieldStyle(.roundedBorder)
-                SelectorEditor(title: "Matches", selector: rule.layers[index].selector)
+                TextField(text: rule.layers[index].name) {
+                    Text(.app("View.LayersEditor.LayerNameEG"))
+                }
+                .textFieldStyle(.roundedBorder)
+                SelectorEditor(title: .app("View.LayersEditor.Matches"), selector: rule.layers[index].selector)
             })
         }
         HStack {
             Button {
                 rule.wrappedValue.layers.append(LayerRule.Layer(name: "", selector: AcaiQuality.Selector()))
             } label: {
-                Label("Add layer", systemImage: "plus.circle.fill")
+                Label(.app("View.LayersEditor.AddLayer"), systemImage: "plus.circle.fill")
             }
             .buttonStyle(.plain)
             Spacer()
-            Toggle("Allow skipping layers", isOn: rule.allowSkip)
+            Toggle(.app("View.LayersEditor.AllowSkippingLayers"), isOn: rule.allowSkip)
         }
     }
 }

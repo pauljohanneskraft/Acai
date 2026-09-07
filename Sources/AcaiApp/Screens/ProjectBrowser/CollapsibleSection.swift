@@ -3,7 +3,7 @@ import SwiftUI
 /// Expansion state is in-memory only (seeded from `defaultExpanded`), so it resets when the pane
 /// is rebuilt.
 struct CollapsibleSection<Accessory: View, Content: View>: View {
-    let title: String
+    let title: LocalizedStringResource
     var defaultExpanded: Bool = true
     @ViewBuilder let accessory: () -> Accessory
     @ViewBuilder let content: () -> Content
@@ -11,7 +11,7 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
     @State private var isExpanded: Bool
 
     init(
-        title: String,
+        title: LocalizedStringResource,
         defaultExpanded: Bool = true,
         @ViewBuilder accessory: @escaping () -> Accessory,
         @ViewBuilder content: @escaping () -> Content
@@ -33,7 +33,7 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
                         .font(.caption.bold())
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    Text(title)
+                    Text(localized: title)
                         .font(.headline)
                     Spacer(minLength: 8)
                     accessory()
@@ -54,7 +54,7 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
 
 extension CollapsibleSection where Accessory == EmptyView {
     init(
-        title: String,
+        title: LocalizedStringResource,
         defaultExpanded: Bool = true,
         @ViewBuilder content: @escaping () -> Content
     ) {

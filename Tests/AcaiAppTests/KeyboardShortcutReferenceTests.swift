@@ -12,7 +12,7 @@ struct KeyboardShortcutReferenceTests {
     @Test("Every group has a non-empty title and at least one shortcut")
     func groupsAreWellFormed() {
         for group in KeyboardShortcutReference.groups {
-            #expect(!group.title.isEmpty)
+            #expect(!String(localized: group.title).isEmpty)
             #expect(!group.shortcuts.isEmpty)
         }
     }
@@ -22,7 +22,7 @@ struct KeyboardShortcutReferenceTests {
         for group in KeyboardShortcutReference.groups {
             for shortcut in group.shortcuts {
                 #expect(!shortcut.symbol.isEmpty)
-                #expect(!shortcut.name.isEmpty)
+                #expect(!String(localized: shortcut.name).isEmpty)
             }
         }
     }

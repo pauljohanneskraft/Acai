@@ -18,16 +18,16 @@ struct GitHubDeviceAuthFlow {
     enum Failure: LocalizedError {
         case expired
         case denied
-        case server(String)
+        case server(LocalizedStringResource)
 
         var errorDescription: String? {
             switch self {
             case .expired:
-                "The sign-in code expired. Try again."
+                String(localized: .app("Error.GitHubDeviceAuthFlow.Expired"))
             case .denied:
-                "Sign-in was declined."
+                String(localized: .app("Error.GitHubDeviceAuthFlow.Denied"))
             case .server(let message):
-                message
+                String(localized: message)
             }
         }
     }
@@ -76,7 +76,7 @@ struct GitHubDeviceAuthFlow {
         let (data, _) = try await session.data(for: request)
         let response = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
         guard let verificationURL = URL(string: response.verificationUri) else {
-            throw Failure.server("Invalid verification URL.")
+            throw Failure.server(.app("Error.GitHubDeviceAuthFlow.InvalidVerificationURL"))
         }
         return DeviceCode(
             deviceCode: response.deviceCode,
@@ -136,11 +136,11 @@ struct GitHubDeviceAuthFlow {
             case "access_denied":
                 throw Failure.denied
             default:
-                throw Failure.server(error)
+                throw Failure.server(.app("Error.GitHubDeviceAuthFlow.ServerError \(error)"))
             }
         }
         guard let accessToken = response.accessToken else {
-            throw Failure.server("No access token in the response.")
+            throw Failure.server(.app("Error.GitHubDeviceAuthFlow.NoAccessToken"))
         }
         let expiresAt = response.expiresIn.map { Date().addingTimeInterval(TimeInterval($0)) }
         return .gitHubApp(accessToken: accessToken, expiresAt: expiresAt, refreshToken: response.refreshToken)

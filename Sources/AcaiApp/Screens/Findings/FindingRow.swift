@@ -43,22 +43,22 @@ struct FindingRow: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                badge(text: finding.kind.displayName, systemImage: finding.kind.systemImage, tint: .secondary)
-                badge(text: finding.severity.label, systemImage: finding.severity.systemImage, tint: severityTint)
+                badge(text: finding.kind.title, systemImage: finding.kind.systemImage, tint: .secondary)
+                badge(text: finding.severity.title, systemImage: finding.severity.systemImage, tint: severityTint)
                 Spacer()
-                Text(finding.codebaseName)
+                Text(verbatim: finding.codebaseName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Text(finding.title)
+            Text(verbatim: finding.title)
                 .font(.callout.bold())
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(finding.message)
+            Text(verbatim: finding.message)
                 .font(.callout)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let location = finding.location {
-                Text("\(location.filePath):\(location.line)")
+                Text(verbatim: "\(location.filePath):\(location.line)")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -79,7 +79,7 @@ struct FindingRow: View {
         }
     }
 
-    private func badge(text: String, systemImage: String, tint: Color) -> some View {
+    private func badge(text: LocalizedStringResource, systemImage: String, tint: Color) -> some View {
         Label(text, systemImage: systemImage)
             .font(.caption.monospaced())
             .padding(.horizontal, 6).padding(.vertical, 2)

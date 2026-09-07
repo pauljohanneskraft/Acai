@@ -24,7 +24,7 @@ struct ViewSourceButton: View {
                 ProgressView()
                     .controlSize(.small)
             } else {
-                Label("View Source", systemImage: "doc.text.magnifyingglass")
+                Label(.app("View.ViewSourceButton.ViewSource"), systemImage: "doc.text.magnifyingglass")
             }
         }
         .disabled(isResolving)
@@ -33,19 +33,19 @@ struct ViewSourceButton: View {
             Button {
                 resolve()
             } label: {
-                Label("View Source", systemImage: "doc.text.magnifyingglass")
+                Label(.app("View.ViewSourceButton.ViewSource"), systemImage: "doc.text.magnifyingglass")
             }
         }
         .sheet(item: $target, onDismiss: { longLivedAccess = nil }, content: { target in
             SourceViewerSheet(url: target.url)
         })
         .alert(
-            "Couldn't Open File",
+            .app("View.ViewSourceButton.CouldNotOpenFile"),
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
         ) {
-            Button("OK", role: .cancel) { errorMessage = nil }
+            Button(.app("View.ViewSourceButton.OK"), role: .cancel) { errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "")
+            Text(verbatim: errorMessage ?? "")
         }
         .onDisappear {
             resolveTask?.cancel()

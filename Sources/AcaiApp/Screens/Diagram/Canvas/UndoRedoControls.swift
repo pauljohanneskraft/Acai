@@ -11,20 +11,20 @@ struct UndoRedoToolbarButtons<Model: CanvasInteraction>: View {
             model.undo()
             onChange()
         } label: {
-            Label("Undo", systemImage: "arrow.uturn.backward")
+            Label(.app("View.UndoRedoToolbarButtons.Undo"), systemImage: "arrow.uturn.backward")
         }
         .disabled(!model.canUndo)
-        .help("Undo (⌘Z)")
+        .help(.app("View.UndoRedoToolbarButtons.UndoZ"))
         .accessibilityIdentifier("diagram.undoButton")
 
         Button {
             model.redo()
             onChange()
         } label: {
-            Label("Redo", systemImage: "arrow.uturn.forward")
+            Label(.app("View.UndoRedoToolbarButtons.Redo"), systemImage: "arrow.uturn.forward")
         }
         .disabled(!model.canRedo)
-        .help("Redo (⇧⌘Z)")
+        .help(.app("View.UndoRedoToolbarButtons.RedoZ"))
         .accessibilityIdentifier("diagram.redoButton")
     }
 }
@@ -39,11 +39,11 @@ struct MultiSelectToggleButton<Model: CanvasInteraction>: View {
             model.isMultiSelectActive.toggle()
         } label: {
             Label(
-                "Select",
+                .app("View.MultiSelectToggleButton.Select"),
                 systemImage: model.isMultiSelectActive ? "checkmark.circle.fill" : "checkmark.circle"
             )
         }
-        .help("Toggle multi-select mode: tap nodes to add or remove them from the selection")
+        .help(.app("View.MultiSelectToggleButton.ToggleMultiSelectMode"))
     }
 }
 

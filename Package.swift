@@ -91,7 +91,7 @@ optionalTargets.append(
             .product(name: "Yams", package: "Yams"),
         ],
         // `.copy`, not `.process`: `Licenses.json` is data to decode, not an asset to transform.
-        resources: [.copy("Resources/Licenses.json")]
+        resources: [.copy("Resources/Licenses.json"), .process("Resources/Localizable.xcstrings")]
     )
 )
 optionalTargets.append(
@@ -113,6 +113,7 @@ optionalTargets.append(
 
 let package = Package(
     name: "Acai",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
         // v17, not v16: `AcaiApp` uses `.inspector()` (iOS 17+/macOS 13+, the latter already
