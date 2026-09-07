@@ -45,7 +45,7 @@ extension DartExtractor {
             case "library_name":
                 currentNamespace = extractLibraryName(child)
             case "declaration":
-                extractTopLevelChildren(child)
+                extractTopLevelDeclaration(child)
             case "import_or_export", "part_directive", "part_of_directive":
                 break
             default:
@@ -60,6 +60,23 @@ extension DartExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             processTopLevelTypeNode(child, nodeType: nodeType)
+        }
+    }
+
+    /// Handles a top-level `declaration` node: `[modifiers] [type] [nullable_type?]
+    /// (initialized_identifier_list | static_final_declaration_list)` — the same shape
+    /// `extractClassMemberDeclaration` handles inside a class body.
+    private mutating func extractTopLevelDeclaration(_ node: Node) {
+        let info = collectDeclarationInfo(node)
+        for child in node.children() {
+            guard let nodeType = child.nodeType else { continue }
+            if nodeType == "initialized_identifier_list" {
+                globalVariables.append(contentsOf: extractFieldsFromIdentifierList(child, info: info))
+            } else if nodeType == "static_final_declaration_list" {
+                globalVariables.append(contentsOf: extractStaticFinalFields(child, info: info))
+            } else {
+                processTopLevelTypeNode(child, nodeType: nodeType)
+            }
         }
     }
 
