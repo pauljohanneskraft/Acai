@@ -80,9 +80,7 @@ extension ProjectBrowserView {
 
     @ViewBuilder
     fileprivate func codebaseRows(project: Project) -> some View {
-        let sortedCodebases = project.codebases.sorted(by: {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        })
+        let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         ForEach(sortedCodebases) { codebase in
             Label(codebase.name, systemImage: "folder")
                 .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
@@ -126,7 +124,7 @@ extension ProjectBrowserView {
     @ViewBuilder
     fileprivate func generatedDiagramRows(project: Project) -> some View {
         let generatedDiagrams = model.generatedDiagramsForProject(project.id)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+            .sorted(byLocalizedName: \.name)
         ForEach(generatedDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
                 TextField(text: $renamingText) {
@@ -171,7 +169,7 @@ extension ProjectBrowserView {
     @ViewBuilder
     fileprivate func freeformDiagramRows(project: Project) -> some View {
         let freeformDiagrams = model.freeformDiagramsForProject(project.id)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+            .sorted(byLocalizedName: \.name)
         ForEach(freeformDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
                 TextField(text: $renamingText) {

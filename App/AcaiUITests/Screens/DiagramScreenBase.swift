@@ -58,29 +58,6 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// On Package Diagram/Call Graph screens only, `saveAsFreeformButton` opens a popover (macOS) or
-    /// sheet (iOS/iPadOS) with this checkbox instead of saving immediately. `SwiftUI.Toggle` surfaces
-    /// as a checkbox on macOS but a switch on iOS, hence the broad `.any` matcher.
-    var saveAsFreeformIncludeMetricsToggle: XCUIElement {
-        app.descendants(matching: .any)["diagram.saveAsFreeform.includeMetricsToggle"]
-    }
-    var saveAsFreeformConfirmButton: XCUIElement { app.buttons["diagram.saveAsFreeform.confirmButton"] }
-    var saveAsFreeformCancelButton: XCUIElement { app.buttons["diagram.saveAsFreeform.cancelButton"] }
-
-    /// Class/Sequence/State screens have no confirmation step — call `saveAsFreeformButton.tap()`
-    /// directly there instead.
-    func saveAsFreeform(includeMetricsNote: Bool, file: StaticString = #filePath, line: UInt = #line) {
-        saveAsFreeformButton.tap()
-        saveAsFreeformIncludeMetricsToggle.waitOrFail(
-            "the Save as Freeform confirmation", file: file, line: line
-        )
-        // The toggle only needs tapping when its current state doesn't already match the request.
-        if let isOn = saveAsFreeformIncludeMetricsToggle.value as? String, (isOn == "1") != includeMetricsNote {
-            saveAsFreeformIncludeMetricsToggle.tap()
-        }
-        saveAsFreeformConfirmButton.tap()
-    }
-
     /// Falls back to iOS's "More" toolbar overflow item if `button` itself never appears — macOS's
     /// `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only.
     func tapToolbarButton(
