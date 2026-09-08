@@ -193,6 +193,9 @@ struct CodebaseDetailView: View {
             if horizontalSizeClass == .compact {
                 Spacer()
             }
+            if artifact != nil {
+                queryButton(codebase: codebase)
+            }
             if let source = codebase.githubSource {
                 githubActions(codebase: codebase, source: source)
             } else {
@@ -210,6 +213,18 @@ struct CodebaseDetailView: View {
                 AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
             }
         }
+    }
+
+    /// Opens `QueryView`, scoped to this codebase — the same `TypeQuery` the CLI's `inspect`
+    /// command and the MCP server's inspect tool already run, exposed where the app's other
+    /// affordances for exploring a result (diagrams, findings) already live.
+    private func queryButton(codebase: Codebase) -> some View {
+        Button {
+            model.selection = .query(codebase.id)
+        } label: {
+            Label(.app("View.CodebaseDetailView.Query"), systemImage: "magnifyingglass")
+        }
+        .accessibilityIdentifier("codebaseDetail.queryButton")
     }
 
     @ViewBuilder

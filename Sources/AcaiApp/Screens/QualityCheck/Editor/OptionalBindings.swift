@@ -32,3 +32,15 @@ extension Binding where Value == Int? {
         )
     }
 }
+
+extension Binding where Value == Bool? {
+    /// Presents an optional boolean as a plain toggle: off reads back as `nil` (facet stays unset),
+    /// on becomes `true` — these facets have no "must be false" query, matching the CLI's own
+    /// `@Flag` options they mirror (e.g. `InspectCommand.publicVars`).
+    var orFalse: Binding<Bool> {
+        Binding<Bool>(
+            get: { wrappedValue ?? false },
+            set: { wrappedValue = $0 ? true : nil }
+        )
+    }
+}
