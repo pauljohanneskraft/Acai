@@ -49,7 +49,7 @@ extension XCUIApplication {
         _ name: String,
         language: String? = nil,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
-        file: StaticString = #filePath, line: UInt = #line
+        file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) {
         let testBundle = Bundle(for: FixtureBundleAnchor.self)
         guard let fixtureURL = testBundle.url(
@@ -59,17 +59,15 @@ extension XCUIApplication {
             return
         }
 
-        #if os(macOS)
-        // Not `FileManager.default.temporaryDirectory`: that resolves inside the sandboxed UI test
-        // runner's own container, and handing that path to the app-under-test triggers an "access
-        // data from other apps" prompt at every launch. `/private/tmp` avoids that.
-        let tempRoot = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
-        #else
-        let tempRoot = FileManager.default.temporaryDirectory
-        #endif
-        let destination = tempRoot
-            .appendingPathComponent("AcaiUITestFixture-\(UUID().uuidString)", isDirectory: true)
+        let destination = fixtureStagingDirectory(name: name, file: file, function: function)
         do {
+            // A rerun (`-test-iterations`) stages into the same directory this test used last time.
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.createDirectory(
+                at: destination.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
             try FileManager.default.copyItem(at: fixtureURL, to: destination)
             try substituteFixtureRoot(in: destination)
             try configure(self, destination)
@@ -98,6 +96,20 @@ extension XCUIApplication {
             return
         }
         #endif
+    }
+
+    /// Deterministic, not a fresh UUID: `CodebaseDetailView` displays this path, so a per-run one
+    /// drifts every golden capturing that screen. `/private/tmp` is shared by the simulator and the
+    /// host, and on macOS avoids the runner container's per-launch "access data from other apps"
+    /// prompt.
+    private func fixtureStagingDirectory(name: String, file: StaticString, function: StaticString) -> URL {
+        let testCase = URL(fileURLWithPath: "\(file)").deletingPathExtension().lastPathComponent
+        let testMethod = "\(function)".prefix { $0.isLetter || $0.isNumber || $0 == "_" }
+        return URL(fileURLWithPath: "/private/tmp", isDirectory: true)
+            .appendingPathComponent("AcaiUITestFixtures", isDirectory: true)
+            .appendingPathComponent(SnapshotPlatform().name, isDirectory: true)
+            .appendingPathComponent("\(testCase).\(testMethod)", isDirectory: true)
+            .appendingPathComponent(name, isDirectory: true)
     }
 
     /// Guards the reason everything goes through `launchEnvironment` — see `UITestFixtureResolver`:
