@@ -14,6 +14,7 @@ struct DartExtractor: TreeSitterExtracting {
     var types: [TypeDeclaration] = []
     var relationships: [Relationship] = []
     var freestandingFunctions: [Member] = []
+    var globalVariables: [Member] = []
     var currentNamespace: String?
     var declaredTypeNames: Set<String> = []
 

@@ -157,4 +157,16 @@ struct KotlinParserTests {
         #expect(artifact.freestandingFunctions[0].name == "greet")
     }
 
+    @Test func moduleGlobals() {
+        let source = """
+        val MAX_RETRIES: Int = 3
+        var counter = 0
+        """
+        let artifact = parser.parse(source: source, fileName: "Config.kt")
+        #expect(artifact.globalVariables.map(\.name).sorted() == ["MAX_RETRIES", "counter"])
+        let maxRetries = artifact.globalVariables.first { $0.name == "MAX_RETRIES" }
+        #expect(maxRetries?.type?.name == "Int")
+        #expect(maxRetries?.modifiers.contains(.readonly) == true)
+    }
+
 }

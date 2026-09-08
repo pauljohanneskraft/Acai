@@ -147,6 +147,18 @@ struct DartOtherTests {
         #expect(addFunc?.type?.name == "int")
     }
 
+    @Test func moduleGlobals() {
+        let source = """
+        const int maxRetries = 3;
+        final String appName = 'Acai';
+        int counter = 0;
+        """
+        let artifact = parser.parse(source: source, fileName: "config.dart")
+        #expect(artifact.globalVariables.map(\.name).sorted() == ["appName", "counter", "maxRetries"])
+        let retries = artifact.globalVariables.first { $0.name == "maxRetries" }
+        #expect(retries?.type?.name == "int")
+    }
+
     @Test func extensionType() {
         let source = """
         extension type IdNumber(int id) {

@@ -12,6 +12,7 @@ extension KotlinExtractor {
         case classDeclaration
         case objectDeclaration
         case functionDeclaration
+        case propertyDeclaration
         case typeAlias
     }
 
@@ -20,6 +21,7 @@ extension KotlinExtractor {
         "class_declaration": .classDeclaration,
         "object_declaration": .objectDeclaration,
         "function_declaration": .functionDeclaration,
+        "property_declaration": .propertyDeclaration,
         "type_alias": .typeAlias
     ]
 
@@ -45,6 +47,8 @@ extension KotlinExtractor {
             freestandingFunctions.append(
                 extractFunctionDeclaration(node)
             )
+        case .propertyDeclaration:
+            globalVariables.append(extractPropertyDeclaration(node))
         case .typeAlias:
             if let typeDecl = extractTypeAlias(node) {
                 types.append(typeDecl)

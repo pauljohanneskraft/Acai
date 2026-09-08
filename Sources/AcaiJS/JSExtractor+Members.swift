@@ -254,6 +254,33 @@ extension JSExtractor {
         return TypeReference(name: text(ctor))
     }
 
+    // MARK: - Top-Level Variable Declaration
+
+    /// A top-level (module-scope) `const`/`let`/`var` declarator, or one inside a TS `namespace`
+    /// body (mirroring how a nested top-level function there still feeds `freestandingFunctions`).
+    /// Reuses the same type-inference and value-classification `extractFieldDefinition` applies to
+    /// a class field, since JS/TS has no separate grammar node for global vs. instance state.
+    func extractGlobalVariable(_ node: Node, name: String, isExported: Bool) -> Member {
+        let nodeLoc = loc(node)
+        let value = node.child(byFieldName: "value")
+
+        var propType = isTypeScript ? extractTypeAnnotation(node) : nil
+        if propType == nil {
+            propType = constructedType(fromFieldValue: value)
+        }
+
+        return Member(
+            name: name,
+            kind: .property,
+            accessLevel: isExported ? .public : .internal,
+            type: propType,
+            location: nodeLoc,
+            callSites: extractCallSites(from: value, scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
+            initialValue: value.map { classifyValue($0) },
+            referencedTypeNames: referencedTypeNames(in: value)
+        )
+    }
+
     // MARK: - Constructor Parameter Properties (TypeScript)
 
     private func extractConstructorParameterProperties(_ ctorNode: Node, into typeDecl: inout TypeDeclaration) {
