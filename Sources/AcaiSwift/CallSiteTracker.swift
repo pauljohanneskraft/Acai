@@ -30,6 +30,17 @@ struct CallSiteAccumulator {
     var knownLocalNames: Set<String> = []
 }
 
+/// Where a `FunctionCallExprSyntax` was found, as `DeclarationVisitor` tracks it: inside a function or
+/// closure body (receivers resolve against the current body's property/parameter/local maps), at bare
+/// top-level script scope (receivers resolve against `topLevelGlobalReceiverOriginMap` instead), or
+/// neither (a call expression outside any function body and inside a type, e.g. a default parameter
+/// value — not a site `recordCallSite` attaches anywhere).
+enum CallSiteScope {
+    case functionBody
+    case fileScope
+    case other
+}
+
 /// Owns everything `DeclarationVisitor` needs to collect call sites, assignments and field reads
 /// while it walks a file: the per-function-body accumulator above, the deferred local/condition
 /// bindings a self-referential or shadowing initializer requires, the top-level (script-style) call
@@ -307,10 +318,11 @@ final class CallSiteTracker {
     /// Resolves and records `node` as either a call site inside the current function body, or (when
     /// outside any function/type) a top-level script statement's call site.
     func recordCallSite(
-        from node: FunctionCallExprSyntax, isInsideFunctionBody: Bool, isAtFileScope: Bool,
+        from node: FunctionCallExprSyntax, scope: CallSiteScope,
         enclosingTypeName: String?, topLevelGlobalPropertyMap: @autoclosure () -> [String: String], fileName: String
     ) {
-        if isInsideFunctionBody {
+        switch scope {
+        case .functionBody:
             recordIterationClosureCallSites(in: node, enclosingTypeName: enclosingTypeName, fileName: fileName)
             // Parameters and locals resolve receivers too, but must not leak into field-read
             // detection, so they're merged in only here (shadowing same-named stored properties and
@@ -328,16 +340,19 @@ final class CallSiteTracker {
                     from: node, localReceiverOriginMap: callSiteState.localReceiverOriginMap, fileName: fileName) {
                 callSiteState.pendingCallSites.append(site)
             }
-        } else if isAtFileScope,
-                  let site = callSites.callSite(
-                    from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil, fileName: fileName)
-                    ?? callSites.deferredCallSite(
-                        from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap, fileName: fileName) {
-            // A bare top-level statement: its calls have nowhere to attach as a member, so they're
-            // recorded separately and given a synthetic reachable member in `buildArtifact()`.
-            // Receivers resolve against globals declared earlier in the file (Swift's top-level
-            // execution order guarantees a global's declaration precedes its use).
-            topLevelCallSites.append(site)
+        case .fileScope:
+            if let site = callSites.callSite(
+                from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil, fileName: fileName)
+                ?? callSites.deferredCallSite(
+                    from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap, fileName: fileName) {
+                // A bare top-level statement: its calls have nowhere to attach as a member, so they're
+                // recorded separately and given a synthetic reachable member in `buildArtifact()`.
+                // Receivers resolve against globals declared earlier in the file (Swift's top-level
+                // execution order guarantees a global's declaration precedes its use).
+                topLevelCallSites.append(site)
+            }
+        case .other:
+            break
         }
     }
 

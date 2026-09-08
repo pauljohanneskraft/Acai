@@ -311,7 +311,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         scope.recordCallSite(
-            from: node, isInsideFunctionBody: functionBodyDepth > 0, isAtFileScope: typeStack.isEmpty,
+            from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
             enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap(),
             fileName: fileName)
         return .visitChildren
