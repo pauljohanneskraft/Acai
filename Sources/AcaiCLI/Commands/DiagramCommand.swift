@@ -6,7 +6,7 @@ import AcaiLibrary
 extension AcaiCommand {
     struct Diagram: ParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Generate a diagram (DOT or Mermaid) from an analysis or source directory"
+            abstract: "Generate a diagram (DOT, Mermaid, or SVG) from an analysis or source directory"
         )
 
         @OptionGroup var artifactSource: ArtifactSource
@@ -17,7 +17,7 @@ extension AcaiCommand {
         @Option(name: .long, help: "Output file path for the diagram. Prints to stdout if omitted.")
         var output: String?
 
-        @Option(name: .long, help: "Output format: dot (default), mermaid.")
+        @Option(name: .long, help: "Output format: dot (default), mermaid, svg (needs Graphviz's dot on PATH).")
         var format: FormatOption?
 
         @Option(name: .long, help: "Color theme: default, dark.")
@@ -117,7 +117,7 @@ extension AcaiCommand {
         mutating func run() throws {
             let artifact = try artifactSource.resolve()
 
-            let diagramFormat = format?.diagramFormat ?? .dot
+            let selectedFormat = format ?? .dot
             let selectedTheme = theme?.diagramTheme
             let export: DiagramExport
             if let sequenceFrom {
@@ -144,8 +144,12 @@ extension AcaiCommand {
                 let exporter = ClassDiagramTextExporter(options: try classDiagramOptions(for: artifact))
                 export = exporter.export(from: artifact)
             }
-            let rendered = export.render(diagramFormat)
-            try rendered.writeOutput(to: output, label: "diagram")
+            if let diagramFormat = selectedFormat.diagramFormat {
+                try export.render(diagramFormat).writeOutput(to: output, label: "diagram")
+            } else {
+                let svg = try GraphvizSVGRenderer().renderSVG(fromDOT: export.render(.dot))
+                try svg.writeOutput(to: output, label: "diagram")
+            }
         }
 
         private func classDiagramOptions(for artifact: CodeArtifact) throws -> ClassDiagramOptions {

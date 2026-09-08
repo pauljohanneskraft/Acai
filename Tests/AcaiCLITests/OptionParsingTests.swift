@@ -16,7 +16,10 @@ struct OptionParsingTests {
     @Test func formatOptionParsesAndMaps() {
         #expect(FormatOption(argument: "dot")?.diagramFormat == .dot)
         #expect(FormatOption(argument: "mermaid")?.diagramFormat == .mermaid)
-        #expect(FormatOption(argument: "svg") == nil)
+        // svg is a valid --format value, but it isn't a `DiagramExport` format itself: it renders
+        // the dot text through Graphviz instead, so it maps to no `DiagramFormat`.
+        #expect(FormatOption(argument: "svg") != nil)
+        #expect(FormatOption(argument: "svg")?.diagramFormat == nil)
     }
 
     @Test func directionOptionParsesAndMaps() {

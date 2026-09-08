@@ -157,6 +157,7 @@ acai impact  --source . Playlist                    # what breaks if I change th
 
 # Draw
 acai diagram --source . --format mermaid --output arch.mmd
+acai diagram --source . --format svg --output arch.svg       # scalable, for a docs site
 acai image   --source . --grouping directory --output arch.png
 
 # Gate
@@ -235,7 +236,7 @@ Adding a language is a self-contained plugin — see [Contributing](#contributin
 
 No tool is magic. Worth knowing up front:
 
-- **PNG rendering is Apple-only.** `acai image` and the app's Export Image both go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux the `image` command doesn't exist at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
+- **PNG rendering is Apple-only.** `acai image` and the app's Export Image both go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux the `image` command doesn't exist at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere. For a vector image that scales to any size, `acai diagram --format svg` runs everywhere too (it shells out to Graphviz's `dot -Tsvg` for you).
 - **It's static analysis.** Açaí reads source text. It does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table — so dynamic dispatch, reflection and code generation are invisible to it.
 - **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives the full picture.
 - **C reads differently.** C has no classes, so its domain appears as structs plus composition, and free functions are attributed to the type they mutate by pointer. Faithful, but its abstractions are concrete structs — they don't count toward abstractness the way a C++ pure-virtual class does.
@@ -353,7 +354,8 @@ On Apple platforms, `AcaiRender`'s `DiagramImageRenderer` takes it the rest of t
 - **Libraries + CLI**: macOS 15+, iOS 17+, tvOS 16+, watchOS 9+, visionOS 1+, and Linux.
 - **`acai image` / PNG export**: macOS only (needs a window-server session).
 - **The apps**: macOS 26 / iOS 26.
-- **Graphviz** (optional) — only to turn DOT into images: `brew install graphviz`.
+- **Graphviz** (optional) — for `acai diagram --format svg` / `acai diff --diagram svg`, or to turn DOT into images
+  yourself: `brew install graphviz`.
 
 ## Build from source
 

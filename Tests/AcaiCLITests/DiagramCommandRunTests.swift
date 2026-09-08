@@ -154,6 +154,24 @@ struct DiagramCommandRunTests {
         }
     }
 
+    /// `GraphvizSVGRendererTests` covers the renderer itself against a fake `dot`; this only
+    /// checks the command wires `--format svg` to it. Skipped when Graphviz isn't installed,
+    /// same as `DiagramImageRendererTests` skips when there's no window server.
+    @Test func writesSVGToOutputFileWhenGraphvizAvailable() throws {
+        guard (try? GraphvizSVGRenderer()) != nil else { return }
+        try CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("diagram.svg")
+            var cmd = try CLITestSupport.parseDiagram(
+                ["--source", dir.path, "--language", "swift", "--format", "svg", "--output", output.path]
+            )
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("<svg"))
+            #expect(contents.contains("Service"))
+        }
+    }
+
     @Test func untraceableSequenceEntryPointThrows() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)

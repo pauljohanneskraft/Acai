@@ -43,9 +43,9 @@ extension AcaiCommand {
         var format: ReportFormatOption = .human
 
         @Option(name: .long, help: ArgumentHelp(
-            "Render a delta diagram (dot or mermaid) with added/removed/changed elements colour-coded,"
-            + " instead of a textual report. Defaults to a class diagram; combine with one of"
-            + " --sequence-from / --state-from / --package / --call-graph for the other diagram types."
+            "Render a delta diagram (dot, mermaid, or svg) with added/removed/changed elements"
+            + " colour-coded, instead of a textual report. Defaults to a class diagram; combine with"
+            + " one of --sequence-from / --state-from / --package / --call-graph for the other diagram types."
         ))
         var diagram: FormatOption?
 
@@ -82,7 +82,7 @@ extension AcaiCommand {
                     "Specify only one of --sequence-from, --state-from, --package, or --call-graph.")
             }
             if modeFlags > 0 && diagram == nil {
-                throw ValidationError("A diagram-type flag requires --diagram dot|mermaid.")
+                throw ValidationError("A diagram-type flag requires --diagram dot|mermaid|svg.")
             }
             if callGraphScope != nil && !callGraph {
                 throw ValidationError("--call-graph-scope requires --call-graph.")
@@ -124,7 +124,10 @@ extension AcaiCommand {
 
         /// Renders the union of both revisions with added=green/removed=red/changed=amber.
         private func deltaDiagram(old: CodeArtifact, new: CodeArtifact, format: FormatOption) throws -> String {
-            let diagramFormat = format.diagramFormat
+            guard let diagramFormat = format.diagramFormat else {
+                let dot = try deltaDiagram(old: old, new: new, format: .dot)
+                return try GraphvizSVGRenderer().renderSVG(fromDOT: dot)
+            }
             if let sequenceFrom {
                 return try SequenceDeltaExporter(
                     request: SequenceDiagramRequest(entryPoint: sequenceFrom, maxDepth: maxDepth)

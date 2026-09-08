@@ -96,7 +96,7 @@ These appear on nearly every command.
 | Flag | Values | Notes |
 | --- | --- | --- |
 | `--output <path>` | — | Writes to a file; prints to stdout if omitted. |
-| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `impact`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`. |
+| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `impact`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot`, `mermaid`, or `svg`. |
 | `--include-generated` | flag | Machine-generated types are **excluded by default**; this includes them. |
 
 ### Selector facets
@@ -188,13 +188,13 @@ No options. Prints a `NAME · LANGUAGE · TYPES · FILES` table, or `No stored a
 
 ### `diagram`
 
-> Generate a diagram (DOT or Mermaid) from an analysis or source directory.
+> Generate a diagram (DOT, Mermaid, or SVG) from an analysis or source directory.
 
 The text-output workhorse. Renders a **class** diagram by default; one flag switches it to another family.
 
 | Flag | Notes |
 | --- | --- |
-| `--format` | `dot` (default), `mermaid` |
+| `--format` | `dot` (default), `mermaid`, `svg` — self-contained vector output for embedding in a documentation site or page; needs Graphviz's `dot` on `PATH` |
 | `--theme` | `default`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
 | *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency` |
@@ -211,13 +211,17 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 ```sh
 acai diagram --source . --output arch.dot
 acai diagram --from myproj --format mermaid --output arch.mmd
+acai diagram --from myproj --format svg --output docs/arch.svg
 acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.dot
 acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.dot
 acai diagram --from myproj --state-from "Download.state" --output states.dot
 acai diagram --from myproj --package --output modules.dot
 ```
 
-Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
+Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`. `--format svg` does this for you: it
+generates the DOT text internally and pipes it through Graphviz for a scalable, self-contained `<svg>`
+document with real `<text>` elements — legible at any size and droppable straight into a documentation
+page with no extra assets.
 
 ### `image`
 
@@ -382,7 +386,7 @@ Each side is a positional stored-analysis name or `.json` path, **or** a directo
 | --- | --- |
 | `--source-old` / `--source-new` | Analyze a directory as that side. |
 | `--format` | `human` (default), `json` |
-| `--diagram` | `dot` or `mermaid` — render a colour-coded delta diagram instead of a report. |
+| `--diagram` | `dot`, `mermaid`, or `svg` — render a colour-coded delta diagram instead of a report. |
 | `--sequence-from`, `--state-from`, `--package`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
 
 ```sh
