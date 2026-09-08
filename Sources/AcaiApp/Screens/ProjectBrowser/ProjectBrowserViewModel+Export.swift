@@ -166,14 +166,11 @@ extension ProjectBrowserViewModel {
 
     // MARK: Save as Freeform Diagram
 
-    /// - Parameter includeMetricsNote: the opt-in — Package/Call Graph screens thread the user's
-    ///   checkbox choice through here; every other diagram type calls this with the default `false`.
     func saveAsFreeformDiagram(
         id diagramId: UUID,
         positions: [String: CGPoint],
         scale: CGFloat,
-        offset: CGPoint,
-        includeMetricsNote: Bool = false
+        offset: CGPoint
     ) {
         guard let diagram = generatedDiagram(for: diagramId),
               let pIdx = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramId) }),
@@ -192,8 +189,7 @@ extension ProjectBrowserViewModel {
             artifact: artifact,
             positions: positions,
             scale: scale,
-            offset: offset,
-            includeMetricsNote: includeMetricsNote
+            offset: offset
         )
         store.projects[pIdx].freeformDiagramIDs.append(freeformDiagram.id)
         store.saveFreeformDiagram(freeformDiagram)

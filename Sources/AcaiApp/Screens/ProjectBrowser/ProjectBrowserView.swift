@@ -199,9 +199,7 @@ public struct ProjectBrowserView: View {
             }
             #endif
             List(selection: $model.selection) {
-                let projects = model.store.projects.sorted(by: {
-                    $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-                })
+                let projects = model.store.projects.sorted(byLocalizedName: \.title)
                 ForEach(projects) { project in
                     projectRow(project: project)
                 }
