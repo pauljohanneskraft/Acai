@@ -22,9 +22,9 @@ struct StatisticDetailBuilderTests {
             Relationship(kind: .dependency, source: "Hub", target: "Beta"),
             Relationship(kind: .dependency, source: "Hub", target: "Alpha")
         ]
-        return CodeArtifact(
-            metadata: .init(sourceLanguage: .swift), types: [hub, beta, alpha], relationships: rels
-        ).enriched()
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [hub, beta, alpha], relationships: rels)
+        return artifact.enriched(using: artifact.standardLanguageResolver)
     }
 
     @Test func typeDetailDropsZerosAndBreaksTiesByName() {
@@ -57,9 +57,9 @@ struct StatisticDetailBuilderTests {
             location: SourceLocation(filePath: "Sources/Core/Outer.swift", line: 1, column: 1))
         let caller = type("Caller", module: "Core")
         let rels = [Relationship(kind: .dependency, source: "Caller", target: "Outer.Inner")]
-        let artifact = CodeArtifact(
-            metadata: .init(sourceLanguage: .swift), types: [outer, caller], relationships: rels
-        ).enriched()
+        let unenrichedArtifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [outer, caller], relationships: rels)
+        let artifact = unenrichedArtifact.enriched(using: unenrichedArtifact.standardLanguageResolver)
         let metrics = artifact.computeMetrics()
         let builder = StatisticDetailBuilder(artifact: artifact)
 
@@ -68,9 +68,9 @@ struct StatisticDetailBuilderTests {
     }
 
     @Test func moduleDetailResolvesADirectoryFromARepresentativeType() {
-        let artifact = CodeArtifact(
-            metadata: .init(sourceLanguage: .swift), types: [type("A", module: "Core")], relationships: []
-        ).enriched()
+        let unenrichedArtifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift), types: [type("A", module: "Core")], relationships: [])
+        let artifact = unenrichedArtifact.enriched(using: unenrichedArtifact.standardLanguageResolver)
         let metrics = artifact.computeMetrics()
         let builder = StatisticDetailBuilder(artifact: artifact)
 
