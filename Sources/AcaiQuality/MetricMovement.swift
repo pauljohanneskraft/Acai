@@ -59,3 +59,23 @@ extension MetricMovement {
         value == value.rounded() ? String(Int(value)) : String(format: "%.2f", value)
     }
 }
+
+extension MetricBudget.Metric {
+    /// `false` for `instability` and `abstractness`: they are the two additive components of
+    /// `distance` (`|abstractness + instability - 1|`), so improving `distance` — the metric with an
+    /// actual "closer to 0 is better" direction — mechanically moves at least one of them. Flagging
+    /// that move as a *hidden* regression would misfire on the very mechanism the improvement used.
+    /// An author who wants either gated declares an explicit `MetricMovement` (or `MetricBudget`) for
+    /// it instead of relying on the automatic guard. Used only by `QualityEvaluator`'s
+    /// hidden-regression scan — an explicitly declared movement is never restricted by this.
+    var isEligibleForHiddenRegressionScan: Bool {
+        switch self {
+        case .instability, .abstractness:
+            return false
+        case .distance, .publicApiSurface, .fanIn, .fanOut, .depthOfInheritance, .weightedMethods,
+             .numberOfChildren, .numberOfProperties, .rfc, .maxParameters, .mutablePublicState, .lcom,
+             .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity:
+            return true
+        }
+    }
+}

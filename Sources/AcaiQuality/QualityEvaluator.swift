@@ -346,7 +346,8 @@ extension QualityEvaluator {
     ) -> [Violation] {
         let touchedModules = Set(declared.map(\.module))
         guard !touchedModules.isEmpty else { return [] }
-        let moduleMetrics = MetricBudget.Metric.allCases.filter(\.isModuleScoped)
+        let moduleMetrics = MetricBudget.Metric.allCases
+            .filter { $0.isModuleScoped && $0.isEligibleForHiddenRegressionScan }
         return touchedModules.sorted().flatMap { name -> [Violation] in
             guard let headModule = headModulesByName[name] else { return [] }
             return moduleMetrics.compactMap { metric -> Violation? in
@@ -370,7 +371,8 @@ extension QualityEvaluator {
         let touchedTypes = Set(declared.map(\.id))
         guard !touchedTypes.isEmpty else { return [] }
         let nodesByID = Dictionary(headGraph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let typeMetrics = MetricBudget.Metric.allCases.filter { !$0.isModuleScoped }
+        let typeMetrics = MetricBudget.Metric.allCases
+            .filter { !$0.isModuleScoped && $0.isEligibleForHiddenRegressionScan }
         return touchedTypes.sorted().flatMap { id -> [Violation] in
             guard let headMetric = headTypesByID[id] else { return [] }
             let source = nodesByID[id]?.location
