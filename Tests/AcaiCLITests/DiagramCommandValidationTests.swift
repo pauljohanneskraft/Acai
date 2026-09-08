@@ -86,8 +86,8 @@ struct DiagramCommandValidationTests {
         let cmd = try CLITestSupport.parseDiagram(
             ["--source", "/tmp/x", "--max-depth", "100", "--max-states", "1000"]
         )
-        #expect(cmd.maxDepth == 100)
-        #expect(cmd.maxStates == 1000)
+        #expect(cmd.shape.maxDepth == 100)
+        #expect(cmd.shape.maxStates == 1000)
     }
 
     @Test func validationErrorUsesValidationExitCode() {
