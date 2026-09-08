@@ -19,7 +19,7 @@ struct StatisticDetailBuilder {
             }
             .map { metric in
                 StatisticDetail.Row(
-                    id: metric.id, name: metric.name.shortName,
+                    id: metric.id, name: metric.shortName,
                     value: metric[keyPath: keyPath].formatted(), relativePath: typeRelativePath(metric.id),
                     reference: .type(id: metric.id))
             }
@@ -39,7 +39,7 @@ struct StatisticDetailBuilder {
             }
             .map { metric in
                 StatisticDetail.Row(
-                    id: metric.id, name: metric.name.shortName,
+                    id: metric.id, name: metric.shortName,
                     value: format(metric[keyPath: keyPath]), relativePath: typeRelativePath(metric.id),
                     reference: .type(id: metric.id))
             }

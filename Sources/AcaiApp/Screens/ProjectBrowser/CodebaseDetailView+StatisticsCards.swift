@@ -177,7 +177,7 @@ extension CodebaseDetailView {
                 "View.CodebaseDetailView.Max \(summary.maximum.formatted(.number.precision(.fractionLength(0))))"),
             secondary: .app(
                 "View.CodebaseDetailView.Avg \(summary.average.formatted(.number.precision(.fractionLength(1))))"),
-            exemplar: caption(descriptor, summary.exemplars.map(\.name.shortName)),
+            exemplar: caption(descriptor, summary.exemplars.map(\.shortName)),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
             blurb: visual.blurb,
@@ -198,7 +198,7 @@ extension CodebaseDetailView {
             color: visual.color,
             primary: .app("View.CodebaseDetailView.Max \(format(summary.maximum))"),
             secondary: .app("View.CodebaseDetailView.Avg \(format(summary.average))"),
-            exemplar: caption(descriptor, summary.exemplars.map(\.name.shortName)),
+            exemplar: caption(descriptor, summary.exemplars.map(\.shortName)),
             severity: visual.threshold?.severity(for: summary.maximum),
             uniformHeight: statCardHeight,
             blurb: visual.blurb,
