@@ -405,6 +405,24 @@ Delta colouring: **added green, removed red, changed amber**, with `+` / `−` /
   run: acai quality --source . --rules quality.yml
 ```
 
+**Gate architecture before it's committed.** A [pre-commit](https://pre-commit.com) hook is
+published from this repository — `acai` must already be on `PATH` (see [Install](#Install)), since
+`language: system` runs it as-is rather than building it.
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pauljohanneskraft/Acai
+    rev: v1.2.3          # pin to a released tag
+    hooks:
+      - id: acai-quality
+        args: [--rules, quality.yml]   # optional; omit to use the built-in smell budgets
+```
+
+The hook only runs when a commit actually touches a recognized source file, so an unrelated commit
+stays fast. Skip it deliberately with `SKIP=acai-quality git commit`, or bypass every hook with
+`git commit --no-verify`.
+
 **Adopt quality rules on an existing codebase.**
 
 ```sh
