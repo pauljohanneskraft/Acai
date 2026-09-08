@@ -1,9 +1,8 @@
 import Foundation
 import AcaiCore
 
-/// Builds the drill-down `StatisticDetail` for a tapped stat card — filtering, ranking and
-/// resolving each row's source location from the metric list. Kept independent of
-/// `CodebaseDetailView` so this logic can be exercised by a test without standing up a view.
+/// Kept independent of `CodebaseDetailView` so this logic can be exercised by a test without
+/// standing up a view.
 struct StatisticDetailBuilder {
     let artifact: CodeArtifact?
 

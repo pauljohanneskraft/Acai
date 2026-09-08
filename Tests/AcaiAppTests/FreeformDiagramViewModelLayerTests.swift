@@ -2,8 +2,6 @@ import Testing
 import AcaiDiagram
 @testable import AcaiApp
 
-/// The container/regular canvas layers used to filter and sort `viewModel.nodes` directly inside
-/// `FreeformDiagramView+Canvas`'s drawing path — moved onto the view model so this is testable here.
 @Suite("FreeformDiagramViewModel canvas layers")
 @MainActor
 struct FreeformDiagramViewModelLayerTests {

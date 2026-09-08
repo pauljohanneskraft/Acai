@@ -95,7 +95,6 @@ extension FreeformDiagramView {
     // MARK: - Regular Node Layer (highest z-level)
 
     var regularNodeLayer: some View {
-        // Lifelines and fragments render through the sequence layer, not as free nodes.
         ForEach(viewModel.regularLayerNodes) { node in
             nodeView(for: node)
         }

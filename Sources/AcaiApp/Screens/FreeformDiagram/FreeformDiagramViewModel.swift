@@ -85,14 +85,11 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     // MARK: - Canvas Layers
 
-    /// Resizable container nodes (package/boundary/subsystem), drawn beneath regular nodes,
-    /// lowest `drawOrder` first.
     var containerLayerNodes: [FreeformDiagram.Node] {
         nodes.filter(\.isResizable).sorted { $0.drawOrder < $1.drawOrder }
     }
 
-    /// Everything but containers, lifelines and fragments — those render through the sequence
-    /// layer instead. Lowest `drawOrder` first.
+    /// Lifelines and fragments render through the sequence layer, not here.
     var regularLayerNodes: [FreeformDiagram.Node] {
         nodes.filter { node in
             guard !node.isResizable else { return false }
