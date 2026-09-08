@@ -35,7 +35,7 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
                 nodeStyles.append("    style \(safe) stroke:\(color),stroke-width:3px")
             }
             if let annotation = options.nodeAnnotation?(type) {
-                nodeNotes.append("    note for \(safe) \"\(annotation.mermaidTextEscaped)\"")
+                nodeNotes.append("    note for \(safe) \"\(annotation.mermaidLabelEscaped)\"")
             }
         }
         lines.append(contentsOf: nodeStyles)
