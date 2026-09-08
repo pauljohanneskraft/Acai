@@ -22,8 +22,6 @@ struct PackageDiagramSidebar: View {
     let onSelect: (String) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
-    @Binding var showSaveAsFreeformOptions: Bool
-    @Binding var includeMetricsNoteOnSave: Bool
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
@@ -66,18 +64,11 @@ struct PackageDiagramSidebar: View {
             )
 
             Section(.app("View.PackageDiagramSidebar.Export")) {
-                Button {
-                    showSaveAsFreeformOptions = true
-                } label: {
+                Button(action: onSaveAsFreeform) {
                     Label(.app("View.PackageDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
                 .help(.app("View.PackageDiagramSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
-                .saveAsFreeformOptions(
-                    isPresented: $showSaveAsFreeformOptions,
-                    includeMetricsNote: $includeMetricsNoteOnSave,
-                    onConfirm: onSaveAsFreeform
-                )
                 Button(action: onExportImage) {
                     Label(.app("View.PackageDiagramSidebar.ExportImage"), systemImage: "photo")
                 }

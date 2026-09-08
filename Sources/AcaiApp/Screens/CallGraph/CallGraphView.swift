@@ -69,8 +69,6 @@ private struct CallGraphCanvasView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: CallGraphSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
-    @State private var showSaveAsFreeformOptions = false
-    @State private var includeMetricsNoteOnSave = false
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -166,9 +164,7 @@ private struct CallGraphCanvasView: View {
             onSelect: { viewModel.selectNode($0, extending: false) },
             onApplyScope: onApplyScope,
             onSaveAsFreeform: confirmSaveAsFreeform,
-            onExportImage: exportImage,
-            showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
-            includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+            onExportImage: exportImage
         )
     }
 
@@ -308,7 +304,7 @@ private struct CallGraphCanvasView: View {
         model.exportImage(named: diagram.name, using: viewModel)
     }
 
-    // MARK: - Save as Freeform (opt-in metric carryover)
+    // MARK: - Save as Freeform
 
     /// Reflects the current, non-diff artifact even when `Compare vs git` is active — the converted
     /// copy is always built from the plain current tree.
@@ -321,8 +317,7 @@ private struct CallGraphCanvasView: View {
             id: diagram.id,
             positions: layoutPositions,
             scale: canvasScale,
-            offset: canvasOffset,
-            includeMetricsNote: includeMetricsNoteOnSave
+            offset: canvasOffset
         )
     }
 
