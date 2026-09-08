@@ -5,24 +5,17 @@ import AcaiTreeSitter
 
 extension PythonExtractor {
 
-    private static let enumBaseNames: Set<String> = [
-        "Enum", "IntEnum", "IntFlag", "Flag", "StrEnum", "ReprEnum"
-    ]
-    private static let abstractBaseNames: Set<String> = ["ABC", "ABCMeta"]
-    /// Stdlib "marker" bases reflected in `TypeKind`/`.abstract` instead of drawn as inheritance
-    /// edges, so `class C(Enum)` reads like other languages' native enum (no phantom `Enum` node).
-    private static let markerBaseNames: Set<String> =
-        enumBaseNames.union(abstractBaseNames).union(["Protocol", "Generic"])
-
     mutating func extractClass(_ node: Node, decorators: [String]) -> TypeDeclaration {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
         // Namespaced so a nested `Inner` doesn't collide with a top-level `Inner`.
         let qualified = declarations.qualifiedName(name)
-        let bases = extractBases(node, className: qualified)
-        let kind = classKind(forBaseNames: bases.allNames)
+        let resolver = baseClassResolver
+        let bases = resolver.bases(for: node, className: qualified)
+        relationships.append(contentsOf: bases.relationships)
+        let kind = resolver.kind(forBaseNames: bases.allNames)
 
         var generics = bases.generics
-        generics.append(contentsOf: extractDeclaredTypeParameters(node))
+        generics.append(contentsOf: resolver.declaredTypeParameters(node))
 
         var decl = TypeDeclaration(
             id: qualified, name: name, qualifiedName: qualified, kind: kind,
@@ -45,67 +38,10 @@ extension PythonExtractor {
         }
 
         let hasAbstractMember = decl.members.contains { $0.modifiers.contains(.abstract) }
-        if hasAbstractMember || bases.allNames.contains(where: { Self.abstractBaseNames.contains($0) }) {
+        if hasAbstractMember || resolver.hasAbstractBase(in: bases.allNames) {
             if !decl.modifiers.contains(.abstract) { decl.modifiers.append(.abstract) }
         }
         return decl
-    }
-
-    private func classKind(forBaseNames names: [String]) -> TypeKind {
-        if names.contains(where: { Self.enumBaseNames.contains($0) }) { return .enum }
-        if names.contains("Protocol") { return .protocol }
-        return .class
-    }
-
-    // MARK: - Base classes
-
-    /// `allNames` is every positional base (for kind/abstract detection); `inherited` excludes the
-    /// stdlib markers. Keyword arguments (`metaclass=…`) are skipped.
-    private mutating func extractBases(
-        _ classNode: Node, className: String
-    ) -> (allNames: [String], inherited: [TypeReference], generics: [GenericParameter]) {
-        guard let supers = classNode.child(byFieldName: "superclasses") else { return ([], [], []) }
-        var allNames: [String] = []
-        var inherited: [TypeReference] = []
-        var generics: [GenericParameter] = []
-
-        let resolver = typeReferenceResolver
-        for child in supers.namedChildren() {
-            guard child.nodeType != "keyword_argument" else { continue }
-
-            if child.nodeType == "subscript",
-               let valueName = child.child(byFieldName: "value").flatMap({ resolver.baseTypeName(from: $0) }),
-               valueName == "Generic" || valueName == "Protocol" {
-                allNames.append(valueName)
-                generics.append(contentsOf: genericParameters(fromSubscript: child))
-                continue
-            }
-
-            guard let name = resolver.baseTypeName(from: child) else { continue }
-            allNames.append(name)
-            guard !Self.markerBaseNames.contains(name) else { continue }
-            inherited.append(TypeReference(name: name))
-            relationships.append(Relationship(kind: .inheritance, source: className, target: name))
-        }
-        return (allNames, inherited, generics)
-    }
-
-    private func genericParameters(fromSubscript node: Node) -> [GenericParameter] {
-        // namedChildren = [value, arg1, arg2, …]; drop the value (e.g. `Generic`) and keep the
-        // bracketed type variables.
-        node.namedChildren().dropFirst().compactMap { child in
-            child.nodeType == "identifier" ? GenericParameter(name: text(child)) : nil
-        }
-    }
-
-    /// PEP 695 declared type parameters (`class Foo[T]:`), when present.
-    private func extractDeclaredTypeParameters(_ node: Node) -> [GenericParameter] {
-        guard let params = node.child(byFieldName: "type_parameters") else { return [] }
-        return params.namedChildren().compactMap { child in
-            let name = child.namedChildren().first { $0.nodeType == "identifier" }.map { text($0) }
-                ?? text(child).trimmingCharacters(in: .whitespacesAndNewlines)
-            return name.isEmpty ? nil : GenericParameter(name: name)
-        }
     }
 
     // MARK: - Enum body

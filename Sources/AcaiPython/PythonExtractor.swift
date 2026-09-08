@@ -1,38 +1,15 @@
 import AcaiCore
 import AcaiTreeSitter
 
-struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
+struct PythonExtractor: DeclarationCollecting, CallSiteResolving {
     let context: SourceFileContext
 
-    /// The declaration/relationship bookkeeping this extractor accumulates while walking — factored
-    /// into its own shared type (`DeclarationCollector`) rather than kept as loose properties here.
+    /// The declaration/relationship bookkeeping this extractor accumulates while walking, factored
+    /// into its own shared type (`DeclarationCollector`). `DeclarationCollecting` supplies
+    /// `TreeSitterExtracting`'s six required state properties as forwards onto this, so this
+    /// extractor doesn't restate that plumbing itself.
     var declarations = DeclarationCollector()
     var topLevelCallSites: [CallSite] = []
-
-    var types: [TypeDeclaration] {
-        get { declarations.types }
-        set { declarations.types = newValue }
-    }
-    var relationships: [Relationship] {
-        get { declarations.relationships }
-        set { declarations.relationships = newValue }
-    }
-    var freestandingFunctions: [Member] {
-        get { declarations.freestandingFunctions }
-        set { declarations.freestandingFunctions = newValue }
-    }
-    var globalVariables: [Member] {
-        get { declarations.globalVariables }
-        set { declarations.globalVariables = newValue }
-    }
-    var currentNamespace: String? {
-        get { declarations.currentNamespace }
-        set { declarations.currentNamespace = newValue }
-    }
-    var declaredTypeNames: Set<String> {
-        get { declarations.declaredTypeNames }
-        set { declarations.declaredTypeNames = newValue }
-    }
 
     init(source: String, fileName: String) {
         self.context = SourceFileContext(source: source, fileName: fileName)
