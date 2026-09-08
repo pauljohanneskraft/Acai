@@ -17,9 +17,7 @@ struct CodebaseTypesSection: View {
         } content: {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
-                .sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
+                .sorted(byLocalizedName: \.name)
             LazyVStack(spacing: 1) {
                 ForEach(sortedTypes, id: \.id) { type in
                     typeRow(type: type)
