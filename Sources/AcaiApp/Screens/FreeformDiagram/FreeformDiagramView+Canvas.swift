@@ -86,25 +86,16 @@ extension FreeformDiagramView {
 
     // MARK: - Container Node Layer (lowest z-level)
 
-    @ViewBuilder
     var containerNodeLayer: some View {
-        let nodes = viewModel.nodes
-            .filter(\.isResizable)
-            .sorted { $0.drawOrder < $1.drawOrder }
-        ForEach(nodes) { node in
+        ForEach(viewModel.containerLayerNodes) { node in
             nodeView(for: node)
         }
     }
 
     // MARK: - Regular Node Layer (highest z-level)
 
-    @ViewBuilder
     var regularNodeLayer: some View {
-        // Lifelines and fragments render through the sequence layer, not as free nodes.
-        let nodes = viewModel.nodes
-            .filter { !$0.isResizable && $0.content.canvasBehavior.rendersAsFreeNode }
-            .sorted { $0.drawOrder < $1.drawOrder }
-        ForEach(nodes) { node in
+        ForEach(viewModel.regularLayerNodes) { node in
             nodeView(for: node)
         }
     }
