@@ -76,14 +76,7 @@ extension FreeformDiagram {
         /// Draw order within its z-layer. Higher values render on top.
         var drawOrder: Int = 0
 
-        var isResizable: Bool {
-            switch content {
-            case .package, .boundary, .subsystem:
-                true
-            default:
-                false
-            }
-        }
+        var isResizable: Bool { content.canvasBehavior.isResizable }
     }
 }
 
@@ -243,6 +236,30 @@ extension FreeformDiagram.Node {
         private static func defaultTypeStereotype(_ typeKind: TypeKind) -> String? {
             typeKind.stereotypeString
         }
+
+        /// How this content places on the canvas: whether it's a user-resizable container, and
+        /// whether it renders through the regular/container node layers at all (a lifeline or
+        /// fragment renders through the sequence layer instead). One exhaustive switch — no
+        /// `default` — so a newly added case must state both facts before this compiles, rather
+        /// than silently inheriting "not resizable, not a free node" from a catch-all.
+        var canvasBehavior: CanvasBehavior {
+            switch self {
+            case .package, .boundary, .subsystem:
+                CanvasBehavior(isResizable: true, rendersAsFreeNode: true)
+            case .lifeline, .fragment:
+                CanvasBehavior(isResizable: false, rendersAsFreeNode: false)
+            case .type, .actor, .useCase, .component, .deploymentNode, .database,
+                 .artifact, .entity, .note, .state, .method:
+                CanvasBehavior(isResizable: false, rendersAsFreeNode: true)
+            }
+        }
+    }
+}
+
+extension FreeformDiagram.Node.Content {
+    struct CanvasBehavior: Equatable {
+        let isResizable: Bool
+        let rendersAsFreeNode: Bool
     }
 }
 
