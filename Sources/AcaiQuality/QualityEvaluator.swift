@@ -18,7 +18,10 @@ public struct QualityEvaluator: Sendable {
         self.languageResolver = languageResolver
     }
 
-    public func evaluate(_ rawArtifact: CodeArtifact) -> QualityReport {
+    /// `baseline`, when given, is compared against `rawArtifact` to evaluate `rules.movements` — an
+    /// expected metric movement, plus a guard against a hidden regression on the same target. Omitted
+    /// (or when `rules.movements` is empty), movements are skipped entirely.
+    public func evaluate(_ rawArtifact: CodeArtifact, baseline: CodeArtifact? = nil) -> QualityReport {
         // Machine-generated types are dropped before evaluation unless the rules opt in — so budgets
         // and cycles reflect only hand-written code. Idempotent, so a pre-filtered artifact is fine.
         // Idempotent, so a pre-filtered artifact is fine.
@@ -50,7 +53,16 @@ public struct QualityEvaluator: Sendable {
         }
 
         let budgets = budgetViolations(graph, typesByID: typesByID)
-        return QualityReport(violations: budgets + structural, checkedRuleCount: rules.ruleCount)
+        var violations = budgets + structural
+        if let baseline, !rules.movements.isEmpty {
+            let filteredBaseline = rules.includeGeneratedTypes
+                ? baseline
+                : baseline.filteringGeneratedTypes(using: languageResolver)
+            let baseGraph = GraphView(
+                artifact: filteredBaseline, moduleResolver: moduleResolver, languageResolver: languageResolver)
+            violations += movementViolations(baseGraph: baseGraph, headGraph: graph)
+        }
+        return QualityReport(violations: violations, checkedRuleCount: rules.ruleCount)
     }
 
     // MARK: - Forbidden dependencies
@@ -233,5 +245,143 @@ private extension MetricBudget {
 
     private func format(_ value: Double) -> String {
         value == value.rounded() ? String(Int(value)) : String(format: "%.2f", value)
+    }
+}
+
+// MARK: - Movements
+
+extension QualityEvaluator {
+    private struct ModuleMetricKey: Hashable {
+        var module: String
+        var metric: MetricBudget.Metric
+    }
+
+    private struct TypeMetricKey: Hashable {
+        var id: String
+        var metric: MetricBudget.Metric
+    }
+
+    private func movementViolations(baseGraph: GraphView, headGraph: GraphView) -> [Violation] {
+        let headTypesByID = Dictionary(
+            headGraph.metrics.types.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let baseTypesByID = Dictionary(
+            baseGraph.metrics.types.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let headModulesByName = Dictionary(
+            headGraph.metrics.modules.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        let baseModulesByName = Dictionary(
+            baseGraph.metrics.modules.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+
+        let moduleMovements = rules.movements.filter(\.metric.isModuleScoped)
+        let typeMovements = rules.movements.filter { !$0.metric.isModuleScoped }
+        let declaredModules = declaredModuleMetrics(moduleMovements, headModulesByName: headModulesByName)
+        let declaredTypes = declaredTypeMetrics(typeMovements, headGraph: headGraph)
+
+        var violations = moduleMovements.flatMap {
+            moduleMovementViolations($0, headModulesByName: headModulesByName, baseModulesByName: baseModulesByName)
+        }
+        violations += typeMovements.flatMap {
+            typeMovementViolations($0, headGraph: headGraph, headTypesByID: headTypesByID, baseTypesByID: baseTypesByID)
+        }
+        violations += hiddenModuleRegressions(
+            headModulesByName: headModulesByName, baseModulesByName: baseModulesByName, declared: declaredModules)
+        violations += hiddenTypeRegressions(
+            headGraph: headGraph, headTypesByID: headTypesByID, baseTypesByID: baseTypesByID, declared: declaredTypes)
+        return violations
+    }
+
+    /// Every `(module, metric)` pair a movement explicitly singles out — excluded from the hidden-
+    /// regression scan, since an explicit rule already governs it.
+    private func declaredModuleMetrics(
+        _ movements: [MetricMovement], headModulesByName: [String: CodeMetrics.ModuleCoupling]
+    ) -> Set<ModuleMetricKey> {
+        Set(movements.flatMap { movement in
+            headModulesByName.keys.filter { movement.target.matchesModule(named: $0) }
+                .map { ModuleMetricKey(module: $0, metric: movement.metric) }
+        })
+    }
+
+    /// The type-scoped counterpart of `declaredModuleMetrics`.
+    private func declaredTypeMetrics(_ movements: [MetricMovement], headGraph: GraphView) -> Set<TypeMetricKey> {
+        Set(movements.flatMap { movement in
+            headGraph.nodes.filter { movement.target.matches($0) }
+                .map { TypeMetricKey(id: $0.id, metric: movement.metric) }
+        })
+    }
+
+    private func moduleMovementViolations(
+        _ movement: MetricMovement,
+        headModulesByName: [String: CodeMetrics.ModuleCoupling],
+        baseModulesByName: [String: CodeMetrics.ModuleCoupling]
+    ) -> [Violation] {
+        headModulesByName.values.compactMap { headModule in
+            guard movement.target.matchesModule(named: headModule.name),
+                  let before = baseModulesByName[headModule.name].flatMap({ movement.metric.value(in: $0) }),
+                  let after = movement.metric.value(in: headModule)
+            else { return nil }
+            return movement.violation(before: before, after: after, subject: headModule.name, source: nil)
+        }
+    }
+
+    private func typeMovementViolations(
+        _ movement: MetricMovement,
+        headGraph: GraphView,
+        headTypesByID: [String: CodeMetrics.TypeMetric],
+        baseTypesByID: [String: CodeMetrics.TypeMetric]
+    ) -> [Violation] {
+        headGraph.nodes.compactMap { node in
+            guard movement.target.matches(node), let headMetric = headTypesByID[node.id],
+                  let before = baseTypesByID[node.id].flatMap({ movement.metric.value(in: $0) }),
+                  let after = movement.metric.value(in: headMetric)
+            else { return nil }
+            return movement.violation(before: before, after: after, subject: node.id, source: node.location)
+        }
+    }
+
+    /// For every module touched by an explicit movement, checks every *other* module-scoped metric
+    /// for a silent regression — an improvement bought by a hidden cost elsewhere doesn't pass.
+    private func hiddenModuleRegressions(
+        headModulesByName: [String: CodeMetrics.ModuleCoupling],
+        baseModulesByName: [String: CodeMetrics.ModuleCoupling],
+        declared: Set<ModuleMetricKey>
+    ) -> [Violation] {
+        let touchedModules = Set(declared.map(\.module))
+        guard !touchedModules.isEmpty else { return [] }
+        let moduleMetrics = MetricBudget.Metric.allCases.filter(\.isModuleScoped)
+        return touchedModules.sorted().flatMap { name -> [Violation] in
+            guard let headModule = headModulesByName[name] else { return [] }
+            return moduleMetrics.compactMap { metric -> Violation? in
+                guard !declared.contains(ModuleMetricKey(module: name, metric: metric)),
+                      let before = baseModulesByName[name].flatMap({ metric.value(in: $0) }),
+                      let after = metric.value(in: headModule)
+                else { return nil }
+                return MetricMovement(metric: metric)
+                    .violation(before: before, after: after, subject: name, source: nil)
+            }
+        }
+    }
+
+    /// The type-scoped counterpart of `hiddenModuleRegressions`.
+    private func hiddenTypeRegressions(
+        headGraph: GraphView,
+        headTypesByID: [String: CodeMetrics.TypeMetric],
+        baseTypesByID: [String: CodeMetrics.TypeMetric],
+        declared: Set<TypeMetricKey>
+    ) -> [Violation] {
+        let touchedTypes = Set(declared.map(\.id))
+        guard !touchedTypes.isEmpty else { return [] }
+        let nodesByID = Dictionary(headGraph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let typeMetrics = MetricBudget.Metric.allCases.filter { !$0.isModuleScoped }
+        return touchedTypes.sorted().flatMap { id -> [Violation] in
+            guard let headMetric = headTypesByID[id] else { return [] }
+            let source = nodesByID[id]?.location
+            return typeMetrics.compactMap { metric -> Violation? in
+                guard !declared.contains(TypeMetricKey(id: id, metric: metric)),
+                      let before = baseTypesByID[id].flatMap({ metric.value(in: $0) }),
+                      let after = metric.value(in: headMetric)
+                else { return nil }
+                return MetricMovement(metric: metric)
+                    .violation(before: before, after: after, subject: id, source: source)
+            }
+        }
     }
 }
