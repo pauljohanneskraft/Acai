@@ -410,7 +410,24 @@ Delta colouring: **added green, removed red, changed amber**, with `+` / `−` /
 
 ## Recipes
 
-**Gate architecture in CI.**
+**Gate architecture in CI.** A [GitHub Action](https://github.com/pauljohanneskraft/Acai) is
+published from this repository — it downloads the matching release binary for the runner, so the
+workflow doesn't install a toolchain or reinvent the invocation:
+
+```yaml
+- uses: pauljohanneskraft/Acai@v1.2.3    # pin to a released tag
+  with:
+    rules: quality.yml                   # optional; omit to use the built-in smell budgets
+```
+
+Every `acai quality` flag is available as an input — `source`, `baseline`, `format`, `output` — and
+the rendered report comes back as the `report` output for a later step to post as a comment or
+artifact. The action fails the job on any violation, the same as the underlying command's non-zero
+exit; see [`action.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/action.yml) for the
+full input list.
+
+On a CI system that isn't GitHub Actions, or once `acai` is already on `PATH` some other way, the
+underlying command is just:
 
 ```yaml
 - name: Acai quality check
