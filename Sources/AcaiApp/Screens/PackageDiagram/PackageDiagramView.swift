@@ -28,8 +28,6 @@ struct PackageDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: PackageDiagramSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
-    @State private var showSaveAsFreeformOptions = false
-    @State private var includeMetricsNoteOnSave = false
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -123,9 +121,7 @@ struct PackageDiagramView: View {
             tab: $sidebarTab,
             onSelect: { viewModel.selectNode($0, extending: false) },
             onSaveAsFreeform: confirmSaveAsFreeform,
-            onExportImage: exportImage,
-            showSaveAsFreeformOptions: $showSaveAsFreeformOptions,
-            includeMetricsNoteOnSave: $includeMetricsNoteOnSave
+            onExportImage: exportImage
         )
     }
 
@@ -252,12 +248,10 @@ struct PackageDiagramView: View {
         model.exportImage(named: diagram.name, using: viewModel)
     }
 
-    // MARK: - Save as Freeform (opt-in metric carryover)
+    // MARK: - Save as Freeform
 
-    /// Confirms the "Save as Freeform" action with one opt-in: whether to carry over the module
-    /// coupling figures already computed for this diagram as a read-only note. Reflects the
-    /// current, non-diff artifact even when `Compare vs git` is active — the converted copy is
-    /// always built from the plain current tree, same as the rest of this conversion.
+    /// Reflects the current, non-diff artifact even when `Compare vs git` is active — the converted
+    /// copy is always built from the plain current tree, same as the rest of this conversion.
     private func confirmSaveAsFreeform() {
         let layoutPositions = Dictionary(
             viewModel.layout.nodes.map { ($0.id, CGPoint(x: $0.rect.midX, y: $0.rect.midY)) },
@@ -267,8 +261,7 @@ struct PackageDiagramView: View {
             id: diagram.id,
             positions: layoutPositions,
             scale: canvasScale,
-            offset: canvasOffset,
-            includeMetricsNote: includeMetricsNoteOnSave
+            offset: canvasOffset
         )
     }
 

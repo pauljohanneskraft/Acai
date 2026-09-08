@@ -125,11 +125,9 @@ struct ProjectDetailView: View {
 
     @ViewBuilder
     private func regularCodebasesAndDiagramsSection(project: Project) -> some View {
-        let sortedCodebases = project.codebases.sorted(by: {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        })
+        let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         let freeformDiagrams = model.freeformDiagramsForProject(projectID)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+            .sorted(byLocalizedName: \.name)
 
         if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
             emptyProjectContentState
@@ -187,9 +185,7 @@ struct ProjectDetailView: View {
 
     @ViewBuilder
     private func compactCodebasesSection(project: Project) -> some View {
-        let sortedCodebases = project.codebases.sorted(by: {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        })
+        let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         Section(.app("View.ProjectDetailView.Codebases")) {
             if sortedCodebases.isEmpty {
                 Text(.app("View.ProjectDetailView.NoCodebasesYetTap"))
@@ -228,7 +224,7 @@ struct ProjectDetailView: View {
     @ViewBuilder
     private func compactDiagramsSection() -> some View {
         let freeformDiagrams = model.freeformDiagramsForProject(projectID)
-            .sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })
+            .sorted(byLocalizedName: \.name)
         Section(.app("View.ProjectDetailView.Diagrams")) {
             if freeformDiagrams.isEmpty {
                 Text(.app("View.ProjectDetailView.NoFreeformDiagramsYetTouch"))
