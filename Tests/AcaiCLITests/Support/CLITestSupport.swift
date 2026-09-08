@@ -37,9 +37,9 @@ enum CLITestSupport {
     }
     #endif
 
-    static func parseRulesInit(_ arguments: [String]) throws -> AcaiCommand.Rules.Init {
-        let root = try AcaiCommand.parseAsRoot(["rules", "init"] + arguments)
-        return try #require(root as? AcaiCommand.Rules.Init)
+    static func parseRules(_ arguments: [String]) throws -> AcaiCommand.Rules {
+        let root = try AcaiCommand.parseAsRoot(["rules"] + arguments)
+        return try #require(root as? AcaiCommand.Rules)
     }
 
     static func parseInspect(_ arguments: [String]) throws -> AcaiCommand.Inspect {
