@@ -102,15 +102,7 @@ extension FreeformDiagramView {
     var regularNodeLayer: some View {
         // Lifelines and fragments render through the sequence layer, not as free nodes.
         let nodes = viewModel.nodes
-            .filter { node in
-                guard !node.isResizable else { return false }
-                switch node.content {
-                case .lifeline, .fragment:
-                    return false
-                default:
-                    return true
-                }
-            }
+            .filter { !$0.isResizable && $0.content.canvasBehavior.rendersAsFreeNode }
             .sorted { $0.drawOrder < $1.drawOrder }
         ForEach(nodes) { node in
             nodeView(for: node)
