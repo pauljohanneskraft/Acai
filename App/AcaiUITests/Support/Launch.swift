@@ -98,14 +98,10 @@ extension XCUIApplication {
         #endif
     }
 
-    /// Where a fixture is staged for one test to launch against. The app *displays* this path —
-    /// `CodebaseDetailView` shows the codebase's directory — so it has to be identical on every
-    /// run, or every screenshot golden capturing that screen drifts by the width of a fresh UUID.
-    /// Hence `/private/tmp` (the simulator shares the host's, and on macOS it also avoids the
-    /// sandboxed runner container's per-launch "access data from other apps" prompt) plus a name
-    /// derived from the calling test rather than a UUID. Per test *and* per platform because
-    /// `-parallel-testing-enabled` clones share this directory, as do a macOS and an iOS run
-    /// started together; the previous run's copy is removed rather than joined.
+    /// Deterministic, not a fresh UUID: `CodebaseDetailView` displays this path, so a per-run one
+    /// drifts every golden capturing that screen. `/private/tmp` is shared by the simulator and the
+    /// host, and on macOS avoids the runner container's per-launch "access data from other apps"
+    /// prompt.
     private func fixtureStagingDirectory(name: String, file: StaticString, function: StaticString) -> URL {
         let testCase = URL(fileURLWithPath: "\(file)").deletingPathExtension().lastPathComponent
         let testMethod = "\(function)".prefix { $0.isLetter || $0.isNumber || $0 == "_" }

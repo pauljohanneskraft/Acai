@@ -54,9 +54,8 @@ final class CompareGitRevisionTests: UIJourneyTestCase {
         XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
         classDiagramButton.tap()
 
-        // The canvas is what says this screen has arrived — its toolbar isn't in the tree either
-        // while the layout is still being computed, so anything reaching for a toolbar button
-        // first is racing the same render on a busy runner.
+        // The canvas, not the toolbar, is what says this screen has arrived: neither is in the tree
+        // while the layout is still being computed.
         let diagram = ClassDiagramScreen(app: app)
         XCTAssertTrue(diagram.typeNode(named: "Added").waitForExistence(timeout: 30),
                       "the uncommitted edit should still be visible on the current (working-tree) side")
