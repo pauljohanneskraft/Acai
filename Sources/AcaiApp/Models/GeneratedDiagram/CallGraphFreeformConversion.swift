@@ -4,18 +4,14 @@ import AcaiDiagram
 
 /// Converts a static call graph into an editable freeform diagram: each method becomes a
 /// `.method` node (the same monospaced box the generated view shows) and every call a dependency
-/// edge. The scope's coverage/leaf distinction isn't carried over by default — a hand-edited call
-/// graph has no analysis behind it — but when `includeMetricsNote` is set, one read-only `.note`
-/// node reporting the resolved/total call-site coverage is appended instead of silently dropping
-/// the figure.
+/// edge. The scope's coverage/leaf distinction isn't carried over — a hand-edited call graph has
+/// no analysis behind it.
 struct CallGraphFreeformConversion: FreeformConversion {
     let context: FreeformConversionContext
-    let includeMetricsNote: Bool
     private let graph: CallGraph
 
-    init(context: FreeformConversionContext, scope: CallGraphScope, includeMetricsNote: Bool) {
+    init(context: FreeformConversionContext, scope: CallGraphScope) {
         self.context = context
-        self.includeMetricsNote = includeMetricsNote
         self.graph = CallGraphBuilder(scope: scope).build(from: context.artifact)
     }
 
@@ -47,16 +43,5 @@ struct CallGraphFreeformConversion: FreeformConversion {
                   let target = idsBySourceID[edge.to] else { return nil }
             return FreeformDiagram.Edge(sourceNodeID: source, targetNodeID: target, kind: .dependency)
         }
-    }
-
-    func metricsFooterNodes(existingNodes: [FreeformDiagram.Node]) -> [FreeformDiagram.Node] {
-        guard includeMetricsNote, !graph.nodes.isEmpty else { return [] }
-        let maxY = existingNodes.map(\.positionY).max() ?? 120
-        return [FreeformDiagram.Node(
-            name: "Call Graph Coverage (read-only)",
-            content: .note(text: graph.coverage.metricsNoteText),
-            positionX: 120,
-            positionY: maxY + 220
-        )]
     }
 }

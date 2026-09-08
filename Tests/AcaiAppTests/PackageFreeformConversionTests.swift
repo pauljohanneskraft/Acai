@@ -8,10 +8,6 @@ import AcaiDiagram
 /// "Save as Freeform" for package diagrams: each build module becomes a `.package` node and every
 /// cross-module dependency a dependency edge, so the freeform editor (which renders through the
 /// same `ContainerNodeView` the generated view uses) shows an identical module graph.
-///
-/// Also covers the opt-in `includeMetricsNote` flag that appends one read-only `.note` node
-/// summarizing the coupling metrics (Ca/Ce/I/A/D) that were computed but, before this flag existed,
-/// silently dropped on conversion.
 @Suite("Package Diagram → Freeform Conversion")
 @MainActor
 struct PackageFreeformConversionTests {
@@ -46,10 +42,6 @@ struct PackageFreeformConversionTests {
 
     private func packageDiagram() -> GeneratedDiagram {
         GeneratedDiagram(name: "Modules", content: .packageDiagram, codebaseID: UUID())
-    }
-
-    private func noteNodes(_ freeform: FreeformDiagram) -> [FreeformDiagram.Node] {
-        freeform.nodes.filter { if case .note = $0.content { true } else { false } }
     }
 
     @Test("Modules become package nodes")
@@ -93,68 +85,11 @@ struct PackageFreeformConversionTests {
         #expect(positions.count == 2)
     }
 
-    @Test("Default conversion drops the metric note (today's unchanged behavior)")
-    func defaultConversionHasNoMetricsNote() {
-        let freeform = packageDiagram().convertToFreeform(
-            artifact: artifact(), positions: [:], scale: 1, offset: .zero
-        )
-        #expect(noteNodes(freeform).isEmpty)
-    }
-
-    @Test("includeMetricsNote: false explicitly still drops the note")
-    func explicitFalseHasNoMetricsNote() {
-        let freeform = packageDiagram().convertToFreeform(
-            artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: false
-        )
-        #expect(noteNodes(freeform).isEmpty)
-    }
-
-    @Test("includeMetricsNote: true appends one read-only note summarizing every module's coupling metrics")
-    func includeMetricsNoteAppendsSummary() throws {
-        let freeform = packageDiagram().convertToFreeform(
-            artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
-        )
-        // Two module nodes plus the appended metrics note.
-        #expect(freeform.nodes.count == 3)
-        let notes = noteNodes(freeform)
-        let note = try #require(notes.first)
-        #expect(notes.count == 1)
-        // Clearly distinguished as non-editable-derived content per the ticket's requirement, even
-        // though `.note` itself doesn't enforce read-only.
-        #expect(note.name.lowercased().contains("read-only"))
-        guard case .note(let text) = note.content else {
-            Issue.record("expected .note content")
-            return
-        }
-        // ModuleA only depends outward (unstable, Ce=2, Ca=0); ModuleB is only depended upon
-        // (stable, Ca=2, Ce=0) and fully abstract — same fixture `PackageDiagramTests` asserts on.
-        #expect(text.contains("ModuleA"))
-        #expect(text.contains("ModuleB"))
-        #expect(text.contains("Ca="))
-        #expect(text.contains("Ce="))
-        #expect(text.contains("I="))
-        #expect(text.contains("A="))
-        #expect(text.contains("D="))
-    }
-
-    @Test("The metrics note doesn't overlap the module nodes it summarizes")
-    func metricsNotePositionedClearOfModules() throws {
-        let freeform = packageDiagram().convertToFreeform(
-            artifact: artifact(), positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
-        )
-        let note = try #require(noteNodes(freeform).first)
-        let moduleMaxY = freeform.nodes
-            .filter { if case .package = $0.content { true } else { false } }
-            .map(\.positionY)
-            .max() ?? 0
-        #expect(note.positionY > moduleMaxY)
-    }
-
-    @Test("An empty package diagram appends no note even when includeMetricsNote is set")
-    func emptyPackageDiagramAppendsNoNote() {
+    @Test("An empty package diagram converts to no nodes")
+    func emptyPackageDiagramConvertsToNoNodes() {
         let emptyArtifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []))
         let freeform = packageDiagram().convertToFreeform(
-            artifact: emptyArtifact, positions: [:], scale: 1, offset: .zero, includeMetricsNote: true
+            artifact: emptyArtifact, positions: [:], scale: 1, offset: .zero
         )
         #expect(freeform.nodes.isEmpty)
     }

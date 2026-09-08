@@ -22,8 +22,6 @@ struct CallGraphSidebar: View {
     let onApplyScope: (CallGraphScope) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
-    @Binding var showSaveAsFreeformOptions: Bool
-    @Binding var includeMetricsNoteOnSave: Bool
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var draftScope: CallGraphScope
@@ -40,9 +38,7 @@ struct CallGraphSidebar: View {
         onSelect: @escaping (String) -> Void,
         onApplyScope: @escaping (CallGraphScope) -> Void,
         onSaveAsFreeform: @escaping () -> Void,
-        onExportImage: @escaping () -> Void,
-        showSaveAsFreeformOptions: Binding<Bool>,
-        includeMetricsNoteOnSave: Binding<Bool>
+        onExportImage: @escaping () -> Void
     ) {
         self.artifact = artifact
         self.graph = graph
@@ -55,8 +51,6 @@ struct CallGraphSidebar: View {
         self.onApplyScope = onApplyScope
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
-        self._showSaveAsFreeformOptions = showSaveAsFreeformOptions
-        self._includeMetricsNoteOnSave = includeMetricsNoteOnSave
         _draftScope = State(initialValue: scope)
     }
 
@@ -135,18 +129,11 @@ struct CallGraphSidebar: View {
             )
 
             Section(.app("View.CallGraphSidebar.Export")) {
-                Button {
-                    showSaveAsFreeformOptions = true
-                } label: {
+                Button(action: onSaveAsFreeform) {
                     Label(.app("View.CallGraphSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
                 .help(.app("View.CallGraphSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
-                .saveAsFreeformOptions(
-                    isPresented: $showSaveAsFreeformOptions,
-                    includeMetricsNote: $includeMetricsNoteOnSave,
-                    onConfirm: onSaveAsFreeform
-                )
                 Button(action: onExportImage) {
                     Label(.app("View.CallGraphSidebar.ExportImage"), systemImage: "photo")
                 }
