@@ -3,15 +3,15 @@ import Testing
 import AcaiQuality
 @testable import AcaiCLI
 
-@Suite("CLI: rules init")
-struct RulesInitCommandTests {
+@Suite("CLI: rules")
+struct RulesCommandTests {
 
     @Test func generatesADraftThatReloadsViaTheChecker() throws {
         try CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("quality.yml")
 
-            var cmd = try CLITestSupport.parseRulesInit(
+            var cmd = try CLITestSupport.parseRules(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
             try cmd.run()
 
