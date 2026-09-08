@@ -17,7 +17,7 @@ extension PythonExtractor {
     mutating func extractClass(_ node: Node, decorators: [String]) -> TypeDeclaration {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
         // Namespaced so a nested `Inner` doesn't collide with a top-level `Inner`.
-        let qualified = qualifiedName(name)
+        let qualified = declarations.qualifiedName(name)
         let bases = extractBases(node, className: qualified)
         let kind = classKind(forBaseNames: bases.allNames)
 
@@ -69,39 +69,25 @@ extension PythonExtractor {
         var inherited: [TypeReference] = []
         var generics: [GenericParameter] = []
 
+        let resolver = typeReferenceResolver
         for child in supers.namedChildren() {
             guard child.nodeType != "keyword_argument" else { continue }
 
             if child.nodeType == "subscript",
-               let valueName = child.child(byFieldName: "value").flatMap({ baseTypeName(from: $0) }),
+               let valueName = child.child(byFieldName: "value").flatMap({ resolver.baseTypeName(from: $0) }),
                valueName == "Generic" || valueName == "Protocol" {
                 allNames.append(valueName)
                 generics.append(contentsOf: genericParameters(fromSubscript: child))
                 continue
             }
 
-            guard let name = baseTypeName(from: child) else { continue }
+            guard let name = resolver.baseTypeName(from: child) else { continue }
             allNames.append(name)
             guard !Self.markerBaseNames.contains(name) else { continue }
             inherited.append(TypeReference(name: name))
             relationships.append(Relationship(kind: .inheritance, source: className, target: name))
         }
         return (allNames, inherited, generics)
-    }
-
-    func baseTypeName(from node: Node) -> String? {
-        switch node.nodeType {
-        case "identifier":
-            return text(node)
-        case "attribute":
-            return node.child(byFieldName: "attribute").map { text($0) }
-        case "subscript":
-            return node.child(byFieldName: "value").flatMap { baseTypeName(from: $0) }
-        case "generic_type":
-            return node.namedChildren().first { $0.nodeType == "identifier" }.map { text($0) }
-        default:
-            return nil
-        }
     }
 
     private func genericParameters(fromSubscript node: Node) -> [GenericParameter] {
