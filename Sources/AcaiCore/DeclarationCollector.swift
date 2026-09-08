@@ -1,12 +1,10 @@
-import AcaiCore
-
 // MARK: - DeclarationCollector
 
-/// Owns the state a Tree-sitter extractor accumulates while walking a file — the discovered types,
+/// Owns the state a language extractor accumulates while walking a file — the discovered types,
 /// their relationships, top-level members, and the namespace/type-name bookkeeping needed to resolve
 /// them — as one collaborator instead of a handful of loose properties on the extractor itself. A
 /// language extractor holds one instance and mutates it as it walks; this type knows no grammar, so
-/// any language can share it unchanged.
+/// any extractor — Tree-sitter-based or not — can share it unchanged.
 public struct DeclarationCollector {
 
     public var types: [TypeDeclaration] = []
