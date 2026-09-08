@@ -60,7 +60,7 @@ struct ClassDiagramFlags: ParsableArguments {
         guard let metric = colorBy else { return }
         guard !metric.isModuleScoped else {
             throw ValidationError(
-                "--color-by \(metric.rawValue) is a per-module metric; class-diagram coloring needs a per-type metric."
+                "--color-by \(metric.rawValue) is a per-module metric; class-diagram colouring needs a per-type metric."
             )
         }
         let ruleSet = try rules.map { try QualityRules.load(contentsOf: $0) } ?? QualityRules.defaultQuality

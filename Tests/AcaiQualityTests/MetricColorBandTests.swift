@@ -120,7 +120,9 @@ struct MetricColorBandTests {
 
     @Test func qualityRulesRoundTripsColorBands() throws {
         let original = QualityRules(colorBands: [
-            MetricColorBand(metric: .fanOut, stops: [Stop(value: 0, color: "#2e7d32"), Stop(value: 10, color: "#c62828")])
+            MetricColorBand(
+                metric: .fanOut,
+                stops: [Stop(value: 0, color: "#2e7d32"), Stop(value: 10, color: "#c62828")])
         ])
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(QualityRules.self, from: data)
