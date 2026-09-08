@@ -12,8 +12,7 @@ struct CodebaseGlobalsSection: View {
         ) {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.globalVariables.count)"))
         } content: {
-            let sortedGlobals = artifact.globalVariables
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            let sortedGlobals = artifact.globalVariables.sorted(byLocalizedName: \.name)
             LazyVStack(spacing: 1) {
                 ForEach(Array(sortedGlobals.enumerated()), id: \.offset) { _, global in
                     globalRow(global: global)

@@ -83,6 +83,28 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         history.clear()
     }
 
+    // MARK: - Canvas Layers
+
+    /// Resizable container nodes (package/boundary/subsystem), drawn beneath regular nodes,
+    /// lowest `drawOrder` first.
+    var containerLayerNodes: [FreeformDiagram.Node] {
+        nodes.filter(\.isResizable).sorted { $0.drawOrder < $1.drawOrder }
+    }
+
+    /// Everything but containers, lifelines and fragments — those render through the sequence
+    /// layer instead. Lowest `drawOrder` first.
+    var regularLayerNodes: [FreeformDiagram.Node] {
+        nodes.filter { node in
+            guard !node.isResizable else { return false }
+            switch node.content {
+            case .lifeline, .fragment:
+                return false
+            default:
+                return true
+            }
+        }.sorted { $0.drawOrder < $1.drawOrder }
+    }
+
     // MARK: - Node CRUD
 
     func addNode(kind: FreeformDiagramNodeKind, name: String, at position: CGPoint) {

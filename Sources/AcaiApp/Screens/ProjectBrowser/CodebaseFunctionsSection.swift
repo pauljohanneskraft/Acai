@@ -9,8 +9,7 @@ struct CodebaseFunctionsSection: View {
         CollapsibleSection(title: .app("View.CodebaseFunctionsSection.TopLevelFunctions"), defaultExpanded: false) {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.freestandingFunctions.count)"))
         } content: {
-            let sortedFunctions = artifact.freestandingFunctions
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            let sortedFunctions = artifact.freestandingFunctions.sorted(byLocalizedName: \.name)
             LazyVStack(spacing: 1) {
                 ForEach(Array(sortedFunctions.enumerated()), id: \.offset) { _, function in
                     functionRow(function: function)
