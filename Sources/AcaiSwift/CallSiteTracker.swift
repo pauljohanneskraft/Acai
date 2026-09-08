@@ -1,28 +1,18 @@
 import SwiftSyntax
 import AcaiCore
 
-/// Per-function-body call-site-collection state: the property/parameter/local maps a call-site
-/// receiver resolves against, and the buffers a body's calls/assignments/field-reads accumulate into
-/// before folding into its `Member`. Grouped into one value so resetting it (new top-of-body
-/// function/initializer, or once finalized) is a single assignment.
 struct CallSiteAccumulator {
     var pendingCallSites: [CallSite] = []
     var pendingAssignments: [VariableAssignment] = []
     var pendingFieldReads: [FieldAccess] = []
-    /// Stored-property name → declared type name for the current type.
     var propertyMap: [String: String] = [:]
-    /// Stored-property name → declared element type, for array-typed (`[X]`) properties. Separate
-    /// from `propertyMap`: an array's element is only a valid receiver inside an iteration closure's
-    /// implicit `$0`, never a direct call on the property itself.
+    /// Separate from `propertyMap`: an array's element is only a valid receiver inside an iteration
+    /// closure's implicit `$0`, never a direct call on the property itself.
     var arrayElementPropertyMap: [String: String] = [:]
-    /// Local-variable name → provable declared type within the current body. Separate from
-    /// `propertyMap`: locals are call-site receivers, not field reads.
     var localMap: [String: String] = [:]
-    /// Local/guard-let name → deferred `CallReceiver`, for a binding whose type couldn't be proven
-    /// concretely in this file but is resolvable post-merge. Consulted only after `localMap` misses.
+    /// A binding whose type couldn't be proven concretely in this file but is resolvable post-merge.
+    /// Consulted only after `localMap` misses.
     var localReceiverOriginMap: [String: CallReceiver] = [:]
-    /// Current function/initializer's parameter name → declared type. Separate from `propertyMap` for
-    /// the same reason as `localMap`.
     var parameterMap: [String: String] = [:]
     /// Every local/parameter name declared so far, whether or not its type was provable — unlike
     /// `localMap`/`parameterMap`. Consulted so a local whose type inference failed isn't mistaken for
@@ -30,11 +20,9 @@ struct CallSiteAccumulator {
     var knownLocalNames: Set<String> = []
 }
 
-/// Where a `FunctionCallExprSyntax` was found, as `DeclarationVisitor` tracks it: inside a function or
-/// closure body (receivers resolve against the current body's property/parameter/local maps), at bare
-/// top-level script scope (receivers resolve against `topLevelGlobalReceiverOriginMap` instead), or
-/// neither (a call expression outside any function body and inside a type, e.g. a default parameter
-/// value — not a site `recordCallSite` attaches anywhere).
+/// Where a `FunctionCallExprSyntax` was found: inside a function/closure body, at bare top-level
+/// script scope, or neither (e.g. a default parameter value) — a call `recordCallSite` attaches
+/// nowhere.
 enum CallSiteScope {
     case functionBody
     case fileScope
@@ -42,14 +30,9 @@ enum CallSiteScope {
 }
 
 /// Owns everything `DeclarationVisitor` needs to collect call sites, assignments and field reads
-/// while it walks a file: the per-function-body accumulator above, the deferred local/condition
-/// bindings a self-referential or shadowing initializer requires, the top-level (script-style) call
-/// collection, and the per-type method-name/return-type lookups those resolutions need.
-///
-/// Expression-shape interpretation itself stays in `CallSiteCollector` (held here, stateless); this
-/// tracker is the traversal-state counterpart the visitor drives through its own push/pop and
-/// begin/end calls, supplying the type/member context (property maps, enclosing type name) it
-/// doesn't own itself.
+/// while it walks a file. Expression-shape interpretation stays in `CallSiteCollector` (held here,
+/// stateless); this is the traversal-state counterpart the visitor drives through push/pop and
+/// begin/end calls, supplying the type/member context it doesn't own itself.
 final class CallSiteTracker {
     private(set) var callSiteState = CallSiteAccumulator()
     private(set) var topLevelCallSites: [CallSite] = []
@@ -64,8 +47,6 @@ final class CallSiteTracker {
     /// Mirrors `DeclarationVisitor.typeStack`: each type's own method names with an ambiguous
     /// (multi-)return-type overload, so those are never mistaken for a cross-file method and deferred.
     private var ambiguousReturnTypeMethodNamesStack: [Set<String>] = []
-    /// Mirrors `DeclarationVisitor.typeStack`: each type's own method names, so a bare
-    /// method-reference-as-value (`action: chooseFile`) resolves regardless of declaration order.
     private var methodNameMapStack: [Set<String>] = []
 
     let callSites: CallSiteCollector
@@ -93,9 +74,9 @@ final class CallSiteTracker {
         methodNameMapStack.removeLast()
     }
 
-    /// Builds a `methodName → returnTypeName` map from a type's direct member list in one pre-pass
-    /// over the raw syntax, so a forward-declared method's return type is seen regardless of source
-    /// order. Keeps only names with a single, unambiguous return type across overloads.
+    /// Built from a raw pre-pass over the type's direct member list, so a forward-declared method's
+    /// return type is seen regardless of source order. Keeps only names with a single, unambiguous
+    /// return type across overloads.
     private func returnTypeMap(from memberBlock: MemberBlockSyntax) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for item in memberBlock.members {
@@ -123,17 +104,12 @@ final class CallSiteTracker {
         return Set(typesByName.filter { $0.value.count > 1 }.keys)
     }
 
-    /// A type's own method names, from the same raw pre-pass as `returnTypeMap` — feeds
-    /// `CallSiteCollector.methodReference`, so a bare method-reference-as-value resolves regardless of
-    /// source order.
     private func methodNames(from memberBlock: MemberBlockSyntax) -> Set<String> {
         Set(memberBlock.members.compactMap { $0.decl.as(FunctionDeclSyntax.self)?.name.text })
     }
 
     // MARK: - Function-body state
 
-    /// Seeds `callSiteState` fresh for a new top-of-body function/initializer. `propertyMap` and
-    /// `arrayElementPropertyMap` come from the caller, which alone knows the current type's members.
     func resetCallSiteState(
         propertyMap: [String: String], arrayElementPropertyMap: [String: String],
         parameterClause: FunctionParameterClauseSyntax
@@ -146,14 +122,10 @@ final class CallSiteTracker {
         )
     }
 
-    /// Clears `callSiteState` once a top-of-body function/initializer has folded its accumulated data
-    /// into a `Member`.
     func clearCallSiteState() {
         callSiteState = CallSiteAccumulator()
     }
 
-    /// Builds a `paramName → typeName` map from a function/initializer's parameter list, so a
-    /// `param.method()` call inside the body resolves. Only provably-typed parameters are included.
     private func parameterMap(from parameterClause: FunctionParameterClauseSyntax) -> [String: String] {
         var map: [String: String] = [:]
         for parameter in signatures.extractParameters(from: parameterClause) {
@@ -164,15 +136,10 @@ final class CallSiteTracker {
         return map
     }
 
-    /// Every parameter's internal name, typed or not — unlike `parameterMap`. Seeds
-    /// `callSiteState.knownLocalNames` so an untyped parameter isn't mistaken for an unresolved
-    /// own-property receiver.
     private func knownParameterNames(from parameterClause: FunctionParameterClauseSyntax) -> Set<String> {
         Set(signatures.extractParameters(from: parameterClause).map(\.internalName))
     }
 
-    /// Merges a nested local function's own parameters into `callSiteState`, so a call through one of
-    /// them resolves inside the nested function.
     func mergeNestedFunctionParameters(from parameterClause: FunctionParameterClauseSyntax) {
         for parameter in signatures.extractParameters(from: parameterClause) {
             callSiteState.knownLocalNames.insert(parameter.internalName)
@@ -184,11 +151,11 @@ final class CallSiteTracker {
 
     // MARK: - Local & condition bindings
 
-    /// Records every binding's name into `callSiteState.knownLocalNames` immediately — recording just
-    /// the name has no self-shadowing hazard — and defers the bindings whose origin could also be
-    /// resolved until `endLocalBindings()`, once their initializer has been fully visited (Swift
-    /// scoping doesn't put a name in scope until its own initializer finishes, so `let size = size(for:
-    /// id)` must resolve the RHS against the outer `size` method, not the not-yet-in-scope local).
+    /// Records every binding's name into `knownLocalNames` immediately, and defers the bindings whose
+    /// origin could also be resolved until `endLocalBindings()`, once their initializer has been fully
+    /// visited: Swift scoping doesn't put a name in scope until its own initializer finishes, so `let
+    /// size = size(for: id)` must resolve the RHS against the outer `size` method, not the
+    /// not-yet-in-scope local.
     func beginLocalBindings(_ bindings: PatternBindingListSyntax) {
         pendingLocalBindingsStack.append(recordingKnownLocalNames(from: bindings))
     }
@@ -241,9 +208,6 @@ final class CallSiteTracker {
             ambiguousMethodNames: currentAmbiguousReturnTypeMethodNames)
     }
 
-    /// Folds a resolved local-binding origin into `callSiteState`: a concrete type name into
-    /// `localMap`, or a deferred `CallReceiver` into `localReceiverOriginMap` — the binding's later use
-    /// as a receiver consults whichever one has an entry.
     private func recordLocalBindingOrigin(_ local: (name: String, origin: LocalBindingOrigin)) {
         switch local.origin {
         case .concrete(let type):
@@ -255,9 +219,6 @@ final class CallSiteTracker {
 
     // MARK: - Top-level (script-style) call collection
 
-    /// Folds a top-level `let`/`var` binding's deferred origin (e.g. `let registry =
-    /// ToolRegistry.standard`) into `topLevelGlobalReceiverOriginMap`, so a later `registry.method()`
-    /// call in top-level code resolves.
     func recordTopLevelGlobalReceiverOrigins(from bindings: PatternBindingListSyntax) {
         for binding in bindings {
             guard let local = callSites.localBinding(from: binding), case .deferred(let receiver) = local.origin
@@ -285,10 +246,9 @@ final class CallSiteTracker {
         return sites
     }
 
-    /// Call sites made inside a stored property's initializer expression (`static let light =
-    /// make(isDark: false)`) — the initializer-expression analogue of `accessorCallSites`, which only
-    /// walks computed accessor bodies. Without this, a call made only from a stored property's
-    /// initializer is invisible to the call graph.
+    /// The initializer-expression analogue of `accessorCallSites` (`static let light = make(isDark:
+    /// false)`), which only walks computed accessor bodies. Without this, a call made only from a
+    /// stored property's initializer is invisible to the call graph.
     func initializerCallSites(
         from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?, fileName: String
     ) -> [CallSite] {
@@ -312,11 +272,7 @@ final class CallSiteTracker {
     }
 
     // MARK: - Call-Site, Assignment & Field-Read Recording
-    // The expression-shape interpretation lives in `CallSiteCollector`; this only stores what the
-    // collector recovers.
 
-    /// Resolves and records `node` as either a call site inside the current function body, or (when
-    /// outside any function/type) a top-level script statement's call site.
     func recordCallSite(
         from node: FunctionCallExprSyntax, scope: CallSiteScope,
         enclosingTypeName: String?, topLevelGlobalPropertyMap: @autoclosure () -> [String: String], fileName: String
@@ -345,10 +301,8 @@ final class CallSiteTracker {
                 from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil, fileName: fileName)
                 ?? callSites.deferredCallSite(
                     from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap, fileName: fileName) {
-                // A bare top-level statement: its calls have nowhere to attach as a member, so they're
-                // recorded separately and given a synthetic reachable member in `buildArtifact()`.
-                // Receivers resolve against globals declared earlier in the file (Swift's top-level
-                // execution order guarantees a global's declaration precedes its use).
+                // Its calls have nowhere to attach as a member, so they're recorded separately and
+                // given a synthetic reachable member in `buildArtifact()`.
                 topLevelCallSites.append(site)
             }
         case .other:
@@ -373,10 +327,8 @@ final class CallSiteTracker {
     }
 
     /// Binds an implicit-`$0` iteration closure's parameter to the iterated array property's element
-    /// type (`addedRelationships.map { $0.reportPhrase() }`) and records the resulting call sites. A
-    /// no-op when `node` isn't such a closure or its receiver isn't a resolvable array property. The
-    /// default child traversal still descends into the closure afterwards, redundantly but
-    /// harmlessly — `$0` has no binding there, so nothing is double-counted.
+    /// type (`addedRelationships.map { $0.reportPhrase() }`). A no-op when `node` isn't such a closure
+    /// or its receiver isn't a resolvable array property.
     private func recordIterationClosureCallSites(
         in node: FunctionCallExprSyntax, enclosingTypeName: String?, fileName: String
     ) {

@@ -23,10 +23,6 @@ final class DeclarationVisitor: SyntaxVisitor {
     private let typeDeclarations = TypeDeclarationExtractor()
     private let members: MemberExtractor
     let signatures = DeclarationSignatureExtractor()
-    /// Owns the call-site/assignment/field-read collection concern: the per-function-body accumulator,
-    /// deferred local bindings, top-level call collection, and the per-type lookups their resolution
-    /// needs. `DeclarationVisitor` drives the walk and supplies type/member context at the seams below
-    /// (`pushType`/`popType`, the function/initializer visitors); the bookkeeping itself lives there.
     let scope: CallSiteTracker
 
     init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
@@ -157,9 +153,6 @@ final class DeclarationVisitor: SyntaxVisitor {
         let isNested = functionBodyDepth > 0
         functionBodyDepth += 1
         if isNested {
-            // A local function isn't a member of its own, but its calls are reachable once the
-            // enclosing function runs — so descend and keep accumulating into the same pending
-            // buffers (merging in its own parameters so `param.method()` inside it resolves).
             scope.mergeNestedFunctionParameters(from: node.signature.parameterClause)
             return .visitChildren
         }
@@ -171,7 +164,6 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visitPost(_ node: FunctionDeclSyntax) {
         functionBodyDepth -= 1
-        // Only the top-of-body function becomes a member; nested ones already contributed above.
         guard functionBodyDepth == 0 else { return }
         var member = members.extractFunction(
             from: node, fileName: fileName, callSites: scope.callSiteState.pendingCallSites,
@@ -188,8 +180,6 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: OptionalBindingConditionSyntax) -> SyntaxVisitorContinueKind {
-        // `guard let x = …` / `if let x = …`: the condition-list analogue of a local VariableDeclSyntax.
-        // Same deferral as below, so a shadowing initializer resolves its RHS against the outer scope.
         guard functionBodyDepth > 0 else { return .visitChildren }
         scope.beginConditionBinding(node)
         return .visitChildren
@@ -201,20 +191,13 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
-        // Local variables aren't members, but recording their provable type lets a later
-        // `local.method()` resolve. Descend into the initializer too, so a call in `let x =
-        // obj.compute()` is collected.
         guard functionBodyDepth == 0 else {
-            // Bindings aren't added to the local map until `visitPost` — this only records names
-            // immediately and defers resolved types.
             scope.beginLocalBindings(node.bindings)
             return .visitChildren
         }
         var extractedMembers = attachingInitializerReferencedTypes(
             to: members.extractVariable(from: node, fileName: fileName), from: node)
-        // Collect call sites from computed-property accessor bodies and stored-property initializer
-        // expressions, so a callee reached only through a property isn't seen as dead. A binding is
-        // either stored or computed, never both, so unconditional attachment is safe.
+        // A binding is either stored or computed, never both, so unconditional attachment is safe.
         let propertySites = collectPropertyCallSites(from: node)
         if !propertySites.isEmpty {
             extractedMembers = extractedMembers.map { member in
@@ -232,9 +215,6 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .skipChildren
     }
 
-    // Only after the initializer is fully visited are its resolved-type bindings folded into the
-    // deferred-binding maps — Swift scoping doesn't put a name in scope until its own initializer
-    // finishes, so `let size = size(for: id)` must resolve the RHS against the outer `size` method.
     override func visitPost(_ node: VariableDeclSyntax) {
         guard functionBodyDepth == 0 else {
             scope.endLocalBindings()
@@ -243,7 +223,6 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: InitializerDeclSyntax) -> SyntaxVisitorContinueKind {
-        // Balance the depth counter against `visitPost` unconditionally (see the function-decl note above).
         let isNested = functionBodyDepth > 0
         functionBodyDepth += 1
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
@@ -306,8 +285,6 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     // MARK: - Call-Site & Assignment Collection
-    // The expression-shape interpretation lives in `CallSiteCollector`; state and bookkeeping live in
-    // `CallSiteTracker` (`scope`); this visitor only drives the walk and supplies type context.
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         scope.recordCallSite(

@@ -2,9 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 /// Bridges the type/member state `DeclarationVisitor` owns (`typeStack`, `protocolProperties`,
-/// `globalVariables`) to the context `CallSiteTracker` (`scope`) needs but doesn't hold itself —
-/// the current type's stored-property maps, the enclosing type name, the top-level global map — plus
-/// the type-scope push/pop that mirrors `typeStack` into the tracker's own per-type lookups.
+/// `globalVariables`) to the context `CallSiteTracker` (`scope`) needs but doesn't hold itself.
 extension DeclarationVisitor {
 
     // MARK: - Stack Management
@@ -28,9 +26,6 @@ extension DeclarationVisitor {
         }
     }
 
-    /// Builds a `varName → typeName` map from the stored properties already extracted for the current
-    /// type, called just before descending into a function body.
-    ///
     /// When the current type is a protocol extension, also seeds the extended protocol's own
     /// requirement properties — the extension's own member list never carries them, so a default
     /// implementation calling through one (`history.undo()`) would otherwise be unresolvable.
@@ -49,8 +44,6 @@ extension DeclarationVisitor {
         return map
     }
 
-    /// Stored-property array-element types for the current type — the array-element counterpart to
-    /// `buildPropertyMap()`, feeding `CallSiteCollector.arrayElementReceiverType`.
     func buildArrayElementPropertyMap() -> [String: String] {
         guard let currentType = typeStack.last else { return [:] }
         var map: [String: String] = [:]
@@ -62,8 +55,6 @@ extension DeclarationVisitor {
         return map
     }
 
-    /// `globalName → typeName` for every top-level `let`/`var` with a provable type, built fresh at
-    /// each top-level call site so it reflects every global declared so far.
     func topLevelGlobalPropertyMap() -> [String: String] {
         Dictionary(
             globalVariables.compactMap { global in global.type.map { (global.name, $0.name) } },
