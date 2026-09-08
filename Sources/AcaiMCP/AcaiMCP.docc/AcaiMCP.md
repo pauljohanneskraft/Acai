@@ -290,7 +290,7 @@ The loop is *measurement narrows → reading confirms → editing fixes → re-r
 
 The skill is explicit that the tool measures and you judge: a data-model core legitimately has high fan-in, and a metric is a question, not a defect.
 
-Four jobs are inherently process-shaped and belong on the CLI: **CI gating** (only the CLI exits non-zero), **`acai rules init`** (no MCP equivalent), **`Scripts/audit.sh`** report bundles, and **`acai store` / `acai list`** for cross-session baselines.
+Four jobs are inherently process-shaped and belong on the CLI: **CI gating** (only the CLI exits non-zero), **`acai rules`** (no MCP equivalent), **`Scripts/audit.sh`** report bundles, and **`acai store` / `acai list`** for cross-session baselines.
 
 ---
 
@@ -310,4 +310,4 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 
 `acai_inspect` and `acai_impact` are at full parity.
 
-**No MCP equivalent at all:** `store`, `list`, `rules init`.
+**No MCP equivalent at all:** `store`, `list`, `rules`.
