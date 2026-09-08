@@ -175,6 +175,19 @@ struct TypeScriptParserTests {
         #expect(artifact.freestandingFunctions.count == 1)
         #expect(artifact.freestandingFunctions[0].name == "helper")
     }
+
+    @Test func moduleGlobals() {
+        let source = """
+        export const MAX_RETRIES: number = 3;
+        let counter = 0;
+        """
+        let artifact = parser.parse(source: source, fileName: "config.ts")
+        #expect(artifact.globalVariables.map(\.name).sorted() == ["MAX_RETRIES", "counter"])
+        let maxRetries = artifact.globalVariables.first { $0.name == "MAX_RETRIES" }
+        #expect(maxRetries?.type?.name == "number")
+        #expect(maxRetries?.accessLevel == .public)
+        #expect(artifact.globalVariables.first { $0.name == "counter" }?.accessLevel == .internal)
+    }
 }
 
 // MARK: - Extended TypeScript Tests

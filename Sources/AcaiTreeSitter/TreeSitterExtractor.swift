@@ -20,6 +20,9 @@ public protocol TreeSitterExtracting {
 
     var freestandingFunctions: [Member] { get set }
 
+    /// Top-level (module-scope) `let`/`var`/`val` declarations.
+    var globalVariables: [Member] { get set }
+
     var currentNamespace: String? { get set }
 
     // MARK: - Required Methods
@@ -81,7 +84,8 @@ extension TreeSitterExtracting {
             ),
             types: types,
             relationships: relationships,
-            freestandingFunctions: freestandingFunctions
+            freestandingFunctions: freestandingFunctions,
+            globalVariables: globalVariables
         )
     }
 

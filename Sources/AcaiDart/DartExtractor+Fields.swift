@@ -16,7 +16,10 @@ extension DartExtractor {
         var isConst = false
     }
 
-    private func applyDeclarationChild(
+    /// Folds one modifier/type child of a `declaration` node (or, at file scope, of `program`
+    /// itself — the two share this per-child shape even though only the class-body form is
+    /// actually wrapped in a `declaration` node) into `info`.
+    func applyDeclarationChild(
         _ child: Node, nodeType: String, to info: inout DeclarationInfo
     ) {
         switch nodeType {
@@ -41,6 +44,19 @@ extension DartExtractor {
         }
     }
 
+    /// Applies the `isNullable` flag collected from a `nullable_type` child onto `info.type`,
+    /// which only becomes known once every child has been seen.
+    func resolvingNullableType(_ info: DeclarationInfo) -> DeclarationInfo {
+        var info = info
+        if info.isNullable, let base = info.type {
+            info.type = TypeReference(
+                name: base.name, genericArguments: base.genericArguments,
+                isOptional: true, isArray: base.isArray
+            )
+        }
+        return info
+    }
+
     /// First pass over a `declaration` node to collect type and modifier info.
     func collectDeclarationInfo(_ node: Node) -> DeclarationInfo {
         var info = DeclarationInfo(
@@ -51,13 +67,7 @@ extension DartExtractor {
             guard let nodeType = child.nodeType else { continue }
             applyDeclarationChild(child, nodeType: nodeType, to: &info)
         }
-        if info.isNullable, let base = info.type {
-            info.type = TypeReference(
-                name: base.name, genericArguments: base.genericArguments,
-                isOptional: true, isArray: base.isArray
-            )
-        }
-        return info
+        return resolvingNullableType(info)
     }
 
     /// Extracts field members from an `initialized_identifier_list` node.

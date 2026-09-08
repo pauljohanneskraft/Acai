@@ -16,6 +16,7 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
     var types: [TypeDeclaration] = []
     var relationships: [Relationship] = []
     var freestandingFunctions: [Member] = []
+    var globalVariables: [Member] = []
     var currentNamespace: String?
     var declaredTypeNames: Set<String> = []
     /// Call sites made by bare top-level statements (`bootstrap();`), collected during
@@ -66,7 +67,8 @@ struct JSExtractor: TreeSitterExtracting, CallSiteResolving {
             ),
             types: types,
             relationships: relationships,
-            freestandingFunctions: freestandingFunctions
+            freestandingFunctions: freestandingFunctions,
+            globalVariables: globalVariables
         )
     }
 }
