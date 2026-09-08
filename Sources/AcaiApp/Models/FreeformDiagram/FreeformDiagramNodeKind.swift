@@ -47,200 +47,172 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
     /// label is the node's name.
     case callGraphMethod
 
-    // MARK: - Identifiable
+    // MARK: - Per-Shape Metadata
 
-    var id: String {
+    /// Every catalogue fact about a shape — identity, display name, icon, grouping — derived
+    /// from one exhaustive switch. A new case must fill in all four here before the enum
+    /// compiles, rather than risk a shape that only picked up some of them because a separate
+    /// switch elsewhere was never visited.
+    private struct Metadata {
+        let id: String
+        let displayName: String
+        let systemImage: String
+        let catalogGroup: CatalogGroup
+    }
+
+    private var metadata: Metadata {
         switch self {
         case .type(let tk):
-            "type.\(tk.rawValue)"
+            let displayName: String
+            let systemImage: String
+            switch tk {
+            case .class:
+                displayName = "Class"
+                systemImage = "c.square"
+            case .actor:
+                displayName = "Actor"
+                systemImage = "bolt.square"
+            case .struct:
+                displayName = "Struct"
+                systemImage = "s.square"
+            case .enum:
+                displayName = "Enum"
+                systemImage = "e.square"
+            case .protocol:
+                displayName = "Protocol"
+                systemImage = "p.square"
+            case .interface:
+                displayName = "Interface"
+                systemImage = "p.square"
+            case .trait:
+                displayName = "Trait"
+                systemImage = "t.square"
+            case .typeAlias:
+                displayName = "Type Alias"
+                systemImage = "arrow.triangle.turn.up.right.diamond"
+            case .object:
+                displayName = "Object"
+                systemImage = "o.square"
+            case .extension:
+                displayName = "Extension"
+                systemImage = "curlybraces"
+            case .annotation:
+                displayName = "Annotation"
+                systemImage = "a.square"
+            case .module:
+                displayName = "Module"
+                systemImage = "square.grid.3x3"
+            case .record:
+                displayName = "Record"
+                systemImage = "r.square"
+            case .mixin:
+                displayName = "Mixin"
+                systemImage = "m.square"
+            }
+            return Metadata(
+                id: "type.\(tk.rawValue)", displayName: displayName, systemImage: systemImage,
+                catalogGroup: .classDiagram
+            )
         case .state(let sk):
-            "state.\(sk.rawValue)"
+            let displayName: String
+            let systemImage: String
+            switch sk {
+            case .initial:
+                displayName = "Initial State"
+                systemImage = "circle.fill"
+            case .final:
+                displayName = "Final State"
+                systemImage = "circle.circle"
+            case .choice:
+                displayName = "Choice"
+                systemImage = "diamond"
+            case .fork:
+                displayName = "Fork"
+                systemImage = "minus.rectangle"
+            case .join:
+                displayName = "Join"
+                systemImage = "minus.rectangle"
+            case .normal, .composite:
+                displayName = "State"
+                systemImage = "capsule"
+            }
+            return Metadata(
+                id: "state.\(sk.rawValue)", displayName: displayName, systemImage: systemImage,
+                catalogGroup: .stateDiagram
+            )
         case .actor:
-            "actor"
+            return Metadata(id: "actor", displayName: "Actor", systemImage: "person", catalogGroup: .useCaseDiagram)
         case .useCase:
-            "useCase"
+            return Metadata(
+                id: "useCase", displayName: "Use Case", systemImage: "ellipsis.rectangle",
+                catalogGroup: .useCaseDiagram
+            )
         case .boundary:
-            "boundary"
+            return Metadata(
+                id: "boundary", displayName: "Boundary", systemImage: "rectangle.dashed",
+                catalogGroup: .useCaseDiagram
+            )
         case .component:
-            "component"
+            return Metadata(
+                id: "component", displayName: "Component", systemImage: "puzzlepiece",
+                catalogGroup: .componentDeployment
+            )
         case .package:
-            "package"
+            return Metadata(
+                id: "package", displayName: "Package", systemImage: "shippingbox",
+                catalogGroup: .componentDeployment
+            )
         case .deploymentNode:
-            "deploymentNode"
+            return Metadata(
+                id: "deploymentNode", displayName: "Node", systemImage: "cube",
+                catalogGroup: .componentDeployment
+            )
         case .database:
-            "database"
+            return Metadata(
+                id: "database", displayName: "Database", systemImage: "cylinder",
+                catalogGroup: .componentDeployment
+            )
         case .artifact:
-            "artifact"
+            return Metadata(
+                id: "artifact", displayName: "Artifact", systemImage: "doc",
+                catalogGroup: .componentDeployment
+            )
         case .subsystem:
-            "subsystem"
+            return Metadata(
+                id: "subsystem", displayName: "Subsystem", systemImage: "square.stack.3d.up",
+                catalogGroup: .componentDeployment
+            )
         case .entity:
-            "entity"
+            return Metadata(id: "entity", displayName: "Entity", systemImage: "tablecells", catalogGroup: .general)
         case .note:
-            "note"
+            return Metadata(id: "note", displayName: "Note", systemImage: "note.text", catalogGroup: .general)
         case .lifeline:
-            "lifeline"
+            return Metadata(
+                id: "lifeline", displayName: "Lifeline", systemImage: "arrow.down.to.line",
+                catalogGroup: .sequenceDiagram
+            )
         case .fragment:
-            "fragment"
+            return Metadata(
+                id: "fragment", displayName: "Fragment (loop/alt/opt)",
+                systemImage: "rectangle.dashed.badge.record", catalogGroup: .sequenceDiagram
+            )
         case .callGraphMethod:
-            "callGraphMethod"
+            return Metadata(
+                id: "callGraphMethod", displayName: "Method", systemImage: "function",
+                catalogGroup: .callGraph
+            )
         }
     }
+
+    // MARK: - Identifiable
+
+    var id: String { metadata.id }
 
     // MARK: - Display Helpers
 
-    var displayName: String {
-        switch self {
-        case .type(let tk):
-            switch tk {
-            case .class:
-                "Class"
-            case .actor:
-                "Actor"
-            case .struct:
-                "Struct"
-            case .enum:
-                "Enum"
-            case .protocol:
-                "Protocol"
-            case .interface:
-                "Interface"
-            case .trait:
-                "Trait"
-            case .typeAlias:
-                "Type Alias"
-            case .object:
-                "Object"
-            case .extension:
-                "Extension"
-            case .annotation:
-                "Annotation"
-            case .module:
-                "Module"
-            case .record:
-                "Record"
-            case .mixin:
-                "Mixin"
-            }
-        case .actor:
-            "Actor"
-        case .useCase:
-            "Use Case"
-        case .boundary:
-            "Boundary"
-        case .component:
-            "Component"
-        case .package:
-            "Package"
-        case .deploymentNode:
-            "Node"
-        case .database:
-            "Database"
-        case .artifact:
-            "Artifact"
-        case .subsystem:
-            "Subsystem"
-        case .entity:
-            "Entity"
-        case .note:
-            "Note"
-        case .lifeline:
-            "Lifeline"
-        case .fragment:
-            "Fragment (loop/alt/opt)"
-        case .callGraphMethod:
-            "Method"
-        case .state(let sk):
-            switch sk {
-            case .initial:
-                "Initial State"
-            case .final:
-                "Final State"
-            case .choice:
-                "Choice"
-            case .fork:
-                "Fork"
-            case .join:
-                "Join"
-            case .normal, .composite:
-                "State"
-            }
-        }
-    }
+    var displayName: String { metadata.displayName }
 
-    var systemImage: String {
-        switch self {
-        case .type(let tk):
-            switch tk {
-            case .class:
-                "c.square"
-            case .actor:
-                "bolt.square"
-            case .struct:
-                "s.square"
-            case .enum:
-                "e.square"
-            case .protocol, .interface:
-                "p.square"
-            case .trait:
-                "t.square"
-            case .annotation:
-                "a.square"
-            case .object:
-                "o.square"
-            case .record:
-                "r.square"
-            case .mixin:
-                "m.square"
-            case .typeAlias:
-                "arrow.triangle.turn.up.right.diamond"
-            case .extension:
-                "curlybraces"
-            case .module:
-                "square.grid.3x3"
-            }
-        case .actor:
-            "person"
-        case .useCase:
-            "ellipsis.rectangle"
-        case .boundary:
-            "rectangle.dashed"
-        case .component:
-            "puzzlepiece"
-        case .package:
-            "shippingbox"
-        case .deploymentNode:
-            "cube"
-        case .database:
-            "cylinder"
-        case .artifact:
-            "doc"
-        case .subsystem:
-            "square.stack.3d.up"
-        case .entity:
-            "tablecells"
-        case .note:
-            "note.text"
-        case .lifeline:
-            "arrow.down.to.line"
-        case .fragment:
-            "rectangle.dashed.badge.record"
-        case .callGraphMethod:
-            "function"
-        case .state(let sk):
-            switch sk {
-            case .initial:
-                "circle.fill"
-            case .final:
-                "circle.circle"
-            case .choice:
-                "diamond"
-            case .fork, .join:
-                "minus.rectangle"
-            case .normal, .composite:
-                "capsule"
-            }
-        }
-    }
+    var systemImage: String { metadata.systemImage }
 
     /// A default name for a freshly inserted node of this kind, e.g. `"NewClass"` for `.type(.class)`
     /// or `"NewNote"` for `.note` — shared by every insertion path (drag-drop, context menu,
@@ -263,25 +235,7 @@ enum FreeformDiagramNodeKind: Equatable, Hashable, Sendable, Identifiable {
         case general = "General"
     }
 
-    var catalogGroup: CatalogGroup {
-        switch self {
-        case .type:
-            .classDiagram
-        case .lifeline, .fragment:
-            .sequenceDiagram
-        case .state:
-            .stateDiagram
-        case .callGraphMethod:
-            .callGraph
-        case .actor, .useCase, .boundary:
-            .useCaseDiagram
-        case .component, .package, .deploymentNode,
-             .database, .artifact, .subsystem:
-            .componentDeployment
-        case .entity, .note:
-            .general
-        }
-    }
+    var catalogGroup: CatalogGroup { metadata.catalogGroup }
 
     /// Every element kind available in the catalog, in display order. State kinds are
     /// limited to the flavours generated diagrams produce (no fork/join/composite yet).

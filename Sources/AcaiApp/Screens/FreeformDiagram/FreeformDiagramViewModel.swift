@@ -91,15 +91,8 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     /// Lifelines and fragments render through the sequence layer, not here.
     var regularLayerNodes: [FreeformDiagram.Node] {
-        nodes.filter { node in
-            guard !node.isResizable else { return false }
-            switch node.content {
-            case .lifeline, .fragment:
-                return false
-            default:
-                return true
-            }
-        }.sorted { $0.drawOrder < $1.drawOrder }
+        nodes.filter { !$0.isResizable && $0.content.canvasBehavior.rendersAsFreeNode }
+            .sorted { $0.drawOrder < $1.drawOrder }
     }
 
     // MARK: - Node CRUD
