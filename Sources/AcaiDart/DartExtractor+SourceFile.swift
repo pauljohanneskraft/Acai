@@ -38,18 +38,40 @@ extension DartExtractor {
         return false
     }
 
+    /// A top-level `const`/`final`/typed-or-inferred `var` declaration has no wrapping
+    /// `declaration` node the way a class-body field does — the grammar's file-scope rule is
+    /// hidden (`_top_level_definition`), so its modifiers, type and `initialized_identifier_list`/
+    /// `static_final_declaration_list` all surface as direct, flattened children of the file root
+    /// instead. `walkSourceFile` folds each modifier/type child into `pendingGlobalInfo` as it
+    /// walks past it and consumes that info the moment it reaches the list node that ends the
+    /// declaration, exactly the values `collectDeclarationInfo` would have produced had there been
+    /// a node to call it on.
     mutating func walkSourceFile(_ node: Node) {
+        var pendingGlobalInfo = DeclarationInfo()
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "library_name":
                 currentNamespace = extractLibraryName(child)
-            case "declaration":
-                extractTopLevelDeclaration(child)
             case "import_or_export", "part_directive", "part_of_directive":
                 break
+            case "initialized_identifier_list":
+                globalVariables.append(contentsOf:
+                    extractFieldsFromIdentifierList(child, info: resolvingNullableType(pendingGlobalInfo)))
+                pendingGlobalInfo = DeclarationInfo()
+            case "static_final_declaration_list":
+                globalVariables.append(contentsOf:
+                    extractStaticFinalFields(child, info: resolvingNullableType(pendingGlobalInfo)))
+                pendingGlobalInfo = DeclarationInfo()
+            case "final_builtin", "const_builtin", "type_identifier", "generic_type",
+                 "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type":
+                applyDeclarationChild(child, nodeType: nodeType, to: &pendingGlobalInfo)
             default:
-                if !processTopLevelTypeNode(child, nodeType: nodeType) {
+                if !child.isNamed, text(child) == "late" {
+                    pendingGlobalInfo.isLate = true
+                } else if processTopLevelTypeNode(child, nodeType: nodeType) {
+                    pendingGlobalInfo = DeclarationInfo()
+                } else {
                     extractTopLevelChildren(child)
                 }
             }
@@ -60,23 +82,6 @@ extension DartExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             processTopLevelTypeNode(child, nodeType: nodeType)
-        }
-    }
-
-    /// Handles a top-level `declaration` node: `[modifiers] [type] [nullable_type?]
-    /// (initialized_identifier_list | static_final_declaration_list)` — the same shape
-    /// `extractClassMemberDeclaration` handles inside a class body.
-    private mutating func extractTopLevelDeclaration(_ node: Node) {
-        let info = collectDeclarationInfo(node)
-        for child in node.children() {
-            guard let nodeType = child.nodeType else { continue }
-            if nodeType == "initialized_identifier_list" {
-                globalVariables.append(contentsOf: extractFieldsFromIdentifierList(child, info: info))
-            } else if nodeType == "static_final_declaration_list" {
-                globalVariables.append(contentsOf: extractStaticFinalFields(child, info: info))
-            } else {
-                processTopLevelTypeNode(child, nodeType: nodeType)
-            }
         }
     }
 
