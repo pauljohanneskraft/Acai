@@ -184,9 +184,7 @@ struct SequenceDiagramSidebar: View {
 
             DiagramFilterSection(
                 filter: filterBinding,
-                codebaseID: codebaseID,
-                projectID: model.projectID(for: codebaseID) ?? codebaseID,
-                artifact: artifact
+                projectID: model.projectID(for: codebaseID) ?? codebaseID
             )
 
             Section(.app("View.SequenceDiagramSidebar.Export")) {
