@@ -10,30 +10,29 @@ adds what is specific to working autonomously.
 Issues labeled `agent-ready`. You pick from the title and the `area:` labels before you read the
 body, so the areas matter:
 
-**Prefer** `area:analysis`, `area:quality`, `area:testing`, `area:cli`, `area:diagrams`. These live
-in the engine and the CLI, which at least build on Linux, so CI's `Unit Test Linux` job gives you a
-real answer on the next run instead of only the macOS jobs. Parser fixes with a failing case, added
-test coverage, refactors that remove a boundary violation, and corrections to diagram output are the
-sweet spot.
+**Every area is open to you.** CI covers the whole package, not just the parts that build on Linux:
+`Unit Test macOS` runs `swift build` and `swift test --parallel` over everything including
+`AcaiApp`, `AcaiRender` and `AcaiGit`; `Unit Test iOS` runs the package tests on a simulator; and
+three UI-test jobs exercise the app itself against the screenshot goldens. So the app-side targets
+are, if anything, better covered than the engine-only ones — there is no area you should avoid
+because feedback would not reach you.
 
-**Lower priority, not off limits** — `area:accessibility`, `area:platform`, and anything in
-`AcaiApp`, `AcaiRender` or `AcaiGit`. These are macOS-only targets (`#if canImport(SwiftUI)` in
-`Package.swift`), so they are absent from your Linux build and you cannot compile them, run them, or
-look at them. That makes the loop slower and blinder, not impossible: CI's macOS jobs compile them
-and the UI-test jobs run them on simulators, so you get real feedback on the next run — it just
-costs a round trip per mistake instead of seconds.
+What differs between areas is not coverage but how *specific* the feedback is. A parser fix with a
+failing case tells you exactly what broke; a layout change tells you a golden moved by 0.03%. Prefer
+`area:analysis`, `area:quality`, `area:testing`, `area:cli` and `area:diagrams` when the queue offers
+them, for that reason alone — not because the others are off limits.
 
-Take one when the queue offers nothing from the preferred list, or when the issue names its files
-and the change is small enough to reason about without running it. Say plainly in the PR body that
-you could not build or see the change, and keep the diff small so a reviewer can check it by eye.
+The real constraint is the same everywhere: **you cannot compile anything locally**, so every mistake
+costs a CI round trip rather than seconds. Keep diffs small, say in the PR body what you could not
+check, and read the checks on your next run.
 
-Two things genuinely need a human, so hand them back with a comment saying why:
+One thing genuinely needs a human, so hand it back with a comment saying why:
 
-- **Work judged by a screenshot.** The goldens under `App/AcaiUITests/__Snapshots__/` are LFS PNGs
-  compared on simulators. You may still change code that shifts them, but you cannot regenerate or
-  approve a golden — CI uploads its captures as artifacts for a person to inspect and accept.
 - **Adding a language.** That is the `/add-language` skill's job and spans a new target, a parser, a
   configuration, detectors, registration and the docs module map. Too large for one autonomous run.
+
+Work judged by a screenshot **is** yours: when your change moves a golden, refresh it yourself — see
+[Accepting screenshot goldens](#accepting-screenshot-goldens).
 
 Do not add third-party dependencies.
 
@@ -65,16 +64,46 @@ you. They are unreliable here: `unused_import` names imports the compiler requir
 platform and even by Swift version, so acting on it breaks builds you cannot see. Removing unused
 imports is not your work; leave those declarations and imports alone.
 
-**The macOS-only targets are blind twice over.** `AcaiApp`, `AcaiRender` and `AcaiGit` are excluded
-from any Linux build (`#if canImport(SwiftUI)` in `Package.swift`), so even a working toolchain
-would not compile them. A change to a shared type that breaks one of them fails CI's
-`Unit Test macOS` job and nothing earlier. Say so in the PR body when you touch them, and read the
-checks on your next run.
+**Which job catches what.** `Unit Test Linux` builds and tests only the platform-agnostic targets —
+`AcaiApp`, `AcaiRender` and `AcaiGit` are `#if canImport(SwiftUI)`-gated and absent there. Those are
+covered by `Unit Test macOS`, which builds and tests the whole package, and by `Unit Test iOS` and
+the UI-test jobs. So a change to a shared type that breaks an app-side target goes green on Linux and
+red on macOS: when Linux passes, that is not the all-clear.
 
-The UI-test jobs (iPhone, iPad, macOS) run on simulators against the LFS goldens, and they report
-back to you like any other check. A failure there is worth reading rather than dismissing — but if
-your change is engine-side and the diff is a rendered pixel, say so instead of guessing at the
-canvas, and leave the golden for a human to accept.
+The UI-test jobs (iPhone, iPad, macOS) run on simulators against the committed goldens, and they
+report back to you like any other check. A failure there is worth reading rather than dismissing.
+
+### Accepting screenshot goldens
+
+When your own change moves a golden, refresh it — do not hand that back. `Scripts/snapshots_accept.sh`
+needs no simulator and no Xcode: it downloads the captures CI already uploaded and copies them over
+the committed goldens, so it runs fine here.
+
+```sh
+Scripts/snapshots_accept.sh                 # newest Build & Test run for your branch
+Scripts/snapshots_accept.sh <run-id>        # a specific run
+git diff --stat -- App/AcaiUITests/__Snapshots__
+```
+
+Every run uploads its captures whether it passed or failed, so wait until the UI-test jobs have
+**finished** — artifacts do not exist while a job is still queued or running. The CI job summary
+carries a drift table naming exactly which state moved and by how much; read it before you accept
+anything.
+
+**The script copies every capture for all three platforms, so it will also overwrite goldens your
+change had nothing to do with.** That is the one way this goes wrong: a rendering regression or a
+simulator flake gets baked into the goldens and stops being visible to anyone. So after running it,
+go through `git diff --stat` line by line and `git checkout --` every golden your diff does not
+explain. Keep only the ones you can name a reason for.
+
+If a golden moved and you cannot explain why from your own diff, that is a finding, not a refresh:
+leave it alone and say so.
+
+These PNGs are **not** in Git LFS — `.gitattributes` excludes `App/**/*.png` from the filter — so
+they commit as ordinary binary files and need no `git lfs` step.
+
+Commit refreshed goldens separately from code, with a message naming the states that moved, and say
+in your hand-over which goldens you accepted and why, so the reviewer knows to look at the images.
 
 ## Conventions
 
