@@ -123,9 +123,7 @@ struct CallGraphSidebar: View {
 
             DiagramFilterSection(
                 filter: $filter,
-                codebaseID: codebaseID,
-                projectID: model.projectID(for: codebaseID) ?? codebaseID,
-                artifact: artifact
+                projectID: model.projectID(for: codebaseID) ?? codebaseID
             )
 
             Section(.app("View.CallGraphSidebar.Export")) {
