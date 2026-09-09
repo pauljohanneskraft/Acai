@@ -21,7 +21,13 @@ extension KeyboardShortcutReference {
         var groups: [Group] = [
             Group(id: "canvas", title: .app("KeyboardShortcutReference.Canvas"), shortcuts: [
                 KeyboardShortcutReference(
-                    symbol: "⌘0", name: .app("KeyboardShortcutReference.FitToView"), context: "canvas")
+                    symbol: "⌘0", name: .app("KeyboardShortcutReference.FitToView"), context: "canvas"),
+                KeyboardShortcutReference(
+                    symbol: "⌘F", name: .app("KeyboardShortcutReference.FindInDiagram"), context: "canvas"),
+                KeyboardShortcutReference(
+                    symbol: "⌘G", name: .app("KeyboardShortcutReference.NextMatch"), context: "canvas"),
+                KeyboardShortcutReference(
+                    symbol: "⇧⌘G", name: .app("KeyboardShortcutReference.PreviousMatch"), context: "canvas")
             ]),
             Group(id: "undo", title: .app("KeyboardShortcutReference.Undo"), shortcuts: [
                 KeyboardShortcutReference(

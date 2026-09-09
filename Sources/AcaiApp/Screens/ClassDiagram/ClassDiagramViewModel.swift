@@ -243,6 +243,53 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         )
     }
 
+    // MARK: - Search
+
+    /// Live "find in diagram" query, matched against each node's display name. Search is
+    /// intentionally excluded from `LayoutSnapshot`/undo — it's transient view state, not data.
+    @Published var searchQuery: String = "" {
+        didSet {
+            guard searchQuery != oldValue else { return }
+            searchStepIndex = 0
+        }
+    }
+    @Published private var searchStepIndex = 0
+
+    /// Node ids matching `searchQuery`, in canvas node order. Empty whenever the query is empty,
+    /// so callers can use `isEmpty` as "search inactive" without checking `searchQuery` too.
+    var searchMatchIDs: [String] {
+        guard !searchQuery.isEmpty else { return [] }
+        return nodes.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }.map(\.id)
+    }
+
+    /// The node the view should be centered on: the first match as soon as a query starts
+    /// matching, then whichever match `stepSearchForward`/`stepSearchBackward` last selected.
+    var currentSearchNodeID: String? {
+        let matches = searchMatchIDs
+        guard !matches.isEmpty else { return nil }
+        return matches[normalizedSearchIndex(in: matches)]
+    }
+
+    private func normalizedSearchIndex(in matches: [String]) -> Int {
+        ((searchStepIndex % matches.count) + matches.count) % matches.count
+    }
+
+    func stepSearchForward() {
+        guard !searchMatchIDs.isEmpty else { return }
+        searchStepIndex += 1
+    }
+
+    func stepSearchBackward() {
+        guard !searchMatchIDs.isEmpty else { return }
+        searchStepIndex -= 1
+    }
+
+    /// Clears the query (and with it, every match/dimming state) without touching selection,
+    /// layout or the canvas's current pan/zoom — the diagram's data is exactly as it was.
+    func dismissSearch() {
+        searchQuery = ""
+    }
+
     // MARK: - Image Export
 
     func exportPNGData(scale: CGFloat = 2) throws -> Data {

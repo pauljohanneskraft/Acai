@@ -77,15 +77,17 @@ extension View {
 
     /// The shared lifecycle wiring for every layout-backed diagram view: undo/redo shortcuts, the
     /// navigation title, a one-frame-delayed initial fit, and a save on disappear. The toolbar stays
-    /// per-view (each diagram kind has its own buttons).
+    /// per-view (each diagram kind has its own buttons). `undoRedoEnabled` lets a view with its own
+    /// text field (e.g. a search bar) yield ⌘Z/⇧⌘Z to that field's native undo while it's focused.
     @MainActor
     func diagramCanvasLifecycle<Model: CanvasInteraction>(
         title: String,
         model: Model,
+        undoRedoEnabled: Bool = true,
         onSave: @escaping () -> Void,
         onCenter: @escaping () -> Void
     ) -> some View {
-        undoRedoKeyboardShortcuts(model: model, onChange: onSave)
+        undoRedoKeyboardShortcuts(model: model, enabled: undoRedoEnabled, onChange: onSave)
             .navigationTitle(title)
             #if !os(macOS)
             // A large/automatic title on iPad wastes header height on every diagram screen even
