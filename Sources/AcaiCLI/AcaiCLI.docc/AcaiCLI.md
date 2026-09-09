@@ -269,7 +269,7 @@ acai metrics --from myproj --format human --sort weightedMethods --top 20
 | `--rules <yaml>` | Rules file. Defaults to the built-in smell budgets. |
 | `--explore` | Report findings but **always exit 0**, and additionally list dependency cycles. |
 | `--scope` | `modules`, `types`, `all` (default) — cycle scope in explore mode. |
-| `--baseline <name-or-path>` | Also report architectural drift since that baseline. |
+| `--baseline <name-or-path>` | Also report architectural drift since that baseline, and evaluate the rules file's `movements` (required if the rules file declares any). |
 | `--format` | `human` (default), `json` |
 
 ```sh
@@ -287,7 +287,19 @@ acai quality --source . --rules quality.yml --baseline last-release
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
 | `layers` | `{layers: [{name, selector}], allowSkip: Bool}` — ordered top to bottom, `allowSkip` defaults `true` |
 | `contracts` | list of `{into: Selector, only: Selector, kinds: [Kind]?, message: String?}` |
+| `movements` | list of `{target: Selector?, metric: <name>, minImprovement: Double?, message: String?}` — only evaluated with `--baseline` |
 | `includeGeneratedTypes` | `Bool`, default `false` |
+
+**Movements — proving a change moved the measurements the right way.** Given `--baseline`, each `movements` entry states how much a metric must have improved (decreased) since then; omitting `minImprovement` (or `0`) means "must not get worse". Every *other* metric on the same target is also checked for a silent regression, so an improvement bought by a hidden cost elsewhere doesn't pass — scope `target` to what the change actually touched to keep the check focused there instead of the whole codebase.
+
+```yaml
+movements:
+  - target: { typeGlob: "OrderService" }
+    metric: fanOut
+    minImprovement: 2       # fanOut must have decreased by at least 2
+  - target: { module: "Payments" }
+    metric: distance         # no minImprovement: must simply not regress
+```
 
 **Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
 
@@ -435,6 +447,14 @@ acai quality --source . --rules quality.yml       # now it ratchets
 ```sh
 acai store baseline ./main-checkout
 acai diff baseline --source-new ./pr-checkout --format json --output drift.json
+```
+
+**Prove a refactor actually improved the metric it targeted.**
+
+```sh
+acai store baseline ./main-checkout
+# quality.yml: { movements: [{ target: { typeGlob: "OrderService" }, metric: fanOut, minImprovement: 2 }] }
+acai quality --source ./pr-checkout --rules quality.yml --baseline baseline
 ```
 
 **Survey an unfamiliar codebase.**
