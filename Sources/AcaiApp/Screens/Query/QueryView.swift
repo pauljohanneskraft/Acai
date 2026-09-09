@@ -3,13 +3,9 @@ import AcaiCore
 import AcaiQuality
 import AcaiLibrary
 
-/// Lets you query one codebase's types and members by their structural properties, not only by
-/// name — backed by the same `TypeQuery` the CLI's `inspect` command and the MCP server's inspect
-/// tool already run, so this view can never disagree with what those report. The type-level filter
-/// reuses `SelectorEditor` unmodified, the same vocabulary `DiagramFilterSection` already uses to
-/// narrow diagrams; the member-level filter is `MemberFilterEditor`, its member-facet companion.
-/// Every row carries a `CodeElementReference`, so it gets the same "Open in…" treatment as a
-/// Findings row — a result leads into the diagram that already shows it, or a freshly scoped one.
+/// Queries one codebase's types and members by structural properties — backed by the same
+/// `TypeQuery` the CLI's `inspect` command and the MCP server's inspect tool already run, so this
+/// view can never disagree with what those report.
 struct QueryView: View {
     let codebaseID: UUID
 
@@ -17,10 +13,8 @@ struct QueryView: View {
     @State private var selector = AcaiQuality.Selector()
     @State private var memberFilter = MemberFilter()
     @State private var reindexPhase: AsyncOperationPhase = .idle
-    /// The filter form lives in a sheet, not inline above the results — the same placement
-    /// `DiagramFilterSection` already has (a diagram's own Settings tab, never inline over its
-    /// canvas): two multi-field editors stacked inline would otherwise claim most of a
-    /// compact-height screen and leave the results list too short to usefully show anything.
+    /// A sheet, not inline: stacking `SelectorEditor` and `MemberFilterEditor` inline squeezes the
+    /// results list too short to render on a compact-height screen.
     @State private var showFilterSheet = false
 
     private var codebase: Codebase? {
@@ -118,7 +112,6 @@ struct QueryView: View {
         .accessibilityIdentifier("query.filterButton")
     }
 
-    /// A sheet, not inline content — see `showFilterSheet`'s own doc comment for why.
     private var filterSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
@@ -245,9 +238,8 @@ struct QueryView: View {
 }
 
 extension MemberFilter {
-    /// Mirrors `AcaiQuality.MemberFilter.isActive` (internal to that module): whether any facet is
-    /// set. `TypeQuery` already excludes types left with zero matching members once this is true, so
-    /// a shown row's `members` is never empty in that case.
+    /// Mirrors the internal `AcaiQuality.MemberFilter.isActive`; `TypeQuery` already drops types
+    /// with no matching members once true, so `memberRows` is never called on an empty list.
     var hasActiveFacet: Bool {
         kind != nil || minParameters != nil || isPublicVar != nil || isOverride != nil
     }

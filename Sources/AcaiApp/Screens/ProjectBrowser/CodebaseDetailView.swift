@@ -215,9 +215,7 @@ struct CodebaseDetailView: View {
         }
     }
 
-    /// Opens `QueryView`, scoped to this codebase — the same `TypeQuery` the CLI's `inspect`
-    /// command and the MCP server's inspect tool already run, exposed where the app's other
-    /// affordances for exploring a result (diagrams, findings) already live.
+    /// Opens `QueryView`, scoped to this codebase.
     private func queryButton(codebase: Codebase) -> some View {
         Button {
             model.selection = .query(codebase.id)

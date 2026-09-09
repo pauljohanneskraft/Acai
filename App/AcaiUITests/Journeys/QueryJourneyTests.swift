@@ -10,6 +10,13 @@ final class QueryJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
     private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
+    private var comparator: ScreenshotComparator {
+        ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("__Snapshots__"))
+    }
+
     func testQueryViewFiltersByMutablePublicState() throws {
         app.launchWithFixture("seeded")
 
@@ -62,5 +69,11 @@ final class QueryJourneyTests: UIJourneyTestCase {
         query.filterSheetDoneButton.tap()
 
         XCTAssertTrue(query.row(id: "Worker").waitForExistence(timeout: 10), "Clearing filters should restore Worker.")
+
+        // Captured last: a missing/drifted golden fails without truncating the assertions above.
+        comparator.validate(
+            viewType: "Query", state: "listPopulated",
+            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
+        )
     }
 }

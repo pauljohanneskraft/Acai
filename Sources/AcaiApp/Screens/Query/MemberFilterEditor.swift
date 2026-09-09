@@ -23,14 +23,12 @@ struct MemberFilterEditor: View {
             }
             .textFieldStyle(.roundedBorder)
             .accessibilityIdentifier("query.memberFilter.minParametersField")
-            // `.toggleStyle(.button)`, matching `FindingsView.showSuppressedToggle`: a plain
-            // `Toggle` renders as a native `Switch` whose accessibility tree behaves differently
-            // enough across platforms that tapping it by identifier isn't reliable there (see that
-            // property's own doc comment).
-            Toggle(.app("View.MemberFilterEditor.MutablePublicStateOnly"), isOn: $filter.isPublicVar.orFalse)
+            // `.toggleStyle(.button)`: a native `Switch` isn't reliably tappable by identifier
+            // across platforms, matching `FindingsView.showSuppressedToggle`.
+            Toggle(.app("View.MemberFilterEditor.MutablePublicStateOnly"), isOn: $filter.isPublicVar.or(default: false))
                 .toggleStyle(.button)
                 .accessibilityIdentifier("query.memberFilter.mutablePublicStateToggle")
-            Toggle(.app("View.MemberFilterEditor.OverridesOnly"), isOn: $filter.isOverride.orFalse)
+            Toggle(.app("View.MemberFilterEditor.OverridesOnly"), isOn: $filter.isOverride.or(default: false))
                 .toggleStyle(.button)
                 .accessibilityIdentifier("query.memberFilter.overridesToggle")
         }
