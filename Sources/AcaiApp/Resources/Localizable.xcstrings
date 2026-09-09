@@ -9357,28 +9357,6 @@
         }
       }
     },
-    "View.DiagramFilterSection.SaveQualityRule" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Als Qualitätsregel speichern"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save as Quality Rule"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer comme règle de qualité"
-          }
-        }
-      }
-    },
     "View.DiagramFilterSection.SavingPreset" : {
       "localizations" : {
         "de" : {
@@ -17079,94 +17057,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter"
-          }
-        }
-      }
-    },
-    "View.SaveAsFreeformOptionsModifier.Cancel" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbrechen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annuler"
-          }
-        }
-      }
-    },
-    "View.SaveAsFreeformOptionsModifier.IncludeCurrentCouplingCoverage" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktuelle Kopplungs-/Abdeckungswerte als schreibgeschützte Notizen einschließen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include current coupling/coverage figures as read-only notes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inclure les valeurs actuelles de couplage/couverture sous forme de notes en lecture seule"
-          }
-        }
-      }
-    },
-    "View.SaveAsFreeformOptionsModifier.Save" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speichern"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer"
-          }
-        }
-      }
-    },
-    "View.SaveAsFreeformOptionsModifier.SaveFreeform" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Als Freeform speichern"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save as Freeform"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer en tant que Freeform"
           }
         }
       }

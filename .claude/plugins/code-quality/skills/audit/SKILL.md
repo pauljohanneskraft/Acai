@@ -58,7 +58,7 @@ file-shaped:
    (non-zero exit); the MCP's `acai_quality` only returns a verdict. Omit `--rules` to gate on the
    built-in smell budgets. Gate module cycles as a hard invariant. Also `acai diff --format json` /
    `acai quality --baseline <name>` in a CI step to fail on adverse drift.
-2. **Author rules** — `acai rules init` generates a candidate `quality.yml` seeded from the current
+2. **Author rules** — `acai rules` generates a candidate `quality.yml` seeded from the current
    worst-case metrics (no MCP tool).
 3. **One-shot file audit** — `Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]` analyzes once
    and fans every command out against that snapshot, writing `metrics.json`, `quality-explore.json`,

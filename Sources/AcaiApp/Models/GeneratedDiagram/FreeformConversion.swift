@@ -3,7 +3,7 @@ import AcaiCore
 
 /// The values every "Save as Freeform" conversion needs regardless of diagram type — bundled so a
 /// `FreeformConversion` conformer's initializer stays under `swiftlint`'s `function_parameter_count`
-/// limit once its own per-type extras (a configuration, a scope, `includeMetricsNote`, …) are added.
+/// limit once its own per-type extras (a configuration, a scope, …) are added.
 struct FreeformConversionContext {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
@@ -25,10 +25,9 @@ struct FreeformConversionContext {
 /// What's deliberately **not** forced into a shared shape, because the five conversions'
 /// requirements genuinely differ (see `GeneratedDiagram+Freeform.swift`'s doc comment for why):
 /// per-item node/edge content construction (`makeNode`/`makeEdges` — a class's full member list
-/// has nothing in common with a lifeline or a package box), grouping-box materialization
-/// (Class-only), and the metrics-footer note (Package/Call Graph-only). Those
-/// three are default-no-op hooks a conformer overrides only when it needs them, rather than every
-/// conformer being forced to implement a "grouping" or "metrics" concept that doesn't apply to it.
+/// has nothing in common with a lifeline or a package box) and grouping-box materialization
+/// (Class-only). That is a default-no-op hook a conformer overrides only when it needs it, rather
+/// than every conformer being forced to implement a "grouping" concept that doesn't apply to it.
 protocol FreeformConversion {
     /// The domain-specific item each source element converts to one freeform node from (a
     /// `TypeDeclaration`, a `SequenceDiagram.Participant`, a `PackageDiagram.Node`, …).
@@ -56,8 +55,6 @@ protocol FreeformConversion {
     /// Grouping/container nodes drawn behind `memberNodes` (Class diagram's directory/product
     /// boxes only). Defaults to none.
     func groupingNodes(memberNodes: [FreeformDiagram.Node], idsBySourceID: [String: String]) -> [FreeformDiagram.Node]
-    /// The opt-in read-only metrics summary (Package/Call Graph only). Defaults to none.
-    func metricsFooterNodes(existingNodes: [FreeformDiagram.Node]) -> [FreeformDiagram.Node]
 }
 
 extension FreeformConversion {
@@ -77,14 +74,10 @@ extension FreeformConversion {
         []
     }
 
-    func metricsFooterNodes(existingNodes: [FreeformDiagram.Node]) -> [FreeformDiagram.Node] {
-        []
-    }
-
     /// Runs the shared skeleton: one node per item (first-wins on a repeated `sourceID`, mirroring
     /// how a language that doesn't qualify by module can report two distinct types under one id),
-    /// then edges, then the optional grouping/metrics-footer hooks, wrapped in a `FreeformDiagram`
-    /// named and positioned to match the diagram being converted.
+    /// then edges, then the optional grouping hook, wrapped in a `FreeformDiagram` named and
+    /// positioned to match the diagram being converted.
     func makeFreeformDiagram() -> FreeformDiagram {
         var idsBySourceID: [String: String] = [:]
         var nodes: [FreeformDiagram.Node] = []
@@ -99,11 +92,10 @@ extension FreeformConversion {
 
         let edges = makeEdges(idsBySourceID: idsBySourceID)
         let grouping = groupingNodes(memberNodes: nodes, idsBySourceID: idsBySourceID)
-        let footer = metricsFooterNodes(existingNodes: nodes)
 
         return FreeformDiagram(
             name: diagram.name + " (Freeform)",
-            nodes: grouping + nodes + footer,
+            nodes: grouping + nodes,
             edges: edges,
             canvasScale: scale,
             canvasOffsetX: offset.x,

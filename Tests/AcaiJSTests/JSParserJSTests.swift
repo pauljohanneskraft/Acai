@@ -101,6 +101,16 @@ struct JavaScriptParserTests {
         #expect(artifact.freestandingFunctions.count == 1)
         #expect(artifact.freestandingFunctions[0].name == "helper")
     }
+
+    @Test func moduleGlobals() {
+        let source = """
+        const MAX_RETRIES = 3;
+        let counter = 0;
+        var LEGACY_FLAG = true;
+        """
+        let artifact = parser.parse(source: source, fileName: "config.js")
+        #expect(artifact.globalVariables.map(\.name).sorted() == ["LEGACY_FLAG", "MAX_RETRIES", "counter"])
+    }
 }
 
 // MARK: - Extended JavaScript Tests

@@ -1,35 +1,6 @@
 import SwiftSyntax
 import AcaiCore
 
-/// Per-function-body call-site-collection state: the property/parameter/local maps a call-site
-/// receiver resolves against, and the buffers a body's calls/assignments/field-reads accumulate into
-/// before folding into its `Member`. Grouped into one value so resetting it (new top-of-body
-/// function/initializer, or once finalized) is a single assignment.
-struct CallSiteAccumulator {
-    var pendingCallSites: [CallSite] = []
-    var pendingAssignments: [VariableAssignment] = []
-    var pendingFieldReads: [FieldAccess] = []
-    /// Stored-property name → declared type name for the current type.
-    var propertyMap: [String: String] = [:]
-    /// Stored-property name → declared element type, for array-typed (`[X]`) properties. Separate
-    /// from `propertyMap`: an array's element is only a valid receiver inside an iteration closure's
-    /// implicit `$0`, never a direct call on the property itself.
-    var arrayElementPropertyMap: [String: String] = [:]
-    /// Local-variable name → provable declared type within the current body. Separate from
-    /// `propertyMap`: locals are call-site receivers, not field reads.
-    var localMap: [String: String] = [:]
-    /// Local/guard-let name → deferred `CallReceiver`, for a binding whose type couldn't be proven
-    /// concretely in this file but is resolvable post-merge. Consulted only after `localMap` misses.
-    var localReceiverOriginMap: [String: CallReceiver] = [:]
-    /// Current function/initializer's parameter name → declared type. Separate from `propertyMap` for
-    /// the same reason as `localMap`.
-    var parameterMap: [String: String] = [:]
-    /// Every local/parameter name declared so far, whether or not its type was provable — unlike
-    /// `localMap`/`parameterMap`. Consulted so a local whose type inference failed isn't mistaken for
-    /// an unresolved own-property receiver: both look identical (a lowercase name, no map entry).
-    var knownLocalNames: Set<String> = []
-}
-
 final class DeclarationVisitor: SyntaxVisitor {
     let fileName: String
     var types: [TypeDeclaration] = []
@@ -37,38 +8,10 @@ final class DeclarationVisitor: SyntaxVisitor {
     private var freestandingFunctions: [Member] = []
     var globalVariables: [Member] = []
     var typeStack: [TypeDeclaration] = []
-    /// Mirrors `typeStack`: each type's `methodName → returnType` map, pre-passed so a forward-declared
-    /// method's return type is seen too.
-    var methodReturnTypeMapStack: [[String: String]] = []
-    /// Mirrors `typeStack`: each type's own method names with an ambiguous (multi-)return-type overload,
-    /// so those are never mistaken for a cross-file method and deferred.
-    var ambiguousReturnTypeMethodNamesStack: [Set<String>] = []
-    /// Mirrors `typeStack`: each type's own method names, so a bare method-reference-as-value
-    /// (`action: chooseFile`) resolves regardless of declaration order.
-    var methodNameMapStack: [Set<String>] = []
-
-    // MARK: - Call-site collection state
 
     /// How many function/initializer bodies we're currently inside. > 0 means collect call sites
     /// instead of treating nested declarations as new members.
     private var functionBodyDepth = 0
-    var callSiteState = CallSiteAccumulator()
-    /// One entry per in-progress local `let`/`var`, holding bindings to add to `callSiteState.localMap`
-    /// once its initializer is fully visited — deferred so a self-referential initializer (`let size =
-    /// size(for: id)`) resolves against the outer `size` method, not the not-yet-in-scope local.
-    private var pendingLocalBindingsStack: [[(name: String, origin: LocalBindingOrigin)]] = []
-    /// One entry per in-progress `guard let`/`if let`/`while let` binding, same deferral as
-    /// `pendingLocalBindingsStack`: a shadowing initializer (`guard let self = self else { return }`)
-    /// must resolve its RHS `self` against the outer scope, not the new local.
-    private var pendingConditionBindingsStack: [(name: String, origin: LocalBindingOrigin)?] = []
-    /// Call sites from bare top-level statements (a `main.swift`-style script), outside any function
-    /// or type body. Attached to a synthetic always-reachable member in `buildArtifact()` so a callee
-    /// reached only from top-level code isn't a dead-code false positive.
-    private var topLevelCallSites: [CallSite] = []
-    /// The top-level analogue of `CallSiteAccumulator.localReceiverOriginMap`: a module-scope global's
-    /// deferred `CallReceiver` whose type isn't provable concretely but is resolvable post-merge.
-    /// Consulted only after `topLevelGlobalPropertyMap()` misses.
-    var topLevelGlobalReceiverOriginMap: [String: CallReceiver] = [:]
     /// Simple names of every type declared in the file, seeded up front so `TypeName.method()` static
     /// calls resolve regardless of declaration order, including forward-declared siblings.
     private let knownTypeNames: Set<String>
@@ -80,22 +23,22 @@ final class DeclarationVisitor: SyntaxVisitor {
     private let typeDeclarations = TypeDeclarationExtractor()
     private let members: MemberExtractor
     let signatures = DeclarationSignatureExtractor()
-    let callSites: CallSiteCollector
+    let scope: CallSiteTracker
 
     init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
         self.fileName = fileName
         self.knownTypeNames = knownTypeNames
         self.protocolProperties = protocolProperties
         self.members = MemberExtractor(knownTypeNames: knownTypeNames)
-        self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames)
+        self.scope = CallSiteTracker(knownTypeNames: knownTypeNames)
         super.init(viewMode: .sourceAccurate)
     }
 
     func buildArtifact() -> CodeArtifact {
         var functions = freestandingFunctions
-        if !topLevelCallSites.isEmpty {
+        if !scope.topLevelCallSites.isEmpty {
             functions.append(Member(
-                name: "<top-level>", kind: .method, accessLevel: .public, callSites: topLevelCallSites))
+                name: "<top-level>", kind: .method, accessLevel: .public, callSites: scope.topLevelCallSites))
         }
         return CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: [fileName]),
@@ -210,27 +153,25 @@ final class DeclarationVisitor: SyntaxVisitor {
         let isNested = functionBodyDepth > 0
         functionBodyDepth += 1
         if isNested {
-            // A local function isn't a member of its own, but its calls are reachable once the
-            // enclosing function runs — so descend and keep accumulating into the same pending
-            // buffers (merging in its own parameters so `param.method()` inside it resolves).
-            mergeNestedFunctionParameters(from: node.signature.parameterClause)
+            scope.mergeNestedFunctionParameters(from: node.signature.parameterClause)
             return .visitChildren
         }
-        resetCallSiteState(parameterClause: node.signature.parameterClause)
+        scope.resetCallSiteState(
+            propertyMap: buildPropertyMap(), arrayElementPropertyMap: buildArrayElementPropertyMap(),
+            parameterClause: node.signature.parameterClause)
         return .visitChildren
     }
 
     override func visitPost(_ node: FunctionDeclSyntax) {
         functionBodyDepth -= 1
-        // Only the top-of-body function becomes a member; nested ones already contributed above.
         guard functionBodyDepth == 0 else { return }
         var member = members.extractFunction(
-            from: node, fileName: fileName, callSites: callSiteState.pendingCallSites,
-            assignments: callSiteState.pendingAssignments, fieldReads: callSiteState.pendingFieldReads)
+            from: node, fileName: fileName, callSites: scope.callSiteState.pendingCallSites,
+            assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
         if let body = node.body {
-            member.referencedTypeNames = callSites.referencedTypes(in: body)
+            member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
         }
-        callSiteState = CallSiteAccumulator()
+        scope.clearCallSiteState()
         if typeStack.isEmpty {
             freestandingFunctions.append(member)
         } else {
@@ -239,36 +180,25 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: OptionalBindingConditionSyntax) -> SyntaxVisitorContinueKind {
-        // `guard let x = …` / `if let x = …`: the condition-list analogue of a local VariableDeclSyntax.
-        // Same deferral as below, so a shadowing initializer resolves its RHS against the outer scope.
         guard functionBodyDepth > 0 else { return .visitChildren }
-        pendingConditionBindingsStack.append(resolvingConditionBinding(from: node))
+        scope.beginConditionBinding(node)
         return .visitChildren
     }
 
     override func visitPost(_ node: OptionalBindingConditionSyntax) {
         guard functionBodyDepth > 0 else { return }
-        if let local = pendingConditionBindingsStack.removeLast() {
-            recordLocalBindingOrigin(local)
-        }
+        scope.endConditionBinding()
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
-        // Local variables aren't members, but recording their provable type lets a later
-        // `local.method()` resolve. Descend into the initializer too, so a call in `let x =
-        // obj.compute()` is collected.
         guard functionBodyDepth == 0 else {
-            // Bindings aren't added to `callSiteState.localMap` until `visitPost` — this only records
-            // names immediately and defers resolved types.
-            pendingLocalBindingsStack.append(recordingKnownLocalNames(from: node.bindings))
+            scope.beginLocalBindings(node.bindings)
             return .visitChildren
         }
         var extractedMembers = attachingInitializerReferencedTypes(
             to: members.extractVariable(from: node, fileName: fileName), from: node)
-        // Collect call sites from computed-property accessor bodies and stored-property initializer
-        // expressions, so a callee reached only through a property isn't seen as dead. A binding is
-        // either stored or computed, never both, so unconditional attachment is safe.
-        let propertySites = collectAccessorCallSites(from: node) + collectInitializerCallSites(from: node)
+        // A binding is either stored or computed, never both, so unconditional attachment is safe.
+        let propertySites = collectPropertyCallSites(from: node)
         if !propertySites.isEmpty {
             extractedMembers = extractedMembers.map { member in
                 var copy = member
@@ -277,7 +207,7 @@ final class DeclarationVisitor: SyntaxVisitor {
             }
         }
         if typeStack.isEmpty {
-            recordingTopLevelGlobalReceiverOrigins(from: node.bindings)
+            scope.recordTopLevelGlobalReceiverOrigins(from: node.bindings)
             globalVariables.append(contentsOf: extractedMembers)
         } else {
             typeStack[typeStack.count - 1].members.append(contentsOf: extractedMembers)
@@ -285,24 +215,20 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .skipChildren
     }
 
-    // Only after the initializer is fully visited are its resolved-type bindings folded into
-    // `callSiteState.localMap` — Swift scoping doesn't put a name in scope until its own initializer
-    // finishes, so `let size = size(for: id)` must resolve the RHS against the outer `size` method.
     override func visitPost(_ node: VariableDeclSyntax) {
         guard functionBodyDepth == 0 else {
-            for local in pendingLocalBindingsStack.removeLast() {
-                recordLocalBindingOrigin(local)
-            }
+            scope.endLocalBindings()
             return
         }
     }
 
     override func visit(_ node: InitializerDeclSyntax) -> SyntaxVisitorContinueKind {
-        // Balance the depth counter against `visitPost` unconditionally (see the function-decl note above).
         let isNested = functionBodyDepth > 0
         functionBodyDepth += 1
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
-        resetCallSiteState(parameterClause: node.signature.parameterClause)
+        scope.resetCallSiteState(
+            propertyMap: buildPropertyMap(), arrayElementPropertyMap: buildArrayElementPropertyMap(),
+            parameterClause: node.signature.parameterClause)
         return .visitChildren
     }
 
@@ -310,12 +236,12 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
         var member = members.extractInitializer(
-            from: node, fileName: fileName, callSites: callSiteState.pendingCallSites,
-            assignments: callSiteState.pendingAssignments, fieldReads: callSiteState.pendingFieldReads)
+            from: node, fileName: fileName, callSites: scope.callSiteState.pendingCallSites,
+            assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
         if let body = node.body {
-            member.referencedTypeNames = callSites.referencedTypes(in: body)
+            member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
         }
-        callSiteState = CallSiteAccumulator()
+        scope.clearCallSiteState()
         typeStack[typeStack.count - 1].members.append(member)
     }
 
@@ -359,63 +285,25 @@ final class DeclarationVisitor: SyntaxVisitor {
     }
 
     // MARK: - Call-Site & Assignment Collection
-    // The expression-shape interpretation lives in `CallSiteCollector`; this visitor only drives the
-    // walk and stores what the collector recovers.
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
-        // Parameters and locals resolve receivers too, but must not leak into field-read detection,
-        // so they're merged in only here (shadowing same-named stored properties and each other).
-        var receiverMap = callSiteState.propertyMap
-        if !callSiteState.parameterMap.isEmpty {
-            receiverMap.merge(callSiteState.parameterMap) { _, parameter in parameter }
-        }
-        if !callSiteState.localMap.isEmpty {
-            receiverMap.merge(callSiteState.localMap) { _, local in local }
-        }
-        // An implicit-`$0` iteration closure (see `recordingIterationClosureCallSites`'s doc).
-        if functionBodyDepth > 0 {
-            recordingIterationClosureCallSites(in: node)
-        }
-        if functionBodyDepth > 0,
-           let site = callSites.callSite(
-               from: node, propertyMap: receiverMap,
-               enclosingTypeName: typeStack.last?.name, knownLocalNames: callSiteState.knownLocalNames,
-               fileName: fileName) ?? callSites.deferredCallSite(
-                from: node, localReceiverOriginMap: callSiteState.localReceiverOriginMap, fileName: fileName) {
-            callSiteState.pendingCallSites.append(site)
-        } else if functionBodyDepth == 0, typeStack.isEmpty,
-                  let site = callSites.callSite(
-                    from: node, propertyMap: topLevelGlobalPropertyMap(),
-                    enclosingTypeName: nil, fileName: fileName) ?? callSites.deferredCallSite(
-                        from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap, fileName: fileName) {
-            // A bare top-level statement: its calls have nowhere to attach as a member, so they're
-            // recorded separately and given a synthetic reachable member in `buildArtifact()`.
-            // Receivers resolve against `globalVariables` declared earlier in the file (Swift's
-            // top-level execution order guarantees a global's declaration precedes its use).
-            topLevelCallSites.append(site)
-        }
+        scope.recordCallSite(
+            from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
+            enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap(),
+            fileName: fileName)
         return .visitChildren
     }
 
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
-        if functionBodyDepth > 0,
-           let assignment = callSites.assignment(from: node, fileName: fileName) {
-            callSiteState.pendingAssignments.append(assignment)
+        if functionBodyDepth > 0 {
+            scope.recordAssignment(from: node, fileName: fileName)
         }
         return .visitChildren
     }
 
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
-        if functionBodyDepth > 0,
-           let read = callSites.fieldRead(
-               from: node, propertyMap: callSiteState.propertyMap, fileName: fileName) {
-            callSiteState.pendingFieldReads.append(read)
-        }
-        if functionBodyDepth > 0, callSites.isBareReferenceUse(node),
-           let site = callSites.methodReference(
-               from: node, propertyMap: callSiteState.propertyMap, methodNames: methodNameMapStack.last ?? [],
-               fileName: fileName) {
-            callSiteState.pendingCallSites.append(site)
+        if functionBodyDepth > 0 {
+            scope.recordFieldReadAndMethodReference(from: node, fileName: fileName)
         }
         return .visitChildren
     }

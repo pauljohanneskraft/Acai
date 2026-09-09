@@ -1,5 +1,4 @@
 import SwiftUI
-import AcaiCore
 import AcaiDiagram
 import AcaiQuality
 
@@ -17,13 +16,10 @@ struct PackageDiagramSidebar: View {
     let selectedNodeIDs: Set<String>
     @Binding var filter: AcaiQuality.Selector?
     let codebaseID: UUID
-    let artifact: CodeArtifact
     @Binding var tab: PackageDiagramSidebarTab
     let onSelect: (String) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
-    @Binding var showSaveAsFreeformOptions: Bool
-    @Binding var includeMetricsNoteOnSave: Bool
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
@@ -60,24 +56,15 @@ struct PackageDiagramSidebar: View {
         Form {
             DiagramFilterSection(
                 filter: $filter,
-                codebaseID: codebaseID,
-                projectID: model.projectID(for: codebaseID) ?? codebaseID,
-                artifact: artifact
+                projectID: model.projectID(for: codebaseID) ?? codebaseID
             )
 
             Section(.app("View.PackageDiagramSidebar.Export")) {
-                Button {
-                    showSaveAsFreeformOptions = true
-                } label: {
+                Button(action: onSaveAsFreeform) {
                     Label(.app("View.PackageDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
                 }
                 .help(.app("View.PackageDiagramSidebar.SaveCopyEditableFreeform"))
                 .accessibilityIdentifier("diagram.saveAsFreeformButton")
-                .saveAsFreeformOptions(
-                    isPresented: $showSaveAsFreeformOptions,
-                    includeMetricsNote: $includeMetricsNoteOnSave,
-                    onConfirm: onSaveAsFreeform
-                )
                 Button(action: onExportImage) {
                     Label(.app("View.PackageDiagramSidebar.ExportImage"), systemImage: "photo")
                 }

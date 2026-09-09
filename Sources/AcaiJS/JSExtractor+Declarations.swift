@@ -79,7 +79,8 @@ extension JSExtractor {
         }
 
         if nodeType == "lexical_declaration" || nodeType == "variable_declaration" {
-            return dispatchVariableClassExpressions(node, decorators: decorators, namespace: namespace)
+            return dispatchVariableClassExpressions(
+                node, isExported: isExported, decorators: decorators, namespace: namespace)
         }
 
         if nodeType == "function_declaration" {
@@ -115,26 +116,33 @@ extension JSExtractor {
         return ([], [])
     }
 
-    /// Extract class expressions from variable declarations (e.g. `const MyClass = class { ... }`).
+    /// Dispatches each declarator in a `const`/`let`/`var` declaration: one assigned a class
+    /// expression (`const MyClass = class { ... }`) becomes a type; every other identifier
+    /// declarator becomes a top-level `Member` in `globalVariables`, the same treatment
+    /// `extractFunctionDeclaration` already gives a top-level `function` declaration.
     private mutating func dispatchVariableClassExpressions(
         _ node: Node,
+        isExported: Bool,
         decorators: [String],
         namespace: String?
     ) -> (types: [TypeDeclaration], functions: [Member]) {
         var allTypes: [TypeDeclaration] = []
-        let isExported = false
         for child in node.namedChildren() {
             guard child.nodeType == "variable_declarator" else { continue }
-            let varName = child.child(byFieldName: "name").map { text($0) }
+            let nameNode = child.child(byFieldName: "name")
+            let varName = nameNode.map { text($0) }
             let value = child.child(byFieldName: "value")
-            guard let value, value.nodeType == "class" else { continue }
-            var typeDecl = extractClassLikeDeclaration(value, isExported: isExported, isDefault: false)
-            if typeDecl.name == "_Anonymous" || typeDecl.name == "default", let varName {
-                typeDecl.name = varName
-                typeDecl.id = varName
-                typeDecl.qualifiedName = varName
+            if let value, value.nodeType == "class" {
+                var typeDecl = extractClassLikeDeclaration(value, isExported: false, isDefault: false)
+                if typeDecl.name == "_Anonymous" || typeDecl.name == "default", let varName {
+                    typeDecl.name = varName
+                    typeDecl.id = varName
+                    typeDecl.qualifiedName = varName
+                }
+                allTypes.append(applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace))
+            } else if nameNode?.nodeType == "identifier", let varName {
+                globalVariables.append(extractGlobalVariable(child, name: varName, isExported: isExported))
             }
-            allTypes.append(applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace))
         }
         return (allTypes, [])
     }

@@ -19,7 +19,7 @@ against your build.
 - [Install](#Install)
 - [The mental model](#The-mental-model)
 - [Shared options](#Shared-options)
-- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`quality`](#quality) · [`rules init`](#rules-init) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`impact`](#impact) · [`diff`](#diff)
+- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`impact`](#impact) · [`diff`](#diff)
 - [Recipes](#Recipes)
 - [Platform differences](#Platform-differences)
 
@@ -297,14 +297,14 @@ Each breach carries a fix hint — `maxParameters` suggests a parameter object, 
 
 This repository gates itself with its own [`quality.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/quality.yml).
 
-### `rules init`
+### `rules`
 
 > Generate a candidate `quality.yml` from the current graph.
 
-The only nested subcommand. Seeds budgets from your current worst-case metrics, so adopting `quality` is "review and edit a draft" rather than "author from a blank page" — and the thresholds ratchet against regression from day one.
+Seeds budgets from your current worst-case metrics, so adopting `quality` is "review and edit a draft" rather than "author from a blank page" — and the thresholds ratchet against regression from day one.
 
 ```sh
-acai rules init --source . --output quality.yml
+acai rules --source . --output quality.yml
 ```
 
 Review and tighten before committing.
@@ -398,7 +398,24 @@ Delta colouring: **added green, removed red, changed amber**, with `+` / `−` /
 
 ## Recipes
 
-**Gate architecture in CI.**
+**Gate architecture in CI.** A [GitHub Action](https://github.com/pauljohanneskraft/Acai) is
+published from this repository — it downloads the matching release binary for the runner, so the
+workflow doesn't install a toolchain or reinvent the invocation:
+
+```yaml
+- uses: pauljohanneskraft/Acai@v1.2.3    # pin to a released tag
+  with:
+    rules: quality.yml                   # optional; omit to use the built-in smell budgets
+```
+
+Every `acai quality` flag is available as an input — `source`, `baseline`, `format`, `output` — and
+the rendered report comes back as the `report` output for a later step to post as a comment or
+artifact. The action fails the job on any violation, the same as the underlying command's non-zero
+exit; see [`action.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/action.yml) for the
+full input list.
+
+On a CI system that isn't GitHub Actions, or once `acai` is already on `PATH` some other way, the
+underlying command is just:
 
 ```yaml
 - name: Acai quality check
@@ -408,7 +425,7 @@ Delta colouring: **added green, removed red, changed amber**, with `+` / `−` /
 **Adopt quality rules on an existing codebase.**
 
 ```sh
-acai rules init --source . --output quality.yml   # draft from current state
+acai rules --source . --output quality.yml        # draft from current state
 $EDITOR quality.yml                               # tighten what you can
 acai quality --source . --rules quality.yml       # now it ratchets
 ```
