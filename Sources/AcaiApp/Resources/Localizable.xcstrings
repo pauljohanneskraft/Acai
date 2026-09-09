@@ -9357,28 +9357,6 @@
         }
       }
     },
-    "View.DiagramFilterSection.SaveQualityRule" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Als Qualitätsregel speichern"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save as Quality Rule"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrer comme règle de qualité"
-          }
-        }
-      }
-    },
     "View.DiagramFilterSection.SavingPreset" : {
       "localizations" : {
         "de" : {

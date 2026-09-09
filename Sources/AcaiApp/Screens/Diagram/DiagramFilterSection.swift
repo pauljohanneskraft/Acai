@@ -1,29 +1,23 @@
 import SwiftUI
-import AcaiCore
 import AcaiQuality
 
 /// A "Filter" `Form` section shared by every diagram type's Settings tab: the unmodified
 /// `SelectorEditor` (the same selector vocabulary `AcaiQuality`'s rules already use, instead of a
-/// second, diagram-specific filter), a "Save as Quality Rule" reverse action, and named,
-/// project-wide filter presets.
+/// second, diagram-specific filter) and named, project-wide filter presets.
 struct DiagramFilterSection: View {
     @Binding var filter: AcaiQuality.Selector?
-    let codebaseID: UUID
     let projectID: UUID
-    let artifact: CodeArtifact
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var presets = FilterPresetList()
     @State private var showSaveAsPreset = false
     @State private var presetName = ""
-    @State private var showQualityRulesEditor = false
     @State private var presetSavePhase: AsyncOperationPhase = .idle
     @State private var presetSaveError: String?
 
     var body: some View {
         Section(.app("View.DiagramFilterSection.Filter")) {
             SelectorEditor(title: .app("View.DiagramFilterSection.ShowOnly"), selector: nonOptionalFilter)
-            saveAsQualityRuleButton
             presetControls
             AsyncOperationStatusView(identifierPrefix: "diagramFilter.presetSave", phase: presetSavePhase)
         }
@@ -36,9 +30,6 @@ struct DiagramFilterSection: View {
             Button(.app("View.DiagramFilterSection.Save"), action: saveCurrentAsPreset)
                 .accessibilityIdentifier("diagram.filter.presetSaveConfirmButton")
             Button(.app("View.DiagramFilterSection.Cancel"), role: .cancel) { presetName = "" }
-        }
-        .sheet(isPresented: $showQualityRulesEditor) {
-            QualityCheckEditorSheet(codebaseID: codebaseID, artifact: artifact)
         }
         .alert(
             .app("View.DiagramFilterSection.CouldNotSavePreset"),
@@ -55,28 +46,6 @@ struct DiagramFilterSection: View {
             get: { filter ?? AcaiQuality.Selector() },
             set: { newValue in filter = newValue == AcaiQuality.Selector() ? nil : newValue }
         )
-    }
-
-    private var isFilterEmpty: Bool {
-        (filter ?? AcaiQuality.Selector()) == AcaiQuality.Selector()
-    }
-
-    private var ruleAction: QualityRuleFromSelector {
-        QualityRuleFromSelector(model: model, codebaseID: codebaseID)
-    }
-
-    private var saveAsQualityRuleButton: some View {
-        Button(.app("View.DiagramFilterSection.SaveQualityRule")) {
-            ruleAction.appendRule(for: filter ?? AcaiQuality.Selector())
-            showQualityRulesEditor = true
-        }
-        .disabled(isFilterEmpty || !ruleAction.isAvailable)
-        .help(
-            ruleAction.isAvailable
-                ? "Append this filter as an editable rule to the codebase's quality check"
-                : "This codebase's quality check points at an external YAML file — edit it there instead"
-        )
-        .accessibilityIdentifier("diagram.filter.saveAsQualityRuleButton")
     }
 
     // MARK: - Presets

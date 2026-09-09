@@ -117,7 +117,6 @@ struct PackageDiagramView: View {
             selectedNodeIDs: viewModel.selectedNodeIDs,
             filter: filterBinding,
             codebaseID: codebase.id,
-            artifact: artifact,
             tab: $sidebarTab,
             onSelect: { viewModel.selectNode($0, extending: false) },
             onSaveAsFreeform: confirmSaveAsFreeform,

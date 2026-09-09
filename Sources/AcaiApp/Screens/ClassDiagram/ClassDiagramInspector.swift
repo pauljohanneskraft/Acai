@@ -89,9 +89,7 @@ struct ClassDiagramSidebar: View {
 
             DiagramFilterSection(
                 filter: config.filter,
-                codebaseID: diagram.codebaseID,
-                projectID: model.projectID(for: diagram.codebaseID) ?? diagram.codebaseID,
-                artifact: artifact
+                projectID: model.projectID(for: diagram.codebaseID) ?? diagram.codebaseID
             )
 
             Section(.app("View.ClassDiagramSidebar.Relationships")) {
