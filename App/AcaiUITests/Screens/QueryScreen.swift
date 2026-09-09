@@ -12,6 +12,9 @@ final class QueryScreen {
     var emptyState: XCUIElement { app.descendants(matching: .any)["query.emptyState"] }
     var notIndexedState: XCUIElement { app.descendants(matching: .any)["query.notIndexedState"] }
     var codebaseNotFoundState: XCUIElement { app.descendants(matching: .any)["query.codebaseNotFoundState"] }
+    /// Opens the filter sheet — every filter control lives there, not inline.
+    var filterButton: XCUIElement { app.buttons["query.filterButton"] }
+    var filterSheetDoneButton: XCUIElement { app.buttons["query.filterSheetDoneButton"] }
     var clearFiltersButton: XCUIElement { app.buttons["query.clearFiltersButton"] }
     var indexNowButton: XCUIElement { app.buttons["query.indexNowButton"] }
 

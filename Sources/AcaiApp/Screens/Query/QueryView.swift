@@ -17,6 +17,11 @@ struct QueryView: View {
     @State private var selector = AcaiQuality.Selector()
     @State private var memberFilter = MemberFilter()
     @State private var reindexPhase: AsyncOperationPhase = .idle
+    /// The filter form lives in a sheet, not inline above the results — the same placement
+    /// `DiagramFilterSection` already has (a diagram's own Settings tab, never inline over its
+    /// canvas): two multi-field editors stacked inline would otherwise claim most of a
+    /// compact-height screen and leave the results list too short to usefully show anything.
+    @State private var showFilterSheet = false
 
     private var codebase: Codebase? {
         model.codebase(for: codebaseID)
@@ -31,6 +36,12 @@ struct QueryView: View {
             if let codebase {
                 if let artifact {
                     content(codebase: codebase, artifact: artifact)
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) { filterButton }
+                        }
+                        .sheet(isPresented: $showFilterSheet) {
+                            filterSheet
+                        }
                 } else {
                     notIndexedState(codebase: codebase)
                 }
@@ -78,9 +89,7 @@ struct QueryView: View {
             artifact: artifact, selector: selector, members: memberFilter,
             languageResolver: artifact.standardLanguageResolver
         ).rows
-        return VStack(alignment: .leading, spacing: 0) {
-            filterSection
-            Divider()
+        return Group {
             if rows.isEmpty {
                 emptyState(codebaseHasNoTypes: isFilterEmpty)
             } else {
@@ -100,23 +109,43 @@ struct QueryView: View {
         selector == AcaiQuality.Selector() && memberFilter == MemberFilter()
     }
 
-    private var filterSection: some View {
-        // Stacked, not side by side: an `HStack` wide enough for both multi-field editors doesn't
-        // fit an iPhone-width screen, clipping (and making untappable) whatever it pushes past the
-        // trailing edge — the same vertical flow `DiagramFilterSection`'s `Form` `Section` already
-        // uses for its own filter controls.
-        VStack(alignment: .leading, spacing: 16) {
-            SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
-            MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
-            if !isFilterEmpty {
-                Button(.app("View.QueryView.ClearFilters")) {
-                    selector = AcaiQuality.Selector()
-                    memberFilter = MemberFilter()
+    private var filterButton: some View {
+        Button {
+            showFilterSheet = true
+        } label: {
+            Label(.app("View.QueryView.Filter"), systemImage: "line.3.horizontal.decrease.circle")
+        }
+        .accessibilityIdentifier("query.filterButton")
+    }
+
+    /// A sheet, not inline content — see `showFilterSheet`'s own doc comment for why.
+    private var filterSheet: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
+                MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
+                if !isFilterEmpty {
+                    Button(.app("View.QueryView.ClearFilters")) {
+                        selector = AcaiQuality.Selector()
+                        memberFilter = MemberFilter()
+                    }
+                    .accessibilityIdentifier("query.clearFiltersButton")
                 }
-                .accessibilityIdentifier("query.clearFiltersButton")
+                Spacer()
+            }
+            .padding()
+            #if os(macOS)
+            .frame(minWidth: 420, minHeight: 480)
+            #endif
+            .navigationTitle(.app("View.QueryView.Filter"))
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(.app("View.QueryView.Done")) { showFilterSheet = false }
+                        .keyboardShortcut(.defaultAction)
+                        .accessibilityIdentifier("query.filterSheetDoneButton")
+                }
             }
         }
-        .padding()
     }
 
     private func emptyState(codebaseHasNoTypes: Bool) -> some View {

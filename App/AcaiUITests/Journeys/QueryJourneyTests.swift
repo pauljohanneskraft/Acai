@@ -36,8 +36,15 @@ final class QueryJourneyTests: UIJourneyTestCase {
         XCTAssertTrue(query.row(id: "Base").waitForExistence(timeout: 10))
         XCTAssertTrue(query.row(id: "Worker").exists)
 
+        // Every filter control lives in a sheet, not inline above the results.
+        XCTAssertTrue(query.filterButton.waitForExistence(timeout: 5))
+        query.filterButton.tap()
+
         XCTAssertTrue(query.mutablePublicStateToggle.waitForExistence(timeout: 5))
         query.mutablePublicStateToggle.tap()
+
+        XCTAssertTrue(query.filterSheetDoneButton.waitForExistence(timeout: 5))
+        query.filterSheetDoneButton.tap()
 
         XCTAssertTrue(
             query.row(id: "Base").waitForExistence(timeout: 10),
@@ -49,7 +56,11 @@ final class QueryJourneyTests: UIJourneyTestCase {
             query.row(id: "Derived").exists,
             "Derived's only property (`helper`) is private and shouldn't match.")
 
+        query.filterButton.tap()
+        XCTAssertTrue(query.clearFiltersButton.waitForExistence(timeout: 5))
         query.clearFiltersButton.tap()
+        query.filterSheetDoneButton.tap()
+
         XCTAssertTrue(query.row(id: "Worker").waitForExistence(timeout: 10), "Clearing filters should restore Worker.")
     }
 }
