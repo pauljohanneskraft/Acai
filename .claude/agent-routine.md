@@ -11,9 +11,10 @@ Issues labeled `agent-ready`. You pick from the title and the `area:` labels bef
 body, so the areas matter:
 
 **Prefer** `area:analysis`, `area:quality`, `area:testing`, `area:cli`, `area:diagrams`. These live
-in the engine and the CLI, which you can build and test in full, so you can finish them in one run
-and hand over something already verified. Parser fixes with a failing case, added test coverage,
-refactors that remove a boundary violation, and corrections to diagram output are the sweet spot.
+in the engine and the CLI, which at least build on Linux, so CI's `Unit Test Linux` job gives you a
+real answer on the next run instead of only the macOS jobs. Parser fixes with a failing case, added
+test coverage, refactors that remove a boundary violation, and corrections to diagram output are the
+sweet spot.
 
 **Lower priority, not off limits** — `area:accessibility`, `area:platform`, and anything in
 `AcaiApp`, `AcaiRender` or `AcaiGit`. These are macOS-only targets (`#if canImport(SwiftUI)` in
@@ -38,17 +39,25 @@ Do not add third-party dependencies.
 
 ## Verification
 
-**You can build and test this project.** The cloud environment has a Swift 6.2 toolchain, and the
-package builds on Linux — CI proves it with a dedicated `Unit Test Linux` job. Run these before every push, from the repository root:
+**You cannot build or test this project. CI is your only compiler.** The cloud environment is plain
+Linux with no Swift toolchain, no SwiftLint and no Docker daemon — `command -v swift` finds nothing.
+Do not try to install a toolchain, and do not spend a run trying to get one: `docker pull swift`
+fails against this session's network policy, and building SwiftLint from source does not fit.
 
-```sh
-swiftlint lint --strict     # if the command exists — see below
-swift build
-swift test --parallel
-```
+Say plainly in the PR body that you could not build, lint or test, and name what you checked
+instead. Never imply a check you did not run. Every job in `.github/workflows/build-test.yml` —
+`SwiftLint`, `Unit Test Linux`, `Unit Test macOS`, `Unit Test iOS`, and the three UI-test jobs — is
+the first real compile your change sees.
 
-Fix what they report. Do not push a red build: unlike the other repositories in this setup, you have
-no excuse for handing a reviewer something that does not compile.
+Because CI is a slow gate, spend the effort a compiler would have caught:
+
+- Read every API you call against its actual declaration, rather than assuming its shape. Missing
+  arguments and wrong types are the failures that have actually cost round trips here.
+- Check line length (120 columns), brace balance, and `.swiftlint.yml`'s limits by script: 4-space
+  indent, type nesting capped at 2, cyclomatic complexity 10, file length 500, function body 50,
+  type body 300, at most 5 function parameters. `--strict` promotes every warning to an error, so
+  one long line fails the build.
+- Grep the whole repository for every symbol you rename, move or delete before you push.
 
 **Do not run `swiftlint analyze`, and do not act on its output.** `.swiftlint.yml` lists
 `unused_import` and `unused_declaration` under `analyzer_rules`, but nothing runs them — not CI, not
@@ -56,19 +65,11 @@ you. They are unreliable here: `unused_import` names imports the compiler requir
 platform and even by Swift version, so acting on it breaks builds you cannot see. Removing unused
 imports is not your work; leave those declarations and imports alone.
 
-`swiftlint` here is a wrapper around the same pinned container CI uses, so its results match. If the
-command is missing or the container fails to start, do not try to install SwiftLint yourself — say
-in the PR body that you could not lint locally, and let CI's lint job report. Self-review against
-`.swiftlint.yml` in that case: 120-column lines, 4-space indent, type nesting capped at 2,
-cyclomatic complexity 10, file length 500, function body 50, type body 300. `--strict` promotes
-every warning to an error, so one long line fails the build.
-
-One thing no local gate covers: **the macOS-only targets.** Your Linux build skips `AcaiApp`,
-`AcaiRender` and `AcaiGit` entirely, so a change to a shared type that breaks one of them compiles
-clean for you and fails CI's `Unit Test macOS` job. Same for anything you write *inside* those
-targets: CI is your only compiler there, exactly as it is for the other repositories in this setup.
-Say so in the PR body when you touch them, and read `gh pr checks` on your next run
-(`.github/workflows/build-test.yml`).
+**The macOS-only targets are blind twice over.** `AcaiApp`, `AcaiRender` and `AcaiGit` are excluded
+from any Linux build (`#if canImport(SwiftUI)` in `Package.swift`), so even a working toolchain
+would not compile them. A change to a shared type that breaks one of them fails CI's
+`Unit Test macOS` job and nothing earlier. Say so in the PR body when you touch them, and read the
+checks on your next run.
 
 The UI-test jobs (iPhone, iPad, macOS) run on simulators against the LFS goldens, and they report
 back to you like any other check. A failure there is worth reading rather than dismissing — but if
@@ -89,7 +90,19 @@ If you add a module, add it to the module map in
 `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` — a generated page nothing links to is
 unreachable.
 
+## Review
+
+Request review from `pauljohanneskraft` when a pull request is ready.
+
 ## Concurrency
 
-One agent PR in flight at a time. This repository usually has several human PRs open; those are not
-yours, do not count against the limit, and must not be touched.
+No limit on open agent pull requests. Work existing ones first — red CI, then unaddressed review
+comments, then incomplete drafts — but when every open agent PR is waiting on CI or on review, start
+a new `agent-ready` issue rather than stopping. A new PR is better than no development.
+
+This repository usually has several human PRs open (#146, #163). Those are not yours: they carry no
+`agent-wip` issue link, and must not be touched.
+
+## Human-set stop signs
+
+`agent-blocked` on an issue or a pull request means hands off. Never add or remove it yourself.

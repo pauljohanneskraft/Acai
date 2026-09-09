@@ -25,45 +25,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         case query(UUID)
     }
 
-    /// `[weak self]`: the coordinator outlives no particular `editing` snapshot, so it always
-    /// resolves a fresh one per reindex.
-    private(set) lazy var fileWatchCoordinator = FileWatchReindexCoordinator { [weak self] id in
-        await self?.editing.reindex(codebaseID: id)
-    }
-
-    /// macOS drives this with a periodic sweep (`startScheduledRefresh()`); iOS drives it one
-    /// codebase per `BGAppRefreshTask` wake instead (`ScheduledRefreshTaskRunner`, also started
-    /// from `startScheduledRefresh()`).
-    private(set) lazy var scheduledRefreshCoordinator = ScheduledRefreshCoordinator(store: store) { [weak self] id in
-        await self?.editing.pull(codebaseID: id)
-    }
-    #if os(iOS)
-    private(set) lazy var scheduledRefreshTaskRunner = ScheduledRefreshTaskRunner(
-        coordinator: scheduledRefreshCoordinator)
-    #endif
-    private var didStartScheduledRefresh = false
-
     init(store: ProjectStore = ProjectStore()) {
         self.store = store
-        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
-    }
-
-    /// Starts the scheduled-refresh mechanism appropriate to the current platform. Idempotent —
-    /// safe to call from a view's `.task`, which may run again if the view is recreated.
-    func startScheduledRefresh() {
-        guard !didStartScheduledRefresh else { return }
-        didStartScheduledRefresh = true
-        #if os(macOS)
-        scheduledRefreshCoordinator.startPeriodicSweep(interval: .seconds(15 * 60))
-        #else
-        scheduledRefreshTaskRunner.register()
-        scheduledRefreshTaskRunner.scheduleNext()
-        #endif
     }
 
     func persistChanges() {
         store.save()
-        fileWatchCoordinator.sync(codebases: store.projects.flatMap(\.codebases))
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
