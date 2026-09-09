@@ -62,4 +62,21 @@ struct ClassDiagramViewModelTests {
         let ungrouped = viewModel(types: types) { $0.grouping = .none }
         #expect(ungrouped.groupingBoxes.isEmpty)
     }
+
+    /// `dependents(for:)` must reuse `ImpactAnalysis` rather than a reimplementation — this pins
+    /// its behavior (transitive, root excluded) through the view model rather than the engine type.
+    @Test func dependentsReflectsTransitiveImpactAnalysis() {
+        let types = [type("A", .public), type("B", .public), type("C", .public)]
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: types,
+            relationships: [
+                Relationship(kind: .association, source: "B", target: "A"),
+                Relationship(kind: .association, source: "C", target: "B")
+            ]
+        )
+        let vm = ClassDiagramViewModel(codebase: Codebase(name: "c", directoryPath: "/tmp"), artifact: artifact)
+        #expect(vm.dependents(for: "A").map(\.id) == ["B", "C"])
+        #expect(vm.dependents(for: "C").isEmpty)
+    }
 }

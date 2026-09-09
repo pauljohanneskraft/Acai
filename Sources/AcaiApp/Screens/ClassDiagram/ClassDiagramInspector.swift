@@ -254,6 +254,23 @@ struct ClassDiagramSidebar: View {
                                     Text(.app("View.ClassDiagramSidebar.RelationshipsCount \(relatedEdges.count)"))
                                 }
                             }
+
+                            let dependents = viewModel.dependents(for: nodeID)
+                            DisclosureGroup {
+                                if dependents.isEmpty {
+                                    Text(.app("View.ClassDiagramSidebar.NoDependents"))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(dependents, id: \.id) { dependent in
+                                        dependentRow(dependent)
+                                    }
+                                }
+                            } label: {
+                                Text(.app("View.ClassDiagramSidebar.DependentsCount \(dependents.count)"))
+                            }
+                            .accessibilityIdentifier("diagram.inspector.dependents")
+
                             VStack(alignment: .center) {
                                 revealInFinderButton(node: node)
                             }
@@ -347,6 +364,38 @@ private extension ClassDiagramSidebar {
             Text(.app("View.ClassDiagramSidebar.WhatChanged"))
         }
         .accessibilityIdentifier("diagram.inspector.whatChanged")
+    }
+
+    /// A dependent already on this canvas re-selects in place (cheap, no diagram switch); one that
+    /// isn't goes through `CodeElementReference` resolution, the same "Open in…" mechanism the
+    /// codebase-wide relationships/types lists use for cross-diagram navigation.
+    @ViewBuilder
+    func dependentRow(_ dependent: ImpactAnalysis.Dependent) -> some View {
+        let label = HStack {
+            Text(verbatim: dependent.qualifiedName)
+                .font(.system(.caption, design: .monospaced))
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+
+        if viewModel.nodes.contains(where: { $0.id == dependent.id }) {
+            Button {
+                viewModel.selectNode(dependent.id, extending: false)
+            } label: {
+                label
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("diagram.inspector.dependentRow.\(dependent.id)")
+        } else {
+            label
+                .openInCodeElement(.type(id: dependent.id), codebase: viewModel.codebase)
+                .accessibilityIdentifier("diagram.inspector.dependentRow.\(dependent.id)")
+        }
     }
 
     @ViewBuilder
