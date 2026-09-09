@@ -79,12 +79,10 @@ The comparison side is extracted read-only — the working tree, index and `HEAD
 and no `git` executable is involved, so it behaves identically on iOS. Changed elements are
 colour-coded and badged; the panel also lists changed files and the findings delta.
 
-## Staying current
+## Search and Handoff
 
-Local codebases are watched and reindexed automatically after a short debounce. GitHub-backed ones
-are checked for a moved remote `HEAD` on a schedule. Types, diagrams and codebases are searchable
-through quick-open (⌘K on macOS) and are mirrored into Spotlight, and Handoff lets you continue a
-diagram on another device.
+Types, diagrams and codebases are searchable through quick-open (⌘K on macOS) and are mirrored into
+Spotlight, and Handoff lets you continue a diagram on another device.
 
 ## Languages
 
