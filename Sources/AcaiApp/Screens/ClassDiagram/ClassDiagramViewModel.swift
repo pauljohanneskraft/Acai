@@ -232,6 +232,14 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         diff?.typeChange(ofType: node.id)
     }
 
+    // MARK: - Dependents
+
+    /// Every type that (transitively) depends on `nodeID` — the same analysis backing `acai impact`
+    /// and the `acai_impact` MCP tool, reused rather than reimplemented.
+    func dependents(for nodeID: String) -> [ImpactAnalysis.Dependent] {
+        ImpactAnalysis(artifact: artifact, rootType: nodeID).report.dependents
+    }
+
     func nodeRect(for id: String) -> CGRect? {
         guard let pos = nodePositions[id] else { return nil }
         let size = effectiveSize(for: id)

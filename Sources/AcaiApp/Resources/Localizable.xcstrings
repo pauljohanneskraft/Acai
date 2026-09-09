@@ -5281,6 +5281,28 @@
         }
       }
     },
+    "View.ClassDiagramSidebar.DependentsCount %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abhängige (%lld)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dependents (%lld)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dépendants (%lld)"
+          }
+        }
+      }
+    },
     "View.ClassDiagramSidebar.Directory" : {
       "localizations" : {
         "de" : {
@@ -5585,6 +5607,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "^[%lld nœud](inflect: true) sélectionné"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramSidebar.NoDependents" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Abhängigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No dependents"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun dépendant"
           }
         }
       }
