@@ -1,25 +1,6 @@
 import SwiftSyntax
 import AcaiCore
 
-struct CallSiteAccumulator {
-    var pendingCallSites: [CallSite] = []
-    var pendingAssignments: [VariableAssignment] = []
-    var pendingFieldReads: [FieldAccess] = []
-    var propertyMap: [String: String] = [:]
-    /// Separate from `propertyMap`: an array's element is only a valid receiver inside an iteration
-    /// closure's implicit `$0`, never a direct call on the property itself.
-    var arrayElementPropertyMap: [String: String] = [:]
-    var localMap: [String: String] = [:]
-    /// A binding whose type couldn't be proven concretely in this file but is resolvable post-merge.
-    /// Consulted only after `localMap` misses.
-    var localReceiverOriginMap: [String: CallReceiver] = [:]
-    var parameterMap: [String: String] = [:]
-    /// Every local/parameter name declared so far, whether or not its type was provable — unlike
-    /// `localMap`/`parameterMap`. Consulted so a local whose type inference failed isn't mistaken for
-    /// an unresolved own-property receiver: both look identical (a lowercase name, no map entry).
-    var knownLocalNames: Set<String> = []
-}
-
 /// Where a `FunctionCallExprSyntax` was found: inside a function/closure body, at bare top-level
 /// script scope, or neither (e.g. a default parameter value) — a call `recordCallSite` attaches
 /// nowhere.
