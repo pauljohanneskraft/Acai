@@ -101,11 +101,13 @@ struct QueryView: View {
     }
 
     private var filterSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 24) {
-                SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
-                MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
-            }
+        // Stacked, not side by side: an `HStack` wide enough for both multi-field editors doesn't
+        // fit an iPhone-width screen, clipping (and making untappable) whatever it pushes past the
+        // trailing edge — the same vertical flow `DiagramFilterSection`'s `Form` `Section` already
+        // uses for its own filter controls.
+        VStack(alignment: .leading, spacing: 16) {
+            SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
+            MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
             if !isFilterEmpty {
                 Button(.app("View.QueryView.ClearFilters")) {
                     selector = AcaiQuality.Selector()
