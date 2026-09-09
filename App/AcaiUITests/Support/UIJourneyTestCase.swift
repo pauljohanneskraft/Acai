@@ -11,20 +11,21 @@ class UIJourneyTestCase: XCTestCase {
     /// exactly what `Scripts/snapshots_accept.sh` consumes to refresh goldens.
     var stopsAtFirstFailure: Bool { true }
 
-    override func setUp() {
-        super.setUp()
+    // The `async` overrides, unlike the synchronous ones, inherit this class's `@MainActor`.
+    override func setUp() async throws {
+        try await super.setUp()
         // Otherwise a failed wait doesn't end the test — every later `waitForExistence` runs out its
         // full timeout too, so one real failure costs a minute of dead wall-clock and reports four
         // cascading assertions instead of the one that matters.
         continueAfterFailure = !stopsAtFirstFailure
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         if (testRun?.failureCount ?? 0) > 0 {
             attachDiagnostics()
         }
         app.terminate()
-        super.tearDown()
+        try await super.tearDown()
     }
 
     /// A failing UI test is otherwise undiagnosable after the fact: only the screenshot journeys
