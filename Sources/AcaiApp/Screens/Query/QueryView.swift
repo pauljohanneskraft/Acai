@@ -125,7 +125,7 @@ struct QueryView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text(text)
+            Text(localized: text)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
