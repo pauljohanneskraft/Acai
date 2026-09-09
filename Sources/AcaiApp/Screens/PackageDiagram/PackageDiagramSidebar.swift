@@ -1,5 +1,4 @@
 import SwiftUI
-import AcaiCore
 import AcaiDiagram
 import AcaiQuality
 
@@ -17,7 +16,6 @@ struct PackageDiagramSidebar: View {
     let selectedNodeIDs: Set<String>
     @Binding var filter: AcaiQuality.Selector?
     let codebaseID: UUID
-    let artifact: CodeArtifact
     @Binding var tab: PackageDiagramSidebarTab
     let onSelect: (String) -> Void
     let onSaveAsFreeform: () -> Void
@@ -58,9 +56,7 @@ struct PackageDiagramSidebar: View {
         Form {
             DiagramFilterSection(
                 filter: $filter,
-                codebaseID: codebaseID,
-                projectID: model.projectID(for: codebaseID) ?? codebaseID,
-                artifact: artifact
+                projectID: model.projectID(for: codebaseID) ?? codebaseID
             )
 
             Section(.app("View.PackageDiagramSidebar.Export")) {
