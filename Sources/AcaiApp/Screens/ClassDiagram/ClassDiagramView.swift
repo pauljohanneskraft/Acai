@@ -218,7 +218,11 @@ struct ClassDiagramView: View {
             }
         }
     }
+}
 
+// MARK: - Canvas Layers
+
+extension ClassDiagramView {
     // MARK: - Edge Layer
 
     @ViewBuilder private var edgeLayer: some View {

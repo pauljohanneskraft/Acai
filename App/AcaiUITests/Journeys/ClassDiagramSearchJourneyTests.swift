@@ -30,6 +30,22 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         return false
     }
 
+    /// Types `text` and waits for the match summary to catch up, retyping if it never arrives —
+    /// same rationale as `QuickOpenScreen.search(_:until:)`: a query landing while the diagram's
+    /// own state is still settling from the previous action (opening the search bar, an earlier
+    /// query) can be missed by SwiftUI's diffing, and a plain wait can't recover from that.
+    @discardableResult
+    private func typeAndWaitForMatchSummary(
+        _ diagram: ClassDiagramScreen, text: String, toRead expected: String,
+        attempts: Int = 3, timeout: TimeInterval = 5
+    ) -> Bool {
+        for _ in 0..<attempts {
+            diagram.searchField.clearAndTypeText(text)
+            if waitForMatchSummary(diagram, toRead: expected, timeout: timeout) { return true }
+        }
+        return false
+    }
+
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
         app.rotateToPortraitOnIPad()
         app.launchWithFixture("seeded")
@@ -61,16 +77,14 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         diagram.openSearch()
 
         // "Base" matches exactly one of the seeded fixture's four types.
-        diagram.searchField.clearAndTypeText("Base")
-        XCTAssertTrue(waitForMatchSummary(diagram, toRead: "1 match"))
+        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "Base", toRead: "1 match"))
         comparator.validate(
             viewType: "ClassDiagram", state: "searching",
             screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
         )
 
         // "er" matches Derived, Helper and Worker but not Base.
-        diagram.searchField.clearAndTypeText("er")
-        XCTAssertTrue(waitForMatchSummary(diagram, toRead: "3 matches"))
+        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "er", toRead: "3 matches"))
 
         // Stepping through matches never crashes or disables itself once there are matches to step
         // through.
@@ -79,8 +93,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
 
         // A query nothing matches reports that plainly rather than looking identical to "not
         // searching yet".
-        diagram.searchField.clearAndTypeText("nonexistentXYZ")
-        XCTAssertTrue(waitForMatchSummary(diagram, toRead: "No matches"))
+        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "nonexistentXYZ", toRead: "No matches"))
 
         diagram.searchDismissButton.tap()
         XCTAssertFalse(diagram.searchField.exists)
