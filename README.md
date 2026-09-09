@@ -128,7 +128,7 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 - **Compare revisions** — diff a diagram against a branch, tag, SHA or pull request. The comparison is extracted read-only; your working tree, index and HEAD are never touched.
 - **Metrics** — ~25 statistic cards (coupling, OO, smells, structure), a churn × complexity hotspot chart, and a Martin main-sequence plot.
 - **GitHub** — sign in with device flow, clone repositories in-app, and share one object store across codebases via linked worktrees.
-- **Stays fresh** — local folders are watched and reindexed automatically; quick-open (⌘K on macOS) and Spotlight both search your types.
+- **Search** — quick-open (⌘K on macOS) and Spotlight both search your types.
 
 <table>
 <tr>
