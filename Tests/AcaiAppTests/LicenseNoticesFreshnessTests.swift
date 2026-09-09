@@ -23,23 +23,29 @@ struct LicenseNoticesFreshnessTests {
         let missing = Set(pinsByIdentity.keys).subtracting(dependenciesByName.keys)
         #expect(
             missing.isEmpty,
-            "Package.resolved has dependencies with no Licenses.json entry: \(missing.sorted()). "
-                + "Run Scripts/generate_licenses.sh and commit the result."
+            Comment(
+                rawValue: "Package.resolved has dependencies with no Licenses.json entry: \(missing.sorted()). "
+                    + "Run Scripts/generate_licenses.sh and commit the result."
+            )
         )
 
         let stale = Set(dependenciesByName.keys).subtracting(pinsByIdentity.keys)
         #expect(
             stale.isEmpty,
-            "Licenses.json has entries for dependencies no longer in Package.resolved: \(stale.sorted()). "
-                + "Run Scripts/generate_licenses.sh and commit the result."
+            Comment(
+                rawValue: "Licenses.json has entries for dependencies no longer in Package.resolved: "
+                    + "\(stale.sorted()). Run Scripts/generate_licenses.sh and commit the result."
+            )
         )
 
         for (identity, pin) in pinsByIdentity {
             guard let dependency = dependenciesByName[identity] else { continue }
             #expect(
                 dependency.revision == pin.revision,
-                "Licenses.json pins \(identity) at \(dependency.revision), but Package.resolved now "
-                    + "resolves it to \(pin.revision). Run Scripts/generate_licenses.sh and commit the result."
+                Comment(
+                    rawValue: "Licenses.json pins \(identity) at \(dependency.revision), but Package.resolved now "
+                        + "resolves it to \(pin.revision). Run Scripts/generate_licenses.sh and commit the result."
+                )
             )
         }
     }
