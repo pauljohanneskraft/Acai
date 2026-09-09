@@ -60,7 +60,7 @@ extension PythonExtractor {
     func extractModuleVariable(_ assign: Node) -> Member? {
         guard let left = assign.child(byFieldName: "left"), left.nodeType == "identifier" else { return nil }
         let name = text(left)
-        let type = assign.child(byFieldName: "type").flatMap { extractType(fromTypeField: $0) }
+        let type = assign.child(byFieldName: "type").flatMap { typeReferenceResolver.resolve(fromTypeField: $0) }
         let initial = assign.child(byFieldName: "right").map { classifyValue($0) }
         return Member(
             name: name,

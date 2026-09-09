@@ -60,7 +60,7 @@ extension PythonExtractor {
         for method in methodNodes {
             guard let nameNode = method.node.child(byFieldName: "name"),
                   let returnTypeNode = method.node.child(byFieldName: "return_type"),
-                  let returnType = extractType(fromTypeField: returnTypeNode)
+                  let returnType = typeReferenceResolver.resolve(fromTypeField: returnTypeNode)
             else { continue }
             typesByName[text(nameNode), default: []].insert(returnType.name)
         }
@@ -78,12 +78,13 @@ extension PythonExtractor {
     // MARK: - Class-body fields
 
     private func collectClassBodyFields(_ body: Node, scope: CallSiteScope) -> [Member] {
+        let resolver = typeReferenceResolver
         var fields: [Member] = []
         for child in body.namedChildren() where child.nodeType == "expression_statement" {
             for assign in child.namedChildren() where assign.nodeType == "assignment" {
                 guard let left = assign.child(byFieldName: "left"), left.nodeType == "identifier" else { continue }
                 let name = text(left)
-                let type = assign.child(byFieldName: "type").flatMap { extractType(fromTypeField: $0) }
+                let type = assign.child(byFieldName: "type").flatMap { resolver.resolve(fromTypeField: $0) }
                 let initial = assign.child(byFieldName: "right").map { classifyValue($0) }
                 fields.append(Member(
                     name: name,
@@ -107,6 +108,7 @@ extension PythonExtractor {
     private func synthesizeSelfFields(
         fromMethods methods: [(node: Node, decorators: [String])], existing: Set<String>
     ) -> [Member] {
+        let resolver = typeReferenceResolver
         var seen = existing
         var fields: [Member] = []
         for method in methods {
@@ -121,7 +123,7 @@ extension PythonExtractor {
                 let name = text(attr)
                 guard !seen.contains(name) else { continue }
                 seen.insert(name)
-                let type = assign.child(byFieldName: "type").flatMap { extractType(fromTypeField: $0) }
+                let type = assign.child(byFieldName: "type").flatMap { resolver.resolve(fromTypeField: $0) }
                     ?? constructedType(fromAssignmentRight: assign.child(byFieldName: "right"))
                 fields.append(Member(
                     name: name,
@@ -162,7 +164,8 @@ extension PythonExtractor {
         if let first = params.first, first.internalName == "self" || first.internalName == "cls" {
             params.removeFirst()
         }
-        let returnType = node.child(byFieldName: "return_type").flatMap { extractType(fromTypeField: $0) }
+        let returnType = node.child(byFieldName: "return_type")
+            .flatMap { typeReferenceResolver.resolve(fromTypeField: $0) }
 
         let decoratorTails = Set(decorators.map { $0.components(separatedBy: ".").last ?? $0 })
         var kind: MemberKind = (name == "__init__") ? .initializer : .method
