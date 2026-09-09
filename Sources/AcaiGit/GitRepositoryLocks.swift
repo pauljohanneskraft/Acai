@@ -12,31 +12,53 @@ import Foundation
 /// `operation`'s own suspension points, not just around them.
 public actor GitRepositorySerialAccess {
     private var isBusy = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [UUID: CheckedContinuation<Void, Error>] = [:]
+    private var waiterOrder: [UUID] = []
 
     public init() {}
 
+    /// Cancelling the caller's `Task` while queued behind another `operation` throws
+    /// `CancellationError` immediately, without ever starting `operation` and without disturbing
+    /// the other waiters' order.
     @discardableResult
     public func run<T: Sendable>(_ operation: @Sendable () async throws -> T) async throws -> T {
-        await acquire()
+        try await acquire()
         defer { release() }
         return try await operation()
     }
 
-    private func acquire() async {
-        if isBusy {
-            await withCheckedContinuation { waiters.append($0) }
+    private func acquire() async throws {
+        guard isBusy else {
+            isBusy = true
+            return
+        }
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                waiters[id] = continuation
+                waiterOrder.append(id)
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(id) }
         }
         isBusy = true
     }
 
+    private func cancelWaiter(_ id: UUID) {
+        guard let continuation = waiters.removeValue(forKey: id) else { return }
+        waiterOrder.removeAll { $0 == id }
+        continuation.resume(throwing: CancellationError())
+    }
+
     private func release() {
-        if let next = waiters.first {
-            waiters.removeFirst()
-            next.resume()
-        } else {
-            isBusy = false
+        while let nextID = waiterOrder.first {
+            waiterOrder.removeFirst()
+            if let continuation = waiters.removeValue(forKey: nextID) {
+                continuation.resume()
+                return
+            }
         }
+        isBusy = false
     }
 }
 

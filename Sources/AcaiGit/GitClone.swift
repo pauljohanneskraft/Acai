@@ -17,8 +17,13 @@ public struct GitClone {
     /// Clones/syncs `destination` to `ref`'s current commit, replacing its contents (if any) only
     /// once the whole operation has fully succeeded — a failed sync leaves whatever was there
     /// before untouched. Returns the resolved commit's SHA.
+    ///
+    /// Cooperatively cancellable: once the calling `Task` is cancelled, the next transfer-progress
+    /// tick aborts the in-flight clone/fetch (mirroring `GitFetch`) and this throws
+    /// `CancellationError`, leaving nothing behind at `destination`.
     @discardableResult
     public func sync(into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil) async throws -> String {
+        try Task.checkCancellation()
         let repository = try await openOrClone(into: destination, onProgress: onProgress)
         try GitCheckout(directory: destination, repository: repository).switchTo(ref: ref)
 
@@ -59,6 +64,12 @@ public struct GitClone {
                 }
             )
         } catch {
+            // GIT_EUSER: the transfer-progress callback (registered unconditionally by
+            // `Repository.clone`, whether or not `onProgress` is nil) returned non-zero because
+            // `Task.isCancelled` was true — this is our own cancellation, not a real clone failure.
+            if error.code == .user {
+                throw CancellationError()
+            }
             throw error.asFailure("Couldn't clone the repository")
         }
 

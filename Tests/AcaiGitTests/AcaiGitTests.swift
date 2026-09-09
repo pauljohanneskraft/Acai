@@ -27,6 +27,26 @@ struct AcaiGitTests {
         #expect(FileManager.default.fileExists(atPath: destination.appendingPathComponent("README.md").path))
     }
 
+    @Test("An already-cancelled Task aborts a fresh clone with CancellationError, leaving nothing on disk")
+    func alreadyCancelledTaskAbortsCloneImmediately() async throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).make()
+        let destination = root.appendingPathComponent("clone", isDirectory: true)
+
+        let task = Task {
+            try await GitClone(remoteURL: source, ref: "main").sync(into: destination)
+        }
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(!FileManager.default.fileExists(atPath: destination.path))
+    }
+
     @Test("Clones at a tag")
     func clonesAtTag() async throws {
         let root = try scratchDirectory()

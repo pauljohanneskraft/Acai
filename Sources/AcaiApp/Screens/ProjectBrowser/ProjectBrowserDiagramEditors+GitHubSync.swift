@@ -35,10 +35,9 @@ extension ProjectCodebaseEditor {
                     repositoryTarget, destination: destination, onProgress: onProgress)
             }
             // Cancelled before finishing: don't add a `Codebase` for a clone we're pretending never
-            // happened. `attachWorktree` itself doesn't observe cancellation (see `ActivityCenter
-            // .run`'s doc comment), so a worktree may still land on disk in the background even
-            // though nothing here ever references it — a known, stated limitation of "cancel" for
-            // this operation kind until true mid-flight interruption is wired.
+            // happened. `attachWorktree` itself aborts the in-flight transfer promptly on
+            // cancellation (`GitClone`/`GitFetch`) and never reaches the worktree-add step, so
+            // nothing lands on disk for a cancelled clone.
             guard let (headSHA, remoteURL) = cloneResult else { return }
             let codebase = Codebase(
                 id: codebaseID,
