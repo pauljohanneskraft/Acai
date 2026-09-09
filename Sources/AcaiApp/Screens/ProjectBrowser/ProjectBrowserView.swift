@@ -131,7 +131,6 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         .onChange(of: handoffPresenter.pendingTarget) { _, target in resolveHandoffContinuation(target) }
-        .task { model.startScheduledRefresh() }
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()

@@ -81,10 +81,9 @@ colour-coded and badged; the panel also lists changed files and the findings del
 
 ## Staying current
 
-Local codebases are watched and reindexed automatically after a short debounce. GitHub-backed ones
-are checked for a moved remote `HEAD` on a schedule. Types, diagrams and codebases are searchable
-through quick-open (⌘K on macOS) and are mirrored into Spotlight, and Handoff lets you continue a
-diagram on another device.
+Reindexing is manual — nothing watches a local folder or polls a remote in the background. Types,
+diagrams and codebases are searchable through quick-open (⌘K on macOS) and are mirrored into
+Spotlight, and Handoff lets you continue a diagram on another device.
 
 ## Languages
 
