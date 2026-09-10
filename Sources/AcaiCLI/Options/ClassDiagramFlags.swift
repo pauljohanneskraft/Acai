@@ -70,10 +70,10 @@ struct ClassDiagramFlags: ParsableArguments {
                 + " for it to the rules file passed via --rules."
             )
         }
-        let coloring = band.coloring(for: artifact.computeMetrics().types)
-        options.nodeColorOverride = { coloring[$0.id]?.hex }
+        let readings = band.readings(for: artifact.computeMetrics().types)
+        options.nodeColorOverride = { readings[$0.id].map { SeverityColors.standard.hex(atFraction: $0.fraction) } }
         options.nodeAnnotation = { type in
-            coloring[type.id].map { "\(metric.rawValue): \($0.formattedValue)" }
+            readings[type.id].map { "\(metric.rawValue): \($0.formattedValue)" }
         }
     }
 }

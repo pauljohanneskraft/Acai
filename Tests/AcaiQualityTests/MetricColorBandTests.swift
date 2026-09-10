@@ -3,9 +3,10 @@ import Testing
 import AcaiCore
 @testable import AcaiQuality
 
-/// `MetricColorBand` powers `acai diagram --color-by`: a continuous gradient over a metric's value,
-/// sourced from the rules file. These tests cover the interpolation/clamping math directly, and the
-/// per-type lookup against real computed metrics (mirroring `SmellBudgetTests`'s fixture style).
+/// `MetricColorBand` powers `acai diagram --color-by`: a fine-to-critical gradient over a metric's
+/// value, with thresholds sourced from the rules file. These tests cover the fraction/clamping math
+/// directly, and the per-type lookup against real computed metrics (mirroring `SmellBudgetTests`'s
+/// fixture style).
 @Suite("Quality: metric colour bands")
 struct MetricColorBandTests {
 
@@ -24,87 +25,69 @@ struct MetricColorBandTests {
         CodeArtifact(metadata: .init(sourceLanguage: .swift), types: types).computeMetrics().types
     }
 
-    // MARK: - hex(for:)
+    // MARK: - readings(for:)
 
-    @Test func interpolatesLinearlyBetweenTheBoundingStops() {
-        let band = MetricColorBand(metric: .maxParameters, stops: [
-            .init(value: 0, color: "#000000"),
-            .init(value: 10, color: "#FFFFFF")
-        ])
-        #expect(band.hex(for: 0) == "#000000")
-        #expect(band.hex(for: 10) == "#FFFFFF")
-        #expect(band.hex(for: 5) == "#808080")
+    @Test func readingsInterpolateLinearlyBetweenFineAndCritical() {
+        let types = typeMetrics([wideMethodType("Mid", parameters: 5)])
+        let band = MetricColorBand(metric: .maxParameters, fine: 0, critical: 10)
+        #expect(band.readings(for: types)["Mid"]?.fraction == 0.5)
     }
 
-    @Test func clampsOutsideTheDefinedRangeInsteadOfExtrapolating() {
-        let band = MetricColorBand(metric: .maxParameters, stops: [
-            .init(value: 2, color: "#111111"),
-            .init(value: 8, color: "#EEEEEE")
-        ])
-        #expect(band.hex(for: -5) == "#111111")
-        #expect(band.hex(for: 50) == "#EEEEEE")
+    @Test func readingsClampAtFineAndCritical() {
+        let types = typeMetrics([wideMethodType("Wide", parameters: 20)])
+        let band = MetricColorBand(metric: .maxParameters, fine: 2, critical: 8)
+        #expect(band.readings(for: types)["Wide"]?.fraction == 1)
     }
 
-    @Test func aSingleStopAppliesToEveryValue() {
-        let band = MetricColorBand(metric: .maxParameters, stops: [Stop(value: 3, color: "#123456")])
-        #expect(band.hex(for: -100) == "#123456")
-        #expect(band.hex(for: 100) == "#123456")
+    @Test func readingsClampBelowFine() {
+        let types = typeMetrics([wideMethodType("Narrow", parameters: 0)])
+        let band = MetricColorBand(metric: .maxParameters, fine: 2, critical: 8)
+        #expect(band.readings(for: types)["Narrow"]?.fraction == 0)
     }
 
-    @Test func sortsStopsRegardlessOfDeclarationOrder() {
-        let band = MetricColorBand(metric: .maxParameters, stops: [
-            .init(value: 10, color: "#FFFFFF"),
-            .init(value: 0, color: "#000000")
-        ])
-        #expect(band.stops.map(\.value) == [0, 10])
-    }
-
-    @Test func hasNoColourWithoutAnyStops() {
-        let band = MetricColorBand(metric: .maxParameters, stops: [])
-        #expect(band.hex(for: 5) == nil)
-    }
-
-    // MARK: - coloring(for:)
-
-    @Test func coloringLooksUpEachTypeByIDWithItsRawValue() {
+    @Test func readingsLookUpEachTypeByIDWithItsRawValue() {
         let types = typeMetrics([wideMethodType("Wide", parameters: 7), wideMethodType("Narrow", parameters: 1)])
-        let band = MetricColorBand(metric: .maxParameters, stops: [
-            .init(value: 0, color: "#000000"),
-            .init(value: 10, color: "#FFFFFF")
-        ])
-        let coloring = band.coloring(for: types)
-        #expect(coloring["Wide"]?.value == 7)
-        #expect(coloring["Narrow"]?.value == 1)
-        #expect(coloring["Wide"]?.hex != coloring["Narrow"]?.hex)
+        let band = MetricColorBand(metric: .maxParameters, fine: 0, critical: 10)
+        let readings = band.readings(for: types)
+        #expect(readings["Wide"]?.value == 7)
+        #expect(readings["Narrow"]?.value == 1)
+        #expect(readings["Wide"]?.fraction != readings["Narrow"]?.fraction)
     }
 
-    @Test func omitsTypesForAModuleScopedMetric() {
+    @Test func readingsOmitTypesForAModuleScopedMetric() {
         let types = typeMetrics([wideMethodType("Wide", parameters: 7)])
-        let band = MetricColorBand(metric: .instability, stops: [Stop(value: 0, color: "#000000")])
-        #expect(band.coloring(for: types).isEmpty)
+        let band = MetricColorBand(metric: .instability, fine: 0, critical: 1)
+        #expect(band.readings(for: types).isEmpty)
     }
 
-    // MARK: - Coloring.formattedValue
+    @Test func aZeroSpanBandTreatsEveryValueAsFine() {
+        let types = typeMetrics([wideMethodType("Wide", parameters: 7)])
+        let band = MetricColorBand(metric: .maxParameters, fine: 3, critical: 3)
+        #expect(band.readings(for: types)["Wide"]?.fraction == 0)
+    }
+
+    // MARK: - Reading.formattedValue
 
     @Test func formattedValuePrintsWholeNumbersBare() {
-        let coloring = MetricColorBand.Coloring(hex: "#000000", value: 7)
-        #expect(coloring.formattedValue == "7")
+        let reading = MetricColorBand.Reading(fraction: 0.5, value: 7)
+        #expect(reading.formattedValue == "7")
     }
 
     @Test func formattedValueRoundsFractionsToTwoDecimalPlaces() {
-        let coloring = MetricColorBand.Coloring(hex: "#000000", value: 0.8333)
-        #expect(coloring.formattedValue == "0.83")
+        let reading = MetricColorBand.Reading(fraction: 0.5, value: 0.8333)
+        #expect(reading.formattedValue == "0.83")
     }
 
     // MARK: - Decoding
 
-    @Test func decodesAndSortsStops() throws {
+    @Test func decodesFineAndCritical() throws {
         let json = """
-        {"metric": "fanOut", "stops": [{"value": 10, "color": "#c62828"}, {"value": 0, "color": "#2e7d32"}]}
+        {"metric": "fanOut", "fine": 0, "critical": 10}
         """
         let band = try JSONDecoder().decode(MetricColorBand.self, from: Data(json.utf8))
         #expect(band.metric == .fanOut)
-        #expect(band.stops.map(\.value) == [0, 10])
+        #expect(band.fine == 0)
+        #expect(band.critical == 10)
     }
 
     // MARK: - QualityRules integration
@@ -119,15 +102,9 @@ struct MetricColorBandTests {
     }
 
     @Test func qualityRulesRoundTripsColorBands() throws {
-        let original = QualityRules(colorBands: [
-            MetricColorBand(
-                metric: .fanOut,
-                stops: [Stop(value: 0, color: "#2e7d32"), Stop(value: 10, color: "#c62828")])
-        ])
+        let original = QualityRules(colorBands: [MetricColorBand(metric: .fanOut, fine: 0, critical: 10)])
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(QualityRules.self, from: data)
         #expect(decoded.colorBands == original.colorBands)
     }
 }
-
-private typealias Stop = MetricColorBand.Stop

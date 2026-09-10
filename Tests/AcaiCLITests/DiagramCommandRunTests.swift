@@ -197,11 +197,8 @@ struct DiagramCommandRunTests {
         let yaml = """
         colorBands:
           - metric: maxParameters
-            stops:
-              - value: 0
-                color: "#2e7d32"
-              - value: 3
-                color: "#c62828"
+            fine: 0
+            critical: 3
         """
         try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
         return rulesURL
@@ -221,8 +218,8 @@ struct DiagramCommandRunTests {
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("maxParameters: 3"))
             #expect(contents.contains("maxParameters: 0"))
-            #expect(contents.contains("#c62828"))
-            #expect(contents.contains("#2e7d32"))
+            #expect(contents.contains("#C62828"))
+            #expect(contents.contains("#2E7D32"))
         }
     }
 

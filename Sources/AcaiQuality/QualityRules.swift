@@ -13,9 +13,11 @@ public struct QualityRules: Codable, Equatable, Sendable {
     public var layers: LayerRule?
     public var contracts: [StereotypeContract]
 
-    /// Continuous colour gradients for diagrams coloured by measurement (`acai diagram --color-by`).
-    /// Presentational, not part of the fitness function — it carries no weight in `ruleCount` and is
-    /// never itself a source of violations.
+    /// Fine/critical value thresholds for diagrams coloured by measurement
+    /// (`acai diagram --color-by`). Only the thresholds are configurable here — the colours
+    /// themselves are fixed and shared app-wide, so this describes what counts as fine or critical
+    /// for a metric, not what a diagram looks like. Not part of the fitness function — it carries no
+    /// weight in `ruleCount` and is never itself a source of violations.
     public var colorBands: [MetricColorBand]
 
     /// `false` (the default) drops each language's generated types before metrics/smells/cycles are
