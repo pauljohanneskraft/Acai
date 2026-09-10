@@ -38,6 +38,10 @@ struct DiagramSearchBar: View {
             .textFieldStyle(.plain)
             .frame(minWidth: 140)
             .focused(isFocused)
+            // Setting this from the toolbar action that reveals the bar races the field's own
+            // creation (it doesn't exist in the hierarchy yet, so the focus request is dropped) —
+            // same fix QuickOpenView's search field already uses for the same reason.
+            .onAppear { isFocused.wrappedValue = true }
             .onSubmit(onStepForward)
             .accessibilityIdentifier("diagram.search.field")
 

@@ -396,8 +396,9 @@ extension ClassDiagramView {
 
 extension ClassDiagramView {
     private func showSearchBar() {
+        // Focus is set by the search field's own onAppear, not here — the field doesn't exist in
+        // the hierarchy yet on this line, so a focus request now would just be dropped.
         isSearchBarVisible = true
-        isSearchFieldFocused = true
     }
 
     /// Clears the query too, so a later ⌘F/toolbar tap starts fresh rather than reopening on a
