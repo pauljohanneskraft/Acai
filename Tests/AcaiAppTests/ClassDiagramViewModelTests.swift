@@ -89,12 +89,12 @@ struct ClassDiagramViewModelTests {
         #expect(vm.currentSearchNodeID == matches[1])
         vm.stepSearchForward()
         vm.stepSearchForward()
-        // Two steps past the last match wraps back to the second one.
-        #expect(vm.currentSearchNodeID == matches[1])
+        // One more step past the last match wraps back to the first one.
+        #expect(vm.currentSearchNodeID == matches[0])
 
         vm.stepSearchBackward()
         vm.stepSearchBackward()
-        #expect(vm.currentSearchNodeID == matches[2])
+        #expect(vm.currentSearchNodeID == matches[1])
     }
 
     @Test func newQueryResetsToFirstMatch() {
