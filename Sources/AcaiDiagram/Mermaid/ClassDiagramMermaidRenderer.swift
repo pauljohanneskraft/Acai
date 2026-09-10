@@ -23,8 +23,10 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         var idMap: [String: String] = [:]
         let types = enriched.types + (options.showExternalTypes ? enriched.externalTypes : [])
         // A per-node delta override fills the node via a trailing `style` directive; gated on the
-        // closure so non-delta output is byte-for-byte unchanged.
+        // closure so non-delta output is byte-for-byte unchanged. `nodeAnnotation` attaches a note
+        // box instead, since a `classDiagram` class label has no room for extra text.
         var nodeStyles: [String] = []
+        var nodeNotes: [String] = []
         for type in types {
             let safe = allocator.id(for: type.id)
             idMap[type.id] = safe
@@ -32,8 +34,12 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
             if let color = options.nodeColorOverride?(type) {
                 nodeStyles.append("    style \(safe) stroke:\(color),stroke-width:3px")
             }
+            if let annotation = options.nodeAnnotation?(type) {
+                nodeNotes.append("    note for \(safe) \"\(annotation.mermaidLabelEscaped)\"")
+            }
         }
         lines.append(contentsOf: nodeStyles)
+        lines.append(contentsOf: nodeNotes)
 
         // Mermaid's `classDiagram` has no per-link colouring (`linkStyle` is flowchart-only and
         // rejected here), so a delta `edgeColorOverride` can't be honoured; relationships render

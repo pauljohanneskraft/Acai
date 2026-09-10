@@ -61,6 +61,12 @@ public struct ClassDiagramOptions: Sendable {
     /// The node counterpart of `edgeColorOverride`, for tinting a delta diagram's type nodes.
     public var nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)?
 
+    /// An optional line of text rendered under a node's name — e.g. a metric readout backing
+    /// `nodeColorOverride`, so a diagram coloured by measurement states the value in text too.
+    /// Colour is never the only signal. Default `nil` keeps every existing diagram byte-for-byte
+    /// identical.
+    public var nodeAnnotation: (@Sendable (TypeDeclaration) -> String?)?
+
     public init(
         layoutDirection: LayoutDirection = .topToBottom,
         showMembers: Bool = true,
@@ -81,7 +87,8 @@ public struct ClassDiagramOptions: Sendable {
         focus: FocusConfiguration? = nil,
         languages: LanguageConfigurationResolver,
         edgeColorOverride: (@Sendable (Relationship) -> String?)? = nil,
-        nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)? = nil
+        nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)? = nil,
+        nodeAnnotation: (@Sendable (TypeDeclaration) -> String?)? = nil
     ) {
         self.layoutDirection = layoutDirection
         self.showMembers = showMembers
@@ -103,6 +110,7 @@ public struct ClassDiagramOptions: Sendable {
         self.languages = languages
         self.edgeColorOverride = edgeColorOverride
         self.nodeColorOverride = nodeColorOverride
+        self.nodeAnnotation = nodeAnnotation
     }
 
     public enum LayoutDirection: String, Sendable {

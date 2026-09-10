@@ -287,6 +287,7 @@ acai quality --source . --rules quality.yml --baseline last-release
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
 | `layers` | `{layers: [{name, selector}], allowSkip: Bool}` — ordered top to bottom, `allowSkip` defaults `true` |
 | `contracts` | list of `{into: Selector, only: Selector, kinds: [Kind]?, message: String?}` |
+| `colorBands` | list of `{metric: <name>, fine: Double, critical: Double}` — read by `acai diagram --color-by`; not a fitness-function rule |
 | `includeGeneratedTypes` | `Bool`, default `false` |
 
 **Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
@@ -296,6 +297,22 @@ Each breach carries a fix hint — `maxParameters` suggests a parameter object, 
 **Built-in defaults** (used when `--rules` is omitted): `maxParameters ≤ 5`, `dataClassScore ≤ 0.8`, `nestingDepth ≤ 2`, `lcom ≤ 1`, `featureEnvyMethods ≤ 2`, `maxCyclomaticComplexity ≤ 10`. `mutablePublicState` is deliberately left out — it's idiomatic in value types and would flood struct-heavy code.
 
 This repository gates itself with its own [`quality.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/quality.yml).
+
+**Colouring a diagram by measurement.** `acai diagram --color-by <metric> --rules quality.yml` tints
+each type-scoped node along a fine-to-critical gradient and prints the value next to it, so colour is
+never the only signal. The colours are fixed (green at `fine`, red at `critical`, amber between) and
+shared with the rest of the app; a `colorBands` entry overrides only the *values* at which a metric
+counts as fine or critical, the same way a `budgets` entry overrides what counts as a breach:
+
+```yaml
+colorBands:
+  - metric: maxCyclomaticComplexity
+    fine: 0
+    critical: 10
+```
+
+`--color-by` requires a per-type metric with a matching `colorBands` entry; a module-scoped metric or
+a metric with no band is a validation error.
 
 ### `rules`
 

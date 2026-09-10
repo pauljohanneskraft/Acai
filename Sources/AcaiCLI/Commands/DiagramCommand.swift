@@ -88,6 +88,7 @@ extension AcaiCommand {
                 // clusters, so lay it out as a single graph.
                 options.groupBy = .none
             }
+            try classFlags.applyColorBy(to: &options, artifact: artifact)
             return options
         }
     }

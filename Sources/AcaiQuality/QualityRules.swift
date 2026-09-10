@@ -13,6 +13,13 @@ public struct QualityRules: Codable, Equatable, Sendable {
     public var layers: LayerRule?
     public var contracts: [StereotypeContract]
 
+    /// Fine/critical value thresholds for diagrams coloured by measurement
+    /// (`acai diagram --color-by`). Only the thresholds are configurable here — the colours
+    /// themselves are fixed and shared app-wide, so this describes what counts as fine or critical
+    /// for a metric, not what a diagram looks like. Not part of the fitness function — it carries no
+    /// weight in `ruleCount` and is never itself a source of violations.
+    public var colorBands: [MetricColorBand]
+
     /// `false` (the default) drops each language's generated types before metrics/smells/cycles are
     /// evaluated. Mirrors the CLI's `--include-generated` / MCP `includeGenerated` for the tools that
     /// aren't rules-file driven.
@@ -24,6 +31,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         budgets: [MetricBudget] = [],
         layers: LayerRule? = nil,
         contracts: [StereotypeContract] = [],
+        colorBands: [MetricColorBand] = [],
         includeGeneratedTypes: Bool = false
     ) {
         self.forbidden = forbidden
@@ -31,6 +39,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         self.budgets = budgets
         self.layers = layers
         self.contracts = contracts
+        self.colorBands = colorBands
         self.includeGeneratedTypes = includeGeneratedTypes
     }
 
@@ -43,6 +52,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         budgets = try container.decodeIfPresent([MetricBudget].self, forKey: .budgets) ?? []
         layers = try container.decodeIfPresent(LayerRule.self, forKey: .layers)
         contracts = try container.decodeIfPresent([StereotypeContract].self, forKey: .contracts) ?? []
+        colorBands = try container.decodeIfPresent([MetricColorBand].self, forKey: .colorBands) ?? []
         includeGeneratedTypes = try container.decodeIfPresent(Bool.self, forKey: .includeGeneratedTypes) ?? false
     }
 

@@ -176,4 +176,70 @@ struct DiagramCommandRunTests {
             )
         }
     }
+
+    // MARK: - --color-by
+
+    private func writeMaxParametersSource(in dir: URL) throws {
+        let source = """
+        class Wide {
+            func configure(a: Int, b: Int, c: Int) {}
+        }
+
+        class Narrow {
+            func run() {}
+        }
+        """
+        try source.write(to: dir.appendingPathComponent("Params.swift"), atomically: true, encoding: .utf8)
+    }
+
+    private func writeMaxParametersRules(in dir: URL) throws -> URL {
+        let rulesURL = dir.appendingPathComponent("quality.yml")
+        let yaml = """
+        colorBands:
+          - metric: maxParameters
+            fine: 0
+            critical: 3
+        """
+        try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
+        return rulesURL
+    }
+
+    @Test func colorByColorsAndAnnotatesNodesFromTheRulesFileBands() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            let rulesURL = try writeMaxParametersRules(in: dir)
+            let output = dir.appendingPathComponent("diagram.dot")
+            var cmd = try CLITestSupport.parseDiagram([
+                "--source", dir.path, "--language", "swift",
+                "--color-by", "maxParameters", "--rules", rulesURL.path,
+                "--output", output.path
+            ])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("maxParameters: 3"))
+            #expect(contents.contains("maxParameters: 0"))
+            #expect(contents.contains("#C62828"))
+            #expect(contents.contains("#2E7D32"))
+        }
+    }
+
+    @Test func colorByWithoutAMatchingBandThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift", "--color-by", "maxParameters"],
+                contains: "No colour band is defined for metric 'maxParameters'"
+            )
+        }
+    }
+
+    @Test func colorByWithAModuleScopedMetricThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift", "--color-by", "instability"],
+                contains: "is a per-module metric"
+            )
+        }
+    }
 }
