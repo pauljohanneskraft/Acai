@@ -62,4 +62,73 @@ struct ClassDiagramViewModelTests {
         let ungrouped = viewModel(types: types) { $0.grouping = .none }
         #expect(ungrouped.groupingBoxes.isEmpty)
     }
+
+    // MARK: - Search (#183)
+
+    @Test func emptyQueryMatchesNothingAndHasNoCurrentNode() {
+        let vm = viewModel(types: [type("Base", .public), type("Derived", .public)])
+        #expect(vm.searchMatchIDs.isEmpty)
+        #expect(vm.currentSearchNodeID == nil)
+    }
+
+    @Test func queryMatchesByNameCaseInsensitively() {
+        let vm = viewModel(types: [type("Base", .public), type("Derived", .public), type("Helper", .public)])
+        vm.searchQuery = "base"
+        #expect(vm.searchMatchIDs == ["Base"])
+        #expect(vm.currentSearchNodeID == "Base")
+    }
+
+    @Test func steppingWrapsForwardAndBackwardThroughMatches() {
+        let vm = viewModel(types: [type("Base", .public), type("Derived", .public), type("Helper", .public)])
+        vm.searchQuery = "e"
+        let matches = vm.searchMatchIDs
+        #expect(matches.count == 3)
+        #expect(vm.currentSearchNodeID == matches[0])
+
+        vm.stepSearchForward()
+        #expect(vm.currentSearchNodeID == matches[1])
+        vm.stepSearchForward()
+        vm.stepSearchForward()
+        // One more step past the last match wraps back to the first one.
+        #expect(vm.currentSearchNodeID == matches[0])
+
+        vm.stepSearchBackward()
+        vm.stepSearchBackward()
+        #expect(vm.currentSearchNodeID == matches[1])
+    }
+
+    @Test func newQueryResetsToFirstMatch() {
+        let vm = viewModel(types: [
+            type("Alpha", .public), type("Beta", .public), type("Gamma", .public), type("Delta", .public)
+        ])
+        vm.searchQuery = "a"
+        vm.stepSearchForward()
+        #expect(vm.currentSearchNodeID == "Beta")
+
+        // A new query with a *different* match count than the previous step index would land on
+        // (here: 2 matches, but the stepped index was 1) proves the index actually reset to 0
+        // rather than surviving by coincidence.
+        vm.searchQuery = "e"
+        #expect(vm.searchMatchIDs == ["Beta", "Delta"])
+        #expect(vm.currentSearchNodeID == "Beta")
+    }
+
+    @Test func dismissClearsQueryAndMatches() {
+        let vm = viewModel(types: [type("Base", .public)])
+        vm.searchQuery = "Base"
+        #expect(!vm.searchMatchIDs.isEmpty)
+
+        vm.dismissSearch()
+        #expect(vm.searchQuery.isEmpty)
+        #expect(vm.searchMatchIDs.isEmpty)
+        #expect(vm.currentSearchNodeID == nil)
+    }
+
+    @Test func steppingWithNoMatchesIsANoOp() {
+        let vm = viewModel(types: [type("Base", .public)])
+        vm.searchQuery = "nonexistent"
+        vm.stepSearchForward()
+        vm.stepSearchBackward()
+        #expect(vm.currentSearchNodeID == nil)
+    }
 }
