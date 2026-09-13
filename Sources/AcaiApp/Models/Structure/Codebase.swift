@@ -14,6 +14,10 @@ struct Codebase: Identifiable, Codable, Hashable {
     var githubSource: GitHubSource?
     var hasArtifact: Bool = false
     var lastIndexed: Date?
+    /// The code's state as of `lastIndexed`, compared against its current state to say whether the
+    /// analysis is stale. `nil` for a codebase indexed before this field existed, or one whose
+    /// fingerprint couldn't be computed — no staleness is claimed without one to compare against.
+    var indexedFingerprint: CodeStateFingerprint?
     var hasParseErrors: Bool = false
     var parseDiagnosticCount: Int = 0
     var qualityCheck: QualityCheckConfiguration?

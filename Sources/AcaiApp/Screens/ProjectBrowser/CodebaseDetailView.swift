@@ -7,6 +7,7 @@ struct CodebaseDetailView: View {
     private let repositoryService: GitHubRepositoryService
     @EnvironmentObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var reindexPhase: AsyncOperationPhase = .idle
     @State private var pullPhase: AsyncOperationPhase = .idle
     @State private var refSwitchPhase: AsyncOperationPhase = .idle
@@ -132,21 +133,70 @@ struct CodebaseDetailView: View {
     /// and the actions (index status + branch picker/Pull, or Reindex) don't both fit — so compact
     /// width gets its own actions row underneath instead of squeezing everything into one line.
     private func headerSection(codebase: Codebase) -> some View {
-        Group {
-            if horizontalSizeClass == .compact {
-                VStack(alignment: .leading, spacing: 12) {
-                    headerTitleRow(codebase: codebase)
-                    headerActionsRow(codebase: codebase)
+        VStack(alignment: .leading, spacing: 12) {
+            Group {
+                if horizontalSizeClass == .compact {
+                    VStack(alignment: .leading, spacing: 12) {
+                        headerTitleRow(codebase: codebase)
+                        headerActionsRow(codebase: codebase)
+                    }
+                } else {
+                    HStack {
+                        headerTitleRow(codebase: codebase)
+                        Spacer()
+                        headerActionsRow(codebase: codebase)
+                    }
                 }
-            } else {
-                HStack {
-                    headerTitleRow(codebase: codebase)
-                    Spacer()
-                    headerActionsRow(codebase: codebase)
-                }
+            }
+            if model.freshness(for: codebaseID) == .stale {
+                staleBanner(codebase: codebase)
             }
         }
         .padding()
+        .task(id: FreshnessCheckToken(codebaseID: codebaseID, lastIndexed: codebase.lastIndexed)) {
+            await model.ensureFreshnessLoaded(codebaseID: codebaseID)
+        }
+        // The code can change on disk without anything in-app noticing — most commonly, the user
+        // switches away (to an external editor, or another codebase and back) and back. Re-check
+        // whenever this becomes visible again, or the app regains focus — not just when a reindex
+        // moves the stored baseline.
+        .onAppear {
+            Task { await model.refreshFreshness(codebaseID: codebaseID) }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task { await model.refreshFreshness(codebaseID: codebaseID) }
+        }
+    }
+
+    private struct FreshnessCheckToken: Equatable {
+        let codebaseID: UUID
+        let lastIndexed: Date?
+    }
+
+    private func staleBanner(codebase: Codebase) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Label(.app("View.CodebaseDetailView.AnalysisOutOfDate"), systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline)
+                .foregroundStyle(.orange)
+            Spacer()
+            Button {
+                reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
+                Task {
+                    await model.editing.reindex(codebaseID: codebase.id)
+                    reindexPhase = .loaded
+                }
+            } label: {
+                Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
+            }
+            .disabled(reindexPhase.isInFlight)
+            .accessibilityIdentifier("codebaseDetail.staleBanner.reindexButton")
+            AsyncOperationStatusView(identifierPrefix: "codebaseDetail.staleBanner.reindex", phase: reindexPhase)
+        }
+        .padding(8)
+        .background(Color.orange.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityIdentifier("codebaseDetail.staleBanner")
     }
 
     private func headerTitleRow(codebase: Codebase) -> some View {

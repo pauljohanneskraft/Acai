@@ -7085,6 +7085,28 @@
         }
       }
     },
+    "View.CodebaseDetailView.AnalysisOutOfDate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Analyse ist veraltet – der Code hat sich seit dem letzten Indizieren geändert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This analysis is out of date — the code has changed since it was last indexed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette analyse est obsolète : le code a changé depuis la dernière indexation."
+          }
+        }
+      }
+    },
     "View.CodebaseDetailView.Indexing" : {
       "localizations" : {
         "de" : {

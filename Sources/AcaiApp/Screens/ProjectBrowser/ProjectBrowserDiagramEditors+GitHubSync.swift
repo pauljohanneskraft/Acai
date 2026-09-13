@@ -185,22 +185,27 @@ extension ProjectCodebaseEditor {
             ) {
                 let detached = Task.detached(priority: .userInitiated) {
                     var refreshed: ScopedResourceAccess.Refreshed?
-                    let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
+                    let access = ScopedResourceAccess(path: path, bookmark: bookmark)
+                    let (artifact, fingerprint) = try access.withResolvedURL(
                         onRefresh: { refreshed = $0 },
-                        { url in try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter) }
+                        { url in
+                            let artifact = try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter)
+                            let fingerprint = CodebaseFreshnessChecker(directoryPath: url.path).currentFingerprint()
+                            return (artifact, fingerprint)
+                        }
                     )
-                    return (artifact, refreshed)
+                    return (artifact, fingerprint, refreshed)
                 }
-                let (artifact, refreshed) = try await withTaskCancellationHandler {
+                let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
                     try await detached.value
                 } onCancel: {
                     detached.cancel()
                 }
                 try await store.saveArtifactAndWait(artifact, for: codebaseID)
-                return (artifact, refreshed)
+                return (artifact, fingerprint, refreshed)
             }
             // Cancelled before finishing: don't apply a result we discarded.
-            guard let (newArtifact, refreshed) = reindexResult else { return }
+            guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
             // Re-resolve indices after the suspension — the user may have mutated the project/codebase
             // list during the (potentially long) analysis, invalidating any pre-`await` indices.
             guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
@@ -208,6 +213,7 @@ extension ProjectCodebaseEditor {
             else { return }
             store.projects[pIndex].codebases[cIndex].hasArtifact = true
             store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
+            store.projects[pIndex].codebases[cIndex].indexedFingerprint = fingerprint
             store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
             store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
             // A bookmark follows a folder that was moved or renamed, so the stored path has to
