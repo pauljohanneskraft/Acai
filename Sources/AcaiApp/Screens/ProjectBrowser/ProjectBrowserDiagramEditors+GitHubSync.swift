@@ -1,4 +1,5 @@
 import Foundation
+import AcaiCore
 import AcaiGit
 
 // `codebase(for:)`/`projectID(for:)`/`mutateCodebase`/`persistProject` (defined in the main file)
