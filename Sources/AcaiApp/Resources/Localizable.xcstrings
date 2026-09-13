@@ -5286,7 +5286,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abhängige (%lld)"
+            "value" : "Abhängigkeiten (%lld)"
           }
         },
         "en" : {
@@ -5616,7 +5616,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Abhängigen"
+            "value" : "Keine Abhängigkeiten"
           }
         },
         "en" : {

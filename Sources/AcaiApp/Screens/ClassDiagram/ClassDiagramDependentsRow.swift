@@ -2,9 +2,6 @@ import SwiftUI
 import AcaiCore
 
 extension ClassDiagramSidebar {
-    /// A dependent already on this canvas re-selects in place (cheap, no diagram switch); one that
-    /// isn't goes through `CodeElementReference` resolution, the same "Open in…" mechanism the
-    /// codebase-wide relationships/types lists use for cross-diagram navigation.
     @ViewBuilder
     func dependentRow(_ dependent: ImpactAnalysis.Dependent) -> some View {
         let label = HStack {
