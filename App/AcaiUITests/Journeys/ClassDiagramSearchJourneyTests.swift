@@ -19,12 +19,19 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
     /// Polls rather than waiting once: `XCUIElement` isn't KVO-compliant, so a predicate expectation
     /// on `.label` would only ever see its first read (see `TextFieldEditing.swift`'s
     /// `pollUntilHittable` doc comment for the same finding on `isHittable`).
+    ///
+    /// Checks `.value` as well as `.label`: confirmed via a failed run's accessibility-hierarchy
+    /// attachment that macOS exposes this dynamically-updating `StaticText`'s text through `AXValue`
+    /// with `label` left empty, while iOS exposes the identical text through `label` — same class of
+    /// platform difference `TextFieldEditing.swift`'s `choose(_:in:)` already documents for a popup
+    /// button's title vs. label.
     private func waitForMatchSummary(
         _ diagram: ClassDiagramScreen, toRead expected: String, timeout: TimeInterval = 5
     ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if diagram.searchMatchSummary.label == expected { return true }
+            let summary = diagram.searchMatchSummary
+            if summary.label == expected || summary.value as? String == expected { return true }
             Thread.sleep(forTimeInterval: 0.1)
         }
         return false
