@@ -2,7 +2,7 @@
 /// `acai diagram --color-by`): green at fine, amber at the midpoint, red at critical. Shares its
 /// green/red with `DeltaEdgeColors`' added/removed, so the same colours mean the same thing
 /// everywhere a diagram uses them. A plain value, like `DeltaEdgeColors` — it names no metric and
-/// carries no rules-file logic; the caller supplies a fraction from `MetricColorBand`.
+/// carries no rules-file logic; the caller supplies a fraction from `MetricBudget.colorReadings(for:)`.
 public struct SeverityColors: Sendable {
     public let fine: String
     public let medium: String

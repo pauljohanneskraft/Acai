@@ -1,7 +1,7 @@
 import Testing
 @testable import AcaiDiagram
 
-/// `SeverityColors` is the fixed, presentational palette behind `--color-by`: `MetricColorBand`
+/// `SeverityColors` is the fixed, presentational palette behind `--color-by`: `MetricBudget`
 /// decides the fraction (a codebase concern), this decides the colour (a view concern).
 @Suite("Severity colours")
 struct SeverityColorsTests {

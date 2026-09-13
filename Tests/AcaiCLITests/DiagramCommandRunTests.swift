@@ -195,16 +195,15 @@ struct DiagramCommandRunTests {
     private func writeMaxParametersRules(in dir: URL) throws -> URL {
         let rulesURL = dir.appendingPathComponent("quality.yml")
         let yaml = """
-        colorBands:
+        budgets:
           - metric: maxParameters
-            fine: 0
-            critical: 3
+            max: 3
         """
         try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
         return rulesURL
     }
 
-    @Test func colorByColorsAndAnnotatesNodesFromTheRulesFileBands() throws {
+    @Test func colorByColorsAndAnnotatesNodesFromTheMetricsOwnBudget() throws {
         try CLITestSupport.withTempDirectory { dir in
             try writeMaxParametersSource(in: dir)
             let rulesURL = try writeMaxParametersRules(in: dir)
@@ -223,12 +222,48 @@ struct DiagramCommandRunTests {
         }
     }
 
-    @Test func colorByWithoutAMatchingBandThrows() throws {
+    @Test func colorByUsesTheBuiltInDefaultBudgetsWhenNoRulesFileIsGiven() throws {
         try CLITestSupport.withTempDirectory { dir in
             try writeMaxParametersSource(in: dir)
+            let output = dir.appendingPathComponent("diagram.dot")
+            // `maxParameters` is one of `MetricBudget.defaultSmellBudgets` (max 5), so `--color-by`
+            // works without `--rules` — the same budget that gates a build without one also colours it.
+            var cmd = try CLITestSupport.parseDiagram([
+                "--source", dir.path, "--language", "swift",
+                "--color-by", "maxParameters", "--output", output.path
+            ])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("maxParameters: 3"))
+            #expect(contents.contains("maxParameters: 0"))
+        }
+    }
+
+    @Test func colorByWithoutAMatchingBudgetThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            // `fanOut` has no entry in the built-in default budgets.
             try expectRunError(
-                ["--source", dir.path, "--language", "swift", "--color-by", "maxParameters"],
-                contains: "No colour band is defined for metric 'maxParameters'"
+                ["--source", dir.path, "--language", "swift", "--color-by", "fanOut"],
+                contains: "No budget with a `max` threshold is defined for metric 'fanOut'"
+            )
+        }
+    }
+
+    @Test func colorByWithABudgetThatHasNoMaxThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            let rulesURL = dir.appendingPathComponent("quality.yml")
+            let yaml = """
+            budgets:
+              - metric: maxParameters
+                min: 1
+            """
+            try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift",
+                 "--color-by", "maxParameters", "--rules", rulesURL.path],
+                contains: "No budget with a `max` threshold is defined for metric 'maxParameters'"
             )
         }
     }

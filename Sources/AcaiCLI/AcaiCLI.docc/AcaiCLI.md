@@ -287,7 +287,6 @@ acai quality --source . --rules quality.yml --baseline last-release
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
 | `layers` | `{layers: [{name, selector}], allowSkip: Bool}` — ordered top to bottom, `allowSkip` defaults `true` |
 | `contracts` | list of `{into: Selector, only: Selector, kinds: [Kind]?, message: String?}` |
-| `colorBands` | list of `{metric: <name>, fine: Double, critical: Double}` — read by `acai diagram --color-by`; not a fitness-function rule |
 | `includeGeneratedTypes` | `Bool`, default `false` |
 
 **Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
@@ -300,19 +299,19 @@ This repository gates itself with its own [`quality.yml`](https://github.com/pau
 
 **Colouring a diagram by measurement.** `acai diagram --color-by <metric> --rules quality.yml` tints
 each type-scoped node along a fine-to-critical gradient and prints the value next to it, so colour is
-never the only signal. The colours are fixed (green at `fine`, red at `critical`, amber between) and
-shared with the rest of the app; a `colorBands` entry overrides only the *values* at which a metric
-counts as fine or critical, the same way a `budgets` entry overrides what counts as a breach:
+never the only signal. The gradient's endpoints are the metric's own `budgets` entry — `min` (or `0`
+when unset) is "fine", `max` is "critical" — so a diagram's colours can never disagree with what
+actually fails the build; there is exactly one place to change a metric's thresholds:
 
 ```yaml
-colorBands:
+budgets:
   - metric: maxCyclomaticComplexity
-    fine: 0
-    critical: 10
+    max: 10
 ```
 
-`--color-by` requires a per-type metric with a matching `colorBands` entry; a module-scoped metric or
-a metric with no band is a validation error.
+The colours themselves are fixed (green at `fine`, red at `critical`, amber between) and shared with
+the rest of the app. `--color-by` requires a per-type metric with a `budgets` entry that sets `max`; a
+module-scoped metric, or one with no such budget, is a validation error.
 
 ### `rules`
 

@@ -32,12 +32,13 @@ struct ClassDiagramFlags: ParsableArguments {
     var noInferDependency: Bool = false
 
     @Option(name: .long, help: ArgumentHelp(
-        "Colour nodes by this metric's value, using bands from --rules (or the built-in defaults)."
-        + " The metric must be per-type and have a `colorBands` entry in the rules file."
+        "Colour nodes by this metric's value, gradient endpoints taken from its `max`/`min` budget"
+        + " thresholds in --rules (or the built-in defaults). The metric must be per-type and have a"
+        + " budget with `max` set."
     ))
     var colorBy: MetricBudget.Metric?
 
-    @Option(name: .long, help: "Path to a code-quality rules YAML file supplying --color-by's colour bands.")
+    @Option(name: .long, help: "Path to a code-quality rules YAML file supplying --color-by's budget thresholds.")
     var rules: String?
 
     /// Applies the set flags onto `options`; unset flags leave the existing value (e.g. from
@@ -53,9 +54,9 @@ struct ClassDiagramFlags: ParsableArguments {
         if noInferDependency { options.inferDependencyFromMethods = false }
     }
 
-    /// Wires `--color-by` onto `options`: looks up its band in the loaded (or default) rules file,
-    /// then colours and annotates every type the band's metric applies to. A no-op when `--color-by`
-    /// wasn't given.
+    /// Wires `--color-by` onto `options`: looks up the metric's own budget in the loaded (or default)
+    /// rules file and uses its `max`/`min` as the gradient's critical/fine endpoints, then colours and
+    /// annotates every type the metric applies to. A no-op when `--color-by` wasn't given.
     func applyColorBy(to options: inout ClassDiagramOptions, artifact: CodeArtifact) throws {
         guard let metric = colorBy else { return }
         guard !metric.isModuleScoped else {
@@ -64,13 +65,14 @@ struct ClassDiagramFlags: ParsableArguments {
             )
         }
         let ruleSet = try rules.map { try QualityRules.load(contentsOf: $0) } ?? QualityRules.defaultQuality
-        guard let band = ruleSet.colorBands.first(where: { $0.metric == metric }) else {
+        guard let budget = ruleSet.budgets.first(where: { $0.metric == metric }),
+              let readings = budget.colorReadings(for: artifact.computeMetrics().types)
+        else {
             throw ValidationError(
-                "No colour band is defined for metric '\(metric.rawValue)'. Add a `colorBands` entry"
-                + " for it to the rules file passed via --rules."
+                "No budget with a `max` threshold is defined for metric '\(metric.rawValue)'. Add a"
+                + " `budgets` entry for it (with `max` set) to the rules file passed via --rules."
             )
         }
-        let readings = band.readings(for: artifact.computeMetrics().types)
         options.nodeColorOverride = { readings[$0.id].map { SeverityColors.standard.hex(atFraction: $0.fraction) } }
         options.nodeAnnotation = { type in
             readings[type.id].map { "\(metric.rawValue): \($0.formattedValue)" }
