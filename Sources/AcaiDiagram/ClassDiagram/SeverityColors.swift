@@ -1,8 +1,4 @@
-/// The default colour palette for a value's position on a fine-to-critical gradient (e.g.
-/// `acai diagram --color-by`): green at fine, amber at the midpoint, red at critical. Shares its
-/// green/red with `DeltaEdgeColors`' added/removed, so the same colours mean the same thing
-/// everywhere a diagram uses them. A plain value, like `DeltaEdgeColors` — it names no metric and
-/// carries no rules-file logic; the caller supplies a fraction from `MetricBudget.colorReadings(for:)`.
+/// Shares its green/red with `DeltaEdgeColors`' added/removed.
 public struct SeverityColors: Sendable {
     public let fine: String
     public let medium: String
@@ -16,8 +12,6 @@ public struct SeverityColors: Sendable {
 
     public static let standard = SeverityColors()
 
-    /// Linear RGB interpolation across `fine → medium → critical` for a `fraction` in `0...1` (0 at
-    /// `fine`, 1 at `critical`), clamped rather than extrapolated.
     public func hex(atFraction fraction: Double) -> String {
         let clamped = min(1, max(0, fraction))
         if clamped <= 0.5 {
@@ -27,8 +21,6 @@ public struct SeverityColors: Sendable {
     }
 }
 
-/// A parsed `#RRGGBB` colour, private to blending gradient stops — never surfaces beyond a hex
-/// string.
 private struct HexColor {
     let red: Double
     let green: Double

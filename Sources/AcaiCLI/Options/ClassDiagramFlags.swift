@@ -54,9 +54,6 @@ struct ClassDiagramFlags: ParsableArguments {
         if noInferDependency { options.inferDependencyFromMethods = false }
     }
 
-    /// Wires `--color-by` onto `options`: looks up the metric's own budget in the loaded (or default)
-    /// rules file and uses its `max`/`min` as the gradient's critical/fine endpoints, then colours and
-    /// annotates every type the metric applies to. A no-op when `--color-by` wasn't given.
     func applyColorBy(to options: inout ClassDiagramOptions, artifact: CodeArtifact) throws {
         guard let metric = colorBy else { return }
         guard !metric.isModuleScoped else {

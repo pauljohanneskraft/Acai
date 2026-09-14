@@ -1,9 +1,5 @@
 import AcaiCore
 
-// Deliberate options bag, not a long-parameter-list smell: every field is an independently-defaulted
-// toggle, and the `var`s let callers build with a couple of labelled args and mutate the rest after
-// (`options.theme = …`). No call site passes a long positional list, so splitting into sub-objects
-// would only break call sites for no real gain.
 public struct ClassDiagramOptions: Sendable {
     public var layoutDirection: LayoutDirection
     public var showMembers: Bool
@@ -15,56 +11,28 @@ public struct ClassDiagramOptions: Sendable {
     public var showGenericParameters: Bool
     public var fontName: String
     public var fontSize: Int
-    /// The cosmetic colour palette. `nil` emits structural output (no background/fill/border/font
-    /// colours) so the consumer themes it at render time. Semantic colours are unaffected.
+    /// `nil` emits structural output (no background/fill/border/font colours) for the consumer to
+    /// theme at render time.
     public var theme: DiagramTheme?
 
     // MARK: - Class-diagram enrichment options
 
-    /// When `true`, properties whose declared type matches a known type produce
-    /// composition / aggregation edges automatically.
     public var inferCompositionFromProperties: Bool
-
-    /// When `true`, method parameter and return types that reference a known
-    /// type produce dependency edges automatically.
     public var inferDependencyFromMethods: Bool
-
-    /// When `true`, types referenced in relationships but not defined in the
-    /// artifact are rendered as lightweight gray placeholder nodes.
     public var showExternalTypes: Bool
-
-    /// When `true`, inferred association/aggregation/composition edges carry their
-    /// `*` / `0..1` / `1` multiplicity labels (`headlabel`/`taillabel` in DOT).
     public var showMultiplicities: Bool
-
-    /// When `true`, stereotypes derived from real type annotations (e.g. `@Entity`→`«entity»`)
-    /// are emitted in addition to the kind-based stereotype. When `false`, only the
-    /// `TypeKind` stereotype is shown.
     public var showAnnotationStereotypes: Bool
-
-    /// When set, restricts the diagram to a single type and the slice of the
-    /// relationship graph around it (see `FocusConfiguration`). `nil` renders the
-    /// whole codebase.
     public var focus: FocusConfiguration?
 
-    /// Resolves each type's language quirks (classification + annotation stereotypes) from its own
-    /// `sourceLanguage`, so a polyglot codebase is styled per type. Injected by the caller
-    /// (`artifact.standardLanguageResolver`, or `LanguageConfigurationResolver(single:)`); required
-    /// so the diagram layer stays agnostic rather than knowing any language.
+    /// Resolves each type's language quirks from its own `sourceLanguage`, keeping this target
+    /// agnostic to any specific language.
     public var languages: LanguageConfigurationResolver
 
-    /// An optional per-edge colour override (a hex like `#2e7d32`) that wins over `theme.edgeColor`
-    /// when non-`nil`. Used to tint a delta diagram's added/removed/changed edges; default `nil`
-    /// keeps every existing diagram byte-for-byte identical.
+    /// Wins over `theme.edgeColor` when non-`nil`.
     public var edgeColorOverride: (@Sendable (Relationship) -> String?)?
-
-    /// The node counterpart of `edgeColorOverride`, for tinting a delta diagram's type nodes.
+    /// The node counterpart of `edgeColorOverride`.
     public var nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)?
-
-    /// An optional line of text rendered under a node's name — e.g. a metric readout backing
-    /// `nodeColorOverride`, so a diagram coloured by measurement states the value in text too.
-    /// Colour is never the only signal. Default `nil` keeps every existing diagram byte-for-byte
-    /// identical.
+    /// A line of text rendered under a node's name, so colour is never the only signal.
     public var nodeAnnotation: (@Sendable (TypeDeclaration) -> String?)?
 
     public init(
