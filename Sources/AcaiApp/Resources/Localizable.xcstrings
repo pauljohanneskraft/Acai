@@ -1783,6 +1783,28 @@
         }
       }
     },
+    "View.ComparisonStatusRow.Comparison" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergleich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparison"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparaison"
+          }
+        }
+      }
+    },
     "View.CompareGitOverlay.CompareVsGit" : {
       "localizations" : {
         "de" : {

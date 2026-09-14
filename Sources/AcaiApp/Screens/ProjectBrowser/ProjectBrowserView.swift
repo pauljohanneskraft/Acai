@@ -263,13 +263,19 @@ public struct ProjectBrowserView: View {
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
             case .sequenceDiagram:
-                SequenceDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) { isComparePresented in
+                    SequenceDiagramView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        isComparePresented: isComparePresented,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             case .stateDiagram:
-                StateDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
+                deltaHosted(diagram: diagram) { isComparePresented in
+                    StateDiagramView(
+                        diagram: diagram, artifact: artifact, codebase: codebase,
+                        isComparePresented: isComparePresented,
+                        comparisonArtifact: model.comparisonArtifact(for: diagram))
+                }
             case .packageDiagram:
                 deltaHosted(diagram: diagram) { isComparePresented in
                     PackageDiagramView(
