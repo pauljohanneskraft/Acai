@@ -46,8 +46,9 @@ struct PythonBaseClassResolver {
             guard let name = typeReferences.baseTypeName(from: child) else { continue }
             result.allNames.append(name)
             guard !Self.markerBaseNames.contains(name) else { continue }
-            result.inherited.append(TypeReference(name: name))
-            result.relationships.append(Relationship(kind: .inheritance, source: className, target: name))
+            let reference = TypeReference(name: name)
+            result.inherited.append(reference)
+            result.relationships.append(reference.relationship(kind: .inheritance, source: className))
         }
         return result
     }
