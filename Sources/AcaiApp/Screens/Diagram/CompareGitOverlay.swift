@@ -228,7 +228,7 @@ struct CompareGitPanel: View {
 
     let diagram: GeneratedDiagram
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?
-    @EnvironmentObject private var model: ProjectBrowserViewModel
+    @EnvironmentObject var model: ProjectBrowserViewModel
     @State private var availableRefs: [GitCheckout.Ref] = []
     @State private var pullRequests: [GitHubPullRequest] = []
     @State private var isEditingCustomRef = false
