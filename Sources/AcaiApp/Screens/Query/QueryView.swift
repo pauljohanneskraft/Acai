@@ -186,12 +186,17 @@ struct QueryView: View {
             .contentShape(Rectangle())
             .openInCodeElement(.type(id: row.id), codebase: codebase, relativePath: row.location?.filePath)
             if let location = row.location {
-                Text(verbatim: "\(location.filePath):\(location.line)")
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                ViewSourceButton(codebase: codebase, relativePath: location.filePath)
+                HStack(spacing: 8) {
+                    Text(verbatim: "\(location.filePath):\(location.line)")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 8)
+                    ViewSourceButton(codebase: codebase, relativePath: location.filePath)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
             }
             if memberFilter.hasActiveFacet {
                 memberRows(row, codebase: codebase)
