@@ -90,6 +90,12 @@ struct FreeformDiagramView: View {
                     .help(.app("View.FreeformDiagramView.SaveRestoreNamedSnapshot"))
                     .accessibilityIdentifier("diagram.checkpointsButton")
 
+                    Button(action: exportImage) {
+                        Label(.app("View.FreeformDiagramView.ExportImage"), systemImage: "photo")
+                    }
+                    .help(.app("View.FreeformDiagramView.ExportDiagramImage"))
+                    .accessibilityIdentifier("diagram.exportImageButton")
+
                     Button {
                         sidebarTab = .catalog
                         showSidebar.toggle()
@@ -188,6 +194,13 @@ struct FreeformDiagramView: View {
             .sheet(isPresented: $showCheckpoints) {
                 FreeformDiagramCheckpointsView(viewModel: viewModel)
             }
+    }
+
+    /// Renders the current diagram (WYSIWYG, including manual placement) to PNG and writes it —
+    /// on the same terms as a generated diagram's own "Export Image" action.
+    private func exportImage() {
+        browserModel.exportImage(
+            named: browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram", using: viewModel)
     }
 
     private var deleteAlertTitle: LocalizedStringResource {
