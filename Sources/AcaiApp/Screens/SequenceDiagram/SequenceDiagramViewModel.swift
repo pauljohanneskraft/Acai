@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiLibrary
 import AcaiQuality
 import AcaiRender
@@ -60,6 +61,7 @@ private struct SequenceDiagramGenerator {
 @MainActor
 final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let artifact: CodeArtifact
+    private let comparisonArtifact: CodeArtifact?
 
     @Published private(set) var diagram: SequenceDiagram
     /// Per-participant centre overrides, keyed by `Participant.id`. Only `x` is honoured.
@@ -73,6 +75,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     @Published var selectedMessageID: Int?
 
     private(set) var configuration: SequenceDiagramConfiguration
+    private var diff: SequenceDiagramDiff?
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
@@ -81,19 +84,22 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     init(
         artifact: CodeArtifact,
         configuration: SequenceDiagramConfiguration,
-        restoredPositions: [String: CGPoint] = [:]
+        restoredPositions: [String: CGPoint] = [:],
+        comparisonArtifact: CodeArtifact? = nil
     ) {
         self.artifact = artifact
+        self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
         // Lifelines move horizontally only; `moveNode` already pins every override's `y` to 0, so
         // restored positions round-trip cleanly with no normalization needed here.
         self.positionOverrides = restoredPositions
-        self.diagram = SequenceDiagramGenerator(artifact: artifact, configuration: configuration).generate()
+        self.diagram = SequenceDiagram()
+        rebuildDiagram()
     }
 
     func applyConfiguration(_ newConfiguration: SequenceDiagramConfiguration) {
         configuration = newConfiguration
-        diagram = SequenceDiagramGenerator(artifact: artifact, configuration: newConfiguration).generate()
+        rebuildDiagram()
         positionOverrides = [:]
         selectedNodeIDs = []
         selectedMessageID = nil
@@ -105,10 +111,50 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     /// participants/messages, it never repositions a surviving one.
     func applyFilter(_ filter: AcaiQuality.Selector?) {
         configuration.filter = filter
-        diagram = SequenceDiagramGenerator(artifact: artifact, configuration: configuration).generate()
+        rebuildDiagram()
+    }
+
+    /// In delta mode, renders the union of both revisions (via `SequenceDiagramDiff`) so removed
+    /// participants/messages still appear and can be tinted; otherwise renders the working-tree
+    /// trace directly.
+    private func rebuildDiagram() {
+        let new = SequenceDiagramGenerator(artifact: artifact, configuration: configuration).generate()
+        if let comparisonArtifact {
+            let old = SequenceDiagramGenerator(artifact: comparisonArtifact, configuration: configuration).generate()
+            let diff = SequenceDiagramDiff(old: old, new: new)
+            self.diff = diff
+            diagram = diff.union
+        } else {
+            diff = nil
+            diagram = new
+        }
     }
 
     var isEmpty: Bool { diagram.participants.isEmpty }
+
+    var isDeltaMode: Bool { diff != nil }
+
+    /// Non-color complement to `messageDeltaColor(_:)`. `nil` when unchanged or not in delta mode.
+    func participantDeltaStatus(_ id: String) -> DeltaStatus? {
+        guard let diff else { return nil }
+        let status = diff.status(ofParticipant: id)
+        return status == .unchanged ? nil : status
+    }
+
+    func messageDeltaStatus(_ message: SequenceDiagram.Message) -> DeltaStatus? {
+        guard let diff else { return nil }
+        let status = diff.status(of: message)
+        return status == .unchanged ? nil : status
+    }
+
+    /// Feeds `SequenceEnsembleView`'s `messageColor` hook, keyed on the same time-ordered list
+    /// `orderedMessages`/`SequenceLayoutModel.MessageLayout.id` both index into.
+    func messageDeltaColor(_ layout: SequenceLayoutModel.MessageLayout) -> Color? {
+        guard let diff, orderedMessages.indices.contains(layout.id),
+              let hex = diff.status(of: orderedMessages[layout.id]).deltaHex
+        else { return nil }
+        return Color(hex: hex)
+    }
 
     /// Clears the selected message whenever the participant selection is replaced (a secondary
     /// selection, same rationale as `FreeformDiagramViewModel.selectedEdgeID`).

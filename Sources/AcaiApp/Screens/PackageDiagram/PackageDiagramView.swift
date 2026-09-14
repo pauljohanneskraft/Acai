@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 import AcaiQuality
 import UniformTypeIdentifiers
@@ -120,7 +121,8 @@ struct PackageDiagramView: View {
             tab: $sidebarTab,
             onSelect: { viewModel.selectNode($0, extending: false) },
             onSaveAsFreeform: confirmSaveAsFreeform,
-            onExportImage: exportImage
+            onExportImage: exportImage,
+            deltaStatus: { viewModel.nodeDeltaStatus(id: $0) }
         )
     }
 
@@ -196,6 +198,7 @@ struct PackageDiagramView: View {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
+        .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             viewModel.selectNode(node.id, extending: false)

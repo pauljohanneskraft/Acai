@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiDiagram
+import AcaiDiff
 import AcaiQuality
 
 enum PackageDiagramSidebarTab {
@@ -20,6 +21,8 @@ struct PackageDiagramSidebar: View {
     let onSelect: (String) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
+    /// `nil` for every id when the diagram isn't in delta mode.
+    var deltaStatus: (String) -> DeltaStatus? = { _ in nil }
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
@@ -39,8 +42,10 @@ struct PackageDiagramSidebar: View {
                 settingsContent
                     .accessibilityIdentifier("diagram.sidebarContent.settings")
             case .inspector:
-                PackageDiagramInspector(diagram: diagram, selectedNodeIDs: selectedNodeIDs, onSelect: onSelect)
-                    .accessibilityIdentifier("diagram.sidebarContent.inspector")
+                PackageDiagramInspector(
+                    diagram: diagram, selectedNodeIDs: selectedNodeIDs, onSelect: onSelect, deltaStatus: deltaStatus
+                )
+                .accessibilityIdentifier("diagram.sidebarContent.inspector")
             }
         }
         .background {
