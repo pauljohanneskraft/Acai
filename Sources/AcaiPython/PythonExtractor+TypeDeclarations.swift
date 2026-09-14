@@ -14,8 +14,11 @@ extension PythonExtractor {
         relationships.append(contentsOf: bases.relationships)
 
         var decl = typeDeclarationExtractor.declaration(
-            for: node, name: name, qualifiedName: qualified, decorators: decorators, bases: bases,
-            accessLevel: accessLevel(forName: name)
+            for: node,
+            signature: .init(
+                name: name, qualifiedName: qualified, decorators: decorators, bases: bases,
+                accessLevel: accessLevel(forName: name)
+            )
         )
 
         if let body = node.child(byFieldName: "body") {

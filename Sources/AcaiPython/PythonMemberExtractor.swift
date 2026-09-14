@@ -17,23 +17,27 @@ struct PythonMemberExtractor {
         "case_clause"
     ]
 
-    func callable(
-        _ node: Node,
-        decorators: [String],
-        parameters: [Parameter],
-        returnType: TypeReference?,
-        accessLevel: AccessLevel,
-        callSites: [CallSite],
-        assignments: [VariableAssignment],
-        fieldReads: [FieldAccess]
-    ) -> Member {
+    struct Signature {
+        let decorators: [String]
+        let parameters: [Parameter]
+        let returnType: TypeReference?
+        let accessLevel: AccessLevel
+    }
+
+    struct ResolvedReferences {
+        let callSites: [CallSite]
+        let assignments: [VariableAssignment]
+        let fieldReads: [FieldAccess]
+    }
+
+    func callable(_ node: Node, signature: Signature, references: ResolvedReferences) -> Member {
         let name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? "_anonymous"
-        var params = parameters
+        var params = signature.parameters
         if let first = params.first, first.internalName == "self" || first.internalName == "cls" {
             params.removeFirst()
         }
 
-        let decoratorTails = Set(decorators.map { $0.components(separatedBy: ".").last ?? $0 })
+        let decoratorTails = Set(signature.decorators.map { $0.components(separatedBy: ".").last ?? $0 })
         var kind: MemberKind = (name == "__init__") ? .initializer : .method
         var modifiers: [Modifier] = []
         var isComputed = false
@@ -52,16 +56,16 @@ struct PythonMemberExtractor {
         return Member(
             name: name,
             kind: kind,
-            accessLevel: accessLevel,
+            accessLevel: signature.accessLevel,
             modifiers: modifiers,
-            type: returnType,
+            type: signature.returnType,
             parameters: params,
             isComputed: isComputed,
-            annotations: decorators,
+            annotations: signature.decorators,
             location: node.location(in: context),
-            callSites: callSites,
-            assignments: assignments,
-            fieldReads: fieldReads,
+            callSites: references.callSites,
+            assignments: references.assignments,
+            fieldReads: references.fieldReads,
             referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
             cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
         )

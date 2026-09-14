@@ -90,13 +90,15 @@ extension PythonExtractor {
 
         return memberExtractor.callable(
             node,
-            decorators: decorators,
-            parameters: params,
-            returnType: returnType,
-            accessLevel: accessLevel(forName: name),
-            callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope)
+            signature: .init(
+                decorators: decorators, parameters: params, returnType: returnType,
+                accessLevel: accessLevel(forName: name)
+            ),
+            references: .init(
+                callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
+                assignments: extractAssignments(from: body),
+                fieldReads: fieldReadResolver.reads(in: body, scope: scope)
+            )
         )
     }
 }

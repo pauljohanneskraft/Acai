@@ -10,26 +10,27 @@ import AcaiTreeSitter
 struct PythonTypeDeclarationExtractor {
     let context: SourceFileContext
 
-    func declaration(
-        for node: Node,
-        name: String,
-        qualifiedName: String,
-        decorators: [String],
-        bases: PythonBaseClassResolver.Bases,
-        accessLevel: AccessLevel
-    ) -> TypeDeclaration {
+    struct Signature {
+        let name: String
+        let qualifiedName: String
+        let decorators: [String]
+        let bases: PythonBaseClassResolver.Bases
+        let accessLevel: AccessLevel
+    }
+
+    func declaration(for node: Node, signature: Signature) -> TypeDeclaration {
         let resolver = PythonBaseClassResolver(context: context)
-        var generics = bases.generics
+        var generics = signature.bases.generics
         generics.append(contentsOf: resolver.declaredTypeParameters(node))
         return TypeDeclaration(
-            id: qualifiedName,
-            name: name,
-            qualifiedName: qualifiedName,
-            kind: resolver.kind(forBaseNames: bases.allNames),
-            accessLevel: accessLevel,
+            id: signature.qualifiedName,
+            name: signature.name,
+            qualifiedName: signature.qualifiedName,
+            kind: resolver.kind(forBaseNames: signature.bases.allNames),
+            accessLevel: signature.accessLevel,
             genericParameters: generics,
-            inheritedTypes: bases.inherited,
-            annotations: decorators,
+            inheritedTypes: signature.bases.inherited,
+            annotations: signature.decorators,
             location: node.location(in: context)
         )
     }
