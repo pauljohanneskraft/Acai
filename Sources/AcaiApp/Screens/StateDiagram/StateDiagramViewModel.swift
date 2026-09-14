@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 
 /// Backs the movement-only state diagram view. The `StateDiagram` regenerates from the stored
@@ -10,6 +11,7 @@ import AcaiRender
 @MainActor
 final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     let artifact: CodeArtifact
+    private let comparisonArtifact: CodeArtifact?
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
     @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
@@ -22,6 +24,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     @Published var selectedTransitionID: Int?
 
     private(set) var configuration: StateDiagramConfiguration?
+    private var diff: StateDiagramDiff?
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
 
@@ -30,12 +33,15 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     init(
         artifact: CodeArtifact,
         configuration: StateDiagramConfiguration?,
-        restoredPositions: [String: CGPoint] = [:]
+        restoredPositions: [String: CGPoint] = [:],
+        comparisonArtifact: CodeArtifact? = nil
     ) {
         self.artifact = artifact
+        self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
         self.positionOverrides = restoredPositions
-        self.result = Self.generate(artifact: artifact, configuration: configuration)
+        self.result = nil
+        rebuild(configuration: configuration)
     }
 
     private static func generate(
@@ -57,13 +63,60 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         }
     }
 
+    /// In delta mode, renders the union of both revisions (via `StateDiagramDiff`) so removed
+    /// states/transitions still appear and can be tinted. Falls back to the plain working-tree
+    /// result — without a diff — when the comparison revision fails its own analysis (e.g. the
+    /// chosen variable didn't exist yet): there's nothing to diff against, but the new result is
+    /// still shown rather than reporting a spurious failure.
+    private func rebuild(configuration: StateDiagramConfiguration?) {
+        let newResult = Self.generate(artifact: artifact, configuration: configuration)
+        guard let comparisonArtifact, case .success(let new) = newResult else {
+            diff = nil
+            result = newResult
+            return
+        }
+        guard case .success(let old) = Self.generate(artifact: comparisonArtifact, configuration: configuration)
+        else {
+            diff = nil
+            result = newResult
+            return
+        }
+        let diff = StateDiagramDiff(old: old, new: new)
+        self.diff = diff
+        result = .success(diff.union)
+    }
+
     func applyConfiguration(_ newConfiguration: StateDiagramConfiguration) {
         configuration = newConfiguration
-        result = Self.generate(artifact: artifact, configuration: newConfiguration)
+        rebuild(configuration: newConfiguration)
         positionOverrides = [:]
         selectedNodeIDs = []
         selectedTransitionID = nil
         history.clear()
+    }
+
+    var isDeltaMode: Bool { diff != nil }
+
+    /// Non-color complement to `transitionDeltaColor(_:)`. `nil` when unchanged or not in delta mode.
+    func stateDeltaStatus(_ id: String) -> DeltaStatus? {
+        guard let diff else { return nil }
+        let status = diff.status(ofState: id)
+        return status == .unchanged ? nil : status
+    }
+
+    /// Feeds `StateEnsembleView`'s `edgeColor` hook, keyed on `StateLayoutModel.EdgeLayout.id` —
+    /// the index into `diagram.transitions` both the layout and the union diagram share.
+    func transitionDeltaColor(_ edge: StateLayoutModel.EdgeLayout) -> Color? {
+        guard let diff, let transitions = diagram?.transitions, transitions.indices.contains(edge.id),
+              let hex = diff.status(of: transitions[edge.id]).deltaHex
+        else { return nil }
+        return Color(hex: hex)
+    }
+
+    func transitionDeltaStatus(_ transition: StateDiagram.Transition) -> DeltaStatus? {
+        guard let diff else { return nil }
+        let status = diff.status(of: transition)
+        return status == .unchanged ? nil : status
     }
 
     func selectionWillReplace() {

@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 import AcaiQuality
 import UniformTypeIdentifiers
@@ -164,7 +165,8 @@ private struct CallGraphCanvasView: View {
             onSelect: { viewModel.selectNode($0, extending: false) },
             onApplyScope: onApplyScope,
             onSaveAsFreeform: confirmSaveAsFreeform,
-            onExportImage: exportImage
+            onExportImage: exportImage,
+            deltaStatus: { viewModel.nodeDeltaStatus(id: $0) }
         )
     }
 
@@ -253,6 +255,7 @@ private struct CallGraphCanvasView: View {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
+        .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             viewModel.selectNode(node.id, extending: false)

@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 
 /// The package diagram's Inspector tab: selection-scoped, matching the Class/Freeform
@@ -12,6 +13,8 @@ struct PackageDiagramInspector: View {
     /// Re-points the canvas/inspector selection at another module — used by the related-modules
     /// list so tapping a dependency jumps straight to it instead of making the user scroll to find it.
     let onSelect: (String) -> Void
+    /// `nil` for every id when the diagram isn't in delta mode.
+    let deltaStatus: (String) -> DeltaStatus?
 
     private static let ratio = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(2))
 
@@ -28,6 +31,9 @@ struct PackageDiagramInspector: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     moduleCard(node, highlighted: true)
+                    if let status = deltaStatus(node.id) {
+                        ComparisonStatusRow(status: status)
+                    }
                     relatedModulesSection(for: node)
                     legend
                 }
