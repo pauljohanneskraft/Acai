@@ -17,6 +17,11 @@ struct DiagramFilterSection: View {
     @State private var presetPendingDelete: FilterPreset?
     @State private var presetSavePhase: AsyncOperationPhase = .idle
     @State private var presetSaveError: String?
+    /// Chains each save onto the previous one so writes land on disk in the order they were made —
+    /// two detached, unserialized saves (e.g. a rename immediately followed by a delete) could
+    /// otherwise finish out of order and let the older one silently resurrect what the newer one
+    /// removed.
+    @State private var pendingPresetSave: Task<Void, Never>?
 
     var body: some View {
         Section(.app("View.DiagramFilterSection.Filter")) {
@@ -44,15 +49,15 @@ struct DiagramFilterSection: View {
         }
         .confirmationDialog(
             .app("View.DiagramFilterSection.ConfirmDeletePreset \(presetPendingDelete?.name ?? "")"),
-            isPresented: Binding(get: { presetPendingDelete != nil }, set: { if !$0 { presetPendingDelete = nil } })
-        ) {
+            isPresented: Binding(get: { presetPendingDelete != nil }, set: { if !$0 { presetPendingDelete = nil } }),
+            presenting: presetPendingDelete
+        ) { preset in
             Button(.app("View.DiagramFilterSection.Delete"), role: .destructive) {
-                if let preset = presetPendingDelete { deletePreset(preset) }
-                presetPendingDelete = nil
+                deletePreset(preset)
             }
             .accessibilityIdentifier("diagram.filter.presetDeleteConfirmButton")
             Button(.app("View.DiagramFilterSection.Cancel"), role: .cancel) { presetPendingDelete = nil }
-        } message: {
+        } message: { _ in
             Text(.app("View.DiagramFilterSection.ThisCannotBeUndone"))
         }
     }
@@ -99,11 +104,13 @@ struct DiagramFilterSection: View {
                 } label: {
                     Label(.app("View.DiagramFilterSection.Rename"), systemImage: "pencil")
                 }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).rename")
                 Button(role: .destructive) {
                     presetPendingDelete = preset
                 } label: {
                     Label(.app("View.DiagramFilterSection.Delete"), systemImage: "trash")
                 }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).contextDelete")
             }
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
@@ -111,6 +118,7 @@ struct DiagramFilterSection: View {
                 } label: {
                     Label(.app("View.DiagramFilterSection.Delete"), systemImage: "trash")
                 }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).swipeDelete")
             }
         }
     }
@@ -159,7 +167,9 @@ struct DiagramFilterSection: View {
         // immutable copy — same rebinding `FindingsView.toggleSuppressed` uses.
         let toSave = list
         presetSavePhase = .loading(.app("View.DiagramFilterSection.SavingPreset"))
-        Task {
+        let previousSave = pendingPresetSave
+        pendingPresetSave = Task {
+            _ = await previousSave?.value
             do {
                 try await Task.detached(priority: .userInitiated) {
                     try FilterPresetStore(baseDir: baseDir).save(toSave, projectID: projectID)
