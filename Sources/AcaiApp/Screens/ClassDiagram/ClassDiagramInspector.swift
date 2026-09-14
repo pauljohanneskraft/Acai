@@ -252,6 +252,23 @@ struct ClassDiagramSidebar: View {
                                     Text(.app("View.ClassDiagramSidebar.RelationshipsCount \(relatedEdges.count)"))
                                 }
                             }
+
+                            let dependents = viewModel.dependents(for: nodeID)
+                            DisclosureGroup {
+                                if dependents.isEmpty {
+                                    Text(.app("View.ClassDiagramSidebar.NoDependents"))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(dependents, id: \.id) { dependent in
+                                        dependentRow(dependent)
+                                    }
+                                }
+                            } label: {
+                                Text(.app("View.ClassDiagramSidebar.DependentsCount \(dependents.count)"))
+                            }
+                            .accessibilityIdentifier("diagram.inspector.dependents")
+
                             VStack(alignment: .center) {
                                 revealInFinderButton(node: node)
                             }
