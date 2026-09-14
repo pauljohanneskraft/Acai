@@ -250,6 +250,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         let current = await Task.detached(priority: .utility) {
             CodebaseFreshnessChecker(directoryPath: directoryPath).currentFingerprint()
         }.value
+        // The caller (a screen the user has already navigated away from) cancelled this: never
+        // publish a result nobody's there to see, so a background disk walk can't jog other screens.
+        guard !Task.isCancelled else { return }
         // A reindex during the computation supersedes this result.
         guard freshnessToken(for: codebaseID) == token else { return }
         freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale)

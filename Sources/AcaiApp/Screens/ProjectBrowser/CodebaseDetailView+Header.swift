@@ -31,12 +31,15 @@ extension CodebaseDetailView {
         .task(id: FreshnessCheckToken(codebaseID: codebaseID, lastIndexed: codebase.lastIndexed)) {
             await model.ensureFreshnessLoaded(codebaseID: codebaseID)
         }
+        .task(id: freshnessRecheckTrigger) {
+            await model.refreshFreshness(codebaseID: codebaseID)
+        }
         .onAppear {
-            Task { await model.refreshFreshness(codebaseID: codebaseID) }
+            freshnessRecheckTrigger += 1
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
-            Task { await model.refreshFreshness(codebaseID: codebaseID) }
+            freshnessRecheckTrigger += 1
         }
     }
 

@@ -16,6 +16,11 @@ struct CodebaseDetailView: View {
     @State var pullPhase: AsyncOperationPhase = .idle
     @State var refSwitchPhase: AsyncOperationPhase = .idle
     @State var availableRefs: [GitHubRef] = []
+    /// Bumped to force a fresh staleness recheck (on appear, or the scene becoming active again);
+    /// tying it to a `.task(id:)` (rather than a plain `Task { }` in `.onAppear`) means SwiftUI
+    /// cancels the previous check the moment this view disappears, instead of letting it finish in
+    /// the background and mutate shared state for a screen the user has already navigated away from.
+    @State var freshnessRecheckTrigger = 0
     /// Not `private`: the diagram-buttons and diagram-sheets extensions (separate files, kept there
     /// only to stay under this file's own line-count limit) need to write it too.
     @State var sequenceConfigContext: ConfigContext?
