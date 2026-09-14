@@ -22,6 +22,8 @@ struct ClassDiagramView: View {
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
     @State private var hasCenteredAfterMeasurement = false
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State private var isSearchBarVisible = false
+    @FocusState private var isSearchFieldFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -82,6 +84,14 @@ struct ClassDiagramView: View {
                     .keyboardShortcut("0", modifiers: .command)
                     .accessibilityIdentifier("diagram.fitToViewButton")
                     Button {
+                        showSearchBar()
+                    } label: {
+                        Label(.app("View.ClassDiagramView.FindInDiagram"), systemImage: "magnifyingglass")
+                    }
+                    .help(.app("View.ClassDiagramView.FindNodeByName"))
+                    .keyboardShortcut("f", modifiers: .command)
+                    .accessibilityIdentifier("diagram.search.toggleButton")
+                    Button {
                         showSidebar.toggle()
                     } label: {
                         Label(.app("View.ClassDiagramView.Sidebar"), systemImage: "sidebar.trailing")
@@ -91,8 +101,12 @@ struct ClassDiagramView: View {
                 }
             }
             .diagramCanvasLifecycle(
-                title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
+                title: diagram.name, model: viewModel, undoRedoEnabled: !isSearchFieldFocused,
+                onSave: savePositions, onCenter: centerDiagram
             )
+            .onChange(of: viewModel.currentSearchNodeID) { _, nodeID in
+                centerOnSearchMatch(nodeID)
+            }
             .userActivity(DiagramHandoffActivity.activityType) {
                 DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
             }
@@ -190,8 +204,25 @@ struct ClassDiagramView: View {
                 showSidebar = true
             })
         }
+        .overlay(alignment: .top) {
+            if isSearchBarVisible {
+                DiagramSearchBar(
+                    query: $viewModel.searchQuery,
+                    matchCount: viewModel.searchMatchIDs.count,
+                    isFocused: $isSearchFieldFocused,
+                    onStepForward: viewModel.stepSearchForward,
+                    onStepBackward: viewModel.stepSearchBackward,
+                    onDismiss: hideSearchBar
+                )
+                .padding(.top, 8)
+            }
+        }
     }
+}
 
+// MARK: - Canvas Layers
+
+extension ClassDiagramView {
     // MARK: - Edge Layer
 
     @ViewBuilder private var edgeLayer: some View {
@@ -219,6 +250,9 @@ struct ClassDiagramView: View {
 
     @ViewBuilder private var nodeLayer: some View {
         let nodes = viewModel.nodes.removingDuplicates { $0.id }
+        let isSearching = !viewModel.searchQuery.isEmpty
+        let searchMatches = Set(viewModel.searchMatchIDs)
+        let currentSearchMatch = viewModel.currentSearchNodeID
         ForEach(nodes) { node in
             if let position = viewModel.nodePositions[node.id] {
                 let hasUserSize = viewModel.userNodeSizes[node.id] != nil
@@ -226,6 +260,8 @@ struct ClassDiagramView: View {
                 let selected = viewModel.selectedNodeIDs.contains(node.id)
                 let deltaBorder = viewModel.deltaColor(for: node)
                 let deltaBadge = viewModel.deltaBadge(for: node)
+                let isDimmedBySearch = isSearching && !searchMatches.contains(node.id)
+                let isCurrentSearchMatch = isSearching && node.id == currentSearchMatch
                 Group {
                     if hasUserSize {
                         TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
@@ -234,6 +270,12 @@ struct ClassDiagramView: View {
                     } else {
                         TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
                             .measuredNode(id: node.id)
+                    }
+                }
+                .opacity(isDimmedBySearch ? 0.25 : 1)
+                .overlay {
+                    if isCurrentSearchMatch {
+                        RoundedRectangle(cornerRadius: 5).stroke(Color.yellow, lineWidth: 3)
                     }
                 }
                 .position(position)
@@ -346,6 +388,37 @@ extension ClassDiagramView {
         ).transform else { return }
         canvasScale = fit.scale
         canvasOffset = fit.offset
+        savePositions()
+    }
+}
+
+// MARK: - Search
+
+extension ClassDiagramView {
+    private func showSearchBar() {
+        // Focus is set by the search field's own onAppear, not here — the field doesn't exist in
+        // the hierarchy yet on this line, so a focus request now would just be dropped.
+        isSearchBarVisible = true
+    }
+
+    /// Clears the query too, so a later ⌘F/toolbar tap starts fresh rather than reopening on a
+    /// stale query with its dimming still applied for a frame.
+    private func hideSearchBar() {
+        viewModel.dismissSearch()
+        isSearchFieldFocused = false
+        isSearchBarVisible = false
+    }
+
+    /// Pans (without changing zoom) so `nodeID`'s current position is centered — the "jump to
+    /// match" behaviour, distinct from `centerDiagram()`'s fit-everything-to-view.
+    private func centerOnSearchMatch(_ nodeID: String?) {
+        guard let nodeID, let position = viewModel.nodePosition(nodeID) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            canvasOffset = CGPoint(
+                x: canvasViewportSize.width / 2 - position.x * canvasScale,
+                y: canvasViewportSize.height / 2 - position.y * canvasScale
+            )
+        }
         savePositions()
     }
 }
