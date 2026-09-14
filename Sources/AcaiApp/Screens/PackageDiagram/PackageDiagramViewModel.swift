@@ -78,6 +78,14 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         return Color(hex: hex)
     }
 
+    /// Non-color complement to `nodeDeltaColor(id:)`, feeding the node's badge overlay. `nil` when
+    /// unchanged or not in delta mode.
+    func nodeDeltaStatus(id: String) -> DeltaStatus? {
+        guard let diff else { return nil }
+        let status = diff.status(ofNode: id)
+        return status == .unchanged ? nil : status
+    }
+
     // MARK: - Layout
 
     var layout: PackageLayoutModel {

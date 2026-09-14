@@ -7,6 +7,7 @@ import AcaiDiagram
 public struct SequenceDiagramDiff: Sendable {
     public let union: SequenceDiagram
     private let statusByKey: [String: DeltaStatus]
+    private let participantStatusByID: [String: DeltaStatus]
 
     public init(old: SequenceDiagram, new: SequenceDiagram) {
         let oldKeys = Set(old.messages.map(\.diffKey))
@@ -19,6 +20,17 @@ public struct SequenceDiagramDiff: Sendable {
         let removed = old.messages.filter { !newKeys.contains($0.diffKey) }
         for message in removed { statusByKey[message.diffKey] = .removed }
         self.statusByKey = statusByKey
+
+        let oldParticipantIDs = Set(old.participants.map(\.id))
+        let newParticipantIDs = Set(new.participants.map(\.id))
+        var participantStatusByID: [String: DeltaStatus] = [:]
+        for id in newParticipantIDs {
+            participantStatusByID[id] = oldParticipantIDs.contains(id) ? .unchanged : .added
+        }
+        for id in oldParticipantIDs where !newParticipantIDs.contains(id) {
+            participantStatusByID[id] = .removed
+        }
+        self.participantStatusByID = participantStatusByID
 
         var participants = new.participants
         let seenParticipants = Set(new.participants.map(\.id))
@@ -39,6 +51,10 @@ public struct SequenceDiagramDiff: Sendable {
 
     public func status(of message: SequenceDiagram.Message) -> DeltaStatus {
         statusByKey[message.diffKey] ?? .unchanged
+    }
+
+    public func status(ofParticipant id: String) -> DeltaStatus {
+        participantStatusByID[id] ?? .unchanged
     }
 }
 

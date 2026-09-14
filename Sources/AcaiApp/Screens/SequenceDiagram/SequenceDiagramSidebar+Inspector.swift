@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiDiagram
+import AcaiDiff
 
 // Selection Inspector for `SequenceDiagramSidebar`, kept in its own file only to stay under
 // that file's own line-count limit — same pattern used throughout this app (e.g.
@@ -36,6 +37,9 @@ extension SequenceDiagramSidebar {
         let received = viewModel.orderedMessages.filter { $0.to == participantID && $0.from != participantID }
         return List {
             Section(name) {
+                if let status = viewModel.participantDeltaStatus(participantID) {
+                    ComparisonStatusRow(status: status)
+                }
                 if !sent.isEmpty {
                     DisclosureGroup {
                         ForEach(Array(sent.enumerated()), id: \.offset) { _, message in
@@ -93,6 +97,9 @@ extension SequenceDiagramSidebar {
                     Text(message.order, format: .number)
                 } label: {
                     Text(.app("View.SequenceDiagramSidebar.Order"))
+                }
+                if let status = viewModel.messageDeltaStatus(message) {
+                    ComparisonStatusRow(status: status)
                 }
             } header: {
                 message.label.map { Text(verbatim: $0) }

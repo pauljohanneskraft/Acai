@@ -1,4 +1,27 @@
 import SwiftUI
+import AcaiDiff
+import AcaiRender
+
+/// A selected element's comparison status (added/removed/changed), for diagram inspectors that
+/// don't have `ClassDiagramInspector.whatChangedSection`'s per-member change detail — the coarser
+/// counterpart, used by Call Graph, Package, Sequence and State diagrams.
+struct ComparisonStatusRow: View {
+    let status: DeltaStatus
+
+    var body: some View {
+        HStack(spacing: 6) {
+            DeltaBadgeView(status: status)
+            Text(.app("View.ComparisonStatusRow.Comparison"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(verbatim: status.rawValue.capitalized)
+                .font(.caption.weight(.semibold))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("diagram.inspector.comparisonStatus")
+    }
+}
 
 /// A label/value row used in the package and call-graph metric sidebars.
 struct MetricRow: View {

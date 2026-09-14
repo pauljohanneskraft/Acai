@@ -34,4 +34,15 @@ struct StateDiagramDiffTests {
         let diff = StateDiagramDiff(old: old, new: new)
         #expect(diff.status(of: new.transitions[0]) == .changed)
     }
+
+    @Test func detectsAddedAndRemovedStates() {
+        let old = StateDiagram(states: [State(id: "A", name: "A"), State(id: "B", name: "B")], transitions: [])
+        let new = StateDiagram(states: [State(id: "A", name: "A"), State(id: "C", name: "C")], transitions: [])
+        let diff = StateDiagramDiff(old: old, new: new)
+        #expect(diff.status(ofState: "A") == .unchanged)
+        #expect(diff.status(ofState: "C") == .added)
+        #expect(diff.status(ofState: "B") == .removed)
+        // The union keeps every state (both sides) so a removed one can still be drawn and tinted.
+        #expect(diff.union.states.map(\.id).sorted() == ["A", "B", "C"])
+    }
 }

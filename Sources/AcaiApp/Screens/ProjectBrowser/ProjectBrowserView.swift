@@ -262,28 +262,6 @@ public struct ProjectBrowserView: View {
            let artifact = model.comparisonNewArtifact(for: diagram) ?? model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
-            case .sequenceDiagram:
-                SequenceDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
-            case .stateDiagram:
-                StateDiagramView(diagram: diagram, artifact: artifact, codebase: codebase)
-                    .id(diagramID)
-                    .environmentObject(model)
-            case .packageDiagram:
-                deltaHosted(diagram: diagram) { isComparePresented in
-                    PackageDiagramView(
-                        diagram: diagram, artifact: artifact, codebase: codebase,
-                        isComparePresented: isComparePresented,
-                        comparisonArtifact: model.comparisonArtifact(for: diagram))
-                }
-            case .callGraph:
-                deltaHosted(diagram: diagram) { isComparePresented in
-                    CallGraphView(
-                        diagram: diagram, artifact: artifact, codebase: codebase,
-                        isComparePresented: isComparePresented,
-                        comparisonArtifact: model.comparisonArtifact(for: diagram))
-                }
             case .moduleCoupling, .hotspot, .cycleDiagram:
                 // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file, own three-way
                 // switch) purely to keep this function's body under SwiftLint's line limit.
@@ -291,12 +269,8 @@ public struct ProjectBrowserView: View {
                     .id(diagramID)
                     .environmentObject(model)
             default:
-                deltaHosted(diagram: diagram) { isComparePresented in
-                    ClassDiagramView(
-                        diagram: diagram, artifact: artifact, codebase: codebase,
-                        isComparePresented: isComparePresented,
-                        comparisonArtifact: model.comparisonArtifact(for: diagram))
-                }
+                // Split into `ProjectBrowserView+StructuralDiagrams.swift` for the same reason.
+                structuralDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
             }
         } else {
             VStack(spacing: 12) {
@@ -310,9 +284,10 @@ public struct ProjectBrowserView: View {
     }
 
     /// Wraps a drawable diagram with the delta-comparison overlay button, loading the git-revision
-    /// snapshot on demand and rebuilding the diagram once it (or a changed ref) is available.
+    /// snapshot on demand and rebuilding the diagram once it (or a changed ref) is available. Not
+    /// `private`: `ProjectBrowserView+StructuralDiagrams.swift`'s extension needs to call it too.
     @ViewBuilder
-    private func deltaHosted(
+    func deltaHosted(
         diagram: GeneratedDiagram, @ViewBuilder content: @escaping (Binding<Bool>) -> some View
     ) -> some View {
         DeltaHostedDiagramView(diagram: diagram, content: content)
