@@ -2330,7 +2330,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finding als ungeprüft markieren"
+            "value" : "Fund als ungeprüft markieren"
           }
         },
         "en" : {
@@ -2352,7 +2352,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finding als geprüft markieren"
+            "value" : "Fund als geprüft markieren"
           }
         },
         "en" : {
@@ -3980,7 +3980,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Findings"
+            "value" : "Funde"
           }
         },
         "en" : {
@@ -9068,7 +9068,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neue Findings (%lld)"
+            "value" : "Neue Funde (%lld)"
           }
         },
         "en" : {
@@ -9112,7 +9112,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Behobene Findings (%lld)"
+            "value" : "Behobene Funde (%lld)"
           }
         },
         "en" : {
@@ -10119,13 +10119,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Codebase ist nicht indiziert — neu indizieren, um ihre Findings einzubeziehen."
+                  "value" : "%lld Codebase ist nicht indiziert — neu indizieren, um ihre Funde einzubeziehen."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Codebases sind nicht indiziert — neu indizieren, um ihre Findings einzubeziehen."
+                  "value" : "%lld Codebases sind nicht indiziert — neu indizieren, um ihre Funde einzubeziehen."
                 }
               }
             }
@@ -10196,7 +10196,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Findings"
+            "value" : "Funde"
           }
         },
         "en" : {
@@ -10218,7 +10218,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Codebase in diesem Projekt wurde indiziert. Indiziere eine Codebase neu, um hier ihre Findings zu sehen."
+            "value" : "Noch keine Codebase in diesem Projekt wurde indiziert. Indiziere eine Codebase neu, um hier ihre Funde zu sehen."
           }
         },
         "en" : {
@@ -10240,7 +10240,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Projekt hat noch keine Codebases. Füge eine hinzu, um hier ihre Findings zu sehen."
+            "value" : "Dieses Projekt hat noch keine Codebases. Füge eine hinzu, um hier ihre Funde zu sehen."
           }
         },
         "en" : {
@@ -10262,7 +10262,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Findings — jede indizierte Codebase in diesem Projekt ist sauber."
+            "value" : "Keine Funde — jede indizierte Codebase in diesem Projekt ist sauber."
           }
         },
         "en" : {
@@ -10284,7 +10284,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Findings entsprechen den aktuellen Filtern."
+            "value" : "Keine Funde entsprechen den aktuellen Filtern."
           }
         },
         "en" : {
@@ -16137,13 +16137,13 @@
                   "one" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Finding"
+                      "value" : "%arg Fund"
                     }
                   },
                   "other" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Findings"
+                      "value" : "%arg Funde"
                     }
                   }
                 }
@@ -16497,13 +16497,13 @@
                   "one" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Finding"
+                      "value" : "%arg Fund"
                     }
                   },
                   "other" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Findings"
+                      "value" : "%arg Funde"
                     }
                   }
                 }

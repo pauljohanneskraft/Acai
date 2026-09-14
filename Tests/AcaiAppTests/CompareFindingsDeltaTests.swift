@@ -63,7 +63,7 @@ struct CompareFindingsDeltaTests {
     @Test func genuinelyResolvedFindingIsSurfaced() {
         let old = [
             finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10),
-            finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3),
+            finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3)
         ]
         let new = [finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10)]
 
