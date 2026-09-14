@@ -8,29 +8,21 @@ extension PythonExtractor {
     mutating func extractClass(_ node: Node, decorators: [String]) -> TypeDeclaration {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
         // Namespaced so a nested `Inner` doesn't collide with a top-level `Inner`.
-        let qualified = declarations.qualifiedName(name)
+        let qualified = qualifiedName(name)
         let resolver = baseClassResolver
         let bases = resolver.bases(for: node, className: qualified)
         relationships.append(contentsOf: bases.relationships)
-        let kind = resolver.kind(forBaseNames: bases.allNames)
 
-        var generics = bases.generics
-        generics.append(contentsOf: resolver.declaredTypeParameters(node))
-
-        var decl = TypeDeclaration(
-            id: qualified, name: name, qualifiedName: qualified, kind: kind,
-            accessLevel: accessLevel(forName: name),
-            genericParameters: generics,
-            inheritedTypes: bases.inherited,
-            annotations: decorators,
-            location: loc(node)
+        var decl = typeDeclarationExtractor.declaration(
+            for: node, name: name, qualifiedName: qualified, decorators: decorators, bases: bases,
+            accessLevel: accessLevel(forName: name)
         )
 
         if let body = node.child(byFieldName: "body") {
             let savedNamespace = currentNamespace
             currentNamespace = qualified
             defer { currentNamespace = savedNamespace }
-            if kind == .enum {
+            if decl.kind == .enum {
                 parseEnumBody(body, into: &decl)
             } else {
                 parseClassBody(body, into: &decl)

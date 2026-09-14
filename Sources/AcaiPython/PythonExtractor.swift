@@ -1,14 +1,15 @@
 import AcaiCore
 import AcaiTreeSitter
 
-struct PythonExtractor: DeclarationCollecting, CallSiteResolving {
+struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     let context: SourceFileContext
 
-    /// The declaration/relationship bookkeeping this extractor accumulates while walking, factored
-    /// into its own shared type (`DeclarationCollector`). `DeclarationCollecting` supplies
-    /// `TreeSitterExtracting`'s six required state properties as forwards onto this, so this
-    /// extractor doesn't restate that plumbing itself.
-    var declarations = DeclarationCollector()
+    var types: [TypeDeclaration] = []
+    var relationships: [Relationship] = []
+    var freestandingFunctions: [Member] = []
+    var globalVariables: [Member] = []
+    var currentNamespace: String?
+    var declaredTypeNames: Set<String> = []
     var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String) {
@@ -24,8 +25,8 @@ struct PythonExtractor: DeclarationCollecting, CallSiteResolving {
             name: { $0.child(byFieldName: "name").map { self.text($0) } }
         )
         walkSourceFile(root)
-        declarations.resolveRelationshipNames()
-        return declarations.buildArtifact(language: .python, fileName: context.fileName)
+        resolveRelationshipNames()
+        return buildArtifact(language: .python)
     }
 
     // MARK: - Access Level (naming convention)
