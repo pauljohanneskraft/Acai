@@ -7,6 +7,7 @@ import AcaiDiagram
 public struct StateDiagramDiff: Sendable {
     public let union: StateDiagram
     private let statusByKey: [String: DeltaStatus]
+    private let stateStatusByID: [String: DeltaStatus]
 
     public init(old: StateDiagram, new: StateDiagram) {
         let oldByKey = Dictionary(old.transitions.map { ($0.diffKey, $0) }, uniquingKeysWith: { first, _ in first })
@@ -24,6 +25,13 @@ public struct StateDiagramDiff: Sendable {
         for transition in removed { statusByKey[transition.diffKey] = .removed }
         self.statusByKey = statusByKey
 
+        let oldStateIDs = Set(old.states.map(\.id))
+        let newStateIDs = Set(new.states.map(\.id))
+        var stateStatusByID: [String: DeltaStatus] = [:]
+        for id in newStateIDs { stateStatusByID[id] = oldStateIDs.contains(id) ? .unchanged : .added }
+        for id in oldStateIDs where !newStateIDs.contains(id) { stateStatusByID[id] = .removed }
+        self.stateStatusByID = stateStatusByID
+
         var states = new.states
         let seenStates = Set(new.states.map(\.id))
         states += old.states.filter { !seenStates.contains($0.id) }
@@ -37,6 +45,10 @@ public struct StateDiagramDiff: Sendable {
 
     public func status(of transition: StateDiagram.Transition) -> DeltaStatus {
         statusByKey[transition.diffKey] ?? .unchanged
+    }
+
+    public func status(ofState id: String) -> DeltaStatus {
+        stateStatusByID[id] ?? .unchanged
     }
 }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 import UniformTypeIdentifiers
 
@@ -11,18 +12,22 @@ struct SequenceDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @StateObject private var viewModel: SequenceDiagramViewModel
+    // Not `private`: `SequenceDiagramView+Canvas.swift`'s extension (kept in its own file only to
+    // stay under this file's own type-body-length limit) needs to read/write these too.
+    @StateObject var viewModel: SequenceDiagramViewModel
 
-    @State private var canvasScale: CGFloat
-    @State private var canvasOffset: CGPoint
-    @State private var dragStartPositions: [String: CGPoint] = [:]
-    @State private var activeDragCanvasLocation: CGPoint?
-    @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
-    @State private var showSidebar = false
-    @State private var sidebarTab: SequenceDiagramSidebarTab = .settings
+    @State var canvasScale: CGFloat
+    @State var canvasOffset: CGPoint
+    @State var dragStartPositions: [String: CGPoint] = [:]
+    @State var activeDragCanvasLocation: CGPoint?
+    @State var canvasAutoPanController = EdgeAutoPanController()
+    @State var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State var showSidebar = false
+    @State var sidebarTab: SequenceDiagramSidebarTab = .settings
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -35,16 +40,22 @@ struct SequenceDiagramView: View {
         #endif
     }
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil
+    ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
+        self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         let config = diagram.sequenceConfiguration
             ?? SequenceDiagramConfiguration(entryTypeName: "", entryMethodName: "")
         self._viewModel = StateObject(wrappedValue: SequenceDiagramViewModel(
             artifact: artifact,
             configuration: config,
-            restoredPositions: diagram.nodePositions.mapValues { CGPoint(x: $0.x, y: $0.y) }
+            restoredPositions: diagram.nodePositions.mapValues { CGPoint(x: $0.x, y: $0.y) },
+            comparisonArtifact: comparisonArtifact
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -142,91 +153,6 @@ struct SequenceDiagramView: View {
         }
     }
 
-    // MARK: - Canvas
-
-    private var canvasContent: some View {
-        PannableCanvas(
-            model: viewModel,
-            scale: $canvasScale,
-            offset: $canvasOffset,
-            activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController,
-            onViewportSizeChange: { canvasViewportSize = $0 },
-            content: {
-                let layout = viewModel.layout
-                ZStack(alignment: .topLeading) {
-                    SequenceEnsembleView(layout: layout)
-                    ForEach(layout.participants) { participant in
-                        participantHeader(participant)
-                    }
-                    ForEach(layout.messages) { message in
-                        messageTapTarget(message)
-                    }
-                }
-            }
-        )
-    }
-
-    private func participantHeader(_ participant: SequenceLayoutModel.ParticipantFrame) -> some View {
-        SequenceParticipantHeader(
-            participant: participant,
-            isSelected: viewModel.selectedNodeIDs.contains(participant.id)
-        )
-        .frame(width: participant.headerRect.width, height: participant.headerRect.height)
-        .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
-        .onTapGesture(count: 2) {
-            viewModel.selectNode(participant.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
-        }
-        .diagramNodeInteraction(
-            id: participant.id,
-            model: viewModel,
-            dragStartPositions: $dragStartPositions,
-            activeDragCanvasLocation: $activeDragCanvasLocation,
-            onCommit: savePositions
-        )
-    }
-
-    /// An invisible tap strip over a message arrow, selecting it for the Inspector tab — mirrors
-    /// `FreeformDiagramView+Canvas.swift`'s `messageTapTarget`, but sized to a full 44pt tall hit area
-    /// (Freeform's 30pt strip is a tap-target shortfall this doesn't repeat).
-    private func messageTapTarget(_ message: SequenceLayoutModel.MessageLayout) -> some View {
-        let width = max(abs(message.toX - message.fromX), 44)
-        let midX = (message.fromX + message.toX) / 2
-        let isSelected = viewModel.selectedMessageID == message.id
-        return RoundedRectangle(cornerRadius: 4)
-            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-            #if os(macOS)
-            .cursorOnHover(.pointingHand)
-            #endif
-            .frame(width: width + 16, height: 44)
-            .position(x: midX, y: message.y)
-            .accessibilityElement()
-            .accessibilityLabel(messageAccessibilityLabel(message))
-            .accessibilityAddTraits(.isButton)
-            .onTapGesture(count: 2) {
-                viewModel.clearSelection()
-                viewModel.selectedMessageID = message.id
-                sidebarTab = .inspector
-                showSidebar = true
-            }
-            .onTapGesture(count: 1) {
-                let newSelection = (viewModel.selectedMessageID == message.id) ? nil : message.id
-                viewModel.clearSelection()
-                viewModel.selectedMessageID = newSelection
-            }
-    }
-
-    private func messageAccessibilityLabel(_ message: SequenceLayoutModel.MessageLayout) -> String {
-        "Message" + (message.label.map { ": \($0)" } ?? "")
-    }
-
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -281,7 +207,7 @@ struct SequenceDiagramView: View {
 
     // MARK: - Persistence & layout
 
-    private func savePositions() {
+    func savePositions() {
         model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,

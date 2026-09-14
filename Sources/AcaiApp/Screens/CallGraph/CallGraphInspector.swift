@@ -1,10 +1,13 @@
 import SwiftUI
 import AcaiDiagram
+import AcaiDiff
 
 struct CallGraphInspector: View {
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
     let onSelect: (String) -> Void
+    /// `nil` for every id when the diagram isn't in delta mode.
+    let deltaStatus: (String) -> DeltaStatus?
 
     private var callCounts: (out: [String: Int], in: [String: Int]) {
         var outgoing: [String: Int] = [:]
@@ -40,6 +43,9 @@ struct CallGraphInspector: View {
         } else if let node = graph.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
             VStack(alignment: .leading, spacing: 12) {
                 methodCard(node, out: counts.out[node.id] ?? 0, incoming: counts.in[node.id] ?? 0, highlighted: true)
+                if let status = deltaStatus(node.id) {
+                    ComparisonStatusRow(status: status)
+                }
                 relatedMethodsSection(for: node)
                 legend
             }

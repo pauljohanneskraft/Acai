@@ -18,6 +18,10 @@ final class CodebaseDetailScreen {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
     }
 
+    /// Opens `QueryView`. Shown only once the codebase has an artifact — same gating as
+    /// `diagramButton`, so it only appears after a successful reindex.
+    var queryButton: XCUIElement { app.buttons["codebaseDetail.queryButton"] }
+
     /// Shown instead of `reindexButton` for a GitHub-backed codebase.
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }
