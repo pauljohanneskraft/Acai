@@ -250,6 +250,10 @@ public struct ProjectBrowserView: View {
             FindingsView(projectID: projectID)
                 .id(projectID)
                 .environmentObject(model)
+        case .query(let codebaseID):
+            QueryView(codebaseID: codebaseID)
+                .id(codebaseID)
+                .environmentObject(model)
         case .none:
             emptyState
                 .navigationTitle("")

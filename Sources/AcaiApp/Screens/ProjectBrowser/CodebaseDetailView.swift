@@ -193,6 +193,9 @@ struct CodebaseDetailView: View {
             if horizontalSizeClass == .compact {
                 Spacer()
             }
+            if artifact != nil {
+                queryButton(codebase: codebase)
+            }
             if let source = codebase.githubSource {
                 githubActions(codebase: codebase, source: source)
             } else {
@@ -210,6 +213,16 @@ struct CodebaseDetailView: View {
                 AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
             }
         }
+    }
+
+    /// Opens `QueryView`, scoped to this codebase.
+    private func queryButton(codebase: Codebase) -> some View {
+        Button {
+            model.selection = .query(codebase.id)
+        } label: {
+            Label(.app("View.CodebaseDetailView.Query"), systemImage: "magnifyingglass")
+        }
+        .accessibilityIdentifier("codebaseDetail.queryButton")
     }
 
     @ViewBuilder
