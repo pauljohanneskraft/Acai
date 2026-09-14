@@ -19,4 +19,9 @@ struct CompareFindingsDelta {
         let oldKeys = Set(oldFindings.map(key))
         return newFindings.filter { !oldKeys.contains(key($0)) }
     }
+
+    var resolved: [Finding] {
+        let newKeys = Set(newFindings.map(key))
+        return oldFindings.filter { !newKeys.contains(key($0)) }
+    }
 }

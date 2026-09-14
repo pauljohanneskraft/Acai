@@ -59,4 +59,34 @@ struct CompareFindingsDeltaTests {
 
         #expect(delta.added.isEmpty)
     }
+
+    @Test func genuinelyResolvedFindingIsSurfaced() {
+        let old = [
+            finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10),
+            finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3),
+        ]
+        let new = [finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.resolved.map(\.title) == ["God class"])
+    }
+
+    @Test func sameFindingShiftedToADifferentLineIsNotReportedAsResolved() {
+        let old = [finding(id: "long-function-Foo", title: "Long function", filePath: "Foo.swift", line: 10)]
+        let new = [finding(id: "long-function-Foo", title: "Long function", filePath: "Foo.swift", line: 25)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.resolved.isEmpty)
+    }
+
+    @Test func newFindingIsNotReportedAsResolved() {
+        let old = [finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10)]
+        let new = old + [finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.resolved.isEmpty)
+    }
 }

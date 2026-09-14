@@ -302,6 +302,7 @@ struct CompareGitPanel: View {
                 }
                 if isFullyLoaded {
                     changedFilesSection
+                    resolvedFindingsSection
                     findingsDeltaSection
                 }
             }
@@ -427,18 +428,22 @@ struct CompareGitPanel: View {
 
     // MARK: - Findings Delta
 
-    private var newFindings: [Finding] {
+    private var findingsDelta: CompareFindingsDelta? {
         guard let codebase = model.codebase(for: diagram.codebaseID),
               let projectID = model.projectID(for: codebase.id),
               let project = model.store.projects.first(where: { $0.id == projectID }),
               let comparisonAnalysis = model.comparisonAnalysis(for: diagram)
-        else { return [] }
+        else { return nil }
         let aggregator = FindingsAggregator(project: project, model: model)
         let oldFindings = aggregator.findings(
             for: codebase, analysis: comparisonAnalysis, artifact: model.comparisonSemanticArtifact(for: diagram))
         let liveFindings = aggregator.findings(for: codebase)
-        return CompareFindingsDelta(oldFindings: oldFindings, newFindings: liveFindings).added
+        return CompareFindingsDelta(oldFindings: oldFindings, newFindings: liveFindings)
     }
+
+    private var newFindings: [Finding] { findingsDelta?.added ?? [] }
+
+    private var resolvedFindings: [Finding] { findingsDelta?.resolved ?? [] }
 
     private var findingsDeltaSection: some View {
         DisclosureGroup(.app("View.CompareGitPanel.NewFindings \(newFindings.count)")) {
@@ -449,6 +454,17 @@ struct CompareGitPanel: View {
             }
         }
         .accessibilityIdentifier("delta.findingsSection")
+    }
+
+    private var resolvedFindingsSection: some View {
+        DisclosureGroup(.app("View.CompareGitPanel.ResolvedFindings \(resolvedFindings.count)")) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(resolvedFindings) { finding in
+                    findingDeltaRow(finding)
+                }
+            }
+        }
+        .accessibilityIdentifier("delta.resolvedFindingsSection")
     }
 
     private func findingDeltaRow(_ finding: Finding) -> some View {

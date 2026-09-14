@@ -9107,6 +9107,28 @@
         }
       }
     },
+    "View.CompareGitPanel.ResolvedFindings %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behobene Findings (%lld)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolved Findings (%lld)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résultats résolus (%lld)"
+          }
+        }
+      }
+    },
     "View.CompareGitPanel.SelectChangedNodeS" : {
       "localizations" : {
         "de" : {
