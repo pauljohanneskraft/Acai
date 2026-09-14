@@ -9,8 +9,7 @@ extension PythonExtractor {
         let name = node.child(byFieldName: "name").map { text($0) } ?? "_Anonymous"
         // Namespaced so a nested `Inner` doesn't collide with a top-level `Inner`.
         let qualified = qualifiedName(name)
-        let resolver = baseClassResolver
-        let bases = resolver.bases(for: node, className: qualified)
+        let bases = baseClassResolver.bases(for: node, className: qualified)
         relationships.append(contentsOf: bases.relationships)
 
         var decl = typeDeclarationExtractor.declaration(
@@ -33,7 +32,7 @@ extension PythonExtractor {
         }
 
         let hasAbstractMember = decl.members.contains { $0.modifiers.contains(.abstract) }
-        if hasAbstractMember || resolver.hasAbstractBase(in: bases.allNames) {
+        if hasAbstractMember || baseClassResolver.hasAbstractBase(in: bases.allNames) {
             if !decl.modifiers.contains(.abstract) { decl.modifiers.append(.abstract) }
         }
         return decl

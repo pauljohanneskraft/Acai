@@ -3,6 +3,11 @@ import AcaiTreeSitter
 
 struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     let context: SourceFileContext
+    let typeReferenceResolver: PythonTypeReferenceResolver
+    let baseClassResolver: PythonBaseClassResolver
+    let parameterExtractor: PythonParameterExtractor
+    let memberExtractor: PythonMemberExtractor
+    let typeDeclarationExtractor: PythonTypeDeclarationExtractor
 
     var types: [TypeDeclaration] = []
     var relationships: [Relationship] = []
@@ -13,7 +18,18 @@ struct PythonExtractor: TreeSitterExtracting, CallSiteResolving {
     var topLevelCallSites: [CallSite] = []
 
     init(source: String, fileName: String) {
-        self.context = SourceFileContext(source: source, fileName: fileName)
+        let context = SourceFileContext(source: source, fileName: fileName)
+        let typeReferenceResolver = PythonTypeReferenceResolver(context: context)
+        let baseClassResolver = PythonBaseClassResolver(context: context, typeReferences: typeReferenceResolver)
+
+        self.context = context
+        self.typeReferenceResolver = typeReferenceResolver
+        self.baseClassResolver = baseClassResolver
+        self.parameterExtractor = PythonParameterExtractor(context: context, typeReferences: typeReferenceResolver)
+        self.memberExtractor = PythonMemberExtractor(context: context, typeReferences: typeReferenceResolver)
+        self.typeDeclarationExtractor = PythonTypeDeclarationExtractor(
+            context: context, baseClassResolver: baseClassResolver
+        )
     }
 
     // MARK: - Public Entry Point

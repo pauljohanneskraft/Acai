@@ -5,10 +5,10 @@ import AcaiTreeSitter
 
 /// Resolves a Python class's base-class list into what `extractClass` needs to build the type
 /// declaration: the positional base names (for kind/abstract detection), the non-marker bases as
-/// inheritance edges, and any `Generic[T]`/`Protocol[T]`/PEP 695 type parameters. Stateless beyond
-/// `context`, mirroring `PythonTypeReferenceResolver`.
+/// inheritance edges, and any `Generic[T]`/`Protocol[T]`/PEP 695 type parameters.
 struct PythonBaseClassResolver {
     let context: SourceFileContext
+    let typeReferences: PythonTypeReferenceResolver
 
     private static let enumBaseNames: Set<String> = [
         "Enum", "IntEnum", "IntFlag", "Flag", "StrEnum", "ReprEnum"
@@ -31,7 +31,6 @@ struct PythonBaseClassResolver {
     func bases(for classNode: Node, className: String) -> Bases {
         guard let supers = classNode.child(byFieldName: "superclasses") else { return Bases() }
         var result = Bases()
-        let typeReferences = PythonTypeReferenceResolver(context: context)
 
         for child in supers.namedChildren() {
             guard child.nodeType != "keyword_argument" else { continue }
@@ -80,8 +79,4 @@ struct PythonBaseClassResolver {
             return name.isEmpty ? nil : GenericParameter(name: name)
         }
     }
-}
-
-extension PythonExtractor {
-    var baseClassResolver: PythonBaseClassResolver { PythonBaseClassResolver(context: context) }
 }

@@ -6,9 +6,10 @@ import AcaiTreeSitter
 /// Shapes a `Member` value from an already-parsed method/field node plus its already-resolved pieces
 /// (parameters, return type, call sites, assignments, field reads) — mirrors `AcaiSwift`'s
 /// `MemberExtractor`: this never resolves a call site or reads `PythonExtractor`'s declaration state
-/// itself, it only builds the value from what the caller already computed. Stateless beyond `context`.
+/// itself, it only builds the value from what the caller already computed.
 struct PythonMemberExtractor {
     let context: SourceFileContext
+    let typeReferences: PythonTypeReferenceResolver
 
     /// Short-circuit `and`/`or` are excluded so the metric stays consistent across languages
     /// (several grammars model them as generic binary nodes rather than decision points).
@@ -95,12 +96,11 @@ struct PythonMemberExtractor {
     /// Built only from methods with an explicit `-> Type` (Python has no return-type inference to
     /// fall back to); ambiguous overloaded names are dropped rather than guessed.
     func methodReturnTypeMap(fromMethodNodes methodNodes: [(node: Node, decorators: [String])]) -> [String: String] {
-        let resolver = PythonTypeReferenceResolver(context: context)
         var typesByName: [String: Set<String>] = [:]
         for method in methodNodes {
             guard let nameNode = method.node.child(byFieldName: "name"),
                   let returnTypeNode = method.node.child(byFieldName: "return_type"),
-                  let returnType = resolver.resolve(fromTypeField: returnTypeNode)
+                  let returnType = typeReferences.resolve(fromTypeField: returnTypeNode)
             else { continue }
             typesByName[nameNode.text(in: context), default: []].insert(returnType.name)
         }
@@ -123,7 +123,6 @@ struct PythonMemberExtractor {
         declaredTypeNames: Set<String>,
         accessLevel: (String) -> AccessLevel
     ) -> [Member] {
-        let resolver = PythonTypeReferenceResolver(context: context)
         var seen = existing
         var fields: [Member] = []
         for method in methods {
@@ -138,7 +137,7 @@ struct PythonMemberExtractor {
                 let name = attr.text(in: context)
                 guard !seen.contains(name) else { continue }
                 seen.insert(name)
-                let type = assign.child(byFieldName: "type").flatMap { resolver.resolve(fromTypeField: $0) }
+                let type = assign.child(byFieldName: "type").flatMap { typeReferences.resolve(fromTypeField: $0) }
                     ?? constructedType(
                         fromAssignmentRight: assign.child(byFieldName: "right"), declaredTypeNames: declaredTypeNames
                     )
@@ -169,8 +168,4 @@ struct PythonMemberExtractor {
             collectAssignmentNodes(child, into: &result)
         }
     }
-}
-
-extension PythonExtractor {
-    var memberExtractor: PythonMemberExtractor { PythonMemberExtractor(context: context) }
 }

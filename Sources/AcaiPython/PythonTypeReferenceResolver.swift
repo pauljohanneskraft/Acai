@@ -127,9 +127,3 @@ struct PythonTypeReferenceResolver {
         return head
     }
 }
-
-extension PythonExtractor {
-    var typeReferenceResolver: PythonTypeReferenceResolver {
-        PythonTypeReferenceResolver(context: context)
-    }
-}
