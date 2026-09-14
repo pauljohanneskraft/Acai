@@ -284,8 +284,8 @@ public struct ProjectBrowserView: View {
     }
 
     /// Wraps a drawable diagram with the delta-comparison overlay button, loading the git-revision
-    /// snapshot on demand and rebuilding the diagram once it (or a changed ref) is available.
-    // Not `private`: `ProjectBrowserView+StructuralDiagrams.swift`'s extension needs to call it too.
+    /// snapshot on demand and rebuilding the diagram once it (or a changed ref) is available. Not
+    /// `private`: `ProjectBrowserView+StructuralDiagrams.swift`'s extension needs to call it too.
     @ViewBuilder
     func deltaHosted(
         diagram: GeneratedDiagram, @ViewBuilder content: @escaping (Binding<Bool>) -> some View
