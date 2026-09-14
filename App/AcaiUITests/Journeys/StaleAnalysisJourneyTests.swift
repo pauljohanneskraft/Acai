@@ -1,11 +1,5 @@
 import XCTest
 
-/// #178: the app must never claim freshness (or staleness) it can't substantiate, and must never
-/// silently keep showing stale results. The core detection — comparing the fingerprint captured at
-/// index time against the code's current state, and flipping to stale after an on-disk edit — is
-/// covered directly at the `ProjectBrowserViewModel` layer (`CodebaseFreshnessViewModelTests`), the
-/// same split `CompareGitRevisionTests` already uses for its own git-comparison logic. This journey
-/// only verifies the banner renders (or doesn't) correctly once that state exists.
 @MainActor
 final class StaleAnalysisJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"

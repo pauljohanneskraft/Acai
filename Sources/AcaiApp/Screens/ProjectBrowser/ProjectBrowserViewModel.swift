@@ -189,12 +189,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         analyses.removeValue(forKey: codebaseID)
     }
 
-    // MARK: - Codebase freshness (issue #178: say when an analysis no longer matches the code)
+    // MARK: - Codebase freshness
 
-    /// Whether the code has moved on since a codebase was last indexed. `nil` means unknown — either
-    /// not checked yet, or the codebase has no `indexedFingerprint` to compare against (indexed
-    /// before this field existed) — the app never claims freshness, or staleness, it can't
-    /// substantiate.
+    /// `nil` from `freshness(for:)` means not yet checked, or no fingerprint to compare against.
     enum CodebaseFreshness: Equatable {
         case fresh
         case stale
@@ -210,8 +207,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         case ready(FreshnessToken, CodebaseFreshness)
     }
 
-    /// Cached per-codebase freshness, populated asynchronously by `ensureFreshnessLoaded`; read
-    /// through `freshness(for:)`. In-memory only — recomputed on demand rather than persisted.
+    /// In-memory only — recomputed on demand rather than persisted.
     @Published private var freshnessStates: [UUID: FreshnessState] = [:]
 
     private func freshnessToken(for codebaseID: UUID) -> FreshnessToken {
@@ -224,27 +220,20 @@ final class ProjectBrowserViewModel: ObservableObject {
         return nil
     }
 
-    /// Computes and caches whether a codebase's analysis is stale, on a background thread. A no-op
-    /// when a matching (same token) result is already cached or in flight, or when the codebase has
-    /// no stored fingerprint to compare against. The right call for "I just navigated here" — nothing
-    /// about the stored baseline can have changed since the last check for the same token, only a
-    /// reindex (which the token already sees) would move it.
+    /// No-op when a matching (same token) result is already cached or in flight.
     func ensureFreshnessLoaded(codebaseID: UUID) async {
         let token = freshnessToken(for: codebaseID)
         switch freshnessStates[codebaseID] {
         case .ready(let cached, _) where cached == token:
-            return  // already current for this token
+            return
         case .computing(let cached) where cached == token:
-            return  // already in flight for this token
+            return
         default:
             break
         }
         await refreshFreshness(codebaseID: codebaseID)
     }
 
-    /// Always recomputes, ignoring any cached result. The right call when the *trigger* itself is the
-    /// signal to re-check — e.g. the app regaining focus, since the code on disk can have changed
-    /// externally without anything the stored baseline token would see.
     func refreshFreshness(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID), let indexedFingerprint = codebase.indexedFingerprint else {
             freshnessStates.removeValue(forKey: codebaseID)
@@ -256,8 +245,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         let current = await Task.detached(priority: .utility) {
             CodebaseFreshnessChecker(directoryPath: directoryPath).currentFingerprint()
         }.value
-        // A reindex during the computation supersedes this result; the view's `.task` will have
-        // re-fired for the new token.
+        // A reindex during the computation supersedes this result.
         guard freshnessToken(for: codebaseID) == token else { return }
         freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale)
     }

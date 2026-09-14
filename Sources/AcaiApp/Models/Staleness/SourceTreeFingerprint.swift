@@ -1,8 +1,6 @@
 import Foundation
 
-/// A cheap change-signature for a directory: newest modification time, file count, and an
-/// order-independent digest folding each file's `(relativePath, mtime, size)`, skipping build/VCS
-/// output. The digest catches a rename/content-swap that alone would preserve mtime and count.
+/// The digest catches a rename/content-swap that alone would preserve mtime and count.
 struct SourceTreeFingerprint {
     let directory: URL
 

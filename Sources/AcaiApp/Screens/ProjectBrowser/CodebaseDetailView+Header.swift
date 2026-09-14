@@ -31,10 +31,6 @@ extension CodebaseDetailView {
         .task(id: FreshnessCheckToken(codebaseID: codebaseID, lastIndexed: codebase.lastIndexed)) {
             await model.ensureFreshnessLoaded(codebaseID: codebaseID)
         }
-        // The code can change on disk without anything in-app noticing — most commonly, the user
-        // switches away (to an external editor, or another codebase and back) and back. Re-check
-        // whenever this becomes visible again, or the app regains focus — not just when a reindex
-        // moves the stored baseline.
         .onAppear {
             Task { await model.refreshFreshness(codebaseID: codebaseID) }
         }
