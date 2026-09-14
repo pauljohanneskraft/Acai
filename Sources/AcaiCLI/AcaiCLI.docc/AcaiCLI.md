@@ -127,6 +127,8 @@ Shared by `diagram` (and partly `image`). Only flags you actually pass are appli
 | `--show-external-types` | include referenced-but-undefined types as placeholders |
 | `--no-infer-composition` | don't derive composition/aggregation from property types |
 | `--no-infer-dependency` | don't derive dependency from parameter/return types |
+| `--color-by <metric>` | colour nodes by a per-type metric's value, gradient endpoints from its `budgets` entry's `min`/`max` |
+| `--rules <yaml>` | rules file supplying `--color-by`'s budget thresholds |
 
 ### Focus
 
@@ -197,7 +199,7 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--format` | `dot` (default), `mermaid` |
 | `--theme` | `default`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
-| *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency` |
+| *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
 | `--sequence-from <entry>` | Sequence diagram from `"Type.method"`, or `"function"` for a top-level function. |
 | `--map <A=B>` | Resolve a protocol/interface to a concrete type while tracing. Repeatable. |
