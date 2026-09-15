@@ -56,9 +56,9 @@ extension KotlinExtractor {
         }
 
         for supertype in supertypes {
-            relationships.append(Relationship(
-                kind: supertype.isClassInheritance ? .inheritance : .conformance,
-                source: qualifiedTypeName, target: supertype.typeRef.name))
+            relationships.append(supertype.typeRef.relationship(
+                kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
+            ))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractBody(body, into: &typeDecl)
@@ -84,9 +84,7 @@ extension KotlinExtractor {
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
         )
         for supertype in supertypes {
-            relationships.append(
-                Relationship(kind: .conformance, source: qualifiedTypeName, target: supertype.typeRef.name)
-            )
+            relationships.append(supertype.typeRef.relationship(kind: .conformance, source: qualifiedTypeName))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractBody(body, into: &typeDecl)
@@ -110,9 +108,9 @@ extension KotlinExtractor {
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
         )
         for supertype in supertypes {
-            relationships.append(Relationship(
-                kind: supertype.isClassInheritance ? .inheritance : .conformance,
-                source: qualifiedTypeName, target: supertype.typeRef.name))
+            relationships.append(supertype.typeRef.relationship(
+                kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
+            ))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractBody(body, into: &typeDecl)
@@ -134,9 +132,9 @@ extension KotlinExtractor {
             namespace: currentNamespace, location: loc(node)
         )
         for supertype in supertypes {
-            relationships.append(Relationship(
-                kind: supertype.isClassInheritance ? .inheritance : .conformance,
-                source: qualifiedTypeName, target: supertype.typeRef.name))
+            relationships.append(supertype.typeRef.relationship(
+                kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
+            ))
         }
         if let body = node.firstChild(withType: "class_body") {
             extractBody(body, into: &typeDecl)
@@ -164,9 +162,9 @@ extension KotlinExtractor {
             annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
         )
         for supertype in supertypes {
-            relationships.append(Relationship(
-                kind: supertype.isClassInheritance ? .inheritance : .conformance,
-                source: qualifiedTypeName, target: supertype.typeRef.name))
+            relationships.append(supertype.typeRef.relationship(
+                kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
+            ))
         }
         if let body = node.firstChild(withType: "enum_class_body") {
             for child in body.namedChildren() where child.nodeType == "enum_entry" {
