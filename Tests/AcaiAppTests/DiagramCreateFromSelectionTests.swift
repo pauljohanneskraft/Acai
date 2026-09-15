@@ -100,11 +100,11 @@ struct DiagramCreateFromSelectionTests {
             diagram.nodes = [
                 .init(id: "A", name: "A", content: .actor),
                 .init(id: "B", name: "B", content: .actor),
-                .init(id: "C", name: "C", content: .actor),
+                .init(id: "C", name: "C", content: .actor)
             ]
             diagram.edges = [
                 .init(id: "e1", sourceNodeID: "A", targetNodeID: "B", kind: .association),
-                .init(id: "e2", sourceNodeID: "B", targetNodeID: "C", kind: .association),
+                .init(id: "e2", sourceNodeID: "B", targetNodeID: "C", kind: .association)
             ]
             diagram.checkpoints = [.init(name: "Snap", nodes: diagram.nodes, edges: diagram.edges)]
             model.freeforms.update(diagramID: originalID, diagram: diagram)
