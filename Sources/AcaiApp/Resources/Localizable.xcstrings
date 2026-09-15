@@ -3777,6 +3777,28 @@
         }
       }
     },
+    "View.ProjectBrowserView.Duplicate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliquer"
+          }
+        }
+      }
+    },
     "View.ProjectBrowserView.Name" : {
       "localizations" : {
         "de" : {
@@ -3971,6 +3993,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Supprimer le projet…"
+          }
+        }
+      }
+    },
+    "View.ProjectDetailView.DuplicateMenu" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliquer"
           }
         }
       }
