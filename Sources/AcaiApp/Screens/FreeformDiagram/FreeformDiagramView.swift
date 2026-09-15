@@ -21,9 +21,9 @@ struct FreeformDiagramView: View {
     @State var cursorLocation: CGPoint = .zero
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var showCheckpoints = false
+    // Not `private`: `FreeformDiagramView+Sidebar.swift` reads this to build the inspector tab.
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
     /// shortcuts yield to the field's native text undo.
-    // Not `private`: `FreeformDiagramView+Sidebar.swift` reads this to build the inspector tab.
     @State var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
