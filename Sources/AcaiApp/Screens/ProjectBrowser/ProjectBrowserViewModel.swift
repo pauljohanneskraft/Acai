@@ -194,6 +194,70 @@ final class ProjectBrowserViewModel: ObservableObject {
         analyses.removeValue(forKey: codebaseID)
     }
 
+    // MARK: - Codebase freshness
+
+    /// `nil` from `freshness(for:)` means not yet checked, or no fingerprint to compare against.
+    enum CodebaseFreshness: Equatable {
+        case fresh
+        case stale
+    }
+
+    private struct FreshnessToken: Equatable {
+        let lastIndexed: Date?
+        let indexedFingerprint: CodeStateFingerprint?
+    }
+
+    private enum FreshnessState {
+        case computing(FreshnessToken)
+        case ready(FreshnessToken, CodebaseFreshness)
+    }
+
+    /// In-memory only — recomputed on demand rather than persisted.
+    @Published private var freshnessStates: [UUID: FreshnessState] = [:]
+
+    private func freshnessToken(for codebaseID: UUID) -> FreshnessToken {
+        let codebase = codebase(for: codebaseID)
+        return FreshnessToken(lastIndexed: codebase?.lastIndexed, indexedFingerprint: codebase?.indexedFingerprint)
+    }
+
+    func freshness(for codebaseID: UUID) -> CodebaseFreshness? {
+        if case .ready(_, let freshness) = freshnessStates[codebaseID] { return freshness }
+        return nil
+    }
+
+    /// No-op when a matching (same token) result is already cached or in flight.
+    func ensureFreshnessLoaded(codebaseID: UUID) async {
+        let token = freshnessToken(for: codebaseID)
+        switch freshnessStates[codebaseID] {
+        case .ready(let cached, _) where cached == token:
+            return
+        case .computing(let cached) where cached == token:
+            return
+        default:
+            break
+        }
+        await refreshFreshness(codebaseID: codebaseID)
+    }
+
+    func refreshFreshness(codebaseID: UUID) async {
+        guard let codebase = codebase(for: codebaseID), let indexedFingerprint = codebase.indexedFingerprint else {
+            freshnessStates.removeValue(forKey: codebaseID)
+            return
+        }
+        let token = freshnessToken(for: codebaseID)
+        freshnessStates[codebaseID] = .computing(token)
+        let directoryPath = codebase.directoryPath
+        let current = await Task.detached(priority: .utility) {
+            CodebaseFreshnessChecker(directoryPath: directoryPath).currentFingerprint()
+        }.value
+        // The caller (a screen the user has already navigated away from) cancelled this: never
+        // publish a result nobody's there to see, so a background disk walk can't jog other screens.
+        guard !Task.isCancelled else { return }
+        // A reindex during the computation supersedes this result.
+        guard freshnessToken(for: codebaseID) == token else { return }
+        freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale)
+    }
+
     // MARK: - Freeform Diagram CRUD
 
     var freeforms: FreeformDiagramEditor {

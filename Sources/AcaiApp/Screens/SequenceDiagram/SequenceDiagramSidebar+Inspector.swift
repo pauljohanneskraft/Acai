@@ -124,7 +124,7 @@ extension SequenceDiagramSidebar {
             rowLabel: \.name,
             rowDetail: nil,
             onSelect: { viewModel.selectNode($0, extending: false) },
-            bulkAction: nil
+            bulkActions: []
         )
     }
 }

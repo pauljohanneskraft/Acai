@@ -1,4 +1,5 @@
 import Foundation
+import AcaiCore
 import AcaiGit
 
 // `codebase(for:)`/`projectID(for:)`/`mutateCodebase`/`persistProject` (defined in the main file)
@@ -185,39 +186,29 @@ extension ProjectCodebaseEditor {
             ) {
                 let detached = Task.detached(priority: .userInitiated) {
                     var refreshed: ScopedResourceAccess.Refreshed?
-                    let artifact = try ScopedResourceAccess(path: path, bookmark: bookmark).withResolvedURL(
+                    let access = ScopedResourceAccess(path: path, bookmark: bookmark)
+                    let (artifact, fingerprint) = try access.withResolvedURL(
                         onRefresh: { refreshed = $0 },
-                        { url in try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter) }
+                        { url in
+                            let artifact = try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter)
+                            let fingerprint = CodebaseFreshnessChecker(directoryPath: url.path).currentFingerprint()
+                            return (artifact, fingerprint)
+                        }
                     )
-                    return (artifact, refreshed)
+                    return (artifact, fingerprint, refreshed)
                 }
-                let (artifact, refreshed) = try await withTaskCancellationHandler {
+                let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
                     try await detached.value
                 } onCancel: {
                     detached.cancel()
                 }
                 try await store.saveArtifactAndWait(artifact, for: codebaseID)
-                return (artifact, refreshed)
+                return (artifact, fingerprint, refreshed)
             }
             // Cancelled before finishing: don't apply a result we discarded.
-            guard let (newArtifact, refreshed) = reindexResult else { return }
-            // Re-resolve indices after the suspension — the user may have mutated the project/codebase
-            // list during the (potentially long) analysis, invalidating any pre-`await` indices.
-            guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
-                  let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
-            else { return }
-            store.projects[pIndex].codebases[cIndex].hasArtifact = true
-            store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
-            store.projects[pIndex].codebases[cIndex].hasParseErrors = newArtifact.metadata.hasParseErrors
-            store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = newArtifact.metadata.parseDiagnostics.count
-            // A bookmark follows a folder that was moved or renamed, so the stored path has to
-            // move with it — it's what the UI shows and what the file watcher opens.
-            if let refreshed {
-                store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshed.bookmark
-                store.projects[pIndex].codebases[cIndex].directoryPath = refreshed.url.path
-            }
-            persistProject(store.projects[pIndex].id)
-            triggerSpotlightReindex()
+            guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
+            applyReindexResult(
+                codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed)
         } catch {
             // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
             // folder of the user's choosing — only a codebase they picked themselves.
@@ -226,5 +217,30 @@ extension ProjectCodebaseEditor {
                 .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
                 relocating: relocatable ? codebaseID : nil)
         }
+    }
+
+    /// Re-resolves indices after the suspension above — the user may have mutated the
+    /// project/codebase list during the (potentially long) analysis, invalidating any pre-`await`
+    /// indices — then applies the freshly parsed result to the stored codebase.
+    private func applyReindexResult(
+        codebaseID: UUID, artifact: CodeArtifact, fingerprint: CodeStateFingerprint?,
+        refreshed: ScopedResourceAccess.Refreshed?
+    ) {
+        guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
+              let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
+        else { return }
+        store.projects[pIndex].codebases[cIndex].hasArtifact = true
+        store.projects[pIndex].codebases[cIndex].lastIndexed = Date()
+        store.projects[pIndex].codebases[cIndex].indexedFingerprint = fingerprint
+        store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
+        store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = artifact.metadata.parseDiagnostics.count
+        // A bookmark follows a folder that was moved or renamed, so the stored path has to
+        // move with it — it's what the UI shows and what the file watcher opens.
+        if let refreshed {
+            store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshed.bookmark
+            store.projects[pIndex].codebases[cIndex].directoryPath = refreshed.url.path
+        }
+        persistProject(store.projects[pIndex].id)
+        triggerSpotlightReindex()
     }
 }

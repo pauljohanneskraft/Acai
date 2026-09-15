@@ -2677,6 +2677,28 @@
         }
       }
     },
+    "View.FreeformDiagramInspector.CreateDiagramFromSelection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm aus Auswahl erstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Diagram From Selection"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer un diagramme à partir de la sélection"
+          }
+        }
+      }
+    },
     "View.FreeformDiagramInspector.DeleteSelected" : {
       "localizations" : {
         "de" : {
@@ -4151,6 +4173,28 @@
         }
       }
     },
+    "View.ProjectDetailView.Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
+          }
+        }
+      }
+    },
     "View.ProjectDetailView.ReindexMenu" : {
       "localizations" : {
         "de" : {
@@ -4169,6 +4213,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Réindexer"
+          }
+        }
+      }
+    },
+    "View.ProjectDetailView.RenameMenu" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer"
           }
         }
       }
@@ -5845,6 +5911,28 @@
         }
       }
     },
+    "View.ClassDiagramSidebar.CreateDiagramFromSelection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm aus Auswahl erstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Diagram From Selection"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer un diagramme à partir de la sélection"
+          }
+        }
+      }
+    },
     "View.ClassDiagramSidebar.Dependency" : {
       "localizations" : {
         "de" : {
@@ -6017,6 +6105,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masquer les types générés"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramSidebar.HideMembers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Member ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Members"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer les membres"
           }
         }
       }
@@ -6545,6 +6655,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher les types externes"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramSidebar.ShowMembers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Member anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Members"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les membres"
           }
         }
       }
@@ -7755,6 +7887,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "hub"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.AnalysisOutOfDate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Analyse ist veraltet – der Code hat sich seit dem letzten Indizieren geändert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This analysis is out of date — the code has changed since it was last indexed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette analyse est obsolète : le code a changé depuis la dernière indexation."
           }
         }
       }
@@ -9833,28 +9987,6 @@
         }
       }
     },
-    "View.DiagramFilterSection.ApplyPreset" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preset anwenden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apply Preset"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appliquer le préréglage"
-          }
-        }
-      }
-    },
     "View.DiagramFilterSection.Cancel" : {
       "localizations" : {
         "de" : {
@@ -9877,24 +10009,24 @@
         }
       }
     },
-    "View.DiagramFilterSection.Choose" : {
+    "View.DiagramFilterSection.ConfirmDeletePreset %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auswählen…"
+            "value" : "„%@“ löschen?"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose…"
+            "value" : "Delete \"%@\"?"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisir…"
+            "value" : "Supprimer \"%@\" ?"
           }
         }
       }
@@ -9917,6 +10049,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossible d'enregistrer le préréglage"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.Delete" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer"
           }
         }
       }
@@ -9983,6 +10137,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.Rename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer"
           }
         }
       }
@@ -10093,6 +10269,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher uniquement"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.ThisCannotBeUndone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This cannot be undone."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette action est irréversible."
           }
         }
       }
