@@ -14,6 +14,9 @@ struct Codebase: Identifiable, Codable, Hashable {
     var githubSource: GitHubSource?
     var hasArtifact: Bool = false
     var lastIndexed: Date?
+    /// `nil` for a codebase indexed before this field existed, or one whose fingerprint couldn't be
+    /// computed.
+    var indexedFingerprint: CodeStateFingerprint?
     var hasParseErrors: Bool = false
     var parseDiagnosticCount: Int = 0
     var qualityCheck: QualityCheckConfiguration?

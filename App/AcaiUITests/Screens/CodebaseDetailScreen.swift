@@ -13,6 +13,12 @@ final class CodebaseDetailScreen {
     var refSwitchLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refSwitch.loaded"] }
     var pullLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.pull.loaded"] }
 
+    var staleBanner: XCUIElement { app.descendants(matching: .any)["codebaseDetail.staleBanner"] }
+    var staleBannerReindexButton: XCUIElement { app.buttons["codebaseDetail.staleBanner.reindexButton"] }
+    var staleBannerReindexLoadedIndicator: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.staleBanner.reindex.loaded"]
+    }
+
     /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
     func diagramButton(type: String) -> XCUIElement {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
