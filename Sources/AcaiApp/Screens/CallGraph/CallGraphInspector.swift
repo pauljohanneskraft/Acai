@@ -73,7 +73,7 @@ struct CallGraphInspector: View {
             rowLabel: \.label,
             rowDetail: nil,
             onSelect: onSelect,
-            bulkAction: nil
+            bulkActions: []
         )
     }
 

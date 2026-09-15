@@ -296,12 +296,23 @@ struct ClassDiagramSidebar: View {
             rowLabel: \.name,
             rowDetail: { $0.kind.rawValue },
             onSelect: { viewModel.selectNode($0, extending: false) },
-            bulkAction: .init(
-                label: selectedNodesShowMembers ? "Hide Members" : "Show Members",
-                systemImage: selectedNodesShowMembers ? "eye.slash" : "eye",
-                role: nil,
-                action: toggleSelectedNodesVisibility
-            )
+            bulkActions: [
+                .init(
+                    label: selectedNodesShowMembers
+                        ? .app("View.ClassDiagramSidebar.HideMembers") : .app("View.ClassDiagramSidebar.ShowMembers"),
+                    systemImage: selectedNodesShowMembers ? "eye.slash" : "eye",
+                    role: nil,
+                    accessibilityIDSuffix: "toggleMembers",
+                    action: toggleSelectedNodesVisibility
+                ),
+                .init(
+                    label: .app("View.ClassDiagramSidebar.CreateDiagramFromSelection"),
+                    systemImage: "rectangle.on.rectangle",
+                    role: nil,
+                    accessibilityIDSuffix: "createFromSelection",
+                    action: createDiagramFromSelection
+                ),
+            ]
         )
     }
 
@@ -311,6 +322,16 @@ struct ClassDiagramSidebar: View {
     private func toggleSelectedNodesVisibility() {
         let ids = selectedNodes.map(\.id)
         editor.mutate { $0.setMemberVisibility(!$0.showsMembers(forTypeIDs: ids), forTypeIDs: ids) }
+    }
+
+    /// Materializes the current selection into a new, independent class diagram pinned to exactly
+    /// those types — a diagram like any other, so it opens immediately for further rearranging,
+    /// filtering, exporting or duplicating.
+    private func createDiagramFromSelection() {
+        let selectedIDs = viewModel.selectedNodeIDs
+        guard let newID = model.diagrams.createDiagramFromSelection(diagram.id, selectedNodeIDs: selectedIDs)
+        else { return }
+        model.selection = .generatedDiagram(newID)
     }
 
 }

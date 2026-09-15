@@ -453,6 +453,16 @@ extension FreeformDiagramInspector {
                 Text(.app("View.FreeformDiagramInspector.NodesSelected \(viewModel.selectedNodeIDs.count)"))
             }
             Section {
+                Button {
+                    viewModel.createDiagramFromSelection()
+                } label: {
+                    Label(
+                        .app("View.FreeformDiagramInspector.CreateDiagramFromSelection"),
+                        systemImage: "rectangle.on.rectangle"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .accessibilityIdentifier("diagram.freeform.createFromSelectionButton")
                 Button(role: .destructive) {
                     viewModel.deleteSelection()
                 } label: {

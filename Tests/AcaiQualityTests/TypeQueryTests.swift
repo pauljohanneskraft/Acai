@@ -41,6 +41,19 @@ struct TypeQueryTests {
         #expect(rows[0].members.first?.location?.filePath == "M.swift")
     }
 
+    @Test func explicitIDsSelectorKeepsOnlyThosePinnedTypesRegardlessOfOtherFacets() {
+        let service = type("Service", kind: .class)
+        let helper = type("Helper", kind: .class)
+        let proto = type("Runnable", kind: .protocol)
+        let rows = TypeQuery(
+            artifact: artifact([service, helper, proto]),
+            selector: Selector(kind: .class, explicitIDs: ["Service", "Runnable"])).rows
+
+        // "Runnable" passes explicitIDs but fails the `kind: .class` facet — every facet stays
+        // AND-combined, explicitIDs doesn't bypass the others.
+        #expect(rows.map(\.qualifiedName) == ["Service"])
+    }
+
     @Test func activeMemberFilterDropsTypesWithNoMatch() {
         let wide = type("Wide", members: [method("f", params: 4)])
         let narrow = type("Narrow", members: [method("g", params: 1)])

@@ -66,7 +66,7 @@ struct PackageDiagramInspector: View {
             rowLabel: \.name,
             rowDetail: { "\($0.typeCount) types" },
             onSelect: onSelect,
-            bulkAction: nil
+            bulkActions: []
         )
     }
 
