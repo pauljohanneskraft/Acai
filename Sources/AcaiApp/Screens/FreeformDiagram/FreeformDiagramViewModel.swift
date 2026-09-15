@@ -135,6 +135,16 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         save()
     }
 
+    /// Materializes the current selection into a new, independent freeform diagram containing
+    /// exactly those nodes (and the edges between them), then navigates there — a diagram like
+    /// any other, so it opens immediately for further editing, exporting or duplicating.
+    func createDiagramFromSelection() {
+        guard let diagramID, let browserModel else { return }
+        guard let newID = browserModel.freeforms.createDiagramFromSelection(diagramID, selectedNodeIDs: selectedNodeIDs)
+        else { return }
+        browserModel.selection = .freeformDiagram(newID)
+    }
+
     func moveNode(_ nodeID: String, to position: CGPoint) {
         if let idx = nodes.firstIndex(where: { $0.id == nodeID }) {
             nodes[idx].positionX = Double(position.x)

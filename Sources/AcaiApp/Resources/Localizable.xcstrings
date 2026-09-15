@@ -2677,6 +2677,28 @@
         }
       }
     },
+    "View.FreeformDiagramInspector.CreateDiagramFromSelection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm aus Auswahl erstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Diagram From Selection"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer un diagramme à partir de la sélection"
+          }
+        }
+      }
+    },
     "View.FreeformDiagramInspector.DeleteSelected" : {
       "localizations" : {
         "de" : {
@@ -5889,6 +5911,28 @@
         }
       }
     },
+    "View.ClassDiagramSidebar.CreateDiagramFromSelection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm aus Auswahl erstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Diagram From Selection"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer un diagramme à partir de la sélection"
+          }
+        }
+      }
+    },
     "View.ClassDiagramSidebar.Dependency" : {
       "localizations" : {
         "de" : {
@@ -6061,6 +6105,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masquer les types générés"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramSidebar.HideMembers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Member ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Members"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer les membres"
           }
         }
       }
@@ -6589,6 +6655,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher les types externes"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramSidebar.ShowMembers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Member anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Members"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les membres"
           }
         }
       }
