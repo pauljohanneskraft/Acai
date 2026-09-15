@@ -9,6 +9,10 @@ struct FreeformDiagramInspector: View {
     /// Mirrors whether any text field here is focused, so the parent can suspend its ⌘Z/⇧⌘Z
     /// shortcuts and let the focused field handle native text undo.
     @Binding var isEditingText: Bool
+    /// Set by the multi-selection panel's "Delete Selected" action, mirroring the parent's own
+    /// Delete-key/context-menu path so every entry point to deleting a selection shows the same
+    /// confirmation.
+    @Binding var showDeleteConfirmation: Bool
 
     // Not `private`: `FreeformDiagramInspector+Members.swift` (a same-type extension in another
     // file) reads/resets these for the inline add-property/add-method rows.
@@ -440,26 +444,24 @@ extension FreeformDiagramInspector {
 
     // MARK: - Multi-Node Inspector
 
-    @ViewBuilder
+    private var selectedNodes: [FreeformDiagram.Node] {
+        viewModel.nodes.filter { viewModel.selectedNodeIDs.contains($0.id) }.sorted { $0.name < $1.name }
+    }
+
     private var multiNodeInspector: some View {
-        Form {
-            Section {
-                ForEach(Array(viewModel.selectedNodeIDs), id: \.self) { nodeID in
-                    if let node = viewModel.nodes.first(where: { $0.id == nodeID }) {
-                        Label(node.name, systemImage: node.content.kind.systemImage)
-                    }
-                }
-            } header: {
-                Text(.app("View.FreeformDiagramInspector.NodesSelected \(viewModel.selectedNodeIDs.count)"))
-            }
-            Section {
-                Button(role: .destructive) {
-                    viewModel.deleteSelection()
-                } label: {
-                    Label(.app("View.FreeformDiagramInspector.DeleteSelected"), systemImage: "trash")
-                        .frame(maxWidth: .infinity)
-                }
-            }
-        }
+        MultiSelectionInspector(
+            items: selectedNodes,
+            title: { Text(.app("View.FreeformDiagramInspector.NodesSelected \($0)")) },
+            rowIcon: { $0.content.kind.systemImage },
+            rowLabel: \.name,
+            rowDetail: nil,
+            onSelect: { viewModel.selectNode($0, extending: false) },
+            bulkAction: .init(
+                label: .app("View.FreeformDiagramInspector.DeleteSelected"),
+                systemImage: "trash",
+                role: .destructive,
+                action: { showDeleteConfirmation = true }
+            )
+        )
     }
 }

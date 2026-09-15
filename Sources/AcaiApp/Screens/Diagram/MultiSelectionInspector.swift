@@ -5,7 +5,7 @@ import SwiftUI
 /// optional bulk action applied to the whole selection.
 struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String {
     struct BulkAction {
-        let label: LocalizedStringKey
+        let label: LocalizedStringResource
         let systemImage: String
         let role: ButtonRole?
         let action: () -> Void
