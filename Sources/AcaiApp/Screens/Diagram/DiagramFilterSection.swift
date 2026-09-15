@@ -12,8 +12,16 @@ struct DiagramFilterSection: View {
     @State private var presets = FilterPresetList()
     @State private var showSaveAsPreset = false
     @State private var presetName = ""
+    @State private var renamingPresetID: UUID?
+    @State private var renamingPresetText = ""
+    @State private var presetPendingDelete: FilterPreset?
     @State private var presetSavePhase: AsyncOperationPhase = .idle
     @State private var presetSaveError: String?
+    /// Chains each save onto the previous one so writes land on disk in the order they were made —
+    /// two detached, unserialized saves (e.g. a rename immediately followed by a delete) could
+    /// otherwise finish out of order and let the older one silently resurrect what the newer one
+    /// removed.
+    @State private var pendingPresetSave: Task<Void, Never>?
 
     var body: some View {
         Section(.app("View.DiagramFilterSection.Filter")) {
@@ -39,6 +47,19 @@ struct DiagramFilterSection: View {
         } message: {
             Text(verbatim: presetSaveError ?? "")
         }
+        .confirmationDialog(
+            .app("View.DiagramFilterSection.ConfirmDeletePreset \(presetPendingDelete?.name ?? "")"),
+            isPresented: Binding(get: { presetPendingDelete != nil }, set: { if !$0 { presetPendingDelete = nil } }),
+            presenting: presetPendingDelete
+        ) { preset in
+            Button(.app("View.DiagramFilterSection.Delete"), role: .destructive) {
+                deletePreset(preset)
+            }
+            .accessibilityIdentifier("diagram.filter.presetDeleteConfirmButton")
+            Button(.app("View.DiagramFilterSection.Cancel"), role: .cancel) { presetPendingDelete = nil }
+        } message: { _ in
+            Text(.app("View.DiagramFilterSection.ThisCannotBeUndone"))
+        }
     }
 
     private var nonOptionalFilter: Binding<AcaiQuality.Selector> {
@@ -52,29 +73,54 @@ struct DiagramFilterSection: View {
 
     @ViewBuilder
     private var presetControls: some View {
-        if !presets.presets.isEmpty {
-            Picker(.app("View.DiagramFilterSection.ApplyPreset"), selection: presetSelection) {
-                Text(.app("View.DiagramFilterSection.Choose")).tag(UUID?.none)
-                ForEach(presets.presets) { preset in
-                    Text(verbatim: preset.name).tag(UUID?.some(preset.id))
-                }
-            }
-            .accessibilityIdentifier("diagram.filter.presetPicker")
+        ForEach(presets.presets) { preset in
+            presetRow(preset)
         }
         Button(.app("View.DiagramFilterSection.SaveAsPreset")) { showSaveAsPreset = true }
             .accessibilityIdentifier("diagram.filter.saveAsPresetButton")
     }
 
-    /// Always reads back `nil` ("Choose…") after applying, so re-picking the same preset re-applies
-    /// it instead of the picker looking permanently "stuck" on a stale selection.
-    private var presetSelection: Binding<UUID?> {
-        Binding(
-            get: { nil },
-            set: { newID in
-                guard let newID, let preset = presets.presets.first(where: { $0.id == newID }) else { return }
-                filter = preset.selector
+    /// Tapping a preset applies it. Renaming swaps the row for a `TextField`, matching the pattern
+    /// the project sidebar uses for renaming a diagram; deleting always confirms, naming the preset.
+    @ViewBuilder
+    private func presetRow(_ preset: FilterPreset) -> some View {
+        if renamingPresetID == preset.id {
+            TextField(text: $renamingPresetText) {
+                Text(.app("View.DiagramFilterSection.Name"))
             }
-        )
+            .accessibilityIdentifier("diagram.filter.presetRenameField")
+            .onSubmit { commitRename(preset) }
+        } else {
+            Button {
+                filter = preset.selector
+            } label: {
+                Text(verbatim: preset.name)
+            }
+            .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString)")
+            .contextMenu {
+                Button {
+                    renamingPresetText = preset.name
+                    renamingPresetID = preset.id
+                } label: {
+                    Label(.app("View.DiagramFilterSection.Rename"), systemImage: "pencil")
+                }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).rename")
+                Button(role: .destructive) {
+                    presetPendingDelete = preset
+                } label: {
+                    Label(.app("View.DiagramFilterSection.Delete"), systemImage: "trash")
+                }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).contextDelete")
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    presetPendingDelete = preset
+                } label: {
+                    Label(.app("View.DiagramFilterSection.Delete"), systemImage: "trash")
+                }
+                .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).swipeDelete")
+            }
+        }
     }
 
     private func loadPresets() async {
@@ -90,15 +136,40 @@ struct DiagramFilterSection: View {
         presetName = ""
         guard !trimmed.isEmpty else { return }
         var updated = presets
-        updated.presets.append(FilterPreset(name: trimmed, selector: filter))
+        updated.addPreset(name: trimmed, selector: filter)
         presets = updated
+        persist(updated)
+    }
+
+    private func commitRename(_ preset: FilterPreset) {
+        let trimmed = renamingPresetText.trimmingCharacters(in: .whitespacesAndNewlines)
+        renamingPresetID = nil
+        guard !trimmed.isEmpty, trimmed != preset.name else { return }
+        var updated = presets
+        updated.rename(preset.id, to: trimmed)
+        presets = updated
+        persist(updated)
+    }
+
+    private func deletePreset(_ preset: FilterPreset) {
+        var updated = presets
+        updated.remove(preset.id)
+        presets = updated
+        persist(updated)
+    }
+
+    /// Saves off the main actor — call after `presets` already reflects the change locally, so the
+    /// UI never waits on disk I/O to show a rename or delete.
+    private func persist(_ list: FilterPresetList) {
         let baseDir = model.store.baseDir
         let projectID = projectID
-        // A fresh `let` (not the `var` mutated above) so this Sendable value crosses the isolation
-        // boundary as an immutable copy — same rebinding `FindingsView.toggleSuppressed` uses.
-        let toSave = updated
+        // A fresh `let` (not a `var`) so this Sendable value crosses the isolation boundary as an
+        // immutable copy — same rebinding `FindingsView.toggleSuppressed` uses.
+        let toSave = list
         presetSavePhase = .loading(.app("View.DiagramFilterSection.SavingPreset"))
-        Task {
+        let previousSave = pendingPresetSave
+        pendingPresetSave = Task {
+            _ = await previousSave?.value
             do {
                 try await Task.detached(priority: .userInitiated) {
                     try FilterPresetStore(baseDir: baseDir).save(toSave, projectID: projectID)

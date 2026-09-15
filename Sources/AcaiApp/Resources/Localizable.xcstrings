@@ -9943,28 +9943,6 @@
         }
       }
     },
-    "View.DiagramFilterSection.ApplyPreset" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preset anwenden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apply Preset"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appliquer le préréglage"
-          }
-        }
-      }
-    },
     "View.DiagramFilterSection.Cancel" : {
       "localizations" : {
         "de" : {
@@ -9987,24 +9965,24 @@
         }
       }
     },
-    "View.DiagramFilterSection.Choose" : {
+    "View.DiagramFilterSection.ConfirmDeletePreset %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auswählen…"
+            "value" : "„%@“ löschen?"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose…"
+            "value" : "Delete \"%@\"?"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisir…"
+            "value" : "Supprimer \"%@\" ?"
           }
         }
       }
@@ -10027,6 +10005,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossible d'enregistrer le préréglage"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.Delete" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer"
           }
         }
       }
@@ -10093,6 +10093,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.Rename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer"
           }
         }
       }
@@ -10203,6 +10225,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher uniquement"
+          }
+        }
+      }
+    },
+    "View.DiagramFilterSection.ThisCannotBeUndone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This cannot be undone."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette action est irréversible."
           }
         }
       }
