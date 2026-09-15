@@ -456,12 +456,22 @@ extension FreeformDiagramInspector {
             rowLabel: \.name,
             rowDetail: nil,
             onSelect: { viewModel.selectNode($0, extending: false) },
-            bulkAction: .init(
-                label: .app("View.FreeformDiagramInspector.DeleteSelected"),
-                systemImage: "trash",
-                role: .destructive,
-                action: { showDeleteConfirmation = true }
-            )
+            bulkActions: [
+                .init(
+                    label: .app("View.FreeformDiagramInspector.CreateDiagramFromSelection"),
+                    systemImage: "rectangle.on.rectangle",
+                    role: nil,
+                    accessibilityIDSuffix: "createFromSelection",
+                    action: { viewModel.createDiagramFromSelection() }
+                ),
+                .init(
+                    label: .app("View.FreeformDiagramInspector.DeleteSelected"),
+                    systemImage: "trash",
+                    role: .destructive,
+                    accessibilityIDSuffix: "deleteSelected",
+                    action: { showDeleteConfirmation = true }
+                )
+            ]
         )
     }
 }
