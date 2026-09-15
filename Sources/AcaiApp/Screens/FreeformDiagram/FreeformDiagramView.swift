@@ -23,7 +23,9 @@ struct FreeformDiagramView: View {
     @State private var showCheckpoints = false
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
     /// shortcuts yield to the field's native text undo.
-    @State private var isEditingText = false
+    // Not `private`: `FreeformDiagramView+Sidebar.swift` (a same-type extension in another file)
+    // passes this down to `FreeformDiagramInspector` as a binding.
+    @State var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
