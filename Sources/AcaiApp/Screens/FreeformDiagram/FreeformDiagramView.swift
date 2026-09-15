@@ -23,7 +23,8 @@ struct FreeformDiagramView: View {
     @State private var showCheckpoints = false
     /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
     /// shortcuts yield to the field's native text undo.
-    @State private var isEditingText = false
+    // Not `private`: `FreeformDiagramView+Sidebar.swift` reads this to build the inspector tab.
+    @State var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
@@ -325,38 +326,5 @@ struct FreeformDiagramView: View {
             }
         }
         return true
-    }
-
-    // MARK: - Sidebar (Catalog + Inspector)
-
-    private var sidebarContent: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $sidebarTab) {
-                Text(.app("View.FreeformDiagramView.Catalog")).tag(SidebarTab.catalog)
-                Text(.app("View.FreeformDiagramView.Inspector")).tag(SidebarTab.inspector)
-            }
-            .pickerStyle(.segmented)
-            .padding(8)
-
-            Divider()
-
-            switch sidebarTab {
-            case .catalog:
-                FreeformDiagramCatalog(viewModel: viewModel)
-            case .inspector:
-                FreeformDiagramInspector(
-                    viewModel: viewModel,
-                    isEditingText: $isEditingText,
-                    showDeleteConfirmation: $showDeleteConfirmation
-                )
-            }
-        }
-        .background {
-            #if os(macOS)
-            Color(nsColor: .controlBackgroundColor)
-            #else
-            Color(uiColor: .secondarySystemBackground)
-            #endif
-        }
     }
 }
