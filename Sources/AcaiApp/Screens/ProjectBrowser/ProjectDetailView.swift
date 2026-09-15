@@ -252,7 +252,10 @@ struct ProjectDetailView: View {
                                     model.selection = .freeformDiagram(id)
                                 }
                             } label: {
-                                Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+                                Label(
+                                    .app("View.ProjectDetailView.DuplicateMenu"),
+                                    systemImage: "plus.square.on.square"
+                                )
                             }
                             .tint(.blue)
                             .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
