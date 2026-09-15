@@ -147,6 +147,14 @@ extension ProjectBrowserView {
                         } label: {
                             Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
                         }
+                        Button {
+                            if let id = model.diagrams.duplicate(diagram.id) {
+                                model.selection = .generatedDiagram(id)
+                            }
+                        } label: {
+                            Label(.app("View.ProjectBrowserView.Duplicate"), systemImage: "plus.square.on.square")
+                        }
+                        .accessibilityIdentifier("sidebar.generatedDiagram.\(diagram.id).duplicate")
                         Button(role: .destructive) {
                             model.diagrams.remove(diagram.id)
                         } label: {
@@ -192,6 +200,14 @@ extension ProjectBrowserView {
                         } label: {
                             Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
                         }
+                        Button {
+                            if let id = model.freeforms.duplicate(diagram.id) {
+                                model.selection = .freeformDiagram(id)
+                            }
+                        } label: {
+                            Label(.app("View.ProjectBrowserView.Duplicate"), systemImage: "plus.square.on.square")
+                        }
+                        .accessibilityIdentifier("sidebar.freeformDiagram.\(diagram.id).duplicate")
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
                         } label: {
