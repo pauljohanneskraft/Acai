@@ -97,6 +97,18 @@ public struct GitCheckout {
         repository.remote["origin"]?.url
     }
 
+    /// Whether the working tree differs from `HEAD` — staged changes, unstaged edits, or untracked
+    /// files. `.default` status options already include untracked files.
+    public var hasUncommittedChanges: Bool {
+        get throws {
+            do {
+                return try !repository.status().isEmpty
+            } catch let error as SwiftGitXError {
+                throw error.asFailure("Couldn't read the working tree status")
+            }
+        }
+    }
+
     /// The branch name if HEAD is attached to one, otherwise the current commit's full SHA (which
     /// round-trips through `GitReference` just as well as a tag name, so a detached-at-a-tag HEAD
     /// doesn't need special-casing here).

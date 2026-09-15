@@ -60,6 +60,12 @@ struct DOTNodeRenderer {
         html += "\(fontClose(font))</B>"
         html += "</TD></TR>"
 
+        if let annotation = options.nodeAnnotation?(type) {
+            html += "<TR><TD ALIGN=\"CENTER\">"
+            html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>\(annotation.dotHTMLEscaped)</FONT>"
+            html += "</TD></TR>"
+        }
+
         guard options.showMembers else {
             html += "</TABLE>"
             return html

@@ -13,10 +13,20 @@ final class CodebaseDetailScreen {
     var refSwitchLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refSwitch.loaded"] }
     var pullLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.pull.loaded"] }
 
+    var staleBanner: XCUIElement { app.descendants(matching: .any)["codebaseDetail.staleBanner"] }
+    var staleBannerReindexButton: XCUIElement { app.buttons["codebaseDetail.staleBanner.reindexButton"] }
+    var staleBannerReindexLoadedIndicator: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.staleBanner.reindex.loaded"]
+    }
+
     /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
     func diagramButton(type: String) -> XCUIElement {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
     }
+
+    /// Opens `QueryView`. Shown only once the codebase has an artifact — same gating as
+    /// `diagramButton`, so it only appears after a successful reindex.
+    var queryButton: XCUIElement { app.buttons["codebaseDetail.queryButton"] }
 
     /// Shown instead of `reindexButton` for a GitHub-backed codebase.
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }

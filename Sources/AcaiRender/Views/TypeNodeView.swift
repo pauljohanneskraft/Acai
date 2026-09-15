@@ -229,24 +229,3 @@ extension TypeNodeView {
         )
     }
 }
-
-// MARK: - Delta Badge
-
-private struct DeltaBadgeView: View {
-    let status: DeltaStatus
-
-    var body: some View {
-        Text(status.badgeGlyph ?? "")
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
-            .foregroundColor(.white)
-            .frame(width: 15, height: 15)
-            .background(Circle().fill(fill))
-            .overlay(Circle().stroke(Color.white, lineWidth: 1))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(status.badgeAccessibilityLabel ?? "")
-    }
-
-    private var fill: Color {
-        status.deltaHex.map { Color(hex: $0) } ?? Color.secondary
-    }
-}

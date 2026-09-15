@@ -96,6 +96,26 @@ struct GeneratedDiagramEditor {
         notify()
     }
 
+    /// Copies `diagramID`'s configuration and arrangement (positions, sizes, canvas transform) into
+    /// a new, independent diagram in the same project. The name is frozen (`isNameUserDefined =
+    /// true`) so it doesn't immediately diverge from the original's the moment the copy's
+    /// configuration is next edited.
+    func duplicate(_ diagramID: UUID) -> UUID? {
+        guard let original = store.generatedDiagrams[diagramID] else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramID) })
+        else { return nil }
+        var copy = original
+        copy.id = UUID()
+        copy.name = original.name + " Copy"
+        copy.isNameUserDefined = true
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].generatedDiagramIDs.append(copy.id)
+        store.saveGeneratedDiagram(copy)
+        persist()
+        return copy.id
+    }
+
     func remove(_ diagramID: UUID) {
         for i in store.projects.indices {
             store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
@@ -103,6 +123,37 @@ struct GeneratedDiagramEditor {
         store.deleteGeneratedDiagramFile(diagramID)
         store.removeFromRecentlyViewed(.generatedDiagram(diagramID))
         persist()
+    }
+
+    /// Creates a new class diagram scoped to exactly `selectedNodeIDs`: a fresh, independent copy
+    /// of `diagramID` whose selector filter is replaced with an `explicitIDs`-only one pinned to
+    /// the selection. Replacing rather than merging with any existing filter loses nothing — the
+    /// selection was already drawn from whatever that filter let through — and keeps the result
+    /// unambiguous. Positions/sizes for nodes outside the selection are dropped since they no
+    /// longer render. Returns `nil` for `diagramID`s with no selector-filter concept to restrict
+    /// (every content type other than a class diagram, for now — package/call graph diagrams
+    /// filter at module/type granularity, which doesn't line up node-for-node with an arbitrary
+    /// selection the way a class diagram's `filter` does).
+    func createDiagramFromSelection(_ diagramID: UUID, selectedNodeIDs: Set<String>) -> UUID? {
+        guard !selectedNodeIDs.isEmpty, let original = store.generatedDiagrams[diagramID] else { return nil }
+        guard case .classDiagram(var config) = original.content else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramID) })
+        else { return nil }
+
+        config.filter = AcaiQuality.Selector(explicitIDs: selectedNodeIDs)
+        var copy = original
+        copy.id = UUID()
+        copy.content = .classDiagram(config)
+        copy.name = original.name + " Selection"
+        copy.isNameUserDefined = true
+        copy.nodePositions = original.nodePositions.filter { selectedNodeIDs.contains($0.key) }
+        copy.nodeSizes = original.nodeSizes.filter { selectedNodeIDs.contains($0.key) }
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].generatedDiagramIDs.append(copy.id)
+        store.saveGeneratedDiagram(copy)
+        persist()
+        return copy.id
     }
 
     /// Applies `transform` to the stored diagram, re-auto-names it (unless user-renamed), bumps
@@ -366,6 +417,25 @@ struct FreeformDiagramEditor {
         notify()
     }
 
+    /// Copies `diagramID`'s nodes, edges and checkpoints into a new, independent diagram in the same
+    /// project. Node/edge ids are copied verbatim (they're only ever referenced by sibling
+    /// nodes/edges within the same diagram, never from outside it), so the copy renders identically
+    /// to the original at the moment of duplication.
+    func duplicate(_ diagramID: UUID) -> UUID? {
+        guard let original = store.freeformDiagrams[diagramID] else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.freeformDiagramIDs.contains(diagramID) })
+        else { return nil }
+        var copy = original
+        copy.id = UUID()
+        copy.name = original.name + " Copy"
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].freeformDiagramIDs.append(copy.id)
+        store.saveFreeformDiagram(copy)
+        persist()
+        return copy.id
+    }
+
     func remove(_ diagramID: UUID) {
         for i in store.projects.indices {
             store.projects[i].freeformDiagramIDs.removeAll { $0 == diagramID }
@@ -373,5 +443,31 @@ struct FreeformDiagramEditor {
         store.deleteFreeformDiagramFile(diagramID)
         store.removeFromRecentlyViewed(.freeformDiagram(diagramID))
         persist()
+    }
+
+    /// Creates a new freeform diagram containing exactly the selected nodes, plus the edges
+    /// between them (an edge survives only when both its endpoints are selected) — the freeform
+    /// equivalent of `GeneratedDiagramEditor.createDiagramFromSelection`. Node/edge ids are copied
+    /// verbatim, same as `duplicate(_:)`; checkpoints are not carried over since they reference the
+    /// full original node/edge set.
+    func createDiagramFromSelection(_ diagramID: UUID, selectedNodeIDs: Set<String>) -> UUID? {
+        guard !selectedNodeIDs.isEmpty, let original = store.freeformDiagrams[diagramID] else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.freeformDiagramIDs.contains(diagramID) })
+        else { return nil }
+
+        var copy = original
+        copy.id = UUID()
+        copy.name = original.name + " Selection"
+        copy.nodes = original.nodes.filter { selectedNodeIDs.contains($0.id) }
+        copy.edges = original.edges.filter {
+            selectedNodeIDs.contains($0.sourceNodeID) && selectedNodeIDs.contains($0.targetNodeID)
+        }
+        copy.checkpoints = []
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].freeformDiagramIDs.append(copy.id)
+        store.saveFreeformDiagram(copy)
+        persist()
+        return copy.id
     }
 }
