@@ -4151,6 +4151,28 @@
         }
       }
     },
+    "View.ProjectDetailView.Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
+          }
+        }
+      }
+    },
     "View.ProjectDetailView.ReindexMenu" : {
       "localizations" : {
         "de" : {
@@ -4169,6 +4191,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Réindexer"
+          }
+        }
+      }
+    },
+    "View.ProjectDetailView.RenameMenu" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer"
           }
         }
       }
