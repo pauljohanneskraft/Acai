@@ -173,7 +173,9 @@ struct GeneratedDiagramEditor {
         notify()
     }
 
-    private func codebaseName(_ codebaseID: UUID) -> String {
+    // Not `private`: `ProjectBrowserDiagramEditors+Cycle.swift`'s extension needs it too — same
+    // "not private, another file's extension needs it too" pattern used throughout this app.
+    func codebaseName(_ codebaseID: UUID) -> String {
         for project in store.projects {
             if let codebase = project.codebases.first(where: { $0.id == codebaseID }) { return codebase.name }
         }

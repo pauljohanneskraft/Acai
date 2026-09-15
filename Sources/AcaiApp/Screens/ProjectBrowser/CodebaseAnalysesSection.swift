@@ -85,21 +85,21 @@ struct QualityCheckSection: View {
         }
         QualityCheckReportView(
             report: report, showsSummary: false, tint: .orange, codebase: codebase, artifact: artifact,
-            onViewAsDiagram: viewAsCycleDiagram
+            onViewAsDiagram: openCycleAsDiagram
         )
     }
 
-    /// The Cycle Diagram entry point: a `cycle`-kind `Violation`'s `subject` is exactly
-    /// `CycleFinder.Cycle.members.joined(separator: ",")` and `detail["scope"]` is the scope's raw
-    /// value (see `QualityEvaluator.cycleViolations`) — enough to reconstruct a `CycleDiagramReference`
-    /// with no re-detection needed. Creates the diagram pre-scoped and selects it directly.
-    private func viewAsCycleDiagram(_ violation: Violation) {
+    /// The "View as Diagram" entry point for a cycle violation: a `cycle`-kind `Violation`'s
+    /// `subject` is exactly `CycleFinder.Cycle.members.joined(separator: ",")` and `detail["scope"]`
+    /// is the scope's raw value (see `QualityEvaluator.cycleViolations`) — enough to open the scoped
+    /// class/package diagram with no re-detection needed.
+    private func openCycleAsDiagram(_ violation: Violation) {
         guard let projectID = model.projectID(for: codebase.id) else { return }
-        let reference = CycleDiagramReference(
-            scope: violation.detail["scope"] ?? CycleFinder.Scope.types.rawValue,
-            members: violation.subject.split(separator: ",").map(String.init)
-        )
-        if let id = model.diagrams.add(to: projectID, codebaseID: codebase.id, content: .cycleDiagram(reference)) {
+        let scope = CycleFinder.Scope(rawValue: violation.detail["scope"] ?? "") ?? .types
+        let members = violation.subject.split(separator: ",").map(String.init)
+        if let id = model.diagrams.openCycle(
+            to: projectID, codebaseID: codebase.id, scope: scope, members: members
+        ) {
             model.selection = .generatedDiagram(id)
         }
     }

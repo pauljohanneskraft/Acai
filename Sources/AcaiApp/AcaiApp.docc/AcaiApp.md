@@ -34,9 +34,11 @@ upgraded to a repository-linked codebase so revision comparison works.
 
 ## Diagrams
 
-Eight generated types: **class**, **sequence**, **state**, **package**, **call graph**, **module
-coupling**, **hotspots**, and **cycles**. Each opens on an infinite, pannable canvas with manual node
-positions that persist, fit-to-view, and full undo/redo.
+Seven generated types: **class**, **sequence**, **state**, **package**, **call graph**, **module
+coupling**, and **hotspots**. Each opens on an infinite, pannable canvas with manual node positions
+that persist, fit-to-view, and full undo/redo. A dependency cycle — flagged wherever one is named,
+such as a Quality Check or Findings row — opens as a class or package diagram scoped to just its
+members and the edges that form it, rather than as a diagram type of its own.
 
 The class diagram is the deepest. Its inspector covers:
 
