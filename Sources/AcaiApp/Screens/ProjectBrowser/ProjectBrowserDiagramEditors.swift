@@ -96,6 +96,26 @@ struct GeneratedDiagramEditor {
         notify()
     }
 
+    /// Copies `diagramID`'s configuration and arrangement (positions, sizes, canvas transform) into
+    /// a new, independent diagram in the same project. The name is frozen (`isNameUserDefined =
+    /// true`) so it doesn't immediately diverge from the original's the moment the copy's
+    /// configuration is next edited.
+    func duplicate(_ diagramID: UUID) -> UUID? {
+        guard let original = store.generatedDiagrams[diagramID] else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.generatedDiagramIDs.contains(diagramID) })
+        else { return nil }
+        var copy = original
+        copy.id = UUID()
+        copy.name = original.name + " Copy"
+        copy.isNameUserDefined = true
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].generatedDiagramIDs.append(copy.id)
+        store.saveGeneratedDiagram(copy)
+        persist()
+        return copy.id
+    }
+
     func remove(_ diagramID: UUID) {
         for i in store.projects.indices {
             store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
@@ -364,6 +384,25 @@ struct FreeformDiagramEditor {
         diagram.lastModified = Date()
         store.saveFreeformDiagram(diagram)
         notify()
+    }
+
+    /// Copies `diagramID`'s nodes, edges and checkpoints into a new, independent diagram in the same
+    /// project. Node/edge ids are copied verbatim (they're only ever referenced by sibling
+    /// nodes/edges within the same diagram, never from outside it), so the copy renders identically
+    /// to the original at the moment of duplication.
+    func duplicate(_ diagramID: UUID) -> UUID? {
+        guard let original = store.freeformDiagrams[diagramID] else { return nil }
+        guard let projectIndex = store.projects.firstIndex(where: { $0.freeformDiagramIDs.contains(diagramID) })
+        else { return nil }
+        var copy = original
+        copy.id = UUID()
+        copy.name = original.name + " Copy"
+        copy.createdDate = Date()
+        copy.lastModified = Date()
+        store.projects[projectIndex].freeformDiagramIDs.append(copy.id)
+        store.saveFreeformDiagram(copy)
+        persist()
+        return copy.id
     }
 
     func remove(_ diagramID: UUID) {
