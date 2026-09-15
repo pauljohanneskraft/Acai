@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 
 enum StateDiagramSidebarTab {
@@ -281,6 +282,9 @@ extension StateDiagramSidebar {
         return List {
             Section(state?.name ?? stateID) {
                 stateFields(state)
+                if let status = viewModel.stateDeltaStatus(stateID) {
+                    ComparisonStatusRow(status: status)
+                }
                 stateTransitionGroups(outgoing: outgoing, incoming: incoming)
             }
         }
@@ -387,6 +391,9 @@ extension StateDiagramSidebar {
                         Text(.app("View.StateDiagramSidebar.Action"))
                     }
                 }
+                if let status = viewModel.transitionDeltaStatus(transition) {
+                    ComparisonStatusRow(status: status)
+                }
             }
         }
         .listStyle(.inset)
@@ -407,7 +414,7 @@ extension StateDiagramSidebar {
             rowLabel: \.name,
             rowDetail: nil,
             onSelect: { viewModel.selectNode($0, extending: false) },
-            bulkAction: nil
+            bulkActions: []
         )
     }
 }

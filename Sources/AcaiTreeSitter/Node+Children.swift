@@ -20,4 +20,21 @@ public extension Node {
     func hasChild(withType type: String) -> Bool {
         (0..<childCount).contains { child(at: $0)?.nodeType == type }
     }
+
+    /// `1 +` the count of decision-point nodes (in `branchKinds`, supplied by the caller so this names
+    /// no language) found while walking this node's subtree. Iterative (explicit stack) so a deeply
+    /// nested body can't overflow the stack.
+    func cyclomaticComplexity(branchKinds: Set<String>) -> Int {
+        var complexity = 1
+        var stack: [Node] = [self]
+        while let node = stack.popLast() {
+            if let type = node.nodeType, branchKinds.contains(type) {
+                complexity += 1
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map { stack.append($0) }
+            }
+        }
+        return complexity
+    }
 }

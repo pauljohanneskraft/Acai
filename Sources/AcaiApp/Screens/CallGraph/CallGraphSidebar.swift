@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiQuality
 
 enum CallGraphSidebarTab {
@@ -22,6 +23,8 @@ struct CallGraphSidebar: View {
     let onApplyScope: (CallGraphScope) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
+    /// `nil` for every id when the diagram isn't in delta mode.
+    let deltaStatus: (String) -> DeltaStatus?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var draftScope: CallGraphScope
@@ -38,7 +41,8 @@ struct CallGraphSidebar: View {
         onSelect: @escaping (String) -> Void,
         onApplyScope: @escaping (CallGraphScope) -> Void,
         onSaveAsFreeform: @escaping () -> Void,
-        onExportImage: @escaping () -> Void
+        onExportImage: @escaping () -> Void,
+        deltaStatus: @escaping (String) -> DeltaStatus? = { _ in nil }
     ) {
         self.artifact = artifact
         self.graph = graph
@@ -51,6 +55,7 @@ struct CallGraphSidebar: View {
         self.onApplyScope = onApplyScope
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
+        self.deltaStatus = deltaStatus
         _draftScope = State(initialValue: scope)
     }
 
@@ -70,8 +75,10 @@ struct CallGraphSidebar: View {
                 settingsContent
                     .accessibilityIdentifier("diagram.sidebarContent.settings")
             case .inspector:
-                CallGraphInspector(graph: graph, selectedNodeIDs: selectedNodeIDs, onSelect: onSelect)
-                    .accessibilityIdentifier("diagram.sidebarContent.inspector")
+                CallGraphInspector(
+                    graph: graph, selectedNodeIDs: selectedNodeIDs, onSelect: onSelect, deltaStatus: deltaStatus
+                )
+                .accessibilityIdentifier("diagram.sidebarContent.inspector")
             }
         }
         .background {

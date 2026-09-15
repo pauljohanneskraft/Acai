@@ -127,6 +127,8 @@ Shared by `diagram` (and partly `image`). Only flags you actually pass are appli
 | `--show-external-types` | include referenced-but-undefined types as placeholders |
 | `--no-infer-composition` | don't derive composition/aggregation from property types |
 | `--no-infer-dependency` | don't derive dependency from parameter/return types |
+| `--color-by <metric>` | colour nodes by a per-type metric's value, gradient endpoints from its `budgets` entry's `min`/`max` |
+| `--rules <yaml>` | rules file supplying `--color-by`'s budget thresholds |
 
 ### Focus
 
@@ -197,7 +199,7 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--format` | `dot` (default), `mermaid` |
 | `--theme` | `default`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
-| *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency` |
+| *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
 | `--sequence-from <entry>` | Sequence diagram from `"Type.method"`, or `"function"` for a top-level function. |
 | `--map <A=B>` | Resolve a protocol/interface to a concrete type while tracing. Repeatable. |
@@ -308,6 +310,22 @@ Each breach carries a fix hint — `maxParameters` suggests a parameter object, 
 **Built-in defaults** (used when `--rules` is omitted): `maxParameters ≤ 5`, `dataClassScore ≤ 0.8`, `nestingDepth ≤ 2`, `lcom ≤ 1`, `featureEnvyMethods ≤ 2`, `maxCyclomaticComplexity ≤ 10`. `mutablePublicState` is deliberately left out — it's idiomatic in value types and would flood struct-heavy code.
 
 This repository gates itself with its own [`quality.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/quality.yml).
+
+**Colouring a diagram by measurement.** `acai diagram --color-by <metric> --rules quality.yml` tints
+each type-scoped node along a fine-to-critical gradient and prints the value next to it, so colour is
+never the only signal. The gradient's endpoints are the metric's own `budgets` entry — `min` (or `0`
+when unset) is "fine", `max` is "critical" — so a diagram's colours can never disagree with what
+actually fails the build; there is exactly one place to change a metric's thresholds:
+
+```yaml
+budgets:
+  - metric: maxCyclomaticComplexity
+    max: 10
+```
+
+The colours themselves are fixed (green at `fine`, red at `critical`, amber between) and shared with
+the rest of the app. `--color-by` requires a per-type metric with a `budgets` entry that sets `max`; a
+module-scoped metric, or one with no such budget, is a validation error.
 
 ### `rules`
 

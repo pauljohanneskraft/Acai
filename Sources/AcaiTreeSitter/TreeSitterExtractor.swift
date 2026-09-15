@@ -185,40 +185,16 @@ extension TreeSitterExtracting {
         return names
     }
 
-    /// Walks iteratively (explicit stack) so a deeply nested body can't overflow the stack.
     /// Over-captures every identifier by design; the engine keeps only names that resolve to a known
     /// type.
     public func referencedTypeNames(in body: Node?) -> [String] {
-        guard let body else { return [] }
-        var names: Set<String> = []
-        var stack: [Node] = [body]
-        while let node = stack.popLast() {
-            if node.nodeType?.hasSuffix("identifier") == true {
-                names.insert(text(node))
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map { stack.append($0) }
-            }
-        }
-        return Array(names)
+        body?.referencedTypeNames(in: context) ?? []
     }
 
-    /// The cyclomatic complexity of a method `body`: `1 +` the count of decision-point nodes whose
-    /// tree-sitter type is in `branchKinds` (supplied by the language plugin, so this helper names no
-    /// language). Returns `nil` when there's no body, distinguishing "not measured" from "no branches".
+    /// The cyclomatic complexity of a method `body` (see `Node.cyclomaticComplexity(branchKinds:)`).
+    /// Returns `nil` when there's no body, distinguishing "not measured" from "no branches".
     public func cyclomaticComplexity(in body: Node?, branchKinds: Set<String>) -> Int? {
-        guard let body else { return nil }
-        var complexity = 1
-        var stack: [Node] = [body]
-        while let node = stack.popLast() {
-            if let type = node.nodeType, branchKinds.contains(type) {
-                complexity += 1
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map { stack.append($0) }
-            }
-        }
-        return complexity
+        body?.cyclomaticComplexity(branchKinds: branchKinds)
     }
 
     /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes and `missing` nodes

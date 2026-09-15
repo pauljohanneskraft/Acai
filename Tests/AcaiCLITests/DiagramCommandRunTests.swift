@@ -176,4 +176,105 @@ struct DiagramCommandRunTests {
             )
         }
     }
+
+    // MARK: - --color-by
+
+    private func writeMaxParametersSource(in dir: URL) throws {
+        let source = """
+        class Wide {
+            func configure(a: Int, b: Int, c: Int) {}
+        }
+
+        class Narrow {
+            func run() {}
+        }
+        """
+        try source.write(to: dir.appendingPathComponent("Params.swift"), atomically: true, encoding: .utf8)
+    }
+
+    private func writeMaxParametersRules(in dir: URL) throws -> URL {
+        let rulesURL = dir.appendingPathComponent("quality.yml")
+        let yaml = """
+        budgets:
+          - metric: maxParameters
+            max: 3
+        """
+        try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
+        return rulesURL
+    }
+
+    @Test func colorByColorsAndAnnotatesNodesFromTheMetricsOwnBudget() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            let rulesURL = try writeMaxParametersRules(in: dir)
+            let output = dir.appendingPathComponent("diagram.dot")
+            var cmd = try CLITestSupport.parseDiagram([
+                "--source", dir.path, "--language", "swift",
+                "--color-by", "maxParameters", "--rules", rulesURL.path,
+                "--output", output.path
+            ])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("maxParameters: 3"))
+            #expect(contents.contains("maxParameters: 0"))
+            #expect(contents.contains("#C62828"))
+            #expect(contents.contains("#2E7D32"))
+        }
+    }
+
+    @Test func colorByUsesTheBuiltInDefaultBudgetsWhenNoRulesFileIsGiven() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            let output = dir.appendingPathComponent("diagram.dot")
+            // `maxParameters` is one of `MetricBudget.defaultSmellBudgets` (max 5), so `--color-by`
+            // works without `--rules` — the same budget that gates a build without one also colours it.
+            var cmd = try CLITestSupport.parseDiagram([
+                "--source", dir.path, "--language", "swift",
+                "--color-by", "maxParameters", "--output", output.path
+            ])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("maxParameters: 3"))
+            #expect(contents.contains("maxParameters: 0"))
+        }
+    }
+
+    @Test func colorByWithoutAMatchingBudgetThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            // `fanOut` has no entry in the built-in default budgets.
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift", "--color-by", "fanOut"],
+                contains: "No budget with a `max` threshold is defined for metric 'fanOut'"
+            )
+        }
+    }
+
+    @Test func colorByWithABudgetThatHasNoMaxThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            let rulesURL = dir.appendingPathComponent("quality.yml")
+            let yaml = """
+            budgets:
+              - metric: maxParameters
+                min: 1
+            """
+            try yaml.write(to: rulesURL, atomically: true, encoding: .utf8)
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift",
+                 "--color-by", "maxParameters", "--rules", rulesURL.path],
+                contains: "No budget with a `max` threshold is defined for metric 'maxParameters'"
+            )
+        }
+    }
+
+    @Test func colorByWithAModuleScopedMetricThrows() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try writeMaxParametersSource(in: dir)
+            try expectRunError(
+                ["--source", dir.path, "--language", "swift", "--color-by", "instability"],
+                contains: "is a per-module metric"
+            )
+        }
+    }
 }

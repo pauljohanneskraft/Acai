@@ -1,6 +1,7 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiDiff
 import AcaiRender
 import UniformTypeIdentifiers
 
@@ -12,18 +13,22 @@ struct StateDiagramView: View {
     let diagram: GeneratedDiagram
     let artifact: CodeArtifact
     let codebase: Codebase
+    let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @StateObject private var viewModel: StateDiagramViewModel
+    // Not `private`: `StateDiagramView+Canvas.swift`'s extension (kept in its own file only to
+    // stay under this file's own type-body-length limit) needs to read/write these too.
+    @StateObject var viewModel: StateDiagramViewModel
 
-    @State private var canvasScale: CGFloat
-    @State private var canvasOffset: CGPoint
-    @State private var dragStartPositions: [String: CGPoint] = [:]
-    @State private var activeDragCanvasLocation: CGPoint?
-    @State private var canvasAutoPanController = EdgeAutoPanController()
-    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
-    @State private var showSidebar = false
-    @State private var sidebarTab: StateDiagramSidebarTab = .settings
+    @State var canvasScale: CGFloat
+    @State var canvasOffset: CGPoint
+    @State var dragStartPositions: [String: CGPoint] = [:]
+    @State var activeDragCanvasLocation: CGPoint?
+    @State var canvasAutoPanController = EdgeAutoPanController()
+    @State var canvasViewportSize = CGSize(width: 900, height: 600)
+    @State var showSidebar = false
+    @State var sidebarTab: StateDiagramSidebarTab = .settings
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -36,14 +41,20 @@ struct StateDiagramView: View {
         #endif
     }
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(
+        diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase,
+        isComparePresented: Binding<Bool>, comparisonArtifact: CodeArtifact? = nil
+    ) {
         self.diagram = diagram
         self.artifact = artifact
         self.codebase = codebase
+        self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         self._viewModel = StateObject(wrappedValue: StateDiagramViewModel(
             artifact: artifact,
             configuration: diagram.stateConfiguration,
-            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint)
+            restoredPositions: diagram.nodePositions.mapValues(\.cgPoint),
+            comparisonArtifact: comparisonArtifact
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
@@ -138,93 +149,6 @@ struct StateDiagramView: View {
         }
     }
 
-    // MARK: - Canvas
-
-    private var canvasContent: some View {
-        PannableCanvas(
-            model: viewModel,
-            scale: $canvasScale,
-            offset: $canvasOffset,
-            activeDragCanvasLocation: activeDragCanvasLocation,
-            autoPanController: canvasAutoPanController,
-            onViewportSizeChange: { canvasViewportSize = $0 },
-            content: {
-                let layout = viewModel.layout
-                ZStack(alignment: .topLeading) {
-                    StateEnsembleView(layout: layout)
-                    ForEach(layout.nodes) { node in
-                        stateNode(node)
-                    }
-                    ForEach(layout.edges) { edge in
-                        transitionTapTarget(edge, layout: layout)
-                    }
-                }
-            }
-        )
-    }
-
-    private func stateNode(_ node: StateLayoutModel.NodeFrame) -> some View {
-        StateNodeView(
-            state: node.state,
-            isSelected: viewModel.selectedNodeIDs.contains(node.id)
-        )
-        .frame(width: node.rect.width, height: node.rect.height)
-        .position(x: node.rect.midX, y: node.rect.midY)
-        .onTapGesture(count: 2) {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
-        }
-        .diagramNodeInteraction(
-            id: node.id,
-            model: viewModel,
-            dragStartPositions: $dragStartPositions,
-            activeDragCanvasLocation: $activeDragCanvasLocation,
-            onCommit: savePositions
-        )
-    }
-
-    /// An invisible tap strip over a transition arrow, selecting it for the Inspector tab —
-    /// same rationale as `SequenceDiagramView.messageTapTarget`, sized to a full 44pt hit area.
-    private func transitionTapTarget(_ edge: StateLayoutModel.EdgeLayout, layout: StateLayoutModel) -> some View {
-        let midpoint: CGPoint = {
-            guard let from = layout.frame(for: edge.from), let to = layout.frame(for: edge.to) else {
-                return .zero
-            }
-            return CGPoint(x: (from.midX + to.midX) / 2, y: (from.midY + to.midY) / 2)
-        }()
-        let isSelected = viewModel.selectedTransitionID == edge.id
-        return RoundedRectangle(cornerRadius: 4)
-            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-            #if os(macOS)
-            .cursorOnHover(.pointingHand)
-            #endif
-            .frame(width: 44, height: 44)
-            .position(midpoint)
-            .accessibilityElement()
-            .accessibilityLabel(
-                edge.label.map { Text(.app("View.StateDiagramView.TransitionLabel \($0)")) }
-                    ?? Text(.app("View.StateDiagramView.Transition"))
-            )
-            .accessibilityAddTraits(.isButton)
-            .onTapGesture(count: 2) {
-                viewModel.clearSelection()
-                viewModel.selectedTransitionID = edge.id
-                sidebarTab = .inspector
-                showSidebar = true
-            }
-            .onTapGesture(count: 1) {
-                let newSelection: Int? = (viewModel.selectedTransitionID == edge.id) ? nil : edge.id
-                viewModel.clearSelection()
-                viewModel.selectedTransitionID = newSelection
-            }
-    }
-
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -296,7 +220,7 @@ struct StateDiagramView: View {
 
     // MARK: - Persistence & layout
 
-    private func savePositions() {
+    func savePositions() {
         model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.positionOverrides,
