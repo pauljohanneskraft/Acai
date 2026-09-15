@@ -1,0 +1,10 @@
+- id: acai-quality
+  name: Acai quality gate
+  description: >-
+    Fails the commit when the codebase violates its architecture rules (dependency cycles,
+    forbidden dependencies, layering, metric budgets). Requires `acai` to already be on PATH —
+    see https://github.com/pauljohanneskraft/Acai#install.
+  entry: acai quality --source .
+  language: system
+  pass_filenames: false
+  files: \.(swift|kt|kts|java|ts|tsx|js|jsx|dart|py|c|h|cpp|hpp|cc|cxx)$
