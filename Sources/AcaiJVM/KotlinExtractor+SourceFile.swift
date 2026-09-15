@@ -97,34 +97,19 @@ extension KotlinExtractor {
 
     /// In Kotlin every declaration without an explicit visibility modifier is **public** by default,
     /// so the returned `accessLevel` falls back to `.public`.
-    func extractModifiers(
-        _ node: Node?
-    ) -> ModifierInfo {
-        guard let node, node.nodeType == "modifiers" else {
-            return ModifierInfo(
-                accessLevel: .public, modifiers: [], annotations: []
-            )
-        }
-        var access: AccessLevel?
-        var modifiers: [Modifier] = []
-        var annotations: [String] = []
-
-        for child in node.namedChildren() {
-            guard let childType = child.nodeType else { continue }
-            let modifierText = text(child)
-            if childType == "visibility_modifier" {
-                access = Self.visibilityMap[modifierText]
-            } else if childType == "annotation" {
-                annotations.append(normalizedAnnotation(modifierText))
-            } else if let categoryMap = Self.modifierMapByNodeType[childType],
-                      let modifier = categoryMap[modifierText] {
-                modifiers.append(modifier)
+    private static let modifierClassifier = ModifierClassifier(
+        defaultAccessLevel: .public,
+        annotationNodeTypes: ["annotation"],
+        classify: { nodeType, text in
+            if nodeType == "visibility_modifier" { return visibilityMap[text].map { .accessLevel($0) } }
+            if let categoryMap = modifierMapByNodeType[nodeType], let modifier = categoryMap[text] {
+                return .modifier(modifier)
             }
+            return nil
         }
-        return ModifierInfo(
-            accessLevel: access ?? .public,
-            modifiers: modifiers,
-            annotations: annotations
-        )
+    )
+
+    func extractModifiers(_ node: Node?) -> ModifierInfo {
+        Self.modifierClassifier.modifierInfo(for: node, in: context)
     }
 }
