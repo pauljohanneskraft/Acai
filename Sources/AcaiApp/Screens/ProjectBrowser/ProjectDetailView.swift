@@ -6,6 +6,8 @@ struct ProjectDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State var addingCodebase = false
     @State private var codebasePendingDeletion: Codebase?
+    @State private var renamingDiagramID: UUID?
+    @State private var renamingText = ""
     /// Drives the destructive "Delete Project…" confirmation — a second, discoverable path
     /// to the same action the sidebar's context menu already offers.
     @State var showDeleteProjectConfirmation = false
@@ -232,29 +234,34 @@ struct ProjectDetailView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(freeformDiagrams) { diagram in
-                    Button {
-                        model.selection = .freeformDiagram(diagram.id)
-                    } label: {
-                        freeformDiagramRowContent(diagram: diagram)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
-                    .swipeActions(edge: .leading) {
+                    if renamingDiagramID == diagram.id {
+                        renamingField(diagram: diagram)
+                    } else {
                         Button {
-                            if let id = model.freeforms.duplicate(diagram.id) {
-                                model.selection = .freeformDiagram(id)
-                            }
+                            model.selection = .freeformDiagram(diagram.id)
                         } label: {
-                            Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+                            freeformDiagramRowContent(diagram: diagram)
                         }
-                        .tint(.blue)
-                        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            model.freeforms.remove(diagram.id)
-                        } label: {
-                            Label(.app("View.ProjectDetailView.Delete"), systemImage: "trash")
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
+                        .contextMenu { freeformDiagramContextMenu(diagram: diagram) }
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                if let id = model.freeforms.duplicate(diagram.id) {
+                                    model.selection = .freeformDiagram(id)
+                                }
+                            } label: {
+                                Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+                            }
+                            .tint(.blue)
+                            .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                model.freeforms.remove(diagram.id)
+                            } label: {
+                                Label(.app("View.ProjectDetailView.Delete"), systemImage: "trash")
+                            }
                         }
                     }
                 }
@@ -446,33 +453,63 @@ extension ProjectDetailView {
         .contentShape(Rectangle())
     }
 
+    @ViewBuilder
     fileprivate func freeformDiagramRow(diagram: FreeformDiagram) -> some View {
-        Button {
-            model.selection = .freeformDiagram(diagram.id)
-        } label: {
-            freeformDiagramRowContent(diagram: diagram)
-                // See `codebaseRow`'s matching comment: only the regular-width call site needs
-                // this padding, so it's applied here rather than baked into the shared content.
+        if renamingDiagramID == diagram.id {
+            renamingField(diagram: diagram)
                 .padding(.horizontal)
                 .padding(.vertical, 6)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
-        .contextMenu {
+        } else {
             Button {
-                if let id = model.freeforms.duplicate(diagram.id) {
-                    model.selection = .freeformDiagram(id)
-                }
+                model.selection = .freeformDiagram(diagram.id)
             } label: {
-                Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+                freeformDiagramRowContent(diagram: diagram)
+                    // See `codebaseRow`'s matching comment: only the regular-width call site needs
+                    // this padding, so it's applied here rather than baked into the shared content.
+                    .padding(.horizontal)
+                    .padding(.vertical, 6)
             }
-            .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
-            Button(role: .destructive) {
-                model.freeforms.remove(diagram.id)
-            } label: {
-                Label(.app("View.ProjectDetailView.DeleteMenu"), systemImage: "trash")
-            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
+            .contextMenu { freeformDiagramContextMenu(diagram: diagram) }
         }
+    }
+
+    private func renamingField(diagram: FreeformDiagram) -> some View {
+        TextField(text: $renamingText) {
+            Text(.app("View.ProjectDetailView.Name"))
+        }
+        .onSubmit {
+            model.freeforms.rename(diagram.id, name: renamingText)
+            renamingDiagramID = nil
+        }
+        .textFieldStyle(.roundedBorder)
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).renameField")
+    }
+
+    @ViewBuilder
+    fileprivate func freeformDiagramContextMenu(diagram: FreeformDiagram) -> some View {
+        Button {
+            renamingText = diagram.name
+            renamingDiagramID = diagram.id
+        } label: {
+            Label(.app("View.ProjectDetailView.RenameMenu"), systemImage: "pencil")
+        }
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).rename")
+        Button {
+            if let id = model.freeforms.duplicate(diagram.id) {
+                model.selection = .freeformDiagram(id)
+            }
+        } label: {
+            Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+        }
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
+        Button(role: .destructive) {
+            model.freeforms.remove(diagram.id)
+        } label: {
+            Label(.app("View.ProjectDetailView.DeleteMenu"), systemImage: "trash")
+        }
+        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).delete")
     }
 }
 
