@@ -4,13 +4,23 @@ import AcaiDiagram
 
 struct CodebaseDetailView: View {
     let codebaseID: UUID
-    private let repositoryService: GitHubRepositoryService
     @EnvironmentObject var model: ProjectBrowserViewModel
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var reindexPhase: AsyncOperationPhase = .idle
-    @State private var pullPhase: AsyncOperationPhase = .idle
-    @State private var refSwitchPhase: AsyncOperationPhase = .idle
-    @State private var availableRefs: [GitHubRef] = []
+    /// Not `private`: the header extension (a separate file, kept there only to stay under this
+    /// file's own line-count limit) reads these too.
+    let repositoryService: GitHubRepositoryService
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.scenePhase) var scenePhase
+    /// Not `private`: the header extension (a separate file, kept there only to stay under this
+    /// file's own line-count limit) needs to write these too.
+    @State var reindexPhase: AsyncOperationPhase = .idle
+    @State var pullPhase: AsyncOperationPhase = .idle
+    @State var refSwitchPhase: AsyncOperationPhase = .idle
+    @State var availableRefs: [GitHubRef] = []
+    /// Bumped to force a fresh staleness recheck (on appear, or the scene becoming active again);
+    /// tying it to a `.task(id:)` (rather than a plain `Task { }` in `.onAppear`) means SwiftUI
+    /// cancels the previous check the moment this view disappears, instead of letting it finish in
+    /// the background and mutate shared state for a screen the user has already navigated away from.
+    @State var freshnessRecheckTrigger = 0
     /// Not `private`: the diagram-buttons and diagram-sheets extensions (separate files, kept there
     /// only to stay under this file's own line-count limit) need to write it too.
     @State var sequenceConfigContext: ConfigContext?
@@ -126,174 +136,6 @@ struct CodebaseDetailView: View {
         }
     }
 
-    // MARK: - Header
-
-    /// A single crowded row works on iPad/macOS, but on iPhone the title (icon + name + subtitle)
-    /// and the actions (index status + branch picker/Pull, or Reindex) don't both fit — so compact
-    /// width gets its own actions row underneath instead of squeezing everything into one line.
-    private func headerSection(codebase: Codebase) -> some View {
-        Group {
-            if horizontalSizeClass == .compact {
-                VStack(alignment: .leading, spacing: 12) {
-                    headerTitleRow(codebase: codebase)
-                    headerActionsRow(codebase: codebase)
-                }
-            } else {
-                HStack {
-                    headerTitleRow(codebase: codebase)
-                    Spacer()
-                    headerActionsRow(codebase: codebase)
-                }
-            }
-        }
-        .padding()
-    }
-
-    private func headerTitleRow(codebase: Codebase) -> some View {
-        HStack {
-            Image(systemName: "folder")
-                .font(.title)
-                .foregroundStyle(.primary)
-                .frame(width: 44, height: 44)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 4) {
-                TextField(text: Binding(
-                    get: { codebase.name },
-                    set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
-                )) {
-                    Text(.app("View.CodebaseDetailView.CodebaseName"))
-                }
-                .font(.title2.bold())
-                .textFieldStyle(.plain)
-
-                if let source = codebase.githubSource {
-                    Text(verbatim: "\(source.owner)/\(source.repo) @ \(source.ref)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                } else {
-                    Text(verbatim: (codebase.directoryPath as NSString).abbreviatingWithTildeInPath)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                }
-            }
-        }
-    }
-
-    private func headerActionsRow(codebase: Codebase) -> some View {
-        HStack {
-            indexStatus(codebase: codebase)
-            if horizontalSizeClass == .compact {
-                Spacer()
-            }
-            if artifact != nil {
-                queryButton(codebase: codebase)
-            }
-            if let source = codebase.githubSource {
-                githubActions(codebase: codebase, source: source)
-            } else {
-                Button {
-                    reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                    Task {
-                        await model.editing.reindex(codebaseID: codebase.id)
-                        reindexPhase = .loaded
-                    }
-                } label: {
-                    Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
-                }
-                .disabled(reindexPhase.isInFlight)
-                .accessibilityIdentifier("codebaseDetail.reindexButton")
-                AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
-            }
-        }
-    }
-
-    /// Opens `QueryView`, scoped to this codebase.
-    private func queryButton(codebase: Codebase) -> some View {
-        Button {
-            model.selection = .query(codebase.id)
-        } label: {
-            Label(.app("View.CodebaseDetailView.Query"), systemImage: "magnifyingglass")
-        }
-        .accessibilityIdentifier("codebaseDetail.queryButton")
-    }
-
-    @ViewBuilder
-    private func githubActions(codebase: Codebase, source: GitHubSource) -> some View {
-        Picker(.app("View.CodebaseDetailView.BranchTag"), selection: Binding(
-            get: { GitHubRef(name: source.ref, kind: source.refKind).id },
-            set: { newID in
-                let currentRef = GitHubRef(name: source.ref, kind: source.refKind)
-                guard let selected = (availableRefs + [currentRef]).first(where: { $0.id == newID }) else { return }
-                refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(selected.name)"))
-                Task {
-                    await model.editing.switchGitHubRef(
-                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
-                    refSwitchPhase = .loaded
-                }
-            }
-        )) {
-            if !availableRefs.contains(where: { $0.name == source.ref && $0.kind == source.refKind }) {
-                Text(verbatim: source.ref).tag(GitHubRef(name: source.ref, kind: source.refKind).id)
-            }
-            ForEach(availableRefs) { ref in
-                Text(verbatim: ref.name).tag(ref.id)
-            }
-        }
-        .labelsHidden()
-        .frame(maxWidth: 160)
-        .disabled(refSwitchPhase.isInFlight)
-        .accessibilityIdentifier("codebaseDetail.refPicker")
-        .task(id: codebase.id) { await loadAvailableRefs(source: source) }
-        AsyncOperationStatusView(identifierPrefix: "codebaseDetail.refSwitch", phase: refSwitchPhase)
-
-        Button {
-            pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
-            Task {
-                await model.editing.pull(codebaseID: codebase.id)
-                pullPhase = .loaded
-            }
-        } label: {
-            Label(.app("View.CodebaseDetailView.Pull"), systemImage: "arrow.triangle.2.circlepath")
-        }
-        .disabled(pullPhase.isInFlight)
-        .accessibilityIdentifier("codebaseDetail.pullButton")
-        AsyncOperationStatusView(identifierPrefix: "codebaseDetail.pull", phase: pullPhase)
-    }
-
-    private func loadAvailableRefs(source: GitHubSource) async {
-        guard let account = GitHubTokenStore().load() else { return }
-        availableRefs = (try? await repositoryService.refs(
-            credential: account.credential, owner: source.owner, repo: source.repo)) ?? []
-    }
-
-    private func indexStatus(codebase: Codebase) -> some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            if let date = codebase.lastIndexed {
-                let formatted = date.formatted(date: .abbreviated, time: .shortened)
-                Text(.app("View.CodebaseDetailView.LastIndexed \(formatted)"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if codebase.hasParseErrors {
-                Label(
-                    .app("View.CodebaseDetailView.SyntaxIssues \(codebase.parseDiagnosticCount)"),
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .help(.app("View.CodebaseDetailView.SomeFilesCouldNot"))
-            }
-        }
-    }
-
     // MARK: - Analysis-backed sections
 
     /// The report sections whose scans are computed once in the background (``CodebaseAnalysis``) and
@@ -329,10 +171,10 @@ struct CodebaseDetailView: View {
 
 }
 
-// Not Indexed section — kept small; the diagram buttons/card-grid layout live in
-// `CodebaseDetailView+Diagrams.swift` and the diagram configuration sheets live in
-// `CodebaseDetailView+DiagramSheets.swift` (both separate files, kept there only to stay under
-// this file's own `file_length` limit).
+// Not Indexed section — kept small; the header lives in `CodebaseDetailView+Header.swift`, the
+// diagram buttons/card-grid layout in `CodebaseDetailView+Diagrams.swift`, and the diagram
+// configuration sheets in `CodebaseDetailView+DiagramSheets.swift` (all separate files, kept there
+// only to stay under this file's own `file_length`/`type_body_length` limits).
 extension CodebaseDetailView {
 
     // MARK: - Not Indexed

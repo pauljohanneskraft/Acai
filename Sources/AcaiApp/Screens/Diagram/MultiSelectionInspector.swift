@@ -5,9 +5,12 @@ import SwiftUI
 /// optional bulk action applied to the whole selection.
 struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String {
     struct BulkAction {
-        let label: LocalizedStringKey
+        let label: LocalizedStringResource
         let systemImage: String
         let role: ButtonRole?
+        /// Suffixes `"diagram.multiSelection.bulkAction."` — must be unique among the actions
+        /// passed to one inspector so a screen object can target this action specifically.
+        let accessibilityIDSuffix: String
         let action: () -> Void
     }
 
@@ -19,7 +22,7 @@ struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String
     let rowDetail: ((Item) -> String?)?
     /// Tapping a row narrows the selection to it; `nil` renders a non-interactive row.
     let onSelect: ((String) -> Void)?
-    let bulkAction: BulkAction?
+    let bulkActions: [BulkAction]
 
     var body: some View {
         List {
@@ -30,15 +33,18 @@ struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String
             } header: {
                 title(items.count)
             }
-            if let bulkAction {
+            if !bulkActions.isEmpty {
                 Section {
-                    Button(role: bulkAction.role) {
-                        bulkAction.action()
-                    } label: {
-                        Label(bulkAction.label, systemImage: bulkAction.systemImage)
-                            .frame(maxWidth: .infinity)
+                    ForEach(bulkActions, id: \.accessibilityIDSuffix) { bulkAction in
+                        Button(role: bulkAction.role) {
+                            bulkAction.action()
+                        } label: {
+                            Label(bulkAction.label, systemImage: bulkAction.systemImage)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .accessibilityIdentifier(
+                            "diagram.multiSelection.bulkAction.\(bulkAction.accessibilityIDSuffix)")
                     }
-                    .accessibilityIdentifier("diagram.multiSelection.bulkAction")
                 }
             }
         }
