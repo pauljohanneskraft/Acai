@@ -239,6 +239,17 @@ struct ProjectDetailView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            if let id = model.freeforms.duplicate(diagram.id) {
+                                model.selection = .freeformDiagram(id)
+                            }
+                        } label: {
+                            Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+                        }
+                        .tint(.blue)
+                        .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
+                    }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             model.freeforms.remove(diagram.id)
@@ -448,6 +459,14 @@ extension ProjectDetailView {
         .buttonStyle(.plain)
         .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")
         .contextMenu {
+            Button {
+                if let id = model.freeforms.duplicate(diagram.id) {
+                    model.selection = .freeformDiagram(id)
+                }
+            } label: {
+                Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")
+            }
+            .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).duplicate")
             Button(role: .destructive) {
                 model.freeforms.remove(diagram.id)
             } label: {
