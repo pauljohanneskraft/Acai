@@ -20,8 +20,7 @@ extension DartExtractor {
                 inheritedTypes.append(ref)
                 let label = ref.genericArguments.isEmpty ? nil
                     : "<" + ref.genericArguments.map(\.name).joined(separator: ", ") + ">"
-                relationships.append(Relationship(
-                    kind: .inheritance, source: typeId, target: ref.name, label: label))
+                relationships.append(ref.relationship(kind: .inheritance, source: typeId, label: label))
             }
         }
 
@@ -33,16 +32,14 @@ extension DartExtractor {
         for mixinsNode in mixinNodes {
             for ref in extractTypeList(mixinsNode) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .inheritance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .inheritance, source: typeId))
             }
         }
 
         if let interfacesNode = node.child(byFieldName: "interfaces") {
             for ref in extractTypeList(interfacesNode) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .conformance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -76,16 +73,14 @@ extension DartExtractor {
         for child in node.children() where child.nodeType == "mixins" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .inheritance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .inheritance, source: typeId))
             }
         }
 
         for child in node.children() where child.nodeType == "interfaces" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .conformance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -123,15 +118,13 @@ extension DartExtractor {
             case "type_not_void_list", "_type_not_void_list":
                 for ref in extractTypeListFromChildren(child) {
                     refs.append(ref)
-                    relationships.append(Relationship(
-                        kind: .inheritance, source: typeId, target: ref.name))
+                    relationships.append(ref.relationship(kind: .inheritance, source: typeId))
                 }
                 seenOnKeyword = false
             case "type_identifier", "generic_type":
                 if let ref = extractTypeReference(child) {
                     refs.append(ref)
-                    relationships.append(Relationship(
-                        kind: .inheritance, source: typeId, target: ref.name))
+                    relationships.append(ref.relationship(kind: .inheritance, source: typeId))
                 }
             default:
                 seenOnKeyword = false
@@ -153,8 +146,7 @@ extension DartExtractor {
         for child in node.children() where child.nodeType == "interfaces" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .conformance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -217,8 +209,7 @@ extension DartExtractor {
         for child in node.children() where child.nodeType == "interfaces" {
             for ref in extractTypeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(Relationship(
-                    kind: .conformance, source: typeId, target: ref.name))
+                relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 

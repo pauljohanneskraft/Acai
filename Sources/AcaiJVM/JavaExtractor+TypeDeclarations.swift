@@ -78,33 +78,27 @@ extension JavaExtractor {
         "strictfp": .strictfp, "default": .default
     ]
 
-    func extractModifiers(_ node: Node) -> ModifierInfo {
-        var accessLevel: AccessLevel?
-        var modifiers: [Modifier] = []
-        var annotations: [String] = []
-
-        for child in node.children() {
-            guard let nodeType = child.nodeType else { continue }
-            if let access = Self.accessLevelMap[nodeType] {
-                accessLevel = access
-            } else if let modifier = Self.modifierMap[nodeType] {
-                modifiers.append(modifier)
-            } else if nodeType == "marker_annotation" || nodeType == "annotation" {
-                annotations.append(normalizedAnnotation(text(child)))
+    // Java's default (no explicit modifier) is package-private — resolved here so the engine never
+    // sees a nil visibility. `@Override` maps to the `.override` modifier, so the dead-code scan
+    // exempts an override of a supertype/interface member the same way it does for other languages.
+    private static let modifierClassifier = ModifierClassifier(
+        defaultAccessLevel: .packagePrivate,
+        annotationNodeTypes: ["marker_annotation", "annotation"],
+        classify: { nodeType, _ in
+            if let access = accessLevelMap[nodeType] { return .accessLevel(access) }
+            if let modifier = modifierMap[nodeType] { return .modifier(modifier) }
+            return nil
+        },
+        postProcess: { info in
+            let hasOverrideAnnotation = info.annotations.contains { $0.lowercased() == "@override" }
+            if !info.modifiers.contains(.override), hasOverrideAnnotation {
+                info.modifiers.append(.override)
             }
         }
+    )
 
-        // `@Override` maps to the `.override` modifier, so the dead-code scan exempts an override of a
-        // supertype/interface member the same way it does for other languages.
-        if !modifiers.contains(.override),
-           annotations.contains(where: { $0.lowercased() == "@override" }) {
-            modifiers.append(.override)
-        }
-
-        // Java's default (no explicit modifier) is package-private — resolved here so the engine
-        // never sees a nil visibility.
-        return ModifierInfo(
-            accessLevel: accessLevel ?? .packagePrivate, modifiers: modifiers, annotations: annotations)
+    func extractModifiers(_ node: Node) -> ModifierInfo {
+        Self.modifierClassifier.modifierInfo(for: node, in: context)
     }
 
     func extractModifiersFromParent(_ node: Node) -> ModifierInfo {
