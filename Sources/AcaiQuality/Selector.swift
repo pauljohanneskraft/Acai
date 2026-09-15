@@ -21,6 +21,10 @@ public struct Selector: Codable, Hashable, Sendable {
     public var minMembers: Int?
     /// Minimum nested-type depth — selects deeply nested types (scope a rule onto them).
     public var minNesting: Int?
+    /// Exact set of type ids to allow through — everything else fails, regardless of the other
+    /// facets. Unlike `typeGlob` (one pattern), this pins an arbitrary, pre-picked group of types,
+    /// e.g. a diagram scoped to exactly the nodes a user selected.
+    public var explicitIDs: Set<String>?
 
     public init(
         module: String? = nil,
@@ -30,7 +34,8 @@ public struct Selector: Codable, Hashable, Sendable {
         minimumAccess: AccessLevel? = nil,
         kind: TypeKind? = nil,
         minMembers: Int? = nil,
-        minNesting: Int? = nil
+        minNesting: Int? = nil,
+        explicitIDs: Set<String>? = nil
     ) {
         self.module = module
         self.typeGlob = typeGlob
@@ -40,9 +45,11 @@ public struct Selector: Codable, Hashable, Sendable {
         self.kind = kind
         self.minMembers = minMembers
         self.minNesting = minNesting
+        self.explicitIDs = explicitIDs
     }
 
     public func matches(_ node: GraphView.Node) -> Bool {
+        if let explicitIDs, !explicitIDs.contains(node.id) { return false }
         if let module, !Glob(module).matches(node.module) { return false }
         if let typeGlob, !Glob(typeGlob).matches(node.id), !Glob(typeGlob).matches(node.qualifiedName) {
             return false
