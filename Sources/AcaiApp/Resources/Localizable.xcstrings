@@ -12235,6 +12235,50 @@
         }
       }
     },
+    "View.FreeformDiagramView.ExportDiagramImage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm als Bild exportieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export the diagram as an image"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter le diagramme sous forme d'image"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramView.ExportImage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bild exportieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Image"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter l'image"
+          }
+        }
+      }
+    },
     "View.FreeformDiagramView.FitDiagramVisibleCanvas" : {
       "localizations" : {
         "de" : {
