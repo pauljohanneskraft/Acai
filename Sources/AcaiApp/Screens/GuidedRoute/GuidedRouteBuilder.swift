@@ -50,10 +50,9 @@ struct GuidedRouteBuilder {
     private func topType(by metric: (CodeMetrics.TypeMetric) -> Int) -> CodeMetrics.TypeMetric? {
         metrics.types
             .filter { metric($0) > 0 }
-            .sorted { lhs, rhs in
+            .max { lhs, rhs in
                 let (left, right) = (metric(lhs), metric(rhs))
-                return left != right ? left > right : lhs.name < rhs.name
+                return left != right ? left < right : lhs.name > rhs.name
             }
-            .first
     }
 }

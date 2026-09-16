@@ -3,25 +3,34 @@ import SwiftUI
 extension GuidedRoute.Stop.Kind {
     var title: LocalizedStringResource {
         switch self {
-        case .entryPoint: .app("View.GuidedRouteSheet.EntryPoint")
-        case .mostDependedUpon: .app("View.GuidedRouteSheet.MostDependedUpon")
-        case .mostComplex: .app("View.GuidedRouteSheet.MostComplex")
+        case .entryPoint:
+            .app("View.GuidedRouteSheet.EntryPoint")
+        case .mostDependedUpon:
+            .app("View.GuidedRouteSheet.MostDependedUpon")
+        case .mostComplex:
+            .app("View.GuidedRouteSheet.MostComplex")
         }
     }
 
     var stopDescription: LocalizedStringResource {
         switch self {
-        case .entryPoint: .app("View.GuidedRouteSheet.EntryPointDescription")
-        case .mostDependedUpon: .app("View.GuidedRouteSheet.MostDependedUponDescription")
-        case .mostComplex: .app("View.GuidedRouteSheet.MostComplexDescription")
+        case .entryPoint:
+            .app("View.GuidedRouteSheet.EntryPointDescription")
+        case .mostDependedUpon:
+            .app("View.GuidedRouteSheet.MostDependedUponDescription")
+        case .mostComplex:
+            .app("View.GuidedRouteSheet.MostComplexDescription")
         }
     }
 
     var systemImage: String {
         switch self {
-        case .entryPoint: "arrowshape.turn.up.forward"
-        case .mostDependedUpon: "point.3.connected.trianglepath.dotted"
-        case .mostComplex: "chart.line.uptrend.xyaxis"
+        case .entryPoint:
+            "arrowshape.turn.up.forward"
+        case .mostDependedUpon:
+            "point.3.connected.trianglepath.dotted"
+        case .mostComplex:
+            "chart.line.uptrend.xyaxis"
         }
     }
 }
