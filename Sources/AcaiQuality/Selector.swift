@@ -69,6 +69,15 @@ public struct Selector: Codable, Hashable, Sendable {
         guard let module else { return true }
         return Glob(module).matches(name)
     }
+
+    /// Whether this selector matches a node identified only by name — e.g. a state diagram's
+    /// state, which carries no `TypeDeclaration` for the other facets to check against. Consults
+    /// `typeGlob` (against the name) and `explicitIDs`; a selector with neither matches every name.
+    public func matchesName(_ name: String) -> Bool {
+        if let explicitIDs, !explicitIDs.contains(name) { return false }
+        if let typeGlob, !Glob(typeGlob).matches(name) { return false }
+        return true
+    }
 }
 
 /// A compiled `*`/`?` glob pattern, anchored to the whole string. Kept in-target (no regex
