@@ -32,6 +32,11 @@ several codebases on one monorepo share a single object store at different commi
 If a local folder happens to be a git working directory with an `origin` remote, it is silently
 upgraded to a repository-linked codebase so revision comparison works.
 
+Finishing a codebase's first index offers a **guided route**: three stops assembled entirely from
+measurements the index already took — where execution enters, the type most other code depends on,
+and the type carrying the single most complex method — each opening the diagram that actually shows
+it. It only offers itself once, but is re-runnable any time from the codebase's own toolbar.
+
 ## Diagrams
 
 Seven generated types: **class**, **sequence**, **state**, **package**, **call graph**, **module

@@ -161,6 +161,7 @@ extension ProjectCodebaseEditor {
 
     func reindex(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
+        let wasFirstIndex = !codebase.hasArtifact
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
         let fileFilter = codebase.fileFilter
@@ -209,6 +210,7 @@ extension ProjectCodebaseEditor {
             guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
             applyReindexResult(
                 codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed)
+            if wasFirstIndex { presentGuidedRoute(codebaseID) }
         } catch {
             // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
             // folder of the user's choosing — only a codebase they picked themselves.

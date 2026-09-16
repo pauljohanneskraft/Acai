@@ -198,6 +198,9 @@ struct ProjectCodebaseEditor {
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
+    /// Builds and shows the guided route (see `GuidedRouteBuilder`) for a codebase that just
+    /// finished its first index — called from `reindex(codebaseID:)`.
+    let presentGuidedRoute: (UUID) -> Void
     /// Real network clone/fetch, swapped for `FixtureGitHubRepositoryService` under a UI test
     /// fixture — see `GitHubRepositoryService`.
     var repositoryService: GitHubRepositoryService = GitHubRepositoryServiceResolver().resolve()

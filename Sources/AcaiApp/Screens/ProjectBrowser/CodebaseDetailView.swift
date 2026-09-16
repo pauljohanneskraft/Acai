@@ -118,6 +118,10 @@ struct CodebaseDetailView: View {
                 StatisticDetailSheet(codebase: codebase, detail: detail)
                     .environmentObject(model)
             }
+            .sheet(item: $model.pendingGuidedRoute) { route in
+                GuidedRouteSheet(route: route)
+                    .environmentObject(model)
+            }
             .confirmationDialog(
                 .app("View.CodebaseDetailView.ConfirmDeleteCodebase \(codebase.name)"),
                 isPresented: $showDeleteConfirmation
