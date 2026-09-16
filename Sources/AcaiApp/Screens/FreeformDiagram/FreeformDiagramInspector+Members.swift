@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiCore
+import AcaiRender
 
 // MARK: - Member Editing (properties & methods on `.type` nodes)
 
@@ -55,8 +56,7 @@ extension FreeformDiagramInspector {
 
     private func propertyRow(nodeID: String, prop: FreeformDiagram.Node.Member) -> some View {
         HStack {
-            Text(verbatim: prop.displayString)
-                .font(.system(size: 12, design: .monospaced))
+            MemberRowView(item: prop.displayItem, compact: false)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     memberSheet = .editProperty(nodeID: nodeID, memberID: prop.id)
@@ -125,8 +125,7 @@ extension FreeformDiagramInspector {
 
     private func methodRow(nodeID: String, method: FreeformDiagram.Node.Member) -> some View {
         HStack {
-            Text(verbatim: method.displayString)
-                .font(.system(size: 12, design: .monospaced))
+            MemberRowView(item: method.displayItem, compact: false)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     memberSheet = .editMethod(nodeID: nodeID, memberID: method.id)
