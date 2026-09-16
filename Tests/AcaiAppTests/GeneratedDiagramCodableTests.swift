@@ -55,16 +55,6 @@ struct GeneratedDiagramCodableTests {
         }
     }
 
-    @Test func cycleDiagramRoundTripsWithReference() throws {
-        let reference = CycleDiagramReference(scope: "modules", members: ["ModuleA", "ModuleB"])
-        let diagram = GeneratedDiagram(name: "Cyc", content: .cycleDiagram(reference), codebaseID: UUID())
-
-        let decoded = try roundTrip(diagram)
-        #expect(decoded == diagram)
-        #expect(decoded.type == .cycleDiagram)
-        #expect(decoded.cycleDiagramReference == reference)
-    }
-
     @Test func stateDiagramRoundTripsWithConfiguration() throws {
         let config = StateDiagramConfiguration(typeName: "Loader", variableName: "state", maxStates: 15)
         let diagram = GeneratedDiagram(name: "St", content: .stateDiagram(config), codebaseID: UUID())

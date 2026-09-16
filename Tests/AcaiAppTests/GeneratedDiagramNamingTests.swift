@@ -38,18 +38,6 @@ struct GeneratedDiagramNamingTests {
         }
     }
 
-    @Test func cycleDiagramNameListsMembers() {
-        let reference = CycleDiagramReference(scope: "types", members: ["A", "B", "C"])
-        let diagram = GeneratedDiagram(name: "", content: .cycleDiagram(reference), codebaseID: UUID())
-        #expect(diagram.autoName(codebaseName: "MyApp") == "MyApp — Cycle: A ↔ B ↔ C")
-    }
-
-    @Test func cycleDiagramNameTruncatesLongCycles() {
-        let reference = CycleDiagramReference(scope: "types", members: ["A", "B", "C", "D"])
-        let diagram = GeneratedDiagram(name: "", content: .cycleDiagram(reference), codebaseID: UUID())
-        #expect(diagram.autoName(codebaseName: "MyApp") == "MyApp — Cycle: A ↔ B ↔ C…")
-    }
-
     @Test func emptyCodebaseNameOmitsPrefix() {
         let config = SequenceDiagramConfiguration(entryTypeName: "A", entryMethodName: "b")
         let diagram = GeneratedDiagram(name: "", content: .sequenceDiagram(config), codebaseID: UUID())

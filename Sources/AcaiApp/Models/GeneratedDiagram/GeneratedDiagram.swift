@@ -61,9 +61,6 @@ extension GeneratedDiagram {
         case moduleCoupling
         /// Churn × complexity scatter. No configuration, for the same reason as `.moduleCoupling`.
         case hotspot
-        /// One isolated dependency cycle, identified by the scope/members `AcaiQuality
-        /// .CycleFinder` already reported for it — see `CycleDiagramReference`.
-        case cycleDiagram(CycleDiagramReference)
 
         init(type: DiagramType) {
             switch type {
@@ -81,14 +78,6 @@ extension GeneratedDiagram {
                 self = .moduleCoupling
             case .hotspot:
                 self = .hotspot
-            case .cycleDiagram:
-                // Degenerate/unreachable by design: a cycle diagram has no meaningful content until
-                // a specific cycle is chosen, so it's never created through this generic
-                // type-only initializer — `CodebaseDetailView.diagramsBar` excludes `.cycleDiagram`
-                // from the general "add a diagram" grid, and the one real entry point (a Quality
-                // Check cycle violation's "View as Diagram" action) constructs
-                // `.cycleDiagram(CycleDiagramReference(...))` directly with the real scope/members.
-                self = .cycleDiagram(CycleDiagramReference(scope: "types", members: []))
             }
         }
 
@@ -108,8 +97,6 @@ extension GeneratedDiagram {
                 .moduleCoupling
             case .hotspot:
                 .hotspot
-            case .cycleDiagram:
-                .cycleDiagram
             }
         }
     }
@@ -139,10 +126,6 @@ extension GeneratedDiagram {
             case .module(let name):
                 return "\(prefix)Call Graph: \(name)"
             }
-        case .cycleDiagram(let reference):
-            let shown = reference.members.prefix(3).joined(separator: " ↔ ")
-            let suffix = reference.members.count > 3 ? "…" : ""
-            return "\(prefix)Cycle: \(shown)\(suffix)"
         default:
             return "\(prefix)\(content.type.displayName)"
         }
@@ -183,26 +166,6 @@ extension GeneratedDiagram {
             if let newValue, case .callGraph = content { content = .callGraph(newValue) }
         }
     }
-
-    var cycleDiagramReference: CycleDiagramReference? {
-        if case .cycleDiagram(let reference) = content { reference } else { nil }
-    }
-}
-
-/// Identifies exactly one `AcaiQuality.CycleFinder.Cycle` for a Cycle Diagram to isolate and
-/// render: which scope it was found at, and its members (type ids for a `.types`-scope cycle,
-/// module names for a `.modules`-scope one), in the same order `CycleFinder` itself reports them.
-/// Stores `scope` as `AcaiQuality.CycleFinder.Scope`'s plain `rawValue` rather than the enum type
-/// itself — `AcaiApp` already depends on `AcaiQuality`, but keeping this reference a plain,
-/// self-contained value (matching how it's actually produced, straight out of `Violation.detail["scope"]`
-/// and `Violation.subject`) avoids coupling `GeneratedDiagram.Content`'s Codable shape to another
-/// module's enum layout.
-struct CycleDiagramReference: Codable, Hashable, Sendable {
-    /// `AcaiQuality.CycleFinder.Scope.modules.rawValue` or `.types.rawValue` ("modules"/"types").
-    var scope: String
-    /// The cycle's members, sorted (mirrors `CycleFinder.Cycle.members`) — type ids for a
-    /// `.types`-scope cycle, module names for a `.modules`-scope one.
-    var members: [String]
 }
 
 extension GeneratedDiagram {
