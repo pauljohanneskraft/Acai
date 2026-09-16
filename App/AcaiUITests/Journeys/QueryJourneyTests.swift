@@ -7,73 +7,34 @@ import XCTest
 /// known-answer filter, not just a smoke check that the screen opens.
 @MainActor
 final class QueryJourneyTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
-
-    private var comparator: ScreenshotComparator {
-        ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__"))
-    }
 
     func testQueryViewFiltersByMutablePublicState() throws {
-        app.launchWithFixture("seeded")
-
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        codebaseRow.tap()
-
-        let codebaseDetail = CodebaseDetailScreen(app: app)
-        XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
-        codebaseDetail.reindexButton.tap()
-
-        XCTAssertTrue(
-            codebaseDetail.queryButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
-        codebaseDetail.queryButton.tap()
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
 
         let query = QueryScreen(app: app)
-        XCTAssertTrue(query.list.waitForExistence(timeout: 10))
-        XCTAssertTrue(query.row(id: "Base").waitForExistence(timeout: 10))
+        codebaseDetail.queryButton.tap("Query", until: query.list)
+        query.row(id: "Base").waitOrFail("the Base query row")
         XCTAssertTrue(query.row(id: "Worker").exists)
 
         // Every filter control lives in a sheet, not inline above the results.
-        XCTAssertTrue(query.filterButton.waitForExistence(timeout: 5))
-        query.filterButton.tap()
+        query.filterButton.tap("the query filter button", until: query.mutablePublicStateToggle)
+        query.mutablePublicStateToggle.tapWhenReady("Mutable public state only")
+        query.filterSheetDoneButton.tapWhenReady("the filter sheet's Done button")
 
-        XCTAssertTrue(query.mutablePublicStateToggle.waitForExistence(timeout: 5))
-        query.mutablePublicStateToggle.tap()
-
-        XCTAssertTrue(query.filterSheetDoneButton.waitForExistence(timeout: 5))
-        query.filterSheetDoneButton.tap()
-
-        XCTAssertTrue(
-            query.row(id: "Base").waitForExistence(timeout: 10),
-            "Base has a public settable `id` property and should still match.")
-        XCTAssertFalse(
-            query.row(id: "Worker").exists,
-            "Worker has no stored properties at all and shouldn't match \"mutable public state only\".")
+        query.row(id: "Worker").waitForDisappearanceOrFail(
+            "the Worker query row (it has no stored properties and shouldn't match \"mutable public state only\")"
+        )
+        query.row(id: "Base").waitOrFail("the Base query row (its public settable `id` should still match)")
         XCTAssertFalse(
             query.row(id: "Derived").exists,
             "Derived's only property (`helper`) is private and shouldn't match.")
 
-        query.filterButton.tap()
-        XCTAssertTrue(query.clearFiltersButton.waitForExistence(timeout: 5))
-        query.clearFiltersButton.tap()
-        query.filterSheetDoneButton.tap()
+        query.filterButton.tap("the query filter button", until: query.clearFiltersButton)
+        query.clearFiltersButton.tapWhenReady("Clear Filters")
+        query.filterSheetDoneButton.tapWhenReady("the filter sheet's Done button")
 
-        XCTAssertTrue(query.row(id: "Worker").waitForExistence(timeout: 10), "Clearing filters should restore Worker.")
+        query.row(id: "Worker").waitOrFail("the Worker query row after clearing filters")
 
-        // Captured last: a missing/drifted golden fails without truncating the assertions above.
-        comparator.validate(
-            viewType: "Query", state: "listPopulated",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        validateScreenshot("Query", state: "listPopulated")
     }
 }

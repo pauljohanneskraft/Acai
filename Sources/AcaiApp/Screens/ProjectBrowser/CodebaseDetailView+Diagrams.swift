@@ -51,7 +51,7 @@ extension CodebaseDetailView {
                 codebaseID: codebase.id,
                 content: GeneratedDiagram.Content(type: type)
             ) {
-                model.selection = .generatedDiagram(id)
+                model.open(.generatedDiagram(id))
             }
         } label: {
             HStack(spacing: 12) {

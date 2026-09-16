@@ -90,10 +90,12 @@ struct HotspotChartView: View {
             loadingState
         } else if let message = viewModel.loadError {
             statusState(
+                identifier: "hotspot.error",
                 systemImage: "exclamationmark.triangle",
                 text: .app("View.HotspotChartView.CouldNotLoadGitHistory \(message)"))
         } else if !viewModel.hasGitHistory {
             statusState(
+                identifier: "hotspot.noGitHistory",
                 systemImage: "questionmark.folder",
                 text: .app("View.HotspotChartView.NoGitHistory")
             )
@@ -102,7 +104,10 @@ struct HotspotChartView: View {
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            statusState(systemImage: "flame", text: .app("View.HotspotChartView.NoFilesToPlot"))
+            statusState(
+                identifier: "hotspot.noFilesToPlot", systemImage: "flame",
+                text: .app("View.HotspotChartView.NoFilesToPlot")
+            )
         }
     }
 
@@ -112,15 +117,17 @@ struct HotspotChartView: View {
             Text(.app("View.HotspotChartView.WalkingCommitHistory")).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("hotspot.loading")
     }
 
-    private func statusState(systemImage: String, text: LocalizedStringResource) -> some View {
+    private func statusState(identifier: String, systemImage: String, text: LocalizedStringResource) -> some View {
         VStack(spacing: 12) {
             Image(systemName: systemImage).font(.system(size: 28)).foregroundStyle(.secondary)
             Text(localized: text).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier(identifier)
     }
 
     private func chart(_ data: HotspotChartData) -> some View {

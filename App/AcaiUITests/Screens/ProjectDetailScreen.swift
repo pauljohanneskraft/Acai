@@ -8,35 +8,43 @@ final class ProjectDetailScreen {
         self.app = app
     }
 
-    var addCodebaseButton: XCUIElement {
-        openAddMenuIfNeeded(target: "projectDetail.addCodebaseButton")
-        return app.buttons["projectDetail.addCodebaseButton"]
-    }
-
-    var addDiagramButton: XCUIElement {
-        openAddMenuIfNeeded(target: "projectDetail.addDiagramButton")
-        return app.buttons["projectDetail.addDiagramButton"]
-    }
-
-    var findingsButton: XCUIElement {
-        openAddMenuIfNeeded(target: "projectDetail.findingsButton")
-        return app.buttons["projectDetail.findingsButton"]
-    }
+    var addCodebaseButton: XCUIElement { app.buttons["projectDetail.addCodebaseButton"] }
+    var addDiagramButton: XCUIElement { app.buttons["projectDetail.addDiagramButton"] }
+    var findingsButton: XCUIElement { app.buttons["projectDetail.findingsButton"] }
 
     /// The compact-width (iPhone) "+" toolbar button; never exists on regular width.
     var addMenuButton: XCUIElement { app.buttons["projectDetail.addMenuButton"] }
 
-    /// A no-op on regular width, or once the menu is already open — checked via `target`'s own
-    /// existence first, so repeated calls never tap "+" twice and toggle the menu shut again.
-    /// `menuButton` needs a real wait, not a plain `.exists`: a caller reading this accessor right
-    /// after navigating here can race the screen's own initial render, where `addMenuButton`
-    /// doesn't exist *yet* either.
-    private func openAddMenuIfNeeded(target: String) {
-        guard !app.buttons[target].exists else { return }
-        let menuButton = app.buttons["projectDetail.addMenuButton"]
-        // Absence is the regular-width answer, not a failure, so this one wait stays unchecked.
-        guard menuButton.waitForExistence(timeout: 10) else { return }
-        menuButton.tap()
+    func tapAddCodebase(file: StaticString = #filePath, line: UInt = #line) {
+        tapAddMenuItem(addCodebaseButton, description: "Add Codebase", file: file, line: line)
+    }
+
+    func tapAddDiagram(file: StaticString = #filePath, line: UInt = #line) {
+        tapAddMenuItem(addDiagramButton, description: "Add Diagram", file: file, line: line)
+    }
+
+    func openFindings(file: StaticString = #filePath, line: UInt = #line) {
+        tapAddMenuItem(findingsButton, description: "Findings", file: file, line: line)
+    }
+
+    /// Regular width shows these actions directly; compact width hides them behind "+".
+    private func tapAddMenuItem(_ item: XCUIElement, description: String, file: StaticString, line: UInt) {
+        if SnapshotPlatform().isCompactWidth {
+            addMenuButton.tap("the \"+\" menu", until: item, file: file, line: line)
+        }
+        item.tapWhenReady(description, file: file, line: line)
+    }
+
+    /// Only meaningful on compact width. Opening a `Menu` has no side effect, so this may retry.
+    func openAddMenu(file: StaticString = #filePath, line: UInt = #line) {
+        addMenuButton.tap("the \"+\" menu", until: addCodebaseButton, file: file, line: line)
+    }
+
+    /// An open `Menu` is covered by a full-screen dismiss region, so tapping where the "+" button
+    /// sits closes it — unlike a tap near the screen edge, which the home indicator can swallow.
+    func closeAddMenu(file: StaticString = #filePath, line: UInt = #line) {
+        addMenuButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        addCodebaseButton.waitForDisappearanceOrFail("the open \"+\" menu", file: file, line: line)
     }
 
     /// `.firstMatch`: this identifier can resolve to more than one accessibility node for a

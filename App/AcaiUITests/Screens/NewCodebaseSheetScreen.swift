@@ -20,7 +20,10 @@ final class NewCodebaseSheetScreen {
     var cloneLoadingIndicator: XCUIElement { app.descendants(matching: .any)["newCodebase.clone.loading"] }
 
     @discardableResult
-    func choose(_ label: String, from picker: XCUIElement, timeout: TimeInterval = 10) -> XCUIElement {
-        picker.choose(label, in: app, timeout: timeout)
+    func choose(
+        _ label: String, from picker: XCUIElement, timeout: TimeInterval = .uiTransition,
+        file: StaticString = #filePath, line: UInt = #line
+    ) -> XCUIElement {
+        picker.choose(label, in: app, timeout: timeout, file: file, line: line)
     }
 }

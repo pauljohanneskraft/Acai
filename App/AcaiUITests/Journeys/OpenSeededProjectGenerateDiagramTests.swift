@@ -2,36 +2,11 @@ import XCTest
 
 @MainActor
 final class OpenSeededProjectGenerateDiagramTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
-
     func testGenerateClassDiagramFromSeededCodebase() throws {
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded")
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
+        let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        codebaseRow.tap()
-
-        let codebaseDetail = CodebaseDetailScreen(app: app)
-        XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
-        codebaseDetail.reindexButton.tap()
-
-        let classDiagramButton = codebaseDetail.diagramButton(type: "class")
-        XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
-        let diagram = ClassDiagramScreen(app: app)
-        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
-        // keyed on the canvas appearing creates a second diagram whenever the first is still
-        // rendering — an extra sidebar row and a screenshot that differs run to run.
-        classDiagramButton.tapUntilItDisappears()
-
-        XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 30))
-        XCTAssertTrue(diagram.typeNode(named: "Derived").exists)
+        diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
+        XCTAssertTrue(diagram.typeNode(named: "Derived").exists, "Derived should be drawn alongside Base")
     }
 }

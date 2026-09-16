@@ -4,12 +4,12 @@ import XCTest
 final class FreeformDiagramScreen: DiagramScreenBase {
     var checkpointsButton: XCUIElement { app.buttons["diagram.checkpointsButton"] }
 
-    func tapCheckpoints() {
-        tapToolbarButton(checkpointsButton, label: "Checkpoints")
+    func tapCheckpoints(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(checkpointsButton, label: "Checkpoints", file: file, line: line)
     }
 
-    func tapSidebarToggle() {
-        tapToolbarButton(sidebarToggleButton, label: "Sidebar")
+    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(sidebarToggleButton, label: "Sidebar", file: file, line: line)
     }
 
     // MARK: - Point-and-Place Catalog
@@ -39,17 +39,20 @@ final class FreeformDiagramScreen: DiagramScreenBase {
     /// conditional toggles here rather than an unconditional open/close pair. On compact width
     /// (iPhone) the sidebar already auto-closes once placement begins, making the second toggle a
     /// no-op there. `"type.class"` (the catalog's first entry) stands in for "is the catalog
-    /// showing at all," regardless of which `kindID` this call wants.
-    func placeNodeViaCatalog(kindID: String) {
-        if !catalogNodeButton("type.class").exists {
-            tapSidebarToggle()
+    /// showing at all," regardless of which `kindID` this call wants. Call once the diagram's
+    /// toolbar is on screen, so the first `exists` read reflects a rendered sidebar.
+    func placeNodeViaCatalog(kindID: String, file: StaticString = #filePath, line: UInt = #line) {
+        let catalog = catalogNodeButton("type.class")
+        if !catalog.exists {
+            tapSidebarToggle(file: file, line: line)
         }
-        let button = catalogNodeButton(kindID)
-        XCTAssertTrue(button.waitForExistence(timeout: 10), "catalog entry '\(kindID)' never appeared")
-        button.tap()
-        XCTAssertTrue(cancelPlacementButton.waitForExistence(timeout: 5), "placement mode never started")
-        if catalogNodeButton("type.class").exists {
-            tapSidebarToggle()
+        catalogNodeButton(kindID).tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
+        cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
+        // Compact width closes the sidebar itself once placement begins; give that a moment to land
+        // before deciding whether to close it by hand.
+        if !catalog.waitForNonExistence(timeout: 2) {
+            tapSidebarToggle(file: file, line: line)
+            catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
         }
         tapCanvasCenter()
     }
@@ -89,12 +92,11 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         app.buttons["checkpoints.row.\(name)"]
     }
 
-    func saveCheckpoint(named name: String) {
-        tapCheckpoints()
-        XCTAssertTrue(checkpointsSaveButton.waitForExistence(timeout: 5))
-        checkpointsSaveButton.tap()
-        XCTAssertTrue(checkpointsNameField.waitForExistence(timeout: 5))
-        checkpointsNameField.clearAndTypeText(name)
-        checkpointsConfirmSaveButton.tap()
+    func saveCheckpoint(named name: String, file: StaticString = #filePath, line: UInt = #line) {
+        tapCheckpoints(file: file, line: line)
+        checkpointsSaveButton.tapWhenReady("the checkpoints Save button", file: file, line: line)
+        checkpointsNameField.waitOrFail("the checkpoint name field", file: file, line: line)
+        checkpointsNameField.clearAndTypeText(name, file: file, line: line)
+        checkpointsConfirmSaveButton.tapWhenReady("the checkpoint name alert's Save button", file: file, line: line)
     }
 }

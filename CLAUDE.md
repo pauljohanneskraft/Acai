@@ -57,7 +57,7 @@ This separation is load-bearing — keep it:
 
 **A generated page is not a reachable page.** When you add a module, also add it to the module map in `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` — that file is the site's landing page (`docs_generate.sh` redirects the root to it), and it is the only thing linking the per-module pages together. Skipping this leaves the docs reachable only by guessing the URL. Cross-module links there are written `[AcaiFoo](/documentation/acaifoo/)`, lowercased, no hosting base path (the renderer prepends it).
 
-**All prose lives in `.docc` catalogs** — there are no per-module `README.md` files and no `Documentation/` folder. That includes the user-facing guides for the binaries: the full `acai` flag reference is `Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md`, the MCP tool/schema reference is `Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md`, and the app's is `Sources/AcaiApp/AcaiApp.docc/AcaiApp.md`. The root `README.md` links to their published pages rather than restating them; the only other markdown in the repo is `Examples/README.md`. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
+**All prose lives in `.docc` catalogs** — there are no per-module `README.md` files and no `Documentation/` folder. That includes the user-facing guides for the binaries: the full `acai` flag reference is `Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md`, the MCP tool/schema reference is `Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md`, and the app's is `Sources/AcaiApp/AcaiApp.docc/AcaiApp.md`. The root `README.md` links to their published pages rather than restating them; the only other markdown in the repo is `Examples/README.md` and the review checklist in `.github/copilot-instructions.md`. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
 
 **In-page anchor links follow DocC's convention, not GitHub's.** DocC keeps the heading's case and turns spaces into hyphens (`## The mental model` → `#The-mental-model`); GitHub lowercases. A table of contents copied from GitHub-style markdown will silently fail to resolve, so match the heading exactly.
 
@@ -236,3 +236,52 @@ asserting; a raised timeout is not a fix for a flaky async test.
 identifier and real label for every new interactive element, and the loading/loaded/error identifier
 triple for every new async operation reachable from a journey. Coverage that is always one change
 behind the app never catches up.
+
+## Writing a UI journey
+
+Journeys (`App/AcaiUITests`) are held to the same bar as unit tests. CI runs them **once, with no
+retries**: a journey that fails intermittently has a real defect — in the app or in the test — and
+the fix is to find it, never to re-run, add a retry, raise a timeout or widen a screenshot threshold.
+Every past "flake" here had a concrete cause: a dropped navigation in the app, a tap on an unsettled
+control, a retried action that created a duplicate, a stale golden, an unpinned status bar.
+
+**Structure.** Subclass `UIJourneyTestCase`. Start from the fixture helpers in
+`Support/SeededFixture.swift` (`openSeededCodebase`, `openIndexedSeededCodebase`, …) instead of
+re-deriving navigation, and reach screens through their screen object in `Screens/`. A screen object
+exposes *actions* (`reindex()`, `createDiagram(type:as:)`, `openCompare()`, `compare(against:)`) that
+wait for their own outcome; a getter never taps. A flow two journeys need becomes an action, not a
+copy.
+
+**Interacting.** Only through `Support/Interaction.swift`:
+- `tapWhenReady` for anything with a side effect — it waits until the element exists, is hittable
+  and has stopped moving, then taps **exactly once**. Never retry a create/delete/toggle: a retry of
+  a tap that landed but is still being processed makes a duplicate.
+- `tap(_:until:)` only for idempotent navigation (selecting a row, opening a sheet).
+- `waitOrFail`, `waitForDisappearanceOrFail`, and `AsyncOperation.waitUntilLoaded` for waiting. Every
+  async operation a journey triggers is observed through its `.loading`/`.loaded`/`.error`
+  identifiers — never inferred from an unrelated element that may exist before the work finished.
+- Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,
+  comparing). Measured on CI, a transition lands within seconds or never, so a longer wait only
+  delays the failure.
+- No `Thread.sleep` in a journey, no bare `.exists` to choose a branch before the screen has settled,
+  and no coordinate taps near a screen edge (the home indicator swallows them).
+
+`UIJourneyTestCase` stops at the first failure, so one real miss reports once instead of cascading.
+
+**Screenshots.** `validateScreenshot(_:state:)` captures once the window stops changing; drift is
+reported at the end of the test so the remaining states are still captured. Goldens come only from
+CI (`Scripts/snapshots_accept.sh`) — a local renderer's pixels are not comparable, so run journeys
+locally for behaviour, never to judge drift. A new state is red on its first CI run by design. A
+golden must not contain anything that varies per run (paths, dates, IDs, the clock): the app hides
+the iOS status bar and forces the colour scheme under a UI-test fixture, and every iPad journey runs
+in landscape. When drift appears, open the capture before touching the threshold.
+
+**App side.** A journey can only be deterministic if the app is. Selecting something created in the
+same turn goes through `ProjectBrowserViewModel.open(_:)`; every user-initiated async operation shows
+an `AsyncOperationStatusView`; test-only behaviour hangs off `UITestFixtureResolver` and is inert in
+release builds.
+
+**When a journey fails.** The result bundle carries a screenshot and the element tree of the failing
+moment, and the job summary lists every screenshot's drift. Reproduce a suspected intermittent
+failure locally by running only that test repeatedly (`xcodebuild test-without-building
+-only-testing:… -test-iterations 20`) — if it reproduces, the fix can be proven before CI.

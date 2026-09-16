@@ -19,4 +19,8 @@ struct SnapshotPlatform {
         }
         #endif
     }
+
+    /// iPhone's compact width: a navigation stack over the sidebar and a "+" menu in place of inline
+    /// actions. Branch on this rather than on whether an element happens to exist yet.
+    var isCompactWidth: Bool { name == "iPhone" }
 }

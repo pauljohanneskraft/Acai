@@ -123,7 +123,7 @@ public struct ProjectBrowserView: View {
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
                 let id = model.editing.addProject(title: title, subtitle: subtitle)
-                model.selection = .project(id)
+                model.open(.project(id))
             }
         }
         .sheet(isPresented: $quickOpenPresenter.isPresented) {

@@ -331,7 +331,7 @@ struct ClassDiagramSidebar: View {
         let selectedIDs = viewModel.selectedNodeIDs
         guard let newID = model.diagrams.createDiagramFromSelection(diagram.id, selectedNodeIDs: selectedIDs)
         else { return }
-        model.selection = .generatedDiagram(newID)
+        model.open(.generatedDiagram(newID))
     }
 
 }

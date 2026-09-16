@@ -6,27 +6,13 @@ import XCTest
 /// nodes.
 @MainActor
 final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
-
-    private var comparator: ScreenshotComparator {
-        ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__"))
-    }
-
     /// Polls rather than waiting once: `XCUIElement` isn't KVO-compliant, so a predicate expectation
-    /// on `.label` would only ever see its first read (see `TextFieldEditing.swift`'s
-    /// `pollUntilHittable` doc comment for the same finding on `isHittable`).
+    /// on `.label` would only ever see its first read.
     ///
-    /// Checks `.value` as well as `.label`: confirmed via a failed run's accessibility-hierarchy
-    /// attachment that macOS exposes this dynamically-updating `StaticText`'s text through `AXValue`
-    /// with `label` left empty, while iOS exposes the identical text through `label` — same class of
-    /// platform difference `TextFieldEditing.swift`'s `choose(_:in:)` already documents for a popup
-    /// button's title vs. label.
+    /// Checks `.value` as well as `.label`: macOS exposes this dynamically-updating `StaticText`'s
+    /// text through `AXValue` with `label` left empty, while iOS exposes it through `label`.
     private func waitForMatchSummary(
-        _ diagram: ClassDiagramScreen, toRead expected: String, timeout: TimeInterval = 5
+        _ diagram: ClassDiagramScreen, toRead expected: String, timeout: TimeInterval
     ) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
@@ -37,78 +23,53 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         return false
     }
 
-    /// Types `text` and waits for the match summary to catch up, retyping if it never arrives —
-    /// same rationale as `QuickOpenScreen.search(_:until:)`: a query landing while the diagram's
-    /// own state is still settling from the previous action (opening the search bar, an earlier
-    /// query) can be missed by SwiftUI's diffing, and a plain wait can't recover from that.
-    @discardableResult
-    private func typeAndWaitForMatchSummary(
-        _ diagram: ClassDiagramScreen, text: String, toRead expected: String,
-        attempts: Int = 3, timeout: TimeInterval = 5
-    ) -> Bool {
+    /// Types `text` and waits for the match summary to catch up, retyping if it never arrives: a
+    /// query landing while the diagram's own state is still settling from the previous action can be
+    /// missed by SwiftUI's diffing, and a plain wait can't recover from that. Retyping is idempotent.
+    private func search(
+        _ diagram: ClassDiagramScreen, for text: String, expecting expected: String, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
         for _ in 0..<attempts {
-            diagram.searchField.clearAndTypeText(text)
-            if waitForMatchSummary(diagram, toRead: expected, timeout: timeout) { return true }
+            diagram.searchField.clearAndTypeText(text, file: file, line: line)
+            if waitForMatchSummary(diagram, toRead: expected, timeout: .uiTransition / 2) { return }
         }
-        return false
+        XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded")
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
+        let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        codebaseRow.tap()
-
-        let codebaseDetail = CodebaseDetailScreen(app: app)
-        XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
-        codebaseDetail.reindexButton.tap()
-
-        let classDiagramButton = codebaseDetail.diagramButton(type: "class")
-        XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
-        let diagram = ClassDiagramScreen(app: app)
-        classDiagramButton.tapUntilItDisappears()
-
-        XCTAssertTrue(diagram.typeNode(named: "Base").waitForExistence(timeout: 30))
-        XCTAssertTrue(diagram.typeNode(named: "Derived").exists)
-        XCTAssertTrue(diagram.typeNode(named: "Helper").exists)
-        XCTAssertTrue(diagram.typeNode(named: "Worker").exists)
+        diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
+        for name in ["Derived", "Helper", "Worker"] {
+            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
+        }
 
         diagram.openSearch()
 
         // "Base" matches exactly one of the seeded fixture's four types.
-        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "Base", toRead: "1 match"))
-        comparator.validate(
-            viewType: "ClassDiagram", state: "searching",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        search(diagram, for: "Base", expecting: "1 match")
+        validateScreenshot("ClassDiagram", state: "searching")
 
         // "er" matches Derived, Helper and Worker but not Base.
-        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "er", toRead: "3 matches"))
+        search(diagram, for: "er", expecting: "3 matches")
 
         // Stepping through matches never crashes or disables itself once there are matches to step
         // through.
-        diagram.searchNextButton.tap()
-        diagram.searchPreviousButton.tap()
+        diagram.searchNextButton.tapWhenReady("the search's Next Match button")
+        diagram.searchPreviousButton.tapWhenReady("the search's Previous Match button")
 
         // A query nothing matches reports that plainly rather than looking identical to "not
         // searching yet".
-        XCTAssertTrue(typeAndWaitForMatchSummary(diagram, text: "nonexistentXYZ", toRead: "No matches"))
+        search(diagram, for: "nonexistentXYZ", expecting: "No matches")
 
-        diagram.searchDismissButton.tap()
-        XCTAssertFalse(diagram.searchField.exists)
+        diagram.searchDismissButton.tapWhenReady("the search's Dismiss button")
+        diagram.searchField.waitForDisappearanceOrFail("the search field after dismissing search")
         // Dismissing search touches only the search UI's own state — every node from before is
         // still exactly where it was.
-        XCTAssertTrue(diagram.typeNode(named: "Base").exists)
-        XCTAssertTrue(diagram.typeNode(named: "Derived").exists)
-        XCTAssertTrue(diagram.typeNode(named: "Helper").exists)
-        XCTAssertTrue(diagram.typeNode(named: "Worker").exists)
+        for name in ["Base", "Derived", "Helper", "Worker"] {
+            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should survive dismissing search")
+        }
     }
 }
