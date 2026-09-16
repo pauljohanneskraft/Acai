@@ -266,9 +266,9 @@ public struct ProjectBrowserView: View {
            let artifact = model.comparisonNewArtifact(for: diagram) ?? model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
-            case .moduleCoupling, .hotspot, .cycleDiagram:
-                // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file, own three-way
-                // switch) purely to keep this function's body under SwiftLint's line limit.
+            case .moduleCoupling, .hotspot:
+                // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file) purely to keep
+                // this function's body under SwiftLint's line limit.
                 analysisDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
                     .environmentObject(model)

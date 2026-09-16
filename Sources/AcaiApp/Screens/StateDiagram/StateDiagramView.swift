@@ -112,11 +112,15 @@ struct StateDiagramView: View {
 
     private var sidebar: StateDiagramSidebar {
         StateDiagramSidebar(
-            viewModel: viewModel, artifact: artifact, tab: $sidebarTab,
+            viewModel: viewModel, artifact: artifact, codebaseID: codebase.id, tab: $sidebarTab,
             onApply: { config in
                 viewModel.applyConfiguration(config)
                 model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
                 centerDiagram()
+            },
+            onApplyFilter: { filter in
+                viewModel.applyFilter(filter)
+                model.diagrams.updateStateFilter(diagramID: diagram.id, filter: filter)
             },
             onSaveAsFreeform: {
                 // Pass every state's live centre (not just dragged overrides) so the freeform

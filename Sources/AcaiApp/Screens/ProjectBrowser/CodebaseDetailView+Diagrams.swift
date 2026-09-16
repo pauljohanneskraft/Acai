@@ -19,13 +19,8 @@ extension CodebaseDetailView {
     // MARK: - Diagrams
 
     func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        // Cycle Diagram is deliberately excluded here: it has no meaningful content until a
-        // specific cycle is chosen, so it isn't offered as a general "add a diagram" type — its one
-        // entry point is "View as Diagram" on a Quality Check cycle violation row (see
-        // `AnalysisReportViews.swift`'s `ViolationRowView`), which constructs it pre-scoped.
-        let offeredTypes = DiagramType.allCases.filter { $0 != .cycleDiagram }
-        return LazyVGrid(columns: cardColumns(count: offeredTypes.count), spacing: 12) {
-            ForEach(offeredTypes) { type in
+        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
+            ForEach(DiagramType.allCases) { type in
                 diagramButton(codebase: codebase, type: type)
             }
         }
