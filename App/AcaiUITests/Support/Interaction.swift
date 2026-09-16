@@ -41,31 +41,32 @@ extension XCUIElement {
         }
     }
 
-    /// Waits until the element exists with a real frame that held still — a control can exist with a
-    /// stale zero-size frame before layout lands, and a tap landing mid-layout is silently dropped.
-    /// It must also be hittable, unless it lies outside the window: an element scrolled out of view
-    /// never reports hittable, and `tap()` scrolls to it. One inside the window that isn't hittable is
-    /// covered (a menu, a popover) and is not ready.
+    /// Waits until the element can take a tap: it exists and is hittable — an element can exist with a
+    /// stale zero-size frame before layout lands, or sit under a menu or popover. An element scrolled
+    /// out of view never reports hittable (`tap()` scrolls to it), so one lying outside the window is
+    /// ready too.
+    ///
+    /// Every query snapshots the app's accessibility tree, which on a CI simulator takes long enough
+    /// that tight polling slows the app under test and times queries out (measured: the suite ran ~40%
+    /// slower polling several queries every 0.1s). So: one existence wait, then one hit-test per
+    /// quarter second.
     func waitUntilReady(
         _ description: String, timeout: TimeInterval = .uiTransition,
         file: StaticString = #filePath, line: UInt = #line
     ) {
         let deadline = Date().addingTimeInterval(timeout)
-        var previousFrame: CGRect?
-        var stableSamples = 0
+        guard waitForExistence(timeout: timeout) else {
+            XCTFail("\(description) never appeared", file: file, line: line)
+            return
+        }
+        var window: CGRect?
         while Date() < deadline {
-            let currentFrame = exists ? frame : nil
-            if let currentFrame, !currentFrame.isEmpty, currentFrame == previousFrame {
-                stableSamples += 1
-                if isHittable { return }
-                let window = XCUIApplication().windows.firstMatch.frame
-                if stableSamples >= 5, !window.contains(currentFrame) { return }
-            } else {
-                stableSamples = 0
-            }
-            previousFrame = currentFrame
+            if isHittable { return }
+            let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
+            window = windowFrame
+            if exists, !frame.isEmpty, !windowFrame.contains(frame) { return }
             // `XCUIElement` isn't KVO-compliant, so a predicate expectation would latch its first read.
-            Thread.sleep(forTimeInterval: 0.1)
+            Thread.sleep(forTimeInterval: 0.25)
         }
         XCTFail("\(description) never became tappable", file: file, line: line)
     }
@@ -104,7 +105,7 @@ extension XCUIApplication {
     /// `content`, inset away from the screen edges.
     func dismissPopover(showing content: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         let region = otherElements["PopoverDismissRegion"]
-        region.waitUntilReady("the popover's dismiss region", file: file, line: line)
+        region.waitOrFail("the popover's dismiss region", file: file, line: line)
         content.waitOrFail("the popover's content", file: file, line: line)
         let bounds = region.frame
         let offset = CGVector(

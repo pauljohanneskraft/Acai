@@ -267,6 +267,10 @@ copy.
 - Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,
   comparing). Measured on CI, a transition lands within seconds or never, so a longer wait only
   delays the failure.
+- Every query (`exists`, `isHittable`, `frame`, `label`) snapshots the app's accessibility tree, and on
+  a CI simulator one can take seconds. Tight polling slowed the whole suite by ~40% and timed queries
+  out, so wait with one query that encodes the condition (a predicate on the query, like
+  `AsyncOperation`'s loaded-or-error match) rather than polling several properties in a loop.
 - No `Thread.sleep` in a journey, no bare `.exists` to choose a branch before the screen has settled,
   and no coordinate taps near a screen edge (the home indicator swallows them).
 

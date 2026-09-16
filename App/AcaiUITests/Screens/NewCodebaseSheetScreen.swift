@@ -27,12 +27,11 @@ final class NewCodebaseSheetScreen {
         cloneButton.tapWhenReady("Clone", file: file, line: line)
         let deadline = Date().addingTimeInterval(.uiWork)
         while Date() < deadline {
-            if !cloneButton.exists { return }
+            if cloneButton.waitForNonExistence(timeout: 5) { return }
             if app.alerts.firstMatch.exists {
                 XCTFail("cloning failed: \(app.alerts.firstMatch.label)", file: file, line: line)
                 return
             }
-            Thread.sleep(forTimeInterval: 0.2)
         }
         XCTFail("the clone never finished (still cloning: \(cloneLoadingIndicator.exists))", file: file, line: line)
     }

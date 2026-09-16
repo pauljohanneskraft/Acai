@@ -73,7 +73,7 @@ class DiagramScreenBase {
         let overflowButton = app.buttons["OverflowBarButtonItem"]
         let deadline = Date().addingTimeInterval(.uiTransition)
         while Date() < deadline, !button.exists, !overflowButton.exists {
-            Thread.sleep(forTimeInterval: 0.1)
+            Thread.sleep(forTimeInterval: 0.5)
         }
         if button.exists {
             button.tapWhenReady("toolbar button \(label)", file: file, line: line)

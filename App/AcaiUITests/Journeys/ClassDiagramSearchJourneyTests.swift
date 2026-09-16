@@ -6,23 +6,6 @@ import XCTest
 /// nodes.
 @MainActor
 final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
-    /// Polls rather than waiting once: `XCUIElement` isn't KVO-compliant, so a predicate expectation
-    /// on `.label` would only ever see its first read.
-    ///
-    /// Checks `.value` as well as `.label`: macOS exposes this dynamically-updating `StaticText`'s
-    /// text through `AXValue` with `label` left empty, while iOS exposes it through `label`.
-    private func waitForMatchSummary(
-        _ diagram: ClassDiagramScreen, toRead expected: String, timeout: TimeInterval
-    ) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            let summary = diagram.searchMatchSummary
-            if summary.label == expected || summary.value as? String == expected { return true }
-            Thread.sleep(forTimeInterval: 0.1)
-        }
-        return false
-    }
-
     /// Types `text` and waits for the match summary to catch up, retyping if it never arrives: a
     /// query landing while the diagram's own state is still settling from the previous action can be
     /// missed by SwiftUI's diffing, and a plain wait can't recover from that. Retyping is idempotent.
@@ -32,7 +15,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
     ) {
         for _ in 0..<attempts {
             diagram.searchField.clearAndTypeText(text, file: file, line: line)
-            if waitForMatchSummary(diagram, toRead: expected, timeout: .uiTransition / 2) { return }
+            if diagram.searchMatchSummary(reading: expected).appears(within: .uiTransition / 2) { return }
         }
         XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
     }

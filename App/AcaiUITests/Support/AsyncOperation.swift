@@ -12,20 +12,24 @@ struct AsyncOperation {
     var loaded: XCUIElement { app.descendants(matching: .any)["\(identifierPrefix).loaded"] }
     var error: XCUIElement { app.descendants(matching: .any)["\(identifierPrefix).error"] }
 
+    /// Either terminal state, so one wait covers both instead of polling each.
+    private var outcome: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["\(identifierPrefix).loaded", "\(identifierPrefix).error"]
+        )).firstMatch
+    }
+
     /// Fails fast with the app's own error text when the operation fails, rather than timing out.
     func waitUntilLoaded(
         _ description: String, timeout: TimeInterval = .uiWork,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if loaded.exists { return }
-            if error.exists {
-                XCTFail("\(description) failed: \(error.label)", file: file, line: line)
-                return
-            }
-            Thread.sleep(forTimeInterval: 0.2)
+        guard outcome.waitForExistence(timeout: timeout) else {
+            XCTFail("\(description) never finished (still loading: \(loading.exists))", file: file, line: line)
+            return
         }
-        XCTFail("\(description) never finished (still loading: \(loading.exists))", file: file, line: line)
+        if error.exists {
+            XCTFail("\(description) failed: \(error.label)", file: file, line: line)
+        }
     }
 }
