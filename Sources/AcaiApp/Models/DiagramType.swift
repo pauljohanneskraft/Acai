@@ -8,10 +8,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
     case callGraph = "callGraph"
     case moduleCoupling = "moduleCoupling"
     case hotspot = "hotspot"
-    /// Not offered from the general "add a diagram" grid, since a cycle diagram has no meaningful
-    /// content until a specific cycle is chosen; reached instead via "View as Diagram" on a Quality
-    /// Check cycle violation row.
-    case cycleDiagram = "cycleDiagram"
 
     var id: String { rawValue }
 
@@ -33,8 +29,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             .app("DiagramType.ModuleCoupling")
         case .hotspot:
             .app("DiagramType.Hotspots")
-        case .cycleDiagram:
-            .app("DiagramType.CycleDiagram")
         }
     }
 
@@ -54,8 +48,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "Module Coupling"
         case .hotspot:
             "Hotspots"
-        case .cycleDiagram:
-            "Cycle Diagram"
         }
     }
 
@@ -75,8 +67,6 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
             "chart.xyaxis.line"
         case .hotspot:
             "flame"
-        case .cycleDiagram:
-            "arrow.triangle.2.circlepath"
         }
     }
 }
