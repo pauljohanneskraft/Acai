@@ -36,8 +36,9 @@ extension XCUIElement {
 
     /// Waits until the element exists with a real frame that held still — a control can exist with a
     /// stale zero-size frame before layout lands, and a tap landing mid-layout is silently dropped.
-    /// A hittable element is ready after two matching samples; one scrolled out of view never reports
-    /// hittable (`tap()` scrolls to it), so it is ready once its frame stayed put for half a second.
+    /// It must also be hittable, unless it lies outside the window: an element scrolled out of view
+    /// never reports hittable, and `tap()` scrolls to it. One inside the window that isn't hittable is
+    /// covered (a menu, a popover) and is not ready.
     func waitUntilReady(
         _ description: String, timeout: TimeInterval = .uiTransition,
         file: StaticString = #filePath, line: UInt = #line
@@ -49,7 +50,9 @@ extension XCUIElement {
             let currentFrame = exists ? frame : nil
             if let currentFrame, !currentFrame.isEmpty, currentFrame == previousFrame {
                 stableSamples += 1
-                if isHittable || stableSamples >= 5 { return }
+                if isHittable { return }
+                let window = XCUIApplication().windows.firstMatch.frame
+                if stableSamples >= 5, !window.contains(currentFrame) { return }
             } else {
                 stableSamples = 0
             }

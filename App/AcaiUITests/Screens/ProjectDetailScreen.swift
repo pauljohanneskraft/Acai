@@ -36,15 +36,11 @@ final class ProjectDetailScreen {
     }
 
     /// Only meaningful on compact width. Opening a `Menu` has no side effect, so this may retry.
+    /// There is deliberately no counterpart to close it: the open menu's items sit over the "+"
+    /// button and the screen edge is the home indicator's, so no tap reliably dismisses it — a
+    /// journey that opens it ends there.
     func openAddMenu(file: StaticString = #filePath, line: UInt = #line) {
         addMenuButton.tap("the \"+\" menu", until: addCodebaseButton, file: file, line: line)
-    }
-
-    /// An open `Menu` is covered by a full-screen dismiss region, so tapping where the "+" button
-    /// sits closes it — unlike a tap near the screen edge, which the home indicator can swallow.
-    func closeAddMenu(file: StaticString = #filePath, line: UInt = #line) {
-        addMenuButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        addCodebaseButton.waitForDisappearanceOrFail("the open \"+\" menu", file: file, line: line)
     }
 
     /// `.firstMatch`: this identifier can resolve to more than one accessibility node for a

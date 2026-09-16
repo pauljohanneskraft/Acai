@@ -22,14 +22,6 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         projectRow.tap("the seeded project's sidebar row", until: codebaseRow)
         validateScreenshot("ProjectDetail", state: "populated")
 
-        if SnapshotPlatform().isCompactWidth {
-            detail.openAddMenu()
-            // iOS's `Menu` renders through a translucent material that doesn't converge to identical
-            // bytes between recordings of the same state.
-            validateScreenshot("ProjectDetail", state: "addMenuOpen", maxChangedFraction: 7.0e-3)
-            detail.closeAddMenu()
-        }
-
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.reindexButton)
         audit.assertAccessible(codebaseDetail.reindexButton, name: "Reindex button")
@@ -48,5 +40,14 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         base.doubleTap()
         diagram.inspectorContent.waitOrFail("the Inspector for Base")
         validateScreenshot("ClassDiagram", state: "inspectorOpen")
+    }
+
+    func testProjectDetailAddMenuScreenshot() throws {
+        try XCTSkipUnless(SnapshotPlatform().isCompactWidth, "only compact width hides these actions behind \"+\"")
+        let detail = openSeededProject()
+        detail.openAddMenu()
+        // iOS's `Menu` renders through a translucent material that doesn't converge to identical bytes
+        // between recordings of the same state.
+        validateScreenshot("ProjectDetail", state: "addMenuOpen", maxChangedFraction: 7.0e-3)
     }
 }
