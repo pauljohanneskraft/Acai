@@ -44,6 +44,13 @@ struct GeneratedDiagramEditor {
         mutate(diagramID, clearPositions: true) { $0.stateConfiguration = configuration }
     }
 
+    /// Updates a state diagram's selector filter, keeping the rest of the configuration and the
+    /// saved positions — filtering only removes states/transitions, it never repositions a
+    /// surviving one.
+    func updateStateFilter(diagramID: UUID, filter: AcaiQuality.Selector?) {
+        mutate(diagramID, clearPositions: false) { $0.stateConfiguration?.filter = filter }
+    }
+
     /// Updates the rendering configuration of a class diagram (positions kept — a render-option change
     /// never alters the type set).
     func updateClassDiagramConfiguration(diagramID: UUID, configuration: ClassDiagramConfiguration) {
