@@ -14,24 +14,8 @@ extension TypeNodeView {
             kind: content.typeKind,
             stereotype: FreeformDiagram.Node.Content.type(content).stereotype,
             genericParameters: content.genericParameters,
-            properties: content.properties.map { member in
-                MemberDisplayItem(
-                    id: member.id.uuidString,
-                    text: Self.formatFreeformMember(member, isMethod: false),
-                    isStatic: member.isStatic,
-                    isAbstract: member.isAbstract,
-                    accessLevel: member.accessLevel
-                )
-            },
-            methods: content.methods.map { member in
-                MemberDisplayItem(
-                    id: member.id.uuidString,
-                    text: Self.formatFreeformMember(member, isMethod: true),
-                    isStatic: member.isStatic,
-                    isAbstract: member.isAbstract,
-                    accessLevel: member.accessLevel
-                )
-            },
+            properties: content.properties.map(\.displayItem),
+            methods: content.methods.map(\.displayItem),
             enumCases: content.enumCases.map { enumCase in
                 EnumCaseDisplayItem(
                     id: enumCase.id.uuidString,
@@ -40,14 +24,5 @@ extension TypeNodeView {
             },
             isSelected: isSelected
         )
-    }
-
-    private static func formatFreeformMember(_ member: FreeformDiagram.Node.Member, isMethod: Bool) -> String {
-        let symbol = member.accessLevel.umlSymbol
-        if isMethod {
-            return "\(symbol) \(member.name)(\(member.parameters))\(member.type.isEmpty ? "" : ": \(member.type)")"
-        } else {
-            return "\(symbol) \(member.name)\(member.type.isEmpty ? "" : ": \(member.type)")"
-        }
     }
 }
