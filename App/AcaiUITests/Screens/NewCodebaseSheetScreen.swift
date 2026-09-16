@@ -12,6 +12,9 @@ final class NewCodebaseSheetScreen {
 
     var sourcePicker: XCUIElement { app.descendants(matching: .any)["newCodebase.sourcePicker"] }
     var localNameField: XCUIElement { app.textFields["newCodebase.localNameField"] }
+    /// The GitHub tab's optional name override — distinct from `localNameField`, the Local Folder
+    /// tab's own name field.
+    var nameField: XCUIElement { app.textFields["newCodebase.nameField"] }
     var chooseDirectoryButton: XCUIElement { app.buttons["newCodebase.chooseDirectoryButton"] }
     var addButton: XCUIElement { app.buttons["newCodebase.addButton"] }
     var repositoryPicker: XCUIElement { app.descendants(matching: .any)["newCodebase.repositoryPicker"] }

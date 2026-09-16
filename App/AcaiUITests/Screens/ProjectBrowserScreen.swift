@@ -24,6 +24,12 @@ final class ProjectBrowserScreen {
         app.descendants(matching: .any)["sidebar.codebase.\(id)"]
     }
 
+    /// `remoteURL` is the plain remote's `absoluteString` (e.g. `https://github.com/octocat/fixture-repo.git`) —
+    /// see `RepositoryIndexEntry`/`ProjectBrowserView+Repositories.swift`.
+    func repositoryRow(remoteURL: String) -> XCUIElement {
+        app.descendants(matching: .any)["sidebar.repository.\(remoteURL)"]
+    }
+
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
     /// See `ProjectDetailScreen.codebaseRow(named:)`'s identical reasoning.
