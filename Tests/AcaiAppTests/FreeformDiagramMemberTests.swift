@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import AcaiCore
+import AcaiRender
 @testable import AcaiApp
 
 /// `FreeformDiagram.Node.Member`/`Parameter`: structured property/method fields, and back-compat
@@ -41,5 +42,21 @@ struct FreeformDiagramMemberTests {
     func displayStringOmitsParensForProperty() {
         let property = FreeformDiagram.Node.Member(name: "count", type: "Int")
         #expect(property.displayString == "count: Int")
+    }
+
+    @Test("displayItem prefixes displayString with the UML access symbol and carries the row flags")
+    func displayItemPrefixesAccessSymbolAndCarriesFlags() {
+        var member = FreeformDiagram.Node.Member(name: "count", type: "Int")
+        member.accessLevel = .private
+        member.isStatic = true
+        member.isAbstract = true
+
+        let item = member.displayItem
+
+        #expect(item.id == member.id.uuidString)
+        #expect(item.text == "- count: Int")
+        #expect(item.isStatic)
+        #expect(item.isAbstract)
+        #expect(item.accessLevel == .private)
     }
 }
