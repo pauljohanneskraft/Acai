@@ -50,9 +50,7 @@ final class DeleteConfirmationTests: UIJourneyTestCase {
         #else
         // At this window size, `.confirmationDialog` renders as a popover with no "Cancel" button
         // at all — tap-outside-to-dismiss (`PopoverDismissRegion`) is this presentation's Cancel.
-        let dismissRegion = app.otherElements["PopoverDismissRegion"]
-        dismissRegion.tapWhenReady("the confirmation popover's dismiss region")
-        dismissRegion.waitForDisappearanceOrFail("the confirmation popover")
+        app.dismissPopover(showing: ProjectDetailScreen(app: app).deleteCodebaseConfirmButton)
         #endif
 
         XCTAssertTrue(codebaseRow.exists, "cancelling the confirmation must not delete the codebase")

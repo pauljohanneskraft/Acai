@@ -260,6 +260,10 @@ copy.
 - `waitOrFail`, `waitForDisappearanceOrFail`, and `AsyncOperation.waitUntilLoaded` for waiting. Every
   async operation a journey triggers is observed through its `.loading`/`.loaded`/`.error`
   identifiers — never inferred from an unrelated element that may exist before the work finished.
+  Where an operation's completion dismisses its own screen (a sheet), wait for the dismissal and
+  fail fast on the error alert, as `NewCodebaseSheetScreen.clone()` does.
+- `appears(within:)` only inside a retry loop that recovers from a miss by itself (retyping a query)
+  and reports the final miss through `waitOrFail`.
 - Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,
   comparing). Measured on CI, a transition lands within seconds or never, so a longer wait only
   delays the failure.

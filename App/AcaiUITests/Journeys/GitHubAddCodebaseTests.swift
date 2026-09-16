@@ -38,10 +38,10 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker)
         sheet.choose("main", from: sheet.refPicker)
         XCTAssertTrue(sheet.cloneButton.isEnabled)
-        sheet.cloneButton.tapWhenReady("Clone")
+        sheet.clone()
 
         let codebaseRow = detail.codebaseRow(named: "fixture-repo")
-        codebaseRow.waitOrFail("the cloned codebase's row (the GitHub clone/index never finished)", timeout: .uiWork)
+        codebaseRow.waitOrFail("the cloned codebase's row")
         let codebaseDetail = CodebaseDetailScreen(app: app)
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
         codebaseRow.tap("the cloned codebase's row", until: classDiagramButton)

@@ -29,7 +29,7 @@ final class QuickOpenScreen {
     ) {
         for _ in 0..<attempts {
             searchField.clearAndTypeText(text, file: file, line: line)
-            if expected.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
+            if expected.appears(within: .uiTransition / Double(attempts)) { return }
         }
         expected.waitOrFail("the Quick Open result for '\(text)'", file: file, line: line)
     }

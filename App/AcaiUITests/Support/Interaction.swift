@@ -26,6 +26,12 @@ extension XCUIElement {
         return self
     }
 
+    /// A non-failing wait, only for a retry loop that recovers from a miss itself (e.g. retyping a
+    /// query) and reports the final miss through `waitOrFail`.
+    func appears(within timeout: TimeInterval) -> Bool {
+        waitForExistence(timeout: timeout)
+    }
+
     func waitForDisappearanceOrFail(
         _ description: String, timeout: TimeInterval = .uiTransition,
         file: StaticString = #filePath, line: UInt = #line
@@ -87,5 +93,25 @@ extension XCUIElement {
             if !exists { break }
         }
         destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
+    }
+}
+
+@MainActor
+extension XCUIApplication {
+    /// Cancels a popover-style presentation (e.g. a `.confirmationDialog` on iPad), which has no
+    /// Cancel button. The dismiss region spans the whole window, popover included, so its center can
+    /// land on the popover itself and do nothing; this taps the region's corner farthest from
+    /// `content`, inset away from the screen edges.
+    func dismissPopover(showing content: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let region = otherElements["PopoverDismissRegion"]
+        region.waitUntilReady("the popover's dismiss region", file: file, line: line)
+        content.waitOrFail("the popover's content", file: file, line: line)
+        let bounds = region.frame
+        let offset = CGVector(
+            dx: content.frame.midX > bounds.midX ? 0.15 : 0.85,
+            dy: content.frame.midY > bounds.midY ? 0.2 : 0.8
+        )
+        region.coordinate(withNormalizedOffset: offset).tap()
+        region.waitForDisappearanceOrFail("the popover", file: file, line: line)
     }
 }
