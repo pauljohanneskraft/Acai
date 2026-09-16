@@ -203,3 +203,4 @@ extension SequenceDiagramViewModel: DiagramImageExporting {}
 extension StateDiagramViewModel: DiagramImageExporting {}
 extension PackageDiagramViewModel: DiagramImageExporting {}
 extension CallGraphViewModel: DiagramImageExporting {}
+extension FreeformDiagramViewModel: DiagramImageExporting {}
