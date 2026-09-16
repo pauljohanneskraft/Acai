@@ -40,18 +40,17 @@ extension XCUIElement {
     /// so every landed tap creates another diagram).
     ///
     /// `tapUntil` can't be used there: it retries until the *destination* appears, so a first tap
-    /// that landed but is still rendering gets tapped again and creates a duplicate. A retry loop
-    /// keyed on `self` disappearing has the same flaw the moment disappearance is merely slow: a
-    /// tap that already landed but hasn't cleared the screen within one `settle` window looks
-    /// identical to a tap that never landed, so a naive retry there taps again anyway and creates a
-    /// duplicate diagram. Tapping exactly once and spending the whole `settle * attempts` budget on
-    /// one wait avoids that: a slow-but-successful action still has time to finish, and a tap that
-    /// truly never landed leaves `self` on screen so the caller's next assertion fails with a clear
-    /// "never appeared" message instead of the screen silently carrying an extra diagram.
-    func tapUntilItDisappears(settle: TimeInterval = 8, attempts: Int = 3) {
-        guard pollUntilHittable(timeout: settle) else { return }
+    /// that landed but is still rendering gets tapped again and creates a duplicate. This never
+    /// retaps for the same reason: a tap that already landed but hasn't cleared the screen within
+    /// `timeout` looks identical to one that never landed, so retrying would create a duplicate
+    /// diagram exactly as often as it recovered a missed tap. A slow-but-successful action still
+    /// gets the whole `timeout` to finish; a tap that truly never landed leaves `self` on screen so
+    /// the caller's next assertion fails with a clear "never appeared" message instead of the screen
+    /// silently carrying an extra diagram.
+    func tapUntilItDisappears(timeout: TimeInterval = 24) {
+        guard pollUntilHittable(timeout: 5) else { return }
         tap()
-        _ = waitForNonExistence(timeout: settle * Double(attempts))
+        _ = waitForNonExistence(timeout: timeout)
     }
 
     /// Waits for `self` to be hittable, not just present, before tapping. Confirmed empirically: an
