@@ -14,15 +14,14 @@ import UIKit
 @MainActor
 final class RepositoryManagementJourneyTests: UIJourneyTestCase {
     private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let remoteURL = "https://github.com/octocat/fixture-repo.git"
 
     func testRepositoryDetailRefusesRemovalUntilNoCodebaseDependsOnIt() throws {
         let browser = ProjectBrowserScreen(app: app)
         let github = GitHubAccountScreen(app: app)
         defer { if github.signedInRow.exists { github.signOutButton.tap() } }
-        launchWithTwoCodebasesSharingOneRepository(browser: browser, github: github)
+        let remoteURL = launchWithTwoCodebasesSharingOneRepository(browser: browser, github: github)
 
-        let repositoryRow = browser.repositoryRow(remoteURL: Self.remoteURL)
+        let repositoryRow = browser.repositoryRow(remoteURL: remoteURL)
         let repositoryDetail = RepositoryDetailScreen(app: app)
         XCTAssertTrue(repositoryRow.waitForExistence(timeout: 10))
         repositoryRow.tapUntil(repositoryDetail.fetchNowButton)
@@ -51,14 +50,22 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         assertSuccessfulRemoval(repositoryRow: repositoryRow, repositoryDetail: repositoryDetail, browser: browser)
     }
 
+    /// Returns the repository's expected `sidebar.repository.<remoteURL>` accessibility identifier
+    /// suffix. `FixtureGitHubRepositoryService` reports the *local* fixture remote it actually clones
+    /// from as `RepositoryIndexEntry.remoteURL` (see `GitHubRepositoryService.swift`'s
+    /// `attachWorktree`), not a `https://github.com/...` URL — the same `URL(fileURLWithPath:
+    /// isDirectory:)` construction `UITestFixtureResolver.resolveGitHubRemoteURL()` uses, so this must
+    /// match that exactly rather than a plausible-looking GitHub URL literal.
     private func launchWithTwoCodebasesSharingOneRepository(
         browser: ProjectBrowserScreen, github: GitHubAccountScreen
-    ) {
+    ) -> String {
         app.rotateToPortraitOnIPad()
+        var remoteURL = ""
         app.launchWithFixture("seeded") { app, destination in
             let remoteDir = destination.appendingPathComponent("GitHubRemote")
             try GitFixtureRepository(directory: remoteDir).makeRemote()
             app.launchEnvironment["ACAI_UITEST_GITHUB_REMOTE_URL"] = remoteDir.path
+            remoteURL = URL(fileURLWithPath: remoteDir.path, isDirectory: true).absoluteString
         }
         signIn(app: app, browser: browser, github: github)
 
@@ -76,6 +83,7 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         XCTAssertTrue(
             detail.codebaseRow(named: "fixture-repo-2").waitForExistence(timeout: 30),
             "the second, shared-clone codebase never finished")
+        return remoteURL
     }
 
     private func assertScreenShowsRepositoryDetails(
