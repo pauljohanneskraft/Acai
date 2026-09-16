@@ -35,20 +35,23 @@ extension XCUIElement {
         }
     }
 
-    /// Taps, retrying only while `self` is still on screen — for a control that navigates away once
+    /// Taps once, then waits for `self` to leave the screen — for a control that navigates away once
     /// the tap lands *and* whose action isn't idempotent (the diagram buttons call `diagrams.add`,
     /// so every landed tap creates another diagram).
     ///
     /// `tapUntil` can't be used there: it retries until the *destination* appears, so a first tap
-    /// that landed but is still rendering gets tapped again and creates a duplicate. Keying the
-    /// retry on this control disappearing means a tap that worked is never repeated, while a tap
-    /// that never landed still is.
+    /// that landed but is still rendering gets tapped again and creates a duplicate. A retry loop
+    /// keyed on `self` disappearing has the same flaw the moment disappearance is merely slow: a
+    /// tap that already landed but hasn't cleared the screen within one `settle` window looks
+    /// identical to a tap that never landed, so a naive retry there taps again anyway and creates a
+    /// duplicate diagram. Tapping exactly once and spending the whole `settle * attempts` budget on
+    /// one wait avoids that: a slow-but-successful action still has time to finish, and a tap that
+    /// truly never landed leaves `self` on screen so the caller's next assertion fails with a clear
+    /// "never appeared" message instead of the screen silently carrying an extra diagram.
     func tapUntilItDisappears(settle: TimeInterval = 8, attempts: Int = 3) {
-        for _ in 0..<attempts {
-            guard exists else { return }
-            if pollUntilHittable(timeout: settle) { tap() }
-            if waitForNonExistence(timeout: settle) { return }
-        }
+        guard pollUntilHittable(timeout: settle) else { return }
+        tap()
+        _ = waitForNonExistence(timeout: settle * Double(attempts))
     }
 
     /// Waits for `self` to be hittable, not just present, before tapping. Confirmed empirically: an
