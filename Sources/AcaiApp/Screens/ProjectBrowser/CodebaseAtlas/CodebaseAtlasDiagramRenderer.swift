@@ -18,9 +18,9 @@ enum AtlasDiagramRenderOutcome {
 /// app's own "Export Image" action already uses (`DiagramImageExporting` conformances in
 /// `ProjectBrowserViewModel+Export.swift`).
 ///
-/// `moduleCoupling`/`hotspot`/`cycleDiagram` have no PNG-export path anywhere in the app today —
-/// they're chart-style views, not canvas-based diagrams with a `DiagramLayoutModel` — so they
-/// resolve to `.unsupported` rather than growing a new renderer here.
+/// `moduleCoupling`/`hotspot` have no PNG-export path anywhere in the app today — they're
+/// chart-style views, not canvas-based diagrams with a `DiagramLayoutModel` — so they resolve to
+/// `.unsupported` rather than growing a new renderer here.
 @MainActor
 struct CodebaseAtlasDiagramRenderer {
     let codebase: Codebase
@@ -60,7 +60,7 @@ struct CodebaseAtlasDiagramRenderer {
             return CallGraphViewModel(
                 artifact: artifact, scope: diagram.callGraphScope ?? .wholeCodebase,
                 restoredPositions: diagram.nodePositions.mapValues(\.cgPoint))
-        case .moduleCoupling, .hotspot, .cycleDiagram:
+        case .moduleCoupling, .hotspot:
             return nil
         }
     }

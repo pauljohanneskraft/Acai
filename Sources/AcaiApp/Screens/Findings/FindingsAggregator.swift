@@ -66,7 +66,12 @@ struct FindingsAggregator {
                 message: violation.message,
                 location: violation.source,
                 reference: artifact.flatMap { violation.codeElementReference(in: $0) },
-                indexedAt: codebase.lastIndexed)
+                indexedAt: codebase.lastIndexed,
+                cycle: violation.ruleKind == "cycle"
+                    ? Finding.CycleReference(
+                        scope: violation.detail["scope"] ?? CycleFinder.Scope.types.rawValue,
+                        members: violation.subject.split(separator: ",").map(String.init))
+                    : nil)
         }
     }
 
@@ -87,7 +92,8 @@ struct FindingsAggregator {
                 message: "No resolved caller found (call-graph coverage \(coverage)% — may be a false positive).",
                 location: candidate.location,
                 reference: artifact.flatMap { candidate.codeElementReference(in: $0) },
-                indexedAt: codebase.lastIndexed)
+                indexedAt: codebase.lastIndexed,
+                cycle: nil)
         }
     }
 
@@ -103,7 +109,8 @@ struct FindingsAggregator {
                 message: diagnostic.kind.rawValue,
                 location: diagnostic.location,
                 reference: nil,
-                indexedAt: codebase.lastIndexed)
+                indexedAt: codebase.lastIndexed,
+                cycle: nil)
         }
     }
 }

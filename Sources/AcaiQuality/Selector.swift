@@ -25,6 +25,10 @@ public struct Selector: Codable, Hashable, Sendable {
     /// facets. Unlike `typeGlob` (one pattern), this pins an arbitrary, pre-picked group of types,
     /// e.g. a diagram scoped to exactly the nodes a user selected.
     public var explicitIDs: Set<String>?
+    /// Exact set of module names to allow through a `matchesModule(named:)` check — everything else
+    /// fails, regardless of `module`. Unlike `module` (one glob), this pins an arbitrary, pre-picked
+    /// group of modules, e.g. a package diagram scoped to exactly a dependency cycle's members.
+    public var explicitModules: Set<String>?
 
     public init(
         module: String? = nil,
@@ -35,7 +39,8 @@ public struct Selector: Codable, Hashable, Sendable {
         kind: TypeKind? = nil,
         minMembers: Int? = nil,
         minNesting: Int? = nil,
-        explicitIDs: Set<String>? = nil
+        explicitIDs: Set<String>? = nil,
+        explicitModules: Set<String>? = nil
     ) {
         self.module = module
         self.typeGlob = typeGlob
@@ -46,6 +51,7 @@ public struct Selector: Codable, Hashable, Sendable {
         self.minMembers = minMembers
         self.minNesting = minNesting
         self.explicitIDs = explicitIDs
+        self.explicitModules = explicitModules
     }
 
     public func matches(_ node: GraphView.Node) -> Bool {
@@ -63,11 +69,21 @@ public struct Selector: Codable, Hashable, Sendable {
         return true
     }
 
-    /// Whether this selector matches a module by name. Only the `module` facet is consulted;
-    /// a selector with no `module` facet matches every module (used by whole-codebase budgets).
+    /// Whether this selector matches a module by name. Only `explicitModules`/`module` are
+    /// consulted; a selector with neither matches every module (used by whole-codebase budgets).
     public func matchesModule(named name: String) -> Bool {
+        if let explicitModules, !explicitModules.contains(name) { return false }
         guard let module else { return true }
         return Glob(module).matches(name)
+    }
+
+    /// Whether this selector matches a node identified only by name — e.g. a state diagram's
+    /// state, which carries no `TypeDeclaration` for the other facets to check against. Consults
+    /// `typeGlob` (against the name) and `explicitIDs`; a selector with neither matches every name.
+    public func matchesName(_ name: String) -> Bool {
+        if let explicitIDs, !explicitIDs.contains(name) { return false }
+        if let typeGlob, !Glob(typeGlob).matches(name) { return false }
+        return true
     }
 }
 

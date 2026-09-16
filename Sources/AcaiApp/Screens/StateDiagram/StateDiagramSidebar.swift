@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiDiff
+import AcaiQuality
 import AcaiRender
 
 enum StateDiagramSidebarTab {
@@ -17,10 +18,14 @@ enum StateDiagramSidebarTab {
 struct StateDiagramSidebar: View {
     @ObservedObject var viewModel: StateDiagramViewModel
     let artifact: CodeArtifact
+    let codebaseID: UUID
     @Binding var tab: StateDiagramSidebarTab
     let onApply: (StateDiagramConfiguration) -> Void
+    let onApplyFilter: (AcaiQuality.Selector?) -> Void
     let onSaveAsFreeform: () -> Void
     let onExportImage: () -> Void
+
+    @EnvironmentObject private var model: ProjectBrowserViewModel
 
     /// Mirrors `StateConfigSheet`'s own private `Scope`, duplicated rather than shared since that
     /// sheet stays untouched (it's also the creation-time flow presented from
@@ -39,15 +44,19 @@ struct StateDiagramSidebar: View {
     init(
         viewModel: StateDiagramViewModel,
         artifact: CodeArtifact,
+        codebaseID: UUID,
         tab: Binding<StateDiagramSidebarTab>,
         onApply: @escaping (StateDiagramConfiguration) -> Void,
+        onApplyFilter: @escaping (AcaiQuality.Selector?) -> Void,
         onSaveAsFreeform: @escaping () -> Void,
         onExportImage: @escaping () -> Void
     ) {
         self.viewModel = viewModel
         self.artifact = artifact
+        self.codebaseID = codebaseID
         self._tab = tab
         self.onApply = onApply
+        self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
         if let configuration = viewModel.configuration {
@@ -161,6 +170,11 @@ struct StateDiagramSidebar: View {
                     .accessibilityIdentifier("diagram.stateSettings.applyButton")
             }
 
+            DiagramFilterSection(
+                filter: filterBinding,
+                projectID: model.projectID(for: codebaseID) ?? codebaseID
+            )
+
             Section(.app("View.StateDiagramSidebar.Export")) {
                 Button(action: onSaveAsFreeform) {
                     Label(.app("View.StateDiagramSidebar.SaveFreeform"), systemImage: "document.on.document")
@@ -184,6 +198,13 @@ struct StateDiagramSidebar: View {
         onApply(StateDiagramConfiguration(
             typeName: typeName, variableName: draftVariableName, maxStates: draftMaxStates
         ))
+    }
+
+    private var filterBinding: Binding<AcaiQuality.Selector?> {
+        Binding(
+            get: { viewModel.configuration?.filter },
+            set: { onApplyFilter($0) }
+        )
     }
 
     // MARK: - Lookups (duplicated from `StateConfigSheet`, kept independent since that type is also

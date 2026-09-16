@@ -35,7 +35,7 @@ struct CodebaseAtlasExportTests {
                 codebaseID: codebaseID, codebaseName: codebaseName,
                 title: "Issue \(index)", message: "Something worth flagging.",
                 location: SourceLocation(filePath: "Widget.swift", line: index + 1, column: 1),
-                reference: nil, indexedAt: nil)
+                reference: nil, indexedAt: nil, cycle: nil)
         }
     }
 

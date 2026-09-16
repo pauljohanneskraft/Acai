@@ -18,7 +18,8 @@ struct CompareFindingsDeltaTests {
             message: "message",
             location: SourceLocation(filePath: filePath, line: line, column: 1),
             reference: nil,
-            indexedAt: nil)
+            indexedAt: nil,
+            cycle: nil)
     }
 
     @Test func genuinelyNewFindingIsSurfaced() {

@@ -9,6 +9,10 @@ struct FindingRow: View {
     /// under "show suppressed too" without a store to act through.
     var isSuppressed: Bool = false
     var onToggleSuppressed: (() -> Void)?
+    /// `nil` when `finding.cycle` is `nil` (every non-cycle finding), or when this row is shown
+    /// somewhere with no project context to create a diagram in — mirrors
+    /// `ViolationRowView.onViewAsDiagram`'s rationale.
+    var onOpenCycle: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -17,6 +21,12 @@ struct FindingRow: View {
             HStack(spacing: 12) {
                 if let codebase, let location = finding.location {
                     ViewSourceButton(codebase: codebase, relativePath: location.filePath)
+                }
+                if finding.cycle != nil, let onOpenCycle {
+                    Button(action: onOpenCycle) {
+                        Label(.app("View.FindingRow.ViewDiagram"), systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .accessibilityIdentifier("findings.row.viewAsDiagramButton")
                 }
                 if let onToggleSuppressed {
                     Button(action: onToggleSuppressed) {
