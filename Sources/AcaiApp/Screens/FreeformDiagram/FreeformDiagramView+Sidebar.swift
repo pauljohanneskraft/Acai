@@ -19,7 +19,11 @@ extension FreeformDiagramView {
             case .catalog:
                 FreeformDiagramCatalog(viewModel: viewModel)
             case .inspector:
-                FreeformDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
+                FreeformDiagramInspector(
+                    viewModel: viewModel,
+                    isEditingText: $isEditingText,
+                    showDeleteConfirmation: $showDeleteConfirmation
+                )
             }
         }
         .background {
