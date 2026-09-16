@@ -98,6 +98,20 @@ struct PackageDiagramTests {
         #expect(diagram.edges.isEmpty)
     }
 
+    @Test func explicitModulesFilterKeepsOnlyThatSet() {
+        let diagram = PackageDiagramBuilder(filter: Selector(explicitModules: ["ModuleA"]))
+            .build(from: twoModuleArtifact())
+        #expect(diagram.nodes.map(\.name) == ["ModuleA"])
+        #expect(diagram.edges.isEmpty)
+    }
+
+    @Test func explicitModulesFilterKeepsEdgesBetweenTwoKeptModules() {
+        let diagram = PackageDiagramBuilder(filter: Selector(explicitModules: ["ModuleA", "ModuleB"]))
+            .build(from: twoModuleArtifact())
+        #expect(Set(diagram.nodes.map(\.name)) == ["ModuleA", "ModuleB"])
+        #expect(diagram.edges.count == 1)
+    }
+
     // MARK: - DOT rendering
 
     @Test func dotRendersNodesAndWeightedEdge() {
