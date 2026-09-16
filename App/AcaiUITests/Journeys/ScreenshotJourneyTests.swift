@@ -43,7 +43,7 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
     }
 
     func testProjectDetailAddMenuScreenshot() throws {
-        try XCTSkipUnless(SnapshotPlatform().isCompactWidth, "only compact width hides these actions behind \"+\"")
+        try XCTSkipUnless(SnapshotPlatform().usesCompactLayout, "only compact width hides these actions behind \"+\"")
         let detail = openSeededProject()
         detail.openAddMenu()
         // iOS's `Menu` renders through a translucent material that doesn't converge to identical bytes

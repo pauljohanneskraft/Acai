@@ -86,14 +86,37 @@ extension XCUIElement {
         _ description: String, until destination: XCUIElement, attempts: Int = 3,
         file: StaticString = #filePath, line: UInt = #line
     ) {
+        let deadline = Date().addingTimeInterval(.uiTransition)
         let perAttempt = TimeInterval.uiTransition / Double(attempts)
         for _ in 0..<attempts {
-            waitUntilReady(description, file: file, line: line)
+            waitUntilReady(description, timeout: max(deadline.timeIntervalSinceNow, 1), file: file, line: line)
             tap()
-            if destination.waitForExistence(timeout: perAttempt) { return }
-            if !exists { break }
+            if destination.waitForExistence(timeout: min(perAttempt, max(deadline.timeIntervalSinceNow, 1))) {
+                return
+            }
+            if !exists || Date() >= deadline { break }
         }
-        destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
+        destination.waitOrFail(
+            "the destination of tapping \(description)", timeout: max(deadline.timeIntervalSinceNow, 1),
+            file: file, line: line
+        )
+    }
+
+    /// Waits for `self` to go away, failing immediately with `failure`'s label if that appears first —
+    /// for an operation whose success dismisses its own screen and whose failure shows an alert.
+    func waitForDisappearanceOrFail(
+        _ description: String, failingOn failure: XCUIElement, timeout: TimeInterval = .uiWork,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while deadline.timeIntervalSinceNow > 0 {
+            if waitForNonExistence(timeout: min(1, deadline.timeIntervalSinceNow)) { return }
+            if failure.exists {
+                XCTFail("\(description) failed: \(failure.label)", file: file, line: line)
+                return
+            }
+        }
+        XCTFail("\(description) never went away", file: file, line: line)
     }
 }
 
@@ -105,8 +128,8 @@ extension XCUIApplication {
     /// `content`, inset away from the screen edges.
     func dismissPopover(showing content: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         let region = otherElements["PopoverDismissRegion"]
-        region.waitOrFail("the popover's dismiss region", file: file, line: line)
-        content.waitOrFail("the popover's content", file: file, line: line)
+        content.waitUntilReady("the popover's content", file: file, line: line)
+        region.waitUntilReady("the popover's dismiss region", file: file, line: line)
         let bounds = region.frame
         let offset = CGVector(
             dx: content.frame.midX > bounds.midX ? 0.15 : 0.85,

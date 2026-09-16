@@ -25,15 +25,9 @@ final class NewCodebaseSheetScreen {
     /// A failure surfaces as the app's error alert, reported immediately instead of timing out.
     func clone(file: StaticString = #filePath, line: UInt = #line) {
         cloneButton.tapWhenReady("Clone", file: file, line: line)
-        let deadline = Date().addingTimeInterval(.uiWork)
-        while Date() < deadline {
-            if cloneButton.waitForNonExistence(timeout: 5) { return }
-            if app.alerts.firstMatch.exists {
-                XCTFail("cloning failed: \(app.alerts.firstMatch.label)", file: file, line: line)
-                return
-            }
-        }
-        XCTFail("the clone never finished (still cloning: \(cloneLoadingIndicator.exists))", file: file, line: line)
+        cloneButton.waitForDisappearanceOrFail(
+            "the Add Codebase sheet (cloning and indexing)", failingOn: app.alerts.firstMatch, file: file, line: line
+        )
     }
 
     @discardableResult

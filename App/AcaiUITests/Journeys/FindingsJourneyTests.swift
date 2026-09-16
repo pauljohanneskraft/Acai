@@ -14,7 +14,7 @@ final class FindingsJourneyTests: UIJourneyTestCase {
         // detail slot swapped by `Selection`, so the sidebar is one level back from here; regular
         // width keeps the sidebar visible, so there's nothing to pop there.
         let projectRow = ProjectBrowserScreen(app: app).projectRow(id: seeded.projectID)
-        if SnapshotPlatform().isCompactWidth {
+        if SnapshotPlatform().usesCompactLayout {
             app.navigationBars.firstMatch.buttons.element(boundBy: 0).tap("the navigation back button", until: projectRow)
         }
 

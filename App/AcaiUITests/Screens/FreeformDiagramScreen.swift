@@ -46,7 +46,7 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         }
         catalogNodeButton(kindID).tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
         cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
-        if !SnapshotPlatform().isCompactWidth {
+        if !SnapshotPlatform().usesCompactLayout {
             tapSidebarToggle(file: file, line: line)
         }
         catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)

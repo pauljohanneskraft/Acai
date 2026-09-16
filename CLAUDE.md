@@ -253,15 +253,16 @@ wait for their own outcome; a getter never taps. A flow two journeys need become
 copy.
 
 **Interacting.** Only through `Support/Interaction.swift`:
-- `tapWhenReady` for anything with a side effect — it waits until the element exists, is hittable
-  and has stopped moving, then taps **exactly once**. Never retry a create/delete/toggle: a retry of
+- `tapWhenReady` for anything with a side effect — it waits until the element exists and is
+  hittable, then taps **exactly once**. Never retry a create/delete/toggle: a retry of
   a tap that landed but is still being processed makes a duplicate.
 - `tap(_:until:)` only for idempotent navigation (selecting a row, opening a sheet).
 - `waitOrFail`, `waitForDisappearanceOrFail`, and `AsyncOperation.waitUntilLoaded` for waiting. Every
   async operation a journey triggers is observed through its `.loading`/`.loaded`/`.error`
   identifiers — never inferred from an unrelated element that may exist before the work finished.
-  Where an operation's completion dismisses its own screen (a sheet), wait for the dismissal and
-  fail fast on the error alert, as `NewCodebaseSheetScreen.clone()` does.
+  Where an operation's completion dismisses its own screen (a sheet), wait for the dismissal and fail
+  fast on the error alert with `waitForDisappearanceOrFail(_:failingOn:)`, as
+  `NewCodebaseSheetScreen.clone()` does.
 - `appears(within:)` only inside a retry loop that recovers from a miss by itself (retyping a query)
   and reports the final miss through `waitOrFail`.
 - Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,

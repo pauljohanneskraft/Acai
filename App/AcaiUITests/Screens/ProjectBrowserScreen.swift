@@ -47,7 +47,7 @@ final class ProjectBrowserScreen {
         app.typeKey("k", modifierFlags: .command)
         searchField.waitOrFail("the Quick Open search field", file: file, line: line)
         #else
-        let entryPoint = SnapshotPlatform().isCompactWidth ? quickOpenButton : quickOpenFieldProxy
+        let entryPoint = SnapshotPlatform().usesCompactLayout ? quickOpenButton : quickOpenFieldProxy
         entryPoint.tap("the Quick Open entry point", until: searchField, file: file, line: line)
         #endif
     }

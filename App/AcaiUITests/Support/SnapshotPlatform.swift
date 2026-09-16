@@ -20,7 +20,10 @@ struct SnapshotPlatform {
         #endif
     }
 
-    /// iPhone's compact width: a navigation stack over the sidebar and a "+" menu in place of inline
-    /// actions. Branch on this rather than on whether an element happens to exist yet.
-    var isCompactWidth: Bool { name == "iPhone" }
+    /// Whether the app lays out in its compact horizontal size class: a navigation stack over the
+    /// sidebar and a "+" menu in place of inline actions. Journeys run full screen on fixed devices —
+    /// iPhone in portrait, iPad pinned to landscape by `UIJourneyTestCase` — so the device decides it; a
+    /// journey that runs iPad in a multitasking width must not rely on this. Branch on this rather than
+    /// on whether an element happens to exist yet.
+    var usesCompactLayout: Bool { name == "iPhone" }
 }

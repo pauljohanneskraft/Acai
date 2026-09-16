@@ -29,7 +29,7 @@ final class ProjectDetailScreen {
 
     /// Regular width shows these actions directly; compact width hides them behind "+".
     private func tapAddMenuItem(_ item: XCUIElement, description: String, file: StaticString, line: UInt) {
-        if SnapshotPlatform().isCompactWidth {
+        if SnapshotPlatform().usesCompactLayout {
             addMenuButton.tap("the \"+\" menu", until: item, file: file, line: line)
         }
         item.tapWhenReady(description, file: file, line: line)
