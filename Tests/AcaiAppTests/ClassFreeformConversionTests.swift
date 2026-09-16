@@ -313,6 +313,34 @@ struct ClassFreeformConversionTests {
         #expect(freeform.edges.isEmpty)
     }
 
+    @Test("Members stay expanded in the copy even when the source view has them collapsed")
+    func membersStayExpandedEvenWhenCollapsedInSourceView() throws {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public,
+                    members: [Member(name: "x", kind: .property, accessLevel: .public)]
+                )
+            ]
+        )
+        let diagram = classDiagram { config in
+            config.showProperties = false
+            config.propertyVisibility["Foo"] = false
+        }
+
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact, positions: [:], scale: 1, offset: .zero
+        )
+
+        let node = try #require(freeform.nodes.first)
+        guard case .type(let content) = node.content else {
+            Issue.record("expected type content")
+            return
+        }
+        #expect(content.properties.map(\.name) == ["x"])
+    }
+
     @Test("A minimum access level excludes a lower-visibility type and its relationship from the copy")
     func minimumAccessLevelExcludesLowerVisibilityType() {
         let artifact = CodeArtifact(
