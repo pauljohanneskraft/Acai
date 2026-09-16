@@ -39,19 +39,16 @@ class DiagramScreenBase {
     }
 
     /// Call once the diagram's canvas is confirmed on screen — the sidebar renders in the same pass,
-    /// so its absence then really means it's closed.
+    /// so its absence then really means it's closed. Selecting an already-selected segment is a no-op,
+    /// so the tab is tapped unconditionally once the sidebar is open.
     private func openSidebarTab(
         _ tab: XCUIElement, content: XCUIElement, name: String, file: StaticString, line: UInt
     ) {
         if content.exists { return }
         if !settingsContent.exists && !inspectorContent.exists {
             tapToolbarButton(sidebarToggleButton, label: "Sidebar", file: file, line: line)
-            _ = settingsContent.waitForExistence(timeout: .uiTransition)
-                || inspectorContent.waitForExistence(timeout: 1)
         }
-        if !content.exists {
-            tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
-        }
+        tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
         content.waitOrFail("the diagram's \(name) tab", file: file, line: line)
     }
 

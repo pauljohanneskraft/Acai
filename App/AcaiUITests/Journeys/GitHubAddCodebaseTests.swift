@@ -78,9 +78,7 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
         )
 
         featureBranchDiagram.openCompare()
-        // 90s: CI's iPad runner is measurably slower than its iPhone counterpart for this real-git
-        // extraction, and the fixture repo is trivially small, so this isn't a data-volume problem.
-        featureBranchDiagram.compare(against: "main", timeout: 90)
+        featureBranchDiagram.compare(against: "main")
     }
 
     /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding

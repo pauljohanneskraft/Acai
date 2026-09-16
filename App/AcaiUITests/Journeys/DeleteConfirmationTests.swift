@@ -27,20 +27,15 @@ final class DeleteConfirmationTests: UIJourneyTestCase {
         #else
         let delete = app.buttons["Delete"]
         if UIDevice.current.userInterfaceIdiom == .pad {
-            // A press the simulator registers as a tap opens the codebase instead of its context menu.
             row.press(forDuration: 1.5)
-            if !delete.waitForExistence(timeout: .uiTransition) {
-                XCTAssertTrue(
-                    row.exists,
-                    "the long-press on the codebase row was registered as a tap and navigated away",
-                    file: file, line: line
-                )
-            }
         } else {
             row.swipeLeft()
         }
         #endif
-        delete.tapWhenReady("the row's Delete action", file: file, line: line)
+        delete.tapWhenReady(
+            "the row's Delete action (if the codebase screen opened instead, the reveal gesture registered as a tap)",
+            file: file, line: line
+        )
     }
 
     func testCancellingTheConfirmationKeepsTheCodebase() throws {
@@ -56,8 +51,7 @@ final class DeleteConfirmationTests: UIJourneyTestCase {
         // At this window size, `.confirmationDialog` renders as a popover with no "Cancel" button
         // at all — tap-outside-to-dismiss (`PopoverDismissRegion`) is this presentation's Cancel.
         let dismissRegion = app.otherElements["PopoverDismissRegion"]
-        dismissRegion.waitOrFail("the confirmation popover's dismiss region")
-        dismissRegion.tap()
+        dismissRegion.tapWhenReady("the confirmation popover's dismiss region")
         dismissRegion.waitForDisappearanceOrFail("the confirmation popover")
         #endif
 

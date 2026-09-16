@@ -47,12 +47,8 @@ final class ProjectBrowserScreen {
         app.typeKey("k", modifierFlags: .command)
         searchField.waitOrFail("the Quick Open search field", file: file, line: line)
         #else
-        let deadline = Date().addingTimeInterval(.uiTransition)
-        while Date() < deadline, !quickOpenButton.exists, !quickOpenFieldProxy.exists {
-            Thread.sleep(forTimeInterval: 0.1)
-        }
-        let entryPoint = quickOpenButton.exists ? quickOpenButton : quickOpenFieldProxy
-        entryPoint.tap("a Quick Open entry point", until: searchField, file: file, line: line)
+        let entryPoint = SnapshotPlatform().isCompactWidth ? quickOpenButton : quickOpenFieldProxy
+        entryPoint.tap("the Quick Open entry point", until: searchField, file: file, line: line)
         #endif
     }
 

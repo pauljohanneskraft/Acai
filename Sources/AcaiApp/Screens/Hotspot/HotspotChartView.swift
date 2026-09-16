@@ -103,6 +103,7 @@ struct HotspotChartView: View {
             chart(data)
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("hotspot.chart")
         } else {
             statusState(
                 identifier: "hotspot.noFilesToPlot", systemImage: "flame",

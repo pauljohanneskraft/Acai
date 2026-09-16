@@ -5,8 +5,9 @@ extension TimeInterval {
     /// Measured on CI, a transition either lands within ~5s or never does, so waiting longer only
     /// delays the failure.
     static let uiTransition: TimeInterval = 10
-    /// Real work behind the interaction: indexing, cloning, loading a comparison.
-    static let uiWork: TimeInterval = 60
+    /// Real work behind the interaction: indexing, cloning, loading a comparison. Sized for CI's
+    /// slowest case, a real-git comparison extraction on the iPad runner.
+    static let uiWork: TimeInterval = 90
 }
 
 /// The only ways a journey waits for or touches an element. Every helper fails at the caller's line

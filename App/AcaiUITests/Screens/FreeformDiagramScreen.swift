@@ -33,14 +33,12 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
-    /// On regular width (iPad) the sidebar is a persistent `.inspector` column, and a canvas tap
-    /// taken while it's still presented doesn't reach `InfiniteCanvas`'s tap gesture at all
-    /// (confirmed empirically), so it must be closed before the commit tap — hence the two
-    /// conditional toggles here rather than an unconditional open/close pair. On compact width
-    /// (iPhone) the sidebar already auto-closes once placement begins, making the second toggle a
-    /// no-op there. `"type.class"` (the catalog's first entry) stands in for "is the catalog
-    /// showing at all," regardless of which `kindID` this call wants. Call once the diagram's
-    /// toolbar is on screen, so the first `exists` read reflects a rendered sidebar.
+    /// On regular width the sidebar is a persistent `.inspector` column, and a canvas tap taken while
+    /// it's still presented doesn't reach `InfiniteCanvas`'s tap gesture at all (confirmed
+    /// empirically), so it must be closed before the commit tap. On compact width (iPhone) the sidebar
+    /// closes itself once placement begins. `"type.class"` (the catalog's first entry) stands in for
+    /// "is the catalog showing at all," regardless of which `kindID` this call wants. Call once the
+    /// diagram's toolbar is on screen, so the first `exists` read reflects a rendered sidebar.
     func placeNodeViaCatalog(kindID: String, file: StaticString = #filePath, line: UInt = #line) {
         let catalog = catalogNodeButton("type.class")
         if !catalog.exists {
@@ -48,12 +46,10 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         }
         catalogNodeButton(kindID).tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
         cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
-        // Compact width closes the sidebar itself once placement begins; give that a moment to land
-        // before deciding whether to close it by hand.
-        if !catalog.waitForNonExistence(timeout: 2) {
+        if !SnapshotPlatform().isCompactWidth {
             tapSidebarToggle(file: file, line: line)
-            catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
         }
+        catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
         tapCanvasCenter()
     }
 
