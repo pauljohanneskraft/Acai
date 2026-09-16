@@ -35,20 +35,22 @@ extension XCUIElement {
         }
     }
 
-    /// Taps, retrying only while `self` is still on screen — for a control that navigates away once
+    /// Taps once, then waits for `self` to leave the screen — for a control that navigates away once
     /// the tap lands *and* whose action isn't idempotent (the diagram buttons call `diagrams.add`,
     /// so every landed tap creates another diagram).
     ///
     /// `tapUntil` can't be used there: it retries until the *destination* appears, so a first tap
-    /// that landed but is still rendering gets tapped again and creates a duplicate. Keying the
-    /// retry on this control disappearing means a tap that worked is never repeated, while a tap
-    /// that never landed still is.
-    func tapUntilItDisappears(settle: TimeInterval = 8, attempts: Int = 3) {
-        for _ in 0..<attempts {
-            guard exists else { return }
-            if pollUntilHittable(timeout: settle) { tap() }
-            if waitForNonExistence(timeout: settle) { return }
-        }
+    /// that landed but is still rendering gets tapped again and creates a duplicate. This never
+    /// retaps for the same reason: a tap that already landed but hasn't cleared the screen within
+    /// `timeout` looks identical to one that never landed, so retrying would create a duplicate
+    /// diagram exactly as often as it recovered a missed tap. A slow-but-successful action still
+    /// gets the whole `timeout` to finish; a tap that truly never landed leaves `self` on screen so
+    /// the caller's next assertion fails with a clear "never appeared" message instead of the screen
+    /// silently carrying an extra diagram.
+    func tapUntilItDisappears(timeout: TimeInterval = 24) {
+        guard pollUntilHittable(timeout: 5) else { return }
+        tap()
+        _ = waitForNonExistence(timeout: timeout)
     }
 
     /// Waits for `self` to be hittable, not just present, before tapping. Confirmed empirically: an

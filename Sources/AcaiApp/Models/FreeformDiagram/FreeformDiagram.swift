@@ -1,6 +1,7 @@
 import Foundation
 import AcaiCore
 import AcaiDiagram
+import AcaiRender
 
 /// A fully user-defined diagram with manually placed nodes and edges.
 struct FreeformDiagram: Identifiable, Codable, Hashable, Sendable {
@@ -314,6 +315,18 @@ extension FreeformDiagram.Node {
                 result += ": \(type)"
             }
             return result
+        }
+
+        /// The row this member draws as everywhere else in the app — an access-level icon plus
+        /// the same UML-symbol-prefixed text a generated diagram's member rows use.
+        var displayItem: MemberDisplayItem {
+            MemberDisplayItem(
+                id: id.uuidString,
+                text: "\(accessLevel.umlSymbol) \(displayString)",
+                isStatic: isStatic,
+                isAbstract: isAbstract,
+                accessLevel: accessLevel
+            )
         }
     }
 }
