@@ -241,6 +241,7 @@ jobs:
       - name: Prepare Simulator
         run: |
           APP=$(find App/DerivedData/Build/Products -maxdepth 2 -path '*-iphonesimulator/Acai.app' | head -1)
+          [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
           Scripts/simulator_prepare.sh "${{ matrix.device }}" "$APP"
 
       # Deliberately serial: simulator clones for `-parallel-testing-enabled` made each test 3-8x
