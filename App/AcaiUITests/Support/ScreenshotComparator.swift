@@ -12,14 +12,15 @@ import XCTest
 @MainActor
 struct ScreenshotComparator {
     let goldenDirectory: URL
-    /// The fraction of 256×256 luminance cells allowed to differ. A drift above it is a real content
-    /// change until proven otherwise: before raising it, look at the capture — every past "noise"
-    /// case turned out to be a duplicate row, a stale golden or an unpinned status bar.
+    /// The fraction of 256×256 luminance cells allowed to differ. CI renders the same state to
+    /// identical or near-identical pixels on every platform, so a drift above it is a real content
+    /// change until proven otherwise: before raising it, look at the capture — every past "noise" case
+    /// turned out to be a duplicate row, a stale golden or an unpinned status bar.
     var maxChangedFraction: Double
 
     init(goldenDirectory: URL, maxChangedFraction: Double? = nil) {
         self.goldenDirectory = goldenDirectory
-        self.maxChangedFraction = maxChangedFraction ?? (SnapshotPlatform().name == "macOS" ? 4.0e-2 : 2.0e-3)
+        self.maxChangedFraction = maxChangedFraction ?? (SnapshotPlatform().name == "macOS" ? 1.0e-3 : 2.0e-3)
     }
 
     private let comparisonSide = 256

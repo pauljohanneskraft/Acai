@@ -49,10 +49,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
       # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
+      # `-disablePackageRepositoryCache` on every xcodebuild using `.spm-cache`: otherwise a restored
+      # checkout points into ~/Library/Caches/org.swift.swiftpm, which a fresh runner doesn't have, and
+      # package resolution fails ("cannot change to …/repositories/tree-sitter-dart-…").
       - name: Run SPM unit tests on iOS Simulator
         run: |
           xcodebuild test \
@@ -61,6 +64,7 @@ jobs:
             -destination "platform=iOS Simulator,name=iPhone 17" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -90,8 +94,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
       # ui-test-iphone/ui-test-ipad reuse this via test-without-building instead of recompiling.
       - name: Build for testing (UI test bundle)
@@ -102,6 +106,7 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -305,8 +310,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
       - name: Run UI tests
         id: run-tests
@@ -322,6 +327,7 @@ jobs:
             -scheme Acai-macOSUITests \
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
             -maximum-test-execution-time-allowance 600 \
