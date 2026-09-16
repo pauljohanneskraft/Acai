@@ -3,6 +3,7 @@ import Foundation
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 @testable import AcaiApp
 
 /// "Save as Freeform" for sequence diagrams: participants become lifeline nodes at their exact
@@ -102,5 +103,18 @@ struct SequenceFreeformConversionTests {
         #expect(layout.messages.count == 2)
         #expect(layout.messages[0].y < layout.messages[1].y)
         #expect(!layout.activations.isEmpty)
+    }
+
+    @Test("An active selector filter narrows the copy to the same participants shown, keeping the entry point")
+    func activeFilterNarrowsCopyKeepingEntryPoint() {
+        var diagram = sequenceDiagram()
+        diagram.sequenceConfiguration?.filter = Selector(typeGlob: "Caller")
+
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero
+        )
+
+        #expect(freeform.nodes.map(\.name) == ["Caller"])
+        #expect(freeform.edges.isEmpty)
     }
 }

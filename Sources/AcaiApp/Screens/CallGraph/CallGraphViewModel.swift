@@ -7,6 +7,35 @@ import AcaiLibrary
 import AcaiQuality
 import AcaiRender
 
+/// Narrows a built `CallGraph` to the nodes (and edges between two kept nodes) a selector filter
+/// matches — an instantiated value with an instance method that `CallGraphViewModel` delegates to,
+/// and that `CallGraphFreeformConversion` reuses so "Save as Freeform" applies the exact same
+/// filter the live diagram does.
+struct CallGraphFilter {
+    let artifact: CodeArtifact
+    let filter: AcaiQuality.Selector?
+
+    /// Free functions and nodes whose type can't be resolved back to a declaration always pass
+    /// through (fail open) rather than silently vanishing from the graph.
+    func apply(to graph: CallGraph) -> CallGraph {
+        guard let filter else { return graph }
+        let graphView = GraphView(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
+        let typesByName = Dictionary(
+            artifact.flattened().map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        let keptIDs = Set(graph.nodes.filter { node in
+            guard !node.typeName.isEmpty else { return true }
+            guard let type = typesByName[node.typeName], let match = graphView.node(id: type.id) else { return true }
+            return filter.matches(match)
+        }.map(\.id))
+        return CallGraph(
+            title: graph.title,
+            nodes: graph.nodes.filter { keptIDs.contains($0.id) },
+            edges: graph.edges.filter { keptIDs.contains($0.from) && keptIDs.contains($0.to) },
+            coverage: graph.coverage
+        )
+    }
+}
+
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let artifact: CodeArtifact
@@ -45,9 +74,10 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     }
 
     private func rebuild() {
-        let new = filtered(CallGraphBuilder(scope: scope).build(from: artifact))
+        let callGraphFilter = CallGraphFilter(artifact: artifact, filter: filter)
+        let new = callGraphFilter.apply(to: CallGraphBuilder(scope: scope).build(from: artifact))
         if let comparisonArtifact {
-            let old = filtered(CallGraphBuilder(scope: scope).build(from: comparisonArtifact))
+            let old = callGraphFilter.apply(to: CallGraphBuilder(scope: scope).build(from: comparisonArtifact))
             let diff = CallGraphDiff(old: old, new: new)
             self.diff = diff
             self.graph = diff.union
@@ -55,26 +85,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
             self.diff = nil
             self.graph = new
         }
-    }
-
-    /// Free functions and nodes whose type can't be resolved back to a declaration always pass
-    /// through (fail open) rather than silently vanishing from the graph.
-    private func filtered(_ graph: CallGraph) -> CallGraph {
-        guard let filter else { return graph }
-        let graphView = GraphView(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
-        let typesByName = Dictionary(
-            artifact.flattened().map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
-        let keptIDs = Set(graph.nodes.filter { node in
-            guard !node.typeName.isEmpty else { return true }
-            guard let type = typesByName[node.typeName], let match = graphView.node(id: type.id) else { return true }
-            return filter.matches(match)
-        }.map(\.id))
-        return CallGraph(
-            title: graph.title,
-            nodes: graph.nodes.filter { keptIDs.contains($0.id) },
-            edges: graph.edges.filter { keptIDs.contains($0.from) && keptIDs.contains($0.to) },
-            coverage: graph.coverage
-        )
     }
 
     var isDeltaMode: Bool { diff != nil }

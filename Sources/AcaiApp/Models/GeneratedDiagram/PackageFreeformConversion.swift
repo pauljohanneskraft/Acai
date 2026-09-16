@@ -12,7 +12,7 @@ struct PackageFreeformConversion: FreeformConversion {
 
     init(context: FreeformConversionContext) {
         self.context = context
-        self.package = PackageDiagramBuilder().build(
+        self.package = PackageDiagramBuilder(filter: context.diagram.packageDiagramFilter).build(
             from: context.artifact.enriched(using: context.artifact.standardLanguageResolver))
     }
 

@@ -10,9 +10,27 @@ import AcaiRender
 /// enclose the members it contains.
 struct ClassFreeformConversion: FreeformConversion {
     let context: FreeformConversionContext
+    /// The same visible-node/edge computation the live class diagram view renders from (extension
+    /// merging, hidden generated types, focus, minimum access level, and any active selector filter
+    /// all resolved identically) — computed once so the copy can never include a type or
+    /// relationship the source view had filtered out, nor omit one it had shown.
+    private let layout: DiagramLayoutModel
+    private let visibleTypes: [TypeDeclaration]
+
+    init(context: FreeformConversionContext) {
+        self.context = context
+        let layout = DiagramLayoutModel(
+            artifact: context.artifact,
+            configuration: context.diagram.classConfiguration ?? .init(),
+            languages: context.artifact.standardLanguageResolver
+        )
+        self.layout = layout
+        let visibleIDs = Set(layout.nodes.map(\.id))
+        self.visibleTypes = context.artifact.resolvingExtensions().types.filter { visibleIDs.contains($0.id) }
+    }
 
     func items() -> [TypeDeclaration] {
-        artifact.types
+        visibleTypes
     }
 
     func sourceID(for item: TypeDeclaration) -> String {
@@ -64,14 +82,14 @@ struct ClassFreeformConversion: FreeformConversion {
     }
 
     func makeEdges(idsBySourceID: [String: String]) -> [FreeformDiagram.Edge] {
-        // `rel.source`/`rel.target` are already resolved to type ids by enrichment (falling back to
-        // the bare name only for an unresolved/external endpoint); `idsBySourceID` holds only known
-        // type ids, so the lookup below both maps to the freeform node and gates membership in one step.
-        artifact.relationships.compactMap { rel in
-            guard rel.source != rel.target,
-                  let srcID = idsBySourceID[rel.source],
-                  let tgtID = idsBySourceID[rel.target] else { return nil }
-            return .init(sourceNodeID: srcID, targetNodeID: tgtID, kind: rel.kind)
+        // `layout.edges` is already narrowed to the same relationship-kind toggles
+        // (`showInheritance`/`showComposition`/`showDependency`/`showRelationships`) and known-type
+        // set the live diagram draws; `idsBySourceID` holds only visible type ids, so the lookup
+        // below both maps to the freeform node and gates membership in one step.
+        layout.edges.compactMap { edge in
+            guard let srcID = idsBySourceID[edge.sourceID],
+                  let tgtID = idsBySourceID[edge.targetID] else { return nil }
+            return .init(sourceNodeID: srcID, targetNodeID: tgtID, kind: edge.kind)
         }
     }
 
