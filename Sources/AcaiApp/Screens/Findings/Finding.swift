@@ -115,7 +115,7 @@ struct Finding: Identifiable, Hashable {
     /// Present only for a `cycle`-kind violation finding — lets `FindingRow` offer the same "open
     /// as diagram" action `ViolationRowView` gives a cycle violation in the Quality Check section,
     /// without needing to re-parse `title`/`message`. `nil` for every other finding.
-    let cycle: CycleReference?
+    let cycle: CycleReference? = nil
 }
 
 extension Finding {
