@@ -240,6 +240,12 @@ extension ProjectCodebaseEditor {
             store.projects[pIndex].codebases[cIndex].securityScopedBookmark = refreshed.bookmark
             store.projects[pIndex].codebases[cIndex].directoryPath = refreshed.url.path
         }
+        // The fingerprint just computed above already answers "is this fresh" — fresh, by
+        // definition, since it's what was just indexed. Seed it directly rather than letting the
+        // header's `lastIndexed`-keyed recheck immediately re-walk the same disk/git state again.
+        if fingerprint != nil {
+            markFresh(codebaseID)
+        }
         persistProject(store.projects[pIndex].id)
         triggerSpotlightReindex()
     }

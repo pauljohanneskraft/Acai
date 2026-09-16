@@ -18,6 +18,10 @@ struct SourceTreeFingerprint {
         let enumerator = FileManager.default.enumerator(
             at: directory, includingPropertiesForKeys: Array(keys), options: [.skipsHiddenFiles])
         while let url = enumerator?.nextObject() as? URL {
+            // A large tree is the one case this walk takes long enough to matter; checking here
+            // lets a cancelled caller (a screen the user already navigated away from) stop the walk
+            // instead of paying for it just to discard the result.
+            if Task.isCancelled { break }
             let values = try? url.resourceValues(forKeys: keys)
             if values?.isDirectory == true {
                 if Self.skippedDirectories.contains(url.lastPathComponent) {

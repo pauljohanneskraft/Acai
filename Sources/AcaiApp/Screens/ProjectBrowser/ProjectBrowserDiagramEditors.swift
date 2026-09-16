@@ -189,6 +189,9 @@ struct ProjectCodebaseEditor {
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
+    /// Seeds `ProjectBrowserViewModel`'s freshness cache straight from a reindex's own fingerprint —
+    /// see `applyReindexResult`'s use of it in `ProjectBrowserDiagramEditors+GitHubSync.swift`.
+    let markFresh: (UUID) -> Void
     /// Real network clone/fetch, swapped for `FixtureGitHubRepositoryService` under a UI test
     /// fixture — see `GitHubRepositoryService`.
     var repositoryService: GitHubRepositoryService = GitHubRepositoryServiceResolver().resolve()

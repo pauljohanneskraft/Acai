@@ -12,12 +12,16 @@ struct ScreenshotComparator {
     /// Looser than the render snapshot tests' default — a full captured window has real
     /// rendering/anti-aliasing drift. macOS is widened further still: ~2–2.3% drift measured between
     /// separate real-window launches of the same state (window-server font hinting noise a
-    /// simulator doesn't have); iOS/iPad showed none of it.
+    /// simulator doesn't have); iOS/iPad showed none of it. Widened again after CI runs on
+    /// unrelated PRs kept failing `ClassDiagram/searching` and `PackageDiagram/populated` at a
+    /// reproducible ~4.10–4.15% — consistently above the old 4% cap on some CI machines and at
+    /// 0% on others for the identical committed golden, i.e. window-server noise varying by
+    /// runner rather than a real content change; iOS/iPad still showed none of it.
     var maxChangedFraction: Double
 
     init(goldenDirectory: URL, maxChangedFraction: Double? = nil) {
         self.goldenDirectory = goldenDirectory
-        self.maxChangedFraction = maxChangedFraction ?? (SnapshotPlatform().name == "macOS" ? 4.0e-2 : 2.0e-3)
+        self.maxChangedFraction = maxChangedFraction ?? (SnapshotPlatform().name == "macOS" ? 5.0e-2 : 2.0e-3)
     }
 
     private let comparisonSide = 256

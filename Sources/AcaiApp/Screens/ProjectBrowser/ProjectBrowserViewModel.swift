@@ -74,7 +74,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             store: store,
             persist: { [weak self] in self?.persistChanges() },
             notify: { [weak self] in self?.objectWillChange.send() },
-            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) }
+            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) },
+            markFresh: { [weak self] id in self?.markFresh(codebaseID: id) }
         )
     }
 
@@ -247,15 +248,32 @@ final class ProjectBrowserViewModel: ObservableObject {
         let token = freshnessToken(for: codebaseID)
         freshnessStates[codebaseID] = .computing(token)
         let directoryPath = codebase.directoryPath
-        let current = await Task.detached(priority: .utility) {
+        // `Task.detached` isn't a structured child, so cancelling the `.task` view modifier that's
+        // awaiting this function wouldn't otherwise stop the disk walk — only discard its result
+        // once it eventually finishes. `withTaskCancellationHandler` bridges the two, same pattern
+        // as `ProjectCodebaseEditor.reindex`'s own detached parse.
+        let detached = Task.detached(priority: .utility) {
             CodebaseFreshnessChecker(directoryPath: directoryPath).currentFingerprint()
-        }.value
+        }
+        let current = await withTaskCancellationHandler {
+            await detached.value
+        } onCancel: {
+            detached.cancel()
+        }
         // The caller (a screen the user has already navigated away from) cancelled this: never
         // publish a result nobody's there to see, so a background disk walk can't jog other screens.
         guard !Task.isCancelled else { return }
         // A reindex during the computation supersedes this result.
         guard freshnessToken(for: codebaseID) == token else { return }
         freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale)
+    }
+
+    /// Seeds the freshness cache directly, so the header's post-reindex recheck (triggered by
+    /// `lastIndexed` changing) doesn't immediately re-walk the same disk/git state a second time
+    /// to learn what reindexing just told it. Call only once the reindexed fingerprint is already
+    /// stored as `indexedFingerprint` — `freshnessToken(for:)` reads it back from there.
+    func markFresh(codebaseID: UUID) {
+        freshnessStates[codebaseID] = .ready(freshnessToken(for: codebaseID), .fresh)
     }
 
     // MARK: - Freeform Diagram CRUD
