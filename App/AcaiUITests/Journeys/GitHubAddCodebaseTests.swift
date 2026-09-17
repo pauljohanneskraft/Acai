@@ -16,60 +16,42 @@ import UIKit
 /// `feature` one commit further ahead (`Extra`) — instead of github.com.
 @MainActor
 final class GitHubAddCodebaseTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
 
     func testAddingSwitchingBranchAndComparingAGitHubCodebaseAllWorkAgainstARealLocalClone() throws {
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded") { app, destination in
+        let browser = launchSeeded(analysis: .parsed) { app, destination in
             let remoteDir = destination.appendingPathComponent("GitHubRemote")
             try GitFixtureRepository(directory: remoteDir).makeRemote()
             app.launchEnvironment["ACAI_UITEST_GITHUB_REMOTE_URL"] = remoteDir.path
         }
 
-        let browser = ProjectBrowserScreen(app: app)
-
-        // A fixture launch redirects `GitHubTokenStore` into this run's disposable directory, so
-        // the sign-out below is tidiness rather than isolation — and it would not run on an
-        // assertion failure anyway, since XCTest aborts via an exception that skips `defer`.
         let github = GitHubAccountScreen(app: app)
-        defer { if github.signedInRow.exists { github.signOutButton.tap() } }
-        signIn(app: app, browser: browser, github: github)
-
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
+        signIn(browser: browser, github: github)
 
         let detail = ProjectDetailScreen(app: app)
-        XCTAssertTrue(detail.addCodebaseButton.waitForExistence(timeout: 10))
-        detail.addCodebaseButton.tap()
+        browser.projectRow(id: seeded.projectID).tap(
+            "the seeded project's sidebar row", until: detail.codebaseRow(id: seeded.codebaseID)
+        )
+        detail.tapAddCodebase()
 
         github.selectGitHubSource()
         let sheet = NewCodebaseSheetScreen(app: app)
-        XCTAssertTrue(sheet.repositoryPicker.waitForExistence(timeout: 10))
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker)
-        XCTAssertTrue(sheet.refPicker.waitForExistence(timeout: 10))
         sheet.choose("main", from: sheet.refPicker)
-        XCTAssertTrue(sheet.cloneButton.isEnabled)
-        sheet.cloneButton.tap()
+        sheet.cloneButton.waitUntilEnabled("Clone, once a repository and ref are picked")
+        sheet.clone()
 
         let codebaseRow = detail.codebaseRow(named: "fixture-repo")
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 30), "the GitHub clone/index never finished")
+        codebaseRow.waitOrFail("the cloned codebase's row")
         let codebaseDetail = CodebaseDetailScreen(app: app)
         let classDiagramButton = codebaseDetail.diagramButton(type: "class")
-        codebaseRow.tapUntil(classDiagramButton)
+        codebaseRow.tap("the cloned codebase's row", until: classDiagramButton)
 
-        XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 10))
-        let diagram = ClassDiagramScreen(app: app)
-        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
-        // keyed on the canvas appearing creates a second diagram whenever the first is still
-        // rendering — an extra sidebar row and a screenshot that differs run to run.
-        classDiagramButton.tapUntilItDisappears()
-
-        XCTAssertTrue(diagram.typeNode(named: "Widget").waitForExistence(timeout: 30))
+        let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
+        diagram.typeNode(named: "Widget").waitOrFail("the Widget type node", timeout: .uiWork)
         XCTAssertTrue(diagram.typeNode(named: "Gadget").exists)
         XCTAssertFalse(diagram.typeNode(named: "Extra").exists, "feature-only content leaked into the main clone")
 
-        switchBranchAndCompare(app: app, browser: browser, diagram: diagram, codebaseDetail: codebaseDetail)
+        switchBranchAndCompare(browser: browser, diagram: diagram, codebaseDetail: codebaseDetail)
     }
 
     /// `backButton` from the diagram pops all the way to the sidebar, not just one level to
@@ -77,70 +59,37 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
     /// a fixed stack depth. Only iPhone's compact width covers the sidebar with a push/pop stack in
     /// the first place — macOS and iPad's regular width keep it visible.
     private func switchBranchAndCompare(
-        app: XCUIApplication, browser: ProjectBrowserScreen, diagram: ClassDiagramScreen,
-        codebaseDetail: CodebaseDetailScreen
+        browser: ProjectBrowserScreen, diagram: ClassDiagramScreen, codebaseDetail: CodebaseDetailScreen
     ) {
         #if os(iOS)
         if UIDevice.current.userInterfaceIdiom != .pad {
-            diagram.backButton.tap()
+            diagram.backButton.tapWhenReady("the diagram's back button")
         }
         #endif
-        let sidebarCodebaseRow = browser.codebaseRow(named: "fixture-repo")
-        XCTAssertTrue(sidebarCodebaseRow.waitForExistence(timeout: 10))
-        sidebarCodebaseRow.tapUntil(codebaseDetail.refPicker)
+        browser.codebaseRow(named: "fixture-repo").tap(
+            "the cloned codebase's sidebar row", until: codebaseDetail.refPicker
+        )
+        codebaseDetail.switchRef(to: "feature")
 
-        XCTAssertTrue(codebaseDetail.refPicker.waitForExistence(timeout: 10))
-        codebaseDetail.chooseRef("feature")
+        let featureBranchDiagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
+        featureBranchDiagram.typeNode(named: "Extra").waitOrFail(
+            "the Extra type node (switching branches should have fetched feature's content into the same clone)",
+            timeout: .uiWork
+        )
 
-        // Waits on the switch's own completion signal instead of inferring "done" from the diagram
-        // button's mere existence, which is already true mid-switch, before content updates.
-        XCTAssertTrue(
-            codebaseDetail.refSwitchLoadedIndicator.waitForExistence(timeout: UITestWaits.standard.long),
-            "the branch switch never finished")
-        let classDiagramButtonAfterSwitch = codebaseDetail.diagramButton(type: "class")
-        let featureBranchDiagram = ClassDiagramScreen(app: app)
-        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
-        // keyed on the canvas appearing creates a second diagram whenever the first is still
-        // rendering — an extra sidebar row and a screenshot that differs run to run.
-        classDiagramButtonAfterSwitch.tapUntilItDisappears()
-
-        XCTAssertTrue(featureBranchDiagram.typeNode(named: "Extra").waitForExistence(timeout: 10),
-                      "switching branches should have fetched feature's new content into the same clone")
-
-        XCTAssertTrue(featureBranchDiagram.compareButton.waitForExistence(timeout: 10))
         featureBranchDiagram.openCompare()
-        featureBranchDiagram.chooseCompareRef("main")
-        // 90s: CI's iPad runner is measurably slower/more contended than its iPhone counterpart for
-        // the same job, and the fixture repo is trivially small, so this isn't a data-volume
-        // problem. `compareLoadingIndicator` distinguishes a genuine still-loading timeout from
-        // never reaching a recognizable comparison state at all.
-        let loaded = featureBranchDiagram.compareLoadedIndicator.waitForExistence(timeout: 90)
-        let errorExists = featureBranchDiagram.compareErrorIndicator.exists
-        let errorMessage = errorExists ? featureBranchDiagram.compareErrorIndicator.label : "(no error shown)"
-        XCTAssertTrue(loaded, "comparison snapshot never finished loading: \(errorMessage) "
-                      + "(still loading: \(featureBranchDiagram.compareLoadingIndicator.exists))")
-        XCTAssertFalse(errorExists, errorMessage)
+        featureBranchDiagram.compare(against: "main")
     }
 
     /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding
-    /// its own sign-in UI, so sign in there first.
-    private func signIn(app: XCUIApplication, browser: ProjectBrowserScreen, github: GitHubAccountScreen) {
-        #if os(macOS)
-        app.typeKey(",", modifierFlags: .command)
-        #else
-        XCTAssertTrue(browser.settingsButton.waitForExistence(timeout: 10))
-        browser.settingsButton.tap()
-        #endif
-        XCTAssertTrue(github.patField.waitForExistence(timeout: 5))
-        github.patField.tap()
+    /// its own sign-in UI, so sign in there first. A fixture launch redirects `GitHubTokenStore`
+    /// into this run's disposable directory, so no sign-out is needed afterwards.
+    private func signIn(browser: ProjectBrowserScreen, github: GitHubAccountScreen) {
+        browser.openSettings()
+        github.patField.tapWhenReady("the personal access token field")
         github.patField.typeText("fixture-token")
-        github.signInWithTokenButton.tap()
-        XCTAssertTrue(github.signedInRow.waitForExistence(timeout: 5))
-        #if os(macOS)
-        app.typeKey("w", modifierFlags: .command)
-        #else
-        let settings = SettingsScreen(app: app)
-        settings.doneButton.tap()
-        #endif
+        github.signInWithTokenButton.tapWhenReady("Sign In with Token")
+        github.signedInRow.waitOrFail("the signed-in account row")
+        browser.closeSettings()
     }
 }

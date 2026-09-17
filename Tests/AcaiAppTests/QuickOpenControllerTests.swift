@@ -67,7 +67,7 @@ struct QuickOpenControllerTests {
         #expect(model.selection == .generatedDiagram(diagramID))
     }
 
-    @Test func createResolutionAddsAndSelectsANewDiagram() throws {
+    @Test func createResolutionAddsAndSelectsANewDiagram() async throws {
         let (model, projectID, codebaseID) = try makeModel()
         let before = model.generatedDiagramsForProject(projectID).count
         let controller = QuickOpenController(model: model)
@@ -75,6 +75,7 @@ struct QuickOpenControllerTests {
             kind: .type, projectID: projectID, codebaseID: codebaseID, reference: .type(id: "Foo"))
         controller.apply(
             CodeElementResolution(diagramType: .packageDiagram, target: .create(.packageDiagram)), entry: entry)
+        await model.pendingOpen?.value
         #expect(model.generatedDiagramsForProject(projectID).count == before + 1)
         if case .generatedDiagram(let newID) = model.selection {
             #expect(model.generatedDiagramsForProject(projectID).contains { $0.id == newID })

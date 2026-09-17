@@ -19,14 +19,13 @@ extension GeneratedDiagram {
         let context = FreeformConversionContext(
             diagram: self, artifact: artifact, positions: positions, scale: scale, offset: offset
         )
-        // Module Coupling, Hotspot, and Cycle Diagram are read-only analysis views — a scatter/
-        // chart point or an isolated cycle member has no sensible "freeform node"
-        // equivalent the way a class/module/participant does, so there's deliberately no conformer
-        // for them. Handled explicitly (not left to fall through to the `ClassFreeformConversion`
-        // default below, which would silently misinterpret their artifact as a class diagram):
-        // "Save as Freeform" isn't offered on any of these three types' toolbars, so this path is
-        // unreachable from the UI today — an empty diagram if it's ever invoked directly.
-        if [DiagramType.moduleCoupling, .hotspot, .cycleDiagram].contains(content.type) {
+        // Module Coupling and Hotspot are read-only analysis views — a scatter/chart point has no
+        // sensible "freeform node" equivalent the way a class/module/participant does, so there's
+        // deliberately no conformer for them. Handled explicitly (not left to fall through to the
+        // `ClassFreeformConversion` default below, which would silently misinterpret their artifact
+        // as a class diagram): "Save as Freeform" isn't offered on either type's toolbar, so this
+        // path is unreachable from the UI today — an empty diagram if it's ever invoked directly.
+        if [DiagramType.moduleCoupling, .hotspot].contains(content.type) {
             return FreeformDiagram(
                 name: name + " (Freeform)", canvasScale: scale, canvasOffsetX: offset.x, canvasOffsetY: offset.y
             )

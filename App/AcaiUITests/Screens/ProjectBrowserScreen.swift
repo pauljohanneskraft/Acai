@@ -32,7 +32,6 @@ final class ProjectBrowserScreen {
 
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
-    /// See `ProjectDetailScreen.codebaseRow(named:)`'s identical reasoning.
     func codebaseRow(named name: String) -> XCUIElement {
         app.staticTexts[name].firstMatch
     }
@@ -47,22 +46,45 @@ final class ProjectBrowserScreen {
 
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
+        let searchField = QuickOpenScreen(app: app).searchField
         #if os(macOS)
         // macOS's only entry point is ⌘K (`QuickOpenCommands`) — neither affordance exists there.
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
         app.typeKey("k", modifierFlags: .command)
+        searchField.waitOrFail("the Quick Open search field", file: file, line: line)
         #else
-        if quickOpenButton.waitForExistence(timeout: 5) {
-            quickOpenButton.tap()
-        } else {
-            quickOpenFieldProxy.waitOrFail("a Quick Open entry point", file: file, line: line)
-            quickOpenFieldProxy.tap()
-        }
+        let entryPoint = SnapshotPlatform().usesCompactLayout ? quickOpenButton : quickOpenFieldProxy
+        entryPoint.tap("the Quick Open entry point", until: searchField, file: file, line: line)
         #endif
     }
 
     // MARK: - Settings
 
     var settingsButton: XCUIElement { app.buttons["sidebar.settingsButton"] }
+
+    /// macOS reaches Settings via the real `Settings` scene (⌘,); iOS via the sidebar's gear button.
+    func openSettings(file: StaticString = #filePath, line: UInt = #line) {
+        let patField = GitHubAccountScreen(app: app).patField
+        #if os(macOS)
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        app.typeKey(",", modifierFlags: .command)
+        SettingsScreen(app: app).accountsPane.waitOrFail("the Settings window", file: file, line: line)
+        #else
+        settingsButton.tap("Settings", until: SettingsScreen(app: app).sheet, file: file, line: line)
+        #endif
+        patField.waitOrFail("the Settings accounts section", file: file, line: line)
+    }
+
+    func closeSettings(file: StaticString = #filePath, line: UInt = #line) {
+        let settings = SettingsScreen(app: app)
+        #if os(macOS)
+        app.typeKey("w", modifierFlags: .command)
+        settings.accountsPane.waitForDisappearanceOrFail("the Settings window", file: file, line: line)
+        #else
+        settings.doneButton.tapWhenReady("the Settings sheet's Done button", file: file, line: line)
+        settings.sheet.waitForDisappearanceOrFail("the Settings sheet", file: file, line: line)
+        #endif
+    }
 
     // MARK: - Activity indicator
 

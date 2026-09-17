@@ -21,6 +21,10 @@ public struct AcaiRootScene: Scene {
             ProjectBrowserView()
                 .modifier(DiagramThemeProvider())
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+                #if os(iOS)
+                // The clock, date and battery would otherwise differ in every UI-test screenshot.
+                .statusBarHidden(UITestFixtureResolver().resolveBaseDir() != nil)
+                #endif
                 .onContinueUserActivity(DiagramHandoffActivity.activityType) { activity in
                     guard let raw = activity.userInfo?["generatedDiagramID"] as? String, let id = UUID(uuidString: raw)
                     else { return }
