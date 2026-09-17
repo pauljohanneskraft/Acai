@@ -5,7 +5,7 @@ import XCTest
 class DiagramScreenBase {
     let app: XCUIApplication
 
-    init(app: XCUIApplication) {
+    required init(app: XCUIApplication) {
         self.app = app
     }
 
@@ -17,7 +17,7 @@ class DiagramScreenBase {
     /// sheet with no built-in dismiss chrome.
     var sidebarDoneButton: XCUIElement { app.buttons["diagram.sidebarDoneButton"] }
 
-    // MARK: - Sidebar tabs (every generated diagram type now has this Settings/Inspector split)
+    // MARK: - Sidebar tabs (every generated diagram type has this Settings/Inspector split)
 
     /// A plain `Picker(selection:)` with `.pickerStyle(.segmented)` surfaces its `Text` case labels
     /// as buttons, not a custom identifier.
@@ -29,25 +29,27 @@ class DiagramScreenBase {
     /// Precondition for reaching `relayoutButton`/`configureButton`/`saveAsFreeformButton`/
     /// `exportImageButton`/any type-specific Settings control, all of which live in this tab.
     func openSettingsTab(file: StaticString = #filePath, line: UInt = #line) {
-        if !settingsContent.exists && !inspectorContent.exists {
-            sidebarToggleButton.tap()
-        }
-        if !settingsContent.exists {
-            settingsTabButton.tap()
-        }
-        settingsContent.waitOrFail("the diagram's Settings tab", file: file, line: line)
+        openSidebarTab(settingsTabButton, content: settingsContent, name: "Settings", file: file, line: line)
     }
 
     /// Most journeys reach the Inspector by double-tapping a canvas element instead; this is for
     /// the cases that need it without an element to double-tap yet.
     func openInspectorTab(file: StaticString = #filePath, line: UInt = #line) {
+        openSidebarTab(inspectorTabButton, content: inspectorContent, name: "Inspector", file: file, line: line)
+    }
+
+    /// Call once the diagram's canvas is confirmed on screen — the sidebar renders in the same pass,
+    /// so its absence then really means it's closed. Selecting an already-selected segment is a no-op,
+    /// so the tab is tapped unconditionally once the sidebar is open.
+    private func openSidebarTab(
+        _ tab: XCUIElement, content: XCUIElement, name: String, file: StaticString, line: UInt
+    ) {
+        if content.exists { return }
         if !settingsContent.exists && !inspectorContent.exists {
-            sidebarToggleButton.tap()
+            tapSidebarToggle(file: file, line: line)
         }
-        if !inspectorContent.exists {
-            inspectorTabButton.tap()
-        }
-        inspectorContent.waitOrFail("the diagram's Inspector tab", file: file, line: line)
+        tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
+        content.waitOrFail("the diagram's \(name) tab", file: file, line: line)
     }
 
     /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — call
@@ -58,37 +60,34 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Falls back to iOS's "More" toolbar overflow item if `button` itself never appears — macOS's
-    /// `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only.
+    /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
+    /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One
+    /// query matching either element waits for whichever the toolbar rendered.
     func tapToolbarButton(
-        _ button: XCUIElement, label: String, file: StaticString = #filePath, line: UInt = #line
+        identifier: String, label: String, file: StaticString = #filePath, line: UInt = #line
     ) {
+        let button = app.buttons[identifier]
         #if os(macOS)
-        button.waitOrFail("toolbar button \(label)", timeout: 10, file: file, line: line)
-        button.tap()
+        button.tapWhenReady("toolbar button \(label)", file: file, line: line)
         #else
-        // Polls both `button` and the overflow item together instead of waiting out `button`'s
-        // full 10s budget first — on a toolbar that's already collapsed into "More", `button` was
-        // never going to appear, so the old sequential wait paid a deterministic 10s tax every time.
-        let overflowButton = app.buttons["OverflowBarButtonItem"]
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline {
-            if button.exists { button.tap(); return }
-            if overflowButton.exists { break }
-            Thread.sleep(forTimeInterval: 0.1)
+        let overflowIdentifier = "OverflowBarButtonItem"
+        app.buttons.matching(NSPredicate(format: "identifier IN %@", [identifier, overflowIdentifier])).firstMatch
+            .waitOrFail("toolbar button \(label), directly or in overflow", file: file, line: line)
+        if button.exists {
+            button.tapWhenReady("toolbar button \(label)", file: file, line: line)
+            return
         }
-        if button.exists { button.tap(); return }
-        overflowButton.waitOrFail("toolbar button \(label), directly or in overflow", timeout: 1, file: file, line: line)
-        guard overflowButton.exists else { return }
-        overflowButton.tap()
-        let overflowItem = app.buttons[label]
-        overflowItem.waitOrFail("overflow item \(label)", file: file, line: line)
-        overflowItem.tap()
+        app.buttons[overflowIdentifier].tapWhenReady("the toolbar's overflow menu", file: file, line: line)
+        app.buttons[label].tapWhenReady("overflow item \(label)", file: file, line: line)
         #endif
     }
 
     func tapFitToView(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(fitToViewButton, label: "Fit to View", file: file, line: line)
+        tapToolbarButton(identifier: "diagram.fitToViewButton", label: "Fit to View", file: file, line: line)
+    }
+
+    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(identifier: "diagram.sidebarToggleButton", label: "Sidebar", file: file, line: line)
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
@@ -99,21 +98,16 @@ class DiagramScreenBase {
     func compareRefRow(_ name: String) -> XCUIElement { app.buttons["delta.ref.\(name)"] }
     var compareClearButton: XCUIElement { app.buttons["delta.clearButton"] }
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
-    var compareLoadedIndicator: XCUIElement { app.descendants(matching: .any)["delta.loaded"] }
-    var compareErrorIndicator: XCUIElement { app.descendants(matching: .any)["delta.error"] }
-    var compareLoadingIndicator: XCUIElement { app.descendants(matching: .any)["delta.loading"] }
+    var compareOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "delta") }
 
     /// The panel's controls aren't in the accessibility tree until this opens it.
     func openCompare(file: StaticString = #filePath, line: UInt = #line) {
-        compareButton.tap()
-        compareRefRow("HEAD").waitOrFail("the compare panel's HEAD row", file: file, line: line)
+        compareButton.tap("the Compare button", until: compareRefRow("HEAD"), file: file, line: line)
     }
 
-    @discardableResult
-    func chooseCompareRef(_ name: String, file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
-        let row = compareRefRow(name)
-        row.waitOrFail("compare ref row \(name)", file: file, line: line)
-        row.tap()
-        return row
+    /// Chooses `name` in the already-open compare panel and waits for the comparison to load.
+    func compare(against name: String, timeout: TimeInterval = .uiWork, file: StaticString = #filePath, line: UInt = #line) {
+        compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
+        compareOperation.waitUntilLoaded("Comparing against \(name)", timeout: timeout, file: file, line: line)
     }
 }

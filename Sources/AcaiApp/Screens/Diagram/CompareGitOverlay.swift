@@ -11,19 +11,19 @@ import AcaiRender
 ///
 /// iOS/iPadOS use `.sheet` rather than `.popover` + `.presentationCompactAdaptation(.sheet)`: a
 /// `.popover` anchored to a small overlay button on a `GeometryReader`-driven canvas renders no
-/// visible content on iOS. `.sheet` doesn't share that anchor-dependent presentation.
+/// visible content on iOS. `.sheet` doesn't share that anchor-dependent presentation, so it is
+/// presented by `DeltaHostedDiagramView` instead of by this button — see its doc comment.
 struct CompareOverlayButton: View {
     let diagram: GeneratedDiagram
     /// Owned by a stable ancestor above the diagram's own `.id(...)` boundary (`DeltaHostedDiagramView`),
     /// not this view itself: this button renders inside the diagram's canvas, so its view identity
-    /// resets whenever the comparison ref changes. Storing the boolean outside that boundary lets the
-    /// value survive the reset — see `DeltaHostedDiagramView`'s doc comment.
+    /// resets whenever the comparison ref changes.
     @Binding var isPresented: Bool
     /// Invoked when a changed-files row is tapped, with that file's type ids — lets the host diagram
     /// view select/reveal those nodes. `nil` for a diagram type with no such concept (only Class
-    /// Diagram wires this up today).
+    /// Diagram wires this up today). On iOS the sheet reports it through
+    /// `EnvironmentValues.compareChangedFileSelection` instead.
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?
-    @EnvironmentObject private var model: ProjectBrowserViewModel
 
     private var isOn: Bool { diagram.comparisonGitRef != nil }
 
@@ -57,39 +57,24 @@ struct CompareOverlayButton: View {
                 HStack {
                     Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
                     Spacer()
-                    clearButton
+                    CompareClearButton(diagram: diagram)
                 }
                 .padding()
                 Divider()
                 CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: onSelectChangedFileTypes)
             }
         }
-        #else
-        .sheet(isPresented: $isPresented) {
-            // A sheet has no built-in close chrome, so an explicit Done button is the discoverable
-            // dismiss path (unlike macOS's popover, a sheet's `NavigationStack` toolbar renders
-            // correctly here).
-            NavigationStack {
-                CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: onSelectChangedFileTypes)
-                    .navigationTitle(.app("View.CompareOverlayButton.CompareVsGit"))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { clearButton }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(.app("View.CompareOverlayButton.Done")) { isPresented = false }
-                                .accessibilityIdentifier("delta.doneButton")
-                        }
-                    }
-            }
-            .presentationDetents([.medium])
-        }
         #endif
     }
+}
 
-    /// "Clear" is the counterpart to picking a ref from the list, not one more list item, so it
-    /// lives in the panel's header chrome rather than at the top of the scrollable content
-    /// underneath.
-    private var clearButton: some View {
+/// "Clear" is the counterpart to picking a ref from the list, not one more list item, so it lives in
+/// the panel's header chrome rather than at the top of the scrollable content underneath.
+struct CompareClearButton: View {
+    let diagram: GeneratedDiagram
+    @EnvironmentObject private var model: ProjectBrowserViewModel
+
+    var body: some View {
         Button(.app("View.CompareOverlayButton.Clear")) {
             model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
         }
@@ -97,65 +82,6 @@ struct CompareOverlayButton: View {
         .accessibilityIdentifier("delta.clearButton")
     }
 }
-
-/// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
-/// diagram's own `.id(...)` boundary, and hands it down as a `Binding` so `CompareOverlayButton`
-/// can be placed inside the diagram's own canvas without losing that state when the ref changes.
-///
-/// `content`'s `.id(...)` must stay scoped to the diagram view, not this wrapper: if
-/// `CompareOverlayButton` owned `isPresented` itself, changing the ref would tear the button down
-/// (new id) and silently reset it, dismissing the panel. Storing the boolean here, outside the
-/// identity boundary, lets it survive.
-///
-/// That alone isn't enough: `.popover`/`.sheet(isPresented:)` react to the binding *changing*, not
-/// to a freshly mounted view observing an already-`true` value, and a ref change recreates the
-/// button already "on." Forcing a real `false` → `true` transition right after the id changes is
-/// what re-triggers presentation on the new instance.
-struct DeltaHostedDiagramView<Content: View>: View {
-    let diagram: GeneratedDiagram
-    @ViewBuilder var content: (Binding<Bool>) -> Content
-    @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var isComparePresented = false
-
-    /// A pull-request comparison needs both the "old" (merge-base) and "new" (head) snapshots
-    /// before the union diagram can render; the two pre-existing modes only ever load the "old"
-    /// side (the "new" side is the live working tree, already available).
-    private var loaded: Bool {
-        model.comparisonArtifact(for: diagram) != nil
-            && (diagram.comparisonBaseRef == nil || model.comparisonNewArtifact(for: diagram) != nil)
-    }
-
-    private var comparisonTaskID: String {
-        "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")"
-    }
-
-    var body: some View {
-        // `.task(id:)` sits on this `ZStack`, not on `content`, so it's governed only by
-        // `comparisonTaskID` — `content`'s own `.id()` below additionally includes `loaded`, and a
-        // `.task` chained onto that identity would restart every time `loaded` flips, redundantly
-        // re-invoking `ensureComparisonLoaded` right as loading finishes. A single-child `ZStack` is
-        // layout-neutral — nothing to size/align against — so this changes only the task's lifecycle.
-        ZStack {
-            content($isComparePresented)
-                .id("\(comparisonTaskID)|\(loaded)")
-                .onChange(of: comparisonTaskID) { _, _ in
-                    guard isComparePresented else { return }
-                    isComparePresented = false
-                    DispatchQueue.main.async { isComparePresented = true }
-                }
-                // Same false→true forcing as above, for the `loaded` half of `content`'s `.id()`.
-                .onChange(of: loaded) { _, newValue in
-                    guard newValue, isComparePresented else { return }
-                    isComparePresented = false
-                    DispatchQueue.main.async { isComparePresented = true }
-                }
-        }
-        .task(id: comparisonTaskID) {
-            await model.ensureComparisonLoaded(for: diagram)
-        }
-    }
-}
-
 /// Comparison controls: comparing the codebase's current working tree against a git revision
 /// (`HEAD`, a branch, a SHA, …) and colour-coding the added/removed/changed elements. Reads and
 /// writes the diagram's `comparisonGitRef` through the model; the actual snapshot load is driven

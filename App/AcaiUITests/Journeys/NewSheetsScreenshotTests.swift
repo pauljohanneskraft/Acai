@@ -9,51 +9,19 @@ import XCTest
 @MainActor
 final class NewSheetsScreenshotTests: UIJourneyTestCase {
 
-    /// Several states are captured per run; see `UIJourneyTestCase.stopsAtFirstFailure`.
-    override var stopsAtFirstFailure: Bool { false }
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-
-    private var comparator: ScreenshotComparator {
-        ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__"))
-    }
-
     func testNewProjectSheetScreenshot() throws {
-        app.rotateToLandscapeOnIPad()
-        app.launchWithFixture("seeded")
-
-        let browser = ProjectBrowserScreen(app: app)
-        XCTAssertTrue(browser.newProjectButton.waitForExistence(timeout: 10))
-        browser.newProjectButton.tap()
-
+        let browser = launchSeeded(analysis: .parsed)
         let sheet = NewProjectSheetScreen(app: app)
-        XCTAssertTrue(sheet.titleField.waitForExistence(timeout: 10))
-        comparator.validate(
-            viewType: "NewProjectSheet", state: "empty",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        browser.newProjectButton.tap("New Project", until: sheet.titleField)
+        validateScreenshot("NewProjectSheet", state: "empty")
     }
 
     func testNewCodebaseSheetLocalTabScreenshot() throws {
-        app.rotateToLandscapeOnIPad()
-        app.launchWithFixture("seeded")
-
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        XCTAssertTrue(detail.addCodebaseButton.waitForExistence(timeout: 10))
-        detail.addCodebaseButton.tap()
+        let detail = openSeededProject(analysis: .parsed)
+        detail.tapAddCodebase()
 
         let sheet = NewCodebaseSheetScreen(app: app)
-        XCTAssertTrue(sheet.localNameField.waitForExistence(timeout: 10))
-        comparator.validate(
-            viewType: "NewCodebaseSheet", state: "localTabEmpty",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        sheet.localNameField.waitOrFail("the new codebase sheet's name field")
+        validateScreenshot("NewCodebaseSheet", state: "localTabEmpty")
     }
 }

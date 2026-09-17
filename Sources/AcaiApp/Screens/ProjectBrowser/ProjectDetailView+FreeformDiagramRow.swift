@@ -67,7 +67,7 @@ extension ProjectDetailView {
         .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id).rename")
         Button {
             if let id = model.freeforms.duplicate(diagram.id) {
-                model.selection = .freeformDiagram(id)
+                model.open(.freeformDiagram(id))
             }
         } label: {
             Label(.app("View.ProjectDetailView.DuplicateMenu"), systemImage: "plus.square.on.square")

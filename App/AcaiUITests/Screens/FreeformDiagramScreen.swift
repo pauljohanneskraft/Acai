@@ -4,12 +4,8 @@ import XCTest
 final class FreeformDiagramScreen: DiagramScreenBase {
     var checkpointsButton: XCUIElement { app.buttons["diagram.checkpointsButton"] }
 
-    func tapCheckpoints() {
-        tapToolbarButton(checkpointsButton, label: "Checkpoints")
-    }
-
-    func tapSidebarToggle() {
-        tapToolbarButton(sidebarToggleButton, label: "Sidebar")
+    func tapCheckpoints(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(identifier: "diagram.checkpointsButton", label: "Checkpoints", file: file, line: line)
     }
 
     // MARK: - Point-and-Place Catalog
@@ -29,29 +25,26 @@ final class FreeformDiagramScreen: DiagramScreenBase {
 
     var cancelPlacementButton: XCUIElement { app.buttons["freeform.cancelPlacementButton"] }
 
-    func tapCanvasCenter() {
+    func tapCanvasCenter(file: StaticString = #filePath, line: UInt = #line) {
+        SystemBanners().dismiss(file: file, line: line)
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
-    /// On regular width (iPad) the sidebar is a persistent `.inspector` column, and a canvas tap
-    /// taken while it's still presented doesn't reach `InfiniteCanvas`'s tap gesture at all
-    /// (confirmed empirically), so it must be closed before the commit tap — hence the two
-    /// conditional toggles here rather than an unconditional open/close pair. On compact width
-    /// (iPhone) the sidebar already auto-closes once placement begins, making the second toggle a
-    /// no-op there. `"type.class"` (the catalog's first entry) stands in for "is the catalog
-    /// showing at all," regardless of which `kindID` this call wants.
-    func placeNodeViaCatalog(kindID: String) {
-        if !catalogNodeButton("type.class").exists {
-            tapSidebarToggle()
+    /// On regular width the sidebar is a persistent `.inspector` column, and a canvas tap taken while
+    /// it's still presented doesn't reach `InfiniteCanvas`'s tap gesture at all (confirmed
+    /// empirically), so it must be closed before the commit tap. On compact width (iPhone) the sidebar
+    /// closes itself once placement begins. The sidebar starts closed when a diagram opens and this
+    /// leaves it closed, so it always opens it instead of branching on a not-yet-settled tree read.
+    func placeNodeViaCatalog(kindID: String, file: StaticString = #filePath, line: UInt = #line) {
+        tapSidebarToggle(file: file, line: line)
+        let catalog = catalogNodeButton(kindID)
+        catalog.tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
+        cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
+        if !SnapshotPlatform().usesCompactLayout {
+            tapSidebarToggle(file: file, line: line)
         }
-        let button = catalogNodeButton(kindID)
-        XCTAssertTrue(button.waitForExistence(timeout: 10), "catalog entry '\(kindID)' never appeared")
-        button.tap()
-        XCTAssertTrue(cancelPlacementButton.waitForExistence(timeout: 5), "placement mode never started")
-        if catalogNodeButton("type.class").exists {
-            tapSidebarToggle()
-        }
-        tapCanvasCenter()
+        catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
+        tapCanvasCenter(file: file, line: line)
     }
 
     /// `TypeNodeView` carries this identifier already (`diagram.typeNode.<name>`), same as
@@ -89,12 +82,11 @@ final class FreeformDiagramScreen: DiagramScreenBase {
         app.buttons["checkpoints.row.\(name)"]
     }
 
-    func saveCheckpoint(named name: String) {
-        tapCheckpoints()
-        XCTAssertTrue(checkpointsSaveButton.waitForExistence(timeout: 5))
-        checkpointsSaveButton.tap()
-        XCTAssertTrue(checkpointsNameField.waitForExistence(timeout: 5))
-        checkpointsNameField.clearAndTypeText(name)
-        checkpointsConfirmSaveButton.tap()
+    func saveCheckpoint(named name: String, file: StaticString = #filePath, line: UInt = #line) {
+        tapCheckpoints(file: file, line: line)
+        checkpointsSaveButton.tapWhenReady("the checkpoints Save button", file: file, line: line)
+        checkpointsNameField.waitOrFail("the checkpoint name field", file: file, line: line)
+        checkpointsNameField.clearAndTypeText(name, file: file, line: line)
+        checkpointsConfirmSaveButton.tapWhenReady("the checkpoint name alert's Save button", file: file, line: line)
     }
 }
