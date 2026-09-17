@@ -33,6 +33,15 @@ final class NewCodebaseSheetScreen {
         )
     }
 
+    /// Submits with Return so the iPad keyboard, which covers the pickers below the field, goes away.
+    func enterName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+        nameField.tapWhenReady("the codebase name field", file: file, line: line)
+        nameField.typeText(name + "\n")
+        #if os(iOS)
+        app.keyboards.firstMatch.waitForDisappearanceOrFail("the keyboard", file: file, line: line)
+        #endif
+    }
+
     @discardableResult
     func choose(
         _ label: String, from picker: XCUIElement, timeout: TimeInterval = .uiTransition,

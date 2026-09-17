@@ -61,8 +61,7 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
             GitHubAccountScreen(app: app).selectGitHubSource()
             let sheet = NewCodebaseSheetScreen(app: app)
             if name != "fixture-repo" {
-                sheet.nameField.tapWhenReady("the codebase name field")
-                sheet.nameField.typeText(name)
+                sheet.enterName(name)
             }
             sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker)
             sheet.choose("main", from: sheet.refPicker)

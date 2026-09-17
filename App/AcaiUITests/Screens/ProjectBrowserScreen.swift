@@ -27,10 +27,15 @@ final class ProjectBrowserScreen {
     }
 
     /// A predicate rather than a subscript: identifier subscripts are capped at 128 characters, which a
-    /// fixture's `file://` remote URL exceeds.
+    /// fixture's `file://` remote URL exceeds. The identifier lands on the row's icon and text, so this
+    /// resolves to the enclosing row, the element that takes the selection tap.
     func repositoryRow(remoteURL: String) -> XCUIElement {
-        app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier == %@", "sidebar.repository.\(remoteURL)")).firstMatch
+        let identifier = NSPredicate(format: "identifier == %@", "sidebar.repository.\(remoteURL)")
+        #if os(macOS)
+        return app.outlineRows.containing(identifier).firstMatch
+        #else
+        return app.cells.containing(identifier).firstMatch
+        #endif
     }
 
     /// Scoped to the sidebar's own rows — a detail screen may list a codebase under the same name.

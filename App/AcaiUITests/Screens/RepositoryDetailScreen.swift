@@ -29,7 +29,8 @@ final class RepositoryDetailScreen {
     }
 
     func codebasesSectionHeader(count: Int) -> XCUIElement {
-        app.staticTexts["Codebases (\(count))"]
+        let header = "Codebases (\(count))"
+        return app.staticTexts.matching(NSPredicate(format: "label == %@ OR value == %@", header, header)).firstMatch
     }
 
     /// Removal must be refused while a codebase still references the repository, with a message
