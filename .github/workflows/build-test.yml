@@ -49,10 +49,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
       # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
+      # `-disablePackageRepositoryCache` on every xcodebuild using `.spm-cache`: otherwise a restored
+      # checkout points into ~/Library/Caches/org.swift.swiftpm, which a fresh runner doesn't have, and
+      # package resolution fails ("cannot change to …/repositories/tree-sitter-dart-…").
       - name: Run SPM unit tests on iOS Simulator
         run: |
           xcodebuild test \
@@ -61,6 +64,7 @@ jobs:
             -destination "platform=iOS Simulator,name=iPhone 17" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -90,10 +94,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
-      # ui-test-iphone/ui-test-ipad reuse this via test-without-building instead of recompiling.
+      # The ui-test-ios matrix reuses this via test-without-building instead of recompiling.
       - name: Build for testing (UI test bundle)
         run: |
           xcodebuild build-for-testing \
@@ -102,6 +106,7 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
@@ -196,81 +201,23 @@ jobs:
       - name: Run tests
         run: swift test --parallel
 
-  ui-test-iphone:
-    name: UI Test iPhone
+  ui-test-ios:
+    name: UI Test ${{ matrix.platform }}
     needs: [prepare-ui-test-ios]
     runs-on: macos-26
-    timeout-minutes: 45
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
-          lfs: true
-
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "26.5"
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: ios-ui-test-products
-          path: App
-
-      - name: Unpack build-for-testing artifact
-        run: |
-          mkdir -p DerivedData
-          tar -xzf ui-test-products.tar.gz -C DerivedData
-        working-directory: App
-
-      # Deliberately serial. Cloning simulators for `-parallel-testing-enabled` makes each test
-      # 3-8x slower on a runner this size and starts failing app launches outright ("Failed to
-      # launch"), so the suite took longer *and* flaked; iPhone and iPad already run concurrently as
-      # separate jobs. It is still worth passing locally, where there are cores to spare.
-      - name: Prepare Simulator
-        run: Scripts/simulator_prepare.sh "iPhone 17"
-
-      - name: Run UI tests
-        id: run-tests
-        run: |
-          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
-          xcodebuild test-without-building \
-            -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
-            -resultBundlePath TestResults.xcresult \
-            -retry-tests-on-failure \
-            -test-iterations 2
-        working-directory: App
-
-      - name: Screenshot drift summary
-        if: always()
-        run: Scripts/snapshot_drift_summary.sh
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: xcresult-iphone
-          path: App/TestResults.xcresult
-          if-no-files-found: warn
-
-      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
-      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
-      # already leaves this folder ready to download and drop over __Snapshots__/iPhone/, with no
-      # second xcodebuild invocation needed.
-      - name: Upload UI test screenshots
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: iPhone
-          path: App/AcaiUITests/__RecordedSnapshots__/iPhone/
-          if-no-files-found: warn
-
-  ui-test-ipad:
-    name: UI Test iPad
-    needs: [prepare-ui-test-ios]
-    runs-on: macos-26
-    timeout-minutes: 45
+    # A healthy serial iPad run has taken 43 minutes on this runner. A hung test is bounded by the
+    # per-test allowance below, so the job limit only has to leave margin for a passing suite.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: iPhone
+            device: iPhone 17
+            results: xcresult-iphone
+          - platform: iPad
+            device: iPad (A16)
+            results: xcresult-ipad
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -294,18 +241,25 @@ jobs:
         working-directory: App
 
       - name: Prepare Simulator
-        run: Scripts/simulator_prepare.sh "iPad (A16)"
+        run: |
+          APP=$(find App/DerivedData/Build/Products -maxdepth 2 -path '*-iphonesimulator/Acai.app' | head -1)
+          [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
+          Scripts/simulator_prepare.sh "${{ matrix.device }}" "$APP"
 
+      # Deliberately serial: simulator clones for `-parallel-testing-enabled` made each test 3-8x
+      # slower on this runner and failed app launches outright. No `-retry-tests-on-failure` either:
+      # a retry hid real failures inside green jobs and re-ran non-idempotent actions. A hung test
+      # fails after its allowance instead of consuming the job's timeout.
       - name: Run UI tests
-        id: run-tests
         run: |
           XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=iPad (A16)" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }}" \
             -resultBundlePath TestResults.xcresult \
-            -retry-tests-on-failure \
-            -test-iterations 2
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 300 \
+            -maximum-test-execution-time-allowance 600
         working-directory: App
 
       - name: Screenshot drift summary
@@ -316,21 +270,25 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: xcresult-ipad
+          name: ${{ matrix.results }}
           path: App/TestResults.xcresult
           if-no-files-found: warn
 
-      # ScreenshotComparator writes every capture to __RecordedSnapshots__/ as a side effect of the
-      # normal (asserting) run above — not only in record mode — so a golden mismatch/miss there
-      # already leaves this folder ready to download and drop over __Snapshots__/iPad/, with no
-      # second xcodebuild invocation needed.
+      # Every capture lands in __RecordedSnapshots__/ as a side effect of the run above, ready for
+      # `Scripts/snapshots_accept.sh` to drop over __Snapshots__/.
       - name: Upload UI test screenshots
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: iPad
-          path: App/AcaiUITests/__RecordedSnapshots__/iPad/
+          name: ${{ matrix.platform }}
+          path: App/AcaiUITests/__RecordedSnapshots__/${{ matrix.platform }}/
           if-no-files-found: warn
+
+      # The runner's "Complete job" waits for orphaned processes, and has hung past the job timeout
+      # after every step had finished; leave no simulator running behind.
+      - name: Shut down simulators
+        if: always()
+        run: xcrun simctl shutdown all || true
 
   ui-test-macos:
     name: UI Test macOS
@@ -361,8 +319,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: App/.spm-cache
-          key: spm-xcode-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-${{ runner.os }}-
+          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
+          restore-keys: spm-xcode-v2-${{ runner.os }}-
 
       - name: Run UI tests
         id: run-tests
@@ -378,8 +336,10 @@ jobs:
             -scheme Acai-macOSUITests \
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .spm-cache \
-            -retry-tests-on-failure \
-            -test-iterations 2 \
+            -disablePackageRepositoryCache \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 300 \
+            -maximum-test-execution-time-allowance 600 \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 

@@ -9,19 +9,54 @@ final class CodebaseDetailScreen {
     }
 
     var reindexButton: XCUIElement { app.buttons["codebaseDetail.reindexButton"] }
-    var reindexLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.reindex.loaded"] }
-    var refSwitchLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refSwitch.loaded"] }
-    var pullLoadedIndicator: XCUIElement { app.descendants(matching: .any)["codebaseDetail.pull.loaded"] }
+    var reindexOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "codebaseDetail.reindex") }
+    var refSwitchOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "codebaseDetail.refSwitch") }
+    var pullOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "codebaseDetail.pull") }
 
     var staleBanner: XCUIElement { app.descendants(matching: .any)["codebaseDetail.staleBanner"] }
     var staleBannerReindexButton: XCUIElement { app.buttons["codebaseDetail.staleBanner.reindexButton"] }
-    var staleBannerReindexLoadedIndicator: XCUIElement {
-        app.descendants(matching: .any)["codebaseDetail.staleBanner.reindex.loaded"]
+    var staleBannerReindexOperation: AsyncOperation {
+        AsyncOperation(app: app, identifierPrefix: "codebaseDetail.staleBanner.reindex")
+    }
+
+    func reindex(file: StaticString = #filePath, line: UInt = #line) {
+        reindexButton.tapWhenReady("Reindex", file: file, line: line)
+        reindexOperation.waitUntilLoaded("Reindexing the codebase", file: file, line: line)
     }
 
     /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
     func diagramButton(type: String) -> XCUIElement {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
+    }
+
+    /// Creates a diagram whose card opens it directly (class, package, module coupling, hotspot).
+    /// Taps exactly once — the card creates a diagram on every tap — and asserts the detail pane
+    /// actually navigated away, the symptom a dropped selection update leaves behind.
+    @discardableResult
+    func createDiagram<Screen: DiagramScreenBase>(
+        type: String, as screen: Screen.Type, file: StaticString = #filePath, line: UInt = #line
+    ) -> Screen {
+        let button = diagramButton(type: type)
+        button.tapWhenReady("the \(type) diagram card", file: file, line: line)
+        button.waitForDisappearanceOrFail(
+            "the codebase screen after creating a \(type) diagram (the new diagram was never opened)",
+            file: file, line: line
+        )
+        return Screen(app: app)
+    }
+
+    /// Opens the configuration sheet of a diagram type that asks before creating (sequence, state,
+    /// call graph). Opening the sheet has no side effect, so the tap may be retried.
+    @discardableResult
+    func openDiagramConfiguration<Screen: DiagramScreenBase>(
+        type: String, as screen: Screen.Type, until sheetControl: (Screen) -> XCUIElement,
+        file: StaticString = #filePath, line: UInt = #line
+    ) -> Screen {
+        let diagram = Screen(app: app)
+        diagramButton(type: type).tap(
+            "the \(type) diagram card", until: sheetControl(diagram), file: file, line: line
+        )
+        return diagram
     }
 
     /// Opens `QueryView`. Shown only once the codebase has an artifact — same gating as
@@ -32,9 +67,9 @@ final class CodebaseDetailScreen {
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }
 
-    @discardableResult
-    func chooseRef(_ label: String, timeout: TimeInterval = 10) -> XCUIElement {
-        refPicker.choose(label, in: app, timeout: timeout)
+    func switchRef(to label: String, file: StaticString = #filePath, line: UInt = #line) {
+        refPicker.choose(label, in: app, file: file, line: line)
+        refSwitchOperation.waitUntilLoaded("Switching to \(label)", file: file, line: line)
     }
 
     var deleteCodebaseButton: XCUIElement { app.buttons["codebaseDetail.deleteCodebaseButton"] }

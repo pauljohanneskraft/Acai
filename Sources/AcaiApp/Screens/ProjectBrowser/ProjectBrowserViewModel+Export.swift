@@ -194,7 +194,7 @@ extension ProjectBrowserViewModel {
         store.projects[pIdx].freeformDiagramIDs.append(freeformDiagram.id)
         store.saveFreeformDiagram(freeformDiagram)
         persistChanges()
-        selection = .freeformDiagram(freeformDiagram.id)
+        open(.freeformDiagram(freeformDiagram.id))
     }
 }
 
@@ -203,3 +203,4 @@ extension SequenceDiagramViewModel: DiagramImageExporting {}
 extension StateDiagramViewModel: DiagramImageExporting {}
 extension PackageDiagramViewModel: DiagramImageExporting {}
 extension CallGraphViewModel: DiagramImageExporting {}
+extension FreeformDiagramViewModel: DiagramImageExporting {}

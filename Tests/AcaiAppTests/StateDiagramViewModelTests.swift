@@ -2,6 +2,7 @@ import CoreGraphics
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 import AcaiRender
 @testable import AcaiApp
 
@@ -35,8 +36,10 @@ struct StateDiagramViewModelTests {
         )
     }
 
-    private func config(variable: String = "state") -> StateDiagramConfiguration {
-        StateDiagramConfiguration(typeName: "Loader", variableName: variable)
+    private func config(
+        variable: String = "state", filter: AcaiQuality.Selector? = nil
+    ) -> StateDiagramConfiguration {
+        StateDiagramConfiguration(typeName: "Loader", variableName: variable, filter: filter)
     }
 
     @Test func successfulAnalysisExposesDiagram() {
@@ -103,6 +106,36 @@ struct StateDiagramViewModelTests {
         #expect(vm.analysisError != nil)
         #expect(vm.positionOverrides.isEmpty)
         #expect(vm.selectedNodeIDs.isEmpty)
+    }
+
+    @Test func filterKeepsOnlyMatchingStatesAndDropsTheirTransitions() {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.applyFilter(Selector(typeGlob: "loading"))
+        #expect(vm.diagram?.states.map(\.id).sorted() == ["__initial", "state_loading"])
+        #expect(vm.diagram?.transitions.map(\.to) == ["state_loading"])
+        #expect(vm.configuration?.filter == Selector(typeGlob: "loading"))
+    }
+
+    @Test func filterAlwaysKeepsInitialPseudoState() {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.applyFilter(Selector(typeGlob: "nonexistent"))
+        #expect(vm.diagram?.states.map(\.id) == ["__initial"])
+        #expect(vm.diagram?.transitions.isEmpty == true)
+    }
+
+    @Test func filterKeepsPositionOverridesForSurvivingNodes() {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.positionOverrides = ["state_loading": CGPoint(x: 5, y: 6)]
+        vm.applyFilter(Selector(typeGlob: "loading"))
+        #expect(vm.positionOverrides["state_loading"] == CGPoint(x: 5, y: 6))
+    }
+
+    @Test func clearingFilterRestoresEveryState() {
+        let filtered = config(filter: Selector(typeGlob: "loading"))
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: filtered)
+        #expect(vm.diagram?.states.map(\.id).sorted() == ["__initial", "state_loading"])
+        vm.applyFilter(nil)
+        #expect(vm.diagram?.states.map(\.id).sorted() == ["__initial", "state_idle", "state_loaded", "state_loading"])
     }
 
     @Test func historySnapshotMirrorsPositions() {

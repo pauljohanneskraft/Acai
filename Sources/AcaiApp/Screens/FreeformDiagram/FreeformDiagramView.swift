@@ -21,9 +21,7 @@ struct FreeformDiagramView: View {
     @State var cursorLocation: CGPoint = .zero
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var showCheckpoints = false
-    /// True while a text field in the inspector is focused, so the diagram-level ⌘Z/⇧⌘Z
-    /// shortcuts yield to the field's native text undo.
-    @State private var isEditingText = false
+    @State var isEditingText = false
 
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
@@ -89,6 +87,12 @@ struct FreeformDiagramView: View {
                     }
                     .help(.app("View.FreeformDiagramView.SaveRestoreNamedSnapshot"))
                     .accessibilityIdentifier("diagram.checkpointsButton")
+
+                    Button(action: exportImage) {
+                        Label(.app("View.FreeformDiagramView.ExportImage"), systemImage: "photo")
+                    }
+                    .help(.app("View.FreeformDiagramView.ExportDiagramImage"))
+                    .accessibilityIdentifier("diagram.exportImageButton")
 
                     Button {
                         sidebarTab = .catalog
@@ -188,6 +192,13 @@ struct FreeformDiagramView: View {
             .sheet(isPresented: $showCheckpoints) {
                 FreeformDiagramCheckpointsView(viewModel: viewModel)
             }
+    }
+
+    /// Renders the current diagram (WYSIWYG, including manual placement) to PNG and writes it —
+    /// on the same terms as a generated diagram's own "Export Image" action.
+    private func exportImage() {
+        browserModel.exportImage(
+            named: browserModel.freeformDiagram(for: diagramID)?.name ?? "Freeform Diagram", using: viewModel)
     }
 
     private var deleteAlertTitle: LocalizedStringResource {
@@ -325,34 +336,5 @@ struct FreeformDiagramView: View {
             }
         }
         return true
-    }
-
-    // MARK: - Sidebar (Catalog + Inspector)
-
-    private var sidebarContent: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $sidebarTab) {
-                Text(.app("View.FreeformDiagramView.Catalog")).tag(SidebarTab.catalog)
-                Text(.app("View.FreeformDiagramView.Inspector")).tag(SidebarTab.inspector)
-            }
-            .pickerStyle(.segmented)
-            .padding(8)
-
-            Divider()
-
-            switch sidebarTab {
-            case .catalog:
-                FreeformDiagramCatalog(viewModel: viewModel)
-            case .inspector:
-                FreeformDiagramInspector(viewModel: viewModel, isEditingText: $isEditingText)
-            }
-        }
-        .background {
-            #if os(macOS)
-            Color(nsColor: .controlBackgroundColor)
-            #else
-            Color(uiColor: .secondarySystemBackground)
-            #endif
-        }
     }
 }

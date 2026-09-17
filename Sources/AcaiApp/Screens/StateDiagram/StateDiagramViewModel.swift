@@ -3,7 +3,51 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiDiff
+import AcaiQuality
 import AcaiRender
+
+/// Builds a `StateDiagram` from the stored variable configuration, then applies the
+/// configuration's `Selector` filter if any — an instantiated value with instance methods (never
+/// a static-function namespace) that `StateDiagramViewModel` delegates diagram generation to,
+/// including from its own `init`, before `self` is fully initialized and so before any of the
+/// view model's own instance methods could be called.
+private struct StateDiagramGenerator {
+    let artifact: CodeArtifact
+    let configuration: StateDiagramConfiguration?
+
+    func generate() -> Result<StateDiagram, StateDiagramAnalysisError>? {
+        guard let configuration else { return nil }
+        do {
+            let diagram = try StateDiagramBuilder(configuration: configuration)
+                .build(from: artifact.resolvingExtensions())
+            guard let filter = configuration.filter else { return .success(diagram) }
+            return .success(filtered(diagram, by: filter))
+        } catch let error as StateDiagramAnalysisError {
+            return .failure(error)
+        } catch {
+            // `StateDiagramBuilder.build` only throws `StateDiagramAnalysisError`, so this is
+            // unreachable; trap it loudly in debug rather than reporting a misleading "no
+            // assignments" failure if that contract ever changes.
+            assertionFailure("unexpected state-diagram analysis error: \(error)")
+            return .failure(.noAssignments(variableName: configuration.variableName))
+        }
+    }
+
+    /// Drops states `filter` doesn't match by name (and transitions touching them) — except the
+    /// initial pseudo-state (`StateDiagram.State.Kind.initial`), which stays regardless: it has no
+    /// name to match against, and hiding it would break every transition chain's visible starting
+    /// point.
+    private func filtered(_ diagram: StateDiagram, by filter: AcaiQuality.Selector) -> StateDiagram {
+        let keptIDs = Set(diagram.states.filter { state in
+            state.kind == .initial || filter.matchesName(state.name)
+        }.map(\.id))
+        return StateDiagram(
+            title: diagram.title,
+            states: diagram.states.filter { keptIDs.contains($0.id) },
+            transitions: diagram.transitions.filter { keptIDs.contains($0.from) && keptIDs.contains($0.to) }
+        )
+    }
+}
 
 /// Backs the movement-only state diagram view. The `StateDiagram` regenerates from the stored
 /// variable configuration, so it tracks the code; analysis failures surface as a typed error
@@ -44,39 +88,21 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild(configuration: configuration)
     }
 
-    private static func generate(
-        artifact: CodeArtifact,
-        configuration: StateDiagramConfiguration?
-    ) -> Result<StateDiagram, StateDiagramAnalysisError>? {
-        guard let configuration else { return nil }
-        do {
-            return .success(try StateDiagramBuilder(configuration: configuration)
-                .build(from: artifact.resolvingExtensions()))
-        } catch let error as StateDiagramAnalysisError {
-            return .failure(error)
-        } catch {
-            // `stateDiagram(configuration:)` only throws `StateDiagramAnalysisError`,
-            // so this is unreachable; trap it loudly in debug rather than reporting a
-            // misleading "no assignments" failure if that contract ever changes.
-            assertionFailure("unexpected state-diagram analysis error: \(error)")
-            return .failure(.noAssignments(variableName: configuration.variableName))
-        }
-    }
-
     /// In delta mode, renders the union of both revisions (via `StateDiagramDiff`) so removed
     /// states/transitions still appear and can be tinted. Falls back to the plain working-tree
     /// result — without a diff — when the comparison revision fails its own analysis (e.g. the
     /// chosen variable didn't exist yet): there's nothing to diff against, but the new result is
     /// still shown rather than reporting a spurious failure.
     private func rebuild(configuration: StateDiagramConfiguration?) {
-        let newResult = Self.generate(artifact: artifact, configuration: configuration)
+        let newResult = StateDiagramGenerator(artifact: artifact, configuration: configuration).generate()
         guard let comparisonArtifact, case .success(let new) = newResult else {
             diff = nil
             result = newResult
             return
         }
-        guard case .success(let old) = Self.generate(artifact: comparisonArtifact, configuration: configuration)
-        else {
+        guard case .success(let old) = StateDiagramGenerator(
+            artifact: comparisonArtifact, configuration: configuration
+        ).generate() else {
             diff = nil
             result = newResult
             return
@@ -93,6 +119,14 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         selectedNodeIDs = []
         selectedTransitionID = nil
         history.clear()
+    }
+
+    /// Re-derives the diagram for a new filter, keeping the position overrides and undo history —
+    /// unlike `applyConfiguration`, filtering only removes states/transitions, it never
+    /// repositions a surviving one.
+    func applyFilter(_ filter: AcaiQuality.Selector?) {
+        configuration?.filter = filter
+        rebuild(configuration: configuration)
     }
 
     var isDeltaMode: Bool { diff != nil }

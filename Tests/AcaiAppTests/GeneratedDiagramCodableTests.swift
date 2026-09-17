@@ -55,16 +55,6 @@ struct GeneratedDiagramCodableTests {
         }
     }
 
-    @Test func cycleDiagramRoundTripsWithReference() throws {
-        let reference = CycleDiagramReference(scope: "modules", members: ["ModuleA", "ModuleB"])
-        let diagram = GeneratedDiagram(name: "Cyc", content: .cycleDiagram(reference), codebaseID: UUID())
-
-        let decoded = try roundTrip(diagram)
-        #expect(decoded == diagram)
-        #expect(decoded.type == .cycleDiagram)
-        #expect(decoded.cycleDiagramReference == reference)
-    }
-
     @Test func stateDiagramRoundTripsWithConfiguration() throws {
         let config = StateDiagramConfiguration(typeName: "Loader", variableName: "state", maxStates: 15)
         let diagram = GeneratedDiagram(name: "St", content: .stateDiagram(config), codebaseID: UUID())
@@ -124,5 +114,37 @@ struct GeneratedDiagramCodableTests {
 
         let decoded = try JSONDecoder().decode(GeneratedDiagram.self, from: strippedData)
         #expect(decoded.classConfiguration?.filter == nil)
+    }
+
+    @Test func stateDiagramFilterRoundTrips() throws {
+        var config = StateDiagramConfiguration(typeName: "Loader", variableName: "state")
+        config.filter = AcaiQuality.Selector(typeGlob: "loading")
+        let diagram = GeneratedDiagram(name: "St", content: .stateDiagram(config), codebaseID: UUID())
+
+        let decoded = try roundTrip(diagram)
+        #expect(decoded == diagram)
+        #expect(decoded.stateConfiguration?.filter == config.filter)
+    }
+
+    /// Already-persisted JSON, written before `filter` existed on `StateDiagramConfiguration`,
+    /// decodes gracefully: the missing key defaults to `nil` rather than throwing.
+    @Test func stateDiagramConfigurationDecodesGracefullyWithoutFilterKey() throws {
+        let config = StateDiagramConfiguration(typeName: "Loader", variableName: "state")
+        var diagram = GeneratedDiagram(name: "St", content: .stateDiagram(config), codebaseID: UUID())
+        diagram.stateConfiguration?.filter = AcaiQuality.Selector(typeGlob: "*")
+        let data = try JSONEncoder().encode(diagram)
+
+        var json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var content = try #require(json["content"] as? [String: Any])
+        var stateDiagram = try #require(content["stateDiagram"] as? [String: Any])
+        var configuration = try #require(stateDiagram["_0"] as? [String: Any])
+        configuration.removeValue(forKey: "filter")
+        stateDiagram["_0"] = configuration
+        content["stateDiagram"] = stateDiagram
+        json["content"] = content
+        let strippedData = try JSONSerialization.data(withJSONObject: json)
+
+        let decoded = try JSONDecoder().decode(GeneratedDiagram.self, from: strippedData)
+        #expect(decoded.stateConfiguration?.filter == nil)
     }
 }

@@ -11,34 +11,25 @@ import XCTest
 /// `ScopedResourceAccess.Failure` path into this alert.
 @MainActor
 final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testReindexingAnUnreachableFolderOffersToChooseAnother() throws {
         let unreachable = "/private/var/AcaiUITestMissing-\(UUID().uuidString)"
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded") { _, destination in
-            let projectFile = destination
-                .appendingPathComponent("projects/\(Self.projectID).json")
+        let projectID = seeded.projectID
+        let browser = launchSeeded(analysis: .parsed) { _, destination in
+            let projectFile = destination.appendingPathComponent("projects/\(projectID).json")
             let seeded = try String(contentsOf: projectFile, encoding: .utf8)
             try seeded
                 .replacingOccurrences(of: "\(destination.path)/SampleSwiftPackage", with: unreachable)
                 .write(to: projectFile, atomically: true, encoding: .utf8)
         }
 
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
         let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
+        let codebaseRow = detail.codebaseRow(id: seeded.codebaseID)
+        browser.projectRow(id: seeded.projectID).tap("the seeded project's sidebar row", until: codebaseRow)
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
-        codebaseRow.tapUntil(codebaseDetail.reindexButton)
-        XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
-        codebaseDetail.reindexButton.tap()
+        codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.reindexButton)
+        codebaseDetail.reindexButton.tapWhenReady("Reindex")
 
         #if os(macOS)
         let alert = app.sheets
@@ -46,9 +37,7 @@ final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
         let alert = app.alerts
         #endif
         let chooseFolderButton = alert.buttons["Choose Folder…"]
-        XCTAssertTrue(
-            chooseFolderButton.waitForExistence(timeout: 30),
-            "An unreachable codebase folder must offer to choose another one.")
+        chooseFolderButton.waitOrFail("the unreachable-folder alert's Choose Folder… button", timeout: .uiWork)
         // macOS exposes an alert's message as the element's `value`, iOS as its `label`.
         let expected = "\"\(unreachable)\" is no longer available"
         let message = alert.staticTexts
@@ -58,7 +47,6 @@ final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
             message.exists,
             "The alert must say the folder can't be reached, not report it as a codebase with nothing in it.")
 
-        // Leaves the app in a clean state for the next test rather than with a picker open.
-        alert.buttons["Cancel"].tap()
+        alert.buttons["Cancel"].tapWhenReady("the alert's Cancel button")
     }
 }

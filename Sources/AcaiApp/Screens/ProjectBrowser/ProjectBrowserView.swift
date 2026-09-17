@@ -123,7 +123,7 @@ public struct ProjectBrowserView: View {
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in
                 let id = model.editing.addProject(title: title, subtitle: subtitle)
-                model.selection = .project(id)
+                model.open(.project(id))
             }
         }
         .sheet(isPresented: $quickOpenPresenter.isPresented) {
@@ -266,9 +266,9 @@ public struct ProjectBrowserView: View {
            let artifact = model.comparisonNewArtifact(for: diagram) ?? model.artifact(for: diagram.codebaseID),
            let codebase = model.codebase(for: diagram.codebaseID) {
             switch diagram.type {
-            case .moduleCoupling, .hotspot, .cycleDiagram:
-                // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file, own three-way
-                // switch) purely to keep this function's body under SwiftLint's line limit.
+            case .moduleCoupling, .hotspot:
+                // Split into `ProjectBrowserView+AnalysisDiagrams.swift` (own file) purely to keep
+                // this function's body under SwiftLint's line limit.
                 analysisDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
                     .id(diagramID)
                     .environmentObject(model)
@@ -294,7 +294,10 @@ public struct ProjectBrowserView: View {
     func deltaHosted(
         diagram: GeneratedDiagram, @ViewBuilder content: @escaping (Binding<Bool>) -> some View
     ) -> some View {
+        // Keyed per diagram: switching between two diagrams of one type would otherwise keep the host's
+        // compare-panel and has-been-fitted state for the next diagram.
         DeltaHostedDiagramView(diagram: diagram, content: content)
+            .id(diagram.id)
             .environmentObject(model)
     }
 

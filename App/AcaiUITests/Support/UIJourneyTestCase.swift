@@ -1,26 +1,30 @@
 import XCTest
+#if os(iOS)
+import UIKit
+#endif
 
-/// Shared lifecycle for every journey. Owns the app under test so teardown is guaranteed, stops a
-/// test at its first failure, and leaves behind what's needed to diagnose one.
+/// Shared lifecycle for every journey: owns the app under test, stops at the first behavioral
+/// failure, reports screenshot drift without truncating the journey, and attaches diagnostics.
 @MainActor
 class UIJourneyTestCase: XCTestCase {
     let app = XCUIApplication()
 
-    /// `false` for journeys that validate several screenshot states in one method: aborting at the
-    /// first over-threshold state would leave the later states uncaptured, and those captures are
-    /// exactly what `Scripts/snapshots_accept.sh` consumes to refresh goldens.
-    var stopsAtFirstFailure: Bool { true }
+    private var screenshotFailures: [(message: String, file: StaticString, line: UInt)] = []
 
     // The `async` overrides, unlike the synchronous ones, inherit this class's `@MainActor`.
     override func setUp() async throws {
         try await super.setUp()
-        // Otherwise a failed wait doesn't end the test — every later `waitForExistence` runs out its
-        // full timeout too, so one real failure costs a minute of dead wall-clock and reports four
-        // cascading assertions instead of the one that matters.
-        continueAfterFailure = !stopsAtFirstFailure
+        continueAfterFailure = false
+        screenshotFailures = []
+        pinOrientation()
     }
 
     override func tearDown() async throws {
+        // Otherwise the first reported drift aborts teardown before the app is terminated.
+        continueAfterFailure = true
+        for failure in screenshotFailures {
+            XCTFail(failure.message, file: failure.file, line: failure.line)
+        }
         if (testRun?.failureCount ?? 0) > 0 {
             attachDiagnostics()
         }
@@ -28,9 +32,43 @@ class UIJourneyTestCase: XCTestCase {
         try await super.tearDown()
     }
 
-    /// A failing UI test is otherwise undiagnosable after the fact: only the screenshot journeys
-    /// attach anything today, so a run that fails anywhere else leaves nothing but the assertion
-    /// message behind.
+    /// Captures the frontmost window once it stops changing and compares it against its golden.
+    /// Drift is reported at the end of the test rather than immediately, so one drifted state never
+    /// prevents the states after it from being captured for `Scripts/snapshots_accept.sh`.
+    func validateScreenshot(
+        _ viewType: String, state: String, maxChangedFraction: Double? = nil,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let comparator = ScreenshotComparator(
+            goldenDirectory: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("__Snapshots__"),
+            maxChangedFraction: maxChangedFraction
+        )
+        let banners = SystemBanners()
+        banners.dismiss(file: file, line: line)
+        var screenshot = app.screenshotAfterAnimationsIdle()
+        // A banner can also arrive while the capture waits for animations to settle.
+        if banners.isShowing {
+            banners.dismiss(file: file, line: line)
+            screenshot = app.screenshotAfterAnimationsIdle()
+        }
+        if let failure = comparator.validate(viewType: viewType, state: state, screenshot: screenshot, testCase: self) {
+            screenshotFailures.append((failure, file, line))
+        }
+    }
+
+    /// Orientation is simulator-wide and outlives a test, so every iPad journey runs landscape and
+    /// the rotation only ever happens once per simulator boot.
+    private func pinOrientation() {
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad, XCUIDevice.shared.orientation != .landscapeLeft {
+            XCUIDevice.shared.orientation = .landscapeLeft
+        }
+        #endif
+    }
+
     private func attachDiagnostics() {
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "\(name) — screen"
