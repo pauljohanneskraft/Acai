@@ -11,9 +11,6 @@ final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection?
     @Published var pendingExport: PendingExport?
-    /// Set once a codebase finishes its first index (or the user asks to re-run the tour) — see
-    /// `GuidedRouteBuilder`. Presented as a sheet by `CodebaseDetailView`.
-    @Published var pendingGuidedRoute: GuidedRoute?
 
     enum Selection: Hashable {
         case project(UUID)
@@ -87,21 +84,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             store: store,
             persist: { [weak self] in self?.persistChanges() },
             notify: { [weak self] in self?.objectWillChange.send() },
-            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) },
-            presentGuidedRoute: { [weak self] id in self?.presentGuidedRoute(for: id) }
+            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) }
         )
-    }
-
-    // MARK: - Guided route
-
-    /// Builds and shows the guided route for `codebaseID` — see `GuidedRouteBuilder`. Called
-    /// automatically the first time a codebase finishes indexing, and again whenever the user asks
-    /// to re-run the tour. A codebase too small to yield any stop shows nothing.
-    func presentGuidedRoute(for codebaseID: UUID) {
-        guard let projectID = projectID(for: codebaseID), let artifact = artifact(for: codebaseID) else { return }
-        pendingGuidedRoute = GuidedRouteBuilder(
-            projectID: projectID, codebaseID: codebaseID, artifact: artifact, metrics: artifact.computeMetrics()
-        ).build()
     }
 
     // MARK: - Generated Diagram CRUD

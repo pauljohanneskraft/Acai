@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import AcaiCore
 import AcaiDiagram
@@ -6,13 +7,10 @@ import AcaiRender
 
 @Suite("Guided Route Builder")
 struct GuidedRouteBuilderTests {
-    private let projectID = UUID()
-    private let codebaseID = UUID()
     private let language = CodeArtifact.SourceLanguage(rawValue: "test")
 
-    /// `App.run` calls `Worker.process` — nothing calls `App.run`, so it's the call graph's one
-    /// entry point. Both `App.run` and `Worker.process` construct `Hub`, giving it the highest
-    /// relationship-based fan-in. `Tangled.branchy` carries the one measured complexity value.
+    /// `App.run` is the only uncalled caller, `Hub` is referenced by both methods, and `Tangled.branchy`
+    /// carries the one measured complexity.
     private func artifact() -> CodeArtifact {
         CodeArtifact(
             metadata: .init(sourceLanguage: language, filePaths: ["A.swift"]),
@@ -45,22 +43,38 @@ struct GuidedRouteBuilderTests {
         )
     }
 
-    private func builder() -> GuidedRouteBuilder {
-        let artifact = artifact()
-        return GuidedRouteBuilder(
-            projectID: projectID, codebaseID: codebaseID, artifact: artifact, metrics: artifact.computeMetrics())
+    private func stops(for artifact: CodeArtifact) -> [GuidedRouteStop] {
+        GuidedRouteBuilder(artifact: artifact, metrics: artifact.computeMetrics()).stops
     }
 
-    @Test func entryPointStopIsTheUncalledCaller() throws {
-        let route = try #require(builder().build())
-        let stop = try #require(route.stops.first { $0.kind == .entryPoint })
+    @Test func entryPointStopIsTheUncalledCallerScopedToItsType() throws {
+        let stop = try #require(stops(for: artifact()).first { $0.kind == .entryPoint })
         #expect(stop.subject == "App.run")
+        #expect(stop.content == .callGraph(.type("App")))
+    }
+
+    @Test func aFreeFunctionEntryPointOpensTheWholeCodebaseCallGraph() throws {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: language, filePaths: ["main.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "Worker", name: "Worker", qualifiedName: "Worker", kind: .class, accessLevel: .public,
+                    members: [Member(name: "process", kind: .method, accessLevel: .internal)]
+                )
+            ],
+            freestandingFunctions: [
+                Member(
+                    name: "main", kind: .method, accessLevel: .internal,
+                    callSites: [CallSite(receiver: .type("Worker"), methodName: "process")])
+            ]
+        )
+        let stop = try #require(stops(for: artifact).first { $0.kind == .entryPoint })
+        #expect(stop.subject == "main")
         #expect(stop.content == .callGraph(.wholeCodebase))
     }
 
     @Test func mostDependedUponStopFocusesOnTheHighestFanInType() throws {
-        let route = try #require(builder().build())
-        let stop = try #require(route.stops.first { $0.kind == .mostDependedUpon })
+        let stop = try #require(stops(for: artifact()).first { $0.kind == .mostDependedUpon })
         #expect(stop.subject == "Hub")
         var expected = ClassDiagramConfiguration()
         expected.focus = FocusConfiguration(rootTypeName: "Hub", direction: .dependents)
@@ -68,17 +82,16 @@ struct GuidedRouteBuilderTests {
     }
 
     @Test func mostComplexStopFocusesOnTheTypeWithTheHighestComplexity() throws {
-        let route = try #require(builder().build())
-        let stop = try #require(route.stops.first { $0.kind == .mostComplex })
+        let stop = try #require(stops(for: artifact()).first { $0.kind == .mostComplex })
         #expect(stop.subject == "Tangled")
         var expected = ClassDiagramConfiguration()
         expected.focus = FocusConfiguration(rootTypeName: "Tangled")
         #expect(stop.content == .classDiagram(expected))
     }
 
-    @Test func stopsAreOrderedEntryThenDependedUponThenComplexity() throws {
-        let route = try #require(builder().build())
-        #expect(route.stops.map(\.kind) == [.entryPoint, .mostDependedUpon, .mostComplex])
+    @Test func stopsAreOrderedEntryThenDependedUponThenComplexity() {
+        let kinds: [GuidedRouteStop.Kind] = stops(for: artifact()).map(\.kind)
+        #expect(kinds == [.entryPoint, .mostDependedUpon, .mostComplex])
     }
 
     @Test func tiedFanInBreaksAlphabeticallyByName() throws {
@@ -97,23 +110,17 @@ struct GuidedRouteBuilderTests {
                 TypeDeclaration(id: "Alpha", name: "Alpha", qualifiedName: "Alpha", kind: .class, accessLevel: .public)
             ]
         )
-        let route = try #require(GuidedRouteBuilder(
-            projectID: projectID, codebaseID: codebaseID, artifact: artifact, metrics: artifact.computeMetrics()
-        ).build())
-        let stop = try #require(route.stops.first { $0.kind == .mostDependedUpon })
+        let stop = try #require(stops(for: artifact).first { $0.kind == .mostDependedUpon })
         #expect(stop.subject == "Alpha")
     }
 
-    @Test func buildReturnsNilWhenNoStopResolves() {
+    @Test func noStopResolvesForACodebaseWithoutSignal() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: language, filePaths: ["A.swift"]),
             types: [
                 TypeDeclaration(id: "Empty", name: "Empty", qualifiedName: "Empty", kind: .class, accessLevel: .public)
             ]
         )
-        let route = GuidedRouteBuilder(
-            projectID: projectID, codebaseID: codebaseID, artifact: artifact, metrics: artifact.computeMetrics()
-        ).build()
-        #expect(route == nil)
+        #expect(stops(for: artifact).isEmpty)
     }
 }

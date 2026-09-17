@@ -12865,7 +12865,29 @@
         }
       }
     },
-    "View.GuidedRouteSheet.EntryPoint" : {
+    "View.GuidedRouteCard.EmptyState" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Codebase hat noch keinen erkennbaren Einstiegspunkt, keine Abhängigkeiten und keine gemessene Komplexität, die einen Rundgang ergeben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This codebase has no detectable entry point, dependencies or measured complexity to build a route from yet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette codebase n'a pas encore de point d'entrée détectable, de dépendances ni de complexité mesurée pour construire un parcours."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.EntryPoint" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12887,7 +12909,7 @@
         }
       }
     },
-    "View.GuidedRouteSheet.EntryPointDescription" : {
+    "View.GuidedRouteCard.EntryPointDescription" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12909,7 +12931,29 @@
         }
       }
     },
-    "View.GuidedRouteSheet.MostComplex" : {
+    "View.GuidedRouteCard.Hide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.MostComplex" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12931,7 +12975,7 @@
         }
       }
     },
-    "View.GuidedRouteSheet.MostComplexDescription" : {
+    "View.GuidedRouteCard.MostComplexDescription" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12953,7 +12997,7 @@
         }
       }
     },
-    "View.GuidedRouteSheet.MostDependedUpon" : {
+    "View.GuidedRouteCard.MostDependedUpon" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12975,7 +13019,7 @@
         }
       }
     },
-    "View.GuidedRouteSheet.MostDependedUponDescription" : {
+    "View.GuidedRouteCard.MostDependedUponDescription" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12997,29 +13041,29 @@
         }
       }
     },
-    "View.GuidedRouteSheet.NotNow" : {
+    "View.GuidedRouteCard.OpenStop" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nicht jetzt"
+            "value" : "Station öffnen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not Now"
+            "value" : "Open Stop"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas maintenant"
+            "value" : "Ouvrir l'étape"
           }
         }
       }
     },
-    "View.GuidedRouteSheet.Title" : {
+    "View.GuidedRouteCard.Title" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {

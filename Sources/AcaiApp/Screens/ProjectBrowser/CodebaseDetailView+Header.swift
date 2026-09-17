@@ -119,7 +119,9 @@ extension CodebaseDetailView {
             }
             if artifact != nil {
                 queryButton(codebase: codebase)
-                guidedRouteButton(codebase: codebase)
+                if codebase.guidedRoute != .offered {
+                    guidedRouteButton(codebase: codebase)
+                }
             }
             if let source = codebase.githubSource {
                 githubActions(codebase: codebase, source: source)
@@ -150,12 +152,9 @@ extension CodebaseDetailView {
         .accessibilityIdentifier("codebaseDetail.queryButton")
     }
 
-    /// Re-runs the guided route on demand (see `GuidedRouteBuilder`) — the "can be re-run later"
-    /// half of issue #199; the first-index tour presents itself automatically via
-    /// `model.pendingGuidedRoute`.
     private func guidedRouteButton(codebase: Codebase) -> some View {
         Button {
-            model.presentGuidedRoute(for: codebase.id)
+            model.editing.setGuidedRoute(.offered, codebaseID: codebase.id)
         } label: {
             Label(.app("View.CodebaseDetailView.GuidedRoute"), systemImage: "map")
         }

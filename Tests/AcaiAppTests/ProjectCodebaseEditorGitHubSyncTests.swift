@@ -30,7 +30,7 @@ struct ProjectCodebaseEditorGitHubSyncTests {
 
     private func makeEditor(store: ProjectStore, repositoryService: GitHubRepositoryService) -> ProjectCodebaseEditor {
         ProjectCodebaseEditor(
-            store: store, persist: {}, notify: {}, invalidateAnalysis: { _ in }, presentGuidedRoute: { _ in },
+            store: store, persist: {}, notify: {}, invalidateAnalysis: { _ in },
             repositoryService: repositoryService)
     }
 

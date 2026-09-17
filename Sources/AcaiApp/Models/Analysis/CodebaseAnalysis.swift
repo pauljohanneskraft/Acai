@@ -6,6 +6,7 @@ import AcaiLibrary
 /// Every whole-artifact report shown in the codebase detail pane, computed once and cached.
 struct CodebaseAnalysis: Sendable {
     let metrics: CodeMetrics
+    let guidedRoute: [GuidedRouteStop]
     let deadCode: DeadCodeScan.Report
     let health: HealthCheck.Report
     /// Always present: the configured `quality.yml` if a check is configured and its rules load,
@@ -42,6 +43,7 @@ struct CodebaseAnalysis: Sendable {
             : rawArtifact.filteringGeneratedTypes(using: rawArtifact.standardLanguageResolver)
 
         self.metrics = artifact.computeMetrics()
+        self.guidedRoute = GuidedRouteBuilder(artifact: artifact, metrics: metrics).stops
         self.deadCode = DeadCodeScan(
             artifact: artifact,
             languages: artifact.standardLanguageResolver

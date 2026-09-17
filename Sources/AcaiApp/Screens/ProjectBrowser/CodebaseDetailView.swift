@@ -118,10 +118,6 @@ struct CodebaseDetailView: View {
                 StatisticDetailSheet(codebase: codebase, detail: detail)
                     .environmentObject(model)
             }
-            .sheet(item: $model.pendingGuidedRoute) { route in
-                GuidedRouteSheet(route: route)
-                    .environmentObject(model)
-            }
             .confirmationDialog(
                 .app("View.CodebaseDetailView.ConfirmDeleteCodebase \(codebase.name)"),
                 isPresented: $showDeleteConfirmation
@@ -149,6 +145,10 @@ struct CodebaseDetailView: View {
     private func analysisSections(
         codebase: Codebase, artifact: CodeArtifact, analysis: CodebaseAnalysis
     ) -> some View {
+        if codebase.guidedRoute == .offered, let projectID {
+            GuidedRouteCard(projectID: projectID, codebaseID: codebase.id, stops: analysis.guidedRoute)
+            Divider()
+        }
         statisticsSection(metrics: analysis.metrics)
         Divider()
         QualityCheckSection(

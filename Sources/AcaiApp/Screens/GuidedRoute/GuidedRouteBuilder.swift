@@ -1,57 +1,51 @@
-import Foundation
 import AcaiCore
 import AcaiDiagram
 import AcaiRender
 
-/// Builds a `GuidedRoute` purely from measurements a codebase's own analysis already computed —
-/// `CodeMetrics` and a call graph built the same way the Call Graph diagram itself builds one. No
-/// new analysis, per issue #199's "assembled entirely from measurements already taken".
-struct GuidedRouteBuilder {
-    let projectID: UUID
-    let codebaseID: UUID
+/// Derives the guided route from measurements already taken: the codebase's metrics and its call graph.
+struct GuidedRouteBuilder: Sendable {
     let artifact: CodeArtifact
     let metrics: CodeMetrics
 
-    /// `nil` when none of the three stops resolved to anything — a codebase too small or too
-    /// disconnected to have a meaningful "where do I start".
-    func build() -> GuidedRoute? {
-        let stops = [entryPointStop(), mostDependedUponStop(), mostComplexStop()].compactMap { $0 }
-        guard !stops.isEmpty else { return nil }
-        return GuidedRoute(projectID: projectID, codebaseID: codebaseID, stops: stops)
+    var stops: [GuidedRouteStop] {
+        [entryPointStop, mostDependedUponStop, mostComplexStop].compactMap { $0 }
     }
 
-    /// A method nothing in the codebase calls, but that itself calls out — a call-graph root, and
-    /// exactly where execution enters. `nil` when the call graph resolved no such root (e.g. an
-    /// empty codebase, or one where every method has some caller).
-    private func entryPointStop() -> GuidedRoute.Stop? {
-        let nodes = CallGraphMetrics(artifact: artifact).report.nodes
-        guard let root = nodes.first(where: { $0.inScope && $0.fanIn == 0 && $0.fanOut > 0 }) else { return nil }
-        return GuidedRoute.Stop(kind: .entryPoint, subject: root.label, content: .callGraph(.wholeCodebase))
+    private var entryPointStop: GuidedRouteStop? {
+        let graph = CallGraphBuilder().build(from: artifact)
+        let callees = Set(graph.edges.map(\.to))
+        let fanOut = Dictionary(graph.edges.map { ($0.from, 1) }, uniquingKeysWith: +)
+        let root = graph.nodes
+            .filter { $0.inScope && !callees.contains($0.id) && fanOut[$0.id, default: 0] > 0 }
+            .max { lhs, rhs in
+                let (left, right) = (fanOut[lhs.id, default: 0], fanOut[rhs.id, default: 0])
+                return left != right ? left < right : lhs.id > rhs.id
+            }
+        guard let root else { return nil }
+        let scope: CallGraphScope = root.typeName.isEmpty ? .wholeCodebase : .type(root.typeName)
+        return GuidedRouteStop(kind: .entryPoint, subject: root.label, content: .callGraph(scope))
     }
 
-    /// The type the most other types depend on, opened as a class diagram focused on its dependents.
-    private func mostDependedUponStop() -> GuidedRoute.Stop? {
-        guard let top = topType(by: { $0.fanIn }) else { return nil }
+    private var mostDependedUponStop: GuidedRouteStop? {
+        guard let top = topType(by: \.fanIn) else { return nil }
         var configuration = ClassDiagramConfiguration()
         configuration.focus = FocusConfiguration(rootTypeName: top.id, direction: .dependents)
-        return GuidedRoute.Stop(kind: .mostDependedUpon, subject: top.name, content: .classDiagram(configuration))
+        return GuidedRouteStop(kind: .mostDependedUpon, subject: top.name, content: .classDiagram(configuration))
     }
 
-    /// The type carrying the single most complex method, opened as a class diagram focused on it.
-    private func mostComplexStop() -> GuidedRoute.Stop? {
-        guard let top = topType(by: { $0.maxCyclomaticComplexity }) else { return nil }
+    private var mostComplexStop: GuidedRouteStop? {
+        guard let top = topType(by: \.maxCyclomaticComplexity) else { return nil }
         var configuration = ClassDiagramConfiguration()
         configuration.focus = FocusConfiguration(rootTypeName: top.id)
-        return GuidedRoute.Stop(kind: .mostComplex, subject: top.name, content: .classDiagram(configuration))
+        return GuidedRouteStop(kind: .mostComplex, subject: top.name, content: .classDiagram(configuration))
     }
 
-    /// Highest-scoring type by `metric`, ties broken alphabetically by name for a deterministic
-    /// pick. `nil` when nothing scores above zero.
-    private func topType(by metric: (CodeMetrics.TypeMetric) -> Int) -> CodeMetrics.TypeMetric? {
+    /// Ties break alphabetically by name so the pick is deterministic; `nil` when nothing scores above zero.
+    private func topType(by metric: KeyPath<CodeMetrics.TypeMetric, Int>) -> CodeMetrics.TypeMetric? {
         metrics.types
-            .filter { metric($0) > 0 }
+            .filter { $0[keyPath: metric] > 0 }
             .max { lhs, rhs in
-                let (left, right) = (metric(lhs), metric(rhs))
+                let (left, right) = (lhs[keyPath: metric], rhs[keyPath: metric])
                 return left != right ? left < right : lhs.name > rhs.name
             }
     }
