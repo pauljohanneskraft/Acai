@@ -38,7 +38,7 @@ extension ProjectDetailView {
 
     func createDiagram(name: String) {
         if let id = model.freeforms.add(to: projectID, name: name) {
-            model.selection = .freeformDiagram(id)
+            model.open(.freeformDiagram(id))
         }
     }
 }

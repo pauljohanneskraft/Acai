@@ -15,11 +15,8 @@ extension CodebaseDetailView {
                         content: .stateDiagram(config)
                     )
                     stateConfigContext = nil
-                    // Deferred: selecting in the same synchronous closure as this sheet's own
-                    // dismissal (a separate window on macOS) has been observed to occasionally drop
-                    // the parent NavigationSplitView's detail-column update entirely.
                     if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                        model.open(.generatedDiagram(id))
                     }
                 }
             )
@@ -39,9 +36,8 @@ extension CodebaseDetailView {
                         content: .callGraph(scope)
                     )
                     callGraphConfigContext = nil
-                    // Deferred — see `stateConfigSheet`'s `onCreate`.
                     if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                        model.open(.generatedDiagram(id))
                     }
                 }
             )
@@ -61,9 +57,8 @@ extension CodebaseDetailView {
                         content: .sequenceDiagram(config)
                     )
                     sequenceConfigContext = nil
-                    // Deferred — see `stateConfigSheet`'s `onCreate`.
                     if let id {
-                        Task { @MainActor in model.selection = .generatedDiagram(id) }
+                        model.open(.generatedDiagram(id))
                     }
                 }
             )

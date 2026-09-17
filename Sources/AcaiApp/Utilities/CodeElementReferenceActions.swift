@@ -82,7 +82,7 @@ struct CodeElementReferenceActions: ViewModifier {
         case .create(let content):
             guard let projectID = model.projectID(for: codebase.id) else { return }
             if let id = model.diagrams.add(to: projectID, codebaseID: codebase.id, content: content) {
-                model.selection = .generatedDiagram(id)
+                model.open(.generatedDiagram(id))
             }
         }
     }

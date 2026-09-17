@@ -31,7 +31,7 @@ struct QuickOpenController {
             model.selection = .generatedDiagram(diagramID)
         case .create(let content):
             if let newID = model.diagrams.add(to: entry.projectID, codebaseID: codebaseID, content: content) {
-                model.selection = .generatedDiagram(newID)
+                model.open(.generatedDiagram(newID))
             }
         }
     }

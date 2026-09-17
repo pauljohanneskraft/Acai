@@ -28,8 +28,18 @@ final class ProjectBrowserViewModel: ObservableObject {
         case query(UUID)
     }
 
+    private(set) var pendingOpen: Task<Void, Never>?
+
     init(store: ProjectStore = ProjectStore()) {
         self.store = store
+    }
+
+    /// Selects an item created in this same turn. Selecting it alongside `persistChanges()`'s animated
+    /// sidebar insertion intermittently leaves the detail column on the previous screen.
+    func open(_ newSelection: Selection) {
+        pendingOpen = Task { @MainActor [weak self] in
+            self?.selection = newSelection
+        }
     }
 
     func persistChanges() {

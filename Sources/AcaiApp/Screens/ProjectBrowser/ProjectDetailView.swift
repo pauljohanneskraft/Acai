@@ -249,7 +249,7 @@ struct ProjectDetailView: View {
                         .swipeActions(edge: .leading) {
                             Button {
                                 if let id = model.freeforms.duplicate(diagram.id) {
-                                    model.selection = .freeformDiagram(id)
+                                    model.open(.freeformDiagram(id))
                                 }
                             } label: {
                                 Label(

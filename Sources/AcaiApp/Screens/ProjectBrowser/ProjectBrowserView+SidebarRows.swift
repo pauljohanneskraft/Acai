@@ -149,7 +149,7 @@ extension ProjectBrowserView {
                         }
                         Button {
                             if let id = model.diagrams.duplicate(diagram.id) {
-                                model.selection = .generatedDiagram(id)
+                                model.open(.generatedDiagram(id))
                             }
                         } label: {
                             Label(.app("View.ProjectBrowserView.Duplicate"), systemImage: "plus.square.on.square")
@@ -202,7 +202,7 @@ extension ProjectBrowserView {
                         }
                         Button {
                             if let id = model.freeforms.duplicate(diagram.id) {
-                                model.selection = .freeformDiagram(id)
+                                model.open(.freeformDiagram(id))
                             }
                         } label: {
                             Label(.app("View.ProjectBrowserView.Duplicate"), systemImage: "plus.square.on.square")
