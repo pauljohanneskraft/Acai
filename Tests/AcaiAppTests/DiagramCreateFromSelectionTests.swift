@@ -41,6 +41,8 @@ struct DiagramCreateFromSelectionTests {
             #expect(scoped.codebaseID == original.codebaseID)
             #expect(scoped.nodePositions == ["A": .init(point: CGPoint(x: 1, y: 2))])
             #expect(scoped.nodeSizes == ["A": .init(size: CGSize(width: 5, height: 6))])
+            #expect(original.hasSavedFraming)
+            #expect(!scoped.hasSavedFraming, "the original's framing doesn't frame the subset")
             #expect(scoped.isNameUserDefined)
             #expect(store.projects.first?.generatedDiagramIDs.contains(newID!) == true)
             #expect(store.projects.first?.generatedDiagramIDs.contains(originalID) == true)

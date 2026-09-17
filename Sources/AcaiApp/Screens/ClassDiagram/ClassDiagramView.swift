@@ -20,7 +20,7 @@ struct ClassDiagramView: View {
     @State private var activeResizeState: DiagramResizeState?
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
-    @State private var hasCenteredAfterMeasurement = false
+    @State private var hasCenteredAfterMeasurement: Bool
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
     @State private var isSearchBarVisible = false
     @FocusState private var isSearchFieldFocused: Bool
@@ -56,6 +56,7 @@ struct ClassDiagramView: View {
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
+        self._hasCenteredAfterMeasurement = State(initialValue: diagram.hasSavedFraming)
     }
 
     var body: some View {
