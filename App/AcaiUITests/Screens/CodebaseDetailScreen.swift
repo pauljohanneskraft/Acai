@@ -63,6 +63,51 @@ final class CodebaseDetailScreen {
     /// `diagramButton`, so it only appears after a successful reindex.
     var queryButton: XCUIElement { app.buttons["codebaseDetail.queryButton"] }
 
+    /// Shown once a first reindex finishes, until hidden; `guidedRouteButton` brings it back.
+    var guidedRouteCard: XCUIElement { app.descendants(matching: .any)["guidedRoute.card"] }
+    var guidedRouteHideButton: XCUIElement { app.buttons["guidedRoute.hideButton"] }
+    var guidedRouteButton: XCUIElement { app.buttons["codebaseDetail.guidedRouteButton"] }
+
+    /// `kind` is a `GuidedRouteStop.Kind.rawValue` (`"entryPoint"`, `"mostDependedUpon"`, `"mostComplex"`).
+    func guidedRouteStop(kind: String) -> XCUIElement {
+        app.descendants(matching: .any)["guidedRoute.stop.\(kind)"]
+    }
+
+    /// On compact width the card sits below the one-column diagram grid, so it can start off screen.
+    func scrollIntoView(
+        _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        element.waitOrFail(description, file: file, line: line)
+        for _ in 0..<4 where !element.isHittable {
+            app.scrollViews.firstMatch.swipeUp()
+        }
+    }
+
+    /// Opens a stop's diagram, tapping exactly once and asserting the detail pane navigated away.
+    @discardableResult
+    func openGuidedRouteStop<Screen: DiagramScreenBase>(
+        kind: String, as screen: Screen.Type, file: StaticString = #filePath, line: UInt = #line
+    ) -> Screen {
+        let stop = guidedRouteStop(kind: kind)
+        scrollIntoView(stop, "the \(kind) guided route stop", file: file, line: line)
+        stop.tapWhenReady("the \(kind) guided route stop", file: file, line: line)
+        stop.waitForDisappearanceOrFail(
+            "the codebase screen after opening the \(kind) guided route stop", file: file, line: line
+        )
+        return Screen(app: app)
+    }
+
+    func hideGuidedRoute(file: StaticString = #filePath, line: UInt = #line) {
+        scrollIntoView(guidedRouteHideButton, "the guided route Hide button", file: file, line: line)
+        guidedRouteHideButton.tapWhenReady("Hide the guided route", file: file, line: line)
+        guidedRouteCard.waitForDisappearanceOrFail("the hidden guided route card", file: file, line: line)
+    }
+
+    func showGuidedRoute(file: StaticString = #filePath, line: UInt = #line) {
+        guidedRouteButton.tapWhenReady("Guided Route", file: file, line: line)
+        guidedRouteCard.waitOrFail("the guided route card brought back", file: file, line: line)
+    }
+
     /// Shown instead of `reindexButton` for a GitHub-backed codebase.
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }
