@@ -60,6 +60,16 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
+    /// Taps exactly once — every tap creates another copy — and waits for the copy to open.
+    @discardableResult
+    func saveAsFreeform(file: StaticString = #filePath, line: UInt = #line) -> FreeformDiagramScreen {
+        openSettingsTab(file: file, line: line)
+        saveAsFreeformButton.tapWhenReady("Save as Freeform", file: file, line: line)
+        let freeform = FreeformDiagramScreen(app: app)
+        freeform.openedIndicator.waitOrFail("the freeform copy", file: file, line: line)
+        return freeform
+    }
+
     /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
     /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One
     /// query matching either element waits for whichever the toolbar rendered.

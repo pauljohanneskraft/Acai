@@ -6,6 +6,18 @@ final class ClassDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
+    // MARK: - Focus (Settings tab)
+
+    var focusToggle: XCUIElement { app.descendants(matching: .any)["diagram.focus.toggle"].firstMatch }
+    var focusRootTypePicker: XCUIElement { app.descendants(matching: .any)["diagram.focus.rootTypePicker"] }
+
+    /// Focuses on the first type name alphabetically, following its dependencies.
+    func enableFocus(file: StaticString = #filePath, line: UInt = #line) {
+        openSettingsTab(file: file, line: line)
+        focusToggle.tapWhenReady("the Focus toggle", file: file, line: line)
+        focusRootTypePicker.waitOrFail("the focus root type picker", file: file, line: line)
+    }
+
     // MARK: - Find in Diagram
 
     var searchToggleButton: XCUIElement { app.buttons["diagram.search.toggleButton"] }

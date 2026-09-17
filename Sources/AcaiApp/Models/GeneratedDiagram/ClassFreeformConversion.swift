@@ -10,10 +10,7 @@ import AcaiRender
 /// enclose the members it contains.
 struct ClassFreeformConversion: FreeformConversion {
     let context: FreeformConversionContext
-    /// The same visible-node/edge computation the live class diagram view renders from (extension
-    /// merging, hidden generated types, focus, minimum access level, and any active selector filter
-    /// all resolved identically) — computed once so the copy can never include a type or
-    /// relationship the source view had filtered out, nor omit one it had shown.
+    /// The model the live class diagram renders from, so the copy holds exactly what was on screen.
     private let layout: DiagramLayoutModel
     private let visibleTypes: [TypeDeclaration]
 
@@ -82,10 +79,6 @@ struct ClassFreeformConversion: FreeformConversion {
     }
 
     func makeEdges(idsBySourceID: [String: String]) -> [FreeformDiagram.Edge] {
-        // `layout.edges` is already narrowed to the same relationship-kind toggles
-        // (`showInheritance`/`showComposition`/`showDependency`/`showRelationships`) and known-type
-        // set the live diagram draws; `idsBySourceID` holds only visible type ids, so the lookup
-        // below both maps to the freeform node and gates membership in one step.
         layout.edges.compactMap { edge in
             guard let srcID = idsBySourceID[edge.sourceID],
                   let tgtID = idsBySourceID[edge.targetID] else { return nil }

@@ -11,8 +11,7 @@ import AcaiRender
 /// `Selector` filter if any — an instantiated value with instance methods (never a static-function
 /// namespace) that `SequenceDiagramViewModel` delegates diagram generation to, including from its
 /// own `init`, before `self` is fully initialized and so before any of the view model's own
-/// instance methods could be called. Also used by `SequenceFreeformConversion` so "Save as Freeform"
-/// applies the exact same filter the live diagram does.
+/// instance methods could be called.
 struct SequenceDiagramGenerator {
     let artifact: CodeArtifact
     let configuration: SequenceDiagramConfiguration
