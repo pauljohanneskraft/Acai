@@ -99,6 +99,7 @@ class DiagramScreenBase {
     var compareClearButton: XCUIElement { app.buttons["delta.clearButton"] }
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
     var compareOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "delta") }
+    var compareFindingsSummary: XCUIElement { app.descendants(matching: .any)["delta.findingsSummary"] }
 
     /// The panel's controls aren't in the accessibility tree until this opens it.
     func openCompare(file: StaticString = #filePath, line: UInt = #line) {
