@@ -118,6 +118,7 @@ struct RepositoryDetailView: View {
             isPresented: Binding(get: { removalBlockedMessage != nil }, set: { if !$0 { removalBlockedMessage = nil } })
         ) {
             Button(.app("View.RepositoryDetailView.OK")) {}
+                .accessibilityIdentifier("repository.removalBlocked.okButton")
         } message: {
             removalBlockedMessage.map(Text.init)
         }
