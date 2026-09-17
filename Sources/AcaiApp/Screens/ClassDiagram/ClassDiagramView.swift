@@ -64,13 +64,9 @@ struct ClassDiagramView: View {
             .onAppear { applyChangedFileSelection() }
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
-                // The initial auto-fit can run before nodes report real sizes, landing on a stale
-                // fit; re-fit once real sizes are in.
-                if !hasCenteredAfterMeasurement && viewModel.hasPerformedMeasuredLayout {
-                    hasCenteredAfterMeasurement = true
-                    centerDiagram()
-                }
+                centerOnceMeasured()
             }
+            .onChange(of: canvasViewportSize) { _, _ in centerOnceMeasured() }
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
@@ -105,7 +101,7 @@ struct ClassDiagramView: View {
             }
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, undoRedoEnabled: !isSearchFieldFocused,
-                onSave: savePositions, onCenter: centerDiagram
+                onSave: savePositions, onCenter: { centerDiagram() }
             )
             .onChange(of: viewModel.currentSearchNodeID) { _, nodeID in
                 centerOnSearchMatch(nodeID)
@@ -381,15 +377,24 @@ extension ClassDiagramView {
         )
     }
 
-    private func centerDiagram() {
+    /// The initial auto-fit can run before nodes report real sizes or before the canvas has a size,
+    /// landing on a stale fit; fit once both are in, and only count it done when it actually applied.
+    private func centerOnceMeasured() {
+        guard !hasCenteredAfterMeasurement, viewModel.hasPerformedMeasuredLayout else { return }
+        hasCenteredAfterMeasurement = centerDiagram()
+    }
+
+    @discardableResult
+    private func centerDiagram() -> Bool {
         guard let fit = FitToView(
             nodeIDs: viewModel.nodes.map(\.id),
             rect: { viewModel.nodeRect(for: $0) },
             viewport: canvasViewportSize
-        ).transform else { return }
+        ).transform else { return false }
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()
+        return true
     }
 }
 
