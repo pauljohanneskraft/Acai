@@ -12,7 +12,7 @@ the engine only through ``LanguageConfiguration``, resolved from the ``LanguageR
 
 If you're building on Açaí, this is the module to understand first — it's the shape of the data.
 For the practical "analyze a folder and draw it" path, jump to
-[Getting Started](/documentation/acailibrary/gettingstarted) over in [AcaiLibrary](/documentation/acailibrary/).
+[Getting Started](/documentation/guides/gettingstarted) over in [the package overview](/documentation/guides).
 
 ### The model in one breath
 
