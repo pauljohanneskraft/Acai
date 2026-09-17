@@ -137,8 +137,10 @@ struct FitToView {
     var maxScale: CGFloat = 1.2
     var minScale: CGFloat = 0.2
 
-    /// `nil` when no node has a rect to frame.
+    /// `nil` when no node has a rect to frame, or the viewport hasn't been laid out yet — a zero-size
+    /// viewport would clamp to `minScale` and park the diagram in a corner.
     var transform: (scale: CGFloat, offset: CGPoint)? {
+        guard viewport.width > padding * 2, viewport.height > padding * 2 else { return nil }
         let rects = nodeIDs.compactMap(rect)
         guard let first = rects.first else { return nil }
         let bounds = rects.dropFirst().reduce(first) { $0.union($1) }

@@ -5,55 +5,28 @@ import XCTest
 /// `DeleteConfirmationTests` covers via the sidebar/row context menu.
 @MainActor
 final class DiscoverableDeletePathTests: UIJourneyTestCase {
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
 
     func testDeleteCodebaseButtonOnItsOwnDetailScreenRemovesIt() throws {
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded")
+        let codebaseDetail = openSeededCodebase(analysis: .parsed)
+        let codebaseRow = ProjectDetailScreen(app: app).codebaseRow(id: seeded.codebaseID)
 
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
+        codebaseDetail.deleteCodebaseButton.tapWhenReady("Delete Codebase…")
+        codebaseDetail.deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation")
 
-        let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        codebaseRow.tap()
-
-        let codebaseDetail = CodebaseDetailScreen(app: app)
-        XCTAssertTrue(codebaseDetail.deleteCodebaseButton.waitForExistence(timeout: 10))
-        codebaseDetail.deleteCodebaseButton.tap()
-
-        XCTAssertTrue(codebaseDetail.deleteCodebaseConfirmButton.waitForExistence(timeout: 5))
-        codebaseDetail.deleteCodebaseConfirmButton.tap()
-
-        XCTAssertTrue(
-            codebaseRow.waitForNonExistence(timeout: 5),
-            "confirming the codebase's own delete button must remove it, same as the row's context menu"
+        codebaseRow.waitForDisappearanceOrFail(
+            "the deleted codebase's row (its own delete button must remove it, same as the row's context menu)"
         )
     }
 
     func testDeleteProjectButtonOnItsOwnDetailScreenRemovesIt() throws {
-        app.rotateToPortraitOnIPad()
-        app.launchWithFixture("seeded")
+        let detail = openSeededProject(analysis: .parsed)
+        let projectRow = ProjectBrowserScreen(app: app).projectRow(id: seeded.projectID)
 
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
+        detail.deleteProjectButton.tapWhenReady("Delete Project…")
+        detail.deleteProjectConfirmButton.tapWhenReady("the project delete confirmation")
 
-        let detail = ProjectDetailScreen(app: app)
-        XCTAssertTrue(detail.deleteProjectButton.waitForExistence(timeout: 10))
-        detail.deleteProjectButton.tap()
-
-        XCTAssertTrue(detail.deleteProjectConfirmButton.waitForExistence(timeout: 5))
-        detail.deleteProjectConfirmButton.tap()
-
-        XCTAssertTrue(
-            projectRow.waitForNonExistence(timeout: 5),
-            "confirming the project's own delete button must remove it, same as the sidebar's context menu"
+        projectRow.waitForDisappearanceOrFail(
+            "the deleted project's row (its own delete button must remove it, same as the sidebar's context menu)"
         )
     }
 }

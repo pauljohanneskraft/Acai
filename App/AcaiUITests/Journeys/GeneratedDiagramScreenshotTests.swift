@@ -8,131 +8,66 @@ import XCTest
 /// content.
 @MainActor
 final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
-
-    /// Several states are captured per run; see `UIJourneyTestCase.stopsAtFirstFailure`.
-    override var stopsAtFirstFailure: Bool { false }
-    private static let projectID = "11111111-1111-1111-1111-111111111111"
-    private static let codebaseID = "22222222-2222-2222-2222-222222222222"
-
-    private var comparator: ScreenshotComparator {
-        ScreenshotComparator(goldenDirectory: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__"))
-    }
-
-    private func launchReindexedCodebase(_ app: XCUIApplication) -> CodebaseDetailScreen {
-        app.rotateToLandscapeOnIPad()
-        app.launchWithFixture("seeded") { app, destination in
-            app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
-                [Self.codebaseID, destination.appendingPathComponent("artifacts/seeded.json").path]
-            ])
-        }
-
-        let browser = ProjectBrowserScreen(app: app)
-        let projectRow = browser.projectRow(id: Self.projectID)
-        XCTAssertTrue(projectRow.waitForExistence(timeout: 10))
-        projectRow.tap()
-
-        let detail = ProjectDetailScreen(app: app)
-        let codebaseRow = detail.codebaseRow(id: Self.codebaseID)
-        XCTAssertTrue(codebaseRow.waitForExistence(timeout: 10))
-        codebaseRow.tap()
-
-        let codebaseDetail = CodebaseDetailScreen(app: app)
-        XCTAssertTrue(codebaseDetail.reindexButton.waitForExistence(timeout: 10))
-        codebaseDetail.reindexButton.tap()
-
-        let classDiagramButton = codebaseDetail.diagramButton(type: "class")
-        XCTAssertTrue(classDiagramButton.waitForExistence(timeout: 30), "the codebase never finished indexing")
-        return codebaseDetail
-    }
-
     func testSequenceDiagramScreenshot() throws {
-        let codebaseDetail = launchReindexedCodebase(app)
-
-        let sequence = SequenceDiagramScreen(app: app)
-        let sequenceButton = codebaseDetail.diagramButton(type: "sequence")
-        sequenceButton.tapUntil(sequence.typePicker)
+        let codebaseDetail = openIndexedSeededCodebase()
+        let sequence = codebaseDetail.openDiagramConfiguration(
+            type: "sequence", as: SequenceDiagramScreen.self, until: { $0.typePicker }
+        )
 
         sequence.typePicker.choose("Derived", in: app)
         sequence.methodPicker.choose("doWork", in: app)
-        sequence.nextButton.tap()
+        sequence.nextButton.tapWhenReady("the sequence configuration's Next button")
 
-        XCTAssertTrue(sequence.participant(named: "Derived").waitForExistence(timeout: 30))
-        XCTAssertTrue(sequence.participant(named: "Helper").exists)
-        XCTAssertTrue(sequence.participant(named: "Worker").exists)
+        sequence.participant(named: "Derived").waitOrFail("the Derived participant", timeout: .uiWork)
+        XCTAssertTrue(sequence.participant(named: "Helper").exists, "Helper should be a participant")
+        XCTAssertTrue(sequence.participant(named: "Worker").exists, "Worker should be a participant")
 
-        sequence.fitToViewButton.tap()
-        comparator.validate(
-            viewType: "SequenceDiagram", state: "populated",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        sequence.tapFitToView()
+        validateScreenshot("SequenceDiagram", state: "populated")
     }
 
     func testStateDiagramScreenshot() throws {
-        let codebaseDetail = launchReindexedCodebase(app)
-
-        let state = StateDiagramScreen(app: app)
-        let stateButton = codebaseDetail.diagramButton(type: "state")
-        stateButton.tapUntil(state.scopePicker)
+        let codebaseDetail = openIndexedSeededCodebase()
+        let state = codebaseDetail.openDiagramConfiguration(
+            type: "state", as: StateDiagramScreen.self, until: { $0.scopePicker }
+        )
 
         state.scopePicker.choose("Base", in: app)
         state.variablePicker.choose("id", in: app)
-        state.createButton.tap()
-
-        XCTAssertTrue(state.fitToViewButton.waitForExistence(timeout: 30))
-        state.fitToViewButton.tap()
+        state.createButton.tapWhenReady("the state configuration's Create button")
 
         // `StateNodeView`'s label is the assignment's raw source text, quotes included, so the
         // state's name (and this identifier) is literally `"idle"`.
-        XCTAssertTrue(state.stateNode(named: "\"idle\"").waitForExistence(timeout: 10))
-        XCTAssertTrue(state.stateNode(named: "\"requested\"").exists)
-        XCTAssertTrue(state.stateNode(named: "\"failed\"").exists)
-        comparator.validate(
-            viewType: "StateDiagram", state: "populated",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        state.stateNode(named: "\"idle\"").waitOrFail("the idle state node", timeout: .uiWork)
+        XCTAssertTrue(state.stateNode(named: "\"requested\"").exists, "the requested state should be drawn")
+        XCTAssertTrue(state.stateNode(named: "\"failed\"").exists, "the failed state should be drawn")
+
+        state.tapFitToView()
+        validateScreenshot("StateDiagram", state: "populated")
     }
 
     func testPackageDiagramScreenshot() throws {
-        let codebaseDetail = launchReindexedCodebase(app)
+        let codebaseDetail = openIndexedSeededCodebase()
+        let package = codebaseDetail.createDiagram(type: "package", as: PackageDiagramScreen.self)
 
-        let package = PackageDiagramScreen(app: app)
-        let packageButton = codebaseDetail.diagramButton(type: "package")
-        // `tapUntilItDisappears`, not `tapUntil`: this button calls `diagrams.add`, so a retry
-        // keyed on the canvas appearing creates a second diagram whenever the first is still
-        // rendering — an extra sidebar row and a screenshot that differs run to run.
-        packageButton.tapUntilItDisappears()
+        package.containerNode(named: "SampleSwiftPackage").waitOrFail("the SampleSwiftPackage module", timeout: .uiWork)
 
-        XCTAssertTrue(package.containerNode(named: "SampleSwiftPackage").waitForExistence(timeout: 30))
-
-        package.fitToViewButton.tap()
-        comparator.validate(
-            viewType: "PackageDiagram", state: "populated",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
-        )
+        package.tapFitToView()
+        validateScreenshot("PackageDiagram", state: "populated")
     }
 
     func testCallGraphScreenshot() throws {
-        let codebaseDetail = launchReindexedCodebase(app)
-
-        let callGraph = CallGraphScreen(app: app)
-        let callGraphButton = codebaseDetail.diagramButton(type: "callGraph")
-        callGraphButton.tapUntil(callGraph.createButton)
-
-        callGraph.createButton.tap()
-
-        // 30s, not this file's usual 10s: call-graph creation can occasionally take noticeably
-        // longer than the other diagram types' render to complete.
-        XCTAssertTrue(callGraph.node(id: "Derived.doWork").waitForExistence(timeout: 30))
-        XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists)
-        XCTAssertTrue(callGraph.node(id: "Worker.execute").exists)
-
-        callGraph.fitToViewButton.tap()
-        comparator.validate(
-            viewType: "CallGraph", state: "populated",
-            screenshot: app.screenshotAfterAnimationsIdle(), testCase: self
+        let codebaseDetail = openIndexedSeededCodebase()
+        let callGraph = codebaseDetail.openDiagramConfiguration(
+            type: "callGraph", as: CallGraphScreen.self, until: { $0.createButton }
         )
+        callGraph.createButton.tapWhenReady("the call graph configuration's Create button")
+
+        callGraph.node(id: "Derived.doWork").waitOrFail("the Derived.doWork node", timeout: .uiWork)
+        XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists, "Helper.performTask should be drawn")
+        XCTAssertTrue(callGraph.node(id: "Worker.execute").exists, "Worker.execute should be drawn")
+
+        callGraph.tapFitToView()
+        validateScreenshot("CallGraph", state: "populated")
     }
 }

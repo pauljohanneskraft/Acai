@@ -9,28 +9,6 @@ private final class FixtureBundleAnchor {}
 
 @MainActor
 extension XCUIApplication {
-    /// Call before `launchWithFixture` (not after) so the app launches already rotated, rather than
-    /// racing an in-flight async rotation mid-test.
-    func rotateToLandscapeOnIPad() {
-        #if os(iOS)
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            XCUIDevice.shared.orientation = .landscapeLeft
-        }
-        #endif
-    }
-
-    /// Device orientation is simulator-wide state, not scoped to one test's app launch, so a test
-    /// can't assume it starts in whatever orientation the *previous* test left the simulator in —
-    /// every non-landscape test declares this precondition itself rather than relying on landscape
-    /// tests to clean up after themselves.
-    func rotateToPortraitOnIPad() {
-        #if os(iOS)
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            XCUIDevice.shared.orientation = .portrait
-        }
-        #endif
-    }
-
     /// Launches the app pointed at a fresh, disposable copy of the named fixture
     /// (`Fixtures/<name>` in this UI test bundle) instead of the real user's persisted state.
     /// Fixture JSON may reference its own eventual on-disk location via the literal placeholder

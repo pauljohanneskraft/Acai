@@ -100,7 +100,7 @@ struct QualityCheckSection: View {
         if let id = model.diagrams.openCycle(
             to: projectID, codebaseID: codebase.id, scope: scope, members: members
         ) {
-            model.selection = .generatedDiagram(id)
+            model.open(.generatedDiagram(id))
         }
     }
 
