@@ -14,30 +14,55 @@ extension CompareGitPanel {
         return CompareFindingsDelta(oldFindings: oldFindings, newFindings: liveFindings)
     }
 
-    private var newFindings: [Finding] { findingsDelta?.added ?? [] }
-
-    private var resolvedFindings: [Finding] { findingsDelta?.resolved ?? [] }
-
-    var findingsDeltaSection: some View {
-        DisclosureGroup(.app("View.CompareGitPanel.NewFindings \(newFindings.count)")) {
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(newFindings) { finding in
-                    findingDeltaRow(finding)
-                }
-            }
+    @ViewBuilder var findingsSections: some View {
+        let delta = findingsDelta ?? CompareFindingsDelta(oldFindings: [], newFindings: [])
+        let resolved = delta.resolved
+        let added = delta.added
+        findingsSummary(resolvedCount: resolved.count, addedCount: added.count, netChange: delta.netChange)
+        DisclosureGroup(.app("View.CompareGitPanel.ResolvedFindings \(resolved.count)")) {
+            findingRows(resolved)
+        }
+        .accessibilityIdentifier("delta.resolvedFindingsSection")
+        DisclosureGroup(.app("View.CompareGitPanel.NewFindings \(added.count)")) {
+            findingRows(added)
         }
         .accessibilityIdentifier("delta.findingsSection")
     }
 
-    var resolvedFindingsSection: some View {
-        DisclosureGroup(.app("View.CompareGitPanel.ResolvedFindings \(resolvedFindings.count)")) {
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(resolvedFindings) { finding in
-                    findingDeltaRow(finding)
+    private func findingsSummary(resolvedCount: Int, addedCount: Int, netChange: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(.app("View.CompareGitPanel.FindingsSummary \(resolvedCount) \(addedCount)"))
+            Label {
+                if netChange < 0 {
+                    Text(.app("View.CompareGitPanel.NetFewer \(-netChange)"))
+                } else if netChange > 0 {
+                    Text(.app("View.CompareGitPanel.NetMore \(netChange)"))
+                } else {
+                    Text(.app("View.CompareGitPanel.NetUnchanged"))
                 }
+            } icon: {
+                Image(systemName: netChangeSymbol(netChange))
+            }
+            .fontWeight(.semibold)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("delta.findingsSummary")
+    }
+
+    private func netChangeSymbol(_ netChange: Int) -> String {
+        if netChange < 0 { return "arrow.down.circle" }
+        if netChange > 0 { return "arrow.up.circle" }
+        return "equal.circle"
+    }
+
+    private func findingRows(_ findings: [Finding]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(findings) { finding in
+                findingDeltaRow(finding)
             }
         }
-        .accessibilityIdentifier("delta.resolvedFindingsSection")
     }
 
     private func findingDeltaRow(_ finding: Finding) -> some View {

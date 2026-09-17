@@ -228,8 +228,7 @@ struct CompareGitPanel: View {
                 }
                 if isFullyLoaded {
                     changedFilesSection
-                    resolvedFindingsSection
-                    findingsDeltaSection
+                    findingsSections
                 }
             }
             .padding(16)

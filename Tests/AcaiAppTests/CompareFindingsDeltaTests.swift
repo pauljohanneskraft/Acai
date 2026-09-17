@@ -90,4 +90,31 @@ struct CompareFindingsDeltaTests {
 
         #expect(delta.resolved.isEmpty)
     }
+
+    @Test func netChangeIsNegativeWhenAChangeResolvesMoreThanItIntroduces() {
+        let old = (1...5).map { finding(id: "old\($0)", title: "Long function", filePath: "F\($0).swift", line: 1) }
+        let new = [finding(id: "new", title: "God class", filePath: "Bar.swift", line: 3)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.netChange == -4)
+    }
+
+    @Test func netChangeIsZeroWhenResolvedAndIntroducedBalance() {
+        let old = [finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10)]
+        let new = [finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.netChange == 0)
+    }
+
+    @Test func netChangeIsPositiveWhenAChangeOnlyIntroducesFindings() {
+        let old = [finding(id: "a", title: "Long function", filePath: "Foo.swift", line: 10)]
+        let new = old + [finding(id: "b", title: "God class", filePath: "Bar.swift", line: 3)]
+
+        let delta = CompareFindingsDelta(oldFindings: old, newFindings: new)
+
+        #expect(delta.netChange == 1)
+    }
 }

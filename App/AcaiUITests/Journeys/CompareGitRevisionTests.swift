@@ -20,6 +20,7 @@ final class CompareGitRevisionTests: UIJourneyTestCase {
         validateScreenshot("ClassDiagram", state: "comparePanelOpen")
 
         diagram.compare(against: "HEAD")
+        diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
         validateScreenshot("ClassDiagram", state: "deltaComparison")
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.
