@@ -12,6 +12,9 @@ final class SaveAsFreeformJourneyTests: UIJourneyTestCase {
 
         let freeform = diagram.saveAsFreeform()
         freeform.typeNode(named: "Base").waitOrFail("Base in the freeform copy")
+        // A wrongly copied node lands at a fallback position, which the inherited canvas offset can
+        // leave outside the viewport — and so outside the accessibility tree — hiding the defect.
+        freeform.tapFitToView()
         for hidden in ["Derived", "Helper", "Worker"] {
             XCTAssertFalse(
                 freeform.typeNode(named: hidden).exists, "\(hidden) was hidden by focus but appeared in the copy"

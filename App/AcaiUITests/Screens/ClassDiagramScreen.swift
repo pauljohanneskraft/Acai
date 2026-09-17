@@ -13,7 +13,7 @@ final class ClassDiagramScreen: DiagramScreenBase {
 
     /// Focuses on the first type name alphabetically, following its dependencies.
     func enableFocus(file: StaticString = #filePath, line: UInt = #line) {
-        openSettingsTab(file: file, line: line)
+        revealInSettings(focusToggle, "the Focus toggle", file: file, line: line)
         focusToggle.tapWhenReady("the Focus toggle", file: file, line: line)
         focusRootTypePicker.waitOrFail("the focus root type picker", file: file, line: line)
     }
