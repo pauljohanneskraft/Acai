@@ -15,9 +15,20 @@ struct FitToViewTests {
     }
 
     @Test func framesAllNodesInsideALaidOutViewport() throws {
-        let transform = try #require(fit(viewport: CGSize(width: 1000, height: 800)).transform)
-        #expect(transform.scale > FitToView(nodeIDs: [], rect: { _ in nil }).minScale)
-        #expect(transform.scale <= FitToView(nodeIDs: [], rect: { _ in nil }).maxScale)
+        let viewport = CGSize(width: 1000, height: 800)
+        let fitting = fit(viewport: viewport)
+        let transform = try #require(fitting.transform)
+        let bounds = rects.values.reduce(CGRect.null) { $0.union($1) }
+        let framed = CGRect(
+            x: bounds.minX * transform.scale + transform.offset.x,
+            y: bounds.minY * transform.scale + transform.offset.y,
+            width: bounds.width * transform.scale,
+            height: bounds.height * transform.scale
+        )
+        let padded = CGRect(origin: .zero, size: viewport).insetBy(dx: fitting.padding, dy: fitting.padding)
+        #expect(padded.contains(framed))
+        #expect(abs(framed.midX - viewport.width / 2) < 0.001)
+        #expect(abs(framed.midY - viewport.height / 2) < 0.001)
     }
 
     @Test func declinesAViewportThatHasNotBeenLaidOutYet() {
