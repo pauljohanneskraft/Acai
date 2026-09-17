@@ -20,7 +20,8 @@ struct ClassDiagramView: View {
     @State private var activeResizeState: DiagramResizeState?
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
-    @State private var hasCenteredAfterMeasurement: Bool
+    @State private var hasCenteredAfterMeasurement = false
+    @Environment(\.diagramHasBeenFitted) private var hostHasBeenFitted
     /// `.zero` until the canvas reports its real size, so `FitToView` declines to fit against a placeholder.
     @State private var canvasViewportSize = CGSize.zero
     @State private var isSearchBarVisible = false
@@ -57,7 +58,6 @@ struct ClassDiagramView: View {
         ))
         self._canvasScale = State(initialValue: CGFloat(diagram.canvasScale))
         self._canvasOffset = State(initialValue: CGPoint(x: diagram.canvasOffsetX, y: diagram.canvasOffsetY))
-        self._hasCenteredAfterMeasurement = State(initialValue: diagram.hasSavedFraming)
     }
 
     var body: some View {
@@ -382,8 +382,10 @@ extension ClassDiagramView {
     /// The initial auto-fit can run before nodes report real sizes or before the canvas has a size,
     /// landing on a stale fit; fit once both are in, and only count it done when it actually applied.
     private func centerOnceMeasured() {
-        guard !hasCenteredAfterMeasurement, viewModel.hasPerformedMeasuredLayout else { return }
-        hasCenteredAfterMeasurement = centerDiagram()
+        let hasBeenFitted = hostHasBeenFitted?.wrappedValue ?? hasCenteredAfterMeasurement
+        guard !hasBeenFitted, viewModel.hasPerformedMeasuredLayout, centerDiagram() else { return }
+        hasCenteredAfterMeasurement = true
+        hostHasBeenFitted?.wrappedValue = true
     }
 
     @discardableResult

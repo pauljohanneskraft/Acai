@@ -155,10 +155,6 @@ struct GeneratedDiagramEditor {
         copy.isNameUserDefined = true
         copy.nodePositions = original.nodePositions.filter { selectedNodeIDs.contains($0.key) }
         copy.nodeSizes = original.nodeSizes.filter { selectedNodeIDs.contains($0.key) }
-        // The original's framing doesn't frame the subset; an identity transform fits it on first open.
-        copy.canvasScale = 1
-        copy.canvasOffsetX = 0
-        copy.canvasOffsetY = 0
         copy.createdDate = Date()
         copy.lastModified = Date()
         store.projects[projectIndex].generatedDiagramIDs.append(copy.id)

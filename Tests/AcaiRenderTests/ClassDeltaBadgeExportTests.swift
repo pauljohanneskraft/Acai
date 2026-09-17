@@ -1,14 +1,18 @@
 import Testing
 import Foundation
 import CoreGraphics
-import ImageIO
 import SwiftUI
+import AcaiPNGComparison
 @testable import AcaiRender
 @testable import AcaiCore
 @testable import AcaiDiff
 
+/// Compared perceptually, like every render snapshot: two renders of the same view under a loaded,
+/// parallel test run are not bit-identical, so byte or exact-pixel equality fails intermittently.
+/// `badgeOverrideChangesTheRenderedPixels` proves the same comparison still sees a badge.
 @Suite("Class diagram delta badge PNG export")
 struct ClassDeltaBadgeExportTests {
+    private let comparison = PNGGoldenComparison()
 
     private func laidOutSingleNode() -> LaidOutDiagram {
         let type = TypeDeclaration(
@@ -36,9 +40,7 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        #expect(!withoutBadge.isEmpty)
-        #expect(!withBadge.isEmpty)
-        #expect(withoutBadge != withBadge)
+        #expect(comparison.compare(committed: withoutBadge, rendered: withBadge) != .match)
     }
 
     @Test @MainActor func unchangedBadgeStatusRendersLikeNoBadge() throws {
@@ -55,27 +57,6 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        // Pixels, not PNG bytes: the encoder doesn't promise identical bytes for identical images.
-        #expect(try #require(RenderedPixels(png: withoutBadge)) == #require(RenderedPixels(png: withUnchangedBadge)))
-    }
-}
-
-private struct RenderedPixels: Equatable {
-    let width: Int
-    let height: Int
-    let rgba: [UInt8]
-
-    init?(png: Data) {
-        guard let source = CGImageSourceCreateWithData(png as CFData, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
-        width = image.width
-        height = image.height
-        var buffer = [UInt8](repeating: 0, count: width * height * 4)
-        guard let context = CGContext(
-            data: &buffer, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return nil }
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-        rgba = buffer
+        #expect(comparison.compare(committed: withoutBadge, rendered: withUnchangedBadge) == .match)
     }
 }

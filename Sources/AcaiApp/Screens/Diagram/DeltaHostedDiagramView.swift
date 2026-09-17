@@ -13,6 +13,18 @@ extension EnvironmentValues {
         get { self[CompareChangedFileSelectionKey.self] }
         set { self[CompareChangedFileSelectionKey.self] = newValue }
     }
+
+    /// Whether the diagram has been fitted to its canvas since it was opened, owned above its identity
+    /// boundary: a rebuild when a comparison loads keeps the user's zoom and pan instead of re-fitting
+    /// against a canvas that may still be mid-layout. `nil` outside a `DeltaHostedDiagramView`.
+    var diagramHasBeenFitted: Binding<Bool>? {
+        get { self[DiagramHasBeenFittedKey.self] }
+        set { self[DiagramHasBeenFittedKey.self] = newValue }
+    }
+}
+
+private struct DiagramHasBeenFittedKey: EnvironmentKey {
+    static let defaultValue: Binding<Bool>? = nil
 }
 
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
@@ -33,6 +45,7 @@ struct DeltaHostedDiagramView<Content: View>: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var isComparePresented = false
     @State private var changedFileSelection: Set<String>?
+    @State private var hasBeenFitted = false
     #if os(macOS)
     @State private var reopensCompare = false
     #endif
@@ -63,6 +76,7 @@ struct DeltaHostedDiagramView<Content: View>: View {
             content($isComparePresented)
                 .id(contentIdentity)
                 .environment(\.compareChangedFileSelection, $changedFileSelection)
+                .environment(\.diagramHasBeenFitted, $hasBeenFitted)
                 #if os(macOS)
                 .onChange(of: contentIdentity) { _, _ in
                     guard isComparePresented || reopensCompare else { return }

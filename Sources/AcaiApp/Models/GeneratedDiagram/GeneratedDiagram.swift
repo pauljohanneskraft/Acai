@@ -46,15 +46,6 @@ struct GeneratedDiagram: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension GeneratedDiagram {
-    /// Whether the diagram has been laid out and framed before, so reopening it — or rebuilding its view
-    /// when a comparison loads — restores the user's zoom and pan instead of re-fitting against a
-    /// viewport that may still be mid-layout. Every fit persists a non-identity transform.
-    var hasSavedFraming: Bool {
-        !nodePositions.isEmpty && (canvasScale != 1 || canvasOffsetX != 0 || canvasOffsetY != 0)
-    }
-}
-
-extension GeneratedDiagram {
     enum Content: Codable, Hashable, Sendable {
         case classDiagram(ClassDiagramConfiguration)
         case sequenceDiagram(SequenceDiagramConfiguration)
