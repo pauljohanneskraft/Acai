@@ -21,7 +21,8 @@ struct ClassDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: ClassDiagramSidebarTab = .settings
     @State private var hasCenteredAfterMeasurement: Bool
-    @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    /// `.zero` until the canvas reports its real size, so `FitToView` declines to fit against a placeholder.
+    @State private var canvasViewportSize = CGSize.zero
     @State private var isSearchBarVisible = false
     @FocusState private var isSearchFieldFocused: Bool
     #if os(iOS)

@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import CoreGraphics
+import ImageIO
 import SwiftUI
 @testable import AcaiRender
 @testable import AcaiCore
@@ -54,6 +55,27 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        #expect(withoutBadge == withUnchangedBadge)
+        // Pixels, not PNG bytes: the encoder doesn't promise identical bytes for identical images.
+        #expect(try #require(RenderedPixels(png: withoutBadge)) == #require(RenderedPixels(png: withUnchangedBadge)))
+    }
+}
+
+private struct RenderedPixels: Equatable {
+    let width: Int
+    let height: Int
+    let rgba: [UInt8]
+
+    init?(png: Data) {
+        guard let source = CGImageSourceCreateWithData(png as CFData, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+        width = image.width
+        height = image.height
+        var buffer = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(
+            data: &buffer, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        rgba = buffer
     }
 }
