@@ -40,7 +40,10 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        #expect(comparison.compare(committed: withoutBadge, rendered: withBadge) != .match)
+        guard case .drifted = comparison.compare(committed: withoutBadge, rendered: withBadge) else {
+            Issue.record("the badge should render as a visible difference from the unbadged node")
+            return
+        }
     }
 
     @Test @MainActor func unchangedBadgeStatusRendersLikeNoBadge() throws {

@@ -33,15 +33,12 @@ final class FreeformDiagramScreen: DiagramScreenBase {
     /// On regular width the sidebar is a persistent `.inspector` column, and a canvas tap taken while
     /// it's still presented doesn't reach `InfiniteCanvas`'s tap gesture at all (confirmed
     /// empirically), so it must be closed before the commit tap. On compact width (iPhone) the sidebar
-    /// closes itself once placement begins. `"type.class"` (the catalog's first entry) stands in for
-    /// "is the catalog showing at all," regardless of which `kindID` this call wants. Call once the
-    /// diagram's toolbar is on screen, so the first `exists` read reflects a rendered sidebar.
+    /// closes itself once placement begins. The sidebar starts closed when a diagram opens and this
+    /// leaves it closed, so it always opens it instead of branching on a not-yet-settled tree read.
     func placeNodeViaCatalog(kindID: String, file: StaticString = #filePath, line: UInt = #line) {
-        let catalog = catalogNodeButton("type.class")
-        if !catalog.exists {
-            tapSidebarToggle(file: file, line: line)
-        }
-        catalogNodeButton(kindID).tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
+        tapSidebarToggle(file: file, line: line)
+        let catalog = catalogNodeButton(kindID)
+        catalog.tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
         cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
         if !SnapshotPlatform().usesCompactLayout {
             tapSidebarToggle(file: file, line: line)
