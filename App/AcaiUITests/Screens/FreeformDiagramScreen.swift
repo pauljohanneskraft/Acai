@@ -5,11 +5,7 @@ final class FreeformDiagramScreen: DiagramScreenBase {
     var checkpointsButton: XCUIElement { app.buttons["diagram.checkpointsButton"] }
 
     func tapCheckpoints(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(checkpointsButton, label: "Checkpoints", file: file, line: line)
-    }
-
-    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(sidebarToggleButton, label: "Sidebar", file: file, line: line)
+        tapToolbarButton(identifier: "diagram.checkpointsButton", label: "Checkpoints", file: file, line: line)
     }
 
     // MARK: - Point-and-Place Catalog

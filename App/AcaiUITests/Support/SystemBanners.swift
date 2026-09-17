@@ -22,11 +22,12 @@ struct SystemBanners {
         #endif
     }
 
-    func dismiss() {
+    /// Fails at the caller's line if the banner won't go away, rather than tapping or capturing under it.
+    func dismiss(file: StaticString = #filePath, line: UInt = #line) {
         #if os(iOS)
         guard banner.exists else { return }
         banner.swipeUp()
-        _ = banner.waitForNonExistence(timeout: 5)
+        banner.waitForDisappearanceOrFail("the system notification banner", file: file, line: line)
         #endif
     }
 }

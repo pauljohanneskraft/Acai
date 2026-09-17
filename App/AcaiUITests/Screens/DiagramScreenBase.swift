@@ -46,7 +46,7 @@ class DiagramScreenBase {
     ) {
         if content.exists { return }
         if !settingsContent.exists && !inspectorContent.exists {
-            tapToolbarButton(sidebarToggleButton, label: "Sidebar", file: file, line: line)
+            tapSidebarToggle(file: file, line: line)
         }
         tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
         content.waitOrFail("the diagram's \(name) tab", file: file, line: line)
@@ -60,32 +60,34 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Falls back to iOS's "More" toolbar overflow item if `button` itself never appears — macOS's
-    /// `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only.
+    /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
+    /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One
+    /// query matching either element waits for whichever the toolbar rendered.
     func tapToolbarButton(
-        _ button: XCUIElement, label: String, file: StaticString = #filePath, line: UInt = #line
+        identifier: String, label: String, file: StaticString = #filePath, line: UInt = #line
     ) {
+        let button = app.buttons[identifier]
         #if os(macOS)
         button.tapWhenReady("toolbar button \(label)", file: file, line: line)
         #else
-        // Polls both together: on a toolbar that's already collapsed into "More", `button` was
-        // never going to appear.
-        let overflowButton = app.buttons["OverflowBarButtonItem"]
-        let deadline = Date().addingTimeInterval(.uiTransition)
-        while Date() < deadline, !button.exists, !overflowButton.exists {
-            Thread.sleep(forTimeInterval: 0.5)
-        }
+        let overflowIdentifier = "OverflowBarButtonItem"
+        app.buttons.matching(NSPredicate(format: "identifier IN %@", [identifier, overflowIdentifier])).firstMatch
+            .waitOrFail("toolbar button \(label), directly or in overflow", file: file, line: line)
         if button.exists {
             button.tapWhenReady("toolbar button \(label)", file: file, line: line)
             return
         }
-        overflowButton.tapWhenReady("toolbar button \(label), directly or in overflow", file: file, line: line)
+        app.buttons[overflowIdentifier].tapWhenReady("the toolbar's overflow menu", file: file, line: line)
         app.buttons[label].tapWhenReady("overflow item \(label)", file: file, line: line)
         #endif
     }
 
     func tapFitToView(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(fitToViewButton, label: "Fit to View", file: file, line: line)
+        tapToolbarButton(identifier: "diagram.fitToViewButton", label: "Fit to View", file: file, line: line)
+    }
+
+    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
+        tapToolbarButton(identifier: "diagram.sidebarToggleButton", label: "Sidebar", file: file, line: line)
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)

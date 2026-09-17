@@ -79,7 +79,7 @@ extension XCUIElement {
         file: StaticString = #filePath, line: UInt = #line
     ) {
         waitUntilReady(description, timeout: timeout, file: file, line: line)
-        SystemBanners().dismiss()
+        SystemBanners().dismiss(file: file, line: line)
         tap()
     }
 
@@ -94,7 +94,7 @@ extension XCUIElement {
     ) {
         for _ in 0..<attempts {
             waitUntilReady(description, file: file, line: line)
-            SystemBanners().dismiss()
+            SystemBanners().dismiss(file: file, line: line)
             tap()
             if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
             if !exists { break }
@@ -135,7 +135,7 @@ extension XCUIApplication {
             dx: content.frame.midX > bounds.midX ? 0.15 : 0.85,
             dy: content.frame.midY > bounds.midY ? 0.2 : 0.8
         )
-        SystemBanners().dismiss()
+        SystemBanners().dismiss(file: file, line: line)
         region.coordinate(withNormalizedOffset: offset).tap()
         region.waitForDisappearanceOrFail("the popover", file: file, line: line)
     }

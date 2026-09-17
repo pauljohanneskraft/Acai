@@ -47,11 +47,11 @@ class UIJourneyTestCase: XCTestCase {
             maxChangedFraction: maxChangedFraction
         )
         let banners = SystemBanners()
-        banners.dismiss()
+        banners.dismiss(file: file, line: line)
         var screenshot = app.screenshotAfterAnimationsIdle()
         // A banner can also arrive while the capture waits for animations to settle.
         if banners.isShowing {
-            banners.dismiss()
+            banners.dismiss(file: file, line: line)
             screenshot = app.screenshotAfterAnimationsIdle()
         }
         if let failure = comparator.validate(viewType: viewType, state: state, screenshot: screenshot, testCase: self) {

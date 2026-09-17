@@ -11,6 +11,6 @@ final class HotspotJourneyTests: UIJourneyTestCase {
         // The seeded fixture isn't a git repository, so loading ends in the "no git history" state.
         hotspot.noGitHistoryState.waitOrFail("the hotspot screen's no-git-history state", timeout: .uiWork)
 
-        hotspot.tapToolbarButton(hotspot.sidebarToggleButton, label: "Sidebar")
+        hotspot.tapSidebarToggle()
     }
 }
