@@ -57,7 +57,7 @@ stays free of language names, and external consumers register a language the sam
 
 ## See Also
 
-- ``AcaiLibrary``
+- [AcaiLibrary](/documentation/acailibrary/)
 - <doc:GettingStarted>
 - [CodeParser](/documentation/acaicore/codeparser)
 - [LanguageConfiguration](/documentation/acaicore/languageconfiguration)

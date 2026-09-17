@@ -55,9 +55,13 @@ This separation is load-bearing — keep it:
 
 `Scripts/docs_generate.sh` reads the target list from the package manifest, so **every non-test target is published automatically** — library, executable and C targets alike. A module with no public API yields an empty page, which is fine; a module with no page at all is not.
 
-**A generated page is not a reachable page.** When you add a module, also add it to the module map in `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` — that file is the site's landing page (`docs_generate.sh` redirects the root to it), and it is the only thing linking the per-module pages together. Skipping this leaves the docs reachable only by guessing the URL. Cross-module links there are written `[AcaiFoo](/documentation/acaifoo/)`, lowercased, no hosting base path (the renderer prepends it).
+**A generated page is not a reachable page.** When you add a module, also add it to the module map in `Guides.docc/Guides.md` — the only thing linking the per-module pages together. Skipping this leaves the docs reachable only by guessing the URL. Cross-module links there are written `[AcaiFoo](/documentation/acaifoo/)`, lowercased, no hosting base path (the renderer prepends it).
 
-**All prose lives in `.docc` catalogs** — there are no per-module `README.md` files and no `Documentation/` folder. That includes the user-facing guides for the binaries: the full `acai` flag reference is `Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md`, the MCP tool/schema reference is `Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md`, and the app's is `Sources/AcaiApp/AcaiApp.docc/AcaiApp.md`. The root `README.md` links to their published pages rather than restating them; the only other markdown in the repo is `Examples/README.md` and the review checklist in `.github/copilot-instructions.md`. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
+**`Guides.docc` is a catalog with no target** — articles only, so `docs_generate.sh` builds it with a bare `docc convert` and merges it in alongside the per-target archives. It holds the overview, the module map, `GettingStarted.md` and `AddingALanguage.md`; `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` describes only the composition root. Its `# Acai Overview & Guides` heading is load-bearing: `docc merge` sorts the landing page's card grid by title, so the leading `Acai ` is what keeps the guides ahead of `AcaiApp`. The navigator's order is the merge argument order instead, which the script sorts explicitly.
+
+**The site root redirects to `/documentation/`, never to a module page.** The renderer scopes the sidebar once, from the URL the visitor arrives on, so that combined landing page is the only entry whose navigator lists every module.
+
+**All prose lives in `.docc` catalogs** — there are no per-module `README.md` files and no `Documentation/` folder; the package-wide prose is `Guides.docc` at the repo root. That includes the user-facing guides for the binaries: the full `acai` flag reference is `Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md`, the MCP tool/schema reference is `Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md`, and the app's is `Sources/AcaiApp/AcaiApp.docc/AcaiApp.md`. The root `README.md` links to their published pages rather than restating them; the only other markdown in the repo is `Examples/README.md` and the review checklist in `.github/copilot-instructions.md`. Regenerate the CLI flag tables from `acai <command> --help`, never by hand from the source.
 
 **In-page anchor links follow DocC's convention, not GitHub's.** DocC keeps the heading's case and turns spaces into hyphens (`## The mental model` → `#The-mental-model`); GitHub lowercases. A table of contents copied from GitHub-style markdown will silently fail to resolve, so match the heading exactly.
 
@@ -65,7 +69,7 @@ README screenshots live in `.github/images/`.
 
 ## Adding a language
 
-Use the `/add-language` skill. A language is a self-contained plugin: a new target (dep + parser), its `SourceLanguage` constant + `CodeParser.configuration` (primitives/collections, any framework stereotypes or generated-code filter, build-output dirs), its build-system detector(s), then registration in `AcaiLibrary` (`AnalysisService.standard`). Do **not** add language data to any agnostic target. Finish by linking the new module from the AcaiLibrary module map — see [Documentation](#documentation).
+Use the `/add-language` skill. A language is a self-contained plugin: a new target (dep + parser), its `SourceLanguage` constant + `CodeParser.configuration` (primitives/collections, any framework stereotypes or generated-code filter, build-output dirs), its build-system detector(s), then registration in `AcaiLibrary` (`AnalysisService.standard`). Do **not** add language data to any agnostic target. Finish by linking the new module from the module map in `Guides.docc/Guides.md` — see [Documentation](#documentation).
 
 ## The user-facing quality bar
 

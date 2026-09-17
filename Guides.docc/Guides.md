@@ -1,0 +1,137 @@
+# Acai Overview & Guides
+
+@Metadata {
+    @TechnologyRoot
+}
+
+See your codebase. Point Açaí at a folder of source code and get a UML class diagram back.
+
+## Overview
+
+Açaí reads your source the way a compiler's front end would — it actually parses it,
+it doesn't grep for keywords — and builds **one unified model** of your types and how
+they relate. From that model it draws class diagrams: the boxes, the members, and the
+inheritance / composition / dependency arrows between them. It works across **Swift,
+Kotlin, Java, TypeScript/JavaScript, Dart, Python, C, and C++**, in a single mixed-language
+picture, with nothing to annotate and no build to run first.
+
+If you only read one page, make it <doc:GettingStarted> — one call to [AnalysisService](/documentation/acaicore/analysisservice)
+discovers, parses, and merges an entire project for you.
+
+## A map of the modules
+
+The package is split into small, focused modules. You rarely need all of them at once,
+so here's the lay of the land — follow a link whenever you want the full API for one.
+
+### The front door
+
+- **[AcaiLibrary](/documentation/acailibrary/)** — the composition root. [AnalysisService](/documentation/acaicore/analysisservice) finds the source
+  in a project (SPM, Xcode, Gradle, Maven, Node, Flutter, pip…), runs the right parser for
+  each file, and merges the results. Re-exports the core model, so importing this is
+  usually all you need.
+
+### The core model
+
+- **[AcaiCore](/documentation/acaicore/)** — the shared vocabulary everything else speaks: `CodeArtifact`
+  (the parsed model), `TypeDeclaration`, `Member`, `Relationship`, and the `CodeParser`
+  protocol every language parser conforms to. Start here if you want to understand the
+  shape of the data.
+
+### Language parsers
+
+Each one is a stateless `CodeParser` you can use directly, or let [AnalysisService](/documentation/acaicore/analysisservice) pick
+for you. They turn source text into the same [AcaiCore](/documentation/acaicore/) model.
+
+- **[AcaiSwift](/documentation/acaiswift/)** — Swift, via Apple's native SwiftSyntax.
+- **[AcaiJS](/documentation/acaijs/)** — JavaScript and TypeScript (`.js`, `.ts`, `.tsx`, …).
+- **[AcaiJVM](/documentation/acaijvm/)** — Java and Kotlin (`.java`, `.kt`, `.kts`); one module, as they
+  share the JVM build systems.
+- **[AcaiDart](/documentation/acaidart/)** — Dart.
+- **[AcaiPython](/documentation/acaipython/)** — Python (`.py`).
+- **[AcaiCFamily](/documentation/acaicfamily/)** — C and C++ (`.c`, `.h`, `.cpp`, `.hpp`, …); one module,
+  as they share the C/C++ build systems. The C parser owns the shared `.h` extension and routes each
+  header to the C or C++ grammar by its contents.
+- **[AcaiTreeSitter](/documentation/acaitreesitter/)** — the shared Tree-sitter helpers the
+  grammar-based parsers above are built on. Reach for this only if you're writing a new
+  parser.
+
+Each plugin is self-contained: it owns its parser, its `SourceLanguage`, its
+[LanguageConfiguration](/documentation/acaicore/languageconfiguration) (the language's quirks), and its build-system detector(s).
+
+### Diagrams & rendering
+
+Turn a [AcaiCore](/documentation/acaicore/) model into something you can look at.
+
+- **[AcaiDiagram](/documentation/acaidiagram/)** — generates Graphviz **DOT** and **Mermaid** from a
+  model: class, package, sequence, state and call-graph diagrams, with options for inferred
+  composition, dependency edges, external types, and grouping.
+- **[AcaiRender](/documentation/acairender/)** — on Apple platforms, lays out a model with a Sugiyama
+  hierarchical layout and renders it straight to a **PNG**, no Graphviz required.
+
+### Analysis
+
+Higher-level questions asked of a parsed model.
+
+- **[AcaiDiff](/documentation/acaidiff/)** — the structural delta between two revisions: which types,
+  members, relationships and metrics changed. Also produces the renderable union behind
+  colour-coded delta diagrams.
+- **[AcaiQuality](/documentation/acaiquality/)** — the architecture fitness function: selectors, metric
+  budgets, forbidden dependencies, layering, stereotype contracts and cycle detection.
+
+### Applications
+
+The three entry points built on everything above. Each page is that tool's complete user guide, not
+just its API.
+
+- **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool: every command and flag,
+  plus recipes for CI gating, drift checks and dead-code sweeps.
+- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all nine
+  tools with their input schemas, the snapshot-cache contract, and how to wire it into a client.
+- **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps:
+  what it does, and how the pieces fit.
+
+### Supporting modules
+
+Internal building blocks. You would not normally depend on these directly, but they are documented
+so nothing in the package is a blank spot.
+
+- **[AcaiGit](/documentation/acaigit/)** — a libgit2 wrapper (clone, fetch, checkout, worktrees, diff,
+  churn) used by the app for repository cloning, revision comparison and hotspot charts. Built only
+  on Apple platforms, and not a package product.
+- **[CPythonScanner](/documentation/cpythonscanner/)** — vendors the Python grammar's external C
+  scanner; see `Package.swift` for why it must be pinned to the grammar version.
+- **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by
+  the render and app snapshot tests.
+- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives shared by the test
+  targets.
+
+## Project discovery
+
+How [AnalysisService](/documentation/acaicore/analysisservice) finds the source folders inside a
+project before parsing. You don't usually touch these directly — they power the automatic discovery.
+
+- [ProjectDiscovery](/documentation/acaicore/projectdiscovery) and
+  [SourceSpec](/documentation/acaicore/sourcespec) — the discovery walk and the folder-plus-language
+  pairs it yields.
+- [BuildSystemDetector](/documentation/acaicore/buildsystemdetector) — the protocol each detector
+  conforms to, with [FallbackDetector](/documentation/acaicore/fallbackdetector) for projects that
+  match no build system.
+- The detectors themselves, each living in its own language plugin:
+  [SwiftPackageManagerDetector](/documentation/acaiswift/swiftpackagemanagerdetector),
+  [XcodeDetector](/documentation/acaiswift/xcodedetector),
+  [JVMBuildSystemDetector](/documentation/acaijvm/jvmbuildsystemdetector),
+  [NodeDetector](/documentation/acaijs/nodedetector),
+  [FlutterDetector](/documentation/acaidart/flutterdetector) and
+  [PythonDetector](/documentation/acaipython/pythondetector).
+
+Shared constants live in [AcaiConstants](/documentation/acaicore/acaiconstants).
+
+## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+
+### Contributing
+
+- <doc:AddingALanguage>
