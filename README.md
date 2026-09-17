@@ -11,7 +11,7 @@ One engine, three ways to use it: a **SwiftUI app** for macOS and iPadOS/iOS, th
 [![Documentation](https://img.shields.io/badge/docs-DocC-informational.svg)](https://pauljohanneskraft.github.io/Acai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> 📚 **Full API documentation lives at [pauljohanneskraft.github.io/Acai](https://pauljohanneskraft.github.io/Acai/)** — every module, every public type. If you're here to build on Açaí rather than use it, start with the [Getting Started](https://pauljohanneskraft.github.io/Acai/documentation/acailibrary/gettingstarted) guide.
+> 📚 **Full API documentation lives at [pauljohanneskraft.github.io/Acai](https://pauljohanneskraft.github.io/Acai/)** — every module, every public type. If you're here to build on Açaí rather than use it, start with the [Getting Started](https://pauljohanneskraft.github.io/Acai/documentation/guides/gettingstarted) guide.
 
 <p align="center">
   <img src=".github/images/app-hero.png" alt="The Açaí macOS app: project sidebar, class diagram on the canvas, and the toolbar" width="100%">
@@ -377,7 +377,7 @@ swift test --parallel
 
 Issues and pull requests are very welcome.
 
-**Adding a language is the highest-value contribution**, and it's designed to be self-contained: a new target with a parser, its `SourceLanguage` constant, its `LanguageConfiguration`, its build-system detector, and one registration in `AcaiLibrary`. Nothing in an agnostic target changes. The [Adding a Language](https://pauljohanneskraft.github.io/Acai/documentation/acailibrary/addingalanguage) guide walks it through, the existing plugins under `Sources/AcaiDart` and `Sources/AcaiPython` are good templates, and `Tests/AcaiLibraryTests/ParserConformanceChecker.swift` checks the producer-contract invariants every parser must satisfy.
+**Adding a language is the highest-value contribution**, and it's designed to be self-contained: a new target with a parser, its `SourceLanguage` constant, its `LanguageConfiguration`, its build-system detector, and one registration in `AcaiLibrary`. Nothing in an agnostic target changes. The [Adding a Language](https://pauljohanneskraft.github.io/Acai/documentation/guides/addingalanguage) guide walks it through, the existing plugins under `Sources/AcaiDart` and `Sources/AcaiPython` are good templates, and `Tests/AcaiLibraryTests/ParserConformanceChecker.swift` checks the producer-contract invariants every parser must satisfy.
 
 Other good places to start: a language's parser coverage (the capability table above has honest gaps), a new diagram type, or metrics.
 

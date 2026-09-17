@@ -55,7 +55,7 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
 
 9. **Documentation** — add a `Sources/Acai<Lang>/Acai<Lang>.docc/Acai<Lang>.md` catalog page (copy an
    existing plugin's), then **link it from the module map** in
-   `Sources/AcaiLibrary/AcaiLibrary.docc/AcaiLibrary.md` under "Language parsers":
+   `Guides.docc/Guides.md` under "Language parsers":
    `- **[Acai<Lang>](/documentation/acai<lang>/)** — <language> (`.ext`, …).`
    The page itself is published automatically (`Scripts/docs_generate.sh` reads the manifest), but
    nothing links to it until you add that line, so this step is what makes it reachable. Also add the
