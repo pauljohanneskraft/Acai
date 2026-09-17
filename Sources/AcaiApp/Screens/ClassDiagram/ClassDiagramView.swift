@@ -27,6 +27,7 @@ struct ClassDiagramView: View {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
+    @Environment(\.compareChangedFileSelection) private var changedFileSelection
 
     private var isCompactWidth: Bool {
         #if os(iOS)
@@ -59,6 +60,8 @@ struct ClassDiagramView: View {
 
     var body: some View {
         sidebarPresentedCanvas
+            .onChange(of: changedFileSelection.wrappedValue) { _, _ in applyChangedFileSelection() }
+            .onAppear { applyChangedFileSelection() }
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
                 // The initial auto-fit can run before nodes report real sizes, landing on a stale
@@ -198,11 +201,9 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: { ids in
-                viewModel.selectedNodeIDs = ids
-                sidebarTab = .inspector
-                showSidebar = true
-            })
+            CompareOverlayButton(
+                diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: selectChangedFileTypes
+            )
         }
         .overlay(alignment: .top) {
             if isSearchBarVisible {
@@ -399,6 +400,20 @@ extension ClassDiagramView {
         // Focus is set by the search field's own onAppear, not here — the field doesn't exist in
         // the hierarchy yet on this line, so a focus request now would just be dropped.
         isSearchBarVisible = true
+    }
+
+    private func selectChangedFileTypes(_ ids: Set<String>) {
+        viewModel.selectedNodeIDs = ids
+        sidebarTab = .inspector
+        showSidebar = true
+    }
+
+    /// Applies a changed-file pick from the iOS compare sheet, which can arrive while this view is
+    /// being recreated for a new comparison — hence also on appear.
+    private func applyChangedFileSelection() {
+        guard let ids = changedFileSelection.wrappedValue else { return }
+        changedFileSelection.wrappedValue = nil
+        selectChangedFileTypes(ids)
     }
 
     /// Clears the query too, so a later ⌘F/toolbar tap starts fresh rather than reopening on a

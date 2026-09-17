@@ -2,9 +2,10 @@ import XCTest
 
 extension TimeInterval {
     /// An element that follows directly from the previous interaction: navigation, a sheet, a menu.
-    /// Measured on CI, a transition either lands within ~5s or never does, so waiting longer only
-    /// delays the failure.
-    static let uiTransition: TimeInterval = 10
+    /// The transition itself lands within a few seconds or never, but on a loaded CI simulator a single
+    /// accessibility query was measured at ~9s, so the budget has to cover query latency, not just the
+    /// transition. A wait returns as soon as its condition holds, so this only lengthens real failures.
+    static let uiTransition: TimeInterval = 30
     /// Real work behind the interaction: indexing, cloning, loading a comparison. Sized for CI's
     /// slowest case, a real-git comparison extraction on the iPad runner.
     static let uiWork: TimeInterval = 90
@@ -60,14 +61,15 @@ extension XCUIElement {
             return
         }
         var window: CGRect?
-        while Date() < deadline {
+        // Checked at least once even if a slow existence query used up the deadline.
+        repeat {
             if isHittable { return }
             let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
             window = windowFrame
             if exists, !frame.isEmpty, !windowFrame.contains(frame) { return }
             // `XCUIElement` isn't KVO-compliant, so a predicate expectation would latch its first read.
             Thread.sleep(forTimeInterval: 0.25)
-        }
+        } while Date() < deadline
         XCTFail("\(description) never became tappable", file: file, line: line)
     }
 
@@ -77,29 +79,27 @@ extension XCUIElement {
         file: StaticString = #filePath, line: UInt = #line
     ) {
         waitUntilReady(description, timeout: timeout, file: file, line: line)
+        SystemBanners().dismiss()
         tap()
     }
 
     /// Taps, and taps again only while `destination` hasn't appeared. Only for idempotent navigation
     /// (selecting a row, opening a sheet) — a retried create action makes a duplicate.
+    ///
+    /// Each wait keeps its own budget rather than sharing one deadline: a single slow query on a loaded
+    /// CI simulator would otherwise consume the whole budget and fail a tap that was never attempted.
     func tap(
         _ description: String, until destination: XCUIElement, attempts: Int = 3,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        let deadline = Date().addingTimeInterval(.uiTransition)
-        let perAttempt = TimeInterval.uiTransition / Double(attempts)
         for _ in 0..<attempts {
-            waitUntilReady(description, timeout: max(deadline.timeIntervalSinceNow, 1), file: file, line: line)
+            waitUntilReady(description, file: file, line: line)
+            SystemBanners().dismiss()
             tap()
-            if destination.waitForExistence(timeout: min(perAttempt, max(deadline.timeIntervalSinceNow, 1))) {
-                return
-            }
-            if !exists || Date() >= deadline { break }
+            if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
+            if !exists { break }
         }
-        destination.waitOrFail(
-            "the destination of tapping \(description)", timeout: max(deadline.timeIntervalSinceNow, 1),
-            file: file, line: line
-        )
+        destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
     }
 
     /// Waits for `self` to go away, failing immediately with `failure`'s label if that appears first —
@@ -135,6 +135,7 @@ extension XCUIApplication {
             dx: content.frame.midX > bounds.midX ? 0.15 : 0.85,
             dy: content.frame.midY > bounds.midY ? 0.2 : 0.8
         )
+        SystemBanners().dismiss()
         region.coordinate(withNormalizedOffset: offset).tap()
         region.waitForDisappearanceOrFail("the popover", file: file, line: line)
     }

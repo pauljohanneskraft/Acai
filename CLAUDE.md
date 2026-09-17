@@ -263,15 +263,24 @@ copy.
   Where an operation's completion dismisses its own screen (a sheet), wait for the dismissal and fail
   fast on the error alert with `waitForDisappearanceOrFail(_:failingOn:)`, as
   `NewCodebaseSheetScreen.clone()` does.
+- A signal a journey waits on must live on a surface the app keeps on screen while the work completes.
+  Three past failures waited on something inside a transient presentation (a menu, a popover, a
+  sheet torn down and re-presented when its host view's identity reset) and timed out on work that
+  had succeeded. If a panel must survive its host's identity resets, fix that in the app — the user
+  loses the panel the same way.
 - `appears(within:)` only inside a retry loop that recovers from a miss by itself (retyping a query)
   and reports the final miss through `waitOrFail`.
 - Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,
-  comparing). Measured on CI, a transition lands within seconds or never, so a longer wait only
-  delays the failure.
+  comparing). They are sized for CI query latency (a single query was measured at ~9s on a loaded
+  simulator), not for the transition itself, and every wait returns as soon as its condition holds.
+  Never give several waits one shared deadline: a slow query then fails a step that never ran.
 - Every query (`exists`, `isHittable`, `frame`, `label`) snapshots the app's accessibility tree, and on
   a CI simulator one can take seconds. Tight polling slowed the whole suite by ~40% and timed queries
   out, so wait with one query that encodes the condition (a predicate on the query, like
   `AsyncOperation`'s loaded-or-error match) rather than polling several properties in a loop.
+- iOS drops system notification banners onto the simulator whenever it likes (on CI: "Ready for Apple
+  Intelligence"). `SystemBanners` swipes them away before every helper tap and every screenshot; a
+  journey that taps outside the helpers must call it too.
 - No `Thread.sleep` in a journey, no bare `.exists` to choose a branch before the screen has settled,
   and no coordinate taps near a screen edge (the home indicator swallows them).
 

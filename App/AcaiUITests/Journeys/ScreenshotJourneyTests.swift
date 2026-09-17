@@ -31,6 +31,9 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
         audit.assertAccessible(diagram.undoButton, name: "Undo button")
         audit.assertAccessible(diagram.redoButton, name: "Redo button")
+        // The canvas centres its content once, against the viewport it has at that moment, and hiding
+        // the status bar can land either side of it; fitting re-lays out against the final viewport.
+        diagram.tapFitToView()
         validateScreenshot("ClassDiagram", state: "populated")
 
         // `.firstMatch`: unlike `.tap()`, `.doubleTap()` requires resolving to a single element,

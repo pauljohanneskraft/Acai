@@ -282,6 +282,12 @@ jobs:
           path: App/AcaiUITests/__RecordedSnapshots__/${{ matrix.platform }}/
           if-no-files-found: warn
 
+      # The runner's "Complete job" waits for orphaned processes, and has hung past the job timeout
+      # after every step had finished; leave no simulator running behind.
+      - name: Shut down simulators
+        if: always()
+        run: xcrun simctl shutdown all || true
+
   ui-test-macos:
     name: UI Test macOS
     runs-on: macos-26

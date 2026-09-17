@@ -46,7 +46,14 @@ class UIJourneyTestCase: XCTestCase {
                 .appendingPathComponent("__Snapshots__"),
             maxChangedFraction: maxChangedFraction
         )
-        let screenshot = app.screenshotAfterAnimationsIdle()
+        let banners = SystemBanners()
+        banners.dismiss()
+        var screenshot = app.screenshotAfterAnimationsIdle()
+        // A banner can also arrive while the capture waits for animations to settle.
+        if banners.isShowing {
+            banners.dismiss()
+            screenshot = app.screenshotAfterAnimationsIdle()
+        }
         if let failure = comparator.validate(viewType: viewType, state: state, screenshot: screenshot, testCase: self) {
             screenshotFailures.append((failure, file, line))
         }
