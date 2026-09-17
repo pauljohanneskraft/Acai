@@ -9,5 +9,6 @@ final class HotspotScreen: DiagramScreenBase {
         app.staticTexts[fileName]
     }
 
-    var loadingIndicator: XCUIElement { app.staticTexts["Walking commit history…"] }
+    var loadingState: XCUIElement { app.descendants(matching: .any)["hotspot.loading"].firstMatch }
+    var noGitHistoryState: XCUIElement { app.descendants(matching: .any)["hotspot.noGitHistory"].firstMatch }
 }

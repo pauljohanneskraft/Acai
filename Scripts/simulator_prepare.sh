@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
-# Boots the given iOS Simulator (if needed) and pins its status bar (time, battery, signal) to
-# fixed values, so screenshot goldens don't churn on the wall-clock digits alone.
+# Boots the given iOS Simulator and puts it into the state the UI tests assume, so nothing about a
+# fresh runner's simulator (first-launch costs, one-time system overlays) leaks into the first test.
 #
-# `simctl status_bar override` is the only way to pin the status bar — `Process`/`NSTask` isn't
-# available on iOS at all, so this can't be called from inside the Swift UI test code itself and
-# instead runs as a normal step before `xcodebuild test`.
+# The status bar needs no pinning: the app hides it whenever it runs under a UI-test fixture.
 #
-# Known limitation: `--time` only pins the clock, not the date (confirmed via `simctl status_bar
-# <udid> list`, which never shows a date field regardless of input format). Only iPad's landscape
-# status bar shows a date at all, so this is a narrow residual source of golden churn.
-#
-# `simctl` converts `--time` from UTC to the *host Mac's* local timezone for display — not the
-# simulator's, and not affected by the invoking process's `TZ` env var. A fixed UTC string would
-# therefore display differently per host timezone, so instead we compute the UTC instant
-# corresponding to "today at 9:41 local time" and pass that.
-#
-# Usage: Scripts/simulator_prepare.sh <DEVICE>
-#   DEVICE  simulator name, e.g. "iPhone 17" or "iPad (A16)"
+# Usage: Scripts/simulator_prepare.sh <DEVICE> [APP_PATH]
+#   DEVICE    simulator name, e.g. "iPhone 17" or "iPad (A16)"
+#   APP_PATH  optional built Acai.app to install and launch once before the tests. On a cold CI
+#             simulator the first launch took long enough to time out the first test ("Failed to
+#             launch", "Timed out waiting for confirmation of orientation change").
 set -euo pipefail
 
-DEVICE="${1:?usage: Scripts/simulator_prepare.sh <DEVICE>}"
+DEVICE="${1:?usage: Scripts/simulator_prepare.sh <DEVICE> [APP_PATH]}"
+APP_PATH="${2:-}"
+BUNDLE_ID="de.kraftsoftware.Acai"
 
-# Device names can contain parens themselves (e.g. "iPad (A16)"), so match everything before the
-# fixed ` (UDID) (STATE)` suffix rather than splitting per paren group. `DEVICE_ENV` is exported
-# (not interpolated into the pattern) so parens in the name are literal, not regex metacharacters.
+# Device names can contain parens (e.g. "iPad (A16)"), so match everything before the fixed
+# ` (UDID) (STATE)` suffix. `DEVICE_ENV` is exported rather than interpolated so parens stay literal.
 export DEVICE_ENV="$DEVICE"
 UDID=$(xcrun simctl list devices available | perl -ne '
     if (/^\s*(.+) \(([0-9A-Fa-f-]{36})\) \([A-Za-z]+\)\s*$/) {
@@ -36,28 +29,21 @@ if [ -z "$UDID" ]; then
     exit 1
 fi
 
-echo "▸ Booting $DEVICE ($UDID) if needed and pinning its status bar"
+echo "▸ Booting $DEVICE ($UDID) if needed"
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
-# The keyboard's one-time "Slide to Type" tutorial overlay (real device and simulator alike) only
-# renders the *first* time any keyboard appears on it — whichever run happens to be that first use
-# gets it baked into its screenshot goldens, and no later run can reproduce it on demand. Suppressing
-# it here, before any test touches a text field, keeps every recording deterministic.
+# The keyboard's one-time "Slide to Type" overlay only renders the first time any keyboard appears,
+# so whichever test happened to type first would capture it.
 xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences \
     DidShowContinuousPathIntroduction -bool true
 
-# Two-step local→epoch→UTC conversion: passing `-u` alongside `-j -f` would make BSD `date` treat
-# the *input* string as UTC too, silently skipping the timezone conversion. Routing through an
-# epoch (timezone-agnostic by construction) avoids that.
-TODAY_LOCAL_0941_EPOCH=$(date -j -f "%Y-%m-%d %H:%M:%S" "$(date +%Y-%m-%d) 09:41:00" "+%s")
-PINNED_TIME=$(date -u -r "$TODAY_LOCAL_0941_EPOCH" "+%Y-%m-%dT%H:%M:%S.000Z")
+if [ -n "$APP_PATH" ]; then
+    echo "▸ Warming up $BUNDLE_ID"
+    xcrun simctl install "$UDID" "$APP_PATH"
+    xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null
+    sleep 10
+    xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+fi
 
-# `simctl` rejects an ISO date-time with no fractional seconds ("Invalid, non-ISO date/time
-# string") but accepts one with milliseconds included.
-xcrun simctl status_bar "$UDID" override \
-    --time "$PINNED_TIME" \
-    --dataNetwork wifi --wifiMode active --wifiBars 3 \
-    --batteryState charged --batteryLevel 100
-
-echo "✓ $DEVICE ($UDID) status bar pinned"
+echo "✓ $DEVICE ($UDID) prepared"

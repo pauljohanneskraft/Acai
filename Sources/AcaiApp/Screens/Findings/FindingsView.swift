@@ -1,4 +1,5 @@
 import SwiftUI
+import AcaiQuality
 
 /// The project-level Findings view: every quality violation, dead-code candidate, and
 /// health-check parse diagnostic across every codebase in the project, aggregated into one
@@ -133,7 +134,8 @@ struct FindingsView: View {
                         // `nil` while the baseline is still loading — hides the action rather than
                         // risking a suppress/un-suppress tap racing the in-flight load and having
                         // its result silently overwritten once that load completes.
-                        onToggleSuppressed: isLoadingSuppression ? nil : { toggleSuppressed(finding) }
+                        onToggleSuppressed: isLoadingSuppression ? nil : { toggleSuppressed(finding) },
+                        onOpenCycle: { openCycle(finding) }
                     )
                     .listRowSeparator(.hidden)
                 }
@@ -245,6 +247,17 @@ struct FindingsView: View {
             FindingsSuppressionStore(baseDir: baseDir).load(projectID: projectID)
         }.value
         isLoadingSuppression = false
+    }
+
+    /// Opens a `cycle`-kind finding as a class/package diagram scoped to exactly its members, the
+    /// same action `ViolationRowView` offers on the Quality Check section's own cycle rows.
+    private func openCycle(_ finding: Finding) {
+        guard let cycle = finding.cycle, let scope = CycleFinder.Scope(rawValue: cycle.scope) else { return }
+        if let id = model.diagrams.openCycle(
+            to: projectID, codebaseID: finding.codebaseID, scope: scope, members: cycle.members
+        ) {
+            model.open(.generatedDiagram(id))
+        }
     }
 
     private func toggleSuppressed(_ finding: Finding) {

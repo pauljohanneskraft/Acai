@@ -2,12 +2,17 @@ import Testing
 import Foundation
 import CoreGraphics
 import SwiftUI
+import AcaiPNGComparison
 @testable import AcaiRender
 @testable import AcaiCore
 @testable import AcaiDiff
 
+/// Compared perceptually, like every render snapshot: two renders of the same view under a loaded,
+/// parallel test run are not bit-identical, so byte or exact-pixel equality fails intermittently.
+/// `badgeOverrideChangesTheRenderedPixels` proves the same comparison still sees a badge.
 @Suite("Class diagram delta badge PNG export")
 struct ClassDeltaBadgeExportTests {
+    private let comparison = PNGGoldenComparison()
 
     private func laidOutSingleNode() -> LaidOutDiagram {
         let type = TypeDeclaration(
@@ -35,9 +40,10 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        #expect(!withoutBadge.isEmpty)
-        #expect(!withBadge.isEmpty)
-        #expect(withoutBadge != withBadge)
+        guard case .drifted = comparison.compare(committed: withoutBadge, rendered: withBadge) else {
+            Issue.record("the badge should render as a visible difference from the unbadged node")
+            return
+        }
     }
 
     @Test @MainActor func unchangedBadgeStatusRendersLikeNoBadge() throws {
@@ -54,6 +60,6 @@ struct ClassDeltaBadgeExportTests {
             return
         }
 
-        #expect(withoutBadge == withUnchangedBadge)
+        #expect(comparison.compare(committed: withoutBadge, rendered: withUnchangedBadge) == .match)
     }
 }

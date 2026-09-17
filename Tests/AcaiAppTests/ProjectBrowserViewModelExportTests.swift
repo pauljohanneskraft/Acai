@@ -40,13 +40,14 @@ struct ProjectBrowserViewModelExportTests {
         #expect(dot == "digraph Acai { }")
     }
 
-    @Test func savingAsFreeformDiagramAddsItToTheProjectAndSelectsIt() throws {
+    @Test func savingAsFreeformDiagramAddsItToTheProjectAndSelectsIt() async throws {
         let (model, projectID, codebaseID) = makeModel()
         let diagramID = try #require(
             model.diagrams.add(to: projectID, codebaseID: codebaseID, content: .packageDiagram))
         let before = model.store.freeformDiagrams.count
 
         model.saveAsFreeformDiagram(id: diagramID, positions: [:], scale: 1, offset: .zero)
+        await model.pendingOpen?.value
 
         #expect(model.store.freeformDiagrams.count == before + 1)
         guard case .freeformDiagram(let newID) = model.selection else {

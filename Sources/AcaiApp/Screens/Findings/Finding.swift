@@ -112,4 +112,21 @@ struct Finding: Identifiable, Hashable {
     /// The list's secondary sort key: the codebase's own last-indexed timestamp, the freshest
     /// recency signal available without git-blame authorship.
     let indexedAt: Date?
+    /// Present only for a `cycle`-kind violation finding — lets `FindingRow` offer the same "open
+    /// as diagram" action `ViolationRowView` gives a cycle violation in the Quality Check section,
+    /// without needing to re-parse `title`/`message`. `nil` for every other finding. No default
+    /// value here: a stored `let` with an inline default is dropped from the synthesized
+    /// memberwise initializer entirely, so every call site passes it explicitly instead.
+    let cycle: CycleReference?
+}
+
+extension Finding {
+    /// A `cycle`-kind finding's scope and members. `scope` stays a plain
+    /// `AcaiQuality.CycleFinder.Scope.rawValue` string rather than the enum itself, mirroring how
+    /// `QualityEvaluator.cycleViolations` already encodes it into `Violation.detail["scope"]` — no
+    /// extra dependency on `AcaiQuality`'s types needed here.
+    struct CycleReference: Hashable {
+        let scope: String
+        let members: [String]
+    }
 }

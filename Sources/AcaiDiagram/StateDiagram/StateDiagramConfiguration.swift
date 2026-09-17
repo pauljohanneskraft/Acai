@@ -1,4 +1,5 @@
 import AcaiCore
+import AcaiQuality
 
 /// Configuration for value-flow state diagram generation: the variable whose
 /// statically-observable assignments define the state space.
@@ -9,11 +10,21 @@ public struct StateDiagramConfiguration: Codable, Hashable, Sendable {
     /// The analysis fails with ``StateDiagramAnalysisError/tooManyStates(count:limit:)``
     /// when the variable takes more distinct values than this.
     public var maxStates: Int
+    /// When set, only states this selector matches by name (via `Selector.matchesName(_:)` — the
+    /// only facet that applies to a state, which carries no `TypeDeclaration`) are shown, along
+    /// with transitions between two kept states; the initial pseudo-state is always exempt, since
+    /// hiding it would break every transition chain's visible starting point. `nil` (the default)
+    /// shows every state.
+    public var filter: AcaiQuality.Selector?
 
-    public init(typeName: String? = nil, variableName: String, maxStates: Int = 20) {
+    public init(
+        typeName: String? = nil, variableName: String, maxStates: Int = 20,
+        filter: AcaiQuality.Selector? = nil
+    ) {
         self.typeName = typeName
         self.variableName = variableName
         self.maxStates = maxStates
+        self.filter = filter
     }
 }
 
