@@ -11,6 +11,11 @@ final class GuidedRouteJourneyTests: UIJourneyTestCase {
         codebaseDetail.guidedRouteCard.waitOrFail("the guided route card after a first index", timeout: .uiWork)
         XCTAssertFalse(codebaseDetail.guidedRouteButton.exists, "the header button is redundant while the card shows")
 
+        // Only the card: the rest of the screen shows the per-run "Last indexed" timestamp.
+        codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteStop(kind: "mostComplex"), "the last guided route stop")
+        codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteHideButton, "the guided route Hide button")
+        validateScreenshot("GuidedRouteCard", state: "offered", of: codebaseDetail.guidedRouteCard)
+
         let diagram = codebaseDetail.openGuidedRouteStop(kind: "mostDependedUpon", as: ClassDiagramScreen.self)
         diagram.typeNode(named: "Helper").waitOrFail("the focused Helper type node", timeout: .uiWork)
         diagram.typeNode(named: "Derived").waitOrFail("Helper's dependent Derived")
