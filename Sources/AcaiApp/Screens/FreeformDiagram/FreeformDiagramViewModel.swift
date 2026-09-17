@@ -142,7 +142,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         guard let diagramID, let browserModel else { return }
         guard let newID = browserModel.freeforms.createDiagramFromSelection(diagramID, selectedNodeIDs: selectedNodeIDs)
         else { return }
-        browserModel.selection = .freeformDiagram(newID)
+        browserModel.open(.freeformDiagram(newID))
     }
 
     func moveNode(_ nodeID: String, to position: CGPoint) {

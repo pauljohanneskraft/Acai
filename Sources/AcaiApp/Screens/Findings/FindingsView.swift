@@ -256,7 +256,7 @@ struct FindingsView: View {
         if let id = model.diagrams.openCycle(
             to: projectID, codebaseID: finding.codebaseID, scope: scope, members: cycle.members
         ) {
-            model.selection = .generatedDiagram(id)
+            model.open(.generatedDiagram(id))
         }
     }
 

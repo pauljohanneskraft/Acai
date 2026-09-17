@@ -33,7 +33,7 @@ extension ProjectBrowserViewModel {
             selection = .generatedDiagram(diagramID)
         case .create(let content):
             if let newID = diagrams.add(to: entry.projectID, codebaseID: codebaseID, content: content) {
-                selection = .generatedDiagram(newID)
+                open(.generatedDiagram(newID))
             }
         }
     }
