@@ -25,7 +25,8 @@ final class FreeformDiagramScreen: DiagramScreenBase {
 
     var cancelPlacementButton: XCUIElement { app.buttons["freeform.cancelPlacementButton"] }
 
-    func tapCanvasCenter() {
+    func tapCanvasCenter(file: StaticString = #filePath, line: UInt = #line) {
+        SystemBanners().dismiss(file: file, line: line)
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
@@ -46,7 +47,7 @@ final class FreeformDiagramScreen: DiagramScreenBase {
             tapSidebarToggle(file: file, line: line)
         }
         catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
-        tapCanvasCenter()
+        tapCanvasCenter(file: file, line: line)
     }
 
     /// `TypeNodeView` carries this identifier already (`diagram.typeNode.<name>`), same as

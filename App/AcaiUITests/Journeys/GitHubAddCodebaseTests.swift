@@ -37,7 +37,7 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
         let sheet = NewCodebaseSheetScreen(app: app)
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker)
         sheet.choose("main", from: sheet.refPicker)
-        XCTAssertTrue(sheet.cloneButton.isEnabled)
+        sheet.cloneButton.waitUntilEnabled("Clone, once a repository and ref are picked")
         sheet.clone()
 
         let codebaseRow = detail.codebaseRow(named: "fixture-repo")

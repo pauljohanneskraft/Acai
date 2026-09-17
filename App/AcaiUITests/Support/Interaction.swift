@@ -73,6 +73,21 @@ extension XCUIElement {
         XCTFail("\(description) never became tappable", file: file, line: line)
     }
 
+    /// A control enabled by input it depends on (a typed token, a picked option) updates a render pass
+    /// after that input, so an instant `isEnabled` read can still see it disabled.
+    func waitUntilEnabled(
+        _ description: String, timeout: TimeInterval = .uiTransition,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        waitOrFail(description, timeout: timeout, file: file, line: line)
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if isEnabled { return }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        XCTFail("\(description) never became enabled", file: file, line: line)
+    }
+
     /// Taps exactly once. Use this for anything with a side effect (creating, deleting, toggling).
     func tapWhenReady(
         _ description: String, timeout: TimeInterval = .uiTransition,

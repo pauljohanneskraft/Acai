@@ -97,7 +97,7 @@ jobs:
           key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
           restore-keys: spm-xcode-v2-${{ runner.os }}-
 
-      # ui-test-iphone/ui-test-ipad reuse this via test-without-building instead of recompiling.
+      # The ui-test-ios matrix reuses this via test-without-building instead of recompiling.
       - name: Build for testing (UI test bundle)
         run: |
           xcodebuild build-for-testing \
@@ -205,7 +205,9 @@ jobs:
     name: UI Test ${{ matrix.platform }}
     needs: [prepare-ui-test-ios]
     runs-on: macos-26
-    timeout-minutes: 45
+    # A healthy serial iPad run has taken 43 minutes on this runner. A hung test is bounded by the
+    # per-test allowance below, so the job limit only has to leave margin for a passing suite.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

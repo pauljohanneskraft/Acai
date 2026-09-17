@@ -3,6 +3,10 @@ import XCTest
 /// The UI-test side of the app's `AsyncOperationStatusView`: every user-initiated async operation
 /// exposes `<prefix>.loading`, `<prefix>.loaded` and `<prefix>.error`. Waiting on these is the only
 /// reliable way to know background work finished — a downstream element usually exists before it did.
+///
+/// `.loaded` stays on screen after the operation completes, so a second run of the same operation on
+/// the same screen would find the first run's marker and return early. Run each operation once per
+/// screen visit; a flow that needs a second run must first leave and reopen the screen.
 @MainActor
 struct AsyncOperation {
     let app: XCUIApplication

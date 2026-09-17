@@ -7,9 +7,10 @@ extension XCUIApplication {
     /// diffs/records a golden mid-animation. Waiting for one specific element to exist only proves
     /// that element updated, not that independently-animated siblings did too — hence polling the
     /// whole frame rather than a single targeted wait. Each capture is expensive on a CI simulator —
-    /// capturing every 0.1s timed a screenshot request out — so it samples at half-second intervals.
+    /// capturing every 0.1s timed a screenshot request out — yet the interval must stay under half a
+    /// text cursor's ~1s blink cycle, or consecutive captures of a focused field alternate forever.
     func screenshotAfterAnimationsIdle(
-        pollInterval: TimeInterval = 0.5, stableSamplesRequired: Int = 2, timeout: TimeInterval = 10
+        pollInterval: TimeInterval = 0.3, stableSamplesRequired: Int = 2, timeout: TimeInterval = 10
     ) -> XCUIScreenshot {
         var latest = windows.firstMatch.screenshot()
         var previous = latest.pngRepresentation

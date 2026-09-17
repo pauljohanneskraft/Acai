@@ -18,6 +18,7 @@ final class DeleteConfirmationTests: UIJourneyTestCase {
     /// both iPad and macOS (right-click), while iPhone's compact width uses `.swipeActions`.
     private func tapDelete(on row: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         row.waitUntilReady("the seeded codebase's row", file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
         #if os(macOS)
         row.rightClick()
         // Window-scoped, not `app.descendants`: the system Edit menu's standard "Delete" item

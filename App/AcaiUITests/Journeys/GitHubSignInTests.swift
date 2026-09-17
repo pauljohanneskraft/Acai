@@ -18,7 +18,7 @@ final class GitHubSignInTests: UIJourneyTestCase {
         let github = GitHubAccountScreen(app: app)
         github.patField.tapWhenReady("the personal access token field")
         github.patField.typeText("fixture-token")
-        XCTAssertTrue(github.signInWithTokenButton.isEnabled)
+        github.signInWithTokenButton.waitUntilEnabled("Sign In with Token, once a token is entered")
         github.signInWithTokenButton.tapWhenReady("Sign In with Token")
 
         github.signedInRow.waitOrFail("the signed-in account row")

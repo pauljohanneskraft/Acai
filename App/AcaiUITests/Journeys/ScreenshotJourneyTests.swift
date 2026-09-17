@@ -40,6 +40,7 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         // but every row of text inside `TypeNodeView` carries the same identifier.
         let base = diagram.typeNode(named: "Base").firstMatch
         base.waitUntilReady("the Base type node")
+        SystemBanners().dismiss()
         base.doubleTap()
         diagram.inspectorContent.waitOrFail("the Inspector for Base")
         validateScreenshot("ClassDiagram", state: "inspectorOpen")

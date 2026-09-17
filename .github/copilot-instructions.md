@@ -16,3 +16,7 @@ For any change under `App/AcaiUITests/`, or any app change a journey drives, che
 - navigation or fixture setup copied between journeys instead of reusing a screen action or
   `Support/SeededFixture.swift`
 - selecting a just-created item directly instead of through `ProjectBrowserViewModel.open(_:)`
+- a journey waiting on a signal inside a transient presentation (menu, popover, sheet), or view state
+  that must survive an identity reset kept below that reset
+- a tap or capture outside the shared helpers that doesn't clear `SystemBanners` first
+- polling several accessibility properties in a loop instead of one query that encodes the condition

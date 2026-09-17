@@ -268,6 +268,8 @@ copy.
   sheet torn down and re-presented when its host view's identity reset) and timed out on work that
   had succeeded. If a panel must survive its host's identity resets, fix that in the app — the user
   loses the panel the same way.
+- `waitUntilEnabled` before relying on a control that input enables (a typed token, a picked option):
+  it updates a render pass after that input, so an instant `isEnabled` read races it.
 - `appears(within:)` only inside a retry loop that recovers from a miss by itself (retyping a query)
   and reports the final miss through `waitOrFail`.
 - Timeouts are `.uiTransition` (UI following an interaction) or `.uiWork` (real indexing, cloning,
@@ -297,7 +299,10 @@ in landscape. When drift appears, open the capture before touching the threshold
 **App side.** A journey can only be deterministic if the app is. Selecting something created in the
 same turn goes through `ProjectBrowserViewModel.open(_:)`; every user-initiated async operation shows
 an `AsyncOperationStatusView`; test-only behaviour hangs off `UITestFixtureResolver` and is inert in
-release builds.
+release builds. State that must survive a view's identity reset (a presented panel, "already fitted
+to the canvas") lives above that reset, as in `DeltaHostedDiagramView` — a rebuild otherwise tears
+presentations down and redoes first-appearance work against a canvas that may still be mid-layout.
+Never special-case UI tests to hide such a race: the user hits it too.
 
 **When a journey fails.** The result bundle carries a screenshot and the element tree of the failing
 moment, and the job summary lists every screenshot's drift. Reproduce a suspected intermittent
