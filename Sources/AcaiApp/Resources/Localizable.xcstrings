@@ -2374,7 +2374,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finding als ungeprüft markieren"
+            "value" : "Fund als ungeprüft markieren"
           }
         },
         "en" : {
@@ -2396,7 +2396,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finding als geprüft markieren"
+            "value" : "Fund als geprüft markieren"
           }
         },
         "en" : {
@@ -4090,7 +4090,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Findings"
+            "value" : "Funde"
           }
         },
         "en" : {
@@ -9327,6 +9327,154 @@
         }
       }
     },
+    "View.CompareGitPanel.FindingsSummary %lld %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@resolved@ · %#@new@"
+          },
+          "substitutions" : {
+            "new" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg neu"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg neu"
+                    }
+                  }
+                }
+              }
+            },
+            "resolved" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg behoben"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg behoben"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@resolved@ · %#@new@"
+          },
+          "substitutions" : {
+            "new" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg new"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg new"
+                    }
+                  }
+                }
+              }
+            },
+            "resolved" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg resolved"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg resolved"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@resolved@ · %#@new@"
+          },
+          "substitutions" : {
+            "new" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg nouveau"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg nouveaux"
+                    }
+                  }
+                }
+              }
+            },
+            "resolved" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg résolu"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg résolus"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "View.CompareGitPanel.Loaded" : {
       "localizations" : {
         "de" : {
@@ -9371,12 +9519,150 @@
         }
       }
     },
+    "View.CompareGitPanel.NetFewer %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Fund weniger"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Funde weniger"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld fewer finding"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld fewer findings"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld résultat de moins"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld résultats de moins"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.NetMore %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Fund mehr"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Funde mehr"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more finding"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more findings"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld résultat de plus"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld résultats de plus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.NetUnchanged" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Nettoänderung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No net change"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun changement net"
+          }
+        }
+      }
+    },
     "View.CompareGitPanel.NewFindings %lld" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neue Findings (%lld)"
+            "value" : "Neue Funde (%lld)"
           }
         },
         "en" : {
@@ -9411,6 +9697,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ref (un SHA, HEAD~3, …)"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.ResolvedFindings %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behobene Funde (%lld)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolved Findings (%lld)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résultats résolus (%lld)"
           }
         }
       }
@@ -10485,13 +10793,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Codebase ist nicht indiziert — neu indizieren, um ihre Findings einzubeziehen."
+                  "value" : "%lld Codebase ist nicht indiziert — neu indizieren, um ihre Funde einzubeziehen."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Codebases sind nicht indiziert — neu indizieren, um ihre Findings einzubeziehen."
+                  "value" : "%lld Codebases sind nicht indiziert — neu indizieren, um ihre Funde einzubeziehen."
                 }
               }
             }
@@ -10562,7 +10870,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Findings"
+            "value" : "Funde"
           }
         },
         "en" : {
@@ -10584,7 +10892,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Codebase in diesem Projekt wurde indiziert. Indiziere eine Codebase neu, um hier ihre Findings zu sehen."
+            "value" : "Noch keine Codebase in diesem Projekt wurde indiziert. Indiziere eine Codebase neu, um hier ihre Funde zu sehen."
           }
         },
         "en" : {
@@ -10606,7 +10914,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Projekt hat noch keine Codebases. Füge eine hinzu, um hier ihre Findings zu sehen."
+            "value" : "Dieses Projekt hat noch keine Codebases. Füge eine hinzu, um hier ihre Funde zu sehen."
           }
         },
         "en" : {
@@ -10628,7 +10936,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Findings — jede indizierte Codebase in diesem Projekt ist sauber."
+            "value" : "Keine Funde — jede indizierte Codebase in diesem Projekt ist sauber."
           }
         },
         "en" : {
@@ -10650,7 +10958,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Findings entsprechen den aktuellen Filtern."
+            "value" : "Keine Funde entsprechen den aktuellen Filtern."
           }
         },
         "en" : {
@@ -16767,13 +17075,13 @@
                   "one" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Finding"
+                      "value" : "%arg Fund"
                     }
                   },
                   "other" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Findings"
+                      "value" : "%arg Funde"
                     }
                   }
                 }
@@ -17127,13 +17435,13 @@
                   "one" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Finding"
+                      "value" : "%arg Fund"
                     }
                   },
                   "other" : {
                     "stringUnit" : {
                       "state" : "translated",
-                      "value" : "%arg Findings"
+                      "value" : "%arg Funde"
                     }
                   }
                 }
