@@ -50,8 +50,6 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         try XCTSkipUnless(SnapshotPlatform().usesCompactLayout, "only compact width hides these actions behind \"+\"")
         let detail = openSeededProject()
         detail.openAddMenu()
-        // iOS's `Menu` renders through a translucent material that doesn't converge to identical bytes
-        // between recordings of the same state.
-        validateScreenshot("ProjectDetail", state: "addMenuOpen", maxChangedFraction: 7.0e-3)
+        validateScreenshot("ProjectDetail", state: "addMenuOpen")
     }
 }
