@@ -161,56 +161,8 @@ extension ProjectCodebaseEditor {
 
     func reindex(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
-        let wasFirstIndex = !codebase.hasArtifact
-        let path = codebase.directoryPath
-        let bookmark = codebase.securityScopedBookmark
-        let fileFilter = codebase.fileFilter
-        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
-        let store = store
         do {
-            // `refreshedBookmark` is populated (and only read) inside this single detached
-            // closure's own synchronous execution, then handed back through the return value —
-            // never captured mutably across the concurrency boundary.
-            //
-            // Registered with `activityCenter` so this shows up in the Activity indicator and flips
-            // the codebase row's checkmark to a spinner for as long as it runs. `Task.detached`
-            // doesn't inherit cancellation from its parent, so the detached parse is explicitly
-            // cancelled via `withTaskCancellationHandler` when the wrapping `run` task is cancelled
-            // — `AnalysisService.parseFiles` then observes it between files (`Task.checkCancellation`)
-            // and the parse actually stops, rather than merely having its result discarded.
-            //
-            // The artifact is saved to disk (awaited) *inside* this closure, before `run` returns —
-            // otherwise `isBusy`/the row's spinner would flip to "done" before the write lands.
-            let reindexResult = try await store.activityCenter.run(
-                title: .app("Activity.Indexing \(codebase.name)"),
-                kind: .reindex, subject: .codebase(codebaseID)
-            ) {
-                let detached = Task.detached(priority: .userInitiated) {
-                    var refreshed: ScopedResourceAccess.Refreshed?
-                    let access = ScopedResourceAccess(path: path, bookmark: bookmark)
-                    let (artifact, fingerprint) = try access.withResolvedURL(
-                        onRefresh: { refreshed = $0 },
-                        { url in
-                            let artifact = try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter)
-                            let fingerprint = CodebaseFreshnessChecker(directoryPath: url.path).currentFingerprint()
-                            return (artifact, fingerprint)
-                        }
-                    )
-                    return (artifact, fingerprint, refreshed)
-                }
-                let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
-                    try await detached.value
-                } onCancel: {
-                    detached.cancel()
-                }
-                try await store.saveArtifactAndWait(artifact, for: codebaseID)
-                return (artifact, fingerprint, refreshed)
-            }
-            // Cancelled before finishing: don't apply a result we discarded.
-            guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
-            applyReindexResult(
-                codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed,
-                wasFirstIndex: wasFirstIndex)
+            _ = try await reindexOutcome(codebaseID: codebaseID)
         } catch {
             // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
             // folder of the user's choosing — only a codebase they picked themselves.
@@ -219,6 +171,74 @@ extension ProjectCodebaseEditor {
                 .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
                 relocating: relocatable ? codebaseID : nil)
         }
+    }
+
+    enum ReindexOutcome: Equatable {
+        case completed
+        case cancelled
+    }
+
+    enum ReindexFailure: LocalizedError {
+        case codebaseNotFound
+
+        var errorDescription: String? {
+            String(localized: .app("Error.ReindexFailure.CodebaseNotFound"))
+        }
+    }
+
+    /// Reindexes without reporting, for a caller that surfaces the failure itself.
+    func reindexOutcome(codebaseID: UUID) async throws -> ReindexOutcome {
+        guard let codebase = codebase(for: codebaseID) else { throw ReindexFailure.codebaseNotFound }
+        let wasFirstIndex = !codebase.hasArtifact
+        let path = codebase.directoryPath
+        let bookmark = codebase.securityScopedBookmark
+        let fileFilter = codebase.fileFilter
+        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
+        let store = store
+        // `refreshedBookmark` is populated (and only read) inside this single detached
+        // closure's own synchronous execution, then handed back through the return value —
+        // never captured mutably across the concurrency boundary.
+        //
+        // Registered with `activityCenter` so this shows up in the Activity indicator and flips
+        // the codebase row's checkmark to a spinner for as long as it runs. `Task.detached`
+        // doesn't inherit cancellation from its parent, so the detached parse is explicitly
+        // cancelled via `withTaskCancellationHandler` when the wrapping `run` task is cancelled
+        // — `AnalysisService.parseFiles` then observes it between files (`Task.checkCancellation`)
+        // and the parse actually stops, rather than merely having its result discarded.
+        //
+        // The artifact is saved to disk (awaited) *inside* this closure, before `run` returns —
+        // otherwise `isBusy`/the row's spinner would flip to "done" before the write lands.
+        let reindexResult = try await store.activityCenter.run(
+            title: .app("Activity.Indexing \(codebase.name)"),
+            kind: .reindex, subject: .codebase(codebaseID)
+        ) {
+            let detached = Task.detached(priority: .userInitiated) {
+                var refreshed: ScopedResourceAccess.Refreshed?
+                let access = ScopedResourceAccess(path: path, bookmark: bookmark)
+                let (artifact, fingerprint) = try access.withResolvedURL(
+                    onRefresh: { refreshed = $0 },
+                    { url in
+                        let artifact = try analyzer.enrichedArtifact(at: url, fileFilter: fileFilter)
+                        let fingerprint = CodebaseFreshnessChecker(directoryPath: url.path).currentFingerprint()
+                        return (artifact, fingerprint)
+                    }
+                )
+                return (artifact, fingerprint, refreshed)
+            }
+            let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
+                try await detached.value
+            } onCancel: {
+                detached.cancel()
+            }
+            try await store.saveArtifactAndWait(artifact, for: codebaseID)
+            return (artifact, fingerprint, refreshed)
+        }
+        // Cancelled before finishing: don't apply a result we discarded.
+        guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return .cancelled }
+        applyReindexResult(
+            codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed,
+            wasFirstIndex: wasFirstIndex)
+        return .completed
     }
 
     /// Re-resolves indices after the suspension above — the user may have mutated the

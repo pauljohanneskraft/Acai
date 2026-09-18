@@ -49,6 +49,12 @@ extension KeyboardShortcutReference {
             ])
         ]
         #if os(macOS)
+        groups.append(Group(id: "windows", title: .app("KeyboardShortcutReference.Windows"), shortcuts: [
+            KeyboardShortcutReference(
+                symbol: "⌥⌘O", name: .app("KeyboardShortcutReference.OpenInNewWindow"), context: "windows"),
+            KeyboardShortcutReference(
+                symbol: "⌥⌘C", name: .app("KeyboardShortcutReference.CopyLink"), context: "windows")
+        ]))
         groups.append(Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [
             KeyboardShortcutReference(
                 symbol: "⌘?", name: .app("KeyboardShortcutReference.KeyboardShortcuts"), context: "help")

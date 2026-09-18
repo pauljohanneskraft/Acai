@@ -63,6 +63,20 @@ final class ProjectDetailScreen {
         app.descendants(matching: .any)["projectDetail.freeformDiagramRow.\(id)"]
     }
 
+    #if os(macOS)
+    /// Waits for the diagram to show in the window it opened, which becomes the frontmost one.
+    func openFreeformDiagramInNewWindow(id: String, file: StaticString = #filePath, line: UInt = #line) {
+        let row = freeformDiagramRow(id: id)
+        row.waitUntilReady("the freeform diagram's row", file: file, line: line)
+        row.rightClick()
+        // Window-scoped: the File menu's own "Open in New Window" item also matches an unscoped query.
+        app.windows.firstMatch.descendants(matching: .any)["Open in New Window"]
+            .tapWhenReady("the row's Open in New Window action", file: file, line: line)
+        app.windows.firstMatch.descendants(matching: .any)["diagram.checkpointsButton"]
+            .waitOrFail("the freeform diagram in its own window", file: file, line: line)
+    }
+    #endif
+
     var deleteProjectButton: XCUIElement { app.buttons["projectDetail.deleteProjectButton"] }
     var deleteProjectConfirmButton: XCUIElement {
         app.buttons.matching(identifier: "projectDetail.project.delete.confirmButton").firstMatch

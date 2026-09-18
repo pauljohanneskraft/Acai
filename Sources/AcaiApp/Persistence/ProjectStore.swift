@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import AcaiGit
 import AcaiQuality
@@ -17,6 +18,9 @@ import Yams
 /// ```
 @MainActor
 final class ProjectStore: ObservableObject {
+    /// The one store every window and system action of the running app shares.
+    static let app = ProjectStore()
+
     @Published var projects: [Project] = []
     @Published var generatedDiagrams: [UUID: GeneratedDiagram] = [:]
     @Published var freeformDiagrams: [UUID: FreeformDiagram] = [:]
@@ -65,6 +69,8 @@ final class ProjectStore: ObservableObject {
     /// against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
     let activityCenter = ActivityCenter()
+    /// Codebases whose cached analysis every window must drop.
+    let analysisInvalidations = PassthroughSubject<UUID, Never>()
     private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {

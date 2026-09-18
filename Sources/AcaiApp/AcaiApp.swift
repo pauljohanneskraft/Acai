@@ -10,16 +10,19 @@ public struct AcaiRootScene: Scene {
     // *separate* `Scene` a view-owned `@StateObject` on `ProjectBrowserView` can't reach) — see
     // each type's own doc comment for why it has to live here rather than lower in the hierarchy.
     @StateObject private var accountStore = GitHubAccountStore()
-    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var handoffPresenter = HandoffContinuationPresenter()
+    @StateObject private var store = ProjectStore.app
+    @StateObject private var browserWindows = BrowserWindows()
 
     public init() {}
 
     public var body: some Scene {
         WindowGroup {
-            ProjectBrowserView()
+            ProjectBrowserView(store: store)
                 .modifier(DiagramThemeProvider())
+                // Links open in an existing main window rather than a new one each.
+                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
                 #if os(iOS)
                 // The clock, date and battery would otherwise differ in every UI-test screenshot.
@@ -47,16 +50,28 @@ public struct AcaiRootScene: Scene {
             #if os(macOS)
             KeyboardShortcutCommands()
             QuickOpenCommands()
+            BrowserWindowCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`QuickOpenCommands` needs `quickOpenPresenter`).
+        // read these via `@EnvironmentObject`.
         .environmentObject(accountStore)
-        .environmentObject(quickOpenPresenter)
         .environmentObject(settingsPresenter)
         .environmentObject(handoffPresenter)
+        .environmentObject(browserWindows)
         #if os(macOS)
+        WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
+            ProjectBrowserView(store: store, windowAddress: $address)
+                .modifier(DiagramThemeProvider())
+                .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+                .handlesExternalEvents(preferring: [], allowing: [])
+        }
+        .handlesExternalEvents(matching: [])
+        .environmentObject(accountStore)
+        .environmentObject(settingsPresenter)
+        .environmentObject(handoffPresenter)
+        .environmentObject(browserWindows)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()
         }

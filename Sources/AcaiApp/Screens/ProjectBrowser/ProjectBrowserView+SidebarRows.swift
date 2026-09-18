@@ -18,6 +18,8 @@ extension ProjectBrowserView {
 
     @ViewBuilder
     fileprivate func projectContextMenu(project: Project) -> some View {
+        addressMenuItems(for: .project(project.id), idPrefix: "sidebar.project.\(project.id)")
+        Divider()
         Button(role: .destructive) {
             projectPendingDeletion = project
         } label: {
@@ -87,6 +89,8 @@ extension ProjectBrowserView {
                 .help(codebase.name)
                 .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
                 .contextMenu {
+                    addressMenuItems(for: .codebase(codebase.id), idPrefix: "sidebar.codebase.\(codebase.id)")
+                    Divider()
                     Button {
                         Task { await model.editing.reindex(codebaseID: codebase.id) }
                     } label: {
@@ -143,6 +147,9 @@ extension ProjectBrowserView {
                     .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
                     .help(diagram.name)
                     .contextMenu {
+                        addressMenuItems(
+                            for: .generatedDiagram(diagram.id), idPrefix: "sidebar.generatedDiagram.\(diagram.id)")
+                        Divider()
                         Button {
                             renamingText = diagram.name
                             renamingDiagramID = diagram.id
@@ -196,6 +203,9 @@ extension ProjectBrowserView {
                     .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
                     .help(diagram.name)
                     .contextMenu {
+                        addressMenuItems(
+                            for: .freeformDiagram(diagram.id), idPrefix: "sidebar.freeformDiagram.\(diagram.id)")
+                        Divider()
                         Button {
                             renamingText = diagram.name
                             renamingDiagramID = diagram.id

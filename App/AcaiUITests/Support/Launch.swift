@@ -59,6 +59,10 @@ extension XCUIApplication {
         if let language {
             launchArguments += ["-AppleLanguages", "(\(language))", "-AppleLocale", language]
         }
+        #if os(macOS)
+        // A window a previous journey opened would otherwise be restored into this one.
+        launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
+        #endif
         assertLaunchArgumentsAreDefaults(file: file, line: line)
         launch()
         #if os(macOS)
