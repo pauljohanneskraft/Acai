@@ -74,22 +74,33 @@ final class CodebaseDetailScreen {
     }
 
     /// The card sits below the diagram grid, so it can start past the bottom of the pane. Checks the
-    /// frame rather than `isHittable`, which on macOS stays `true` for a partly clipped element.
+    /// frame rather than `isHittable`, which on macOS stays `true` for a partly clipped element, and
+    /// scrolls in short steps so the element's top never overshoots under the navigation bar.
     func scrollIntoView(
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         element.waitOrFail(description, file: file, line: line)
         // Not `firstMatch`: on macOS that is the sidebar's list.
         let scrollView = app.scrollViews.containing(.any, identifier: "guidedRoute.card").firstMatch
-        for _ in 0..<8 where element.frame.maxY > scrollView.frame.maxY {
+        for _ in 0..<12 where element.frame.maxY > scrollView.frame.maxY {
             #if os(macOS)
             scrollView.scroll(byDeltaX: 0, deltaY: -60)
             #else
-            scrollView.swipeUp()
+            // A slow, held drag instead of `swipeUp()`, whose fling travels a varying distance.
+            scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)).press(
+                forDuration: 0.1,
+                thenDragTo: scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+                withVelocity: .slow, thenHoldForDuration: 0.1
+            )
             #endif
         }
-        XCTAssertLessThanOrEqual(
-            element.frame.maxY, scrollView.frame.maxY, "\(description) never scrolled fully into view",
+        let navigationBar = app.navigationBars.firstMatch
+        let visibleTop = navigationBar.exists ? navigationBar.frame.maxY : scrollView.frame.minY
+        let frame = element.frame
+        XCTAssertTrue(
+            frame.maxY <= scrollView.frame.maxY && frame.minY >= visibleTop,
+            "\(description) never scrolled fully into view (\(frame), visible from \(visibleTop) "
+                + "to \(scrollView.frame.maxY))",
             file: file, line: line
         )
     }
