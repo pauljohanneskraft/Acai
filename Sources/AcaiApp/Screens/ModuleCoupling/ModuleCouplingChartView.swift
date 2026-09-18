@@ -13,7 +13,6 @@ import AcaiCore
 /// in the ranked legend list and in each point's accessibility value.
 struct ModuleCouplingChartView: View {
     let diagram: GeneratedDiagram
-    let codebase: Codebase
     private let data: ModuleCouplingChartData
 
     @State private var showSidebar = false
@@ -21,9 +20,8 @@ struct ModuleCouplingChartView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
+    init(diagram: GeneratedDiagram, artifact: CodeArtifact) {
         self.diagram = diagram
-        self.codebase = codebase
         self.data = ModuleCouplingChartData(modules: artifact.computeMetrics().modules)
     }
 
@@ -42,9 +40,6 @@ struct ModuleCouplingChartView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbarContent }
-            .userActivity(DiagramHandoffActivity.activityType) {
-                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
-            }
     }
 
     @ViewBuilder
