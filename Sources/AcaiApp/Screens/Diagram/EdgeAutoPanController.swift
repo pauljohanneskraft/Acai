@@ -20,6 +20,9 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     var viewportSize: CGSize = .zero
 
+    /// Replaces the continuous scroll with a jump of a third of the viewport every half second.
+    var reducesMotion = false
+
     // MARK: - Output
 
     /// Called each tick with the *incremental* canvas delta for this frame.
@@ -31,12 +34,17 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     private let basePanSpeed: CGFloat = 8
 
+    private let ticksPerStep = 30
+
+    private lazy var ticksUntilStep = ticksPerStep
+
     // MARK: - Lifecycle
 
     var isRunning: Bool { timer != nil }
 
     func start() {
         guard timer == nil else { return }
+        ticksUntilStep = ticksPerStep
         let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             self?.tick()
         }
@@ -55,7 +63,7 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     // MARK: - Tick
 
-    private func tick() {
+    func tick() {
         let screenX = canvasLocation.x * scale + offset.x
         let screenY = canvasLocation.y * scale + offset.y
 
@@ -82,7 +90,18 @@ final class EdgeAutoPanController: @unchecked Sendable {
             dy = -basePanSpeed * (depth / edgeMargin)
         }
 
-        guard dx != 0 || dy != 0 else { return }
+        guard dx != 0 || dy != 0 else {
+            ticksUntilStep = ticksPerStep
+            return
+        }
+
+        if reducesMotion {
+            ticksUntilStep -= 1
+            guard ticksUntilStep <= 0 else { return }
+            ticksUntilStep = ticksPerStep
+            dx = dx == 0 ? 0 : (dx > 0 ? w : -w) / 3
+            dy = dy == 0 ? 0 : (dy > 0 ? h : -h) / 3
+        }
 
         // Keep the internal offset in sync so the next tick's screen conversion stays accurate.
         offset.x += dx

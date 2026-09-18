@@ -76,12 +76,12 @@ struct SequenceConfigSheet: View {
                     switch phase {
                     case .entryPoint:
                         Button(.app("View.SequenceConfigSheet.Next"), action: advance)
-                            .keyboardShortcut(.defaultAction)
+                            .keyboardShortcut(.confirmDialog)
                             .disabled(entryMethodName.isEmpty)
                             .accessibilityIdentifier("sequenceConfig.nextButton")
                     case .resolveInterfaces:
                         Button(.app("View.SequenceConfigSheet.Create"), action: create)
-                            .keyboardShortcut(.defaultAction)
+                            .keyboardShortcut(.confirmDialog)
                             .accessibilityIdentifier("sequenceConfig.createButton")
                     }
                 }

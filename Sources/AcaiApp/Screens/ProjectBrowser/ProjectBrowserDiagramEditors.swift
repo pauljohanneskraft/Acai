@@ -139,7 +139,6 @@ struct GeneratedDiagramEditor {
             store.projects[i].generatedDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteGeneratedDiagramFile(diagramID)
-        store.removeFromRecentlyViewed(.generatedDiagram(diagramID))
         persist()
     }
 
@@ -227,14 +226,9 @@ struct ProjectCodebaseEditor {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return }
         for did in project.generatedDiagramIDs {
             store.deleteGeneratedDiagramFile(did)
-            store.removeFromRecentlyViewed(.generatedDiagram(did))
         }
         for did in project.freeformDiagramIDs {
             store.deleteFreeformDiagramFile(did)
-            store.removeFromRecentlyViewed(.freeformDiagram(did))
-        }
-        for codebase in project.codebases {
-            store.removeFromRecentlyViewed(.codebase(codebase.id))
         }
         store.deleteProjectFile(projectID)
         store.projects.removeAll { $0.id == projectID }
@@ -297,7 +291,6 @@ struct ProjectCodebaseEditor {
             for did in toRemove {
                 store.projects[i].generatedDiagramIDs.removeAll { $0 == did }
                 store.deleteGeneratedDiagramFile(did)
-                store.removeFromRecentlyViewed(.generatedDiagram(did))
             }
         }
         store.deleteArtifactFile(for: codebaseID)
@@ -313,7 +306,6 @@ struct ProjectCodebaseEditor {
         } else {
             store.deleteGitHubClone(for: codebaseID)
         }
-        store.removeFromRecentlyViewed(.codebase(codebaseID))
         persist()
         triggerSpotlightReindex()
     }
@@ -465,7 +457,6 @@ struct FreeformDiagramEditor {
             store.projects[i].freeformDiagramIDs.removeAll { $0 == diagramID }
         }
         store.deleteFreeformDiagramFile(diagramID)
-        store.removeFromRecentlyViewed(.freeformDiagram(diagramID))
         persist()
     }
 

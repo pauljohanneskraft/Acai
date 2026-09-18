@@ -47,8 +47,6 @@ extension ProjectStore {
             projects = []
             generatedDiagrams = [:]
             freeformDiagrams = [:]
-            recentlyViewed = RecentlyViewed()
-            saveRecentlyViewed()
         }
 
         // Codebases carry indexing state pointing at an artifact file `exportAllData()`

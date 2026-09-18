@@ -110,7 +110,7 @@ struct StateConfigSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(.app("View.StateConfigSheet.Create"), action: create)
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(.confirmDialog)
                         .disabled(scope == nil || variableName.isEmpty)
                         .accessibilityIdentifier("stateConfig.createButton")
                 }

@@ -83,7 +83,7 @@ struct DiagramSearchBar: View {
             .help(.app("View.DiagramSearchBar.PreviousMatch"))
             .accessibilityLabel(.app("View.DiagramSearchBar.PreviousMatch"))
             .accessibilityIdentifier("diagram.search.previousButton")
-            .keyboardShortcut("g", modifiers: [.command, .shift])
+            .keyboardShortcut(.previousMatch)
 
             Button(action: onStepForward) {
                 Image(systemName: "chevron.down")
@@ -91,7 +91,7 @@ struct DiagramSearchBar: View {
             .help(.app("View.DiagramSearchBar.NextMatch"))
             .accessibilityLabel(.app("View.DiagramSearchBar.NextMatch"))
             .accessibilityIdentifier("diagram.search.nextButton")
-            .keyboardShortcut("g", modifiers: .command)
+            .keyboardShortcut(.nextMatch)
         }
         .buttonStyle(.plain)
         .disabled(matchCount == 0)
@@ -108,6 +108,6 @@ struct DiagramSearchBar: View {
         .help(.app("View.DiagramSearchBar.Close"))
         .accessibilityLabel(.app("View.DiagramSearchBar.Close"))
         .accessibilityIdentifier("diagram.search.dismissButton")
-        .keyboardShortcut(.cancelAction)
+        .keyboardShortcut(.closeFind)
     }
 }

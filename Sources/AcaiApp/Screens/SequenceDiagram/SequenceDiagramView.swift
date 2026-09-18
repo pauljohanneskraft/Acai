@@ -169,7 +169,7 @@ struct SequenceDiagramView: View {
                 Label(.app("View.SequenceDiagramView.FitView"), systemImage: "rectangle.dashed")
             }
             .help(.app("View.SequenceDiagramView.FitDiagramVisibleCanvas"))
-            .keyboardShortcut("0", modifiers: .command)
+            .keyboardShortcut(.fitToView)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()

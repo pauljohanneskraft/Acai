@@ -59,7 +59,7 @@ private struct KeyboardShortcutsHelpMenuButton: View {
         Button(.app("View.KeyboardShortcutsHelpMenuButton.KeyboardShortcuts")) {
             openWindow(id: KeyboardShortcutCommands.windowID)
         }
-        .keyboardShortcut("/", modifiers: [.command, .shift])
+        .keyboardShortcut(.keyboardShortcuts)
     }
 }
 #endif
