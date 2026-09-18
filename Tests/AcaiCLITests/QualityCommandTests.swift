@@ -2,6 +2,7 @@ import ArgumentParser
 import Foundation
 import Testing
 @testable import AcaiCLI
+import AcaiCore
 import AcaiQuality
 
 @Suite("CLI: quality command")
@@ -138,6 +139,61 @@ struct QualityCommandTests {
             #expect(throws: ExitCode.self) { try cmd.run() }
             let report = try String(contentsOf: outURL, encoding: .utf8)
             #expect(report.contains("forbidden-dependency"))
+        }
+    }
+
+    // MARK: - Movements
+
+    @Test func movementsWithoutBaselineIsRejected() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            let src = dir.appendingPathComponent("src", isDirectory: true)
+            try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
+            try "class A {}\n".write(to: src.appendingPathComponent("m.swift"), atomically: true, encoding: .utf8)
+            let rulesURL = dir.appendingPathComponent("rules.yml")
+            try "movements:\n  - metric: fanOut\n".write(to: rulesURL, atomically: true, encoding: .utf8)
+
+            var cmd = try parseQuality(["--source", src.path, "--language", "swift", "--rules", rulesURL.path])
+            #expect {
+                try cmd.run()
+            } throws: { error in
+                CLITestSupport.message(for: error).contains("require --baseline")
+            }
+        }
+    }
+
+    @Test func movementRegressionFailsBuild() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            let src = dir.appendingPathComponent("src", isDirectory: true)
+            try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
+            // Current: Hub depends on X and Y (fanOut 2) — worse than the baseline's 1.
+            try "class Hub { var x: X; var y: Y }\nclass X {}\nclass Y {}\n"
+                .write(to: src.appendingPathComponent("m.swift"), atomically: true, encoding: .utf8)
+
+            // Baseline built through the engine's own Codable model (not hand-typed JSON), so the
+            // fixture matches production's on-disk shape exactly: Hub depended on X only (fanOut 1).
+            let hub = TypeDeclaration(
+                id: "Hub", name: "Hub", qualifiedName: "Hub", kind: .class, accessLevel: .internal,
+                location: SourceLocation(filePath: "m.swift", line: 1, column: 1))
+            let baselineArtifact = CodeArtifact(
+                metadata: .init(sourceLanguage: CodeArtifact.SourceLanguage(rawValue: "swift")),
+                types: [hub],
+                relationships: [Relationship(kind: .dependency, source: "Hub", target: "X")])
+            let baseURL = dir.appendingPathComponent("base.json")
+            try JSONEncoder().encode(baselineArtifact).write(to: baseURL)
+
+            let rulesURL = dir.appendingPathComponent("rules.yml")
+            try "movements:\n  - target: { typeGlob: \"Hub\" }\n    metric: fanOut\n"
+                .write(to: rulesURL, atomically: true, encoding: .utf8)
+            let outURL = dir.appendingPathComponent("out.txt")
+
+            var cmd = try parseQuality([
+                "--source", src.path, "--language", "swift",
+                "--rules", rulesURL.path, "--baseline", baseURL.path, "--output", outURL.path
+            ])
+            #expect(throws: ExitCode.self) { try cmd.run() }
+            let report = try String(contentsOf: outURL, encoding: .utf8)
+            #expect(report.contains("movement"))
+            #expect(report.contains("fanOut"))
         }
     }
 
