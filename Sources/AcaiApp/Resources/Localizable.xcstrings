@@ -9679,6 +9679,50 @@
         }
       }
     },
+    "View.CompareGitPanel.ChangeRequestLabel %lld %@ %@ %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lld %2$@, erstellt von %3$@, führt %4$@ in %5$@ zusammen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lld %2$@, raised by %3$@, merges %4$@ into %5$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lld %2$@, créée par %3$@, fusionne %4$@ dans %5$@"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.ChangeRequestDetail %@ %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "von %1$@ · %2$@ → %3$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by %1$@ · %2$@ → %3$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "par %1$@ · %2$@ → %3$@"
+          }
+        }
+      }
+    },
     "View.CompareGitPanel.ChangedFiles %lld" : {
       "localizations" : {
         "de" : {
@@ -9697,6 +9741,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fichiers modifiés (%lld)"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.Custom" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzerdefiniert…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personnalisé…"
           }
         }
       }
@@ -9845,6 +9911,72 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.KindBranch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branch"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.KindChangeRequest" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Änderungsanfrage"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change request"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demande de modification"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.KindTag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
           }
         }
       }

@@ -80,17 +80,18 @@ and can export a ready-made CI invocation so the rules you tuned here gate your 
 
 ## Comparing revisions
 
-Any diagram can be compared against a **branch, tag, SHA or pull request**. Pull requests compare
-against the merge base, so a moved base branch doesn't leak unrelated changes into the delta.
+Any diagram can be compared against a **branch, tag, SHA or open change request**. Each change
+request in the picker shows its title, who raised it, and which branch merges into which. A change
+request compares against the merge base, so a moved base branch doesn't leak unrelated changes into
+the delta.
 
 The comparison side is extracted read-only — the working tree, index and `HEAD` are never touched,
 and no `git` executable is involved, so it behaves identically on iOS. Changed elements are
 colour-coded and badged; the panel also lists changed files and the findings delta.
 
-## Search and Handoff
+## Search
 
-Types, diagrams and codebases are searchable through quick-open (⌘K on macOS) and are mirrored into
-Spotlight, and Handoff lets you continue a diagram on another device.
+Types, diagrams and codebases are searchable through quick-open (⌘K on macOS).
 
 ## Links
 

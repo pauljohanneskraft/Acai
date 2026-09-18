@@ -266,6 +266,5 @@ extension ProjectCodebaseEditor {
             store.projects[pIndex].codebases[cIndex].directoryPath = refreshed.url.path
         }
         persistProject(store.projects[pIndex].id)
-        triggerSpotlightReindex()
     }
 }
