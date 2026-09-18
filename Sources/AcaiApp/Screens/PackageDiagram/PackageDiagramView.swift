@@ -65,9 +65,6 @@ struct PackageDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
-            .userActivity(DiagramHandoffActivity.activityType) {
-                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
-            }
     }
 
     /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
