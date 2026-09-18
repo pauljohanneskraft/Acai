@@ -111,11 +111,13 @@ extension ProjectBrowserView {
                 }
                 .swipeActions(edge: .trailing) {
                     if horizontalSizeClass == .compact {
-                        Button(role: .destructive) {
+                        // Not `role: .destructive`: `List` would animate the row out before the confirmation.
+                        Button {
                             codebasePendingDeletion = codebase
                         } label: {
                             Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                         }
+                        .tint(.red)
                     }
                 }
         }

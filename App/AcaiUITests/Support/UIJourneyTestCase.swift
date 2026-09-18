@@ -36,7 +36,7 @@ class UIJourneyTestCase: XCTestCase {
     /// Drift is reported at the end of the test rather than immediately, so one drifted state never
     /// prevents the states after it from being captured for `Scripts/snapshots_accept.sh`.
     func validateScreenshot(
-        _ viewType: String, state: String, maxChangedFraction: Double? = nil,
+        _ viewType: String, state: String, of element: XCUIElement? = nil, maxChangedFraction: Double? = nil,
         file: StaticString = #filePath, line: UInt = #line
     ) {
         let comparator = ScreenshotComparator(
@@ -48,11 +48,11 @@ class UIJourneyTestCase: XCTestCase {
         )
         let banners = SystemBanners()
         banners.dismiss(file: file, line: line)
-        var screenshot = app.screenshotAfterAnimationsIdle()
+        var screenshot = app.screenshotAfterAnimationsIdle(of: element)
         // A banner can also arrive while the capture waits for animations to settle.
         if banners.isShowing {
             banners.dismiss(file: file, line: line)
-            screenshot = app.screenshotAfterAnimationsIdle()
+            screenshot = app.screenshotAfterAnimationsIdle(of: element)
         }
         if let failure = comparator.validate(viewType: viewType, state: state, screenshot: screenshot, testCase: self) {
             screenshotFailures.append((failure, file, line))

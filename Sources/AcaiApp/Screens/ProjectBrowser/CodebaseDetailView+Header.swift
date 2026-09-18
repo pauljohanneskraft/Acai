@@ -119,6 +119,9 @@ extension CodebaseDetailView {
             }
             if artifact != nil {
                 queryButton(codebase: codebase)
+                if codebase.guidedRoute != .offered {
+                    guidedRouteButton(codebase: codebase)
+                }
             }
             if let source = codebase.githubSource {
                 githubActions(codebase: codebase, source: source)
@@ -147,6 +150,15 @@ extension CodebaseDetailView {
             Label(.app("View.CodebaseDetailView.Query"), systemImage: "magnifyingglass")
         }
         .accessibilityIdentifier("codebaseDetail.queryButton")
+    }
+
+    private func guidedRouteButton(codebase: Codebase) -> some View {
+        Button {
+            model.editing.setGuidedRoute(.offered, codebaseID: codebase.id)
+        } label: {
+            Label(.app("View.CodebaseDetailView.GuidedRoute"), systemImage: "map")
+        }
+        .accessibilityIdentifier("codebaseDetail.guidedRouteButton")
     }
 
     @ViewBuilder

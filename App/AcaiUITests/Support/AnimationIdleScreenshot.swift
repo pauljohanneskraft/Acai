@@ -9,16 +9,19 @@ extension XCUIApplication {
     /// whole frame rather than a single targeted wait. Each capture is expensive on a CI simulator —
     /// capturing every 0.1s timed a screenshot request out — yet the interval must stay under half a
     /// text cursor's ~1s blink cycle, or consecutive captures of a focused field alternate forever.
+    /// `element` narrows the capture to one element, for a screen whose surroundings vary per run.
     func screenshotAfterAnimationsIdle(
+        of element: XCUIElement? = nil,
         pollInterval: TimeInterval = 0.3, stableSamplesRequired: Int = 2, timeout: TimeInterval = 10
     ) -> XCUIScreenshot {
-        var latest = windows.firstMatch.screenshot()
+        let target = element ?? windows.firstMatch
+        var latest = target.screenshot()
         var previous = latest.pngRepresentation
         var stableCount = 0
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             Thread.sleep(forTimeInterval: pollInterval)
-            latest = windows.firstMatch.screenshot()
+            latest = target.screenshot()
             let current = latest.pngRepresentation
             if current == previous {
                 stableCount += 1

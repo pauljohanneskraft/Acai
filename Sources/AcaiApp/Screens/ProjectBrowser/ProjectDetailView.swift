@@ -205,11 +205,13 @@ struct ProjectDetailView: View {
                     .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
                     .contextMenu { codebaseContextMenu(codebase: codebase) }
                     .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
+                        // Not `role: .destructive`: `List` would animate the row out before the confirmation.
+                        Button {
                             codebasePendingDeletion = codebase
                         } label: {
                             Label(.app("View.ProjectDetailView.Delete"), systemImage: "trash")
                         }
+                        .tint(.red)
                     }
                     .swipeActions(edge: .leading) {
                         Button {

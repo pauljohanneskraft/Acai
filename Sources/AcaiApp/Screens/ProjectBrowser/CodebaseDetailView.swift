@@ -145,6 +145,10 @@ struct CodebaseDetailView: View {
     private func analysisSections(
         codebase: Codebase, artifact: CodeArtifact, analysis: CodebaseAnalysis
     ) -> some View {
+        if codebase.guidedRoute == .offered, let projectID {
+            GuidedRouteCard(projectID: projectID, codebaseID: codebase.id, stops: analysis.guidedRoute)
+            Divider()
+        }
         statisticsSection(metrics: analysis.metrics)
         Divider()
         QualityCheckSection(

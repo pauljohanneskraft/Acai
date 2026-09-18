@@ -27,4 +27,11 @@ struct Codebase: Identifiable, Codable, Hashable {
     /// remains the authoritative on-disk location for now; nothing yet re-resolves file access
     /// through this reference.
     var repository: CodebaseRepositoryReference?
+    /// `nil` until a first index offers the route, so codebases indexed before it existed are never offered one.
+    var guidedRoute: GuidedRouteOffer?
+}
+
+enum GuidedRouteOffer: String, Codable, Hashable {
+    case offered
+    case dismissed
 }

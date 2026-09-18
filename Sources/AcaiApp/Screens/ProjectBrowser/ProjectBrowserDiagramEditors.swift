@@ -29,6 +29,17 @@ struct GeneratedDiagramEditor {
         return diagram.id
     }
 
+    /// Reuses an unfiltered, non-comparison diagram of the same content instead of adding a duplicate.
+    func addOrReuse(to projectID: UUID, codebaseID: UUID, content: GeneratedDiagram.Content) -> UUID? {
+        let existing = store.projects.first { $0.id == projectID }?.generatedDiagramIDs.first { id in
+            guard let diagram = store.generatedDiagrams[id] else { return false }
+            return diagram.codebaseID == codebaseID && diagram.content == content
+                && diagram.comparisonGitRef == nil && diagram.packageDiagramFilter == nil
+                && diagram.callGraphFilter == nil
+        }
+        return existing ?? add(to: projectID, codebaseID: codebaseID, content: content)
+    }
+
     /// Updates the entry-point configuration of a sequence diagram, clearing saved positions (the
     /// participant set may have changed).
     func updateSequenceConfiguration(diagramID: UUID, configuration: SequenceDiagramConfiguration) {
@@ -360,6 +371,10 @@ struct ProjectCodebaseEditor {
                 return
             }
         }
+    }
+
+    func setGuidedRoute(_ offer: GuidedRouteOffer, codebaseID: UUID) {
+        mutateCodebase(codebaseID) { $0.guidedRoute = offer }
     }
 
     func persistProject(_ projectID: UUID) {

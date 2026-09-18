@@ -7825,6 +7825,28 @@
         }
       }
     },
+    "View.CodebaseDetailView.GuidedRoute" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geführter Rundgang"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guided Route"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parcours guidé"
+          }
+        }
+      }
+    },
     "View.CodebaseDetailView.Hotspot" : {
       "localizations" : {
         "de" : {
@@ -13147,6 +13169,226 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Açaí ne parvient pas à déterminer quelles autorisations possède votre token GitHub. Réautorisez pour continuer."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.EmptyState" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Codebase hat noch keinen erkennbaren Einstiegspunkt, keine Abhängigkeiten und keine gemessene Komplexität, die einen Rundgang ergeben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This codebase has no detectable entry point, dependencies or measured complexity to build a route from yet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette codebase n'a pas encore de point d'entrée détectable, de dépendances ni de complexité mesurée pour construire un parcours."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.EntryPoint" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wo die Ausführung beginnt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where Execution Enters"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où l'exécution commence"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.EntryPointDescription" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts anderes im Code ruft dies auf – ein natürlicher Einstiegspunkt zum Lesen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing else in the codebase calls this — a natural place to start reading."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien d'autre dans le code n'appelle ceci — un bon point de départ pour la lecture."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.Hide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.MostComplex" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wo die meiste Komplexität liegt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where Complexity Concentrates"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où se concentre la complexité"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.MostComplexDescription" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Typ mit der komplexesten einzelnen Methode."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The type with the single most complex method."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le type contenant la méthode la plus complexe."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.MostDependedUpon" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wovon alles abhängt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Everything Depends On"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce dont tout dépend"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.MostDependedUponDescription" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Typ, von dem die meisten anderen abhängen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The type the most other code depends on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le type dont dépendent le plus les autres."
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.OpenStop" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Station öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Stop"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir l'étape"
+          }
+        }
+      }
+    },
+    "View.GuidedRouteCard.Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geführter Rundgang"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guided Route"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parcours guidé"
           }
         }
       }

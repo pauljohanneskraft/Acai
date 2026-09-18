@@ -161,6 +161,7 @@ extension ProjectCodebaseEditor {
 
     func reindex(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
+        let wasFirstIndex = !codebase.hasArtifact
         let path = codebase.directoryPath
         let bookmark = codebase.securityScopedBookmark
         let fileFilter = codebase.fileFilter
@@ -208,7 +209,8 @@ extension ProjectCodebaseEditor {
             // Cancelled before finishing: don't apply a result we discarded.
             guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
             applyReindexResult(
-                codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed)
+                codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed,
+                wasFirstIndex: wasFirstIndex)
         } catch {
             // An app-managed directory (a GitHub clone or worktree) must never be re-pointed at a
             // folder of the user's choosing — only a codebase they picked themselves.
@@ -224,7 +226,7 @@ extension ProjectCodebaseEditor {
     /// indices — then applies the freshly parsed result to the stored codebase.
     private func applyReindexResult(
         codebaseID: UUID, artifact: CodeArtifact, fingerprint: CodeStateFingerprint?,
-        refreshed: ScopedResourceAccess.Refreshed?
+        refreshed: ScopedResourceAccess.Refreshed?, wasFirstIndex: Bool
     ) {
         guard let pIndex = store.projects.firstIndex(where: { $0.id == projectID(for: codebaseID) }),
               let cIndex = store.projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
@@ -234,6 +236,9 @@ extension ProjectCodebaseEditor {
         store.projects[pIndex].codebases[cIndex].indexedFingerprint = fingerprint
         store.projects[pIndex].codebases[cIndex].hasParseErrors = artifact.metadata.hasParseErrors
         store.projects[pIndex].codebases[cIndex].parseDiagnosticCount = artifact.metadata.parseDiagnostics.count
+        if wasFirstIndex, store.projects[pIndex].codebases[cIndex].guidedRoute == nil {
+            store.projects[pIndex].codebases[cIndex].guidedRoute = .offered
+        }
         // A bookmark follows a folder that was moved or renamed, so the stored path has to
         // move with it — it's what the UI shows and what the file watcher opens.
         if let refreshed {
