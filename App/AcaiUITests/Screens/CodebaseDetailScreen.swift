@@ -79,7 +79,8 @@ final class CodebaseDetailScreen {
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         element.waitOrFail(description, file: file, line: line)
-        let scrollView = app.scrollViews.firstMatch
+        // Not `firstMatch`: on macOS that is the sidebar's list.
+        let scrollView = app.scrollViews.containing(.any, identifier: "guidedRoute.card").firstMatch
         for _ in 0..<8 where element.frame.maxY > scrollView.frame.maxY {
             #if os(macOS)
             scrollView.scroll(byDeltaX: 0, deltaY: -60)
