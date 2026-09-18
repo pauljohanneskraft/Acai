@@ -7,7 +7,7 @@ extension ProjectBrowserView {
     @ViewBuilder
     func analysisDiagramDetail(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) -> some View {
         if diagram.type == .moduleCoupling {
-            ModuleCouplingChartView(diagram: diagram, artifact: artifact, codebase: codebase)
+            ModuleCouplingChartView(diagram: diagram, artifact: artifact)
         } else {
             HotspotChartView(diagram: diagram, artifact: artifact, codebase: codebase)
         }

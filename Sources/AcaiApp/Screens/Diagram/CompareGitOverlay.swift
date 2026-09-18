@@ -110,29 +110,33 @@ struct CompareGitPanel: View {
             }
         }
 
-        var name: String {
-            switch self {
-            case .head:
-                "HEAD"
-            case .ref(let ref):
-                ref.name
-            case .pullRequest(let pullRequest):
-                "#\(pullRequest.number) \(pullRequest.title)"
-            case .custom:
-                "Custom…"
-            }
-        }
-
-        var kindLabel: String? {
+        var kind: Text? {
             switch self {
             case .custom:
                 nil
             case .head:
-                "HEAD"
+                Text(verbatim: "HEAD")
             case .ref(let ref):
-                ref.kind == .branch ? "Branch" : "Tag"
+                if ref.kind == .branch {
+                    Text(.app("View.CompareGitPanel.KindBranch"))
+                } else {
+                    Text(.app("View.CompareGitPanel.KindTag"))
+                }
             case .pullRequest:
-                "PR"
+                Text(.app("View.CompareGitPanel.KindChangeRequest"))
+            }
+        }
+
+        var accessibilityTitle: Text {
+            switch self {
+            case .head:
+                Text(verbatim: "HEAD")
+            case .ref(let ref):
+                Text(verbatim: ref.name)
+            case .pullRequest(let pullRequest):
+                pullRequest.pickerAccessibilityLabel
+            case .custom:
+                Text(.app("View.CompareGitPanel.Custom"))
             }
         }
 
@@ -182,22 +186,12 @@ struct CompareGitPanel: View {
                 Button {
                     select(row)
                 } label: {
-                    HStack {
-                        Text(verbatim: row.name)
-                        Spacer()
-                        if let kindLabel = row.kindLabel {
-                            Text(verbatim: kindLabel)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        if row == selectedRow {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                    .contentShape(Rectangle())
+                    rowLabel(row)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(row.accessibilityTitle)
+                .accessibilityValue(row.kind ?? Text(verbatim: ""))
+                .accessibilityAddTraits(row == selectedRow ? .isSelected : [])
                 .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
             }
             .listStyle(.plain)
@@ -236,6 +230,45 @@ struct CompareGitPanel: View {
         .frame(minWidth: 260, alignment: .leading)
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
             await model.ensureComparisonAnalysisLoaded(for: diagram)
+        }
+    }
+
+    private func rowLabel(_ row: RefRow) -> some View {
+        HStack {
+            rowTitle(row)
+            Spacer()
+            if let kind = row.kind {
+                kind
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            if row == selectedRow {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func rowTitle(_ row: RefRow) -> some View {
+        switch row {
+        case .head:
+            Text(verbatim: "HEAD")
+        case .ref(let ref):
+            Text(verbatim: ref.name)
+        case .pullRequest(let pullRequest):
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: "#\(pullRequest.number) \(pullRequest.title)")
+                    .lineLimit(2)
+                pullRequest.pickerDetail
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        case .custom:
+            Text(.app("View.CompareGitPanel.Custom"))
         }
     }
 
@@ -368,5 +401,15 @@ struct CompareGitPanel: View {
         else { return }
         pullRequests = (try? await GitHubRepositoryServiceResolver().resolve().pullRequests(
             credential: credential, owner: source.owner, repo: source.repo)) ?? []
+    }
+}
+
+private extension GitHubPullRequest {
+    var pickerDetail: Text {
+        Text(.app("View.CompareGitPanel.ChangeRequestDetail \(authorLogin) \(headRef) \(baseRef)"))
+    }
+
+    var pickerAccessibilityLabel: Text {
+        Text(.app("View.CompareGitPanel.ChangeRequestLabel \(number) \(title) \(authorLogin) \(headRef) \(baseRef)"))
     }
 }

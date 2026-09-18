@@ -4,8 +4,7 @@ import AcaiCore
 /// One searchable thing Quick Open can find and jump to: a project, codebase, type, method,
 /// module, or existing diagram, from any project. Resolves either directly (a project/codebase/
 /// diagram opens by selecting it) or through `CodeElementReference`'s resolution mechanism (a
-/// type/method/module). Also the on-device Core Spotlight index's source of truth — see
-/// `SpotlightIndexer`.
+/// type/method/module).
 struct QuickOpenEntry: Identifiable, Hashable {
     enum Kind: Hashable {
         case project
