@@ -7,13 +7,10 @@ import AcaiCore
 /// doesn't invent a second way to turn "a type" into "a diagram," it's just another entry point into
 /// the one that already shipped.
 ///
-/// Presented as a sheet on macOS (⌘K) and iPhone (a dedicated search button); embedded directly
-/// above the Projects sidebar's `List` on iPad, where its results replace the project tree while a
-/// query is active — "the sidebar tree optional rather than mandatory," per the design doc.
+/// Presented as a sheet on every platform: ⌘K on macOS, the sidebar's search button on iOS.
 struct QuickOpenView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    /// `nil` when hosted inline (iPad) — there is nothing to dismiss; a sheet host passes its own
-    /// `\.dismiss` action through so a chosen result can close the sheet after applying it.
+    /// Lets a chosen result close the hosting sheet after applying it.
     var dismissAction: (() -> Void)?
 
     @State private var query = ""
@@ -126,11 +123,7 @@ struct QuickOpenView: View {
     }
 }
 
-/// Wraps `QuickOpenView` for sheet presentation (macOS ⌘K, iPhone's dedicated search button, and
-/// iPad's pinned search field, which opens this same sheet rather than filtering inline — see
-/// `ProjectBrowserView`'s sidebar for why: one shared implementation of the search+resolve flow,
-/// not a second, divergent inline variant). Supplies `dismissAction` from `\.dismiss` so choosing a
-/// result closes the sheet.
+/// Wraps `QuickOpenView` for sheet presentation, supplying `dismissAction` from `\.dismiss`.
 struct QuickOpenSheetHost: View {
     @Environment(\.dismiss) private var dismiss
 

@@ -21,7 +21,9 @@ state, file filter and quality configuration. There are two ways to add one, on 
 
 - **A local folder**, chosen through the system document picker. On iOS that reaches any file
   provider — iCloud Drive, Working Copy, and so on. Access is retained with a security-scoped
-  bookmark, so it survives relaunches.
+  bookmark, so it survives relaunches. Dragging one or more folders from Finder or Files onto a
+  project in the sidebar adds them too, each named after its folder; a folder the project already
+  has is skipped.
 - **A GitHub repository**, cloned in-app. Sign in with the device flow (a short code plus a
   verification page — no client secret), then pick a repository. Cloning is a real git clone over
   HTTPS via libgit2; only the credential-free URL is persisted.
@@ -66,7 +68,9 @@ summarising its metrics. Named checkpoints snapshot a whole layout so you can ex
 ### Export
 
 Diagrams export as **PNG**, **DOT** and **Mermaid**. Image export is what you see on screen: your
-manual positions, sizes and visibility settings, rendered exactly as arranged.
+manual positions, sizes and visibility settings, rendered exactly as arranged. On macOS an export
+opens a save panel; on iPhone and iPad it opens the system share sheet, with Save to Files among
+its options.
 
 ## Findings and quality
 
