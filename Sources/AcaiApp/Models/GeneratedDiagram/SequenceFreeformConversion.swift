@@ -13,11 +13,7 @@ struct SequenceFreeformConversion: FreeformConversion {
 
     init(context: FreeformConversionContext, configuration: SequenceDiagramConfiguration) {
         self.context = context
-        self.sequence = SequenceDiagramBuilder(
-            entryPoint: (configuration.entryTypeName, configuration.entryMethodName),
-            maxDepth: configuration.maxDepth,
-            typeMapping: configuration.typeMapping
-        ).build(from: context.artifact)
+        self.sequence = SequenceDiagramGenerator(artifact: context.artifact, configuration: configuration).generate()
     }
 
     func items() -> [SequenceDiagram.Participant] {
