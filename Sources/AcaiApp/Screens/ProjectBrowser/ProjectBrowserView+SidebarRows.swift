@@ -243,14 +243,11 @@ private struct SidebarCodebaseRow: View {
             if let busyOperation {
                 ProgressView()
                     .controlSize(.small)
+                    .accessibilityLabel(busyOperation.title)
                     .help(busyOperation.title)
             } else {
                 Image(systemName: "folder")
             }
         }
-        // The row stays labelled by its name alone, so it can still be found while busy.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: codebase.name))
-        .accessibilityValue(busyOperation.map { Text($0.title) } ?? Text(verbatim: ""))
     }
 }
