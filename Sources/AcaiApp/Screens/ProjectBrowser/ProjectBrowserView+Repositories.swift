@@ -9,11 +9,12 @@ extension ProjectBrowserView {
         if !entries.isEmpty {
             Section(.app("View.ProjectBrowserView.Repositories")) {
                 ForEach(entries) { entry in
+                    // `.badge` before `.tag`: after it, the row stops taking selection clicks.
                     RepositoryRow(activityCenter: model.store.activityCenter, entry: entry)
+                        .badge(entry.codebases.count)
                         .tag(ProjectBrowserViewModel.Selection.repository(entry.remoteURL))
                         .help(entry.remoteURL.absoluteString)
                         .accessibilityIdentifier("sidebar.repository.\(entry.remoteURL.absoluteString)")
-                        .badge(entry.codebases.count)
                 }
             }
         }
