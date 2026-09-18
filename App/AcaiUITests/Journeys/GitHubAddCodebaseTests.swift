@@ -25,7 +25,7 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
         }
 
         let github = GitHubAccountScreen(app: app)
-        signIn(browser: browser, github: github)
+        github.signInWithToken(through: browser)
 
         let detail = ProjectDetailScreen(app: app)
         browser.projectRow(id: seeded.projectID).tap(
@@ -79,17 +79,5 @@ final class GitHubAddCodebaseTests: UIJourneyTestCase {
 
         featureBranchDiagram.openCompare()
         featureBranchDiagram.compare(against: "main")
-    }
-
-    /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding
-    /// its own sign-in UI, so sign in there first. A fixture launch redirects `GitHubTokenStore`
-    /// into this run's disposable directory, so no sign-out is needed afterwards.
-    private func signIn(browser: ProjectBrowserScreen, github: GitHubAccountScreen) {
-        browser.openSettings()
-        github.patField.tapWhenReady("the personal access token field")
-        github.patField.typeText("fixture-token")
-        github.signInWithTokenButton.tapWhenReady("Sign In with Token")
-        github.signedInRow.waitOrFail("the signed-in account row")
-        browser.closeSettings()
     }
 }

@@ -37,6 +37,7 @@ struct RepositoryDetailView: View {
                         ProgressView()
                     } else {
                         Text(verbatim: onDiskSize.map(Self.byteCountFormatter.string(fromByteCount:)) ?? "—")
+                            .accessibilityIdentifier("repository.diskSizeValue")
                     }
                 } label: {
                     Text(.app("View.RepositoryDetailView.DiskSize"))
@@ -45,8 +46,9 @@ struct RepositoryDetailView: View {
                     if isLoadingDetails {
                         ProgressView()
                     } else {
-                        lastFetchedAt.map { Text(verbatim: $0.formatted(.relative(presentation: .named))) }
-                            ?? Text(.app("View.RepositoryDetailView.Never"))
+                        (lastFetchedAt.map { Text(verbatim: $0.formatted(.relative(presentation: .named))) }
+                            ?? Text(.app("View.RepositoryDetailView.Never")))
+                            .accessibilityIdentifier("repository.lastFetchedValue")
                     }
                 } label: {
                     Text(.app("View.RepositoryDetailView.LastFetched"))
@@ -60,6 +62,7 @@ struct RepositoryDetailView: View {
                 } else {
                     ForEach(referencingCodebases) { codebase in
                         Label(codebase.name, systemImage: "folder")
+                            .accessibilityIdentifier("repository.codebase.\(codebase.name)")
                     }
                 }
             }
@@ -116,6 +119,7 @@ struct RepositoryDetailView: View {
             isPresented: Binding(get: { removalBlockedMessage != nil }, set: { if !$0 { removalBlockedMessage = nil } })
         ) {
             Button(.app("View.RepositoryDetailView.OK")) {}
+                .accessibilityIdentifier("repository.removalBlocked.okButton")
         } message: {
             removalBlockedMessage.map(Text.init)
         }

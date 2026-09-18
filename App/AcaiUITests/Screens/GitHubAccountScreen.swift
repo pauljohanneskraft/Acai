@@ -23,6 +23,18 @@ final class GitHubAccountScreen {
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
 
+    /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding its
+    /// own sign-in UI. A fixture launch redirects `GitHubTokenStore` into the run's disposable
+    /// directory, so no sign-out is needed afterwards.
+    func signInWithToken(through browser: ProjectBrowserScreen, file: StaticString = #filePath, line: UInt = #line) {
+        browser.openSettings(file: file, line: line)
+        patField.tapWhenReady("the personal access token field", file: file, line: line)
+        patField.typeText("fixture-token")
+        signInWithTokenButton.tapWhenReady("Sign In with Token", file: file, line: line)
+        signedInRow.waitOrFail("the signed-in account row", file: file, line: line)
+        browser.closeSettings(file: file, line: line)
+    }
+
     // MARK: - Signed-in detail
 
     var usedByCodebasesLabel: XCUIElement { app.descendants(matching: .any)["github.usedByCodebasesLabel"] }
