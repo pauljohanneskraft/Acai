@@ -14,7 +14,14 @@ final class ClassDiagramScreen: DiagramScreenBase {
     /// Focuses on the first type name alphabetically, following its dependencies.
     func enableFocus(file: StaticString = #filePath, line: UInt = #line) {
         revealInSettings(focusToggle, "the Focus toggle", file: file, line: line)
-        focusToggle.tapWhenReady("the Focus toggle", file: file, line: line)
+        // On iOS the identified element is the whole row; a tap at its centre lands on the label and
+        // doesn't flip it, so tap the nested switch instead.
+        #if os(macOS)
+        let control = focusToggle
+        #else
+        let control = focusToggle.switches.firstMatch
+        #endif
+        control.tapWhenReady("the Focus toggle", file: file, line: line)
         focusRootTypePicker.waitOrFail("the focus root type picker", file: file, line: line)
     }
 

@@ -52,8 +52,7 @@ class DiagramScreenBase {
     }
 
     /// Call once the diagram's canvas is confirmed on screen — the sidebar renders in the same pass,
-    /// so its absence then really means it's closed. Selecting an already-selected segment is a no-op,
-    /// so the tab is tapped unconditionally once the sidebar is open.
+    /// so its absence then really means it's closed.
     private func openSidebarTab(
         _ tab: XCUIElement, content: XCUIElement, name: String, file: StaticString, line: UInt
     ) {
@@ -94,6 +93,7 @@ class DiagramScreenBase {
     func saveAsFreeform(file: StaticString = #filePath, line: UInt = #line) -> FreeformDiagramScreen {
         revealInSettings(saveAsFreeformButton, "the Save as Freeform button", file: file, line: line)
         saveAsFreeformButton.tapWhenReady("Save as Freeform", file: file, line: line)
+        settingsContent.waitForDisappearanceOrFail("the source diagram's Settings after saving", file: file, line: line)
         let freeform = FreeformDiagramScreen(app: app)
         freeform.openedIndicator.waitOrFail("the freeform copy", file: file, line: line)
         return freeform
