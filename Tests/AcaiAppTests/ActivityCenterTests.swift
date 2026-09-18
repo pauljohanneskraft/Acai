@@ -62,7 +62,8 @@ struct ActivityCenterTests {
         #expect(center.operations.isEmpty)
     }
 
-    @Test func progressOverloadPublishesReportedValuesOnTheRow() async throws {
+    @Test(.timeLimit(.minutes(5)))
+    func progressOverloadPublishesReportedValuesOnTheRow() async throws {
         let center = ActivityCenter()
         let gate = AsyncGate()
         let task = Task {
@@ -72,14 +73,13 @@ struct ActivityCenterTests {
                 return 1
             }
         }
-        // Three actor hops sit between this poll and `onProgress` actually landing (the test's own
-        // `Task`, `run`'s work `Task`, and `onProgress`'s own reporting `Task`), each contending for
-        // the same `@MainActor` serial executor as every other suite running in parallel — a wider
-        // margin than the default is needed here specifically, not because the condition is ever
-        // expected to take long, but because a fully-loaded parallel run can push all three hops out
-        // without any of them being individually stuck.
-        try await Eventually(timeout: .seconds(15))
-            .waitUntil("progress is reported") { center.operations.first?.progress == 0.5 }
+        // Awaits the publish itself rather than polling against a deadline: the report crosses three
+        // main-actor hops that a fully loaded parallel run can delay arbitrarily.
+        var reported = false
+        for await found in center.$operations.contains(where: { $0.first?.progress == 0.5 }).values {
+            reported = found
+        }
+        #expect(reported)
         #expect(center.operations.first?.progress == 0.5)
         await gate.open()
         _ = try await task.value
