@@ -113,11 +113,13 @@ struct DiagramFilterSection: View {
                 .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).contextDelete")
             }
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
+                // Not `role: .destructive`: `List` would animate the row out before the confirmation.
+                Button {
                     presetPendingDelete = preset
                 } label: {
                     Label(.app("View.DiagramFilterSection.Delete"), systemImage: "trash")
                 }
+                .tint(.red)
                 .accessibilityIdentifier("diagram.filter.presetRow.\(preset.id.uuidString).swipeDelete")
             }
         }
