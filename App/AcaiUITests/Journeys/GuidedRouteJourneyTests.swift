@@ -12,8 +12,7 @@ final class GuidedRouteJourneyTests: UIJourneyTestCase {
         XCTAssertFalse(codebaseDetail.guidedRouteButton.exists, "the header button is redundant while the card shows")
 
         // Only the card: the rest of the screen shows the per-run "Last indexed" timestamp.
-        codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteStop(kind: "mostComplex"), "the last guided route stop")
-        codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteHideButton, "the guided route Hide button")
+        codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteCard, "the guided route card")
         validateScreenshot("GuidedRouteCard", state: "offered", of: codebaseDetail.guidedRouteCard)
 
         let diagram = codebaseDetail.openGuidedRouteStop(kind: "mostDependedUpon", as: ClassDiagramScreen.self)

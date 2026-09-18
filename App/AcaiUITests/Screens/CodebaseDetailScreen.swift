@@ -73,14 +73,24 @@ final class CodebaseDetailScreen {
         app.descendants(matching: .any)["guidedRoute.stop.\(kind)"]
     }
 
-    /// On compact width the card sits below the one-column diagram grid, so it can start off screen.
+    /// The card sits below the diagram grid, so it can start past the bottom of the pane. Checks the
+    /// frame rather than `isHittable`, which on macOS stays `true` for a partly clipped element.
     func scrollIntoView(
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         element.waitOrFail(description, file: file, line: line)
-        for _ in 0..<4 where !element.isHittable {
-            app.scrollViews.firstMatch.swipeUp()
+        let scrollView = app.scrollViews.firstMatch
+        for _ in 0..<8 where element.frame.maxY > scrollView.frame.maxY {
+            #if os(macOS)
+            scrollView.scroll(byDeltaX: 0, deltaY: -60)
+            #else
+            scrollView.swipeUp()
+            #endif
         }
+        XCTAssertLessThanOrEqual(
+            element.frame.maxY, scrollView.frame.maxY, "\(description) never scrolled fully into view",
+            file: file, line: line
+        )
     }
 
     /// Opens a stop's diagram, tapping exactly once and asserting the detail pane navigated away.
