@@ -3,6 +3,7 @@ import Foundation
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 import AcaiRender
 @testable import AcaiApp
 
@@ -38,9 +39,19 @@ struct ClassFreeformConversionTests {
         )
     }
 
+    private func type(id: String, name: String, accessLevel: AccessLevel) -> TypeDeclaration {
+        TypeDeclaration(id: id, name: name, qualifiedName: id, kind: .class, accessLevel: accessLevel)
+    }
+
     private func classDiagram(grouping: ClassDiagramConfiguration.Grouping) -> GeneratedDiagram {
         var config = ClassDiagramConfiguration()
         config.grouping = grouping
+        return GeneratedDiagram(name: "Classes", content: .classDiagram(config), codebaseID: UUID())
+    }
+
+    private func classDiagram(_ configure: (inout ClassDiagramConfiguration) -> Void) -> GeneratedDiagram {
+        var config = ClassDiagramConfiguration()
+        configure(&config)
         return GeneratedDiagram(name: "Classes", content: .classDiagram(config), codebaseID: UUID())
     }
 
@@ -283,5 +294,70 @@ struct ClassFreeformConversionTests {
         )
 
         #expect(packageNodes(freeform).isEmpty)
+    }
+
+    @Test("An active selector filter narrows the copy to the same types the source view shows")
+    func activeFilterNarrowsCopyToMatchingTypes() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift"]),
+            types: [type(id: "Keep", name: "Keep"), type(id: "Drop", name: "Drop")],
+            relationships: [Relationship(kind: .dependency, source: "Keep", target: "Drop")]
+        )
+
+        let diagram = classDiagram { $0.filter = Selector(typeGlob: "Keep") }
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact, positions: [:], scale: 1, offset: .zero
+        )
+
+        #expect(freeform.nodes.map(\.name) == ["Keep"])
+        #expect(freeform.edges.isEmpty)
+    }
+
+    @Test("Members stay expanded in the copy even when the source view has them collapsed")
+    func membersStayExpandedEvenWhenCollapsedInSourceView() throws {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public,
+                    members: [Member(name: "x", kind: .property, accessLevel: .public)]
+                )
+            ]
+        )
+        let diagram = classDiagram { config in
+            config.showProperties = false
+            config.propertyVisibility["Foo"] = false
+        }
+
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact, positions: [:], scale: 1, offset: .zero
+        )
+
+        let node = try #require(freeform.nodes.first)
+        guard case .type(let content) = node.content else {
+            Issue.record("expected type content")
+            return
+        }
+        #expect(content.properties.map(\.name) == ["x"])
+    }
+
+    @Test("A minimum access level excludes a lower-visibility type and its relationship from the copy")
+    func minimumAccessLevelExcludesLowerVisibilityType() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift"]),
+            types: [
+                type(id: "Public", name: "Public", accessLevel: .public),
+                type(id: "Internal", name: "Internal", accessLevel: .internal)
+            ],
+            relationships: [Relationship(kind: .dependency, source: "Public", target: "Internal")]
+        )
+
+        let diagram = classDiagram { $0.minimumAccessLevel = .public }
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact, positions: [:], scale: 1, offset: .zero
+        )
+
+        #expect(freeform.nodes.map(\.name) == ["Public"])
+        #expect(freeform.edges.isEmpty)
     }
 }

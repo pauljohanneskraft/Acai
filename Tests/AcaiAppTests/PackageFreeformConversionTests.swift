@@ -3,6 +3,7 @@ import Foundation
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 @testable import AcaiApp
 
 /// "Save as Freeform" for package diagrams: each build module becomes a `.package` node and every
@@ -92,5 +93,18 @@ struct PackageFreeformConversionTests {
             artifact: emptyArtifact, positions: [:], scale: 1, offset: .zero
         )
         #expect(freeform.nodes.isEmpty)
+    }
+
+    @Test("An active selector filter narrows the copy to the same modules the source view shows")
+    func activeFilterNarrowsCopyToMatchingModules() {
+        var diagram = packageDiagram()
+        diagram.packageDiagramFilter = Selector(module: "ModuleA")
+
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero
+        )
+
+        #expect(freeform.nodes.map(\.name) == ["ModuleA"])
+        #expect(freeform.edges.isEmpty)
     }
 }
