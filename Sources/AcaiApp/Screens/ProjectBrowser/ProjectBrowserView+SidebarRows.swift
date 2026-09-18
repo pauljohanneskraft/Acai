@@ -82,7 +82,7 @@ extension ProjectBrowserView {
     fileprivate func codebaseRows(project: Project) -> some View {
         let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         ForEach(sortedCodebases) { codebase in
-            Label(codebase.name, systemImage: "folder")
+            SidebarCodebaseRow(activityCenter: model.store.activityCenter, codebase: codebase)
                 .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
                 .help(codebase.name)
                 .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
@@ -227,5 +227,30 @@ extension ProjectBrowserView {
                     }
             }
         }
+    }
+}
+
+private struct SidebarCodebaseRow: View {
+    @ObservedObject var activityCenter: ActivityCenter
+    let codebase: Codebase
+
+    private var busyOperation: ActivityOperation? { activityCenter.operation(for: .codebase(codebase.id)) }
+
+    var body: some View {
+        Label {
+            Text(verbatim: codebase.name)
+        } icon: {
+            if let busyOperation {
+                ProgressView()
+                    .controlSize(.small)
+                    .help(busyOperation.title)
+            } else {
+                Image(systemName: "folder")
+            }
+        }
+        // The row stays labelled by its name alone, so it can still be found while busy.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: codebase.name))
+        .accessibilityValue(busyOperation.map { Text($0.title) } ?? Text(verbatim: ""))
     }
 }

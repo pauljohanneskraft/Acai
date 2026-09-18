@@ -11,6 +11,7 @@ final class ProjectDetailScreen {
     var addCodebaseButton: XCUIElement { app.buttons["projectDetail.addCodebaseButton"] }
     var addDiagramButton: XCUIElement { app.buttons["projectDetail.addDiagramButton"] }
     var findingsButton: XCUIElement { app.buttons["projectDetail.findingsButton"] }
+    var emptyState: XCUIElement { app.descendants(matching: .any)["projectDetail.emptyState"] }
 
     /// The compact-width (iPhone) "+" toolbar button; never exists on regular width.
     var addMenuButton: XCUIElement { app.buttons["projectDetail.addMenuButton"] }
