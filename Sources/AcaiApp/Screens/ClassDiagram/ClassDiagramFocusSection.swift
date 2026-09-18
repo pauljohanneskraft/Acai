@@ -9,13 +9,16 @@ struct FocusSection: View {
     var body: some View {
         Section(.app("View.FocusSection.Focus")) {
             Toggle(.app("View.FocusSection.FocusClass"), isOn: focusEnabled)
+                .accessibilityIdentifier("diagram.focus.toggle")
 
             if configuration.focus != nil {
                 Picker(.app("View.FocusSection.RootType"), selection: rootType) {
                     ForEach(typeNames, id: \.self) { Text(verbatim: $0).tag($0) }
                 }
+                .accessibilityIdentifier("diagram.focus.rootTypePicker")
 
                 Toggle(.app("View.FocusSection.LimitDepth"), isOn: depthLimited)
+                    .accessibilityIdentifier("diagram.focus.depthToggle")
                 if configuration.focus?.maxDepth != nil {
                     Stepper(
                         .app("View.FocusSection.Depth \(configuration.focus?.maxDepth ?? 1)"),
@@ -28,6 +31,7 @@ struct FocusSection: View {
                     Text(.app("View.FocusSection.Dependents")).tag(FocusConfiguration.Direction.dependents)
                     Text(.app("View.FocusSection.Both")).tag(FocusConfiguration.Direction.both)
                 }
+                .accessibilityIdentifier("diagram.focus.directionPicker")
 
                 DisclosureGroup {
                     ForEach(Relationship.Kind.allCases, id: \.self) { kind in
@@ -38,6 +42,7 @@ struct FocusSection: View {
                 }
 
                 Toggle(.app("View.FocusSection.IncludeInterconnections"), isOn: interconnections)
+                    .accessibilityIdentifier("diagram.focus.interconnectionsToggle")
             }
         }
     }

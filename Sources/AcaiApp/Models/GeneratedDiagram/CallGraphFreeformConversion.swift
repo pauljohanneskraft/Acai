@@ -12,7 +12,9 @@ struct CallGraphFreeformConversion: FreeformConversion {
 
     init(context: FreeformConversionContext, scope: CallGraphScope) {
         self.context = context
-        self.graph = CallGraphBuilder(scope: scope).build(from: context.artifact)
+        let built = CallGraphBuilder(scope: scope).build(from: context.artifact)
+        let filter = CallGraphFilter(artifact: context.artifact, filter: context.diagram.callGraphFilter)
+        self.graph = filter.apply(to: built)
     }
 
     func items() -> [CallGraph.Node] {

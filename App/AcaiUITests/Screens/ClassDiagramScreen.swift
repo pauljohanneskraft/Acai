@@ -6,6 +6,25 @@ final class ClassDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
+    // MARK: - Focus (Settings tab)
+
+    var focusToggle: XCUIElement { app.descendants(matching: .any)["diagram.focus.toggle"].firstMatch }
+    var focusRootTypePicker: XCUIElement { app.descendants(matching: .any)["diagram.focus.rootTypePicker"] }
+
+    /// Focuses on the first type name alphabetically, following its dependencies.
+    func enableFocus(file: StaticString = #filePath, line: UInt = #line) {
+        revealInSettings(focusToggle, "the Focus toggle", file: file, line: line)
+        // On iOS the identified element is the whole row; a tap at its centre lands on the label and
+        // doesn't flip it, so tap the nested switch instead.
+        #if os(macOS)
+        let control = focusToggle
+        #else
+        let control = focusToggle.switches.firstMatch
+        #endif
+        control.tapWhenReady("the Focus toggle", file: file, line: line)
+        focusRootTypePicker.waitOrFail("the focus root type picker", file: file, line: line)
+    }
+
     // MARK: - Find in Diagram
 
     var searchToggleButton: XCUIElement { app.buttons["diagram.search.toggleButton"] }
