@@ -62,6 +62,7 @@ struct RepositoryDetailView: View {
                 } else {
                     ForEach(referencingCodebases) { codebase in
                         Label(codebase.name, systemImage: "folder")
+                            .accessibilityIdentifier("repository.codebase.\(codebase.name)")
                     }
                 }
             }

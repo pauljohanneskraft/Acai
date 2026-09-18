@@ -28,12 +28,15 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
             .waitOrFail("the clone's on-disk size")
         repository.loadedValue(identifier: "repository.lastFetchedValue", excluding: "Never")
             .waitOrFail("the clone's last-fetched time")
-        repository.codebasesSectionHeader(count: 2).waitOrFail("the two referencing codebases")
+        repository.referencingCodebase(named: "fixture-repo").waitOrFail("the first referencing codebase")
+        repository.referencingCodebase(named: "fixture-repo-2").waitOrFail("the second referencing codebase")
         repository.refuseRemoval(naming: ["fixture-repo", "fixture-repo-2"])
 
         returnToSidebar(browser: browser)
         browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo-2"))
-        repositoryRow.tap("the repository's sidebar row", until: repository.codebasesSectionHeader(count: 1))
+        repositoryRow.tap("the repository's sidebar row", until: repository.referencingCodebase(named: "fixture-repo"))
+        repository.referencingCodebase(named: "fixture-repo-2")
+            .waitForDisappearanceOrFail("the deleted codebase in the repository's list")
         repository.refuseRemoval(naming: ["fixture-repo"])
     }
 
