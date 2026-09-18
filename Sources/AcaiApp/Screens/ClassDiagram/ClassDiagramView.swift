@@ -108,9 +108,6 @@ struct ClassDiagramView: View {
             .onChange(of: viewModel.currentSearchNodeID) { _, nodeID in
                 centerOnSearchMatch(nodeID)
             }
-            .userActivity(DiagramHandoffActivity.activityType) {
-                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
-            }
     }
 
     /// On compact width (iPhone), `.inspector` collapses to a sheet-like presentation with no

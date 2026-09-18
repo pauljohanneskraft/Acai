@@ -45,9 +45,6 @@ struct HotspotChartView: View {
             .task {
                 await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
             }
-            .userActivity(DiagramHandoffActivity.activityType) {
-                DiagramHandoffActivity(diagram: diagram, codebase: codebase).configure($0)
-            }
     }
 
     @ViewBuilder
