@@ -24,7 +24,10 @@ final class ClassDiagramScreen: DiagramScreenBase {
     var searchDismissButton: XCUIElement { app.buttons["diagram.search.dismissButton"] }
 
     func openSearch(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(identifier: "diagram.search.toggleButton", label: "Find in Diagram", file: file, line: line)
+        tapToolbarButton(
+            identifier: "diagram.search.toggleButton", label: "Find in Diagram", until: searchField,
+            file: file, line: line
+        )
         searchField.waitOrFail("the diagram search field", file: file, line: line)
     }
 }

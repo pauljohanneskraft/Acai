@@ -63,8 +63,11 @@ class DiagramScreenBase {
     /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
     /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One
     /// query matching either element waits for whichever the toolbar rendered.
+    /// With a `destination`, an overflow item is re-tapped only while its menu is still open — a tap
+    /// landing while the menu is still presenting does nothing, and one that registered closes it.
     func tapToolbarButton(
-        identifier: String, label: String, file: StaticString = #filePath, line: UInt = #line
+        identifier: String, label: String, until destination: XCUIElement? = nil,
+        file: StaticString = #filePath, line: UInt = #line
     ) {
         let button = app.buttons[identifier]
         #if os(macOS)
@@ -78,7 +81,11 @@ class DiagramScreenBase {
             return
         }
         app.buttons[overflowIdentifier].tapWhenReady("the toolbar's overflow menu", file: file, line: line)
-        app.buttons[label].tapWhenReady("overflow item \(label)", file: file, line: line)
+        if let destination {
+            app.buttons[label].tap("overflow item \(label)", until: destination, file: file, line: line)
+        } else {
+            app.buttons[label].tapWhenReady("overflow item \(label)", file: file, line: line)
+        }
         #endif
     }
 
