@@ -3,6 +3,7 @@ import Foundation
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiQuality
 @testable import AcaiApp
 
 /// "Save as Freeform" for call graphs: each method becomes a `.method` node and every call a
@@ -76,5 +77,18 @@ struct CallGraphFreeformConversionTests {
             artifact: emptyArtifact, positions: [:], scale: 1, offset: .zero
         )
         #expect(freeform.nodes.isEmpty)
+    }
+
+    @Test("An active selector filter narrows the copy to the same methods the source view shows")
+    func activeFilterNarrowsCopyToMatchingMethods() {
+        var diagram = callGraphDiagram()
+        diagram.callGraphFilter = Selector(typeGlob: "A")
+
+        let freeform = diagram.convertToFreeform(
+            artifact: artifact(), positions: [:], scale: 1, offset: .zero
+        )
+
+        #expect(freeform.nodes.map(\.name) == ["A.run"])
+        #expect(freeform.edges.isEmpty)
     }
 }

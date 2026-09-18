@@ -20,9 +20,22 @@ class DiagramScreenBase {
     // MARK: - Sidebar tabs (every generated diagram type has this Settings/Inspector split)
 
     /// A plain `Picker(selection:)` with `.pickerStyle(.segmented)` surfaces its `Text` case labels
-    /// as buttons, not a custom identifier.
-    var settingsTabButton: XCUIElement { app.buttons["Settings"] }
-    var inspectorTabButton: XCUIElement { app.buttons["Inspector"] }
+    /// as its segments, not a custom identifier — and macOS exposes those segments as radio buttons
+    /// (confirmed in a failing run's element tree), iOS as buttons.
+    var settingsTabButton: XCUIElement { sidebarTab("Settings") }
+    var inspectorTabButton: XCUIElement { sidebarTab("Inspector") }
+
+    /// Matched by label without an identifier: the project browser's own `sidebar.settingsButton`
+    /// carries the label "Settings" too, and a query matching both throws on every property read.
+    private func sidebarTab(_ label: String) -> XCUIElement {
+        let segments: XCUIElementQuery
+        #if os(macOS)
+        segments = app.radioButtons
+        #else
+        segments = app.buttons
+        #endif
+        return segments.matching(NSPredicate(format: "label == %@ AND identifier == ''", label)).firstMatch
+    }
     var settingsContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.settings"] }
     var inspectorContent: XCUIElement { app.descendants(matching: .any)["diagram.sidebarContent.inspector"] }
 
@@ -39,8 +52,7 @@ class DiagramScreenBase {
     }
 
     /// Call once the diagram's canvas is confirmed on screen — the sidebar renders in the same pass,
-    /// so its absence then really means it's closed. Selecting an already-selected segment is a no-op,
-    /// so the tab is tapped unconditionally once the sidebar is open.
+    /// so its absence then really means it's closed.
     private func openSidebarTab(
         _ tab: XCUIElement, content: XCUIElement, name: String, file: StaticString, line: UInt
     ) {
@@ -48,6 +60,8 @@ class DiagramScreenBase {
         if !settingsContent.exists && !inspectorContent.exists {
             tapSidebarToggle(file: file, line: line)
         }
+        // Opening the sidebar restores the tab it was last on, which is usually this one already.
+        if content.exists { return }
         tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
         content.waitOrFail("the diagram's \(name) tab", file: file, line: line)
     }
@@ -59,6 +73,31 @@ class DiagramScreenBase {
     var saveAsFreeformButton: XCUIElement { app.buttons["diagram.saveAsFreeformButton"] }
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
+
+    /// Opens the Settings tab and scrolls until `element` is in the tree: the tab is a `Form`, which
+    /// on iOS is a lazy `List` whose further-down rows don't exist until they scroll into view.
+    func revealInSettings(
+        _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        openSettingsTab(file: file, line: line)
+        for _ in 0..<8 {
+            if element.appears(within: .uiTransition / 8) { return }
+            SystemBanners().dismiss(file: file, line: line)
+            settingsContent.swipeUp()
+        }
+        element.waitOrFail(description, file: file, line: line)
+    }
+
+    /// Taps exactly once — every tap creates another copy — and waits for the copy to open.
+    @discardableResult
+    func saveAsFreeform(file: StaticString = #filePath, line: UInt = #line) -> FreeformDiagramScreen {
+        revealInSettings(saveAsFreeformButton, "the Save as Freeform button", file: file, line: line)
+        saveAsFreeformButton.tapWhenReady("Save as Freeform", file: file, line: line)
+        settingsContent.waitForDisappearanceOrFail("the source diagram's Settings after saving", file: file, line: line)
+        let freeform = FreeformDiagramScreen(app: app)
+        freeform.openedIndicator.waitOrFail("the freeform copy", file: file, line: line)
+        return freeform
+    }
 
     /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
     /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One

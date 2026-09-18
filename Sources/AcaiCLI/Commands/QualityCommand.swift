@@ -12,9 +12,18 @@ extension AcaiCommand {
             abstract: "Check the codebase against a declarative code-quality rules file",
             discussion: """
             Validates the relationship graph and metrics against a YAML rules file (forbidden \
-            dependencies, dependency cycles, layering, metric budgets, stereotype contracts) and \
-            fails the build (non-zero exit) on any violation. Omit --rules to use the built-in \
-            curated smell budgets (long parameter lists, data classes, low cohesion, feature envy, …).
+            dependencies, dependency cycles, layering, metric budgets, stereotype contracts, and — \
+            with --baseline — expected metric movements) and fails the build (non-zero exit) on any \
+            violation. Omit --rules to use the built-in curated smell budgets (long parameter lists, \
+            data classes, low cohesion, feature envy, …).
+
+            A rules file's `movements` section states how a metric was expected to move since \
+            --baseline (e.g. `{ target: { typeGlob: "Foo" }, metric: fanOut, minImprovement: 2 }` — \
+            fanOut must have decreased by at least 2). Omitting minImprovement (or setting it to 0) \
+            means "must not get worse". Every other metric on the same target is also checked for a \
+            silent regression, so an improvement bought by a hidden cost elsewhere doesn't pass — \
+            scope the target selector to what the change actually touched to keep the check focused. \
+            Movements are only evaluated when --baseline is given.
 
               acai quality --source ./ --rules quality.yml
               acai quality --source ./ --explore            # rank smells + list cycles, never fail
@@ -62,16 +71,23 @@ extension AcaiCommand {
             let artifact = try artifactSource.resolve()
             let ruleSet = try rules.map { try QualityRules.load(contentsOf: $0) }
                 ?? QualityRules.defaultQuality
+            guard baseline != nil || ruleSet.movements.isEmpty else {
+                throw ValidationError(
+                    "The rules file declares \(ruleSet.movements.count) movement rule(s), which require"
+                    + " --baseline to evaluate."
+                )
+            }
 
             let evaluator = QualityEvaluator(
                 rules: ruleSet,
                 languageResolver: artifact.standardLanguageResolver
             )
-            var report = evaluator.evaluate(artifact)
+            let baselineArtifact = try baseline.map { try ArtifactSource.loadStored($0) }
+            var report = evaluator.evaluate(artifact, baseline: baselineArtifact)
             if explore && ruleSet.cycles == nil {
                 report.violations += cycleFindings(artifact)
             }
-            let drift = try baseline.map { try driftDiff(current: artifact, baselineRef: $0) }
+            let drift = baselineArtifact.map { ArtifactDiffer().diff(old: $0, new: artifact) }
 
             try render(report: report, drift: drift).writeOutput(to: output, label: "quality report")
 
@@ -96,11 +112,6 @@ extension AcaiCommand {
                         detail: ["scope": cycleScope.rawValue])
                 }
             }
-        }
-
-        private func driftDiff(current: CodeArtifact, baselineRef: String) throws -> ArtifactDiff {
-            let base = try ArtifactSource.loadStored(baselineRef)
-            return ArtifactDiffer().diff(old: base, new: current)
         }
 
         private func render(report: QualityReport, drift: ArtifactDiff?) throws -> String {

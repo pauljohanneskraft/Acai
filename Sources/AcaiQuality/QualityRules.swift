@@ -5,13 +5,17 @@ import AcaiCore
 /// YAML rules file (`quality.yml`).
 ///
 /// Rule kinds: forbidden dependencies, dependency cycles, metric budgets (which subsume the code
-/// smells), ordered layers, and stereotype contracts.
+/// smells), ordered layers, stereotype contracts, and — given a `--baseline` — expected metric
+/// movements.
 public struct QualityRules: Codable, Equatable, Sendable {
     public var forbidden: [DependencyRule]
     public var cycles: CycleRule?
     public var budgets: [MetricBudget]
     public var layers: LayerRule?
     public var contracts: [StereotypeContract]
+    /// Only evaluated when the caller supplies a baseline artifact (e.g. the CLI's `--baseline`) — see
+    /// `QualityEvaluator.evaluate(_:baseline:)`.
+    public var movements: [MetricMovement]
 
     /// `false` (the default) drops each language's generated types before metrics/smells/cycles are
     /// evaluated. Mirrors the CLI's `--include-generated` / MCP `includeGenerated` for the tools that
@@ -24,6 +28,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         budgets: [MetricBudget] = [],
         layers: LayerRule? = nil,
         contracts: [StereotypeContract] = [],
+        movements: [MetricMovement] = [],
         includeGeneratedTypes: Bool = false
     ) {
         self.forbidden = forbidden
@@ -31,6 +36,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         self.budgets = budgets
         self.layers = layers
         self.contracts = contracts
+        self.movements = movements
         self.includeGeneratedTypes = includeGeneratedTypes
     }
 
@@ -43,13 +49,15 @@ public struct QualityRules: Codable, Equatable, Sendable {
         budgets = try container.decodeIfPresent([MetricBudget].self, forKey: .budgets) ?? []
         layers = try container.decodeIfPresent(LayerRule.self, forKey: .layers)
         contracts = try container.decodeIfPresent([StereotypeContract].self, forKey: .contracts) ?? []
+        movements = try container.decodeIfPresent([MetricMovement].self, forKey: .movements) ?? []
         includeGeneratedTypes = try container.decodeIfPresent(Bool.self, forKey: .includeGeneratedTypes) ?? false
     }
 
     /// The number of distinct rules evaluated — reported so a passing run still proves it checked
     /// something (an empty rules file is not silently "passing meaningfully").
     public var ruleCount: Int {
-        forbidden.count + (cycles == nil ? 0 : 1) + budgets.count + (layers == nil ? 0 : 1) + contracts.count
+        forbidden.count + (cycles == nil ? 0 : 1) + budgets.count + (layers == nil ? 0 : 1)
+            + contracts.count + movements.count
     }
 
     /// Applied when a project runs the quality check without its own `quality.yml`, so a no-config
