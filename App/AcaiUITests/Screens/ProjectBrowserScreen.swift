@@ -112,10 +112,10 @@ final class ProjectBrowserScreen {
     }
     #endif
 
-    /// ⇧⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
+    /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
     func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
         newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        app.typeKey("/", modifierFlags: [.command, .shift])
+        app.typeKey("/", modifierFlags: .command)
         KeyboardShortcutsScreen(app: app).panel.waitOrFail("the Keyboard Shortcuts panel", file: file, line: line)
     }
 

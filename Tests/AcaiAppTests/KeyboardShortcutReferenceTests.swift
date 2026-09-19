@@ -38,7 +38,7 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.deleteSelection.symbol == "⌫")
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
-        #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⇧⌘/")
+        #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⌘/")
         #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
     }
 

@@ -81,7 +81,8 @@ extension KeyboardShortcutReference {
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
     static let keyboardShortcuts = KeyboardShortcutReference(
-        id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: [.command, .shift]),
+        // Not ⇧⌘/: iPadOS keeps that for itself, and the Mac and iPad share one set of keys.
+        id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: .command),
         name: .app("KeyboardShortcutReference.KeyboardShortcuts"))
 }
 
@@ -90,8 +91,6 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
-        /// iPadOS keeps these keys for itself, so iPad doesn't list a shortcut that would never fire.
-        var isReservedByIPadOS = false
     }
 
     static let allGroups: [Group] = [
@@ -107,18 +106,8 @@ extension KeyboardShortcutReference {
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
-        Group(
-            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
-            isReservedByIPadOS: true)
+        Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
     ]
-
-    static let groups: [Group] = {
-        #if os(macOS)
-        allGroups
-        #else
-        allGroups.filter { !$0.isReservedByIPadOS }
-        #endif
-    }()
 }
 
 extension View {
