@@ -134,7 +134,7 @@ struct QueryView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(.app("View.QueryView.Done")) { showFilterSheet = false }
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(.confirmDialog)
                         .accessibilityIdentifier("query.filterSheetDoneButton")
                 }
             }

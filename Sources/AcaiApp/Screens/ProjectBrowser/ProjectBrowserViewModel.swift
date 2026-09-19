@@ -44,7 +44,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
-        withAnimation {
+        withAnimation(.outlineChange) {
             pruneDanglingSelection()
             objectWillChange.send()
         }

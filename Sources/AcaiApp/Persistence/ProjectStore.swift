@@ -21,7 +21,6 @@ final class ProjectStore: ObservableObject {
     @Published var generatedDiagrams: [UUID: GeneratedDiagram] = [:]
     @Published var freeformDiagrams: [UUID: FreeformDiagram] = [:]
     @Published var artifacts: [UUID: CodeArtifact] = [:]
-    @Published var recentlyViewed = RecentlyViewed()
 
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert).
     @Published var lastError: StoreError?
@@ -69,7 +68,6 @@ final class ProjectStore: ObservableObject {
     /// against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
     let activityCenter = ActivityCenter()
-    private var recentlyViewedURL: URL { baseDir.appendingPathComponent("recentlyViewed.json") }
 
     init(baseDir: URL? = nil) {
         let fileManager = FileManager.default
@@ -102,8 +100,8 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
+        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("recentlyViewed.json"))
         load()
-        loadRecentlyViewed()
     }
 
     // MARK: - Load
@@ -309,36 +307,6 @@ final class ProjectStore: ObservableObject {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
-    }
-
-    // MARK: - Recently Viewed
-
-    func loadRecentlyViewed() {
-        guard let data = try? Data(contentsOf: recentlyViewedURL) else { return }
-        recentlyViewed = (try? JSONDecoder().decode(RecentlyViewed.self, from: data)) ?? RecentlyViewed()
-    }
-
-    func saveRecentlyViewed() {
-        do {
-            try JSONEncoder().encode(recentlyViewed).write(to: recentlyViewedURL, options: .atomic)
-        } catch {
-            report(.app("Error.ProjectStore.SaveRecentlyViewed \(error.localizedDescription)"))
-        }
-    }
-
-    func recordOpened(_ item: RecentlyViewedItem) {
-        recentlyViewed.recordOpened(item)
-        saveRecentlyViewed()
-    }
-
-    func togglePin(_ item: RecentlyViewedItem) {
-        recentlyViewed.togglePin(item)
-        saveRecentlyViewed()
-    }
-
-    func removeFromRecentlyViewed(_ item: RecentlyViewedItem) {
-        recentlyViewed.remove(item)
-        saveRecentlyViewed()
     }
 
     // MARK: - GitHub clones (older codebases only — see `githubClonesDir`)

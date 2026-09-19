@@ -66,9 +66,9 @@ struct CallGraphConfigSheet: View {
             HStack {
                 Spacer()
                 Button(.app("View.CallGraphConfigSheet.Cancel"), role: .cancel, action: onCancel)
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(.cancelDialog)
                 Button(.app("View.CallGraphConfigSheet.Create")) { onCreate(scope) }
-                    .keyboardShortcut(.defaultAction)
+                    .keyboardShortcut(.confirmDialog)
                     .accessibilityIdentifier("callGraphConfig.createButton")
             }
         }

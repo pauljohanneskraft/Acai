@@ -42,7 +42,7 @@ struct StatisticDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(.app("View.StatisticDetailSheet.Done")) { dismiss() }
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(.confirmDialog)
                 }
             }
         }

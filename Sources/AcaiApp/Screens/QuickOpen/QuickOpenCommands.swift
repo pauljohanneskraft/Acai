@@ -12,7 +12,7 @@ struct QuickOpenCommands: Commands {
             Button(.app("View.QuickOpenCommands.QuickOpen")) {
                 presenter.isPresented = true
             }
-            .keyboardShortcut("k", modifiers: .command)
+            .keyboardShortcut(.quickOpen)
         }
     }
 }

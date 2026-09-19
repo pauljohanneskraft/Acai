@@ -61,14 +61,14 @@ extension View {
                     model.undo()
                     onChange()
                 }
-                .keyboardShortcut("z", modifiers: .command)
+                .keyboardShortcut(.undo)
                 .disabled(!enabled)
 
                 Button("") {
                     model.redo()
                     onChange()
                 }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
+                .keyboardShortcut(.redo)
                 .disabled(!enabled)
             }
             .hidden()
