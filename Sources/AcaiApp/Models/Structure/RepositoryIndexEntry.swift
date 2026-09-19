@@ -2,7 +2,8 @@ import Foundation
 
 /// One shared `AcaiGit.GitRepository`'s reverse index: every codebase, across every project, whose
 /// `Codebase.repository` references it — the Repositories sidebar/detail needs this to show
-/// "used by N codebases" and to block removal while any codebase still depends on it.
+/// "used by N codebases". A repository no codebase references has no entry — its clone is deleted
+/// with its last worktree.
 struct RepositoryIndexEntry: Identifiable, Hashable {
     var remoteURL: URL
     var codebases: [Codebase]

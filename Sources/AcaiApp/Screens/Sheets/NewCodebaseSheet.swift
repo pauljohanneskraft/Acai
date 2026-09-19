@@ -324,16 +324,12 @@ struct NewCodebaseSheet: View {
         }
     }
 
-    /// Checked against the plain (credential-free) remote URL `GitHubRepositoryClone` would build
-    /// for this repository — the same one `CodebaseRepositoryReference.remoteURL` ends up storing.
+    /// Checked against the same credential-free URL `CodebaseRepositoryReference.remoteURL` ends up
+    /// storing.
     private var isSelectedRepositoryAlreadyCloned: Bool {
-        guard let repository = selectedRepository, account != nil else { return false }
-        var plainRemoteURLComponents = URLComponents()
-        plainRemoteURLComponents.scheme = "https"
-        plainRemoteURLComponents.host = "github.com"
-        plainRemoteURLComponents.path = "/\(repository.owner.login)/\(repository.name).git"
-        guard let plainRemoteURL = plainRemoteURLComponents.url else { return false }
-        return GitRepository(remoteURL: plainRemoteURL, storeDirectory: model.store.gitRepositoriesDir).isCloned
+        guard let repository = selectedRepository, let account else { return false }
+        let remote = GitHubRemote(credential: account.credential, owner: repository.owner.login, repo: repository.name)
+        return GitRepository(remoteURL: remote.plainURL, storeDirectory: model.store.gitRepositoriesDir).isCloned
     }
 
     private var filteredRepositories: [GitHubAPIClient.Repository] {

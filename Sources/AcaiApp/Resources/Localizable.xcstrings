@@ -873,6 +873,28 @@
         }
       }
     },
+    "Error.ProjectBrowserViewModel.RemoveCloneFailed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die lokale Kopie der Codebase konnte nicht gelöscht werden: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't delete the codebase's local copy: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de supprimer la copie locale de la codebase : %@"
+          }
+        }
+      }
+    },
     "Error.ProjectBrowserViewModel.SaveQualityRulesFailed %@" : {
       "localizations" : {
         "de" : {
@@ -18343,28 +18365,6 @@
         }
       }
     },
-    "View.RepositoryDetailView.CanRemoveRepository" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Repository kann nicht entfernt werden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Can't Remove Repository"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de supprimer le repository"
-          }
-        }
-      }
-    },
     "View.RepositoryDetailView.Codebases %lld" : {
       "localizations" : {
         "de" : {
@@ -18383,28 +18383,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Codebases (%lld)"
-          }
-        }
-      }
-    },
-    "View.RepositoryDetailView.DeletesSharedCloneDisk" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dies löscht den gemeinsam genutzten Klon von der Festplatte. Dies kann nicht rückgängig gemacht werden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This deletes its shared clone from disk. This cannot be undone."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cela supprime son clone partagé du disque. Cette action est irréversible."
           }
         }
       }
@@ -18603,138 +18581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Distant"
-          }
-        }
-      }
-    },
-    "View.RepositoryDetailView.RemovalBlocked %@ %lld" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entferne oder weise zuerst %1$@ neu zu — dieses Repository wird noch von %#@codebases@ referenziert."
-          },
-          "substitutions" : {
-            "codebases" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg Codebase"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg Codebases"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove or reassign %1$@ first — this repository is still referenced by %#@codebases@."
-          },
-          "substitutions" : {
-            "codebases" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg codebase"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg codebases"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimez ou réaffectez d'abord %1$@ — ce repository est encore référencé par %#@codebases@."
-          },
-          "substitutions" : {
-            "codebases" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg codebase"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg codebases"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "View.RepositoryDetailView.Remove" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entfernen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimer"
-          }
-        }
-      }
-    },
-    "View.RepositoryDetailView.RemoveRepository" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Repository entfernen?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove this repository?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimer ce repository ?"
           }
         }
       }
