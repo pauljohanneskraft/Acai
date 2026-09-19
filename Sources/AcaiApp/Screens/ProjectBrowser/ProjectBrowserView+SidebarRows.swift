@@ -18,6 +18,8 @@ extension ProjectBrowserView {
 
     @ViewBuilder
     fileprivate func projectContextMenu(project: Project) -> some View {
+        addressMenuItems(for: .project(project.id), idPrefix: "sidebar.project.\(project.id)")
+        Divider()
         Button(role: .destructive) {
             projectPendingDeletion = project
         } label: {
@@ -89,6 +91,8 @@ extension ProjectBrowserView {
                 .help(codebase.name)
                 .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
                 .contextMenu {
+                    addressMenuItems(for: .codebase(codebase.id), idPrefix: "sidebar.codebase.\(codebase.id)")
+                    Divider()
                     Button {
                         Task { await model.editing.reindex(codebaseID: codebase.id) }
                     } label: {
@@ -125,6 +129,15 @@ extension ProjectBrowserView {
         }
     }
 
+    fileprivate func renameMenuItem(diagramID: UUID, name: String) -> some View {
+        Button {
+            renamingText = name
+            renamingDiagramID = diagramID
+        } label: {
+            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
+        }
+    }
+
     @ViewBuilder
     fileprivate func generatedDiagramRows(project: Project) -> some View {
         let generatedDiagrams = model.generatedDiagramsForProject(project.id)
@@ -145,12 +158,10 @@ extension ProjectBrowserView {
                     .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
                     .help(diagram.name)
                     .contextMenu {
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
-                        }
+                        addressMenuItems(
+                            for: .generatedDiagram(diagram.id), idPrefix: "sidebar.generatedDiagram.\(diagram.id)")
+                        Divider()
+                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
                         Button {
                             if let id = model.diagrams.duplicate(diagram.id) {
                                 model.open(.generatedDiagram(id))
@@ -198,12 +209,10 @@ extension ProjectBrowserView {
                     .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
                     .help(diagram.name)
                     .contextMenu {
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
-                        }
+                        addressMenuItems(
+                            for: .freeformDiagram(diagram.id), idPrefix: "sidebar.freeformDiagram.\(diagram.id)")
+                        Divider()
+                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
                         Button {
                             if let id = model.freeforms.duplicate(diagram.id) {
                                 model.open(.freeformDiagram(id))

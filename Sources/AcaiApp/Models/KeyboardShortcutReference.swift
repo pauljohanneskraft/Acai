@@ -80,6 +80,12 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    static let openInNewWindow = KeyboardShortcutReference(
+        id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.OpenInNewWindow"))
+    static let copyLink = KeyboardShortcutReference(
+        id: "copyLink", shortcut: KeyboardShortcut("c", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.CopyLink"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.KeyboardShortcuts"))
@@ -109,6 +115,9 @@ extension KeyboardShortcutReference {
         Group(
             id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen],
             isMacOSOnly: true),
+        Group(
+            id: "windows", title: .app("KeyboardShortcutReference.Windows"),
+            shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
         Group(
             id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
             isMacOSOnly: true)
