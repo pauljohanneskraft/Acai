@@ -77,7 +77,7 @@ struct FreeformDiagramView: View {
                         Label(.app("View.FreeformDiagramView.FitView"), systemImage: "rectangle.dashed")
                     }
                     .help(.app("View.FreeformDiagramView.FitDiagramVisibleCanvas"))
-                    .keyboardShortcut("0", modifiers: .command)
+                    .keyboardShortcut(.fitToView)
                     .accessibilityIdentifier("diagram.fitToViewButton")
 
                     Button {
@@ -161,19 +161,19 @@ struct FreeformDiagramView: View {
                             showDeleteConfirmation = true
                         }
                     }
-                    .keyboardShortcut(.delete, modifiers: [])
+                    .keyboardShortcut(.deleteSelection)
 
                     Button("") { viewModel.clipboard.copySelection() }
-                        .keyboardShortcut("c", modifiers: .command)
+                        .keyboardShortcut(.copy)
 
                     Button("") { viewModel.clipboard.cutSelection() }
-                        .keyboardShortcut("x", modifiers: .command)
+                        .keyboardShortcut(.cut)
 
                     Button("") { viewModel.clipboard.paste() }
-                        .keyboardShortcut("v", modifiers: .command)
+                        .keyboardShortcut(.paste)
 
                     Button("") { viewModel.selectAll() }
-                        .keyboardShortcut("a", modifiers: .command)
+                        .keyboardShortcut(.selectAll)
                 }
                 .hidden()
             }
@@ -272,7 +272,7 @@ struct FreeformDiagramView: View {
             // Hidden button so Escape (macOS, external keyboard on iPad) backs out of placement
             // mode — the explicit "or Escape key" cancel affordance alongside `placementCancelButton`.
             Button("") { viewModel.cancelPlacement() }
-                .keyboardShortcut(.cancelAction)
+                .keyboardShortcut(.cancelPlacement)
                 .hidden()
         }
     }

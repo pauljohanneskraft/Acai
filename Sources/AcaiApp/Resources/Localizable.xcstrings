@@ -1217,28 +1217,6 @@
         }
       }
     },
-    "Error.ProjectStore.SaveRecentlyViewed %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zuletzt geöffnet konnte nicht gesichert werden: %@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Failed to save recently viewed: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Échec de l'enregistrement des éléments récents : %@"
-          }
-        }
-      }
-    },
     "Error.ScopedResourceAccess.BookmarkFailed %@ %@" : {
       "localizations" : {
         "de" : {
@@ -1283,6 +1261,50 @@
         }
       }
     },
+    "KeyboardShortcutReference.CancelDialog" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.CancelPlacement" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platzierung abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel Placement"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler le placement"
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.Canvas" : {
       "localizations" : {
         "de" : {
@@ -1301,6 +1323,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Canvas"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.CloseFind" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche schließen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Find"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fermer la recherche"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.ConfirmDialog" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestätigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmer"
           }
         }
       }
@@ -1367,6 +1433,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Supprimer la sélection"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.Dialogs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dialoge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dialogs"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boîtes de dialogue"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.FindClassDiagrams" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suchen (Klassendiagramme)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find (Class Diagrams)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche (diagrammes de classes)"
           }
         }
       }
@@ -1459,6 +1569,28 @@
         }
       }
     },
+    "KeyboardShortcutReference.Navigation" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.NextMatch" : {
       "localizations" : {
         "de" : {
@@ -1521,6 +1653,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Correspondance précédente"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.QuickOpen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Open"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouverture rapide"
           }
         }
       }

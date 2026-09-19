@@ -3,6 +3,7 @@ import SwiftUI
 struct ActivityIndicatorView: View {
     @ObservedObject var activityCenter: ActivityCenter
     @State private var isExpanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
@@ -34,7 +35,7 @@ struct ActivityIndicatorView: View {
                 .app("View.ActivityIndicatorView.ActivityProgress \(running)"), systemImage: "circle.dotted"
             )
                 .labelStyle(.iconOnly)
-                .symbolEffect(.pulse)
+                .symbolEffect(.pulse, isActive: !reduceMotion)
                 .overlay(alignment: .topTrailing) {
                     Text(.app("View.ActivityIndicatorView.RunningCount \(activityCenter.operations.count)"))
                         .font(.system(size: 9, weight: .bold))

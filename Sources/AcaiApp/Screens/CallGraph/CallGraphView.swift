@@ -288,7 +288,7 @@ private struct CallGraphCanvasView: View {
                 Label(.app("View.CallGraphCanvasView.FitView"), systemImage: "rectangle.dashed")
             }
             .help(.app("View.CallGraphCanvasView.FitDiagramVisibleCanvas"))
-            .keyboardShortcut("0", modifiers: .command)
+            .keyboardShortcut(.fitToView)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()

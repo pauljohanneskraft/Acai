@@ -166,7 +166,7 @@ struct StateDiagramView: View {
                 Label(.app("View.StateDiagramView.FitView"), systemImage: "rectangle.dashed")
             }
             .help(.app("View.StateDiagramView.FitDiagramVisibleCanvas"))
-            .keyboardShortcut("0", modifiers: .command)
+            .keyboardShortcut(.fitToView)
             .accessibilityIdentifier("diagram.fitToViewButton")
             Button {
                 showSidebar.toggle()

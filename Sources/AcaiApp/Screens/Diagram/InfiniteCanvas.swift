@@ -35,6 +35,7 @@ struct InfiniteCanvas<Content: View>: View {
     #endif
 
     @Environment(\.diagramPalette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let content: () -> Content
 
@@ -114,6 +115,7 @@ struct InfiniteCanvas<Content: View>: View {
         autoPanController.scale = scale
         autoPanController.offset = offset
         autoPanController.viewportSize = viewportSize
+        autoPanController.reducesMotion = reduceMotion
 
         autoPanController.onPanTick = { canvasDelta in
             offset.x -= canvasDelta.width * scale

@@ -9,6 +9,7 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @State private var isExpanded: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         title: LocalizedStringResource,
@@ -26,7 +27,7 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
+                withAnimation(Animation.disclosure.respecting(reduceMotion: reduceMotion)) { isExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "chevron.right")
