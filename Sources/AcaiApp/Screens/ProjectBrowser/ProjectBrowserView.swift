@@ -5,7 +5,7 @@ public struct ProjectBrowserView: View {
     // Not `private`: `ProjectBrowserView+Repositories.swift`'s and `ProjectBrowserView
     // +SidebarRows.swift`'s extensions (separate files, kept there only to stay under this file's
     // own line-count limit) need to read these too.
-    @StateObject var model = ProjectBrowserViewModel()
+    @StateObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     // Shared with `AcaiRootScene`'s ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
     // doc comment for why this can't just be local `@State` on this view. Not `private`:
@@ -30,7 +30,9 @@ public struct ProjectBrowserView: View {
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
 
-    public init() {}
+    init(store: ProjectStore) {
+        _model = StateObject(wrappedValue: ProjectBrowserViewModel(store: store))
+    }
 
     public var body: some View {
         NavigationSplitView {
