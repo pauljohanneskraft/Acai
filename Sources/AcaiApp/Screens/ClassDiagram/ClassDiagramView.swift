@@ -224,6 +224,7 @@ extension ClassDiagramView {
 
     @ViewBuilder private var edgeLayer: some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
+        let names = Dictionary(viewModel.nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
@@ -233,13 +234,25 @@ extension ClassDiagramView {
                     targetRect: targetRect,
                     sourceLabel: edge.sourceLabel,
                     targetLabel: edge.targetLabel,
-                    strokeColor: viewModel.deltaColor(for: edge)
+                    strokeColor: viewModel.deltaColor(for: edge),
+                    accessibilityDescription: DiagramElementDescription(
+                        classEdge: edge,
+                        sourceName: names[edge.sourceID] ?? edge.sourceID,
+                        targetName: names[edge.targetID] ?? edge.targetID,
+                        delta: viewModel.deltaStatus(for: edge)
+                    ).edgeAccessibility(identifier: "diagram.edge.\(edge.sourceID)->\(edge.targetID)")
                 )
             }
         }
     }
 
     // MARK: - Node Layer
+
+    private func showDetails(for id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
+    }
 
     private var editor: ClassDiagramConfigEditor {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
@@ -275,11 +288,16 @@ extension ClassDiagramView {
                         RoundedRectangle(cornerRadius: 5).stroke(Color.yellow, lineWidth: 3)
                     }
                 }
+                .diagramNodeAccessibility(
+                    DiagramElementDescription(typeNode: node, delta: deltaBadge),
+                    identifier: "diagram.typeNode.\(node.name)",
+                    isSelected: selected,
+                    onSelect: { viewModel.selectNode(node.id, extending: false) },
+                    onShowDetails: { showDetails(for: node.id) }
+                )
                 .position(position)
                 .onTapGesture(count: 2) {
-                    viewModel.selectNode(node.id, extending: false)
-                    sidebarTab = .inspector
-                    showSidebar = true
+                    showDetails(for: node.id)
                 }
                 .onTapGesture(count: 1) {
                     #if os(macOS)
@@ -297,9 +315,7 @@ extension ClassDiagramView {
                 ))
                 .contextMenu {
                     Button {
-                        viewModel.selectNode(node.id, extending: false)
-                        sidebarTab = .inspector
-                        showSidebar = true
+                        showDetails(for: node.id)
                     } label: {
                         Label(.app("View.ClassDiagramView.Details"), systemImage: "info")
                     }

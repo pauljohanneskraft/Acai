@@ -15,12 +15,17 @@ final class HardwareKeyboardShortcutsJourneyTests: UIJourneyTestCase {
         launchSeeded(analysis: .parsed).openQuickOpenWithKeyboard()
     }
 
+    #if os(macOS)
+    /// macOS only: iPadOS keeps ⇧⌘/ for itself — neither a menu command nor a view-bound shortcut
+    /// receives it — so iPad lists the panel in its Help menu and reaches it from the sidebar.
     func testKeyboardShortcutsPanelOpensWithShiftCommandSlash() {
         launchSeeded().openKeyboardShortcutsWithKeyboard()
         KeyboardShortcutsScreen(app: app).close()
     }
-
-    func testSettingsOpenWithCommandComma() {
-        launchSeeded().openSettingsWithKeyboard()
+    #else
+    func testKeyboardShortcutsPanelOpensFromTheSidebarMenu() {
+        launchSeeded().openKeyboardShortcutsFromMenu()
+        KeyboardShortcutsScreen(app: app).close()
     }
+    #endif
 }

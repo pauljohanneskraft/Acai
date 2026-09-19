@@ -50,11 +50,18 @@ extension SequenceDiagramView {
         )
         .frame(width: participant.headerRect.width, height: participant.headerRect.height)
         .deltaBadge(viewModel.participantDeltaStatus(participant.id))
+        .diagramNodeAccessibility(
+            DiagramElementDescription(
+                participantNamed: participant.name, kind: participant.kind,
+                delta: viewModel.participantDeltaStatus(participant.id)),
+            identifier: "diagram.sequenceParticipant.\(participant.name)",
+            isSelected: viewModel.selectedNodeIDs.contains(participant.id),
+            onSelect: { viewModel.selectNode(participant.id, extending: false) },
+            onShowDetails: { showDetails(forParticipant: participant.id) }
+        )
         .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
         .onTapGesture(count: 2) {
-            viewModel.selectNode(participant.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
+            showDetails(forParticipant: participant.id)
         }
         .diagramNodeInteraction(
             id: participant.id,
@@ -85,22 +92,50 @@ extension SequenceDiagramView {
             .frame(width: width + 16, height: 44)
             .position(x: midX, y: message.y)
             .accessibilityElement()
-            .accessibilityLabel(messageAccessibilityLabel(message))
-            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
+            .accessibilityValue(Text(verbatim: messageDescription(message).summary))
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { toggleMessageSelection(message.id) }
+            .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
+                showDetails(forMessage: message.id)
+            }
             .onTapGesture(count: 2) {
-                viewModel.clearSelection()
-                viewModel.selectedMessageID = message.id
-                sidebarTab = .inspector
-                showSidebar = true
+                showDetails(forMessage: message.id)
             }
             .onTapGesture(count: 1) {
-                let newSelection = (viewModel.selectedMessageID == message.id) ? nil : message.id
-                viewModel.clearSelection()
-                viewModel.selectedMessageID = newSelection
+                toggleMessageSelection(message.id)
             }
     }
 
-    func messageAccessibilityLabel(_ message: SequenceLayoutModel.MessageLayout) -> String {
-        "Message" + (message.label.map { ": \($0)" } ?? "")
+    private func messageDescription(_ layout: SequenceLayoutModel.MessageLayout) -> DiagramElementDescription {
+        let messages = viewModel.orderedMessages
+        guard messages.indices.contains(layout.id) else {
+            return DiagramElementDescription(label: "", details: [])
+        }
+        let message = messages[layout.id]
+        return DiagramElementDescription(
+            edgeFrom: viewModel.participantName(message.from) ?? message.from,
+            to: viewModel.participantName(message.to) ?? message.to,
+            details: layout.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
+            delta: viewModel.messageDeltaStatus(message))
+    }
+
+    private func toggleMessageSelection(_ id: Int) {
+        let newSelection = (viewModel.selectedMessageID == id) ? nil : id
+        viewModel.clearSelection()
+        viewModel.selectedMessageID = newSelection
+    }
+
+    private func showDetails(forMessage id: Int) {
+        viewModel.clearSelection()
+        viewModel.selectedMessageID = id
+        sidebarTab = .inspector
+        showSidebar = true
+    }
+
+    private func showDetails(forParticipant id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
     }
 }

@@ -6,6 +6,22 @@ final class ClassDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
+    /// A type node as VoiceOver reads it: labelled with its name and carrying a non-empty description.
+    func describedTypeNode(named name: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier == %@ AND label == %@ AND value != nil AND value != ''",
+            "diagram.typeNode.\(name)", name
+        )).firstMatch
+    }
+
+    /// Matched by its spoken label, which names both ends in whatever language the app runs in.
+    func relationship(from source: String, to target: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier BEGINSWITH 'diagram.edge.' AND label CONTAINS %@ AND label CONTAINS %@ AND value != ''",
+            source, target
+        )).firstMatch
+    }
+
     // MARK: - Focus (Settings tab)
 
     var focusToggle: XCUIElement { app.descendants(matching: .any)["diagram.focus.toggle"].firstMatch }

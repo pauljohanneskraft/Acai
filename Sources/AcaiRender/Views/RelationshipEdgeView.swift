@@ -17,6 +17,8 @@ public struct RelationshipEdgeView: View, Equatable {
     let lineWidthScale: CGFloat
     /// Optional colour override for the line and arrow/diamond strokes; wins over `palette.edgeLine`.
     let strokeColor: Color?
+    /// `nil` leaves the edge out of the accessibility tree (e.g. in image snapshots).
+    let accessibilityDescription: EdgeAccessibility?
 
     public init(
         kind: Relationship.Kind,
@@ -26,7 +28,8 @@ public struct RelationshipEdgeView: View, Equatable {
         sourceLabel: String? = nil,
         targetLabel: String? = nil,
         lineWidthScale: CGFloat = 1,
-        strokeColor: Color? = nil
+        strokeColor: Color? = nil,
+        accessibilityDescription: EdgeAccessibility? = nil
     ) {
         self.kind = kind
         self.sourceRect = sourceRect
@@ -36,13 +39,14 @@ public struct RelationshipEdgeView: View, Equatable {
         self.targetLabel = targetLabel
         self.lineWidthScale = lineWidthScale
         self.strokeColor = strokeColor
+        self.accessibilityDescription = accessibilityDescription
     }
 
     nonisolated public static func == (lhs: RelationshipEdgeView, rhs: RelationshipEdgeView) -> Bool {
         lhs.sourceRect == rhs.sourceRect && lhs.targetRect == rhs.targetRect
             && lhs.kind == rhs.kind && lhs.label == rhs.label && lhs.lineWidthScale == rhs.lineWidthScale
             && lhs.sourceLabel == rhs.sourceLabel && lhs.targetLabel == rhs.targetLabel
-            && lhs.strokeColor == rhs.strokeColor
+            && lhs.strokeColor == rhs.strokeColor && lhs.accessibilityDescription == rhs.accessibilityDescription
     }
 
     @Environment(\.diagramPalette) private var palette
@@ -120,6 +124,7 @@ public struct RelationshipEdgeView: View, Equatable {
                         x: (startPoint.x + endPoint.x) / 2,
                         y: (startPoint.y + endPoint.y) / 2 - 8
                     )
+                    .accessibilityHidden(accessibilityDescription != nil)
             }
 
             if let sourceLabel {
@@ -128,7 +133,26 @@ public struct RelationshipEdgeView: View, Equatable {
             if let targetLabel {
                 multiplicityLabel(targetLabel, near: endPoint, toward: startPoint)
             }
+
+            if let accessibilityDescription {
+                accessibilityAnchor(
+                    accessibilityDescription,
+                    at: CGPoint(x: (startPoint.x + endPoint.x) / 2, y: (startPoint.y + endPoint.y) / 2))
+            }
         }
+    }
+
+    /// A line has no area for VoiceOver to focus on, so the edge is anchored to a square at its midpoint.
+    /// It never takes taps: edges draw above nodes, and the square would swallow a node's.
+    private func accessibilityAnchor(_ description: EdgeAccessibility, at midpoint: CGPoint) -> some View {
+        Color.clear
+            .frame(width: 44, height: 44)
+            .position(midpoint)
+            .allowsHitTesting(false)
+            .accessibilityElement()
+            .accessibilityLabel(Text(verbatim: description.label))
+            .accessibilityValue(Text(verbatim: description.value))
+            .if(description.identifier != nil) { $0.accessibilityIdentifier(description.identifier ?? "") }
     }
 
     /// Nudged to one side so it doesn't sit under the node or the arrow head.
@@ -141,6 +165,8 @@ public struct RelationshipEdgeView: View, Equatable {
             .font(.system(size: 9, design: .monospaced))
             .foregroundColor(palette.edgeLabelInk)
             .position(x: anchor.x + ux * 16 - uy * 9, y: anchor.y + uy * 16 + ux * 9)
+            // Folded into `accessibilityDescription.value` when set, so the edge reads as one element.
+            .accessibilityHidden(accessibilityDescription != nil)
     }
 
     // MARK: - Connection Points

@@ -11,9 +11,10 @@ public struct ProjectBrowserView: View {
     // doc comment for why this can't just be local `@State` on this view. Not `private`:
     // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
     @EnvironmentObject var quickOpenPresenter: QuickOpenPresenter
-    // iPad/iPhone have no `Settings` scene — a gear icon and `SettingsCommands`' ⌘, open the same
-    // content as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to
-    // GitHub in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
+    // iPad/iPhone have no `Settings` scene — a gear icon opens the same content as a sheet instead
+    // (iPadOS keeps ⌘, for the system's own Settings command). Shared (not local `@State`) so
+    // `NewCodebaseSheet`'s "Sign in to GitHub in Settings" button can open it too — see
+    // `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
     @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     #if !os(macOS)
@@ -82,6 +83,7 @@ public struct ProjectBrowserView: View {
                         } label: {
                             Label(.app("View.ProjectBrowserView.DiagramTheme"), systemImage: "paintbrush")
                         }
+                        .accessibilityIdentifier("sidebar.diagramThemeMenu")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         ActivityIndicatorView(activityCenter: model.store.activityCenter)

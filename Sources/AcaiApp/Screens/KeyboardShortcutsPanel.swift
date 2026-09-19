@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// "Keyboard Shortcuts" reference panel, grouped by context. Help menu (⇧⌘/) everywhere; iPad/iPhone
-/// also reach it from the sidebar toolbar's overflow menu.
+/// "Keyboard Shortcuts" reference panel, grouped by context. Help menu everywhere (⇧⌘/ on macOS);
+/// iPad/iPhone also reach it from the sidebar toolbar's overflow menu.
 struct KeyboardShortcutsPanel: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(KeyboardShortcutReference.allGroups) { group in
+                ForEach(KeyboardShortcutReference.groups) { group in
                     Section {
                         ForEach(group.shortcuts) { shortcut in
                             HStack {
@@ -55,6 +55,7 @@ struct KeyboardShortcutCommands: Commands {
             KeyboardShortcutsHelpMenuButton(presenter: presenter)
         }
         #else
+        // iPadOS keeps its own Help items, and ⇧⌘/ with them: the item is reachable, its shortcut isn't.
         CommandGroup(after: .help) {
             KeyboardShortcutsHelpMenuButton(presenter: presenter)
         }

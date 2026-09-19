@@ -80,10 +80,6 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
-    /// Bound only off macOS: there the `Settings` scene provides ⌘, itself.
-    static let openSettings = KeyboardShortcutReference(
-        id: "openSettings", shortcut: KeyboardShortcut(",", modifiers: .command),
-        name: .app("KeyboardShortcutReference.OpenSettings"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.KeyboardShortcuts"))
@@ -94,6 +90,8 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
+        /// iPadOS keeps these keys for itself, so iPad doesn't list a shortcut that would never fire.
+        var isReservedByIPadOS = false
     }
 
     static let allGroups: [Group] = [
@@ -108,11 +106,19 @@ extension KeyboardShortcutReference {
         Group(
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
+        Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
         Group(
-            id: "navigation", title: .app("KeyboardShortcutReference.Navigation"),
-            shortcuts: [.quickOpen, .openSettings]),
-        Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
+            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
+            isReservedByIPadOS: true)
     ]
+
+    static let groups: [Group] = {
+        #if os(macOS)
+        allGroups
+        #else
+        allGroups.filter { !$0.isReservedByIPadOS }
+        #endif
+    }()
 }
 
 extension View {

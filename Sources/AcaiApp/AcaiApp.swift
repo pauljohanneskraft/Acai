@@ -32,9 +32,6 @@ public struct AcaiRootScene: Scene {
             DiagramThemeCommands()
             QuickOpenCommands()
             KeyboardShortcutCommands()
-            #if !os(macOS)
-            SettingsCommands()
-            #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also

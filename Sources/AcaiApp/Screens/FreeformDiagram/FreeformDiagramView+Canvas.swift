@@ -64,6 +64,7 @@ extension FreeformDiagramView {
     var edgeLayer: some View {
         // Sequence messages are drawn by `sequenceLayer` through the shared layout.
         let messageEdgeIDs = Set(viewModel.sequence.messageEdges.map(\.id))
+        let names = nodeNames
         return ForEach(viewModel.edges.filter { !messageEdgeIDs.contains($0.id) }) { edge in
             RelationshipEdgeView(
                 kind: edge.kind,
@@ -71,7 +72,12 @@ extension FreeformDiagramView {
                 targetRect: viewModel.nodeRect(edge.targetNodeID),
                 // Transitions draw their UML `event [guard] / action` label; ordinary
                 // relationship edges show their free-form label, when set.
-                label: edge.transition?.label ?? edge.label
+                label: edge.transition?.label ?? edge.label,
+                accessibilityDescription: DiagramElementDescription(
+                    freeformEdge: edge,
+                    sourceName: names[edge.sourceNodeID] ?? "",
+                    targetName: names[edge.targetNodeID] ?? ""
+                ).edgeAccessibility(identifier: "diagram.freeformEdge.\(edge.id)")
             )
             .onTapGesture(count: 2) {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
@@ -82,6 +88,42 @@ extension FreeformDiagramView {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
             }
         }
+    }
+
+    private var nodeNames: [String: String] {
+        Dictionary(viewModel.nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private func showDetails(forNode id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
+    }
+
+    /// Matches the identifier each node view sets on itself, which `children: .ignore` would drop.
+    private func accessibilityIdentifier(for node: FreeformDiagram.Node) -> String {
+        switch node.content {
+        case .type:
+            "diagram.typeNode.\(node.name)"
+        case .state:
+            "diagram.stateNode.\(node.name)"
+        case .lifeline:
+            "diagram.sequenceParticipant.\(node.name)"
+        case .package, .boundary, .subsystem:
+            "diagram.containerNode.\(node.name)"
+        default:
+            "diagram.freeformNode.\(node.id)"
+        }
+    }
+
+    private func nodeAccessibility(_ view: some View, for node: FreeformDiagram.Node) -> some View {
+        view.diagramNodeAccessibility(
+            DiagramElementDescription(freeformNode: node),
+            identifier: accessibilityIdentifier(for: node),
+            isSelected: viewModel.selectedNodeIDs.contains(node.id),
+            onSelect: { viewModel.selectNode(node.id, extending: false) },
+            onShowDetails: { showDetails(forNode: node.id) }
+        )
     }
 
     // MARK: - Container Node Layer (lowest z-level)
@@ -157,11 +199,16 @@ extension FreeformDiagramView {
             .cursorOnHover(.pointingHand)
             #endif
             .frame(width: tab.width, height: tab.height)
+            .diagramNodeAccessibility(
+                DiagramElementDescription(label: fragment.kind.rawValue, details: [.app("FreeformKind.Fragment")]),
+                identifier: "diagram.freeformNode.\(fragment.id)",
+                isSelected: viewModel.selectedNodeIDs.contains(fragment.id),
+                onSelect: { viewModel.selectNode(fragment.id, extending: false) },
+                onShowDetails: { showDetails(forNode: fragment.id) }
+            )
             .position(x: tab.midX, y: anchorY + tab.midY)
             .onTapGesture(count: 2) {
-                viewModel.selectNode(fragment.id, extending: false)
-                sidebarTab = .inspector
-                showSidebar = true
+                showDetails(forNode: fragment.id)
             }
             .onTapGesture(count: 1) {
                 #if os(macOS)
@@ -194,16 +241,43 @@ extension FreeformDiagramView {
             // Cover the label above the arrow as well as the arrow itself.
             .frame(width: width + 16, height: 30)
             .position(x: midX, y: anchorY + message.y - 4)
+            .accessibilityElement()
+            .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
+            .accessibilityValue(Text(verbatim: messageSummary(edge)))
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { toggleEdgeSelection(edge) }
+            .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
+                showDetails(forEdge: edge)
+            }
             .onTapGesture(count: 2) {
-                guard let edge else { return }
-                viewModel.selectedEdgeID = edge.id
-                sidebarTab = .inspector
-                showSidebar = true
+                showDetails(forEdge: edge)
             }
             .onTapGesture(count: 1) {
-                guard let edge else { return }
-                viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
+                toggleEdgeSelection(edge)
             }
+    }
+
+    private func messageSummary(_ edge: FreeformDiagram.Edge?) -> String {
+        guard let edge else { return "" }
+        let names = nodeNames
+        return DiagramElementDescription(
+            edgeFrom: names[edge.sourceNodeID] ?? "",
+            to: names[edge.targetNodeID] ?? "",
+            details: edge.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
+            delta: nil
+        ).summary
+    }
+
+    private func toggleEdgeSelection(_ edge: FreeformDiagram.Edge?) {
+        guard let edge else { return }
+        viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
+    }
+
+    private func showDetails(forEdge edge: FreeformDiagram.Edge?) {
+        guard let edge else { return }
+        viewModel.selectedEdgeID = edge.id
+        sidebarTab = .inspector
+        showSidebar = true
     }
 
     private func lifelineHeader(for node: FreeformDiagram.Node, anchorY: CGFloat) -> some View {
@@ -215,17 +289,16 @@ extension FreeformDiagramView {
             x: node.positionX,
             y: anchorY + SequenceLayoutModel.headerHeight / 2
         )
-        return ParticipantHeaderView(
+        let header = ParticipantHeaderView(
             name: node.name,
             kind: kind,
             isSelected: viewModel.selectedNodeIDs.contains(node.id)
         )
         .frame(width: size.width, height: size.height)
+        return nodeAccessibility(header, for: node)
         .position(position)
         .onTapGesture(count: 2) {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
+            showDetails(forNode: node.id)
         }
         .onTapGesture(count: 1) {
             #if os(macOS)
@@ -251,12 +324,10 @@ extension FreeformDiagramView {
         let size = viewModel.nodeSize(node.id)
         let selected = viewModel.selectedNodeIDs.contains(node.id)
 
-        return nodeContent(node: node, size: size, isSelected: selected)
+        return nodeAccessibility(nodeContent(node: node, size: size, isSelected: selected), for: node)
             .position(pos)
             .onTapGesture(count: 2) {
-                viewModel.selectNode(node.id, extending: false)
-                sidebarTab = .inspector
-                showSidebar = true
+                showDetails(forNode: node.id)
             }
             .onTapGesture(count: 1) {
                 #if os(macOS)
@@ -280,9 +351,7 @@ extension FreeformDiagramView {
     @ViewBuilder
     private func nodeContextMenu(for node: FreeformDiagram.Node) -> some View {
         Button {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
+            showDetails(forNode: node.id)
         } label: {
             Label(.app("View.FreeformDiagramView.Edit"), systemImage: "pencil")
         }
