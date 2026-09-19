@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build-and-deploy:
     name: Build & Deploy DocC
-    runs-on: macos-26
+    runs-on: macos-27
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
