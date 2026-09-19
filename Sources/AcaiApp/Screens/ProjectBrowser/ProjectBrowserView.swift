@@ -7,14 +7,15 @@ public struct ProjectBrowserView: View {
     // own line-count limit) need to read these too.
     @StateObject var model = ProjectBrowserViewModel()
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
+    // Shared with `AcaiRootScene`'s ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
     // doc comment for why this can't just be local `@State` on this view. Not `private`:
     // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
     @EnvironmentObject var quickOpenPresenter: QuickOpenPresenter
-    // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
-    // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
-    // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
+    // iPad/iPhone have no `Settings` scene — a gear icon and `SettingsCommands`' ⌘, open the same
+    // content as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to
+    // GitHub in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
+    @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     #if !os(macOS)
     // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
     // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
@@ -27,9 +28,6 @@ public struct ProjectBrowserView: View {
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
-    #if !os(macOS)
-    @State private var showKeyboardShortcuts = false
-    #endif
 
     public init() {}
 
@@ -76,7 +74,7 @@ public struct ProjectBrowserView: View {
                                 }
                             }
                             Button {
-                                showKeyboardShortcuts = true
+                                keyboardShortcutsPresenter.isPresented = true
                             } label: {
                                 Label(.app("View.ProjectBrowserView.KeyboardShortcuts"), systemImage: "keyboard")
                             }
@@ -128,7 +126,7 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         #if !os(macOS)
-        .sheet(isPresented: $showKeyboardShortcuts) {
+        .sheet(isPresented: $keyboardShortcutsPresenter.isPresented) {
             KeyboardShortcutsPanel()
         }
         .sheet(isPresented: $settingsPresenter.isPresented) {

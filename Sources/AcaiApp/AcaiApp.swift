@@ -11,6 +11,7 @@ public struct AcaiRootScene: Scene {
     @StateObject private var accountStore = GitHubAccountStore()
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     @StateObject private var settingsPresenter = SettingsPresenter()
+    @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
 
     public init() {}
 
@@ -24,19 +25,24 @@ public struct AcaiRootScene: Scene {
                 .statusBarHidden(UITestFixtureResolver().resolveBaseDir() != nil)
                 #endif
         }
+        // Menu commands are what an iPad's hardware keyboard fires too, so every one is attached on
+        // every platform — `KeyboardShortcutReferenceTests` rejects a shortcut-binding command
+        // attached on macOS only.
         .commands {
             DiagramThemeCommands()
-            #if os(macOS)
-            KeyboardShortcutCommands()
             QuickOpenCommands()
+            KeyboardShortcutCommands()
+            #if !os(macOS)
+            SettingsCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`QuickOpenCommands` needs `quickOpenPresenter`).
+        // read these via `@EnvironmentObject`.
         .environmentObject(accountStore)
         .environmentObject(quickOpenPresenter)
         .environmentObject(settingsPresenter)
+        .environmentObject(keyboardShortcutsPresenter)
         #if os(macOS)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()
