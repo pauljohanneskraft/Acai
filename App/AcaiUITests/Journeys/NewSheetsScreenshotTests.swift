@@ -16,6 +16,17 @@ final class NewSheetsScreenshotTests: UIJourneyTestCase {
         validateScreenshot("NewProjectSheet", state: "empty")
     }
 
+    func testEmptyProjectOffersOneAddPrompt() throws {
+        let browser = launchSeeded(analysis: .parsed)
+        let sheet = NewProjectSheetScreen(app: app)
+        browser.newProjectButton.tap("New Project", until: sheet.titleField)
+        sheet.create(title: "Empty")
+
+        let detail = ProjectDetailScreen(app: app)
+        detail.emptyState.waitOrFail("the empty project's add prompt")
+        validateScreenshot("ProjectDetail", state: "empty")
+    }
+
     func testNewCodebaseSheetLocalTabScreenshot() throws {
         let detail = openSeededProject(analysis: .parsed)
         detail.tapAddCodebase()

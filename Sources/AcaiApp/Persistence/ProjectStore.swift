@@ -45,6 +45,14 @@ final class ProjectStore: ObservableObject {
         lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
     }
 
+    /// Codebases the app cloned from GitHub — the ones the signed-in account's token reaches.
+    var gitHubBackedCodebaseCount: Int {
+        projects.flatMap(\.codebases).filter { codebase in
+            guard codebase.managedCheckout != nil, case .github = codebase.repository?.host else { return false }
+            return true
+        }.count
+    }
+
     let baseDir: URL
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }

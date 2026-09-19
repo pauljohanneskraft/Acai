@@ -9,9 +9,6 @@ import Foundation
 @MainActor
 final class GitHubAccountStore: ObservableObject {
     @Published private(set) var account: GitHubTokenStore.StoredAccount?
-    /// "Used by N codebases" in the signed-in view. Refreshed on demand (`refreshCodebaseCount()`)
-    /// rather than kept live-synced against `ProjectStore`, which this object has no reference to.
-    @Published private(set) var codebaseCount: Int = 0
     @Published private(set) var isRefreshingScopes = false
 
     private let tokenStore = GitHubTokenStore()
@@ -79,15 +76,5 @@ final class GitHubAccountStore: ObservableObject {
     private func credentialExpiresAt(_ credential: GitHubCredential) -> Date? {
         if case .gitHubApp(_, let expiresAt, _) = credential { return expiresAt }
         return nil
-    }
-
-    /// Reads a **fresh** `ProjectStore` snapshot from disk rather than holding a live reference —
-    /// `ProjectStore.load()` isn't safe to call twice on one instance (it appends, not replaces).
-    func refreshCodebaseCount() {
-        let store = ProjectStore()
-        codebaseCount = store.projects.flatMap(\.codebases).filter { codebase in
-            guard codebase.managedCheckout != nil, case .github = codebase.repository?.host else { return false }
-            return true
-        }.count
     }
 }
