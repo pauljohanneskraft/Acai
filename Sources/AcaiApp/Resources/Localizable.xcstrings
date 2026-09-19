@@ -1,6 +1,182 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+        "Error.AppAddress.Malformed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ ist kein Açaí-Link. Ein Link hat die Form acai://project/…, acai://codebase/… oder acai://diagram/…."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” isn’t an Açaí link. A link looks like acai://project/…, acai://codebase/… or acai://diagram/…."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » n’est pas un lien Açaí. Un lien a la forme acai://project/…, acai://codebase/… ou acai://diagram/…."
+          }
+        }
+      }
+    },
+    "Error.AppAddress.ProjectNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das verlinkte Projekt existiert nicht mehr. Es wurde möglicherweise gelöscht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The linked project no longer exists. It may have been deleted."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le projet lié n’existe plus. Il a peut-être été supprimé."
+          }
+        }
+      }
+    },
+    "Error.AppAddress.CodebaseNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die verlinkte Codebase existiert nicht mehr. Sie wurde möglicherweise gelöscht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The linked codebase no longer exists. It may have been deleted."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La codebase liée n’existe plus. Elle a peut-être été supprimée."
+          }
+        }
+      }
+    },
+    "Error.AppAddress.DiagramNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das verlinkte Diagramm existiert nicht mehr. Es wurde möglicherweise gelöscht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The linked diagram no longer exists. It may have been deleted."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le diagramme lié n’existe plus. Il a peut-être été supprimé."
+          }
+        }
+      }
+    },
+    "Error.ReindexFailure.CodebaseNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Codebase existiert nicht mehr, daher kann sie nicht neu indiziert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This codebase no longer exists, so it can’t be reindexed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette codebase n’existe plus, elle ne peut donc pas être réindexée."
+          }
+        }
+      }
+    },
+    "Intent.ReindexCodebase.Cancelled %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Neuindizierung von %@ wurde abgebrochen, bevor sie abgeschlossen war."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindexing %@ was cancelled before it finished."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La réindexation de %@ a été annulée avant la fin."
+          }
+        }
+      }
+    },
+    "Intent.ReindexCodebase.Done %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde neu indiziert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindexed %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a été réindexée."
+          }
+        }
+      }
+    },
+    "View.AddressMenuItems.CopyLink" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link kopieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Link"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier le lien"
+          }
+        }
+      }
+    },
     "ParticipantKind.Actor" : {
       "localizations" : {
         "de" : {

@@ -8,11 +8,11 @@ public struct AcaiRootScene: Scene {
     // Shared across scenes (the main `WindowGroup` and macOS's `Settings` scene, which is a
     // *separate* `Scene` a view-owned `@StateObject` on `ProjectBrowserView` can't reach) — see
     // each type's own doc comment for why it has to live here rather than lower in the hierarchy.
-    @StateObject private var projectStore = ProjectStore()
+    @StateObject private var projectStore = ProjectStore.app
     @StateObject private var accountStore = GitHubAccountStore()
-    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
+    @StateObject private var browserWindows = BrowserWindows()
 
     public init() {}
 
@@ -20,6 +20,8 @@ public struct AcaiRootScene: Scene {
         WindowGroup {
             ProjectBrowserView(store: projectStore)
                 .modifier(DiagramThemeProvider())
+                // Links open in an existing main window rather than a new one each.
+                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
                 #if os(iOS)
                 // The clock, date and battery would otherwise differ in every UI-test screenshot.
@@ -33,16 +35,27 @@ public struct AcaiRootScene: Scene {
             DiagramThemeCommands()
             QuickOpenCommands()
             KeyboardShortcutCommands()
+            BrowserWindowCommands()
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject`.
-        .environmentObject(projectStore)
+        // read these via `@EnvironmentObject` (`QuickOpenCommands` needs `quickOpenPresenter`).
         .environmentObject(accountStore)
-        .environmentObject(quickOpenPresenter)
+        .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
         .environmentObject(keyboardShortcutsPresenter)
+        .environmentObject(browserWindows)
         #if os(macOS)
+        WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
+            ProjectBrowserView(store: store, windowAddress: $address)
+                .modifier(DiagramThemeProvider())
+                .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+        }
+        // Links go to a main window, never spawn one of these.
+        .handlesExternalEvents(matching: [])
+        .environmentObject(accountStore)
+        .environmentObject(settingsPresenter)
+        .environmentObject(browserWindows)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()
         }

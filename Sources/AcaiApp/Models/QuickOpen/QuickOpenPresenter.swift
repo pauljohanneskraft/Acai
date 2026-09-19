@@ -1,10 +1,8 @@
 import Foundation
 
-/// Whether Quick Open's sheet is presented — a tiny piece of shared state instantiated once
-/// in `AcaiRootScene` and injected into both the main `WindowGroup` and its `.commands` block,
-/// since a `Commands` menu item lives outside the view hierarchy `ProjectBrowserView`'s own
-/// `@State` could reach directly. `QuickOpenCommands` toggles this to open ⌘K; `ProjectBrowserView`
-/// binds its Quick Open sheet to it on every platform.
+/// Whether one window's Quick Open sheet is presented. Each `ProjectBrowserView` owns one and
+/// publishes it as a focused scene object, so macOS's ⌘K (`QuickOpenCommands`) opens it in the key
+/// window only.
 @MainActor
 final class QuickOpenPresenter: ObservableObject {
     @Published var isPresented = false

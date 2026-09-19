@@ -80,6 +80,12 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    static let openInNewWindow = KeyboardShortcutReference(
+        id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.OpenInNewWindow"))
+    static let copyLink = KeyboardShortcutReference(
+        id: "copyLink", shortcut: KeyboardShortcut("c", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.CopyLink"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         // Not ⇧⌘/: iPadOS keeps that for itself, and the Mac and iPad share one set of keys.
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: .command),
@@ -106,7 +112,13 @@ extension KeyboardShortcutReference {
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
+        Group(
+            id: "windows", title: .app("KeyboardShortcutReference.Windows"),
+            shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
         Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
+        Group(
+            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
+            isMacOSOnly: true)
     ]
 }
 

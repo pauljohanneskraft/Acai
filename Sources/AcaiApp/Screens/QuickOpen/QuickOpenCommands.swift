@@ -5,14 +5,15 @@ import SwiftUI
 /// owning its own state, since a `Commands` menu item lives outside the view hierarchy
 /// `ProjectBrowserView`'s own `@State` could reach — see that type's doc comment.
 struct QuickOpenCommands: Commands {
-    @EnvironmentObject private var presenter: QuickOpenPresenter
+    @FocusedObject private var presenter: QuickOpenPresenter?
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
             Button(.app("View.QuickOpenCommands.QuickOpen")) {
-                presenter.isPresented = true
+                presenter?.isPresented = true
             }
             .keyboardShortcut(.quickOpen)
+            .disabled(presenter == nil)
         }
     }
 }
