@@ -53,7 +53,9 @@ final class FreeformDiagramScreen: DiagramScreenBase {
             tapSidebarToggle(file: file, line: line)
         }
         catalog.waitForDisappearanceOrFail("the catalog sidebar", file: file, line: line)
+        placementGhost.waitOrFail("the preview of the node about to be placed", file: file, line: line)
         tapCanvasCenter(file: file, line: line)
+        placementGhost.waitForDisappearanceOrFail("the placement preview once placed", file: file, line: line)
     }
 
     /// `TypeNodeView` carries this identifier already (`diagram.typeNode.<name>`), same as

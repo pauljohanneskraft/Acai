@@ -146,6 +146,31 @@ struct FreeformDiagramCanvasTests {
         #expect(vm.nodes.isEmpty)
     }
 
+    @Test("placementPreview shows exactly the node the pending placement would insert")
+    func placementPreviewMatchesCommittedNode() throws {
+        let vm = FreeformDiagramViewModel()
+        #expect(vm.placementPreview == nil)
+
+        vm.beginPlacement(kind: .type(.class))
+        let preview = try #require(vm.placementPreview)
+        #expect(vm.nodes.isEmpty)
+
+        vm.commitPlacement(at: CGPoint(x: 42, y: 24))
+        #expect(preview.name == vm.nodes[0].name)
+        #expect(preview.content == vm.nodes[0].content)
+        #expect(vm.placementPreview == nil)
+    }
+
+    @Test("A preview node's size comes from the same estimate the canvas lays nodes out with")
+    func placementPreviewSizeMatchesPlacedNode() throws {
+        let vm = FreeformDiagramViewModel()
+        vm.beginPlacement(kind: .package)
+        let preview = try #require(vm.placementPreview)
+
+        vm.commitPlacement(at: .zero)
+        #expect(vm.nodeSize(of: preview) == vm.nodeSize(vm.nodes[0].id))
+    }
+
     @Test("commitPlacement with nothing pending is a no-op")
     func commitPlacementNoOpWhenNothingPending() {
         let vm = FreeformDiagramViewModel()

@@ -48,14 +48,15 @@ struct MultiSelectToggleButton<Model: CanvasInteraction>: View {
 }
 
 extension View {
-    /// Hidden buttons that capture ⌘Z / ⇧⌘Z and route them to the model's undo/redo. `enabled`
-    /// lets a view yield the shortcut to native text-field undo while a field is focused.
+    /// Hidden buttons that capture ⌘Z / ⇧⌘Z, plus an Apple Pencil double-tap for undo, routed to the
+    /// model. `enabled` lets a view yield both to native text-field undo while a field is focused.
     func undoRedoKeyboardShortcuts<Model: CanvasInteraction>(
         model: Model,
         enabled: Bool = true,
         onChange: @escaping () -> Void
     ) -> some View {
-        background {
+        modifier(PencilDoubleTapUndo(model: model, enabled: enabled, onChange: onChange))
+        .background {
             Group {
                 Button("") {
                     model.undo()
