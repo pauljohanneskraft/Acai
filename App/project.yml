@@ -30,6 +30,8 @@ targets:
       # app bundle — without them the system never hands the process a language other than English,
       # so `AcaiApp`'s own catalog would never be consulted.
       - path: Shared/InfoPlist.xcstrings
+      # App Intents resolves an intent's static strings from the main bundle only.
+      - path: Shared/AppIntents.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp
@@ -51,6 +53,10 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         ITSAppUsesNonExemptEncryption: false
         CFBundleDisplayName: Açaí
+        # `acai://project|codebase|diagram/<uuid>` — see `AppAddress`.
+        CFBundleURLTypes:
+          - CFBundleURLName: de.kraftsoftware.Acai
+            CFBundleURLSchemes: [acai]
     settings:
       base:
         PRODUCT_NAME: Acai
@@ -126,6 +132,7 @@ targets:
     sources:
       - path: macOS
       - path: Shared/InfoPlist.xcstrings
+      - path: Shared/AppIntents.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp
@@ -139,6 +146,10 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         CFBundleDisplayName: Açaí
         LSApplicationCategoryType: "public.app-category.developer-tools"
+        # `acai://project|codebase|diagram/<uuid>` — see `AppAddress`.
+        CFBundleURLTypes:
+          - CFBundleURLName: de.kraftsoftware.Acai
+            CFBundleURLSchemes: [acai]
     settings:
       base:
         PRODUCT_NAME: Acai

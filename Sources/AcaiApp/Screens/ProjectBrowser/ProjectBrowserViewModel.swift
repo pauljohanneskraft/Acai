@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 import AcaiGit
@@ -26,9 +27,26 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     private(set) var pendingOpen: Task<Void, Never>?
+    private var storeSubscriptions: Set<AnyCancellable> = []
 
-    init(store: ProjectStore = ProjectStore()) {
+    /// Each window has its own view model over the one shared store, so a change made through
+    /// another window (or a system action) re-renders this one and prunes what it no longer finds.
+    init(store: ProjectStore) {
         self.store = store
+        store.objectWillChange
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.objectWillChange.send()
+                    // `objectWillChange` fires before the mutation lands.
+                    Task { @MainActor [weak self] in withAnimation(.outlineChange) { self?.pruneDanglingSelection() } }
+                }
+            }
+            .store(in: &storeSubscriptions)
+        store.analysisInvalidations
+            .sink { [weak self] codebaseID in
+                MainActor.assumeIsolated { self?.dropAnalysis(codebaseID: codebaseID) }
+            }
+            .store(in: &storeSubscriptions)
     }
 
     /// Selects an item created in this same turn. Selecting it alongside `persistChanges()`'s animated
@@ -197,9 +215,13 @@ final class ProjectBrowserViewModel: ObservableObject {
         analyses[codebaseID] = .ready(token, analysis)
     }
 
-    /// Drops a codebase's cached analysis and bumps its revision, forcing a recompute. Used when a
-    /// change the token can't otherwise see (an in-place rules-file edit) invalidates the check.
+    /// Drops a codebase's cached analysis in every window, forcing a recompute. Used when a change the
+    /// token can't otherwise see (an in-place rules-file edit) invalidates the check.
     func invalidateAnalysis(codebaseID: UUID) {
+        store.analysisInvalidations.send(codebaseID)
+    }
+
+    private func dropAnalysis(codebaseID: UUID) {
         analysisRevisions[codebaseID, default: 0] += 1
         analyses.removeValue(forKey: codebaseID)
     }

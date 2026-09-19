@@ -58,6 +58,9 @@ extension ProjectDetailView {
 
     @ViewBuilder
     func freeformDiagramContextMenu(diagram: FreeformDiagram) -> some View {
+        AddressMenuItems(
+            selection: .freeformDiagram(diagram.id), idPrefix: "projectDetail.freeformDiagramRow.\(diagram.id)")
+        Divider()
         Button {
             renamingText = diagram.name
             renamingDiagramID = diagram.id

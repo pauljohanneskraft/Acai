@@ -94,6 +94,41 @@ colour-coded and badged; the panel also lists changed files and the findings del
 
 Types, diagrams and codebases are searchable through quick-open (⌘K on macOS).
 
+## Links
+
+Every project, codebase and diagram has a stable address that opens it directly, from a note, a chat
+message or another app:
+
+| Opens | Address |
+| --- | --- |
+| A project | `acai://project/<id>` |
+| A codebase | `acai://codebase/<id>` |
+| A diagram, generated or freeform | `acai://diagram/<id>` |
+
+`<id>` is the item's UUID, which never changes, so a link survives renaming. **Copy Link** in any
+project, codebase or diagram's context menu (or **File › Copy Link**, ⌥⌘C, on macOS for whatever is
+selected) puts its address on the clipboard. If a link names something that has since been deleted,
+or isn't an Açaí link at all, the app says so and stays where it was.
+
+## Windows
+
+On macOS, **Open in New Window** in a project, codebase or diagram's context menu (or **File › Open
+in New Window**, ⌥⌘O, for the selection) gives it a window of its own. Each window navigates
+independently; what you select in one doesn't move another. Windows reopen where they were after a
+relaunch.
+
+A diagram is shown by one window at a time, since each window edits its own copy of it. Opening a
+diagram that another window already shows brings that window to the front, and selecting it in a
+second window offers **Show Window** instead of a copy that could overwrite the first window's edits.
+
+## Automation
+
+**Reindex Codebase** is a Shortcuts action, so a reindex can be scheduled or chained into your own
+automation, such as reindexing after a nightly merge. The run shows in the activity list like one you
+started by hand. The action returns the codebase when the reindex finishes. It fails with the reason
+when the codebase no longer exists, the analysis fails, or the run is cancelled, so a shortcut can
+branch on the result.
+
 ## Languages
 
 The app ships in English, German and French, following the system language — there is no in-app
