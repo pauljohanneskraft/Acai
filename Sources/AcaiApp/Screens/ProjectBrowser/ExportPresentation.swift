@@ -79,7 +79,6 @@ private struct ExportShareSheet {
         }
 
         let controller = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
-        controller.view.accessibilityIdentifier = "export.shareSheet"
         controller.completionWithItemsHandler = { _, _, _, _ in ExportStaging.standard.discardAll() }
         if let popover = controller.popoverPresentationController {
             popover.sourceView = presenter.view

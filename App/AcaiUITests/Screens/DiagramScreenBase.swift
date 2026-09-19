@@ -100,7 +100,8 @@ class DiagramScreenBase {
     }
 
     #if os(iOS)
-    var shareSheet: XCUIElement { app.descendants(matching: .any)["export.shareSheet"] }
+    /// UIKit's own identifier: one set on the activity controller's view isn't reliably in the tree.
+    var shareSheet: XCUIElement { app.otherElements["ActivityListView"] }
 
     /// Taps exactly once and waits for the system share sheet the export hands its file to.
     @discardableResult
