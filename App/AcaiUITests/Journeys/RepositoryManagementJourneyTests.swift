@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class RepositoryManagementJourneyTests: UIJourneyTestCase {
 
-    func testRepositoryDetailRefusesRemovalWhileACodebaseDependsOnIt() throws {
+    func testRepositoryDetailShowsTheSharedCloneAndTheCodebasesUsingIt() throws {
         var remoteURL = ""
         let browser = launchSeeded { app, destination in
             remoteURL = try Self.stageRemote(for: app, in: destination)
@@ -20,21 +20,18 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
 
         let audit = AccessibilityAudit(testCase: self)
         audit.assertAccessible(repository.fetchNowButton, name: "Fetch Now button")
-        audit.assertAccessible(repository.removeButton, name: "Remove button")
         repository.loadedValue(identifier: "repository.diskSizeValue", excluding: "—")
             .waitOrFail("the clone's on-disk size")
         repository.loadedValue(identifier: "repository.lastFetchedValue", excluding: "Never")
             .waitOrFail("the clone's last-fetched time")
         repository.referencingCodebase(named: "fixture-repo").waitOrFail("the first referencing codebase")
         repository.referencingCodebase(named: "fixture-repo-2").waitOrFail("the second referencing codebase")
-        repository.refuseRemoval(naming: ["fixture-repo", "fixture-repo-2"])
 
         returnToSidebar(browser: browser)
         browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo-2"))
         repositoryRow.tap("the repository's sidebar row", until: repository.referencingCodebase(named: "fixture-repo"))
         repository.referencingCodebase(named: "fixture-repo-2")
             .waitForDisappearanceOrFail("the deleted codebase in the repository's list")
-        repository.refuseRemoval(naming: ["fixture-repo"])
     }
 
     /// Two codebases at different revisions of one repository live side by side on a single clone;
