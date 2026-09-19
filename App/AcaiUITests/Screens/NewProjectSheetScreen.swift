@@ -18,4 +18,11 @@ final class NewProjectSheetScreen {
     var createButton: XCUIElement {
         app.descendants(matching: .any).matching(identifier: "newProjectSheet.createButton").firstMatch
     }
+
+    func create(title: String, file: StaticString = #filePath, line: UInt = #line) {
+        titleField.clearAndTypeText(title, file: file, line: line)
+        createButton.waitUntilEnabled("the new project sheet's Create button", file: file, line: line)
+        createButton.tapWhenReady("the new project sheet's Create button", file: file, line: line)
+        titleField.waitForDisappearanceOrFail("the new project sheet", file: file, line: line)
+    }
 }

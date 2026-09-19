@@ -105,11 +105,9 @@ struct ProjectDetailView: View {
     // MARK: - Regular width (iPad, macOS) — unchanged
 
     private func regularContent(project: Project, index: Int) -> some View {
-        let isProjectEmpty = project.codebases.isEmpty
-            && model.freeformDiagramsForProject(projectID).isEmpty
-        return ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                projectHeader(project: project, index: index, showActions: !isProjectEmpty)
+                projectHeader(project: project, index: index, showActions: !isEmpty(project))
 
                 Divider()
                 regularCodebasesAndDiagramsSection(project: project)
@@ -132,7 +130,7 @@ struct ProjectDetailView: View {
         let freeformDiagrams = model.freeformDiagramsForProject(projectID)
             .sorted(byLocalizedName: \.name)
 
-        if sortedCodebases.isEmpty && freeformDiagrams.isEmpty {
+        if isEmpty(project) {
             emptyProjectContentState
         } else {
             sectionHeader(title: .app("View.ProjectDetailView.Codebases"))
@@ -178,8 +176,15 @@ struct ProjectDetailView: View {
             Section {
                 projectTitleFields(index: index)
             }
-            compactCodebasesSection(project: project)
-            compactDiagramsSection()
+            if isEmpty(project) {
+                Section {
+                    emptyProjectContentState
+                        .listRowBackground(Color.clear)
+                }
+            } else {
+                compactCodebasesSection(project: project)
+                compactDiagramsSection()
+            }
             Section {
                 deleteProjectSection
             }
@@ -362,6 +367,9 @@ private extension ProjectDetailView {
             .foregroundStyle(.secondary)
             .textFieldStyle(.plain)
         }
+        // A plain macOS field laid out mid-animation (a just-created project) keeps a clipped height.
+        .fixedSize(horizontal: false, vertical: true)
+        .transaction { $0.animation = nil }
     }
 }
 

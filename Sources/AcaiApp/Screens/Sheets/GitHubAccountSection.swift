@@ -14,6 +14,7 @@ import AppKit
 /// comment for the one-time setup it depends on).
 struct GitHubAccountSection: View {
     @EnvironmentObject private var accountStore: GitHubAccountStore
+    @EnvironmentObject private var projectStore: ProjectStore
 
     @State private var patText = ""
     @State private var isSigningIn = false
@@ -37,10 +38,6 @@ struct GitHubAccountSection: View {
             }
         }
         .onDisappear { pollTask?.cancel() }
-        .task(id: accountStore.account?.login) {
-            guard accountStore.account != nil else { return }
-            accountStore.refreshCodebaseCount()
-        }
         #if os(iOS)
         // Attaching the sheet to a background view hides the presentation anchor from the root of
         // the hierarchy, avoiding conflicts with the host sheet already presented.
@@ -137,7 +134,7 @@ struct GitHubAccountSection: View {
     }
 
     private var codebaseCountLine: LocalizedStringResource {
-        .app("View.GitHubAccountSection.UsedByCodebases \(accountStore.codebaseCount)")
+        .app("View.GitHubAccountSection.UsedByCodebases \(projectStore.gitHubBackedCodebaseCount)")
     }
 
     private var expiryMessage: LocalizedStringResource? {
@@ -229,7 +226,6 @@ struct GitHubAccountSection: View {
                 try await accountStore.signIn(with: credential)
                 patText = ""
                 errorMessage = nil
-                accountStore.refreshCodebaseCount()
             } catch {
                 errorMessage = error.localizedDescription
             }

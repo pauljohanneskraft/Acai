@@ -49,6 +49,10 @@ final class ProjectStore: ObservableObject {
         lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
     }
 
+    var gitHubBackedCodebaseCount: Int {
+        projects.flatMap(\.codebases).filter { $0.githubSource != nil }.count
+    }
+
     let baseDir: URL
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
