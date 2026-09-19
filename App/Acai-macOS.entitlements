@@ -5,7 +5,7 @@
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<!-- GitHub API calls (`GitHubAPIClient`) and libgit2's HTTPS transport (`AcaiGit`'s
-	clone/fetch, wrapped by `GitHubRepositoryClone`/`GitRepository`) both need outbound network
+	clone/fetch, wrapped by `GitRepository`) both need outbound network
 	access. -->
 	<key>com.apple.security.network.client</key>
 	<true/>

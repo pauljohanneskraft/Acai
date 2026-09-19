@@ -56,9 +56,6 @@ final class ProjectStore: ObservableObject {
     /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
     /// form; any other path is an external file the user referenced.
     private var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
-    /// GitHub-backed codebases created before worktree support existed only — newer codebases use
-    /// `gitRepositoriesDir`/`gitWorktreesDir` instead.
-    var githubClonesDir: URL { baseDir.appendingPathComponent("github-clones", isDirectory: true) }
     /// One shared "hub" clone per distinct remote URL, reused by every codebase referencing it
     /// instead of each getting an independent full clone.
     var gitRepositoriesDir: URL { baseDir.appendingPathComponent("git-repositories", isDirectory: true) }
@@ -97,11 +94,15 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
-        try? fileManager.createDirectory(at: githubClonesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
         try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("recentlyViewed.json"))
+        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("github-clones", isDirectory: true))
         load()
+        let gitStorageSweep = GitStorageSweep(store: self)
+        if !gitStorageSweep.isEmpty {
+            Task.detached(priority: .utility) { await gitStorageSweep.run() }
+        }
     }
 
     // MARK: - Load
@@ -123,7 +124,8 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.freeformDiagramIDs {
                         loadFreeformDiagram(diagramID)
                     }
-                    for codebase in project.codebases where codebase.hasArtifact {
+                    discardPerCodebaseClones(inProjectAt: projects.count - 1)
+                    for codebase in projects[projects.count - 1].codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
                 } catch {
@@ -309,14 +311,30 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    // MARK: - GitHub clones (older codebases only — see `githubClonesDir`)
+    // MARK: - Codebase removal
 
-    func githubCloneURL(for codebaseID: UUID) -> URL {
-        githubClonesDir.appendingPathComponent(codebaseID.uuidString, isDirectory: true)
+    /// Removes the codebase from the project together with its generated diagrams, stored analysis
+    /// and managed rules. The caller persists the project.
+    func deleteCodebaseData(_ codebaseID: UUID, fromProjectAt projectIndex: Int) {
+        projects[projectIndex].codebases.removeAll { $0.id == codebaseID }
+        let orphanedDiagramIDs = projects[projectIndex].generatedDiagramIDs.filter {
+            generatedDiagrams[$0]?.codebaseID == codebaseID
+        }
+        projects[projectIndex].generatedDiagramIDs.removeAll { orphanedDiagramIDs.contains($0) }
+        orphanedDiagramIDs.forEach(deleteGeneratedDiagramFile)
+        deleteArtifactFile(for: codebaseID)
+        deleteManagedRules(forCodebase: codebaseID)
     }
 
-    func deleteGitHubClone(for codebaseID: UUID) {
-        try? FileManager.default.removeItem(at: githubCloneURL(for: codebaseID))
+    /// A GitHub codebase with no `repository` is one with its own independent clone, a layout the app
+    /// no longer supports. It is discarded rather than migrated.
+    private func discardPerCodebaseClones(inProjectAt projectIndex: Int) {
+        let discarded = projects[projectIndex].codebases.filter { $0.githubSource != nil && $0.repository == nil }
+        guard !discarded.isEmpty else { return }
+        for codebase in discarded {
+            deleteCodebaseData(codebase.id, fromProjectAt: projectIndex)
+        }
+        saveProject(projects[projectIndex])
     }
 
     // MARK: - Git worktrees

@@ -29,13 +29,6 @@ protocol GitHubRepositoryService: Sendable {
     func repositories(credential: GitHubCredential) async throws -> [GitHubAPIClient.Repository]
     func refs(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubRef]
     func pullRequests(credential: GitHubCredential, owner: String, repo: String) async throws -> [GitHubPullRequest]
-    /// The old one-independent-clone-per-codebase sync, kept only for older codebases that were
-    /// created against `ProjectStore.githubCloneURL(for:)` and still resolve their files there.
-    @discardableResult
-    func sync(
-        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)?
-    ) async throws -> String
-
     /// Ensures a shared hub clone exists for `owner/repo` (creating it if this is the first
     /// codebase ever to reference it) and registers a brand-new linked worktree for one codebase.
     @discardableResult
@@ -79,26 +72,16 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
     }
 
     @discardableResult
-    func sync(
-        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> String {
-        try await GitHubRepositoryClone(
-            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref
-        ).sync(into: destination, onProgress: onProgress)
-    }
-
-    @discardableResult
     func attachWorktree(
         _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (headSHA: String, remoteURL: URL) {
-        let clone = GitHubRepositoryClone(
-            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref)
+        let remote = GitHubRemote(credential: target.credential, owner: target.owner, repo: target.repo)
         let headSHA = try await GitWorktreeSync(
-            transportURL: clone.authenticatedRemoteURL, ref: target.ref,
+            transportURL: remote.authenticatedURL, ref: target.ref,
             hubStoreDirectory: destination.hubStoreDirectory, locks: destination.locks
         ).attachWorktree(named: destination.worktreeName, at: destination.worktreeDirectory, onProgress: onProgress)
-        return (headSHA, clone.plainRemoteURL)
+        return (headSHA, remote.plainURL)
     }
 
     @discardableResult
@@ -106,24 +89,23 @@ struct LiveGitHubRepositoryService: GitHubRepositoryService {
         _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> String {
-        let clone = GitHubRepositoryClone(
-            credential: target.credential, owner: target.owner, repo: target.repo, ref: target.ref)
+        let remote = GitHubRemote(credential: target.credential, owner: target.owner, repo: target.repo)
         return try await GitWorktreeSync(
-            transportURL: clone.authenticatedRemoteURL, ref: target.ref,
+            transportURL: remote.authenticatedURL, ref: target.ref,
             hubStoreDirectory: destination.hubStoreDirectory, locks: destination.locks
         ).resyncWorktree(at: destination.worktreeDirectory, onProgress: onProgress)
     }
 }
 
 /// Deterministic, network-free conformance for the snapshot tests' XCUITest journeys:
-/// `repositories`/`refs` return canned data for the one local fixture repository, and `sync`
-/// performs a real libgit2 clone/fetch (via `AcaiGit.GitClone`) against `remoteURL` — a local git
-/// repository staged by the UI test — instead of `https://github.com/...`. Selected whenever
+/// `repositories`/`refs` return canned data for the one local fixture repository, and the worktree
+/// operations run real libgit2 clones/fetches against `remoteURL` — a local git repository staged by
+/// the UI test — instead of `https://github.com/...`. Selected whenever
 /// `UITestFixtureResolver().resolveBaseDir() != nil`, regardless of whether `remoteURL` is set —
 /// otherwise a signed-in-only journey would fall through to `LiveGitHubRepositoryService` and hit
 /// real network with a fake credential.
 struct FixtureGitHubRepositoryService: GitHubRepositoryService {
-    /// `nil` when no `-AcaiUITestGitHubRemoteURL` was configured — `refs`/`sync` throw a local
+    /// `nil` when no `-AcaiUITestGitHubRemoteURL` was configured — `refs` and the worktree operations throw a local
     /// `Failure` instead of falling back to network.
     let remoteURL: URL?
 
@@ -161,15 +143,6 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     }
 
     @discardableResult
-    func sync(
-        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> String {
-        guard let remoteURL else { throw Failure.noFixtureRemoteConfigured }
-        return try await GitClone(remoteURL: remoteURL, ref: target.ref)
-            .sync(into: destination, onProgress: onProgress)
-    }
-
-    @discardableResult
     func attachWorktree(
         _ target: GitHubRepositoryTarget, destination: GitWorktreeDestination,
         onProgress: (@Sendable (Double) -> Void)? = nil
@@ -195,7 +168,7 @@ struct FixtureGitHubRepositoryService: GitHubRepositoryService {
     }
 }
 
-/// Network-free *and* git-free: `sync`/`attachWorktree`/`resyncWorktree` copy an already-staged
+/// Network-free *and* git-free: `attachWorktree`/`resyncWorktree` copy an already-staged
 /// directory instead of running real libgit2 operations, so a journey that just needs a GitHub-
 /// backed codebase to exist doesn't pay for git timing it isn't proving.
 struct FastFixtureGitHubRepositoryService: GitHubRepositoryService {
@@ -244,15 +217,6 @@ struct FastFixtureGitHubRepositoryService: GitHubRepositoryService {
         try fileManager.createDirectory(
             at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
         try fileManager.copyItem(at: source, to: destination)
-    }
-
-    @discardableResult
-    func sync(
-        _ target: GitHubRepositoryTarget, into destination: URL, onProgress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> String {
-        try copyTree(from: try stagedDirectory(for: target.ref), to: destination)
-        onProgress?(1)
-        return cannedSHA(for: target.ref)
     }
 
     @discardableResult
