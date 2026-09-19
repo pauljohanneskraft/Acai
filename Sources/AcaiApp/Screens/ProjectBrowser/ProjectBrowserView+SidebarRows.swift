@@ -127,6 +127,15 @@ extension ProjectBrowserView {
         }
     }
 
+    fileprivate func renameMenuItem(diagramID: UUID, name: String) -> some View {
+        Button {
+            renamingText = name
+            renamingDiagramID = diagramID
+        } label: {
+            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
+        }
+    }
+
     @ViewBuilder
     fileprivate func generatedDiagramRows(project: Project) -> some View {
         let generatedDiagrams = model.generatedDiagramsForProject(project.id)
@@ -150,12 +159,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .generatedDiagram(diagram.id), idPrefix: "sidebar.generatedDiagram.\(diagram.id)")
                         Divider()
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
-                        }
+                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
                         Button {
                             if let id = model.diagrams.duplicate(diagram.id) {
                                 model.open(.generatedDiagram(id))
@@ -206,12 +210,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .freeformDiagram(diagram.id), idPrefix: "sidebar.freeformDiagram.\(diagram.id)")
                         Divider()
-                        Button {
-                            renamingText = diagram.name
-                            renamingDiagramID = diagram.id
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
-                        }
+                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
                         Button {
                             if let id = model.freeforms.duplicate(diagram.id) {
                                 model.open(.freeformDiagram(id))

@@ -1,0 +1,102 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Intent.CodebaseEntity.TypeName" : {
+      "comment" : "What a codebase is called where Shortcuts lists the kinds of things the app offers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        }
+      }
+    },
+    "Intent.ReindexCodebase.Codebase" : {
+      "comment" : "The Reindex Codebase action's parameter: which codebase to reindex.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        }
+      }
+    },
+    "Intent.ReindexCodebase.Description" : {
+      "comment" : "Shortcuts' description of the Reindex Codebase action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indiziert eine Codebase in Açaí neu und schlägt fehl, wenn die Analyse nicht abgeschlossen wird."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindexes a codebase in Açaí, and fails if the analysis doesn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexe une codebase dans Açaí, et échoue si l’analyse ne se termine pas."
+          }
+        }
+      }
+    },
+    "Intent.ReindexCodebase.Title" : {
+      "comment" : "The name of the Reindex Codebase action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer la codebase"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

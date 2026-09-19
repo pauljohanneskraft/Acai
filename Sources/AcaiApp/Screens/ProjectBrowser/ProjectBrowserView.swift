@@ -38,6 +38,7 @@ public struct ProjectBrowserView: View {
     @State private var showKeyboardShortcuts = false
     #endif
 
+    /// `windowAddress` is set for a window opened on one item, which starts on it with the sidebar hidden.
     init(store: ProjectStore, windowAddress: Binding<AppAddress?>? = nil) {
         let initialAddress = windowAddress?.wrappedValue
         _model = StateObject(wrappedValue: {
@@ -145,7 +146,6 @@ public struct ProjectBrowserView: View {
             QuickOpenSheetHost()
                 .environmentObject(model)
         }
-        .onChange(of: handoffPresenter.pendingTarget) { _, target in resolveHandoffContinuation(target) }
         .environment(\.openInNewWindow, OpenInNewWindowAction { openInNewWindow($0) })
         .onOpenURL { url in openLink(url) }
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
@@ -344,29 +344,6 @@ public struct ProjectBrowserView: View {
         DeltaHostedDiagramView(diagram: diagram, content: content)
             .id(diagram.id)
             .environmentObject(model)
-    }
-
-    @ViewBuilder
-    private func freeformDiagramDetail(diagramID: UUID) -> some View {
-        if model.freeformDiagram(for: diagramID) != nil {
-            FreeformDiagramView(diagramID: diagramID)
-                .id(diagramID)
-                .environmentObject(model)
-        } else {
-            Text(.app("View.ProjectBrowserView.DiagramNotFound"))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "rectangle.3.group")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text(.app("View.ProjectBrowserView.SelectProjectDiagram"))
-                .font(.title3)
-                .foregroundStyle(.secondary)
-        }
     }
 }
 

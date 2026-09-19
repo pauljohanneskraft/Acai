@@ -35,14 +35,14 @@ struct KeyboardShortcutReferenceTests {
 
     /// Pins the set hand-verified against `grep -rn ".keyboardShortcut(" Sources/AcaiApp`: ⌘0 (fit
     /// to view), ⌘F/⌘G/⇧⌘G (find in diagram), ⌘Z/⇧⌘Z (undo/redo), ⌘C/X/V/A (freeform selection), ⌫
-    /// (freeform delete), plus ⌘? (this panel's own Help-menu shortcut, macOS-only). Not a live
-    /// completeness check.
+    /// (freeform delete), plus ⌥⌘O/⌥⌘C (open in new window, copy link) and ⌘? (this panel's own
+    /// Help-menu shortcut), all macOS-only. Not a live completeness check.
     @Test("The hand-verified shortcut set has not silently drifted")
     func coversKnownShortcutsAsOfLastManualCheck() {
         let allSymbols = Set(KeyboardShortcutReference.groups.flatMap { $0.shortcuts.map(\.symbol) })
         #if os(macOS)
         #expect(allSymbols == [
-            "⌘0", "⌘F", "⌘G", "⇧⌘G", "⌘Z", "⇧⌘Z", "⌘C", "⌘X", "⌘V", "⌘A", "⌫", "⌘?"
+            "⌘0", "⌘F", "⌘G", "⇧⌘G", "⌘Z", "⇧⌘Z", "⌘C", "⌘X", "⌘V", "⌘A", "⌫", "⌥⌘O", "⌥⌘C", "⌘?"
         ])
         #else
         #expect(allSymbols == ["⌘0", "⌘F", "⌘G", "⇧⌘G", "⌘Z", "⇧⌘Z", "⌘C", "⌘X", "⌘V", "⌘A", "⌫"])

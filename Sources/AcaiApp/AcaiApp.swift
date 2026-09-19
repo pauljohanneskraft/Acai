@@ -10,7 +10,6 @@ public struct AcaiRootScene: Scene {
     // each type's own doc comment for why it has to live here rather than lower in the hierarchy.
     @StateObject private var accountStore = GitHubAccountStore()
     @StateObject private var settingsPresenter = SettingsPresenter()
-    @StateObject private var handoffPresenter = HandoffContinuationPresenter()
     @StateObject private var store = ProjectStore.app
     @StateObject private var browserWindows = BrowserWindows()
 
@@ -41,19 +40,17 @@ public struct AcaiRootScene: Scene {
         // read these via `@EnvironmentObject`.
         .environmentObject(accountStore)
         .environmentObject(settingsPresenter)
-        .environmentObject(handoffPresenter)
         .environmentObject(browserWindows)
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: store, windowAddress: $address)
                 .modifier(DiagramThemeProvider())
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
-                .handlesExternalEvents(preferring: [], allowing: [])
         }
+        // Links go to a main window, never spawn one of these.
         .handlesExternalEvents(matching: [])
         .environmentObject(accountStore)
         .environmentObject(settingsPresenter)
-        .environmentObject(handoffPresenter)
         .environmentObject(browserWindows)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()
