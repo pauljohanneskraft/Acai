@@ -85,6 +85,9 @@ final class GitHubAccountStore: ObservableObject {
     /// `ProjectStore.load()` isn't safe to call twice on one instance (it appends, not replaces).
     func refreshCodebaseCount() {
         let store = ProjectStore()
-        codebaseCount = store.projects.flatMap(\.codebases).filter { $0.githubSource != nil }.count
+        codebaseCount = store.projects.flatMap(\.codebases).filter { codebase in
+            guard codebase.managedCheckout != nil, case .github = codebase.repository?.host else { return false }
+            return true
+        }.count
     }
 }

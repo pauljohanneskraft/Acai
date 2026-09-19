@@ -112,6 +112,8 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     /// Most recent comparison load error, surfaced near the picker.
     @Published var comparisonError: String?
+    /// Set with `comparisonError` when the comparison needs history a shallow clone doesn't have.
+    @Published var comparisonNeedsFullHistory = false
 
     /// Files the user has checked off in a diagram's Compare panel changed-files list, and findings
     /// they've checked off in its "New findings" list — an in-memory, per-session reading aid, never
@@ -256,9 +258,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         }
         let token = freshnessToken(for: codebaseID)
         freshnessStates[codebaseID] = .computing(token)
-        let directoryPath = codebase.directoryPath
+        let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
+        let revision = codebase.pinnedRevision
         let current = await Task.detached(priority: .utility) {
-            CodebaseFreshnessChecker(directoryPath: directoryPath).currentFingerprint()
+            try? access.withResolvedURL { url in
+                CodebaseFreshnessChecker(directoryPath: url.path, revision: revision).currentFingerprint()
+            }
         }.value
         // The caller (a screen the user has already navigated away from) cancelled this: never
         // publish a result nobody's there to see, so a background disk walk can't jog other screens.

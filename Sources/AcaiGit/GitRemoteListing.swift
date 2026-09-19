@@ -11,6 +11,11 @@ public struct GitRemoteListing {
         public let refs: [GitCheckout.Ref]
         /// The branch the remote's `HEAD` points at, when it advertises one.
         public let defaultBranch: String?
+
+        public init(refs: [GitCheckout.Ref], defaultBranch: String?) {
+            self.refs = refs
+            self.defaultBranch = defaultBranch
+        }
     }
 
     public init(remoteURL: URL) {

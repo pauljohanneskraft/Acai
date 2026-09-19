@@ -455,24 +455,24 @@
         }
       }
     },
-    "Activity.Cloning %@/%@" : {
+    "Activity.CloningRemote %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@/%2$@ wird geklont…"
+            "value" : "%@ wird geklont…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cloning %1$@/%2$@…"
+            "value" : "Cloning %@…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clonage de %1$@/%2$@…"
+            "value" : "Clonage de %@…"
           }
         }
       }
@@ -499,24 +499,24 @@
         }
       }
     },
-    "Activity.Fetching %@/%@" : {
+    "Activity.FetchingFullHistory %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@/%2$@ wird abgerufen…"
+            "value" : "Vollständige Git-Historie von %@ wird abgerufen…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fetching %1$@/%2$@…"
+            "value" : "Fetching the full history of %@…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Récupération de %1$@/%2$@…"
+            "value" : "Récupération de l'historique git complet de %@…"
           }
         }
       }
@@ -565,24 +565,24 @@
         }
       }
     },
-    "Activity.Switching %@/%@ %@" : {
+    "Activity.SwitchingRemote %@ %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@/%2$@ wird auf %3$@ umgestellt…"
+            "value" : "%1$@ wird auf %2$@ umgestellt…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Switching %1$@/%2$@ to %3$@…"
+            "value" : "Switching %1$@ to %2$@…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bascule de %1$@/%2$@ vers %3$@…"
+            "value" : "Bascule de %1$@ vers %2$@…"
           }
         }
       }
@@ -917,46 +917,46 @@
         }
       }
     },
-    "Error.ProjectBrowserViewModel.SignInToPull %@/%@" : {
+    "Error.ProjectBrowserViewModel.SignInToGitHubMayHelp %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Melde dich bei GitHub an, um %1$@/%2$@ zu pullen."
+            "value" : "Das Repository auf GitHub war nicht erreichbar. Wenn es privat ist, melde dich in den Einstellungen bei GitHub an. Details: %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign in to GitHub to pull %1$@/%2$@."
+            "value" : "Couldn't reach the repository on GitHub. If it's private, sign in to GitHub in Settings. Details: %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez-vous à GitHub pour puller %1$@/%2$@."
+            "value" : "Impossible d'atteindre le repository sur GitHub. S'il est privé, connectez-vous à GitHub dans Réglages. Détails : %@"
           }
         }
       }
     },
-    "Error.ProjectBrowserViewModel.SignInToSwitchBranches" : {
+    "Error.ProjectBrowserViewModel.FetchFullHistoryFailed %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Melde dich bei GitHub an, um Branches zu wechseln."
+            "value" : "Die vollständige Git-Historie konnte nicht abgerufen werden: %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign in to GitHub to switch branches."
+            "value" : "Couldn't fetch the full history: %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez-vous à GitHub pour changer de branch."
+            "value" : "Impossible de récupérer l'historique git complet : %@"
           }
         }
       }
@@ -15237,6 +15237,600 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connectez-vous à GitHub dans Réglages"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.SourceLocalFolder" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lokaler Ordner"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local Folder"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dossier local"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.SourceRemoteURL" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote-URL"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote URL"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL distante"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.SourceGitHub" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.RemoteAddress" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.RemoteAddressFooter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jedes über HTTPS erreichbare Git-Remote funktioniert: GitHub, GitLab, Bitbucket, Gitea oder dein eigener Server."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any git remote reachable over HTTPS works: GitHub, GitLab, Bitbucket, Gitea or your own server."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout remote git accessible en HTTPS fonctionne : GitHub, GitLab, Bitbucket, Gitea ou votre propre serveur."
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.ReadingBranches" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branches werden gelesen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading branches…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture des branches…"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.CouldNotReadRemote %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Branches des Remotes konnten nicht gelesen werden: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read the remote's branches: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de lire les branches du remote : %@"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.Retry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.LargeCloneTitle %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Repository ist etwa %@ groß."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This repository is about %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce repository fait environ %@."
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.LargeCloneMessage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die vollständige Git-Historie zu klonen dauert eine Weile und belegt viel Speicherplatz. Nur den neuesten Stand zu klonen geht deutlich schneller – für Änderungshäufigkeiten im Hotspot-Diagramm und für Vergleiche mit der Basis eines Change Requests muss die vollständige Historie dann später abgerufen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloning the full history takes a while and uses a lot of disk space. Cloning only the latest snapshot is much faster, but churn in the hotspot chart and comparisons with a change request's base will need the full history, which you can fetch later."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloner l'historique git complet prend du temps et occupe beaucoup d'espace disque. Cloner uniquement le dernier instantané est bien plus rapide, mais le churn du graphique des hotspots et les comparaisons avec la base d'une change request nécessiteront l'historique complet, que vous pourrez récupérer plus tard."
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.CloneLatestSnapshot" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur neuesten Stand klonen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clone Latest Snapshot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloner le dernier instantané"
+          }
+        }
+      }
+    },
+    "View.NewCodebaseSheet.CloneFullHistory" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vollständige Historie klonen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clone Full History"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloner l'historique complet"
+          }
+        }
+      }
+    },
+    "RemoteAddress.Problem.Malformed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib eine Adresse wie https://example.com/team/project.git ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter an address like https://example.com/team/project.git."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez une adresse comme https://example.com/team/project.git."
+          }
+        }
+      }
+    },
+    "RemoteAddress.Problem.UnsupportedScheme" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH-Adressen werden noch nicht unterstützt. Verwende die HTTPS-Adresse des Repositorys."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH addresses aren't supported yet. Use the repository's HTTPS address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les adresses SSH ne sont pas encore prises en charge. Utilisez l'adresse HTTPS du repository."
+          }
+        }
+      }
+    },
+    "RemoteAddress.Problem.ContainsCredentials" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lass Zugangsdaten aus der Adresse weg. Öffentliche Repositorys brauchen keine, und die GitHub-Anmeldung findest du in den Einstellungen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave credentials out of the address. Public repositories need none, and GitHub sign-in is in Settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "N'incluez pas d'identifiants dans l'adresse. Les repositories publics n'en ont pas besoin, et la connexion à GitHub se trouve dans Réglages."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.AnalysedRevision" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysierte Revision"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysed Revision"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Révision analysée"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.AnalysedRevisionHelp" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysiere diesen Ordner auf einem anderen Branch oder Tag. Er wird aus der Git-Historie gelesen; dein Checkout bleibt unverändert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse this folder at another branch or tag. It's read from the repository's history; your checkout isn't changed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyser ce dossier sur une autre branch ou un autre tag. Il est lu depuis l'historique git ; votre checkout n'est pas modifié."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.AnalysingRevision %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysiert: %1$@ · ausgecheckt: %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysing %1$@ · checked out: %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse de %1$@ · checkout actuel : %2$@"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.WorkingTree" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arbeitsverzeichnis"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Working Tree"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arbre de travail"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.LatestSnapshotOnly" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur neuester Stand"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest snapshot only"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernier instantané uniquement"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.LatestSnapshotOnlyHelp" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur der neueste Commit wurde geklont. Funktionen, die die Git-Historie nutzen, brauchen zuerst die vollständige Historie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the latest commit was cloned. Features that use the history need the full history first."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seul le dernier commit a été cloné. Les fonctions qui utilisent l'historique git ont d'abord besoin de l'historique complet."
+          }
+        }
+      }
+    },
+    "View.FetchFullHistoryButton.FetchFullHistory" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vollständige Historie abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetch Full History"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupérer l'historique complet"
+          }
+        }
+      }
+    },
+    "View.FetchFullHistoryButton.Fetching" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vollständige Historie wird abgerufen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetching full history…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupération de l'historique complet…"
+          }
+        }
+      }
+    },
+    "View.FetchFullHistoryButton.Failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die vollständige Historie wurde nicht abgerufen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The full history wasn't fetched."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'historique complet n'a pas été récupéré."
+          }
+        }
+      }
+    },
+    "View.HotspotChartView.HistoryNotFetched" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von diesem Repository wurde nur der neueste Stand geklont, daher lässt sich die Änderungshäufigkeit noch nicht zählen. Rufe die vollständige Historie ab, um Hotspots zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the latest snapshot of this repository was cloned, so churn can't be counted yet. Fetch the full history to see hotspots."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seul le dernier instantané de ce repository a été cloné : le churn ne peut pas encore être calculé. Récupérez l'historique complet pour voir les hotspots."
+          }
+        }
+      }
+    },
+    "View.HotspotChartView.LocalHistoryShallow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Repository dieses Ordners ist ein flacher Klon, daher lässt sich die Änderungshäufigkeit nicht zählen. Rufe seine vollständige Historie mit git ab (git fetch --unshallow) und öffne dieses Diagramm erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This folder's repository is a shallow clone, so churn can't be counted. Fetch its full history with git (git fetch --unshallow), then open this diagram again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le repository de ce dossier est un clone superficiel : le churn ne peut pas être calculé. Récupérez son historique complet avec git (git fetch --unshallow), puis rouvrez ce diagramme."
+          }
+        }
+      }
+    },
+    "View.RepositoryDetailView.History" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique"
           }
         }
       }

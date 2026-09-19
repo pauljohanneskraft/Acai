@@ -17,21 +17,37 @@ through `AcaiGit`, a libgit2 wrapper.
 ## Getting a codebase in
 
 A **project** groups codebases and diagrams; a **codebase** points at source and holds its index
-state, file filter and quality configuration. There are two ways to add one, on every platform:
+state, file filter and quality configuration. There are three ways to add one, on every platform:
 
 - **A local folder**, chosen through the system document picker. On iOS that reaches any file
   provider — iCloud Drive, Working Copy, and so on. Access is retained with a security-scoped
   bookmark, so it survives relaunches.
-- **A GitHub repository**, cloned in-app. Sign in with the device flow (a short code plus a
-  verification page — no client secret), then pick a repository. Cloning is a real git clone over
-  HTTPS via libgit2; only the credential-free URL is persisted.
+- **A remote URL** — any git remote reachable over HTTPS, whoever hosts it: GitLab, Bitbucket,
+  Gitea, a self-hosted server. Its branches and tags are read before anything is cloned. Public
+  repositories need no account; an address carrying credentials is refused rather than stored.
+- **A GitHub repository**, picked from your account. Sign in with the device flow (a short code
+  plus a verification page — no client secret), then pick a repository. This is a convenience on
+  top of the remote URL path, not a separate one: the stored model is just the remote's
+  credential-free URL, and the GitHub token is only ever sent to GitHub.
 
-Repositories are cloned once into a shared hub and each codebase gets its own linked worktree, so
-several codebases on one monorepo share a single object store at different commits. Deleting the
-last codebase that uses a repository deletes its clone too.
+Cloning is a real git clone over HTTPS via libgit2. Repositories are cloned once into a shared hub
+and each codebase gets its own linked worktree, so several codebases on one monorepo share a single
+object store at different commits. **Pull** and the branch/tag picker work for every remote. Deleting
+the last codebase that uses a repository deletes its clone too.
+
+When GitHub reports a repository larger than about 500 MB, adding it asks first and offers **Clone
+Latest Snapshot** — only the tip commit — alongside the full history. A latest-snapshot clone is
+badged as such. Features that need history never present a truncated one as complete: the hotspot
+chart and change-request comparisons say the history isn't there yet and offer **Fetch Full
+History**, which deepens the shared clone in place. Remotes that don't report a size clone as before,
+without asking.
 
 If a local folder happens to be a git working directory with an `origin` remote, it is silently
-upgraded to a repository-linked codebase so revision comparison works.
+upgraded to a repository-linked codebase so revision comparison works. Such a folder can also be
+**analysed at another branch or tag** from the codebase header: that revision's tree is read from
+the repository's history into a temporary directory, so the checkout, index, `HEAD` and any
+uncommitted work are never touched. The header says which revision is analysed and what is checked
+out, and View Source shows files as they were at that revision.
 
 Finishing a codebase's first index adds a **guided route** card to the codebase screen: three stops
 assembled entirely from measurements the index already took — where execution enters, the type most
@@ -81,8 +97,10 @@ and can export a ready-made CI invocation so the rules you tuned here gate your 
 
 ## Comparing revisions
 
-Any diagram can be compared against a **branch, tag, SHA or open change request**. Each change
-request in the picker shows its title, who raised it, and which branch merges into which. A change
+Any diagram can be compared against a **branch, tag, SHA or open change request**. Change requests
+come from the remote's host — GitHub today — for a cloned repository and for a local folder
+tracking one alike. Each change request in the picker shows its title, who raised it, and which
+branch merges into which. A change
 request compares against the merge base, so a moved base branch doesn't leak unrelated changes into
 the delta.
 
@@ -114,6 +132,7 @@ the three, and fails on any label the layout truncates.
 
 Screens live under `Screens/`, one directory per feature area, each pairing a SwiftUI view with an
 observable view model. Domain and persistence types live under `Models/` and `Persistence/`;
-`GitHub/` holds the device-auth flow, cloning and worktree synchronisation. Projects, diagrams and
+`Remote/` holds the host-neutral remote model, cloning and worktree synchronisation; `GitHub/` holds
+only what GitHub adds on top — the device-auth flow, repository browsing and change requests. Projects, diagrams and
 artifacts persist as per-file JSON, and export/import moves projects, layouts and rules between
 machines — indexed artifacts and clones are deliberately left out, since both are regenerable.

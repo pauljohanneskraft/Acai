@@ -322,10 +322,10 @@ final class ProjectStore: ObservableObject {
         deleteManagedRules(forCodebase: codebaseID)
     }
 
-    /// A GitHub codebase with no `repository` is one with its own independent clone, a layout the app
+    /// A managed codebase with no `repository` is one with its own independent clone, a layout the app
     /// no longer supports. It is discarded rather than migrated.
     private func discardPerCodebaseClones(inProjectAt projectIndex: Int) {
-        let discarded = projects[projectIndex].codebases.filter { $0.githubSource != nil && $0.repository == nil }
+        let discarded = projects[projectIndex].codebases.filter { $0.managedCheckout != nil && $0.repository == nil }
         guard !discarded.isEmpty else { return }
         for codebase in discarded {
             deleteCodebaseData(codebase.id, fromProjectAt: projectIndex)

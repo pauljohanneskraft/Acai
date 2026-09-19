@@ -139,6 +139,24 @@ final class CodebaseDetailScreen {
         refSwitchOperation.waitUntilLoaded("Switching to \(label)", file: file, line: line)
     }
 
+    /// A local folder in a git repository, analysed at a revision read from its history.
+    var revisionPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.revisionPicker"] }
+    var revisionSwitchOperation: AsyncOperation {
+        AsyncOperation(app: app, identifierPrefix: "codebaseDetail.revisionSwitch")
+    }
+    var pinnedRevisionCaption: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.pinnedRevisionCaption"].firstMatch
+    }
+
+    func analyse(at revision: String, file: StaticString = #filePath, line: UInt = #line) {
+        revisionPicker.choose(revision, in: app, file: file, line: line)
+        revisionSwitchOperation.waitUntilLoaded("Analysing at \(revision)", file: file, line: line)
+    }
+
+    var latestSnapshotBadge: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.latestSnapshotBadge"].firstMatch
+    }
+
     var deleteCodebaseButton: XCUIElement { app.buttons["codebaseDetail.deleteCodebaseButton"] }
     var deleteCodebaseConfirmButton: XCUIElement {
         app.buttons.matching(identifier: "codebaseDetail.codebase.delete.confirmButton").firstMatch

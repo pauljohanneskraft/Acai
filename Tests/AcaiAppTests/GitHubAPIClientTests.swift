@@ -43,22 +43,23 @@ struct GitHubNetworkingTests {
         return GitHubAPIClient(credential: credential, session: URLSession(configuration: configuration))
     }
 
-    @Test func branchesRequestsExpectedPathAndPageSize() async throws {
-        let capturedRequest = Locked<URLRequest?>(nil)
+    @Test func repositoriesDecodeSizeWhenPresentAndToleratesItsAbsence() async throws {
         MockURLProtocol.handler = { request in
-            capturedRequest.value = request
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, try JSONEncoder().encode([["name": "main"], ["name": "develop"]]))
+            let owner: [String: Any] = ["login": "acme"]
+            let body: [[String: Any]] = [
+                ["id": 1, "name": "big", "full_name": "acme/big", "owner": owner, "default_branch": "main",
+                 "private": false, "size": 812_000],
+                ["id": 2, "name": "small", "full_name": "acme/small", "owner": owner, "default_branch": "main",
+                 "private": true]
+            ]
+            return (response, try JSONSerialization.data(withJSONObject: body))
         }
         defer { MockURLProtocol.handler = nil }
 
-        let client = makeClient(credential: .personalAccessToken("secret-token"))
-        let refs = try await client.branches(owner: "acme", repo: "widgets")
+        let repositories = try await makeClient(credential: .personalAccessToken("t")).repositories()
 
-        #expect(refs.map(\.name) == ["main", "develop"])
-        #expect(capturedRequest.value?.url?.path == "/repos/acme/widgets/branches")
-        #expect(capturedRequest.value?.url?.query?.contains("per_page=100") == true)
-        #expect(capturedRequest.value?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
+        #expect(repositories.map(\.sizeKilobytes) == [812_000, nil])
     }
 
     @Test func repositoriesRequestsRequestedPageAtSharedPageSize() async throws {
@@ -121,7 +122,7 @@ struct GitHubNetworkingTests {
 
         let client = makeClient(credential: .personalAccessToken("t"))
         await #expect(throws: (any Error).self) {
-            _ = try await client.branches(owner: "acme", repo: "widgets")
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
         }
     }
 }

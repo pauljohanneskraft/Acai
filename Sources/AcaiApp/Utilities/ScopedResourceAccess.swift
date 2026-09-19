@@ -69,6 +69,14 @@ struct ScopedResourceAccess {
         return try body(plain)
     }
 
+    /// Holds the bookmark's scope open, when it can be, around work that reaches the location by
+    /// its stored path. Unlike `withResolvedURL`, it neither probes nor fails when there's no scope.
+    func whileAccessible<T>(_ body: () throws -> T) rethrows -> T {
+        let scoped = try? resolvedScopedURL()
+        defer { scoped?.url.stopAccessingSecurityScopedResource() }
+        return try body()
+    }
+
     /// A resolved bookmark whose security scope is open — the caller owns balancing it with
     /// `stopAccessingSecurityScopedResource()`.
     private struct Scoped {

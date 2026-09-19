@@ -1,3 +1,4 @@
+import AcaiGit
 import Foundation
 #if os(macOS)
 import AppKit
@@ -21,9 +22,16 @@ extension Codebase {
     ///
     /// Runs synchronously — callers on a `View`/view model should dispatch this off the main actor
     /// (e.g. `Task.detached`), since it touches the filesystem.
+    /// A codebase analysed at a pinned revision shows the file as it was at that revision — a copy
+    /// read from history into a temporary directory — not whatever the working tree holds now.
     func resolvedFileURL(relativePath: String) throws -> URL {
         try ScopedResourceAccess(path: directoryPath, bookmark: securityScopedBookmark).withResolvedURL { root in
-            try resolvedFileURL(relativePath: relativePath, root: root)
+            if let revision = pinnedRevision {
+                _ = try PathEscapeGuard(root: root).resolvedURL(forRelativePath: relativePath)
+                return try GitDiffSnapshot(directory: root, reference: revision)
+                    .extractedFile(relativePath: relativePath)
+            }
+            return try resolvedFileURL(relativePath: relativePath, root: root)
         }
     }
 

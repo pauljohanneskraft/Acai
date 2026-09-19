@@ -27,7 +27,13 @@ public struct GitRepository: Sendable {
     /// `GitHubRemote.authenticatedURL` — and must never end up as part of a
     /// directory name on disk).
     public var localPath: URL {
-        storeDirectory.appendingPathComponent(Self.storeKey(for: remoteURL), isDirectory: true)
+        storeDirectory.appendingPathComponent(identity, isDirectory: true)
+    }
+
+    /// Equal for every spelling of one remote (`…/repo` and `…/repo.git`, any host case, with or
+    /// without credentials).
+    public var identity: String {
+        Self.storeKey(for: remoteURL)
     }
 
     /// This moves the shared clone's own working directory — callers that want an independent
