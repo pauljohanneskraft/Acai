@@ -16,7 +16,7 @@ public struct ProjectBrowserView: View {
     /// The value of the `WindowGroup(for:)` this window was opened with, kept pointing at what the
     /// window shows so reopening that address focuses this window and relaunch restores it.
     let windowAddress: Binding<AppAddress?>?
-    
+
     @EnvironmentObject var browserWindows: BrowserWindows
     // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
     // doc comment for why this can't just be local `@State` on this view.
