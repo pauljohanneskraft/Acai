@@ -34,17 +34,26 @@ public struct GitRepository: Sendable {
     /// checkout at a different ref simultaneously should add a `GitWorktree` instead of calling
     /// this repeatedly with different refs.
     @discardableResult
-    public func sync(ref: String, onProgress: (@Sendable (Double) -> Void)? = nil) async throws -> String {
+    public func sync(
+        ref: String, depth: GitHistoryDepth = .full, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> String {
         // `GitClone.sync(into:)` stages a fresh clone in a sibling `.itemReplacementDirectory`
         // before moving it into place — `FileManager` needs `storeDirectory` to already exist to
         // pick an appropriate (same-volume) location for that staging directory, so this can't be
         // left for `GitClone` itself to create only once it's ready to move the finished clone in.
         try FileManager.default.createDirectory(at: storeDirectory, withIntermediateDirectories: true)
-        return try await GitClone(remoteURL: remoteURL, ref: ref).sync(into: localPath, onProgress: onProgress)
+        return try await GitClone(remoteURL: remoteURL, ref: ref, depth: depth)
+            .sync(into: localPath, onProgress: onProgress)
     }
 
-    public func fetch(onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
-        try await GitCheckout(directory: localPath).fetch(onProgress: onProgress)
+    public func fetch(
+        depth: GitHistoryDepth = .full, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws {
+        try await GitFetch(repositoryDirectory: localPath, depth: depth).run(onProgress: onProgress)
+    }
+
+    public var isShallow: Bool {
+        isCloned && GitHistoryAvailability(directory: localPath).isShallow
     }
 
     public var isCloned: Bool {
@@ -80,6 +89,7 @@ public struct GitRepository: Sendable {
     }
 
     public func commitHistory(ref: String, limit: Int = 50) throws -> [GitCommitSummary] {
+        try GitHistoryAvailability(directory: localPath).requireFullHistory()
         let repository = try Repository(at: localPath, createIfNotExists: false)
         var commit = try GitReference(name: ref).resolve(in: repository)
 

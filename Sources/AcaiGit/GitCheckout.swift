@@ -45,7 +45,7 @@ public struct GitCheckout {
     }
 
     public struct Ref: Identifiable, Hashable, Sendable {
-        public enum Kind: String, Hashable, Sendable {
+        public enum Kind: String, Hashable, Sendable, Codable {
             case branch
             case tag
         }
@@ -53,6 +53,11 @@ public struct GitCheckout {
         public var name: String
         public var kind: Kind
         public var id: String { "\(kind.rawValue)-\(name)" }
+
+        public init(name: String, kind: Kind) {
+            self.name = name
+            self.kind = kind
+        }
     }
 
     public func refs() throws -> [Ref] {
@@ -140,6 +145,7 @@ public struct GitCheckout {
         guard let root = GitRepositoryRoot(directory: directory).find() else {
             throw Failure.notAGitRepository(directory.path)
         }
+        try GitHistoryAvailability(directory: root).requireFullHistory()
 
         func message(_ context: String) -> String {
             if let error = git_error_last(), let text = error.pointee.message {

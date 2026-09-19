@@ -9,6 +9,7 @@ import libgit2
 public struct GitClone {
     public let remoteURL: URL
     public let ref: String
+    public let depth: GitHistoryDepth
 
     public enum Failure: LocalizedError {
         case libgit2(String)
@@ -21,9 +22,10 @@ public struct GitClone {
         }
     }
 
-    public init(remoteURL: URL, ref: String) {
+    public init(remoteURL: URL, ref: String, depth: GitHistoryDepth = .full) {
         self.remoteURL = remoteURL
         self.ref = ref
+        self.depth = depth
     }
 
     /// Clones/syncs `destination` to `ref`'s current commit, replacing its contents (if any) only
@@ -51,7 +53,7 @@ public struct GitClone {
             } catch {
                 throw error.asFailure("Couldn't open the repository")
             }
-            try await GitCheckout(directory: destination, repository: repository).fetch(onProgress: onProgress)
+            try await GitFetch(repositoryDirectory: destination, depth: depth).run(onProgress: onProgress)
             return repository
         }
 
@@ -101,6 +103,7 @@ public struct GitClone {
         guard git_clone_options_init(&cloneOptions, UInt32(GIT_CLONE_OPTIONS_VERSION)) == 0 else {
             throw Failure.libgit2(lastErrorMessage("Couldn't initialize clone options"))
         }
+        cloneOptions.fetch_opts.depth = depth.libgit2Depth
         cloneOptions.fetch_opts.callbacks.transfer_progress = { stats, payload in
             guard !Task.isCancelled else { return -1 }
             guard let stats, let payload else { return 0 }
