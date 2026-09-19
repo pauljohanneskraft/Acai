@@ -107,7 +107,19 @@ final class ProjectBrowserScreen {
         }
         SystemBanners().dismiss(file: file, line: line)
         app.open(url)
+        #if os(macOS)
+        // Launch Services delivers the link without bringing the app to the front, and a background
+        // window's controls never report hittable.
+        app.activate()
+        #endif
     }
+
+    #if os(macOS)
+    /// Window › Cycle Through Windows (⌘`), as a user brings a covered window forward.
+    func cycleWindows() {
+        app.typeKey("`", modifierFlags: .command)
+    }
+    #endif
 
     // MARK: - Settings
 

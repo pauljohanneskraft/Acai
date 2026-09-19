@@ -12,6 +12,8 @@ final class NewWindowJourneyTests: UIJourneyTestCase {
         detail.openFreeformDiagramInNewWindow(id: freeformDiagramID)
         XCTAssertEqual(app.windows.count, 2, "Open in New Window must add a window, not replace the first.")
 
+        // The new window opens in front, covering the first one.
+        ProjectBrowserScreen(app: app).cycleWindows()
         let row = detail.freeformDiagramRow(id: freeformDiagramID)
         row.tapWhenReady("the freeform diagram's row in the first window")
         let showWindow = app.buttons["diagramOpenElsewhere.showWindowButton"]
