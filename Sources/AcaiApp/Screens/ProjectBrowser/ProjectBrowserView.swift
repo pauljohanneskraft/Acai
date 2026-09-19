@@ -14,21 +14,12 @@ public struct ProjectBrowserView: View {
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
-    #if !os(macOS)
-    // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
-    // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
-    @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
-    private var diagramTheme: DiagramThemeSelection = .system
-    #endif
     @State private var newProjectPresented = false
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
-    #if !os(macOS)
-    @State private var showKeyboardShortcuts = false
-    #endif
 
     public init() {}
 
@@ -57,35 +48,13 @@ public struct ProjectBrowserView: View {
                         }
                         .accessibilityIdentifier("sidebar.quickOpenButton")
                     }
-                    // `.topBarTrailing`, not `.secondaryAction`, for these three — verified against
-                    // a real XCUITest run that with more than one `.secondaryAction` sibling item,
-                    // iOS collapses all of them into a single system overflow control with no
-                    // individually-tappable accessibility element for any one of them (matches
-                    // Apple's own documented "may show inside an overflow menu" behavior for that
-                    // placement). `.topBarTrailing` renders each as its own reliably-tappable bar
-                    // button instead.
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Picker(.app("View.ProjectBrowserView.DiagramTheme"), selection: $diagramTheme) {
-                                ForEach(DiagramThemeSelection.allCases) { option in
-                                    Label(option.label, systemImage: option.symbol).tag(option)
-                                }
-                            }
-                            Button {
-                                showKeyboardShortcuts = true
-                            } label: {
-                                Label(.app("View.ProjectBrowserView.KeyboardShortcuts"), systemImage: "keyboard")
-                            }
-                            .accessibilityIdentifier("sidebar.keyboardShortcutsButton")
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.DiagramTheme"), systemImage: "paintbrush")
-                        }
-                    }
+                    // `.topBarTrailing`, not `.secondaryAction`: with more than one `.secondaryAction`
+                    // sibling, iOS collapses them into one overflow control with no individually
+                    // tappable element. The iPad sidebar fits three bar items before it overflows too,
+                    // which is why the diagram theme and keyboard shortcuts live in Settings.
                     ToolbarItem(placement: .topBarTrailing) {
                         ActivityIndicatorView(activityCenter: model.store.activityCenter)
                     }
-                    // A standalone icon (not nested inside the Diagram Theme `Menu` above) — more
-                    // reliably discoverable/tappable than burying it another level deep.
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             settingsPresenter.isPresented = true
@@ -102,10 +71,6 @@ public struct ProjectBrowserView: View {
                 .containerBackground(.windowBackground, for: .window)
                 #endif
         }
-        // macOS has no sidebar-toolbar `Menu` today (the Diagram Theme picker lives in the menu
-        // bar via `DiagramThemeCommands` instead — there's no menu bar on iOS, which is why that
-        // iOS-only `Menu` above exists at all) — so this is a small dedicated toolbar of its own,
-        // rather than inventing a `MenuBarExtra` scene for one icon.
         #if os(macOS)
         .toolbar {
             ToolbarItem {
@@ -124,9 +89,6 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         #if !os(macOS)
-        .sheet(isPresented: $showKeyboardShortcuts) {
-            KeyboardShortcutsPanel()
-        }
         .sheet(isPresented: $settingsPresenter.isPresented) {
             SettingsSheet()
                 .environmentObject(model)

@@ -5,12 +5,24 @@ import SwiftUI
 /// via ⌘,.
 struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showKeyboardShortcuts = false
 
     var body: some View {
         NavigationStack {
             Form {
+                Section(.app("View.SettingsSheet.Appearance")) {
+                    DiagramThemePicker()
+                }
                 Section(.app("View.SettingsSheet.GitHubAccount")) {
                     GitHubAccountSection()
+                }
+                Section {
+                    Button {
+                        showKeyboardShortcuts = true
+                    } label: {
+                        Label(.app("View.SettingsSheet.KeyboardShortcuts"), systemImage: "keyboard")
+                    }
+                    .accessibilityIdentifier("settings.keyboardShortcutsButton")
                 }
                 Section(.app("View.SettingsSheet.Licenses")) {
                     LicensesSection()
@@ -23,6 +35,9 @@ struct SettingsSheet: View {
                         .accessibilityIdentifier("settings.doneButton")
                 }
             }
+        }
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutsPanel()
         }
         .accessibilityIdentifier("settings.sheet")
     }
