@@ -60,7 +60,6 @@ extension ProjectBrowserView {
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("diagramOpenElsewhere.showWindowButton")
         }
-        .accessibilityIdentifier("diagramOpenElsewhere")
     }
 
     func addressMenuItems(for selection: ProjectBrowserViewModel.Selection, idPrefix: String) -> some View {

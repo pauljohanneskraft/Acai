@@ -1,4 +1,7 @@
 import XCTest
+#if os(macOS)
+import AppKit
+#endif
 
 @MainActor
 final class ProjectBrowserScreen {
@@ -106,11 +109,28 @@ final class ProjectBrowserScreen {
             return
         }
         SystemBanners().dismiss(file: file, line: line)
-        app.open(url)
         #if os(macOS)
-        // Launch Services delivers the link without bringing the app to the front, and a background
-        // window's controls never report hittable.
+        // `XCUIApplication.open(_:)` launches another instance on macOS, whose window then covers this
+        // one. Launch Services hands the link to the running instance, as it does for a real link.
+        let running = NSRunningApplication.runningApplications(withBundleIdentifier: "de.kraftsoftware.Acai")
+            .max { ($0.launchDate ?? .distantPast) < ($1.launchDate ?? .distantPast) }
+        guard let bundleURL = running?.bundleURL else {
+            XCTFail("The app under test isn't running", file: file, line: line)
+            return
+        }
+        let delivered = XCTestExpectation(description: "Launch Services delivers \(address)")
+        nonisolated(unsafe) var failure: Error?
+        NSWorkspace.shared.open([url], withApplicationAt: bundleURL, configuration: .init()) { _, error in
+            failure = error
+            delivered.fulfill()
+        }
+        guard XCTWaiter().wait(for: [delivered], timeout: .uiTransition) == .completed, failure == nil else {
+            XCTFail("Couldn't open \(address): \(failure?.localizedDescription ?? "timed out")", file: file, line: line)
+            return
+        }
         app.activate()
+        #else
+        app.open(url)
         #endif
     }
 
