@@ -367,6 +367,9 @@ private extension ProjectDetailView {
             .foregroundStyle(.secondary)
             .textFieldStyle(.plain)
         }
+        // A plain macOS field laid out mid-animation (a just-created project) keeps a clipped height.
+        .fixedSize(horizontal: false, vertical: true)
+        .transaction { $0.animation = nil }
     }
 }
 
