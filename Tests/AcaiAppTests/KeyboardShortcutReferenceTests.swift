@@ -39,6 +39,26 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
         #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⇧⌘/")
+        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
+        #expect(KeyboardShortcutReference.openSettings.symbol == "⌘,")
+    }
+
+    /// An iPad's hardware keyboard fires the same menu commands the Mac's menu bar does, so a command that
+    /// binds a shortcut but is attached only on macOS silently drops that shortcut on iPad.
+    @Test("No shortcut-binding menu command is attached on macOS only")
+    func shortcutCommandsAreAttachedOnEveryPlatform() throws {
+        let sources = try swiftFiles().map { try String(contentsOf: $0, encoding: .utf8) }
+        let commandTypes = sources
+            .filter { $0.contains(".keyboardShortcut(") }
+            .flatMap { $0.matches(of: /struct (\w+)\s*:\s*Commands/).map { String($0.1) } }
+        #expect(!commandTypes.isEmpty)
+        for type in commandTypes {
+            let attachments = sources.flatMap { MacOSOnlyRegions(source: $0).lines(containing: "\(type)()") }
+            #expect(!attachments.isEmpty, "`\(type)` binds a shortcut but is never attached")
+            #expect(
+                attachments.allSatisfy { !$0.isMacOSOnly },
+                "`\(type)` binds a shortcut but is attached inside `#if os(macOS)`, so an iPad keyboard never fires it")
+        }
     }
 
     @Test("Every shortcut the app binds is listed in the reference")
@@ -85,6 +105,40 @@ struct KeyboardShortcutReferenceTests {
     private struct Usage {
         let file: String
         let argument: String
+    }
+
+    /// Tracks `#if`/`#else`/`#endif` line by line; a line is macOS-only when any enclosing branch is
+    /// `os(macOS)`, or the `#else` of `!os(macOS)`.
+    private struct MacOSOnlyRegions {
+        struct Line {
+            let text: String
+            let isMacOSOnly: Bool
+        }
+
+        let source: String
+
+        func lines(containing needle: String) -> [Line] {
+            var branches: [(condition: String, isElse: Bool)] = []
+            var result: [Line] = []
+            for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
+                let line = rawLine.trimmingCharacters(in: .whitespaces)
+                if line.hasPrefix("#if ") {
+                    branches.append((String(line.dropFirst(4)), false))
+                } else if line.hasPrefix("#elseif "), !branches.isEmpty {
+                    branches[branches.count - 1] = (String(line.dropFirst(8)), false)
+                } else if line == "#else", !branches.isEmpty {
+                    branches[branches.count - 1].isElse = true
+                } else if line == "#endif", !branches.isEmpty {
+                    branches.removeLast()
+                } else if line.contains(needle) {
+                    let isMacOSOnly = branches.contains { branch in
+                        branch.isElse ? branch.condition == "!os(macOS)" : branch.condition == "os(macOS)"
+                    }
+                    result.append(Line(text: line, isMacOSOnly: isMacOSOnly))
+                }
+            }
+            return result
+        }
     }
 
     /// The argument of every `.keyboardShortcut(…)` call, reduced to the bare entry name when it is

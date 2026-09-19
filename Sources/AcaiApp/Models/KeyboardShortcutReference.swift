@@ -80,6 +80,10 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    /// Bound only off macOS: there the `Settings` scene provides ⌘, itself.
+    static let openSettings = KeyboardShortcutReference(
+        id: "openSettings", shortcut: KeyboardShortcut(",", modifiers: .command),
+        name: .app("KeyboardShortcutReference.OpenSettings"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.KeyboardShortcuts"))
@@ -90,8 +94,6 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
-        /// Bound only inside macOS menu commands; iOS/iPadOS reach these from the sidebar instead.
-        var isMacOSOnly = false
     }
 
     static let allGroups: [Group] = [
@@ -107,20 +109,10 @@ extension KeyboardShortcutReference {
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(
-            id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen],
-            isMacOSOnly: true),
-        Group(
-            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
-            isMacOSOnly: true)
+            id: "navigation", title: .app("KeyboardShortcutReference.Navigation"),
+            shortcuts: [.quickOpen, .openSettings]),
+        Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
     ]
-
-    static let groups: [Group] = {
-        #if os(macOS)
-        allGroups
-        #else
-        allGroups.filter { !$0.isMacOSOnly }
-        #endif
-    }()
 }
 
 extension View {
