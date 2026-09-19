@@ -283,40 +283,38 @@ struct ProjectCodebaseEditor {
     func removeCodebase(_ codebaseID: UUID) {
         let removedCodebase = codebase(for: codebaseID)
         for i in store.projects.indices {
-            store.projects[i].codebases.removeAll { $0.id == codebaseID }
-            let toRemove = store.projects[i].generatedDiagramIDs.filter { did in
-                store.generatedDiagrams[did]?.codebaseID == codebaseID
-            }
-            for did in toRemove {
-                store.projects[i].generatedDiagramIDs.removeAll { $0 == did }
-                store.deleteGeneratedDiagramFile(did)
-            }
+            store.deleteCodebaseData(codebaseID, fromProjectAt: i)
         }
-        store.deleteArtifactFile(for: codebaseID)
-        store.deleteManagedRules(forCodebase: codebaseID)
-        // A codebase created after worktree support existed (has both `githubSource` and
-        // `repository`) has a linked worktree, not an independent clone under `githubClonesDir` —
-        // remove that instead. Only the worktree goes: the shared hub clone itself stays, since
-        // other codebases may still reference it (removing that is a separate, explicit
-        // Repositories UI action). Older codebases (`githubSource` set, `repository` nil) keep
-        // using `deleteGitHubClone`, which is a harmless no-op for every other codebase shape.
-        if removedCodebase?.githubSource != nil, removedCodebase?.repository != nil {
+        if removedCodebase?.githubSource != nil {
             removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
-        } else {
-            store.deleteGitHubClone(for: codebaseID)
         }
         persist()
     }
 
-    /// Deregisters and deletes a codebase's linked worktree, leaving the shared hub clone (and any
-    /// other codebase's worktree of it) untouched.
+    /// Deregisters and deletes a codebase's linked worktree, and the shared hub clone with it once no
+    /// other codebase's worktree is left on it.
     private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) {
-        guard let repository else { return }
+        let worktreeDirectory = store.gitWorktreeURL(for: codebaseID)
+        guard let repository else {
+            try? FileManager.default.removeItem(at: worktreeDirectory)
+            return
+        }
         let sync = GitWorktreeSync(
             transportURL: repository.remoteURL, ref: repository.ref,
             hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
         let worktreeName = store.gitWorktreeName(for: codebaseID)
-        Task { try? await sync.removeWorktree(named: worktreeName) }
+        let store = store
+        Task {
+            guard sync.hub.isCloned else {
+                try? FileManager.default.removeItem(at: worktreeDirectory)
+                return
+            }
+            do {
+                try await sync.removeWorktree(named: worktreeName)
+            } catch {
+                store.report(.app("Error.ProjectBrowserViewModel.RemoveCloneFailed \(error.localizedDescription)"))
+            }
+        }
     }
 
     // MARK: Quality-check rules

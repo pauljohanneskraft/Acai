@@ -3,9 +3,8 @@ import Foundation
 import SwiftGitX
 
 /// One shared, on-disk git clone for a remote URL, reused across every `Codebase` that points at
-/// it instead of each getting its own independent full clone (today's `GitClone.sync(into:)`
-/// model — still used directly by callers that want a single standalone checkout, e.g.
-/// `GitHubRepositoryClone`). Reuses `GitClone`'s clone-or-fetch primitive, but pins the destination
+/// it instead of each getting its own independent full clone. Reuses `GitClone`'s clone-or-fetch
+/// primitive, but pins the destination
 /// to a path derived deterministically from `remoteURL` under `storeDirectory`, so two `Codebase`s
 /// naming the same remote resolve to the same on-disk clone.
 ///
@@ -25,7 +24,7 @@ public struct GitRepository: Sendable {
 
     /// Deterministic and collision-resistant: a SHA-256 digest of the remote URL with any embedded
     /// credentials stripped first (a GitHub PAT is often embedded in `remoteURL`'s userinfo — see
-    /// `GitHubRepositoryClone.authenticatedRemoteURL` — and must never end up as part of a
+    /// `GitHubRemote.authenticatedURL` — and must never end up as part of a
     /// directory name on disk).
     public var localPath: URL {
         storeDirectory.appendingPathComponent(Self.storeKey(for: remoteURL), isDirectory: true)
