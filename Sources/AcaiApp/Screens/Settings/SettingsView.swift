@@ -1,14 +1,15 @@
 import SwiftUI
 
-/// macOS's `Settings` scene content (⌘,) — a real Settings scene with Accounts, MCP, and Licenses
-/// sections. General (diagram theme) is a separate, not-yet-built pane (Repositories deliberately
-/// stays in the sidebar instead, to avoid duplicating scope), so a `TabView` isn't needed yet for
-/// a single scrolling pane.
+/// macOS's `Settings` scene content (⌘,) — one scrolling pane with Accounts, Appearance, MCP and
+/// Licenses sections. Repositories deliberately stays in the sidebar, to avoid duplicating scope.
 struct SettingsView: View {
     var body: some View {
         Form {
             Section(.app("View.SettingsView.GitHubAccount")) {
                 GitHubAccountSection()
+            }
+            Section(.app("View.SettingsView.Appearance")) {
+                DiagramThemePicker()
             }
             #if os(macOS)
             Section(.app("View.SettingsView.ConnectViaMCP")) {

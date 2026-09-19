@@ -8,28 +8,18 @@ public struct ProjectBrowserView: View {
     @StateObject var model = ProjectBrowserViewModel()
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
-    // doc comment for why this can't just be local `@State` on this view. Not `private`:
-    // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
-    @EnvironmentObject var quickOpenPresenter: QuickOpenPresenter
+    // doc comment for why this can't just be local `@State` on this view.
+    @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
-    #if !os(macOS)
-    // Same `@AppStorage` key as `DiagramThemeCommands` (macOS menu-bar picker), so this iOS
-    // toolbar picker and the macOS menu stay in sync automatically — there's no menu bar on iOS.
-    @AppStorage(DiagramThemeSelection.storageKey, store: DiagramThemeSelection.store)
-    private var diagramTheme: DiagramThemeSelection = .system
-    #endif
     @State private var newProjectPresented = false
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
-    #if !os(macOS)
-    @State private var showKeyboardShortcuts = false
-    #endif
 
     public init() {}
 
@@ -49,47 +39,22 @@ public struct ProjectBrowserView: View {
                             }
                             .accessibilityIdentifier("sidebar.newProjectButton")
                         }
-                        // iPhone's dedicated search tab/button — iPad instead gets a pinned field
-                        // atop the sidebar `List` (see `sidebarContent`), so this only needs to
-                        // exist at compact width.
-                        ToolbarItem(placement: .primaryAction) {
-                            Button {
-                                quickOpenPresenter.isPresented = true
-                            } label: {
-                                Label(.app("View.ProjectBrowserView.QuickOpen"), systemImage: "magnifyingglass")
-                            }
-                            .accessibilityIdentifier("sidebar.quickOpenButton")
-                        }
                     }
-                    // `.topBarTrailing`, not `.secondaryAction`, for these three — verified against
-                    // a real XCUITest run that with more than one `.secondaryAction` sibling item,
-                    // iOS collapses all of them into a single system overflow control with no
-                    // individually-tappable accessibility element for any one of them (matches
-                    // Apple's own documented "may show inside an overflow menu" behavior for that
-                    // placement). `.topBarTrailing` renders each as its own reliably-tappable bar
-                    // button instead.
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Picker(.app("View.ProjectBrowserView.DiagramTheme"), selection: $diagramTheme) {
-                                ForEach(DiagramThemeSelection.allCases) { option in
-                                    Label(option.label, systemImage: option.symbol).tag(option)
-                                }
-                            }
-                            Button {
-                                showKeyboardShortcuts = true
-                            } label: {
-                                Label(.app("View.ProjectBrowserView.KeyboardShortcuts"), systemImage: "keyboard")
-                            }
-                            .accessibilityIdentifier("sidebar.keyboardShortcutsButton")
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            quickOpenPresenter.isPresented = true
                         } label: {
-                            Label(.app("View.ProjectBrowserView.DiagramTheme"), systemImage: "paintbrush")
+                            Label(.app("View.ProjectBrowserView.QuickOpen"), systemImage: "magnifyingglass")
                         }
+                        .accessibilityIdentifier("sidebar.quickOpenButton")
                     }
+                    // `.topBarTrailing`, not `.secondaryAction`: with more than one `.secondaryAction`
+                    // sibling, iOS collapses them into one overflow control with no individually
+                    // tappable element. The iPad sidebar fits three bar items before it overflows too,
+                    // which is why the diagram theme and keyboard shortcuts live in Settings.
                     ToolbarItem(placement: .topBarTrailing) {
                         ActivityIndicatorView(activityCenter: model.store.activityCenter)
                     }
-                    // A standalone icon (not nested inside the Diagram Theme `Menu` above) — more
-                    // reliably discoverable/tappable than burying it another level deep.
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             settingsPresenter.isPresented = true
@@ -106,10 +71,6 @@ public struct ProjectBrowserView: View {
                 .containerBackground(.windowBackground, for: .window)
                 #endif
         }
-        // macOS has no sidebar-toolbar `Menu` today (the Diagram Theme picker lives in the menu
-        // bar via `DiagramThemeCommands` instead — there's no menu bar on iOS, which is why that
-        // iOS-only `Menu` above exists at all) — so this is a small dedicated toolbar of its own,
-        // rather than inventing a `MenuBarExtra` scene for one icon.
         #if os(macOS)
         .toolbar {
             ToolbarItem {
@@ -128,28 +89,12 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         #if !os(macOS)
-        .sheet(isPresented: $showKeyboardShortcuts) {
-            KeyboardShortcutsPanel()
-        }
         .sheet(isPresented: $settingsPresenter.isPresented) {
             SettingsSheet()
                 .environmentObject(model)
         }
         #endif
-        .fileExporter(
-            isPresented: Binding(
-                get: { model.pendingExport != nil },
-                set: { if !$0 { model.pendingExport = nil } }
-            ),
-            document: model.pendingExport.map { ExportDocument(data: $0.data) },
-            contentType: model.pendingExport?.contentType ?? .data,
-            defaultFilename: model.pendingExport?.filename
-        ) { result in
-            if case .failure(let error) = result {
-                model.store.report(.app("Error.ProjectBrowserView.ExportFailed \(error.localizedDescription)"))
-            }
-            model.pendingExport = nil
-        }
+        .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(store: model.store, model: model))
         .confirmationDialog(
             .app("View.ProjectBrowserView.ConfirmDeleteProject \(projectPendingDeletion?.title ?? "")"),
@@ -187,12 +132,6 @@ public struct ProjectBrowserView: View {
 
     private var sidebarContent: some View {
         VStack(spacing: 0) {
-            #if !os(macOS)
-            if horizontalSizeClass != .compact {
-                quickOpenSearchFieldProxy
-                Divider()
-            }
-            #endif
             List(selection: $model.selection) {
                 let projects = model.store.projects.sorted(byLocalizedName: \.title)
                 ForEach(projects) { project in

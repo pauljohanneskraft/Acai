@@ -609,6 +609,108 @@
         }
       }
     },
+    "Error.ExportShareSheet.NoWindow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Teilen-Menü konnte nicht geöffnet werden, weil kein Acai-Fenster aktiv ist. Bring Acai in den Vordergrund und exportiere erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The share sheet couldn't open because no Acai window is active. Bring Acai to the front and export again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La feuille de partage n'a pas pu s'ouvrir, car aucune fenêtre d'Acai n'est active. Affichez Acai au premier plan et exportez de nouveau."
+          }
+        }
+      }
+    },
+    "Error.FolderDropTarget.AlreadyAdded %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner ist bereits eine Codebase dieses Projekts und wurde übersprungen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner sind bereits Codebases dieses Projekts und wurden übersprungen."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder is already a codebase of this project and was skipped."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folders are already codebases of this project and were skipped."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dossier est déjà une codebase de ce projet et a été ignoré."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dossiers sont déjà des codebases de ce projet et ont été ignorés."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Error.FolderDropTarget.NoFoldersDropped" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Ordner können als Codebase hinzugefügt werden. Zieh einen Ordner auf ein Projekt, um ihn hinzuzufügen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only folders can be added as codebases. Drag a folder onto a project to add it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuls des dossiers peuvent être ajoutés comme codebases. Faites glisser un dossier sur un projet pour l'ajouter."
+          }
+        }
+      }
+    },
     "Error.ProjectBrowserView.ExportFailed %@" : {
       "localizations" : {
         "de" : {
@@ -4059,28 +4161,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repositories"
-          }
-        }
-      }
-    },
-    "View.ProjectBrowserView.SearchTypesModulesMethods" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Typen, Module, Methoden, Diagramme durchsuchen…"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search types, modules, methods, diagrams…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rechercher des types, modules, méthodes, diagrammes…"
           }
         }
       }
@@ -16421,7 +16501,7 @@
         }
       }
     },
-    "View.ProjectBrowserView.DiagramTheme" : {
+    "View.DiagramThemePicker.DiagramTheme" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16443,7 +16523,7 @@
         }
       }
     },
-    "View.ProjectBrowserView.KeyboardShortcuts" : {
+    "View.SettingsSheet.KeyboardShortcuts" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18246,19 +18326,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Typen, Module, Methoden, Diagramme durchsuchen…"
+            "value" : "Suchen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Search types, modules, methods, diagrams…"
+            "value" : "Search"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des types, modules, méthodes, diagrammes…"
+            "value" : "Rechercher"
           }
         }
       }
@@ -19817,6 +19897,28 @@
         }
       }
     },
+    "View.SettingsSheet.Appearance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparence"
+          }
+        }
+      }
+    },
     "View.SettingsSheet.GitHubAccount" : {
       "localizations" : {
         "de" : {
@@ -19901,6 +20003,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se connecter via MCP"
+          }
+        }
+      }
+    },
+    "View.SettingsView.Appearance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparence"
           }
         }
       }

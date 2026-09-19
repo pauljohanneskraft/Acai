@@ -39,6 +39,7 @@ extension ProjectBrowserView {
                 .help(project.title)
                 .accessibilityIdentifier("sidebar.project.\(project.id)")
                 .contextMenu { projectContextMenu(project: project) }
+                .modifier(FolderDropTarget(projectID: project.id, model: model))
         }
         #else
         // DisclosureGroup's label swallows every tap on iOS (no separate hit-target for the
@@ -74,6 +75,7 @@ extension ProjectBrowserView {
                 .buttonStyle(.plain)
             }
             .contextMenu { projectContextMenu(project: project) }
+            .modifier(FolderDropTarget(projectID: project.id, model: model))
         }
         #endif
     }
