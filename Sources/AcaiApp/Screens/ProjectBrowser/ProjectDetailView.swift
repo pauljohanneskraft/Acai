@@ -412,6 +412,8 @@ extension ProjectDetailView {
 
     @ViewBuilder
     fileprivate func codebaseContextMenu(codebase: Codebase) -> some View {
+        AddressMenuItems(selection: .codebase(codebase.id), idPrefix: "projectDetail.codebaseRow.\(codebase.id)")
+        Divider()
         Button {
             Task { await model.editing.reindex(codebaseID: codebase.id) }
         } label: {
