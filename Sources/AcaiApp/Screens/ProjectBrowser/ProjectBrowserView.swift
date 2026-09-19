@@ -7,10 +7,17 @@ public struct ProjectBrowserView: View {
     // own line-count limit) need to read these too.
     @StateObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
-    // doc comment for why this can't just be local `@State` on this view. Not `private`:
-    // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
-    @EnvironmentObject var quickOpenPresenter: QuickOpenPresenter
+    @StateObject var quickOpenPresenter = QuickOpenPresenter()
+    @EnvironmentObject var browserWindows: BrowserWindows
+    @State var windowToken = UUID()
+    /// The value of the `WindowGroup(for:)` this window was opened with, kept pointing at what the
+    /// window shows so reopening that address focuses this window and relaunch restores it.
+    let windowAddress: Binding<AppAddress?>?
+    @State private var columnVisibility: NavigationSplitViewVisibility
+    #if os(macOS)
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.appearsActive) private var appearsActive
+    #endif
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
@@ -31,12 +38,22 @@ public struct ProjectBrowserView: View {
     @State private var showKeyboardShortcuts = false
     #endif
 
-    init(store: ProjectStore) {
-        _model = StateObject(wrappedValue: ProjectBrowserViewModel(store: store))
+    /// `windowAddress` is set for a window opened on one item, which starts on it with the sidebar hidden.
+    init(store: ProjectStore, windowAddress: Binding<AppAddress?>? = nil) {
+        let initialAddress = windowAddress?.wrappedValue
+        _model = StateObject(wrappedValue: {
+            let model = ProjectBrowserViewModel(store: store)
+            if let initialAddress {
+                model.selection = try? model.selection(for: initialAddress)
+            }
+            return model
+        }())
+        self.windowAddress = windowAddress
+        _columnVisibility = State(initialValue: windowAddress == nil ? .automatic : .detailOnly)
     }
 
     public var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebarContent
                 .navigationTitle(.app("View.ProjectBrowserView.Projects"))
                 .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
@@ -129,6 +146,24 @@ public struct ProjectBrowserView: View {
             QuickOpenSheetHost()
                 .environmentObject(model)
         }
+        .environment(\.openInNewWindow, OpenInNewWindowAction { openInNewWindow($0) })
+        .onOpenURL { url in openLink(url) }
+        .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
+        .onDisappear { browserWindows.windowClosed(windowToken) }
+        .focusedSceneObject(quickOpenPresenter)
+        .focusedSceneValue(\.browserWindowActions, windowActions)
+        #if os(macOS)
+        .background {
+            HostingWindowReader { window in
+                browserWindows.windowOpened(windowToken) { [weak window] in
+                    window?.makeKeyAndOrderFront(nil)
+                }
+            }
+        }
+        .onChange(of: appearsActive, initial: true) { _, isActive in
+            if isActive { browserWindows.windowBecameActive(windowToken) }
+        }
+        #endif
         #if !os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutsPanel()
@@ -152,7 +187,9 @@ public struct ProjectBrowserView: View {
             }
             model.pendingExport = nil
         }
-        .modifier(StoreErrorAlert(store: model.store, model: model))
+        .modifier(StoreErrorAlert(
+            store: model.store, model: model,
+            isPresenter: browserWindows.lastActiveWindow.map { $0 == windowToken } ?? true))
         .confirmationDialog(
             .app("View.ProjectBrowserView.ConfirmDeleteProject \(projectPendingDeletion?.title ?? "")"),
             isPresented: Binding(
@@ -227,6 +264,16 @@ public struct ProjectBrowserView: View {
 
     @ViewBuilder
     private var detailContent: some View {
+        if let diagramID = model.selection?.diagramID,
+           browserWindows.isOpenElsewhere(diagramID, from: windowToken) {
+            diagramOpenElsewhere(diagramID)
+        } else {
+            selectionDetail
+        }
+    }
+
+    @ViewBuilder
+    private var selectionDetail: some View {
         switch model.selection {
         case .project(let id):
             ProjectDetailView(projectID: id)
@@ -298,29 +345,6 @@ public struct ProjectBrowserView: View {
             .id(diagram.id)
             .environmentObject(model)
     }
-
-    @ViewBuilder
-    private func freeformDiagramDetail(diagramID: UUID) -> some View {
-        if model.freeformDiagram(for: diagramID) != nil {
-            FreeformDiagramView(diagramID: diagramID)
-                .id(diagramID)
-                .environmentObject(model)
-        } else {
-            Text(.app("View.ProjectBrowserView.DiagramNotFound"))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "rectangle.3.group")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text(.app("View.ProjectBrowserView.SelectProjectDiagram"))
-                .font(.title3)
-                .foregroundStyle(.secondary)
-        }
-    }
 }
 
 // MARK: - Store Error Alert
@@ -330,6 +354,8 @@ public struct ProjectBrowserView: View {
 private struct StoreErrorAlert: ViewModifier {
     @ObservedObject var store: ProjectStore
     @ObservedObject var model: ProjectBrowserViewModel
+    /// The store is shared by every window, so only the last active one presents its error.
+    let isPresenter: Bool
 
     /// Drives the picker from view state rather than from the alert's own action: presenting a
     /// `.fileImporter` while the alert is still dismissing silently does nothing. The target is
@@ -340,7 +366,10 @@ private struct StoreErrorAlert: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .alert(item: $store.lastError) { error in
+            .alert(item: Binding(
+                get: { isPresenter ? store.lastError : nil },
+                set: { if isPresenter { store.lastError = $0 } }
+            )) { error in
                 guard let codebaseID = error.relocatableCodebaseID else {
                     return Alert(
                         title: Text(.app("View.StoreErrorAlert.SomethingWentWrong")),
