@@ -54,7 +54,15 @@ public actor GitRepositoryLocks {
     public func run<T: Sendable>(
         for repository: GitRepository, _ operation: @Sendable () async throws -> T
     ) async throws -> T {
-        let key = repository.localPath.path
+        try await run(forClonePath: repository.localPath, operation)
+    }
+
+    /// For a clone known only by its directory — one whose remote URL is no longer recorded anywhere.
+    @discardableResult
+    public func run<T: Sendable>(
+        forClonePath localPath: URL, _ operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        let key = localPath.standardizedFileURL.path
         let access = locksByPath[key] ?? GitRepositorySerialAccess()
         locksByPath[key] = access
         return try await access.run(operation)

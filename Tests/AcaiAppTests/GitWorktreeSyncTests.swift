@@ -64,8 +64,32 @@ struct GitWorktreeSyncTests {
         #expect(FileManager.default.fileExists(atPath: worktree.appendingPathComponent("Feature.swift").path))
     }
 
-    @Test("removeWorktree deletes the worktree but leaves the shared hub clone intact")
-    func removeWorktreeLeavesHubIntact() async throws {
+    @Test("removeWorktree keeps the shared hub clone while another worktree still uses it")
+    func removeWorktreeKeepsHubWhileStillUsed() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: GitRepositoryLocks())
+
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+        let otherWorktree = root.appendingPathComponent("other-worktree", isDirectory: true)
+        try await sync.attachWorktree(named: "codebase-1", at: worktree)
+        try await sync.attachWorktree(named: "codebase-2", at: otherWorktree)
+
+        try await sync.removeWorktree(named: "codebase-1")
+
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(FileManager.default.fileExists(atPath: otherWorktree.path))
+        #expect(sync.hub.isCloned)
+    }
+
+    @Test("removeWorktree deletes the shared hub clone along with its last worktree")
+    func removeLastWorktreeDeletesHub() async throws {
         let root = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
 
@@ -78,12 +102,12 @@ struct GitWorktreeSyncTests {
 
         let worktree = root.appendingPathComponent("worktree", isDirectory: true)
         try await sync.attachWorktree(named: "codebase-1", at: worktree)
-        #expect(FileManager.default.fileExists(atPath: worktree.path))
 
         try await sync.removeWorktree(named: "codebase-1")
 
         #expect(!FileManager.default.fileExists(atPath: worktree.path))
-        #expect(sync.hub.isCloned)
+        #expect(!sync.hub.isCloned)
+        #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
     }
 
     // MARK: - Helpers

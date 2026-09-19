@@ -873,6 +873,28 @@
         }
       }
     },
+    "Error.ProjectBrowserViewModel.RemoveCloneFailed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die lokale Kopie der Codebase konnte nicht gelöscht werden: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't delete the codebase's local copy: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de supprimer la copie locale de la codebase : %@"
+          }
+        }
+      }
+    },
     "Error.ProjectBrowserViewModel.SaveQualityRulesFailed %@" : {
       "localizations" : {
         "de" : {
