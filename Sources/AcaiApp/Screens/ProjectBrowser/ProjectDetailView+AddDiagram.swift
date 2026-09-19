@@ -1,6 +1,10 @@
 import SwiftUI
 
 extension ProjectDetailView {
+    func isEmpty(_ project: Project) -> Bool {
+        project.codebases.isEmpty && model.freeformDiagramsForProject(projectID).isEmpty
+    }
+
     /// Shown instead of the header's action buttons + two empty sections when a project has
     /// neither codebases nor diagrams yet, reusing `FreeformDiagramView.emptyCanvasHint`'s visual
     /// language.
@@ -12,19 +16,29 @@ extension ProjectDetailView {
             Text(.app("View.ProjectDetailView.LetSAddFirst"))
                 .font(.title3)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 12) {
-                Button {
-                    addingCodebase = true
-                } label: {
-                    Label(.app("View.ProjectDetailView.AddCodebaseMenu"), systemImage: "plus")
-                }
-                .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramButton
+            // Bordered: inside iPhone's `List` row, a default-styled button makes the whole row its hit area.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { emptyProjectActions }
+                VStack(spacing: 12) { emptyProjectActions }
             }
+            .buttonStyle(.bordered)
             .controlSize(.large)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("projectDetail.emptyState")
+    }
+
+    @ViewBuilder
+    private var emptyProjectActions: some View {
+        Button {
+            addingCodebase = true
+        } label: {
+            Label(.app("View.ProjectDetailView.AddCodebaseMenu"), systemImage: "plus")
+        }
+        .accessibilityIdentifier("projectDetail.addCodebaseButton")
+        addDiagramButton
     }
 
     var addDiagramButton: some View {
