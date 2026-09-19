@@ -99,14 +99,20 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
 
     func addNode(kind: FreeformDiagramNodeKind, name: String, at position: CGPoint) {
         recordUndo()
-        let node = FreeformDiagram.Node(
+        nodes.append(makeNode(kind: kind, name: name, at: position))
+        save()
+    }
+
+    private func makeNode(
+        id: String = UUID().uuidString, kind: FreeformDiagramNodeKind, name: String, at position: CGPoint
+    ) -> FreeformDiagram.Node {
+        FreeformDiagram.Node(
+            id: id,
             name: name,
             content: FreeformDiagram.Node.Content.makeDefault(for: kind),
             positionX: Double(position.x),
             positionY: Double(position.y)
         )
-        nodes.append(node)
-        save()
     }
 
     func removeNode(_ nodeID: String) {
@@ -248,6 +254,11 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         pendingPlacement = nil
     }
 
+    /// The node the next placement tap would insert, for previewing it under the pointer or pencil.
+    var placementPreview: FreeformDiagram.Node? {
+        pendingPlacement.map { makeNode(id: "placementPreview", kind: $0, name: $0.defaultNodeName, at: .zero) }
+    }
+
     /// Routes through `addNode(kind:name:at:)` — the same choke point drag-drop and the context
     /// menu use — so undo keeps working identically.
     @discardableResult
@@ -345,10 +356,14 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         guard let node = nodes.first(where: { $0.id == nodeID }) else {
             return CGSize(width: 120, height: 60)
         }
+        return nodeSize(of: node)
+    }
+
+    func nodeSize(of node: FreeformDiagram.Node) -> CGSize {
         if let w = node.width, let h = node.height {
             return CGSize(width: w, height: h)
         }
-        if let measured = measuredNodeSizes[nodeID] {
+        if let measured = measuredNodeSizes[node.id] {
             return measured
         }
         switch node.content {

@@ -30,7 +30,7 @@ final class MockURLProtocol: URLProtocol {
     override func stopLoading() {}
 }
 
-// `.serialized`: every test here (plus the clone tests in `GitHubRepositoryCloneTests.swift`,
+// `.serialized`: every test here (plus the remote-URL tests in `GitHubRemoteTests.swift`,
 // an extension of this same suite type) installs a handler on `MockURLProtocol`'s shared static
 // state — Swift Testing parallelizes across suites/tests by default, which would let one test's
 // handler leak into another's in-flight request. One serialized suite is the fix.

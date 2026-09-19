@@ -70,9 +70,7 @@ extension ProjectCodebaseEditor {
         // Extracted into locals before the `@Sendable` closure below — see `addGitHubCodebase`'s
         // identical comment for why (avoids capturing `self`/`store`, neither Sendable).
         let repositoryService = self.repositoryService
-        let usesWorktree = codebase.repository != nil
         let worktreeDestination = worktreeDestination(codebaseID: codebaseID)
-        let legacyCloneURL = store.githubCloneURL(for: codebaseID)
         do {
             let fetchResult = try await store.activityCenter.run(
                 title: .app("Activity.Fetching \(source.owner)/\(source.repo)"),
@@ -80,15 +78,8 @@ extension ProjectCodebaseEditor {
             ) { onProgress throws -> String in
                 let target = GitHubRepositoryTarget(
                     credential: account.credential, owner: source.owner, repo: source.repo, ref: source.ref)
-                if usesWorktree {
-                    // Fetch the shared hub clone and move this codebase's own worktree along with it.
-                    return try await repositoryService.resyncWorktree(
-                        target, destination: worktreeDestination, onProgress: onProgress)
-                } else {
-                    // A codebase created before worktree support existed: still an independent
-                    // clone under `githubClonesDir`.
-                    return try await repositoryService.sync(target, into: legacyCloneURL, onProgress: onProgress)
-                }
+                return try await repositoryService.resyncWorktree(
+                    target, destination: worktreeDestination, onProgress: onProgress)
             }
             // Cancelled before finishing: don't stamp a new `lastSyncedCommitSHA`/reindex against a
             // fetch we can't be sure fully landed.
@@ -118,9 +109,7 @@ extension ProjectCodebaseEditor {
         // Extracted into locals before the `@Sendable` closure below — see `addGitHubCodebase`'s
         // identical comment for why (avoids capturing `self`/`store`, neither Sendable).
         let repositoryService = self.repositoryService
-        let usesWorktree = codebase.repository != nil
         let worktreeDestination = worktreeDestination(codebaseID: codebaseID)
-        let legacyCloneURL = store.githubCloneURL(for: codebaseID)
         do {
             let switchResult = try await store.activityCenter.run(
                 title: .app("Activity.Switching \(source.owner)/\(source.repo) \(ref)"),
@@ -128,12 +117,8 @@ extension ProjectCodebaseEditor {
             ) { onProgress throws -> String in
                 let target = GitHubRepositoryTarget(
                     credential: account.credential, owner: source.owner, repo: source.repo, ref: ref)
-                if usesWorktree {
-                    return try await repositoryService.resyncWorktree(
-                        target, destination: worktreeDestination, onProgress: onProgress)
-                } else {
-                    return try await repositoryService.sync(target, into: legacyCloneURL, onProgress: onProgress)
-                }
+                return try await repositoryService.resyncWorktree(
+                    target, destination: worktreeDestination, onProgress: onProgress)
             }
             // Cancelled before finishing: leave the codebase on its previous, still-valid ref rather
             // than stamping a switch that may not have actually landed.

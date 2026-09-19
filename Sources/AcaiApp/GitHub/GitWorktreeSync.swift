@@ -50,14 +50,17 @@ struct GitWorktreeSync {
         }
     }
 
-    /// Deregisters `worktreeName` and deletes its working directory, without touching the shared
-    /// hub clone itself — other codebases may still reference it. Removing the hub clone entirely
-    /// is a separate, explicit action (the Repositories UI's "Remove" action), gated on no codebase
-    /// referencing it any longer.
+    /// Deregisters `worktreeName` and deletes its working directory. The shared hub clone goes too
+    /// once no worktree is left on it — decided under the hub's lock, so a concurrent
+    /// `attachWorktree` either registers first (and keeps it) or re-clones afterwards.
     func removeWorktree(named worktreeName: String) async throws {
         let hub = hub
         try await locks.run(for: hub) {
-            try GitWorktree(repositoryDirectory: hub.localPath).remove(name: worktreeName)
+            let worktrees = GitWorktree(repositoryDirectory: hub.localPath)
+            try worktrees.remove(name: worktreeName)
+            if try worktrees.list().isEmpty {
+                try FileManager.default.removeItem(at: hub.localPath)
+            }
         }
     }
 }
