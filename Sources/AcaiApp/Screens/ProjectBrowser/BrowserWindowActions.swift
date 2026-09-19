@@ -30,12 +30,12 @@ struct BrowserWindowCommands: Commands {
             Button(.app("View.BrowserWindowCommands.OpenInNewWindow")) {
                 actions?.openInNewWindow()
             }
-            .keyboardShortcut("o", modifiers: [.command, .option])
+            .keyboardShortcut(.openInNewWindow)
             .disabled(actions?.address == nil)
             Button(.app("View.BrowserWindowCommands.CopyLink")) {
                 actions?.copyLink()
             }
-            .keyboardShortcut("c", modifiers: [.command, .option])
+            .keyboardShortcut(.copyLink)
             .disabled(actions?.address == nil)
         }
     }

@@ -38,7 +38,7 @@ final class ProjectBrowserViewModel: ObservableObject {
                 MainActor.assumeIsolated {
                     self?.objectWillChange.send()
                     // `objectWillChange` fires before the mutation lands.
-                    Task { @MainActor [weak self] in withAnimation { self?.pruneDanglingSelection() } }
+                    Task { @MainActor [weak self] in withAnimation(.outlineChange) { self?.pruneDanglingSelection() } }
                 }
             }
             .store(in: &storeSubscriptions)
@@ -62,7 +62,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
-        withAnimation {
+        withAnimation(.outlineChange) {
             pruneDanglingSelection()
             objectWillChange.send()
         }
