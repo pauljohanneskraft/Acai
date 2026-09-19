@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// macOS's `Settings` scene content (⌘,) — one scrolling pane with Appearance, Accounts, MCP and
+/// macOS's `Settings` scene content (⌘,) — one scrolling pane with Accounts, Appearance, MCP and
 /// Licenses sections. Repositories deliberately stays in the sidebar, to avoid duplicating scope.
 struct SettingsView: View {
     var body: some View {
         Form {
-            Section(.app("View.SettingsView.Appearance")) {
-                DiagramThemePicker()
-            }
             Section(.app("View.SettingsView.GitHubAccount")) {
                 GitHubAccountSection()
+            }
+            Section(.app("View.SettingsView.Appearance")) {
+                DiagramThemePicker()
             }
             #if os(macOS)
             Section(.app("View.SettingsView.ConnectViaMCP")) {

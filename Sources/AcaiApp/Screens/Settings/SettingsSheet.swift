@@ -10,11 +10,13 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(.app("View.SettingsSheet.Appearance")) {
-                    DiagramThemePicker()
-                }
+                // First, so the token field and its Sign In button stay above the keyboard in
+                // iPad's shorter form sheet.
                 Section(.app("View.SettingsSheet.GitHubAccount")) {
                     GitHubAccountSection()
+                }
+                Section(.app("View.SettingsSheet.Appearance")) {
+                    DiagramThemePicker()
                 }
                 Section {
                     Button {
