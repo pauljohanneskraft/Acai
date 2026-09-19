@@ -22,6 +22,7 @@ public struct ProjectBrowserView: View {
     private var diagramTheme: DiagramThemeSelection = .system
     #endif
     @State private var newProjectPresented = false
+    @FocusState private var isSidebarFocused: Bool
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
     @State var renamingText: String = ""
@@ -119,12 +120,17 @@ public struct ProjectBrowserView: View {
             }
         }
         #endif
-        .sheet(isPresented: $newProjectPresented) {
-            NewProjectSheet { title, subtitle in
-                let id = model.editing.addProject(title: title, subtitle: subtitle)
-                model.open(.project(id))
+        // Otherwise AppKit hands focus to whichever field it finds first, often the new project's title.
+        .sheet(
+            isPresented: $newProjectPresented,
+            onDismiss: { isSidebarFocused = true },
+            content: {
+                NewProjectSheet { title, subtitle in
+                    let id = model.editing.addProject(title: title, subtitle: subtitle)
+                    model.open(.project(id))
+                }
             }
-        }
+        )
         .sheet(isPresented: $quickOpenPresenter.isPresented) {
             QuickOpenSheetHost()
                 .environmentObject(model)
@@ -203,6 +209,7 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            .focused($isSidebarFocused)
 
             // On compact width (iPhone) this action lives in the toolbar instead — a footer button
             // pinned below a short (or empty) list reads as an unexpected floating control there.
