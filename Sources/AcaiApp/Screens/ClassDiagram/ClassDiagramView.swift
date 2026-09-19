@@ -10,6 +10,7 @@ struct ClassDiagramView: View {
     let isComparePresented: Binding<Bool>
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: ClassDiagramViewModel
 
     @State var canvasScale: CGFloat
@@ -82,7 +83,7 @@ struct ClassDiagramView: View {
                         Label(.app("View.ClassDiagramView.FitView"), systemImage: "rectangle.dashed")
                     }
                     .help(.app("View.ClassDiagramView.FitDiagramVisibleCanvas"))
-                    .keyboardShortcut("0", modifiers: .command)
+                    .keyboardShortcut(.fitToView)
                     .accessibilityIdentifier("diagram.fitToViewButton")
                     Button {
                         showSearchBar()
@@ -90,7 +91,7 @@ struct ClassDiagramView: View {
                         Label(.app("View.ClassDiagramView.FindInDiagram"), systemImage: "magnifyingglass")
                     }
                     .help(.app("View.ClassDiagramView.FindNodeByName"))
-                    .keyboardShortcut("f", modifiers: .command)
+                    .keyboardShortcut(.findInDiagram)
                     .accessibilityIdentifier("diagram.search.toggleButton")
                     Button {
                         showSidebar.toggle()
@@ -434,7 +435,7 @@ extension ClassDiagramView {
     /// match" behaviour, distinct from `centerDiagram()`'s fit-everything-to-view.
     private func centerOnSearchMatch(_ nodeID: String?) {
         guard let nodeID, let position = viewModel.nodePosition(nodeID) else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(Animation.canvasPan.respecting(reduceMotion: reduceMotion)) {
             canvasOffset = CGPoint(
                 x: canvasViewportSize.width / 2 - position.x * canvasScale,
                 y: canvasViewportSize.height / 2 - position.y * canvasScale

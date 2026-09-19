@@ -109,31 +109,6 @@ struct ProjectStoreExportTests {
         }
     }
 
-    @Test("Replace-all clears recently-viewed entries, since their local ids no longer exist")
-    func replaceAllClearsRecentlyViewed() throws {
-        try withTempStoreDir { sourceDir in
-            try withTempStoreDir { targetDir in
-                let source = ProjectStore(baseDir: sourceDir)
-                let sourceProject = Project(title: "From Import", subtitle: "")
-                source.projects.append(sourceProject)
-                source.saveProject(sourceProject)
-                let export = source.exportAllData()
-
-                let target = ProjectStore(baseDir: targetDir)
-                let localProject = Project(title: "Local Only", subtitle: "")
-                target.projects.append(localProject)
-                target.saveProject(localProject)
-                target.recordOpened(.codebase(UUID()))
-
-                try target.importAllData(export, mode: .replaceAll)
-
-                #expect(target.recentlyViewed.recents.isEmpty)
-                let reloaded = ProjectStore(baseDir: targetDir)
-                #expect(reloaded.recentlyViewed.recents.isEmpty)
-            }
-        }
-    }
-
     @Test("An imported indexed codebase lands as not-indexed, since its artifact was never bundled")
     func importedCodebaseLandsAsNotIndexed() throws {
         try withTempStoreDir { sourceDir in

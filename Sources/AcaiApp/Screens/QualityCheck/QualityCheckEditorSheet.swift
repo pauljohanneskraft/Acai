@@ -48,7 +48,7 @@ struct QualityCheckEditorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(.app("View.QualityCheckEditorSheet.Save"), action: save)
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(.confirmDialog)
                         .disabled(source == .externalFile && externalPath.isEmpty)
                 }
             }
