@@ -29,7 +29,8 @@ state, file filter and quality configuration. There are two ways to add one, on 
   HTTPS via libgit2; only the credential-free URL is persisted.
 
 Repositories are cloned once into a shared hub and each codebase gets its own linked worktree, so
-several codebases on one monorepo share a single object store at different commits.
+several codebases on one monorepo share a single object store at different commits. Deleting the
+last codebase that uses a repository deletes its clone too.
 
 If a local folder happens to be a git working directory with an `origin` remote, it is silently
 upgraded to a repository-linked codebase so revision comparison works.

@@ -9,10 +9,7 @@ struct RepositoryDetailView: View {
     @State private var lastFetchedAt: Date?
     @State private var worktreeNames: [String] = []
     @State private var isFetching = false
-    @State private var isRemoving = false
     @State private var isLoadingDetails = false
-    @State private var removalBlockedMessage: LocalizedStringResource?
-    @State private var showRemoveConfirmation = false
     @State private var errorMessage: String?
 
     private var hub: GitRepository {
@@ -92,36 +89,9 @@ struct RepositoryDetailView: View {
                 } label: {
                     Label(.app("View.RepositoryDetailView.FetchNow"), systemImage: "arrow.clockwise")
                 }
-                .disabled(isFetching || isRemoving)
+                .disabled(isFetching)
                 .accessibilityIdentifier("repository.fetchNowButton")
             }
-            ToolbarItem {
-                Button(role: .destructive) {
-                    attemptRemove(referencingCodebases)
-                } label: {
-                    Label(.app("View.RepositoryDetailView.Remove"), systemImage: "trash")
-                }
-                .disabled(isFetching || isRemoving)
-                .accessibilityIdentifier("repository.removeButton")
-            }
-        }
-        .confirmationDialog(
-            .app("View.RepositoryDetailView.RemoveRepository"),
-            isPresented: $showRemoveConfirmation
-        ) {
-            Button(.app("View.RepositoryDetailView.Remove"), role: .destructive) { Task { await remove() } }
-                .accessibilityIdentifier("repository.remove.confirmButton")
-        } message: {
-            Text(.app("View.RepositoryDetailView.DeletesSharedCloneDisk"))
-        }
-        .alert(
-            .app("View.RepositoryDetailView.CanRemoveRepository"),
-            isPresented: Binding(get: { removalBlockedMessage != nil }, set: { if !$0 { removalBlockedMessage = nil } })
-        ) {
-            Button(.app("View.RepositoryDetailView.OK")) {}
-                .accessibilityIdentifier("repository.removalBlocked.okButton")
-        } message: {
-            removalBlockedMessage.map(Text.init)
         }
         .alert(
             .app("View.RepositoryDetailView.OperationFailed"),
@@ -166,32 +136,6 @@ struct RepositoryDetailView: View {
                 }
             }
             await loadDetails()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func attemptRemove(_ referencingCodebases: [Codebase]) {
-        guard referencingCodebases.isEmpty else {
-            let names = referencingCodebases.map(\.name).sorted().joined(separator: ", ")
-            let count = referencingCodebases.count
-            removalBlockedMessage = .app("View.RepositoryDetailView.RemovalBlocked \(names) \(count)")
-            return
-        }
-        showRemoveConfirmation = true
-    }
-
-    private func remove() async {
-        guard !isRemoving else { return }
-        isRemoving = true
-        defer { isRemoving = false }
-        let hub = hub
-        let locks = model.store.gitRepositoryLocks
-        do {
-            try await locks.run(for: hub) {
-                try FileManager.default.removeItem(at: hub.localPath)
-            }
-            model.selection = nil
         } catch {
             errorMessage = error.localizedDescription
         }

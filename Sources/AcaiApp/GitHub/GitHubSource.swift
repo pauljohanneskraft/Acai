@@ -8,8 +8,8 @@ struct GitHubRepositoryRef: Hashable {
 }
 
 /// Marks a `Codebase` as originating from an in-app GitHub clone rather than a user-picked local
-/// folder. When present, `Codebase.directoryPath` points at the app-managed clone folder (under
-/// `ProjectStore.githubClonesDir`) and `Codebase.securityScopedBookmark` stays `nil` — that folder
+/// folder. When present, `Codebase.directoryPath` points at the app-managed worktree (under
+/// `ProjectStore.gitWorktreesDir`) and `Codebase.securityScopedBookmark` stays `nil` — that folder
 /// is inside the app's own container, so no bookmark is needed.
 struct GitHubSource: Codable, Hashable {
     var owner: String
