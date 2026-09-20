@@ -13,6 +13,9 @@ public struct AcaiRootScene: Scene {
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
     @StateObject private var browserWindows = BrowserWindows()
+    #if !os(macOS)
+    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #endif
 
     public init() {}
 
@@ -49,6 +52,10 @@ public struct AcaiRootScene: Scene {
         .environmentObject(settingsPresenter)
         .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
+        #if !os(macOS)
+        // The one scene's Quick Open — see `QuickOpenPresenter` for why it isn't a focused-scene object here.
+        .environmentObject(quickOpenPresenter)
+        #endif
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: projectStore, windowAddress: $address)
