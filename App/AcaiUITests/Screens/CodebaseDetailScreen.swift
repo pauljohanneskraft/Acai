@@ -37,12 +37,39 @@ final class CodebaseDetailScreen {
         type: String, as screen: Screen.Type, file: StaticString = #filePath, line: UInt = #line
     ) -> Screen {
         let button = diagramButton(type: type)
+        scrollDiagramCardIntoView(button, type: type, file: file, line: line)
         button.tapWhenReady("the \(type) diagram card", file: file, line: line)
         button.waitForDisappearanceOrFail(
             "the codebase screen after creating a \(type) diagram (the new diagram was never opened)",
             file: file, line: line
         )
         return Screen(app: app)
+    }
+
+    /// The diagram grid is a `LazyVGrid`: a card far enough below the fold isn't built yet, so it
+    /// doesn't exist to query. How far down the grid starts depends on the header, which is taller
+    /// for a codebase carrying a managed checkout's badge and pickers.
+    private func scrollDiagramCardIntoView(
+        _ button: XCUIElement, type: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        guard !button.exists else { return }
+        // Anchored on the class card — the grid's first, always built — so this never picks the
+        // sidebar's list, as `app.scrollViews.firstMatch` would on macOS.
+        let scrollView = app.scrollViews
+            .containing(.any, identifier: "codebaseDetail.diagramButton.class").firstMatch
+        for _ in 0..<6 where !button.exists {
+            #if os(macOS)
+            scrollView.scroll(byDeltaX: 0, deltaY: -60)
+            #else
+            // A slow, held drag rather than `swipeUp()`, whose fling travels a varying distance.
+            scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)).press(
+                forDuration: 0.1,
+                thenDragTo: scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+                withVelocity: .slow, thenHoldForDuration: 0.1
+            )
+            #endif
+        }
+        button.waitOrFail("the \(type) diagram card", file: file, line: line)
     }
 
     /// Opens the configuration sheet of a diagram type that asks before creating (sequence, state,
@@ -137,6 +164,24 @@ final class CodebaseDetailScreen {
     func switchRef(to label: String, file: StaticString = #filePath, line: UInt = #line) {
         refPicker.choose(label, in: app, file: file, line: line)
         refSwitchOperation.waitUntilLoaded("Switching to \(label)", file: file, line: line)
+    }
+
+    /// A local folder in a git repository, analysed at a revision read from its history.
+    var revisionPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.revisionPicker"] }
+    var revisionSwitchOperation: AsyncOperation {
+        AsyncOperation(app: app, identifierPrefix: "codebaseDetail.revisionSwitch")
+    }
+    var pinnedRevisionCaption: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.pinnedRevisionCaption"].firstMatch
+    }
+
+    func analyse(at revision: String, file: StaticString = #filePath, line: UInt = #line) {
+        revisionPicker.choose(revision, in: app, file: file, line: line)
+        revisionSwitchOperation.waitUntilLoaded("Analysing at \(revision)", file: file, line: line)
+    }
+
+    var latestSnapshotBadge: XCUIElement {
+        app.descendants(matching: .any)["codebaseDetail.latestSnapshotBadge"].firstMatch
     }
 
     var deleteCodebaseButton: XCUIElement { app.buttons["codebaseDetail.deleteCodebaseButton"] }

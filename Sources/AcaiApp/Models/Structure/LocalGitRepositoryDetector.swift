@@ -22,7 +22,18 @@ struct LocalGitRepositoryDetector {
             return nil
         }
 
-        return CodebaseRepositoryReference(remoteURL: remoteURL, ref: ref, subpath: subpath(root: root))
+        return CodebaseRepositoryReference(
+            remoteURL: withoutCredentials(remoteURL), ref: ref, subpath: subpath(root: root))
+    }
+
+    /// An `origin` may embed a token (`https://user:token@host/…`); persisted state never does.
+    private func withoutCredentials(_ url: URL) -> URL {
+        guard url.user != nil || url.password != nil,
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else { return url }
+        components.user = nil
+        components.password = nil
+        return components.url ?? url
     }
 
     private func subpath(root: URL) -> String? {

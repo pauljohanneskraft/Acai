@@ -4,7 +4,7 @@ import Testing
 @testable import AcaiApp
 
 /// The generic in-flight-operation registry. Covers the three contracts every call site
-/// (`reindex`, `pull`, `switchGitHubRef`, `addGitHubCodebase`, `RepositoryDetailView.fetchNow`)
+/// (`reindex`, `pull`, `switchRef`, `addRemoteCodebase`, `RepositoryDetailView.fetchNow`)
 /// relies on: the row disappears once `run` returns, `isBusy(_:)` is true for exactly the right
 /// subject while work is outstanding, and cancelling discards the result rather than throwing or
 /// silently applying a stale value.

@@ -101,6 +101,16 @@ struct GitFixture {
         return template.headSHA
     }
 
+    /// A depth-1 clone of `source` at `directory`. libgit2's local transport can't fetch shallowly,
+    /// so the CLI builds it over `file://`.
+    func makeShallowClone(of source: URL) throws {
+        let parent = directory.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        try GitFixture(directory: parent).run([
+            "clone", "--depth", "1", "--no-single-branch", source.absoluteURL.absoluteString, directory.path
+        ])
+    }
+
     private func buildTemplate() throws -> Commits {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try run(["init", "--initial-branch=main"])
