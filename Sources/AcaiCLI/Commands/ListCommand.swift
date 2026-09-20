@@ -30,23 +30,31 @@ extension AcaiCommand {
                 return
             }
 
-            print(Row(name: "NAME", language: "LANGUAGE", types: "TYPES", files: "FILES").formatted)
-            print(String(repeating: "-", count: 50))
+            print(Row(name: "NAME", language: "LANGUAGE", types: "TYPES", files: "FILES", path: "PATH").formatted)
+            print(String(repeating: "-", count: 70))
 
+            let store = AnalysisStore.standard
             for file in jsonFiles.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
                 let name = file.deletingPathExtension().lastPathComponent
-                do {
-                    let data = try Data(contentsOf: file)
-                    let artifact = try JSONDecoder().decode(CodeArtifact.self, from: data)
-                    let row = Row(
+                switch store.lookup(named: name) {
+                case .entry(let entry):
+                    print(Row(
+                        name: name,
+                        language: entry.artifact.metadata.sourceLanguage.rawValue,
+                        types: String(entry.artifact.types.count),
+                        files: String(entry.artifact.metadata.filePaths.count),
+                        path: entry.sourcePath
+                    ).formatted)
+                case .legacyArtifact(let artifact):
+                    print(Row(
                         name: name,
                         language: artifact.metadata.sourceLanguage.rawValue,
                         types: String(artifact.types.count),
-                        files: String(artifact.metadata.filePaths.count)
-                    )
-                    print(row.formatted)
-                } catch {
-                    print(Row(name: name, language: "(error reading)", types: "", files: "").formatted)
+                        files: String(artifact.metadata.filePaths.count),
+                        path: ""
+                    ).formatted)
+                case .absent:
+                    print(Row(name: name, language: "(error reading)", types: "", files: "", path: "").formatted)
                 }
             }
         }
@@ -58,12 +66,14 @@ extension AcaiCommand {
             var language: String
             var types: String
             var files: String
+            var path: String
 
             var formatted: String {
                 name.paddedTrailing(to: 20) + "  "
                     + language.paddedTrailing(to: 12) + "  "
                     + types.paddedLeading(to: 6) + "  "
-                    + files.paddedLeading(to: 5)
+                    + files.paddedLeading(to: 5) + "  "
+                    + path
             }
         }
     }

@@ -27,17 +27,15 @@ extension AcaiCommand {
             guard FileManager.default.fileExists(atPath: url.path) else {
                 throw ValidationError("Source directory does not exist: \(sourceDir)")
             }
+            let resolvedPath = url.resolvingSymlinksInPath().path
 
             let allowedLanguages = language.map { $0.sourceLanguage }
             let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
             artifact.warnIfParseErrors()
-            let json = try JSONReport(artifact).text
 
-            let storageDir = AcaiConstants.standard.analysisDirectory
-            try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
-
-            let filePath = storageDir.appendingPathComponent("\(name).json")
-            try json.write(to: filePath, atomically: true, encoding: .utf8)
+            let fingerprint = SourceTreeFingerprint(directory: url).compute()
+            let filePath = try AnalysisStore.standard.write(
+                artifact, sourcePath: resolvedPath, fingerprint: fingerprint, named: name)
             print("Stored analysis '\(name)' at \(filePath.path)")
         }
     }
