@@ -9,9 +9,18 @@ public struct GroupingBoxView: View {
         self.label = label
     }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private let cornerRadius: CGFloat = 10
     private let cornerPadding: CGFloat = 4
-    private let tabHeight: CGFloat = 22
+    /// `.caption`'s point size at the default `.large` category — matches the label's own font below
+    /// so `tabHeight` and the text driving it never fall out of sync (see `tabHeight`'s doc comment).
+    private var labelFontSize: CGFloat { 12 * dynamicTypeSize.scaleFactor }
+    /// Derived from `labelFontSize` (rather than a fixed 22pt) so the tab always has room for its own
+    /// text: a fixed height left the label overflowing its background and into the first child node's
+    /// title bar once Dynamic Type grew the text past what 22pt could hold. The 22/12 ratio reproduces
+    /// the original fixed height exactly at the default size.
+    private var tabHeight: CGFloat { labelFontSize * (22.0 / 12.0) }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -23,7 +32,7 @@ public struct GroupingBoxView: View {
                 )
 
             Text(label)
-                .font(.caption.weight(.semibold))
+                .font(.system(size: labelFontSize, weight: .semibold))
                 .lineLimit(1)
                 .padding(.horizontal, 10)
                 .frame(height: tabHeight)

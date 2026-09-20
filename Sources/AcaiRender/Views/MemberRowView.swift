@@ -10,10 +10,11 @@ public struct MemberRowView: View {
     let compact: Bool
 
     @Environment(\.diagramPalette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @ScaledMetric(relativeTo: .caption2) private var compactFontSize: CGFloat = 11
-    @ScaledMetric(relativeTo: .caption2) private var iconFontSize: CGFloat = 9
-    @ScaledMetric(relativeTo: .caption) private var expandedFontSize: CGFloat = 12
+    private var compactFontSize: CGFloat { 11 * dynamicTypeSize.scaleFactor }
+    private var iconFontSize: CGFloat { 9 * dynamicTypeSize.scaleFactor }
+    private var expandedFontSize: CGFloat { 12 * dynamicTypeSize.scaleFactor }
 
     public init(item: MemberDisplayItem, compact: Bool) {
         self.item = item

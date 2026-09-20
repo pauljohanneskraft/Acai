@@ -136,7 +136,7 @@ struct ClassDiagramViewModelTests {
     // MARK: - Dynamic Type relayout (#203)
 
     /// `updateMeasuredSizes` only re-runs layout once per invalidation (so a user's dragged
-    /// positions aren't fought on every minor re-measurement) — but without `dynamicTypeSizeDidChange`
+    /// positions aren't fought on every minor re-measurement) — but without `updateDynamicTypeSize`
     /// resetting that latch, a text-size change that grows a node's rendered box after the first
     /// layout would leave every position computed for the old, smaller box, overlapping neighbours.
     @Test func dynamicTypeSizeChangeAllowsOneMoreRelayoutAfterGrowth() {
@@ -161,9 +161,22 @@ struct ClassDiagramViewModelTests {
         // A Dynamic Type size change resets the latch, so the next measurement — now reflecting the
         // larger rendered box — is allowed to relayout again instead of leaving stale positions
         // under a box that grew out from under them.
-        vm.dynamicTypeSizeDidChange()
+        vm.updateDynamicTypeSize(.accessibility5)
         vm.updateMeasuredSizes(["A": CGSize(width: 200, height: 400)])
         #expect(vm.nodePositions != positionsAfterFirstMeasurement)
+    }
+
+    /// `groupingBoxes` reserves space above each box for `GroupingBoxView`'s title tab — that space
+    /// has to grow with `currentDynamicTypeSize`, or a larger tab draws over the top row of its own
+    /// nodes (#203's group-label overlap).
+    @Test func groupingBoxInsetGrowsWithDynamicTypeSize() throws {
+        let vm = viewModel(types: [type("A", file: "Sources/Foo/A.swift")]) { $0.grouping = .directory }
+
+        let widthAtDefaultSize = try #require(vm.groupingBoxes.first).rect.width
+        vm.updateDynamicTypeSize(.accessibility5)
+        let widthAtAccessibilitySize = try #require(vm.groupingBoxes.first).rect.width
+
+        #expect(widthAtAccessibilitySize > widthAtDefaultSize)
     }
 
     /// `dependents(for:)` must reuse `ImpactAnalysis` rather than a reimplementation — this pins

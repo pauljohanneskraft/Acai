@@ -37,6 +37,12 @@ struct CompareOverlayButton: View {
                 .font(.title3)
                 .foregroundStyle(isOn ? .white : Color.secondary)
         }
+        // Chrome, not content: every other canvas-viewport control (the toolbar's undo/redo/fit/
+        // search/sidebar icons) stays a fixed size regardless of Dynamic Type, since a bar-button
+        // icon growing with accessibility text sizes has nowhere bigger to go without overlapping
+        // its neighbours. Pinned here so this floating button matches that convention instead of
+        // silently ballooning while everything around it stays put.
+        .dynamicTypeSize(.large)
         .buttonStyle(.plain)
         .padding(8)
         .background(isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.thinMaterial), in: Circle())

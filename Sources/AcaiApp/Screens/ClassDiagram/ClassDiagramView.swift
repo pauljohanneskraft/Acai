@@ -71,7 +71,8 @@ struct ClassDiagramView: View {
                 centerOnceMeasured()
             }
             .onChange(of: canvasViewportSize) { _, _ in centerOnceMeasured() }
-            .onChange(of: dynamicTypeSize) { _, _ in viewModel.dynamicTypeSizeDidChange() }
+            .onAppear { viewModel.updateDynamicTypeSize(dynamicTypeSize) }
+            .onChange(of: dynamicTypeSize) { _, newValue in viewModel.updateDynamicTypeSize(newValue) }
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)

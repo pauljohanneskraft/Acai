@@ -75,6 +75,26 @@ struct DiagramLayoutModelTests {
         #expect(!boxes.isEmpty)
     }
 
+    /// `titleScale` reserves proportionally more space above a box as it grows, so `GroupingBoxView`'s
+    /// title tab — sized to match a caller's Dynamic Type scale — never draws over its own top row of
+    /// nodes (#203). The default (`1`) matches the CLI/export renderers, which have no such concept.
+    @Test func groupingBoxInsetGrowsWithTitleScale() throws {
+        var config = ClassDiagramConfiguration()
+        config.grouping = .directory
+        let model = DiagramLayoutModel(artifact: sampleArtifact(), configuration: config)
+        let sizes = Dictionary(
+            uniqueKeysWithValues: model.nodes.map { ($0.id, DiagramLayoutModel.estimateSize(for: $0)) }
+        )
+        let positions = model.performLayout(sizes: sizes)
+
+        let defaultBox = try #require(model.groupingBoxes(positions: positions, sizes: sizes).first)
+        let scaledBox = try #require(
+            model.groupingBoxes(positions: positions, sizes: sizes, titleScale: 3).first { $0.id == defaultBox.id }
+        )
+        #expect(scaledBox.rect.width > defaultBox.rect.width)
+        #expect(scaledBox.rect.height > defaultBox.rect.height)
+    }
+
     @Test func noGroupingProducesNoBoxes() {
         var config = ClassDiagramConfiguration()
         config.grouping = .none

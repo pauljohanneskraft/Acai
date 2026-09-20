@@ -151,7 +151,8 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// rects so they always wrap their nodes after drags, resizes and measured-size updates.
     var groupingBoxes: [DiagramLayoutModel.GroupingBox] {
         let sizes = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, effectiveSize(for: $0.id)) })
-        return model.groupingBoxes(positions: nodePositions, sizes: sizes)
+        return model.groupingBoxes(
+            positions: nodePositions, sizes: sizes, titleScale: currentDynamicTypeSize.scaleFactor)
     }
 
     // MARK: - Selection
@@ -203,11 +204,19 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
     }
 
-    /// The system text size changed while this diagram was open. Node boxes will re-measure at
-    /// their new (larger or smaller) rendered size, but `updateMeasuredSizes` only re-runs layout
-    /// once per invalidation — without this, positions computed for the old size category would be
-    /// left in place under boxes that no longer fit them, overlapping their neighbours.
-    func dynamicTypeSizeDidChange() {
+    /// The environment's current Dynamic Type size, so `groupingBoxes` can reserve the same amount of
+    /// space `GroupingBoxView`'s tab actually needs at this size — defaults to `.large` (no scaling)
+    /// until the view reports the real value on appear.
+    private(set) var currentDynamicTypeSize: DynamicTypeSize = .large
+
+    /// The system text size changed while this diagram was open (or the view is reporting it for the
+    /// first time). Node boxes will re-measure at their new (larger or smaller) rendered size, but
+    /// `updateMeasuredSizes` only re-runs layout once per invalidation — without resetting that latch,
+    /// positions computed for the old size category would be left in place under boxes that no longer
+    /// fit them, overlapping their neighbours.
+    func updateDynamicTypeSize(_ size: DynamicTypeSize) {
+        guard size != currentDynamicTypeSize else { return }
+        currentDynamicTypeSize = size
         hasPerformedMeasuredLayout = false
     }
 

@@ -149,9 +149,13 @@ public struct DiagramLayoutModel: Sendable {
     // MARK: - Grouping Boxes
 
     /// One box per path prefix of every node's group key, giving multi-layer nesting.
+    /// `titleScale` is the caller's current `DynamicTypeSize.scaleFactor` (default `1`, the CLI/export
+    /// renderers' fixed size) — the title strip reserved above each box has to grow at the same rate
+    /// as `GroupingBoxView`'s own tab, or a larger tab simply draws over the top row of its own nodes.
     public func groupingBoxes(
         positions: [String: CGPoint],
-        sizes: [String: CGSize]
+        sizes: [String: CGSize],
+        titleScale: CGFloat = 1
     ) -> [GroupingBox] {
         guard configuration.grouping != .none else { return [] }
         func nodeRect(_ id: String) -> CGRect? {
@@ -177,8 +181,8 @@ public struct DiagramLayoutModel: Sendable {
         // Every box reserves a node-free strip at its top for its title tab; each ancestor
         // level adds one more tab-height. Draw shallower (outer) boxes first.
         let maxDepth = byPrefix.values.map(\.depth).max() ?? 1
-        let titleStrip: CGFloat = 30
-        let levelStep: CGFloat = 30
+        let titleStrip: CGFloat = 30 * titleScale
+        let levelStep: CGFloat = 30 * titleScale
         return byPrefix
             .map { key, value in
                 let inset = titleStrip + CGFloat(maxDepth - value.depth) * levelStep

@@ -48,12 +48,13 @@ public struct TypeNodeView: View {
     let badge: DeltaStatus?
 
     @Environment(\.diagramPalette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @ScaledMetric(relativeTo: .caption2) private var stereotypeFontSize: CGFloat = 10
-    @ScaledMetric(relativeTo: .footnote) private var nameFontSize: CGFloat = 13
+    private var stereotypeFontSize: CGFloat { 10 * dynamicTypeSize.scaleFactor }
+    private var nameFontSize: CGFloat { 13 * dynamicTypeSize.scaleFactor }
     /// The 11pt size shared by the empty-section placeholder and every enum-case row — kept as one
     /// value so an empty section still reserves exactly the height a populated one would use.
-    @ScaledMetric(relativeTo: .caption2) private var memberLineFontSize: CGFloat = 11
+    private var memberLineFontSize: CGFloat { 11 * dynamicTypeSize.scaleFactor }
 
     /// Primitive designated initializer. Both the generated-diagram and freeform-diagram
     /// convenience initializers (the latter lives in `AcaiApp`) delegate here, so it must
