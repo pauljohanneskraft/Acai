@@ -8,7 +8,7 @@ struct KeyboardShortcutsPanel: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(KeyboardShortcutReference.allGroups) { group in
+                ForEach(KeyboardShortcutReference.groups) { group in
                     Section {
                         ForEach(group.shortcuts) { shortcut in
                             HStack {

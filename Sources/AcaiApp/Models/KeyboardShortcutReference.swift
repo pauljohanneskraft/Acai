@@ -97,6 +97,9 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
+        /// The feature behind these shortcuts is macOS-only, so the panel hides the group elsewhere and
+        /// `KeyboardShortcutReferenceTests` lets their menu command be attached on macOS only.
+        var isMacOSOnly = false
     }
 
     static let allGroups: [Group] = [
@@ -116,10 +119,15 @@ extension KeyboardShortcutReference {
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
             shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
         Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
-        Group(
-            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
-            isMacOSOnly: true)
     ]
+
+    static let groups: [Group] = {
+        #if os(macOS)
+        allGroups
+        #else
+        allGroups.filter { !$0.isMacOSOnly }
+        #endif
+    }()
 }
 
 extension View {

@@ -29,17 +29,21 @@ public struct AcaiRootScene: Scene {
                 #endif
         }
         // Menu commands are what an iPad's hardware keyboard fires too, so every one is attached on
-        // every platform — `KeyboardShortcutReferenceTests` rejects a shortcut-binding command
-        // attached on macOS only.
+        // every platform — `KeyboardShortcutReferenceTests` rejects a shortcut-binding command attached
+        // on macOS only unless its shortcuts sit in a group marked `isMacOSOnly`, as the extra browser
+        // windows behind `BrowserWindowCommands` do.
         .commands {
             DiagramThemeCommands()
             QuickOpenCommands()
             KeyboardShortcutCommands()
+            #if os(macOS)
             BrowserWindowCommands()
+            #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`QuickOpenCommands` needs `quickOpenPresenter`).
+        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` needs
+        // `keyboardShortcutsPresenter`).
         .environmentObject(accountStore)
         .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
@@ -54,7 +58,9 @@ public struct AcaiRootScene: Scene {
         // Links go to a main window, never spawn one of these.
         .handlesExternalEvents(matching: [])
         .environmentObject(accountStore)
+        .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
+        .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()

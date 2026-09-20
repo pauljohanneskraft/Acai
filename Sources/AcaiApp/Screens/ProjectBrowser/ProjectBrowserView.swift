@@ -7,14 +7,9 @@ public struct ProjectBrowserView: View {
     // own line-count limit) need to read these too.
     @StateObject var model: ProjectBrowserViewModel
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    // Shared with `AcaiRootScene`'s ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
-    // doc comment for why this can't just be local `@State` on this view. Not `private`:
-    // `ProjectBrowserView+QuickOpen.swift`'s extension needs to read it too.
+    // Published as a focused scene object further down, so ⌘K acts on this window — see
+    // `QuickOpenPresenter`'s own doc comment.
     @StateObject var quickOpenPresenter = QuickOpenPresenter()
-    // iPad/iPhone have no `Settings` scene — a gear icon opens the same content as a sheet instead
-    // (iPadOS keeps ⌘, for the system's own Settings command). Shared (not local `@State`) so
-    // `NewCodebaseSheet`'s "Sign in to GitHub in Settings" button can open it too — see
-    // `SettingsPresenter`'s own doc comment.
     @EnvironmentObject var browserWindows: BrowserWindows
     @State var windowToken = UUID()
     /// The value of the `WindowGroup(for:)` this window was opened with, kept pointing at what the
