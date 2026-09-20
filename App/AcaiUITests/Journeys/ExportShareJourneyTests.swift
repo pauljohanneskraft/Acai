@@ -14,11 +14,8 @@ final class ExportShareJourneyTests: UIJourneyTestCase {
             .matching(NSPredicate(format: "label BEGINSWITH 'PNG Image'")).firstMatch
             .waitOrFail("the shared file's PNG caption")
 
-        // The system's tap-outside region; tapped near its top, clear of the sheet on every device.
-        let dismissRegion = app.otherElements["PopoverDismissRegion"]
-        dismissRegion.waitOrFail("the share sheet's dismiss region")
-        SystemBanners().dismiss()
-        dismissRegion.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        // The share sheet has no Close button; it goes away by a tap outside it.
+        app.dismissPopover(showing: shareSheet)
         shareSheet.waitForDisappearanceOrFail("the dismissed share sheet")
     }
 }
