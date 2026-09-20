@@ -1,3 +1,4 @@
+import CoreGraphics
 import Testing
 import AcaiCore
 import AcaiRender
