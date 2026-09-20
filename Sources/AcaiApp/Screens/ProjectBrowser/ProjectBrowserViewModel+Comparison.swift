@@ -22,7 +22,7 @@ extension ProjectBrowserViewModel {
 
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
-        comparisonError = nil
+        reportComparison(nil)
         diagrams.mutate(diagramID, clearPositions: true) {
             $0.comparisonGitRef = (ref?.isEmpty == true) ? nil : ref
             $0.comparisonBaseRef = nil
@@ -35,12 +35,17 @@ extension ProjectBrowserViewModel {
     /// — three-dot semantics, so a base branch that has moved on since the PR forked doesn't leak
     /// its own unrelated changes into the diff.
     func selectComparisonPullRequest(diagramID: UUID, base: String, head: String) {
-        comparisonError = nil
+        reportComparison(nil)
         diagrams.mutate(diagramID, clearPositions: true) {
             $0.comparisonGitRef = head
             $0.comparisonBaseRef = base
         }
         resetComparisonReviewState(diagramID: diagramID)
+    }
+
+    private func reportComparison(_ error: Error?) {
+        comparisonError = error?.localizedDescription
+        comparisonNeedsFullHistory = error is HistoryNotFetched
     }
 
     private func resetComparisonReviewState(diagramID: UUID) {
@@ -79,6 +84,7 @@ extension ProjectBrowserViewModel {
         let directory = codebase.directoryPath
         let fileFilter = codebase.fileFilter
         let url = URL(fileURLWithPath: directory).standardizedFileURL
+        let access = ScopedResourceAccess(path: directory, bookmark: codebase.securityScopedBookmark)
 
         guard let baseRef = diagram.comparisonBaseRef else {
             await loadComparisonSnapshot(
@@ -90,11 +96,11 @@ extension ProjectBrowserViewModel {
         if resolvedMergeBases[mergeBaseKey] == nil {
             do {
                 let sha = try await Task.detached(priority: .userInitiated) {
-                    try GitCheckout(directory: url).mergeBase(baseRef, ref)
+                    try access.whileAccessible { try GitCheckout(directory: url).mergeBase(baseRef, ref) }
                 }.value
                 resolvedMergeBases[mergeBaseKey] = sha
             } catch {
-                comparisonError = error.localizedDescription
+                reportComparison(error)
                 return
             }
         }
@@ -113,13 +119,15 @@ extension ProjectBrowserViewModel {
         do {
             let provider = ComparisonArtifactResolver().resolve(codebaseID: codebaseID, ref: ref, directory: url)
             let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
+            let access = ScopedResourceAccess(
+                path: directory, bookmark: codebase(for: codebaseID)?.securityScopedBookmark)
             let semantic = try await Task.detached(priority: .userInitiated) {
-                try provider.artifact(analyzer: analyzer, fileFilter: fileFilter)
+                try access.whileAccessible { try provider.artifact(analyzer: analyzer, fileFilter: fileFilter) }
             }.value
             comparisonArtifacts[key] = semantic
-            comparisonError = nil
+            reportComparison(nil)
         } catch {
-            comparisonError = error.localizedDescription
+            reportComparison(error)
         }
     }
 

@@ -208,9 +208,8 @@ struct ProjectCodebaseEditor {
     /// Drops a codebase's cached analysis, so its code-quality check recomputes after a rules change
     /// the analysis token can't see (an in-place edit that keeps the same rules path).
     let invalidateAnalysis: (UUID) -> Void
-    /// Real network clone/fetch, swapped for `FixtureGitHubRepositoryService` under a UI test
-    /// fixture — see `GitHubRepositoryService`.
-    var repositoryService: GitHubRepositoryService = GitHubRepositoryServiceResolver().resolve()
+    /// Real network clone/fetch, swapped for a fixture under a UI test — see `GitRemoteService`.
+    var remoteService: GitRemoteService = GitRemoteServiceResolver().resolve()
 
     // MARK: Projects
 
@@ -285,7 +284,7 @@ struct ProjectCodebaseEditor {
         for i in store.projects.indices {
             store.deleteCodebaseData(codebaseID, fromProjectAt: i)
         }
-        if removedCodebase?.githubSource != nil {
+        if removedCodebase?.managedCheckout != nil {
             removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
         }
         persist()

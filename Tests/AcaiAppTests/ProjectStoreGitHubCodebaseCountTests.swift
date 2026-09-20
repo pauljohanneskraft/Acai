@@ -12,17 +12,29 @@ struct ProjectStoreGitHubCodebaseCountTests {
         return ProjectStore(baseDir: url)
     }
 
-    private func gitHubCodebase(_ name: String) -> Codebase {
-        Codebase(
-            name: name, directoryPath: "/tmp/\(name)",
-            githubSource: GitHubSource(owner: "octocat", repo: name, ref: "main"))
+    private func reference(_ remote: String) -> CodebaseRepositoryReference {
+        CodebaseRepositoryReference(remoteURL: URL(string: remote)!, ref: "main")
     }
 
-    @Test func countsOnlyGitHubBackedCodebasesAcrossProjects() throws {
+    private func gitHubCodebase(_ name: String) -> Codebase {
+        Codebase(
+            name: name, directoryPath: "/tmp/\(name)", managedCheckout: ManagedCheckout(),
+            repository: reference("https://github.com/octocat/\(name).git"))
+    }
+
+    /// A local folder tracking a GitHub origin and a clone from another host don't use the account.
+    @Test func countsOnlyCodebasesClonedFromGitHubAcrossProjects() throws {
         let store = try makeStore()
         store.projects = [
             Project(title: "A", subtitle: "", codebases: [
-                gitHubCodebase("widgets"), Codebase(name: "local", directoryPath: "/tmp/local")
+                gitHubCodebase("widgets"),
+                Codebase(name: "local", directoryPath: "/tmp/local"),
+                Codebase(
+                    name: "tracking", directoryPath: "/tmp/tracking",
+                    repository: reference("https://github.com/octocat/tracking.git")),
+                Codebase(
+                    name: "gitlab", directoryPath: "/tmp/gitlab", managedCheckout: ManagedCheckout(),
+                    repository: reference("https://gitlab.example.com/team/gitlab.git"))
             ]),
             Project(title: "B", subtitle: "", codebases: [gitHubCodebase("gadgets")])
         ]

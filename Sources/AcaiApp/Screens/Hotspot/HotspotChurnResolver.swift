@@ -45,7 +45,7 @@ struct HotspotChurnResolver {
         try ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
             .withResolvedURL { url -> [String: Int]? in
                 guard let root = GitRepositoryRoot(directory: url).find() else { return nil }
-                let raw = try GitChurn(directory: root).byFile(ref: "HEAD", limit: limit)
+                let raw = try GitChurn(directory: root).byFile(ref: codebase.pinnedRevision ?? "HEAD", limit: limit)
                 return offsetting(raw, byRepositoryRelativePrefix: relativePrefix(from: root, to: url))
             }
     }

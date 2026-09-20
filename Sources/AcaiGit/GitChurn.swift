@@ -27,6 +27,7 @@ public struct GitChurn: Sendable {
     /// parentless commit against itself, which is empty by construction — an upstream `SwiftGitX`
     /// quirk.
     public func byFile(ref: String, limit: Int = 50) throws -> [String: Int] {
+        try GitHistoryAvailability(directory: directory).requireFullHistory()
         let repository = try Repository(at: directory, createIfNotExists: false)
         var commit = try GitReference(name: ref).resolve(in: repository)
 
