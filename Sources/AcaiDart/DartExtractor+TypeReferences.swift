@@ -276,7 +276,7 @@ extension DartExtractor {
             if nodeType == "abstract" { modifiers.append(.abstract) }
             if nodeType == "sealed" { modifiers.append(.sealed) }
         }
-        return Array(Set(modifiers))
+        return modifiers.uniqued()
     }
 
     // MARK: - Annotations

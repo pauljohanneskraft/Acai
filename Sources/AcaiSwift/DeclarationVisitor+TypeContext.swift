@@ -74,7 +74,7 @@ extension DeclarationVisitor {
             }
         }
         guard !referencedSet.isEmpty else { return members }
-        let referenced = Array(referencedSet)
+        let referenced = referencedSet.sorted()
         return members.map { member in
             var copy = member
             copy.referencedTypeNames = referenced
