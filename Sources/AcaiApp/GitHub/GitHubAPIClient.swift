@@ -4,38 +4,7 @@ struct GitHubRepositoryOwner: Decodable, Hashable {
     var login: String
 }
 
-/// `kind` is folded into `id` so a branch and tag sharing a name don't collide as `Identifiable`
-/// ids when both lists are combined into one `ForEach`/`Picker`.
-struct GitHubRef: Identifiable, Hashable {
-    enum Kind: String, Hashable, Codable {
-        case branch
-        case tag
-    }
-
-    var name: String
-    var kind: Kind
-    var id: String { "\(kind.rawValue)-\(name)" }
-}
-
-private struct GitHubRefResponse: Decodable {
-    var name: String
-}
-
-struct GitHubPullRequest: Identifiable, Hashable {
-    var number: Int
-    var title: String
-    var authorLogin: String
-    /// The branch the PR targets (the "old" side of a three-dot comparison, via its merge-base
-    /// with `headRef`).
-    var baseRef: String
-    /// The branch/SHA carrying the PR's own commits (the "new" side).
-    var headRef: String
-    var state: String
-
-    var id: Int { number }
-}
-
-private struct GitHubPullRequestResponse: Decodable {
+private struct ChangeRequestResponse: Decodable {
     struct Branch: Decodable {
         var ref: String
     }
@@ -93,9 +62,12 @@ struct GitHubAPIClient {
         var owner: GitHubRepositoryOwner
         var defaultBranch: String
         var isPrivate: Bool
+        /// GitHub's estimate of the repository's size on disk, in kilobytes.
+        var sizeKilobytes: Int?
 
         enum CodingKeys: String, CodingKey {
             case id, name, owner
+            case sizeKilobytes = "size"
             case fullName = "full_name"
             case defaultBranch = "default_branch"
             case isPrivate = "private"
@@ -132,29 +104,13 @@ struct GitHubAPIClient {
         )
     }
 
-    func branches(owner: String, repo: String) async throws -> [GitHubRef] {
-        try await get(
-            "repos/\(owner)/\(repo)/branches",
-            query: [URLQueryItem(name: "per_page", value: "100")],
-            as: [GitHubRefResponse].self
-        ).map { GitHubRef(name: $0.name, kind: .branch) }
-    }
-
-    func tags(owner: String, repo: String) async throws -> [GitHubRef] {
-        try await get(
-            "repos/\(owner)/\(repo)/tags",
-            query: [URLQueryItem(name: "per_page", value: "100")],
-            as: [GitHubRefResponse].self
-        ).map { GitHubRef(name: $0.name, kind: .tag) }
-    }
-
-    func pullRequests(owner: String, repo: String) async throws -> [GitHubPullRequest] {
+    func pullRequests(owner: String, repo: String) async throws -> [ChangeRequest] {
         try await get(
             "repos/\(owner)/\(repo)/pulls",
             query: [URLQueryItem(name: "per_page", value: "100")],
-            as: [GitHubPullRequestResponse].self
+            as: [ChangeRequestResponse].self
         ).map {
-            GitHubPullRequest(
+            ChangeRequest(
                 number: $0.number, title: $0.title, authorLogin: $0.user.login,
                 baseRef: $0.base.ref, headRef: $0.head.ref, state: $0.state)
         }

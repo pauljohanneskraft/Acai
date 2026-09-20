@@ -1,13 +1,14 @@
 import SwiftUI
 import AcaiCore
 import AcaiDiagram
+import AcaiGit
 
 struct CodebaseDetailView: View {
     let codebaseID: UUID
     @EnvironmentObject var model: ProjectBrowserViewModel
     /// Not `private`: the header extension (a separate file, kept there only to stay under this
     /// file's own line-count limit) reads these too.
-    let repositoryService: GitHubRepositoryService
+    let remoteService: GitRemoteService
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.scenePhase) var scenePhase
     /// Not `private`: the header extension (a separate file, kept there only to stay under this
@@ -15,7 +16,10 @@ struct CodebaseDetailView: View {
     @State var reindexPhase: AsyncOperationPhase = .idle
     @State var pullPhase: AsyncOperationPhase = .idle
     @State var refSwitchPhase: AsyncOperationPhase = .idle
-    @State var availableRefs: [GitHubRef] = []
+    @State var fullHistoryPhase: AsyncOperationPhase = .idle
+    @State var availableRefs: [GitCheckout.Ref] = []
+    @State var isShallowClone = false
+    @State var localRevisions: LocalRevisions?
     /// Bumped to force a fresh staleness recheck (on appear, or the scene becoming active again);
     /// tying it to a `.task(id:)` (rather than a plain `Task { }` in `.onAppear`) means SwiftUI
     /// cancels the previous check the moment this view disappears, instead of letting it finish in
@@ -42,11 +46,10 @@ struct CodebaseDetailView: View {
         var id: UUID { codebaseID }
     }
 
-    /// Defaults to the real network implementation, swapped for `FixtureGitHubRepositoryService`
-    /// under a UI test fixture — see `GitHubRepositoryService`.
-    init(codebaseID: UUID, repositoryService: GitHubRepositoryService? = nil) {
+    /// Defaults to real git, swapped for a fixture under a UI test — see `GitRemoteService`.
+    init(codebaseID: UUID, remoteService: GitRemoteService? = nil) {
         self.codebaseID = codebaseID
-        self.repositoryService = repositoryService ?? GitHubRepositoryServiceResolver().resolve()
+        self.remoteService = remoteService ?? GitRemoteServiceResolver().resolve()
     }
 
     var codebase: Codebase? {

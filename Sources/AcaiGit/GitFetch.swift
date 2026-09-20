@@ -12,6 +12,7 @@ import libgit2
 /// callback to abort the transfer. This mirrors that same technique for fetch.
 public struct GitFetch {
     public let repositoryDirectory: URL
+    public let depth: GitHistoryDepth
 
     public enum Failure: LocalizedError {
         case libgit2(String)
@@ -24,8 +25,9 @@ public struct GitFetch {
         }
     }
 
-    public init(repositoryDirectory: URL) {
+    public init(repositoryDirectory: URL, depth: GitHistoryDepth = .full) {
         self.repositoryDirectory = repositoryDirectory
+        self.depth = depth
     }
 
     /// Fetches the `origin` remote, reporting `received_objects / total_objects` through
@@ -55,6 +57,7 @@ public struct GitFetch {
         guard git_fetch_options_init(&fetchOptions, UInt32(GIT_FETCH_OPTIONS_VERSION)) == 0 else {
             throw Failure.libgit2(lastErrorMessage("Couldn't initialize fetch options"))
         }
+        fetchOptions.depth = depth.libgit2Depth
         fetchOptions.callbacks.transfer_progress = { stats, payload in
             guard !Task.isCancelled else { return -1 }
             guard let stats, let payload else { return 0 }

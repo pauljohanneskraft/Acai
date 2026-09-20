@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import AcaiCore
+import AcaiGit
 @testable import AcaiApp
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
@@ -76,6 +77,28 @@ struct HotspotViewModelTests {
         #expect(vm.loadError == nil)
         let data = try #require(vm.chartData)
         #expect(!data.points.isEmpty)
+    }
+
+    @Test func aShallowCloneSaysHistoryIsNotFetchedInsteadOfChartingOneCommit() async throws {
+        let root = try makeTempDirectory("shallow")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        try remote.commit("Foo.swift", "class Foo {}\n", message: "foo")
+        let hubStore = root.appendingPathComponent("hubs", isDirectory: true)
+        let hub = GitRepository(remoteURL: remote.directory, storeDirectory: hubStore)
+        try FileManager.default.createDirectory(at: hubStore, withIntermediateDirectories: true)
+        try GitTestRepository(directory: hubStore).git(
+            "clone", "-q", "--depth", "1", remote.directory.absoluteURL.absoluteString, hub.localPath.path)
+        var codebase = Codebase(name: "Demo", directoryPath: hub.localPath.path)
+        codebase.managedCheckout = ManagedCheckout()
+        codebase.repository = CodebaseRepositoryReference(remoteURL: remote.directory, ref: "main")
+        let vm = HotspotViewModel(artifact: artifact())
+
+        await vm.load(codebase: codebase, gitRepositoriesDir: hubStore)
+
+        #expect(vm.isHistoryNotFetched)
+        #expect(vm.chartData == nil)
+        #expect(vm.loadError == nil)
     }
 }
 #endif
