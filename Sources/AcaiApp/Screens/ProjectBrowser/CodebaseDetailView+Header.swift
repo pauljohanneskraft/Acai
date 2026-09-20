@@ -144,6 +144,12 @@ extension CodebaseDetailView {
                 AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
             }
         }
+        // On the row itself, not on the picker: until the refs load the picker renders nothing, and a
+        // task attached to nothing never runs.
+        .task(id: codebase.id) {
+            guard codebase.managedCheckout == nil else { return }
+            await loadLocalRevisions(codebase: codebase)
+        }
     }
 
     /// Opens `QueryView`, scoped to this codebase.

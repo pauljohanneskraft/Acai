@@ -98,36 +98,33 @@ extension CodebaseDetailView {
     /// repository's history; the folder and whatever is checked out in it are left alone.
     @ViewBuilder
     func localRevisionPicker(codebase: Codebase) -> some View {
-        Group {
-            if let localRevisions, !localRevisions.refs.isEmpty {
-                Picker(.app("View.CodebaseDetailView.AnalysedRevision"), selection: Binding(
-                    get: { codebase.analysedRevision },
-                    set: { revision in
-                        refSwitchPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                        Task {
-                            await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
-                            refSwitchPhase = .loaded
-                        }
-                    }
-                )) {
-                    Text(.app("View.CodebaseDetailView.WorkingTree")).tag(String?.none)
-                    if let pinned = codebase.analysedRevision,
-                       !localRevisions.refs.contains(where: { $0.name == pinned }) {
-                        Text(verbatim: pinned).tag(Optional(pinned))
-                    }
-                    ForEach(localRevisions.refs) { ref in
-                        Text(verbatim: ref.name).tag(Optional(ref.name))
+        if let localRevisions, !localRevisions.refs.isEmpty {
+            Picker(.app("View.CodebaseDetailView.AnalysedRevision"), selection: Binding(
+                get: { codebase.analysedRevision },
+                set: { revision in
+                    refSwitchPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
+                    Task {
+                        await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
+                        refSwitchPhase = .loaded
                     }
                 }
-                .labelsHidden()
-                .frame(maxWidth: 160)
-                .disabled(refSwitchPhase.isInFlight)
-                .help(.app("View.CodebaseDetailView.AnalysedRevisionHelp"))
-                .accessibilityIdentifier("codebaseDetail.revisionPicker")
-                AsyncOperationStatusView(identifierPrefix: "codebaseDetail.revisionSwitch", phase: refSwitchPhase)
+            )) {
+                Text(.app("View.CodebaseDetailView.WorkingTree")).tag(String?.none)
+                if let pinned = codebase.analysedRevision,
+                   !localRevisions.refs.contains(where: { $0.name == pinned }) {
+                    Text(verbatim: pinned).tag(Optional(pinned))
+                }
+                ForEach(localRevisions.refs) { ref in
+                    Text(verbatim: ref.name).tag(Optional(ref.name))
+                }
             }
+            .labelsHidden()
+            .frame(maxWidth: 160)
+            .disabled(refSwitchPhase.isInFlight)
+            .help(.app("View.CodebaseDetailView.AnalysedRevisionHelp"))
+            .accessibilityIdentifier("codebaseDetail.revisionPicker")
+            AsyncOperationStatusView(identifierPrefix: "codebaseDetail.revisionSwitch", phase: refSwitchPhase)
         }
-        .task(id: codebase.id) { await loadLocalRevisions(codebase: codebase) }
     }
 
     func pinnedRevisionCaption(revision: String) -> some View {
@@ -141,7 +138,7 @@ extension CodebaseDetailView {
         .accessibilityIdentifier("codebaseDetail.pinnedRevisionCaption")
     }
 
-    private func loadLocalRevisions(codebase: Codebase) async {
+    func loadLocalRevisions(codebase: Codebase) async {
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         localRevisions = await Task.detached(priority: .utility) { () -> LocalRevisions? in
             let revisions = try? access.withResolvedURL { url -> LocalRevisions? in
