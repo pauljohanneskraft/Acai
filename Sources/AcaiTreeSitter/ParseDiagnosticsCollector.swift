@@ -4,8 +4,6 @@ import AcaiCore
 /// required token the source omitted).
 ///
 /// Walks all children, not just named ones, since error/missing nodes are frequently unnamed.
-/// Grammar-agnostic — `Node.isMissing` and the `ERROR` node type are Tree-sitter primitives, so the
-/// same instance works for every language.
 public struct ParseDiagnosticsCollector {
 
     private let context: SourceFileContext

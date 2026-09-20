@@ -1,11 +1,6 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Python's half of assignment extraction: classify one node as an assignment, and classify a
-/// right-hand side as a value.
-///
-/// The recursion lives in `AcaiTreeSitter`'s ``AssignmentResolver``, which holds one of these; the
-/// literal table is handed to a shared ``LiteralClassifier``, built once here rather than per call.
 struct PythonAssignmentSyntax: AssignmentSyntax {
 
     let context: SourceFileContext
@@ -53,8 +48,7 @@ struct PythonAssignmentSyntax: AssignmentSyntax {
         )
     }
 
-    /// Also used for a field's or module variable's initial value, which is the same question asked
-    /// of a node that is not itself an assignment.
+    /// Also used for a field's or module variable's initial value.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
         if let literal = literals.value(of: node) { return literal }
         if let enumCase = node.trimmedText(in: context).enumCaseValue { return enumCase }

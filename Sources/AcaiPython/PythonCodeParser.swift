@@ -6,9 +6,8 @@ public struct PythonCodeParser: CodeParser {
     public let language: CodeArtifact.SourceLanguage = .python
     public let fileExtensions: [String] = ["py"]
 
-    /// Loaded once per parser rather than per file: `AnalysisService` holds one `CodeParser` for a
-    /// whole run and calls `parse` once per source file. The `Parser` itself stays per-call — it is
-    /// mutable and `CodeParser` is documented stateless between calls.
+    /// Loaded once per run, not per file. The `Parser` stays per-call — it is mutable, and
+    /// `CodeParser` is documented stateless between calls.
     private let grammar: TreeSitterGrammar
 
     public init() {

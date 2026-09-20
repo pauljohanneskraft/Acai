@@ -1,17 +1,11 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Python's half of call-site extraction: classify one node, and recognise one local binding.
-///
-/// The recursion, the scope merging and the ordering all live in `AcaiTreeSitter`'s
-/// ``CallSiteResolver``, which holds one of these. Nothing here mutates, so any collaborator that
-/// needs a body's call sites can be handed the resolver rather than having to be the extractor.
 struct PythonCallSiteSyntax: CallSiteSyntax {
 
     let context: SourceFileContext
 
-    /// Every type declared in this file, from the pre-pass — a construction of one of these is what
-    /// makes a local's type provable.
+    /// From the pre-pass: constructing one of these is what makes a local's type provable.
     let declaredTypeNames: Set<String>
 
     /// Matches Python `call { function: attribute { object, attribute } }`: `self.method(...)`,

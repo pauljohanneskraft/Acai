@@ -1,12 +1,8 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Walks a Python file and builds its `CodeArtifact`.
-///
-/// Conforms to nothing: the declaration state lives in a ``DeclarationBuilder`` it owns, and every
-/// shared algorithm reaches it as an injected collaborator — so the small types below
-/// (`PythonMemberExtractor`, `PythonBaseClassResolver`, …) can be handed the same collaborators
-/// instead of having to route through this type. Every one of them is built exactly once, here.
+/// Walks a Python file and builds its `CodeArtifact`, sequencing collaborators that each own one
+/// concern. Every collaborator is built once, in `init`.
 struct PythonExtractor {
 
     private let context: SourceFileContext
@@ -22,13 +18,11 @@ struct PythonExtractor {
 
     private var declarations = DeclarationBuilder()
 
-    /// Bare top-level calls (`main()`, or the body of `if __name__ == "__main__":`) have no caller
-    /// to attach to, so they are collected here and given a synthetic member in ``extract()``.
+    /// Bare top-level calls have no caller to attach to, so they get a synthetic member in
+    /// ``extract(from:)``.
     private var topLevelCallSites: [CallSite] = []
 
-    /// Takes the parsed tree so the declared-type pre-pass — which every call-site decision depends
-    /// on — runs before the collaborators that read it are built, rather than leaving them to be
-    /// assembled later or rebuilt per call.
+    /// Takes the tree so the declared-type pre-pass runs before the collaborators that read it.
     init(source: String, fileName: String, root: Node) {
         let context = SourceFileContext(source: source, fileName: fileName)
         let typeReferenceResolver = PythonTypeReferenceResolver(context: context)
@@ -126,7 +120,7 @@ extension PythonExtractor {
         return Member(
             name: name,
             kind: .property,
-            accessLevel: name.pythonAccessLevel,
+            accessLevel: PythonName(name).accessLevel,
             type: type,
             location: assign.location(in: context),
             initialValue: initial
@@ -162,7 +156,7 @@ extension PythonExtractor {
             for: node,
             signature: .init(
                 name: name, qualifiedName: qualified, decorators: decorators, bases: bases,
-                accessLevel: name.pythonAccessLevel
+                accessLevel: PythonName(name).accessLevel
             )
         )
 
@@ -232,7 +226,7 @@ extension PythonExtractor {
         let existing = Set(fields.map(\.name))
         fields.append(contentsOf: memberExtractor.synthesizeSelfFields(
             fromMethods: methodNodes, existing: existing, declaredTypeNames: declaredTypeNames,
-            accessLevel: \.pythonAccessLevel
+            accessLevel: { PythonName($0).accessLevel }
         ))
 
         let scope = CallSiteScope(
@@ -274,7 +268,7 @@ extension PythonExtractor {
                     name: name,
                     type: assign.child(byFieldName: "type")
                         .flatMap { typeReferenceResolver.resolve(fromTypeField: $0) },
-                    accessLevel: name.pythonAccessLevel,
+                    accessLevel: PythonName(name).accessLevel,
                     location: assign.location(in: context),
                     callSites: callSites.callSites(in: right, scope: scope),
                     initialValue: right.map { assignmentSyntax.classifyValue($0) },
@@ -296,7 +290,7 @@ extension PythonExtractor {
             node,
             signature: .init(
                 decorators: decorators, parameters: params, returnType: returnType,
-                accessLevel: name.pythonAccessLevel
+                accessLevel: PythonName(name).accessLevel
             ),
             references: .init(
                 callSites: callSites.callSites(in: body, scope: scope.merging(parameters: params)),

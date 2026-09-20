@@ -2,23 +2,19 @@ import AcaiCore
 
 // MARK: - CallSiteSyntax
 
-/// What the shared call-site walk needs to know about one language: how to read the file, and how
-/// to turn a single node into a `CallSite` when that node is a call.
+/// One language's answer to "is this node a call, and what does it call?".
 ///
-/// Deliberately narrow — the recursion, the scope merging and the receiver decision tree are all
-/// shared code that consumes this, never per-language. A conformer is a stateless value, so a
-/// collaborator type can hold one; it does not have to *be* the extractor.
+/// A conformer classifies a single node and holds no mutable state, so a plugin's own collaborator
+/// types can hold one — the recursion and scope merging live in ``CallSiteResolver``.
 public protocol CallSiteSyntax {
 
     var context: SourceFileContext { get }
 
-    /// Resolves one node to a `CallSite` if it is a call this language can classify. Returning
-    /// `nil` is the normal case — the walk visits every node.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite?
 
-    /// Local-variable name → provably-declared type, collected from a body so calls on locals
-    /// resolve (`var x = Foo(); x.method()`). Default: no locals. A language overrides this to
-    /// recognise its typed/constructed local declarations, emitting only provable types.
+    /// Local-variable name → provably-declared type, so calls on locals resolve
+    /// (`var x = Foo(); x.method()`). Default: no locals. A language overrides this to recognise its
+    /// typed/constructed local declarations, emitting only provable types.
     func localBindings(in body: Node, scope: CallSiteScope) -> [String: String]
 }
 
@@ -26,8 +22,8 @@ extension CallSiteSyntax {
 
     public func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] { [:] }
 
-    /// A language's ``localBindings(in:scope:)`` uses this so it only writes a per-node recogniser,
-    /// not the traversal. A later binding for the same name wins.
+    /// Lets a language's ``localBindings(in:scope:)`` write only a per-node recogniser. A later
+    /// binding for the same name wins.
     public func collectLocalBindings(
         in body: Node, binding: (Node) -> (name: String, type: String)?
     ) -> [String: String] {
@@ -45,10 +41,7 @@ extension CallSiteSyntax {
 
 // MARK: - CallSiteResolver
 
-/// Walks a member body and collects its call sites, in source (pre-order) order.
-///
-/// The counterpart of ``FieldReadResolver``: a value holding the file and one injected
-/// per-language ``CallSiteSyntax``, so anything that needs a body's call sites can own one.
+/// Collects a body's call sites, in source (pre-order) order.
 public struct CallSiteResolver {
 
     private let syntax: any CallSiteSyntax
@@ -58,8 +51,8 @@ public struct CallSiteResolver {
     }
 
     /// Worth walking even when no properties are known, since `this`/`self` and `TypeName.method()`
-    /// calls are still resolvable. The body's provable local bindings are folded into the scope
-    /// first, which is why this is two passes and not one.
+    /// calls are still resolvable. The body's local bindings are folded into the scope first, which
+    /// is why this is two passes.
     public func callSites(in body: Node?, scope: CallSiteScope) -> [CallSite] {
         guard let body else { return [] }
         let merged = scope.merging(locals: syntax.localBindings(in: body, scope: scope))
@@ -80,13 +73,11 @@ public struct CallSiteResolver {
 
 // MARK: - MemberCallResolver
 
-/// The receiver decision tree shared by field-name-based grammars: `this.method()` → unqualified
+/// The receiver decision tree for field-name-based grammars: `this.method()` → unqualified
 /// self-call; `receiver.method()` / `this.prop.method()` → resolved against the scope; a deeper
-/// chain where `a`'s type is known but `b` isn't a property here → deferred `.propertyChain`,
-/// resolved post-merge.
+/// chain whose head resolves but whose hop doesn't → deferred `.propertyChain`.
 ///
-/// Grammar-specific call-node unwrapping stays with the caller — this receives an
-/// already-unwrapped receiver node.
+/// Grammar-specific call-node unwrapping stays with the caller — `receiver` arrives unwrapped.
 public struct MemberCallResolver {
 
     private let context: SourceFileContext
@@ -123,7 +114,6 @@ public struct MemberCallResolver {
             return scope.resolvedCallSite(receiverName: hop, methodName: methodName, location: location)
         }
 
-        // Deeper chain: resolve the head to a type and defer `hop` to the post-merge pass.
         guard object.nodeType == "identifier" else { return nil }
         let headName = object.text(in: context)
         let headType = scope.knownProperties[headName]
@@ -136,8 +126,7 @@ public struct MemberCallResolver {
     }
 }
 
-/// The grammar node types a language uses for member-call receiver resolution (see
-/// ``MemberCallResolver``).
+/// The grammar node types a language uses for member-call receiver resolution.
 public struct MemberCallGrammar: Sendable {
     /// The node type of a `this`/`self` expression (e.g. `"this"`).
     public let selfNodeType: String

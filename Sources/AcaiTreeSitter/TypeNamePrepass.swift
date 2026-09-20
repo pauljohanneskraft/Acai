@@ -1,15 +1,10 @@
 import SwiftTreeSitter
 
-/// Collects the simple names of every type declared in a file, in one pass before any body is
-/// extracted, so call-site resolution sees the complete set — including a type declared *after*
-/// the body that refers to it.
+/// Collects the simple names of every type declared in a file, before any body is extracted, so
+/// call-site resolution sees types declared after the body that refers to them.
 ///
-/// The traversal is shared; what a language supplies is which node types are declarations, and a
-/// reader that pulls a name out of one. Declarations whose name can't be read are skipped.
-///
-/// The reader is a per-call parameter rather than a stored property so it stays non-escaping: an
-/// extractor is a `struct` that calls this from a `mutating` method, and a stored closure would
-/// have to capture its `inout self`.
+/// The reader is a per-call parameter rather than a stored property so it stays non-escaping:
+/// extractors call this from a `mutating` method, and a stored closure would capture `inout self`.
 public struct TypeNamePrepass {
 
     private let declarationNodeTypes: Set<String>
@@ -18,6 +13,7 @@ public struct TypeNamePrepass {
         self.declarationNodeTypes = declarationNodeTypes
     }
 
+    /// Declarations whose name can't be read are skipped.
     public func names(in root: Node, name: (Node) -> String?) -> Set<String> {
         var names: Set<String> = []
         func walk(_ node: Node) {

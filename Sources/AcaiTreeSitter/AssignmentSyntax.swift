@@ -3,8 +3,7 @@ import Foundation
 
 // MARK: - AssignmentSyntax
 
-/// What the shared assignment walk needs to know about one language: how to read the file, and how
-/// to turn a single node into a `VariableAssignment` when that node is an assignment.
+/// One language's answer to "is this node an assignment?".
 ///
 /// Mirrors ``CallSiteSyntax``. Unlike call sites, assignments need no scope tracking — they are
 /// recorded for any identifier or `this.<field>` target, and consumers filter by name later.
@@ -12,17 +11,12 @@ public protocol AssignmentSyntax {
 
     var context: SourceFileContext { get }
 
-    /// Resolves a single node to a `VariableAssignment` if it represents an assignment or
-    /// increment/decrement whose target is a plain identifier or a `this`-qualified field access.
     func resolveAssignment(_ node: Node) -> VariableAssignment?
 }
 
 // MARK: - AssignmentResolver
 
-/// Walks a member body and collects its assignments, in source (pre-order) order.
-///
-/// The counterpart of ``FieldReadResolver`` and ``CallSiteResolver``: a value holding one injected
-/// per-language ``AssignmentSyntax``.
+/// Collects a body's assignments, in source (pre-order) order.
 public struct AssignmentResolver {
 
     private let syntax: any AssignmentSyntax
@@ -50,10 +44,7 @@ public struct AssignmentResolver {
 
 // MARK: - LiteralClassifier
 
-/// Classifies an assignment's right-hand side as a literal, against one language's node-type table.
-///
-/// The table is the only per-language part: every language then applies the same three steps —
-/// try a literal, fall back to an enum-case access, otherwise an expression snippet.
+/// Classifies a right-hand side as a literal, against one language's node-type table.
 public struct LiteralClassifier: Sendable {
 
     private let context: SourceFileContext
@@ -64,9 +55,9 @@ public struct LiteralClassifier: Sendable {
         self.literals = literals
     }
 
-    /// Returns `nil` when not a recognised literal, letting the caller apply language-specific
-    /// fallbacks. The node type is matched before source text is extracted, so the common
-    /// non-literal path avoids that cost.
+    /// `nil` when not a recognised literal, letting the caller apply language-specific fallbacks.
+    /// The node type is matched before source text is extracted, so the common non-literal path
+    /// avoids that cost.
     public func value(of node: Node) -> VariableAssignment.Value? {
         let nodeType = node.nodeType ?? ""
         if literals.boolean.contains(nodeType) {
@@ -89,8 +80,8 @@ public struct LiteralClassifier: Sendable {
     }
 }
 
-/// The grammar node types a language uses for each literal kind, so the shared literal classifier
-/// stays language-agnostic.
+/// The grammar node types a language uses for each literal kind, so ``LiteralClassifier`` stays
+/// language-agnostic.
 public struct LiteralNodeTypes: Sendable {
     public var boolean: Set<String>
     public var numeric: Set<String>

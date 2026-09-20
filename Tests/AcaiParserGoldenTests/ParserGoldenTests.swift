@@ -4,19 +4,16 @@ import AcaiCore
 import AcaiLibrary
 
 /// Characterization tests: each fixture's whole encoded `CodeArtifact` is pinned to a checked-in
-/// golden. Unlike the per-language suites — which assert the properties someone thought to write a
-/// test for — these fail on *any* change to a parser's output, which is what lets a restructuring
-/// of the extraction layer claim "behaviour unchanged" and be believed.
+/// golden, so a restructuring of the extraction layer has to reproduce output exactly rather than
+/// only satisfy the assertions the per-language suites happen to make.
 ///
 /// A drift here is not a reason to re-record. Read the diff: either it is a regression, or it is a
 /// deliberate behaviour change that belongs in its own commit with the golden update beside it.
 @Suite("Parser output goldens")
 struct ParserGoldenTests {
 
-    /// Python is covered in depth because it is the language this restructuring migrates; every
-    /// other Tree-sitter language gets one broad fixture because the shared tier they all sit on
-    /// is being replaced underneath them. Swift is included although it shares none of that tier —
-    /// `AcaiCore` gains types its extractor could later adopt, and the cost of the guard is one file.
+    /// Python in depth; one broad fixture for every other language, since they share the tier being
+    /// replaced.
     static let fixtures: [ParserGoldenCorpus.Fixture] = [
         .init(parser: PythonCodeParser(), fileName: "classes.py"),
         .init(parser: PythonCodeParser(), fileName: "annotations.py"),
@@ -55,8 +52,7 @@ struct ParserGoldenTests {
         )
     }
 
-    /// A golden of an empty artifact would pass the comparison above while proving nothing, which
-    /// is exactly how a characterization suite rots into decoration.
+    /// A golden of an empty artifact would pass the comparison above while proving nothing.
     @Test("every fixture actually produces declarations", arguments: fixtures)
     func fixtureIsNotVacuous(fixture: ParserGoldenCorpus.Fixture) throws {
         let corpus = ParserGoldenCorpus()

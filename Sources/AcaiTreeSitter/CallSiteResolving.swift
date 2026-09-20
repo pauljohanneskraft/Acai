@@ -1,15 +1,8 @@
 import AcaiCore
 
-/// Source-compatibility shim for the language extractors that have not yet been migrated off the
-/// monolithic ``TreeSitterExtracting`` shape.
-///
-/// Every method here forwards to the value type that now owns the algorithm, so there is exactly
-/// one implementation of each. What this protocol adds is the ability to reach them by *being* an
-/// extractor, which is precisely the coupling the migration removes: a migrated plugin holds a
-/// ``CallSiteResolver`` and a ``MemberCallResolver`` as stored properties instead, so its small
-/// collaborator types can use them too.
-///
-/// Each language migrated off this protocol drops one conformer; it goes away with the last.
+/// Superseded by ``CallSiteSyntax`` plus ``CallSiteResolver``, which a plugin holds instead of
+/// conforming to. Kept so the plugins not yet migrated compile unchanged; deleted with the last
+/// conformer.
 public protocol CallSiteResolving: TreeSitterExtracting, CallSiteSyntax {}
 
 extension CallSiteResolving {

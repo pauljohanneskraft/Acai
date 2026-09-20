@@ -38,12 +38,12 @@ extension Node {
         children().contains { $0.text(in: context) == text }
     }
 
-    /// Every identifier-like name in this subtree, sorted. Walks iteratively (explicit stack) so a
-    /// deeply nested body can't overflow the stack. Over-captures every identifier by design; the
-    /// engine keeps only names that resolve to a known type.
+    /// Every identifier-like name in this subtree. Walks iteratively (explicit stack) so a deeply
+    /// nested body can't overflow the stack. Over-captures every identifier by design; the engine
+    /// keeps only names that resolve to a known type.
     ///
-    /// Sorted rather than in `Set` order because `CodeArtifact` is `Equatable`/`Hashable`/`Codable`:
-    /// an unordered result makes two parses of the same file compare unequal.
+    /// Sorted, not in `Set` order: `CodeArtifact` is `Equatable`/`Hashable`/`Codable`, so an
+    /// unordered result makes two parses of the same file compare unequal.
     public func referencedTypeNames(in context: SourceFileContext) -> [String] {
         var names: Set<String> = []
         var stack: [Node] = [self]

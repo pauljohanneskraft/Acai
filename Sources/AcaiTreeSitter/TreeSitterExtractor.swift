@@ -3,21 +3,13 @@ import AcaiCore
 
 // MARK: - TreeSitterExtracting
 
-/// The monolithic extractor shape the Tree-sitter plugins were originally written against: one
-/// type that owns all of a file's declaration state *and* reaches every shared algorithm through
-/// this conformance.
+/// The monolithic extractor shape: one type owning a file's whole declaration state and reaching
+/// every shared algorithm by conforming.
 ///
-/// That coupling is the thing being removed. A shared algorithm reachable only by conforming to
-/// this protocol can only ever be used by the one type that is the extractor, which is why
-/// splitting a language into small collaborators never produced anything reusable: the
-/// collaborators could not call the shared code. Every member below now forwards to a value type
-/// that owns the algorithm and can be handed to anyone — ``DeclarationBuilder``, ``MemberIndex``,
-/// ``CallSiteResolver``, ``AssignmentResolver``, ``TypeNamePrepass``,
-/// ``ParseDiagnosticsCollector``.
-///
-/// A migrated plugin holds a ``DeclarationBuilder`` and its collaborators as properties and does
-/// not conform to this at all (see `AcaiPython`). This protocol exists only so the plugins that
-/// have not been migrated yet keep compiling unchanged; it is deleted with the last conformer.
+/// Superseded — every member below forwards to a value that owns the algorithm and can be held by
+/// anything (``DeclarationBuilder``, ``MemberIndex``, ``CallSiteResolver``, ``AssignmentResolver``,
+/// ``TypeNamePrepass``, ``ParseDiagnosticsCollector``). A migrated plugin holds those directly and
+/// does not conform to this at all; see `AcaiPython`. Deleted with the last conformer.
 public protocol TreeSitterExtracting {
 
     // MARK: - Required State
@@ -100,9 +92,8 @@ extension TreeSitterExtracting {
         to supertypes: [TypeReference],
         kind: Relationship.Kind
     ) {
-        // Appends directly rather than through `DeclarationBuilder`: this runs once per declared
-        // type, and round-tripping the arrays through a temporary builder would copy them each
-        // time. Both paths build the edge with the same `TypeReference.relationship`.
+        // Direct rather than through `DeclarationBuilder`: this runs once per declared type, and
+        // round-tripping the arrays through a temporary builder would copy them each time.
         relationships.append(contentsOf: supertypes.map { $0.relationship(kind: kind, source: owner) })
     }
 
@@ -117,9 +108,7 @@ extension TreeSitterExtracting {
         types = builder.types
     }
 
-    /// The subset of this extractor's state ``DeclarationBuilder`` owns, so the forwarders above
-    /// share its single implementation. A migrated plugin stores the builder instead of rebuilding
-    /// one here.
+    /// A migrated plugin stores the builder instead of rebuilding one per call.
     private var declarationBuilder: DeclarationBuilder {
         var builder = DeclarationBuilder()
         builder.types = types

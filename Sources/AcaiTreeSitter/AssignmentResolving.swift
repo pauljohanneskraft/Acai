@@ -1,13 +1,11 @@
 import AcaiCore
 
-/// Source-compatibility shim for the language extractors that have not yet been migrated off the
-/// monolithic ``TreeSitterExtracting`` shape. See ``CallSiteResolving`` for why it exists and when
-/// it goes away.
+/// Superseded by ``AssignmentSyntax`` plus ``AssignmentResolver`` and ``LiteralClassifier``. Kept
+/// so the plugins not yet migrated compile unchanged; deleted with the last conformer.
 public protocol AssignmentResolving: TreeSitterExtracting, AssignmentSyntax {}
 
 extension AssignmentResolving {
 
-    /// Extracts assignments from a body node, in source (pre-order) order.
     public func extractAssignments(from body: Node?) -> [VariableAssignment] {
         AssignmentResolver(syntax: self).assignments(in: body)
     }

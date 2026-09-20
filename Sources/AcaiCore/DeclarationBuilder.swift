@@ -1,14 +1,7 @@
-/// The declarations a parser accumulates while walking one source file, plus the namespace and
-/// naming discipline that turns them into a `CodeArtifact` satisfying the producer contract.
+/// The declarations a parser accumulates while walking one source file, and the naming discipline
+/// that turns them into a `CodeArtifact` satisfying the producer contract on ``CodeParser``.
 ///
-/// This is the half of an extractor that has nothing to do with any grammar: every language keeps
-/// the same six pieces of state and qualifies names the same way. Holding them here lets a parser
-/// *delegate* to a value it owns rather than inherit them from a protocol it conforms to — the
-/// difference being that a small collaborator type can be handed a `DeclarationBuilder` too, where
-/// a protocol conformance is reachable only by the one type that is the extractor.
-///
-/// In `AcaiCore` rather than `AcaiTreeSitter` because it names no `Node`: a SwiftSyntax-based
-/// parser keeps the same four arrays and can adopt it unchanged.
+/// In `AcaiCore` rather than `AcaiTreeSitter` because it names no `Node`.
 public struct DeclarationBuilder: Sendable {
 
     public var types: [TypeDeclaration] = []
@@ -24,24 +17,20 @@ public struct DeclarationBuilder: Sendable {
     /// complete set, including forward-declared siblings.
     public var declaredTypeNames: Set<String> = []
 
-    /// The enclosing package/namespace/type, or `nil` at file scope.
     public private(set) var currentNamespace: String?
 
     public init() {}
 
     // MARK: - Naming
 
-    /// A declaration's id and qualified name: the simple name prefixed by the enclosing namespace.
     public func qualifiedName(_ name: String) -> String {
         currentNamespace.map { "\($0).\(name)" } ?? name
     }
 
-    /// Enters `namespace` and returns the namespace to restore, so a caller reads
-    /// `let outer = builder.enter(namespace: id)` / `defer { builder.leave(outer) }`.
-    ///
-    /// Nesting is a save/restore rather than a closure because an extractor is a `struct` that
-    /// mutates itself while walking: passing a closure that also mutates it would overlap
-    /// exclusive access to the same value.
+    /// Returns the namespace to restore: `let outer = builder.enter(namespace: id)` /
+    /// `defer { builder.leave(outer) }`. Save/restore rather than a closure because an extractor is
+    /// a `struct` that mutates itself while walking, so a closure that also mutated it would
+    /// overlap exclusive access.
     public mutating func enter(namespace: String) -> String? {
         let saved = currentNamespace
         currentNamespace = namespace
@@ -65,10 +54,8 @@ public struct DeclarationBuilder: Sendable {
     }
 
     /// Supertype names are taken verbatim from source text (e.g. `Animal`) while type IDs are fully
-    /// qualified (e.g. `com.example.Animal`); this maps short names to qualified IDs.
-    ///
-    /// Delegates to ``TypeIdentityResolver`` so per-file resolution uses the same name→id mapping
-    /// and ambiguity rule as the agnostic enrichment pass.
+    /// qualified (e.g. `com.example.Animal`); this maps short names to qualified IDs, using the same
+    /// resolver and ambiguity rule as the agnostic enrichment pass.
     public mutating func resolveRelationshipNames() {
         let resolver = TypeIdentityResolver(types: types)
 
