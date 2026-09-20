@@ -1,10 +1,11 @@
 import Foundation
 import MCP
 import Testing
+import AcaiCore
 @testable import AcaiMCP
 
 /// Shared helpers for driving the MCP tools in-process. Fixtures live under a unique temp directory
-/// that the caller removes; tests never touch the user's config.
+/// that the caller removes; tests never touch the user's config or the real `~/.acai/analysis`.
 enum MCPTestSupport {
 
     static func withTempDirectory<T>(_ body: (URL) async throws -> T) async throws -> T {
@@ -13,6 +14,20 @@ enum MCPTestSupport {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
         return try await body(dir)
+    }
+
+    /// An `AnalysisStore` under a fresh temp directory, so a test's writes/reads never reach the
+    /// real analysis store the production server uses.
+    static func freshStore() -> AnalysisStore {
+        AnalysisStore(directory: FileManager.default.temporaryDirectory
+            .appendingPathComponent("AcaiMCPTests-store-\(UUID().uuidString)", isDirectory: true))
+    }
+
+    /// A `ToolRegistry` wired to a fresh temp-directory store — the test-safe stand-in for
+    /// `ToolRegistry.standard`, which shares the production `AnalysisStore.standard` and so would
+    /// otherwise write into the real `~/.acai/analysis` when a test calls a tool.
+    static var testRegistry: ToolRegistry {
+        ToolRegistry(tools: ToolRegistry.standard.tools, cache: AnalysisSnapshotCache(store: freshStore()))
     }
 
     /// Writes a two-type Swift source (Service depends on Repository) into `directory` — enough to
