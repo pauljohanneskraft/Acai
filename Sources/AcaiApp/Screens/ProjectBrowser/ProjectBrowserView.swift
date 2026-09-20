@@ -17,9 +17,9 @@ public struct ProjectBrowserView: View {
     let windowAddress: Binding<AppAddress?>?
 
     @EnvironmentObject var browserWindows: BrowserWindows
-    // Shared with `AcaiRootScene`'s macOS ⌘K `Commands` entry — see `QuickOpenPresenter`'s own
-    // doc comment for why this can't just be local `@State` on this view.
-    @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
+    // Published below as a focused scene object, so macOS's ⌘K reaches the key window's own — see
+    // `QuickOpenPresenter`'s doc comment.
+    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
@@ -136,20 +136,6 @@ public struct ProjectBrowserView: View {
                 .environmentObject(model)
         }
         #endif
-        .fileExporter(
-            isPresented: Binding(
-                get: { model.pendingExport != nil },
-                set: { if !$0 { model.pendingExport = nil } }
-            ),
-            document: model.pendingExport.map { ExportDocument(data: $0.data) },
-            contentType: model.pendingExport?.contentType ?? .data,
-            defaultFilename: model.pendingExport?.filename
-        ) { result in
-            if case .failure(let error) = result {
-                model.store.report(.app("Error.ProjectBrowserView.ExportFailed \(error.localizedDescription)"))
-            }
-            model.pendingExport = nil
-        }
         .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(
             store: model.store, model: model,
