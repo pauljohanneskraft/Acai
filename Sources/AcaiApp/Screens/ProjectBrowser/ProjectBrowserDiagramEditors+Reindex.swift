@@ -3,50 +3,10 @@ import AcaiCore
 import AcaiGit
 
 extension ProjectCodebaseEditor {
-    /// Parses the codebase's working tree or, for a local folder pinned to a revision, that
-    /// revision's tree read from the repository's history into a temporary directory — the folder
-    /// itself, its index and its HEAD are never written to.
     func reindex(codebaseID: UUID) async {
         guard let codebase = codebase(for: codebaseID) else { return }
-        let wasFirstIndex = !codebase.hasArtifact
-        let path = codebase.directoryPath
-        let bookmark = codebase.securityScopedBookmark
-        let fileFilter = codebase.fileFilter
-        let revision = codebase.pinnedRevision
-        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
-        let store = store
         do {
-            // `Task.detached` doesn't inherit cancellation, so the parse is cancelled explicitly when
-            // the wrapping `run` task is; `AnalysisService` and `GitDiffSnapshot` both observe it.
-            // The artifact is saved inside the closure so the row's spinner outlasts the write.
-            let reindexResult = try await store.activityCenter.run(
-                title: .app("Activity.Indexing \(codebase.name)"),
-                kind: .reindex, subject: .codebase(codebaseID)
-            ) {
-                let detached = Task.detached(priority: .userInitiated) {
-                    var refreshed: ScopedResourceAccess.Refreshed?
-                    let access = ScopedResourceAccess(path: path, bookmark: bookmark)
-                    let (artifact, fingerprint) = try access.withResolvedURL(
-                        onRefresh: { refreshed = $0 },
-                        { url in
-                            try CodebaseIndexing(directory: url, revision: revision)
-                                .run(analyzer: analyzer, fileFilter: fileFilter)
-                        }
-                    )
-                    return (artifact, fingerprint, refreshed)
-                }
-                let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
-                    try await detached.value
-                } onCancel: {
-                    detached.cancel()
-                }
-                try await store.saveArtifactAndWait(artifact, for: codebaseID)
-                return (artifact, fingerprint, refreshed)
-            }
-            guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return }
-            applyReindexResult(
-                codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed,
-                wasFirstIndex: wasFirstIndex)
+            _ = try await reindexOutcome(codebaseID: codebaseID)
         } catch {
             // An app-managed directory must never be re-pointed at a folder of the user's choosing.
             let relocatable = error is ScopedResourceAccess.Failure && codebase.managedCheckout == nil
@@ -54,6 +14,67 @@ extension ProjectCodebaseEditor {
                 .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
                 relocating: relocatable ? codebaseID : nil)
         }
+    }
+
+    enum ReindexOutcome: Equatable {
+        case completed
+        case cancelled
+    }
+
+    enum ReindexFailure: LocalizedError {
+        case codebaseNotFound
+
+        var errorDescription: String? {
+            String(localized: .app("Error.ReindexFailure.CodebaseNotFound"))
+        }
+    }
+
+    /// Reindexes without reporting, for a caller that surfaces the failure itself.
+    ///
+    /// Parses the codebase's working tree or, for a local folder pinned to a revision, that
+    /// revision's tree read from the repository's history into a temporary directory — the folder
+    /// itself, its index and its HEAD are never written to.
+    func reindexOutcome(codebaseID: UUID) async throws -> ReindexOutcome {
+        guard let codebase = codebase(for: codebaseID) else { throw ReindexFailure.codebaseNotFound }
+        let wasFirstIndex = !codebase.hasArtifact
+        let path = codebase.directoryPath
+        let bookmark = codebase.securityScopedBookmark
+        let fileFilter = codebase.fileFilter
+        let revision = codebase.pinnedRevision
+        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
+        let store = store
+        // `Task.detached` doesn't inherit cancellation, so the parse is cancelled explicitly when
+        // the wrapping `run` task is; `AnalysisService` and `GitDiffSnapshot` both observe it.
+        // The artifact is saved inside the closure so the row's spinner outlasts the write.
+        let reindexResult = try await store.activityCenter.run(
+            title: .app("Activity.Indexing \(codebase.name)"),
+            kind: .reindex, subject: .codebase(codebaseID)
+        ) {
+            let detached = Task.detached(priority: .userInitiated) {
+                var refreshed: ScopedResourceAccess.Refreshed?
+                let access = ScopedResourceAccess(path: path, bookmark: bookmark)
+                let (artifact, fingerprint) = try access.withResolvedURL(
+                    onRefresh: { refreshed = $0 },
+                    { url in
+                        try CodebaseIndexing(directory: url, revision: revision)
+                            .run(analyzer: analyzer, fileFilter: fileFilter)
+                    }
+                )
+                return (artifact, fingerprint, refreshed)
+            }
+            let (artifact, fingerprint, refreshed) = try await withTaskCancellationHandler {
+                try await detached.value
+            } onCancel: {
+                detached.cancel()
+            }
+            try await store.saveArtifactAndWait(artifact, for: codebaseID)
+            return (artifact, fingerprint, refreshed)
+        }
+        guard let (newArtifact, fingerprint, refreshed) = reindexResult else { return .cancelled }
+        applyReindexResult(
+            codebaseID: codebaseID, artifact: newArtifact, fingerprint: fingerprint, refreshed: refreshed,
+            wasFirstIndex: wasFirstIndex)
+        return .completed
     }
 
     /// Analyses a local folder at `revision` instead of its working tree (`nil` clears the pin),
