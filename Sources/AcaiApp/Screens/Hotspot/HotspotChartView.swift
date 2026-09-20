@@ -17,6 +17,7 @@ struct HotspotChartView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @StateObject private var viewModel: HotspotViewModel
     @State private var showSidebar = false
+    @State private var fullHistoryPhase: AsyncOperationPhase = .idle
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -90,6 +91,8 @@ struct HotspotChartView: View {
                 identifier: "hotspot.error",
                 systemImage: "exclamationmark.triangle",
                 text: .app("View.HotspotChartView.CouldNotLoadGitHistory \(message)"))
+        } else if viewModel.isHistoryNotFetched {
+            historyNotFetchedState
         } else if !viewModel.hasGitHistory {
             statusState(
                 identifier: "hotspot.noGitHistory",
@@ -107,6 +110,35 @@ struct HotspotChartView: View {
                 text: .app("View.HotspotChartView.NoFilesToPlot")
             )
         }
+    }
+
+    /// Only an app-managed clone offers to fetch more: deepening a local folder's own repository
+    /// would change the user's checkout, which the app never does.
+    private var historyNotFetchedState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "clock.badge.exclamationmark").font(.system(size: 28)).foregroundStyle(.secondary)
+            if codebase.managedCheckout != nil, let remoteURL = codebase.repository?.remoteURL {
+                Text(.app("View.HotspotChartView.HistoryNotFetched"))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                FetchFullHistoryButton(
+                    remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "hotspot.fullHistory"
+                ) {
+                    Task {
+                        await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Text(.app("View.HotspotChartView.LocalHistoryShallow"))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("hotspot.historyNotFetched")
     }
 
     private var loadingState: some View {

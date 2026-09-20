@@ -1,3 +1,4 @@
+import AcaiGit
 import Foundation
 
 /// One shared `AcaiGit.GitRepository`'s reverse index: every codebase, across every project, whose
@@ -11,18 +12,19 @@ struct RepositoryIndexEntry: Identifiable, Hashable {
 }
 
 /// Builds the repository → codebases reverse index off a plain list of projects — a pure
-/// computation over already-in-memory data, cheap to call from a view body.
+/// computation over already-in-memory data, cheap to call from a view body. Two spellings of one
+/// remote (`…/repo` and `…/repo.git`) are one repository, as they are one shared clone on disk.
 struct RepositoryIndex {
     let projects: [Project]
 
     func entries() -> [RepositoryIndexEntry] {
-        var codebasesByRemote: [URL: [Codebase]] = [:]
+        var entriesByIdentity: [String: RepositoryIndexEntry] = [:]
         for codebase in projects.flatMap(\.codebases) {
             guard let remoteURL = codebase.repository?.remoteURL else { continue }
-            codebasesByRemote[remoteURL, default: []].append(codebase)
+            let identity = GitRepository(remoteURL: remoteURL, storeDirectory: URL(fileURLWithPath: "/")).identity
+            entriesByIdentity[identity, default: RepositoryIndexEntry(remoteURL: remoteURL, codebases: [])]
+                .codebases.append(codebase)
         }
-        return codebasesByRemote
-            .map { RepositoryIndexEntry(remoteURL: $0.key, codebases: $0.value) }
-            .sorted { $0.remoteURL.absoluteString < $1.remoteURL.absoluteString }
+        return entriesByIdentity.values.sorted { $0.remoteURL.absoluteString < $1.remoteURL.absoluteString }
     }
 }

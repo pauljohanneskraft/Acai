@@ -22,6 +22,9 @@ struct GitReference {
     func resolve(in repository: Repository) throws -> Commit {
         let (base, parentSteps) = splitParentSuffix(from: name)
         let commit = try resolveBase(base, in: repository)
+        if parentSteps > 0, let workingDirectory = try? repository.workingDirectory {
+            try GitHistoryAvailability(directory: workingDirectory).requireFullHistory()
+        }
         return try walkParents(from: commit, steps: parentSteps)
     }
 
