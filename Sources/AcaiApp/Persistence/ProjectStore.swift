@@ -14,8 +14,12 @@ import Yams
 ///     generated_<diagramID>.json  – GeneratedDiagram
 ///     freeform_<diagramID>.json     – FreeformDiagram
 ///   artifacts/
-///     codebase_<codebaseID>.json – CodeArtifact (analysis result)
+///     codebase_<codebaseID>.json – pre-shared-store `CodeArtifact`, read once for migration
 /// ```
+/// A codebase's own analysis result lives in `AcaiCore.AnalysisStore` — `~/.acai/analysis`, shared
+/// with the CLI and an MCP session over the same directory — keyed by the codebase's resolved
+/// `directoryPath` rather than its id. `artifacts/` above is the format this store migrates away
+/// from on first load, kept only so an existing install's index isn't dropped.
 @MainActor
 final class ProjectStore: ObservableObject {
     /// The one store every window and system action of the running app shares.
@@ -54,6 +58,10 @@ final class ProjectStore: ObservableObject {
     }
 
     let baseDir: URL
+    /// The shared analysis store an artifact is read from and written to — `AnalysisStore.standard`
+    /// (`~/.acai/analysis`) in production, shared with the CLI and an MCP session over the same
+    /// directory. Injectable so a test's writes never reach the real store.
+    let analysisStore: AnalysisStore
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
@@ -72,7 +80,8 @@ final class ProjectStore: ObservableObject {
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
 
-    init(baseDir: URL? = nil) {
+    init(baseDir: URL? = nil, analysisStore: AnalysisStore = .standard) {
+        self.analysisStore = analysisStore
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
@@ -181,6 +190,17 @@ final class ProjectStore: ObservableObject {
 
     func loadArtifact(for codebaseID: UUID) {
         guard artifacts[codebaseID] == nil else { return }
+
+        // The shared analysis store (`AcaiCore.AnalysisStore`) is the source of truth going
+        // forward — the CLI and an MCP session over the same directory read and write it too.
+        if let sourcePath = resolvedSourcePath(for: codebaseID),
+           case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath) {
+            artifacts[codebaseID] = entry.artifact
+            return
+        }
+
+        // Predates the shared store: this codebase's private `artifacts/codebase_<UUID>.json`,
+        // migrated into the shared store below so this branch is never taken again for it.
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         do {
             let data = try Data(contentsOf: url)
@@ -190,6 +210,7 @@ final class ProjectStore: ObservableObject {
                 return
             }
             artifacts[codebaseID] = stored.artifact
+            migrateArtifactToSharedStore(stored.artifact, for: codebaseID)
         } catch is DecodingError {
             // Predates the versioned envelope, or a schema change — treat as never indexed so the
             // UI offers Reindex rather than a decode error the user can't act on.
@@ -197,6 +218,29 @@ final class ProjectStore: ObservableObject {
         } catch {
             report(.app("Error.ProjectStore.LoadStoredAnalysis \(error.localizedDescription)"))
         }
+    }
+
+    /// Writes an artifact loaded from the pre-shared-store `artifacts/` file into the shared store,
+    /// so this codebase's next load finds it there directly. Best-effort and silent: a failure here
+    /// just means the next load migrates it again, since the private file is left untouched.
+    private func migrateArtifactToSharedStore(_ artifact: CodeArtifact, for codebaseID: UUID) {
+        guard let sourcePath = resolvedSourcePath(for: codebaseID) else { return }
+        let store = analysisStore
+        Task.detached(priority: .utility) {
+            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
+            _ = try? store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
+        }
+    }
+
+    /// The standardized, symlink-resolved absolute path `AnalysisStore` keys entries on, for the
+    /// directory a codebase currently points at. `nil` once the codebase itself is gone.
+    private func resolvedSourcePath(for codebaseID: UUID) -> String? {
+        for project in projects {
+            if let codebase = project.codebases.first(where: { $0.id == codebaseID }) {
+                return codebase.directoryPath.resolvedAsAnalysisSourcePath
+            }
+        }
+        return nil
     }
 
     /// Marks a codebase as un-indexed and persists it, so a stored analysis that can no longer be
@@ -287,10 +331,13 @@ final class ProjectStore: ObservableObject {
     }
 
     private func writeArtifactToDisk(_ artifact: CodeArtifact, for codebaseID: UUID) async throws {
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        let stored = StoredArtifact(formatVersion: Self.currentArtifactFormat, artifact: artifact)
+        guard let sourcePath = resolvedSourcePath(for: codebaseID) else {
+            throw StoreCodebaseNotFoundError()
+        }
+        let store = analysisStore
         try await Task.detached(priority: .utility) {
-            try JSONEncoder().encode(stored).write(to: url, options: .atomic)
+            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
+            try store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
         }.value
     }
 
@@ -311,10 +358,17 @@ final class ProjectStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    func deleteArtifactFile(for codebaseID: UUID) {
+    /// `directoryPath` is required once the codebase itself may already be gone from `projects`
+    /// (as it is when called from `deleteCodebaseData`, after removal) — otherwise the shared
+    /// store's entry can no longer be found by resolved path.
+    func deleteArtifactFile(for codebaseID: UUID, directoryPath: String? = nil) {
         artifacts.removeValue(forKey: codebaseID)
         let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
         try? FileManager.default.removeItem(at: url)
+        let sourcePath = directoryPath?.resolvedAsAnalysisSourcePath ?? resolvedSourcePath(for: codebaseID)
+        if let sourcePath {
+            try? analysisStore.removeEntry(forResolvedPath: sourcePath)
+        }
     }
 
     // MARK: - Codebase removal
@@ -322,13 +376,14 @@ final class ProjectStore: ObservableObject {
     /// Removes the codebase from the project together with its generated diagrams, stored analysis
     /// and managed rules. The caller persists the project.
     func deleteCodebaseData(_ codebaseID: UUID, fromProjectAt projectIndex: Int) {
+        let directoryPath = projects[projectIndex].codebases.first { $0.id == codebaseID }?.directoryPath
         projects[projectIndex].codebases.removeAll { $0.id == codebaseID }
         let orphanedDiagramIDs = projects[projectIndex].generatedDiagramIDs.filter {
             generatedDiagrams[$0]?.codebaseID == codebaseID
         }
         projects[projectIndex].generatedDiagramIDs.removeAll { orphanedDiagramIDs.contains($0) }
         orphanedDiagramIDs.forEach(deleteGeneratedDiagramFile)
-        deleteArtifactFile(for: codebaseID)
+        deleteArtifactFile(for: codebaseID, directoryPath: directoryPath)
         deleteManagedRules(forCodebase: codebaseID)
     }
 
@@ -387,5 +442,19 @@ final class ProjectStore: ObservableObject {
 
     func deleteManagedRules(forCodebase codebaseID: UUID) {
         try? FileManager.default.removeItem(at: managedRulesURL(forCodebase: codebaseID))
+    }
+}
+
+/// Thrown by `ProjectStore.writeArtifactToDisk` when the codebase an analysis is being saved for
+/// no longer exists — saving races a deletion, so there is nowhere left to resolve a source path.
+private struct StoreCodebaseNotFoundError: LocalizedError {
+    var errorDescription: String? { "This codebase no longer exists, so its analysis could not be saved." }
+}
+
+extension String {
+    /// The standardized, symlink-resolved absolute path `AnalysisStore` keys an entry on, treating
+    /// this string as a directory path.
+    fileprivate var resolvedAsAnalysisSourcePath: String {
+        URL(fileURLWithPath: self).standardizedFileURL.resolvingSymlinksInPath().path
     }
 }
