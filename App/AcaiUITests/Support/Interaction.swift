@@ -141,7 +141,12 @@ extension XCUIApplication {
     /// Cancel button. The dismiss region spans the whole window, popover included, so its center can
     /// land on the popover itself and do nothing; this taps the region's corner farthest from
     /// `content`, inset away from the screen edges.
-    func dismissPopover(showing content: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+    /// Tapping the region is idempotent, so a tap the presentation swallowed while it was still
+    /// settling is retried rather than failing the journey.
+    func dismissPopover(
+        showing content: XCUIElement, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
         let region = otherElements["PopoverDismissRegion"]
         content.waitUntilReady("the popover's content", file: file, line: line)
         region.waitUntilReady("the popover's dismiss region", file: file, line: line)
@@ -150,8 +155,11 @@ extension XCUIApplication {
             dx: content.frame.midX > bounds.midX ? 0.15 : 0.85,
             dy: content.frame.midY > bounds.midY ? 0.2 : 0.8
         )
-        SystemBanners().dismiss(file: file, line: line)
-        region.coordinate(withNormalizedOffset: offset).tap()
+        for _ in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            region.coordinate(withNormalizedOffset: offset).tap()
+            if region.waitForNonExistence(timeout: .uiTransition / Double(attempts)) { return }
+        }
         region.waitForDisappearanceOrFail("the popover", file: file, line: line)
     }
 }

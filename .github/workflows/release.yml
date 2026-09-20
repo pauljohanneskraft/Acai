@@ -110,6 +110,65 @@ jobs:
           files: artifacts/*
           fail_on_unmatched_files: true
 
+  bump-homebrew-formula:
+    name: Update Homebrew formula
+    needs: [release-binary]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      # The tag build checks out a detached HEAD; the formula bump is a normal commit onto main.
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Rewrite Formula/acai.rb with this release's version and checksums
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+
+          tag = os.environ["TAG"]
+          version = tag.removeprefix("v")
+
+          with open("Formula/acai.rb") as formula_file:
+              formula = formula_file.read()
+
+          formula = re.sub(r'version "[^"]*"', f'version "{version}"', formula, count=1)
+
+          for asset in ("acai-macos-arm64", "acai-macos-x86_64", "acai-linux-x86_64", "acai-linux-arm64"):
+              with open(f"artifacts/{asset}.tar.gz.sha256") as sha_file:
+                  digest = sha_file.read().split()[0]
+              url = f"https://github.com/pauljohanneskraft/Acai/releases/download/{tag}/{asset}.tar.gz"
+              pattern = re.compile(r'url "[^"]*' + re.escape(f"{asset}.tar.gz") + r'"\n(\s*)sha256 "[0-9a-f]{64}"')
+              formula, count = pattern.subn(f'url "{url}"\n\\1sha256 "{digest}"', formula)
+              if count != 1:
+                  raise SystemExit(f"expected exactly one match for {asset}, got {count}")
+
+          with open("Formula/acai.rb", "w") as formula_file:
+              formula_file.write(formula)
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- Formula/acai.rb; then
+            echo "Formula/acai.rb already matches ${GITHUB_REF_NAME}; nothing to commit."
+            exit 0
+          fi
+          git add Formula/acai.rb
+          git commit -m "Update Formula/acai.rb for ${GITHUB_REF_NAME}"
+          git push origin HEAD:main
+
   release-ios:
     runs-on: macos-26
     timeout-minutes: 60
