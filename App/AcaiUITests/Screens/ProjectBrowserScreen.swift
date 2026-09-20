@@ -79,11 +79,7 @@ final class ProjectBrowserScreen {
 
     // MARK: - Quick Open
 
-    /// Compact width only — regular width pins `quickOpenFieldProxy` atop the sidebar instead.
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
-    /// iPad's pinned search-field proxy atop the sidebar `List` — tapping it opens the same Quick
-    /// Open sheet `quickOpenButton`/⌘K do.
-    var quickOpenFieldProxy: XCUIElement { app.descendants(matching: .any)["sidebar.quickOpenField"] }
 
     /// ⌘K, from a hardware keyboard on iPad. A key event goes to whatever is frontmost, so a system
     /// banner swallows it the way it swallows a tap — the tap helpers clear one first, and typing must too.
@@ -97,25 +93,13 @@ final class ProjectBrowserScreen {
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
         #if os(macOS)
-        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — neither affordance exists there.
+        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — there is no toolbar button there.
         openQuickOpenWithKeyboard(file: file, line: line)
         #else
-        let entryPoint = SnapshotPlatform().usesCompactLayout ? quickOpenButton : quickOpenFieldProxy
-        entryPoint.tap("the Quick Open entry point", until: QuickOpenScreen(app: app).searchField, file: file, line: line)
+        quickOpenButton.tap(
+            "the Quick Open entry point", until: QuickOpenScreen(app: app).searchField, file: file, line: line)
         #endif
     }
-
-    #if !os(macOS)
-    var diagramThemeMenu: XCUIElement { app.buttons["sidebar.diagramThemeMenu"] }
-    var keyboardShortcutsButton: XCUIElement { app.buttons["sidebar.keyboardShortcutsButton"] }
-
-    /// Touch's route to the Keyboard Shortcuts sheet: the sidebar toolbar's Diagram Theme menu.
-    func openKeyboardShortcutsFromMenu(file: StaticString = #filePath, line: UInt = #line) {
-        diagramThemeMenu.tap("the Diagram Theme menu", until: keyboardShortcutsButton, file: file, line: line)
-        keyboardShortcutsButton.tap(
-            "the Keyboard Shortcuts menu item", until: KeyboardShortcutsScreen(app: app).panel, file: file, line: line)
-    }
-    #endif
 
     /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
     func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {

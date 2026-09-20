@@ -27,7 +27,21 @@ against your build.
 
 ## Install
 
-Prebuilt binaries are attached to every [tagged release](https://github.com/pauljohanneskraft/Acai/releases) — each archive contains both `acai` and `acai-mcp`:
+The primary path is Homebrew, tapping this repository directly (there's no separate tap repo):
+
+```sh
+brew tap pauljohanneskraft/acai https://github.com/pauljohanneskraft/Acai
+brew install acai
+```
+
+This installs both `acai` and `acai-mcp` onto your `PATH`, for macOS (arm64 / x86_64) and Linux
+(x86_64 / arm64). `brew upgrade acai` and `brew uninstall acai` work as usual. The formula
+(`Formula/acai.rb`) downloads the matching prebuilt archive for your platform — it never builds
+from source.
+
+Without Homebrew, grab a prebuilt binary directly from every
+[tagged release](https://github.com/pauljohanneskraft/Acai/releases) — each archive contains both
+`acai` and `acai-mcp`:
 
 | Asset | Platform |
 | --- | --- |
@@ -43,7 +57,7 @@ tar -xzf acai-macos-arm64.tar.gz
 sudo mv acai acai-mcp /usr/local/bin/
 ```
 
-From source:
+Contributors build from a checkout instead:
 
 ```sh
 ./Scripts/cli_create.sh     # swift build -c release --arch arm64

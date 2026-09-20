@@ -15,15 +15,9 @@ final class HardwareKeyboardShortcutsJourneyTests: UIJourneyTestCase {
         launchSeeded(analysis: .parsed).openQuickOpenWithKeyboard()
     }
 
+    /// Touch's route to the same panel is Settings, covered by `SettingsAppearanceJourneyTests`.
     func testKeyboardShortcutsPanelOpensWithCommandSlash() {
         launchSeeded().openKeyboardShortcutsWithKeyboard()
         KeyboardShortcutsScreen(app: app).close()
     }
-
-    #if !os(macOS)
-    func testKeyboardShortcutsPanelOpensFromTheSidebarMenu() {
-        launchSeeded().openKeyboardShortcutsFromMenu()
-        KeyboardShortcutsScreen(app: app).close()
-    }
-    #endif
 }
