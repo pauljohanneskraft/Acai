@@ -1,4 +1,5 @@
 import Foundation
+import AcaiCore
 
 struct Codebase: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
