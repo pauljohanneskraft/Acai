@@ -35,17 +35,19 @@ It runs on a folder. Polyglot repo with Swift up front and a C core underneath? 
 
 ### …with the CLI
 
-Grab a prebuilt binary from the [latest release](https://github.com/pauljohanneskraft/Acai/releases) — each archive contains both `acai` and `acai-mcp`, for macOS (arm64 / x86_64) and Linux (x86_64 / arm64):
-
 ```sh
-tar -xzf acai-macos-arm64.tar.gz
-sudo mv acai acai-mcp /usr/local/bin/
+brew tap pauljohanneskraft/acai https://github.com/pauljohanneskraft/Acai
+brew install acai
 
 acai image --source ~/path/to/project --output project.png     # PNG, macOS
 acai diagram --source ~/path/to/project --output project.dot   # DOT, everywhere
 ```
 
-Or build from source: `./Scripts/cli_create.sh && ./Scripts/cli_install.sh`.
+`brew install acai` puts both `acai` and `acai-mcp` on your `PATH`, for macOS (arm64 / x86_64) and
+Linux (x86_64 / arm64). No Homebrew? Grab a prebuilt binary from the
+[latest release](https://github.com/pauljohanneskraft/Acai/releases) instead — see the
+[CLI reference's Install section](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/#Install)
+for every asset and a from-source build.
 
 ### …with the app
 
