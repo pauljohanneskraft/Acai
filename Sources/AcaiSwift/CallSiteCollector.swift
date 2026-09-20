@@ -212,7 +212,7 @@ struct CallSiteCollector {
     func referencedTypes(in node: some SyntaxProtocol) -> [String] {
         let collector = TypeReferenceCollector()
         collector.walk(node)
-        return Array(collector.names)
+        return collector.names.sorted()
     }
 
     // MARK: - Receiver resolution

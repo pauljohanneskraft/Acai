@@ -1,0 +1,780 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 24
+      },
+      "modifiers" : [
+        "static"
+      ],
+      "name" : "product_price",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+        {
+          "location" : {
+            "column" : 79,
+            "filePath" : "shop.c",
+            "line" : 34
+          },
+          "op" : "compound",
+          "targetName" : "index",
+          "value" : {
+            "kind" : "expression",
+            "text" : "index++"
+          }
+        },
+        {
+          "location" : {
+            "column" : 17,
+            "filePath" : "shop.c",
+            "line" : 35
+          },
+          "op" : "compound",
+          "targetName" : "discount",
+          "targetReceiver" : "Product",
+          "value" : {
+            "kind" : "expression",
+            "text" : "product->discount += index"
+          }
+        }
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 28
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "product_classify",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        },
+        {
+          "internalName" : "value",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Category"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 40
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "product_create",
+      "parameters" : [
+        {
+          "internalName" : "name",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "char"
+          }
+        },
+        {
+          "internalName" : "base",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Product"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 23,
+            "filePath" : "shop.c",
+            "line" : 49
+          },
+          "methodName" : "product_price",
+          "receiver" : {
+            "selfDispatch" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 48
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "top_level_discount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    }
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "shop.c"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "c"
+  },
+  "relationships" : [
+
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 4
+          },
+          "name" : "CATEGORY_FOOD"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 5
+          },
+          "name" : "CATEGORY_TOOL"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Category",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 17,
+        "filePath" : "shop.c",
+        "line" : 3
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Category"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "location" : {
+        "column" : 17,
+        "filePath" : "shop.c",
+        "line" : 8
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 9
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "char"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Money",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Money"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 13
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 14
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "level",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Logger"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Product",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.c",
+        "line" : 17
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 18
+          },
+          "modifiers" : [
+            "const"
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "char"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 20
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.c",
+            "line" : 21
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Product"
+    }
+  ]
+}
