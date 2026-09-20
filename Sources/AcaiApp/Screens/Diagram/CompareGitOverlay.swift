@@ -100,7 +100,7 @@ struct CompareGitPanel: View {
         case ref(GitCheckout.Ref)
         /// A pull request: picking this row compares its merge-base against its head, not a single
         /// ref against the live working tree — both sides become explicit historical revisions.
-        case pullRequest(GitHubPullRequest)
+        case changeRequest(ChangeRequest)
         case custom
 
         var id: String {
@@ -109,7 +109,7 @@ struct CompareGitPanel: View {
                 "HEAD"
             case .ref(let ref):
                 ref.id
-            case .pullRequest(let pullRequest):
+            case .changeRequest(let pullRequest):
                 "pr-\(pullRequest.number)"
             case .custom:
                 "custom"
@@ -128,7 +128,7 @@ struct CompareGitPanel: View {
                 } else {
                     Text(.app("View.CompareGitPanel.KindTag"))
                 }
-            case .pullRequest:
+            case .changeRequest:
                 Text(.app("View.CompareGitPanel.KindChangeRequest"))
             }
         }
@@ -139,7 +139,7 @@ struct CompareGitPanel: View {
                 Text(verbatim: "HEAD")
             case .ref(let ref):
                 Text(verbatim: ref.name)
-            case .pullRequest(let pullRequest):
+            case .changeRequest(let pullRequest):
                 pullRequest.pickerAccessibilityLabel
             case .custom:
                 Text(.app("View.CompareGitPanel.Custom"))
@@ -154,7 +154,7 @@ struct CompareGitPanel: View {
                 "HEAD"
             case .ref(let ref):
                 ref.name
-            case .pullRequest(let pullRequest):
+            case .changeRequest(let pullRequest):
                 "pr-\(pullRequest.number)"
             case .custom:
                 "custom"
@@ -166,20 +166,21 @@ struct CompareGitPanel: View {
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?
     @EnvironmentObject var model: ProjectBrowserViewModel
     @State private var availableRefs: [GitCheckout.Ref] = []
-    @State private var pullRequests: [GitHubPullRequest] = []
+    @State private var changeRequests: [ChangeRequest] = []
+    @State private var fullHistoryPhase: AsyncOperationPhase = .idle
     @State private var isEditingCustomRef = false
     @State private var customRefText = ""
 
     private var rows: [RefRow] {
         // Exclude a literal branch/tag named "HEAD" — the dedicated `.head` row above already covers it.
-        [.head] + pullRequests.map(RefRow.pullRequest)
+        [.head] + changeRequests.map(RefRow.changeRequest)
             + availableRefs.filter { $0.name != "HEAD" }.map(RefRow.ref) + [.custom]
     }
 
     private var selectedRow: RefRow? {
         guard let ref = diagram.comparisonGitRef else { return nil }
         if let baseRef = diagram.comparisonBaseRef {
-            return pullRequests.first { $0.headRef == ref && $0.baseRef == baseRef }.map(RefRow.pullRequest)
+            return changeRequests.first { $0.headRef == ref && $0.baseRef == baseRef }.map(RefRow.changeRequest)
         }
         if ref == "HEAD" { return .head }
         if let match = availableRefs.first(where: { $0.name == ref }) { return .ref(match) }
@@ -202,8 +203,8 @@ struct CompareGitPanel: View {
             }
             .listStyle(.plain)
             .task {
-                loadAvailableRefs()
-                await loadPullRequests()
+                await loadAvailableRefs()
+                await loadChangeRequests()
             }
             .frame(minHeight: 150, maxHeight: 260)
             // The nav-bar Clear button lives on a different view instance and can't reach
@@ -263,7 +264,7 @@ struct CompareGitPanel: View {
             Text(verbatim: "HEAD")
         case .ref(let ref):
             Text(verbatim: ref.name)
-        case .pullRequest(let pullRequest):
+        case .changeRequest(let pullRequest):
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: "#\(pullRequest.number) \(pullRequest.title)")
                     .lineLimit(2)
@@ -286,7 +287,7 @@ struct CompareGitPanel: View {
         case .ref(let ref):
             isEditingCustomRef = false
             model.updateComparisonGitRef(diagramID: diagram.id, ref: ref.name)
-        case .pullRequest(let pullRequest):
+        case .changeRequest(let pullRequest):
             isEditingCustomRef = false
             model.selectComparisonPullRequest(
                 diagramID: diagram.id, base: pullRequest.baseRef, head: pullRequest.headRef)
@@ -308,6 +309,14 @@ struct CompareGitPanel: View {
                 .font(.caption)
                 .foregroundStyle(.red)
                 .accessibilityIdentifier("delta.error")
+            if model.comparisonNeedsFullHistory, let codebase = model.codebase(for: diagram.codebaseID),
+               codebase.managedCheckout != nil, let remoteURL = codebase.repository?.remoteURL {
+                FetchFullHistoryButton(
+                    remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "delta.fullHistory"
+                ) {
+                    Task { await model.ensureComparisonLoaded(for: diagram) }
+                }
+            }
         } else if !isFullyLoaded {
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
@@ -392,25 +401,29 @@ struct CompareGitPanel: View {
 
     /// Loads the codebase's branch/tag refs for the list. Best-effort: a failure (e.g. not a git
     /// repository) just leaves the list showing only HEAD/Custom.
-    private func loadAvailableRefs() {
+    private func loadAvailableRefs() async {
         guard let codebase = model.codebase(for: diagram.codebaseID) else { return }
+        let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         let directory = URL(fileURLWithPath: codebase.directoryPath)
-        availableRefs = (try? GitCheckout(directory: directory).refs()) ?? []
+        availableRefs = await Task.detached(priority: .userInitiated) {
+            (try? access.whileAccessible { try GitCheckout(directory: directory).refs() }) ?? []
+        }.value
     }
 
-    /// Only for a GitHub-backed codebase — a plain local folder has no PRs to offer. Best-effort:
-    /// a failure (not signed in, no network) just leaves the PR rows empty.
-    private func loadPullRequests() async {
+    /// Offered when the codebase's remote is on a host whose provider lists change requests —
+    /// whether the app cloned it or it's a local folder tracking it. Best-effort: a failure (not
+    /// signed in, no network) just leaves those rows empty.
+    private func loadChangeRequests() async {
         guard let codebase = model.codebase(for: diagram.codebaseID),
-              let source = codebase.githubSource,
+              case .github(let owner, let repo) = codebase.repository?.host,
               let credential = GitHubTokenStore().load()?.credential
         else { return }
-        pullRequests = (try? await GitHubRepositoryServiceResolver().resolve().pullRequests(
-            credential: credential, owner: source.owner, repo: source.repo)) ?? []
+        changeRequests = (try? await GitHubHostingServiceResolver().resolve().pullRequests(
+            credential: credential, owner: owner, repo: repo)) ?? []
     }
 }
 
-private extension GitHubPullRequest {
+private extension ChangeRequest {
     var pickerDetail: Text {
         Text(.app("View.CompareGitPanel.ChangeRequestDetail \(authorLogin) \(headRef) \(baseRef)"))
     }

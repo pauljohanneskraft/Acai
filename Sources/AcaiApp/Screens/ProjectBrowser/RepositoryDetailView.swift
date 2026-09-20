@@ -11,6 +11,8 @@ struct RepositoryDetailView: View {
     @State private var isFetching = false
     @State private var isLoadingDetails = false
     @State private var errorMessage: String?
+    @State private var isShallow = false
+    @State private var fullHistoryPhase: AsyncOperationPhase = .idle
 
     private var hub: GitRepository {
         GitRepository(remoteURL: remoteURL, storeDirectory: model.store.gitRepositoriesDir)
@@ -49,6 +51,24 @@ struct RepositoryDetailView: View {
                     }
                 } label: {
                     Text(.app("View.RepositoryDetailView.LastFetched"))
+                }
+                if isShallow {
+                    LabeledContent {
+                        Label(
+                            .app("View.CodebaseDetailView.LatestSnapshotOnly"),
+                            systemImage: "clock.badge.exclamationmark"
+                        )
+                        .accessibilityIdentifier("repository.latestSnapshotBadge")
+                    } label: {
+                        Text(.app("View.RepositoryDetailView.History"))
+                    }
+                    HStack {
+                        FetchFullHistoryButton(
+                            remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "repository.fullHistory"
+                        ) {
+                            Task { await loadDetails() }
+                        }
+                    }
                 }
             }
 
@@ -108,9 +128,13 @@ struct RepositoryDetailView: View {
         isLoadingDetails = true
         defer { isLoadingDetails = false }
         let hub = hub
-        let (size, fetchedAt, names) = await Task.detached(priority: .userInitiated) {
-            (hub.onDiskSize, hub.lastFetchedAt, (try? GitWorktree(repositoryDirectory: hub.localPath).list()) ?? [])
+        let (size, fetchedAt, names, shallow) = await Task.detached(priority: .userInitiated) {
+            (
+                hub.onDiskSize, hub.lastFetchedAt,
+                (try? GitWorktree(repositoryDirectory: hub.localPath).list()) ?? [], hub.isShallow
+            )
         }.value
+        isShallow = shallow
         onDiskSize = size
         lastFetchedAt = fetchedAt
         worktreeNames = names.sorted()

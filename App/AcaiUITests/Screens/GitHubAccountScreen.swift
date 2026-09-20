@@ -8,12 +8,10 @@ final class GitHubAccountScreen {
         self.app = app
     }
 
-    /// Matches on label text, not identifier: the segmented "Source" picker's segments surface as a
-    /// different element kind on macOS (`NSSegmentedControl`) vs. iOS.
     func selectGitHubSource(file: StaticString = #filePath, line: UInt = #line) {
         let repositoryPicker = NewCodebaseSheetScreen(app: app).repositoryPicker
-        app.descendants(matching: .any)["From GitHub"].tap(
-            "the From GitHub source", until: repositoryPicker, file: file, line: line
+        NewCodebaseSheetScreen(app: app).sourceSegment("gitHub", label: "GitHub").tap(
+            "the GitHub source", until: repositoryPicker, file: file, line: line
         )
     }
 
