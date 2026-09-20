@@ -41,7 +41,7 @@ public struct PackageDiagramSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(palette.canvasBackground)
+        .background(palette.canvasInk.background)
         .environment(\.diagramPalette, palette)
     }
 

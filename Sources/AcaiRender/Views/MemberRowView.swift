@@ -22,7 +22,7 @@ public struct MemberRowView: View {
                 .font(.system(size: 11, design: .monospaced))
                 .if(item.isStatic) { $0.underline() }
                 .if(item.isAbstract) { $0.italic() }
-                .foregroundColor(palette.secondaryInk)
+                .foregroundColor(palette.canvasInk.secondaryInk)
                 .lineLimit(1)
         } else {
             HStack(spacing: 4) {

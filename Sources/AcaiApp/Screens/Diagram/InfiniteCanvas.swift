@@ -76,7 +76,7 @@ struct InfiniteCanvas<Content: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
-            .background(palette.canvasBackground)
+            .background(palette.canvasInk.background)
             #if os(macOS)
             .gesture(selectionGesture)
             #else
