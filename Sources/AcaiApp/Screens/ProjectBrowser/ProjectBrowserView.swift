@@ -6,7 +6,6 @@ public struct ProjectBrowserView: View {
     // +SidebarRows.swift`'s extensions (separate files, kept there only to stay under this file's
     // own line-count limit) need to read these too.
     @StateObject var model: ProjectBrowserViewModel
-    @StateObject var quickOpenPresenter = QuickOpenPresenter()
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
