@@ -1,0 +1,1217 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 23,
+            "filePath" : "shop.cpp",
+            "line" : 80
+          },
+          "methodName" : "price",
+          "receiver" : {
+            "type" : {
+              "_0" : "Product"
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 79
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "topLevelDiscount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    }
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "shop.cpp"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "cpp"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "shop.Item",
+      "target" : "shop.Priced"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "shop.Product",
+      "target" : "shop.Item"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 7
+          },
+          "name" : "Food"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 8
+          },
+          "name" : "Tool"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Category",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 6
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Category"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 11
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 12
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 13
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::string"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Money",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Money"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 16
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 18
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "std::string"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Logger"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Priced",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 21
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 23
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "deinitializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 24
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "~Priced",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Priced",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Priced"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Item",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "shop.Priced"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 27
+      },
+      "members" : [
+        {
+          "accessLevel" : "protected",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 29
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::string"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 33
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::string"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Item",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Item"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "shop.Item"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.cpp",
+        "line" : 36
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 38
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 39
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 40
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "tags",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "std::string"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::vector"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 43
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 44
+          },
+          "modifiers" : [
+            "static",
+            "const"
+          ],
+          "name" : "defaultCurrency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::string"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "shop.cpp",
+                "line" : 54
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "shop.cpp",
+                "line" : 54
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 53
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "base",
+            "discount"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 57
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "std::string"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 87,
+                "filePath" : "shop.cpp",
+                "line" : 67
+              },
+              "op" : "compound",
+              "targetName" : "index",
+              "value" : {
+                "kind" : "expression",
+                "text" : "++index"
+              }
+            },
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "shop.cpp",
+                "line" : 68
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "discount += index"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "shop.cpp",
+                "line" : 68
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 61
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Category",
+            "Category::Food",
+            "Category::Tool",
+            "Food",
+            "Tool",
+            "discount",
+            "index",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Category"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 74
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "identity",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "namespace" : "shop",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "shop.Product.Builder",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "class",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 46
+          },
+          "members" : [
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.cpp",
+                "line" : 48
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "build",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Product"
+              }
+            }
+          ],
+          "modifiers" : [
+
+          ],
+          "name" : "Builder",
+          "namespace" : "shop.Product",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "shop.Product.Builder"
+        }
+      ],
+      "qualifiedName" : "shop.Product"
+    }
+  ]
+}

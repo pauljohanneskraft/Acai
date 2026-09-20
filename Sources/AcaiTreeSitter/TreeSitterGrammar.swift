@@ -3,7 +3,7 @@ import AcaiCore
 /// `setLanguage` only fails on an ABI mismatch with the linked `SwiftTreeSitter` runtime — a
 /// build/packaging error, not something a malformed source file can trigger. Rather than `try!` and
 /// crash, this degrades to an empty artifact carrying a parse diagnostic.
-public struct TreeSitterGrammar {
+public struct TreeSitterGrammar: Sendable {
     public let language: Language
     public let sourceLanguage: CodeArtifact.SourceLanguage
 

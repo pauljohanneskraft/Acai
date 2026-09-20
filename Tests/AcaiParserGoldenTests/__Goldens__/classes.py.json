@@ -1,0 +1,2549 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 138
+      },
+      "modifiers" : [
+        "async"
+      ],
+      "name" : "fetch_all",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "list"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 8
+          },
+          "methodName" : "TypeVar",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "modifiers" : [
+
+      ],
+      "name" : "<top-level>",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "expression",
+        "text" : "TypeVar(\"T\")"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 8
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "T",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "classes.py"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "python"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "Rectangle",
+      "target" : "Shape"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "Mixed",
+      "target" : "Rectangle"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "Mixed",
+      "target" : "Drawable"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 12
+          },
+          "name" : "RED",
+          "rawValue" : "\"red\""
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 13
+          },
+          "name" : "GREEN",
+          "rawValue" : "\"green\""
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 14
+          },
+          "name" : "BLUE",
+          "rawValue" : "\"blue\""
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Colour",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 11
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Colour",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Colour"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 18
+          },
+          "name" : "LOW",
+          "rawValue" : "1"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 19
+          },
+          "name" : "HIGH",
+          "rawValue" : "2"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Priority",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 17
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Priority",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Priority"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+        "dataclass"
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 23
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 24
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "float"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "stringLiteral",
+            "text" : "\"EUR\""
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "classes.py",
+                "line" : 28
+              },
+              "methodName" : "Money",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 53,
+                "filePath" : "classes.py",
+                "line" : 28
+              },
+              "name" : "amount"
+            },
+            {
+              "location" : {
+                "column" : 87,
+                "filePath" : "classes.py",
+                "line" : 28
+              },
+              "name" : "currency"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 27
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "doubled",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Money",
+            "amount",
+            "currency",
+            "self"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Money"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Money",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Money"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Shape",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 31
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "abstractmethod"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 34
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "area",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "float"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "abstractmethod"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 38
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "perimeter",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "float"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Shape",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Shape"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Rectangle",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Shape"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 42
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "classes.py",
+            "line" : 45
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "width",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "classes.py",
+            "line" : 46
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "height",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "protected",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "classes.py",
+            "line" : 47
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "_cached_area",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 45
+              },
+              "op" : "assign",
+              "targetName" : "width",
+              "value" : {
+                "kind" : "expression",
+                "text" : "width"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 46
+              },
+              "op" : "assign",
+              "targetName" : "height",
+              "value" : {
+                "kind" : "expression",
+                "text" : "height"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 47
+              },
+              "op" : "assign",
+              "targetName" : "_cached_area",
+              "value" : {
+                "kind" : "nilLiteral",
+                "text" : "None"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "classes.py",
+                "line" : 45
+              },
+              "name" : "width"
+            },
+            {
+              "location" : {
+                "column" : 43,
+                "filePath" : "classes.py",
+                "line" : 45
+              },
+              "name" : "width"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "classes.py",
+                "line" : 46
+              },
+              "name" : "height"
+            },
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "classes.py",
+                "line" : 46
+              },
+              "name" : "height"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "classes.py",
+                "line" : 47
+              },
+              "name" : "_cached_area"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 44
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__init__",
+          "parameters" : [
+            {
+              "internalName" : "width",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "float"
+              }
+            },
+            {
+              "internalName" : "height",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "float"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "_cached_area",
+            "height",
+            "self",
+            "width"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "classes.py",
+                "line" : 50
+              },
+              "name" : "width"
+            },
+            {
+              "location" : {
+                "column" : 67,
+                "filePath" : "classes.py",
+                "line" : 50
+              },
+              "name" : "height"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 49
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "area",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "height",
+            "self",
+            "width"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "float"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 51,
+                "filePath" : "classes.py",
+                "line" : 53
+              },
+              "name" : "width"
+            },
+            {
+              "location" : {
+                "column" : 77,
+                "filePath" : "classes.py",
+                "line" : 53
+              },
+              "name" : "height"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 52
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "perimeter",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "height",
+            "self",
+            "width"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "float"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "property"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "classes.py",
+                "line" : 57
+              },
+              "name" : "width"
+            },
+            {
+              "location" : {
+                "column" : 69,
+                "filePath" : "classes.py",
+                "line" : 57
+              },
+              "name" : "height"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 56
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "is_square",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "height",
+            "self",
+            "width"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "bool"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "staticmethod"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "classes.py",
+                "line" : 61
+              },
+              "methodName" : "Rectangle",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 60
+          },
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "unit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Rectangle"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Rectangle"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "classmethod"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "classes.py",
+                "line" : 65
+              },
+              "methodName" : "cls",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 64
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "square",
+          "parameters" : [
+            {
+              "internalName" : "side",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "float"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "cls",
+            "side"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Rectangle"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Rectangle",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Rectangle"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "T"
+        }
+      ],
+      "id" : "Box",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 68
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "classes.py",
+            "line" : 71
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "value",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 71
+              },
+              "op" : "assign",
+              "targetName" : "value",
+              "value" : {
+                "kind" : "expression",
+                "text" : "value"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "classes.py",
+                "line" : 71
+              },
+              "name" : "value"
+            },
+            {
+              "location" : {
+                "column" : 43,
+                "filePath" : "classes.py",
+                "line" : 71
+              },
+              "name" : "value"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 70
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__init__",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "self",
+            "value"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "classes.py",
+                "line" : 74
+              },
+              "name" : "value"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 73
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "unwrap",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "self",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Box",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Box"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Drawable",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "protocol",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 77
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 79
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "draw",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Drawable",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Drawable"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Outer",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 83
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 95
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "outer_method",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Outer",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "Outer.Inner",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "class",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 85
+          },
+          "members" : [
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "cyclomaticComplexity" : 1,
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 92
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "inner_method",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            }
+          ],
+          "modifiers" : [
+
+          ],
+          "name" : "Inner",
+          "nestedTypes" : [
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "associatedTypes" : [
+
+              ],
+              "enumCases" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "id" : "Outer.Inner.Innermost",
+              "inheritedTypes" : [
+
+              ],
+              "kind" : "class",
+              "location" : {
+                "column" : 17,
+                "filePath" : "classes.py",
+                "line" : 87
+              },
+              "members" : [
+                {
+                  "accessLevel" : "public",
+                  "annotations" : [
+
+                  ],
+                  "assignments" : [
+
+                  ],
+                  "callSites" : [
+
+                  ],
+                  "cyclomaticComplexity" : 1,
+                  "fieldReads" : [
+
+                  ],
+                  "genericParameters" : [
+
+                  ],
+                  "isComputed" : false,
+                  "kind" : "method",
+                  "location" : {
+                    "column" : 25,
+                    "filePath" : "classes.py",
+                    "line" : 89
+                  },
+                  "modifiers" : [
+
+                  ],
+                  "name" : "depth",
+                  "parameters" : [
+
+                  ],
+                  "referencedTypeNames" : [
+
+                  ],
+                  "type" : {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "int"
+                  }
+                }
+              ],
+              "modifiers" : [
+
+              ],
+              "name" : "Innermost",
+              "nestedTypes" : [
+
+              ],
+              "qualifiedName" : "Outer.Inner.Innermost"
+            }
+          ],
+          "qualifiedName" : "Outer.Inner"
+        }
+      ],
+      "qualifiedName" : "Outer"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Visibility",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 99
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 101
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "public_method",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "protected",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 104
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "_protected_method",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 107
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__private_method",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 110
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__dunder__",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Visibility",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Visibility"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Mixed",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Rectangle"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Drawable"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 114
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 116
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "draw",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Mixed",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Mixed"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "ParameterShapes",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 120
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 122
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "every_shape",
+          "parameters" : [
+            {
+              "internalName" : "plain",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            },
+            {
+              "internalName" : "typed",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "defaultValue" : "\"x\"",
+              "internalName" : "defaulted",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            },
+            {
+              "internalName" : "args",
+              "isVariadic" : true,
+              "modifiers" : [
+
+              ]
+            },
+            {
+              "internalName" : "kwargs",
+              "isVariadic" : true,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 125
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "typed_splats",
+          "parameters" : [
+            {
+              "internalName" : "args",
+              "isVariadic" : true,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            },
+            {
+              "internalName" : "kwargs",
+              "isVariadic" : true,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 128
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "keyword_only",
+          "parameters" : [
+            {
+              "internalName" : "first",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "defaultValue" : "2",
+              "internalName" : "second",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "ParameterShapes",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "ParameterShapes"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "U"
+        }
+      ],
+      "id" : "Modern",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 132
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 134
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "identity",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "U"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "U"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Modern",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Modern"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "AsyncService",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "classes.py",
+        "line" : 142
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 144
+          },
+          "modifiers" : [
+            "async"
+          ],
+          "name" : "fetch",
+          "parameters" : [
+            {
+              "internalName" : "key",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "key"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "classes.py",
+            "line" : 147
+          },
+          "modifiers" : [
+            "async"
+          ],
+          "name" : "__aenter__",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "self"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "AsyncService"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "AsyncService",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "AsyncService"
+    }
+  ]
+}
