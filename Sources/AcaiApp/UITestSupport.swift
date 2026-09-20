@@ -104,25 +104,26 @@ struct UITestFixtureResolver {
 
     static let dynamicTypeSizeVariable = "ACAI_UITEST_DYNAMIC_TYPE_SIZE"
 
+    private static let dynamicTypeSizesByName: [String: DynamicTypeSize] = [
+        "xSmall": .xSmall,
+        "small": .small,
+        "medium": .medium,
+        "large": .large,
+        "xLarge": .xLarge,
+        "xxLarge": .xxLarge,
+        "xxxLarge": .xxxLarge,
+        "accessibility1": .accessibility1,
+        "accessibility2": .accessibility2,
+        "accessibility3": .accessibility3,
+        "accessibility4": .accessibility4,
+        "accessibility5": .accessibility5
+    ]
+
     /// Forces a specific Dynamic Type size, so a journey can prove layouts hold at the largest
     /// accessibility sizes deterministically, rather than depending on the runner's own text-size
     /// setting.
     func resolveDynamicTypeSize() -> DynamicTypeSize? {
-        switch environment[Self.dynamicTypeSizeVariable] {
-        case "xSmall": return .xSmall
-        case "small": return .small
-        case "medium": return .medium
-        case "large": return .large
-        case "xLarge": return .xLarge
-        case "xxLarge": return .xxLarge
-        case "xxxLarge": return .xxxLarge
-        case "accessibility1": return .accessibility1
-        case "accessibility2": return .accessibility2
-        case "accessibility3": return .accessibility3
-        case "accessibility4": return .accessibility4
-        case "accessibility5": return .accessibility5
-        default: return nil
-        }
+        environment[Self.dynamicTypeSizeVariable].flatMap { Self.dynamicTypeSizesByName[$0] }
     }
 
     private func url(_ variable: String) -> URL? {
