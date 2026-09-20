@@ -1,0 +1,1453 @@
+{
+  "freestandingFunctions" : [
+
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "Shop.java"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "java"
+  },
+  "relationships" : [
+    {
+      "kind" : "conformance",
+      "source" : "com.example.shop.Item",
+      "target" : "com.example.shop.Priced"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "com.example.shop.Product",
+      "target" : "com.example.shop.Item"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "packagePrivate",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Priced",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 6
+      },
+      "members" : [
+        {
+          "accessLevel" : "packagePrivate",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 7
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Priced",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Priced"
+    },
+    {
+      "accessLevel" : "packagePrivate",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 11
+          },
+          "name" : "FOOD"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 12
+          },
+          "name" : "TOOL"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Category",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 10
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "Shop.java",
+                "line" : 15
+              },
+              "methodName" : "name",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 14
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "label",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name",
+            "toLowerCase"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Category"
+    },
+    {
+      "accessLevel" : "packagePrivate",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "record",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 19
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 1,
+            "filePath" : "Shop.java",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 1,
+            "filePath" : "Shop.java",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Money",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Money"
+    },
+    {
+      "accessLevel" : "packagePrivate",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Item",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "com.example.shop.Priced"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 22
+      },
+      "members" : [
+        {
+          "accessLevel" : "protected",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 24
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "packagePrivate",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 27
+              },
+              "op" : "assign",
+              "targetName" : "name",
+              "value" : {
+                "kind" : "expression",
+                "text" : "name"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "Shop.java",
+                "line" : 27
+              },
+              "name" : "name"
+            },
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "Shop.java",
+                "line" : 27
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 26
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Item",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 30
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "Shop.java",
+                "line" : 33
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 32
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Item",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Item"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "com.example.shop.Item"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 37
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "new Logger()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 39
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 40
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 41
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "new ArrayList<>()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 42
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "tags",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "ArrayList"
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "List"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 54
+              },
+              "op" : "assign",
+              "targetName" : "base",
+              "value" : {
+                "kind" : "expression",
+                "text" : "base"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "Shop.java",
+                "line" : 54
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "Shop.java",
+                "line" : 54
+              },
+              "name" : "base"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 52
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Product",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "double"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "base",
+            "name"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@Override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 59
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "Shop.java",
+                "line" : 59
+              },
+              "name" : "audit"
+            },
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "Shop.java",
+                "line" : 60
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 65,
+                "filePath" : "Shop.java",
+                "line" : 60
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 57
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "audit",
+            "base",
+            "discount",
+            "log"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@Override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 66
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 63
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger",
+            "local",
+            "log",
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 87,
+                "filePath" : "Shop.java",
+                "line" : 76
+              },
+              "op" : "compound",
+              "targetName" : "index",
+              "value" : {
+                "kind" : "expression",
+                "text" : "index++"
+              }
+            },
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "Shop.java",
+                "line" : 77
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "this.discount += index"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 35,
+                "filePath" : "Shop.java",
+                "line" : 77
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 70
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Category",
+            "FOOD",
+            "TOOL",
+            "discount",
+            "index",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Category"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+            {
+              "constraints" : [
+
+              ],
+              "name" : "T"
+            }
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 82
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "identity",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "com.example.shop.Product.Builder",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "class",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 44
+          },
+          "members" : [
+            {
+              "accessLevel" : "private",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "initialValue" : {
+                "kind" : "stringLiteral",
+                "text" : "\"\""
+              },
+              "isComputed" : false,
+              "kind" : "property",
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 45
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "name",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "cyclomaticComplexity" : 1,
+              "fieldReads" : [
+                {
+                  "location" : {
+                    "column" : 73,
+                    "filePath" : "Shop.java",
+                    "line" : 48
+                  },
+                  "name" : "name"
+                }
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 17,
+                "filePath" : "Shop.java",
+                "line" : 47
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "build",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+                "Product",
+                "name"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Product"
+              }
+            }
+          ],
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "Builder",
+          "namespace" : "com.example.shop.Product",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "com.example.shop.Product.Builder"
+        }
+      ],
+      "qualifiedName" : "com.example.shop.Product"
+    },
+    {
+      "accessLevel" : "packagePrivate",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.java",
+        "line" : 87
+      },
+      "members" : [
+        {
+          "accessLevel" : "packagePrivate",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "Shop.java",
+            "line" : 88
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Logger"
+    }
+  ]
+}

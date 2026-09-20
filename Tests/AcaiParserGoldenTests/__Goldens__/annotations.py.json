@@ -1,0 +1,1818 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "annotations.py",
+        "line" : 58
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "generic_function",
+      "parameters" : [
+        {
+          "internalName" : "value",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "V"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "value"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "V"
+      }
+    }
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "annotations.py"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "python"
+  },
+  "relationships" : [
+
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Engine",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "annotations.py",
+        "line" : 6
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 8
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "start",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Engine",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Engine"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Wheel",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "annotations.py",
+        "line" : 12
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Wheel",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Wheel"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Annotations",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "annotations.py",
+        "line" : 16
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "{}"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 18
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "registry",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Dict"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "10"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "limit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 22
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "engine",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Engine"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 23
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "spare",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Wheel"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 24
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "wheels",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Wheel"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "List"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "lookup",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Wheel"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Dict"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 26
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "pair",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Wheel"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Tuple"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 27
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "tags",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Set"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 28
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "anything",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Any"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 22
+              },
+              "op" : "assign",
+              "targetName" : "engine",
+              "value" : {
+                "kind" : "expression",
+                "text" : "Engine()"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 23
+              },
+              "op" : "assign",
+              "targetName" : "spare",
+              "value" : {
+                "kind" : "nilLiteral",
+                "text" : "None"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 24
+              },
+              "op" : "assign",
+              "targetName" : "wheels",
+              "value" : {
+                "kind" : "expression",
+                "text" : "[]"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 25
+              },
+              "op" : "assign",
+              "targetName" : "lookup",
+              "value" : {
+                "kind" : "expression",
+                "text" : "{}"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 26
+              },
+              "op" : "assign",
+              "targetName" : "pair",
+              "value" : {
+                "kind" : "expression",
+                "text" : "(Engine(), Wheel())"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 27
+              },
+              "op" : "assign",
+              "targetName" : "tags",
+              "value" : {
+                "kind" : "expression",
+                "text" : "set()"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 28
+              },
+              "op" : "assign",
+              "targetName" : "anything",
+              "value" : {
+                "kind" : "nilLiteral",
+                "text" : "None"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 61,
+                "filePath" : "annotations.py",
+                "line" : 22
+              },
+              "methodName" : "Engine",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 87,
+                "filePath" : "annotations.py",
+                "line" : 26
+              },
+              "methodName" : "Engine",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 107,
+                "filePath" : "annotations.py",
+                "line" : 26
+              },
+              "methodName" : "Wheel",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 61,
+                "filePath" : "annotations.py",
+                "line" : 27
+              },
+              "methodName" : "set",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 22
+              },
+              "name" : "engine"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 23
+              },
+              "name" : "spare"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 24
+              },
+              "name" : "wheels"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 25
+              },
+              "name" : "lookup"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 26
+              },
+              "name" : "pair"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 27
+              },
+              "name" : "tags"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 28
+              },
+              "name" : "anything"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 21
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__init__",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Any",
+            "Dict",
+            "Engine",
+            "List",
+            "Optional",
+            "Set",
+            "Tuple",
+            "Wheel",
+            "anything",
+            "engine",
+            "lookup",
+            "pair",
+            "self",
+            "set",
+            "spare",
+            "str",
+            "tags",
+            "wheels"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 30
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "optional_old",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : true,
+                "name" : "Engine"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Wheel"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 33
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "union_old",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "Wheel"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 36
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "union_new",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "Wheel"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 39
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "nested_optional",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : true,
+                    "name" : "Engine"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : true,
+                "name" : "List"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 42
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "annotated",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "annotations.py",
+                "line" : 46
+              },
+              "methodName" : "Wheel",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 45
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "forward",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Engine"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Wheel"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Wheel"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 48
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "deeply_nested",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "str"
+                  },
+                  {
+                    "genericArguments" : [
+                      {
+                        "genericArguments" : [
+                          {
+                            "genericArguments" : [
+
+                            ],
+                            "isArray" : false,
+                            "isOptional" : false,
+                            "name" : "Engine"
+                          },
+                          {
+                            "genericArguments" : [
+
+                            ],
+                            "isArray" : false,
+                            "isOptional" : true,
+                            "name" : "Wheel"
+                          }
+                        ],
+                        "isArray" : false,
+                        "isOptional" : false,
+                        "name" : "Tuple"
+                      }
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "List"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Dict"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 51
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "no_annotation",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "value"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 54
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "primitives",
+          "parameters" : [
+            {
+              "internalName" : "a",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "internalName" : "b",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "float"
+              }
+            },
+            {
+              "internalName" : "c",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            },
+            {
+              "internalName" : "d",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "bool"
+              }
+            },
+            {
+              "internalName" : "e",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "bytes"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "None"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Annotations",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Annotations"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "K"
+        },
+        {
+          "constraints" : [
+
+          ],
+          "name" : "V"
+        }
+      ],
+      "id" : "Container",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "annotations.py",
+        "line" : 62
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "annotations.py",
+            "line" : 65
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "items",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "K"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "V"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Dict"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "annotations.py",
+                "line" : 65
+              },
+              "op" : "assign",
+              "targetName" : "items",
+              "value" : {
+                "kind" : "expression",
+                "text" : "{}"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "annotations.py",
+                "line" : 65
+              },
+              "name" : "items"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 64
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__init__",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Dict",
+            "K",
+            "V",
+            "items",
+            "self"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "annotations.py",
+                "line" : 68
+              },
+              "methodName" : "get",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Dict"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "annotations.py",
+                "line" : 68
+              },
+              "name" : "items"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "annotations.py",
+            "line" : 67
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "get",
+          "parameters" : [
+            {
+              "internalName" : "key",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "K"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "get",
+            "items",
+            "key",
+            "self"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "V"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Container",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Container"
+    }
+  ]
+}
