@@ -13,4 +13,7 @@ final class SettingsScreen {
     /// macOS's `Settings` scene pane.
     var accountsPane: XCUIElement { app.descendants(matching: .any)["settings.accountsPane"] }
     var doneButton: XCUIElement { app.buttons["settings.doneButton"] }
+    var diagramThemePicker: XCUIElement { app.descendants(matching: .any)["settings.diagramThemePicker"] }
+    /// iPad/iPhone only — macOS opens the shortcut reference from its menu bar.
+    var keyboardShortcutsButton: XCUIElement { app.buttons["settings.keyboardShortcutsButton"] }
 }
