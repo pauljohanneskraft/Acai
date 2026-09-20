@@ -1,0 +1,699 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.js",
+        "line" : 47
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "Legacy",
+      "parameters" : [
+        {
+          "internalName" : "name",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ]
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.js",
+        "line" : 55
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "topLevelDiscount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ]
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "\"EUR\""
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 13,
+        "filePath" : "shop.js",
+        "line" : 59
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "DEFAULT_CURRENCY",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "shop.js"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "javaScript"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "Product",
+      "target" : "Item"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.js",
+        "line" : 1
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 2
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Logger"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Item",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.js",
+        "line" : 5
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.js",
+                "line" : 7
+              },
+              "op" : "assign",
+              "targetName" : "name",
+              "value" : {
+                "kind" : "expression",
+                "text" : "name"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 6
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "constructor",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Item",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Item"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Item"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.js",
+        "line" : 15
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.js",
+                "line" : 18
+              },
+              "op" : "assign",
+              "targetName" : "audit",
+              "value" : {
+                "kind" : "expression",
+                "text" : "new Logger()"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.js",
+                "line" : 19
+              },
+              "op" : "assign",
+              "targetName" : "base",
+              "value" : {
+                "kind" : "expression",
+                "text" : "base"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.js",
+                "line" : 20
+              },
+              "op" : "assign",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "numericLiteral",
+                "text" : "0"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 16
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "constructor",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            },
+            {
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "Logger",
+            "audit",
+            "base",
+            "discount",
+            "name"
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 23
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "audit",
+            "base",
+            "discount",
+            "log"
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.js",
+                "line" : 30
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 28
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger",
+            "local",
+            "log",
+            "name"
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 87,
+                "filePath" : "shop.js",
+                "line" : 40
+              },
+              "op" : "compound",
+              "targetName" : "index",
+              "value" : {
+                "kind" : "expression",
+                "text" : "index++"
+              }
+            },
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "shop.js",
+                "line" : 41
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "this.discount += index"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.js",
+            "line" : 34
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "discount",
+            "index",
+            "value"
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Product"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Legacy",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Legacy",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Legacy"
+    }
+  ]
+}

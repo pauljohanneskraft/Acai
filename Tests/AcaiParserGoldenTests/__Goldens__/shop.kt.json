@@ -1,0 +1,1437 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 99,
+            "filePath" : "shop.kt",
+            "line" : 60
+          },
+          "methodName" : "price",
+          "receiver" : {
+            "type" : {
+              "_0" : "Product"
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 60
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "topLevelDiscount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "price",
+        "product"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Double"
+      }
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "\"EUR\""
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 62
+      },
+      "modifiers" : [
+        "readonly"
+      ],
+      "name" : "DEFAULT_CURRENCY",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "String"
+      }
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "shop.kt"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "kotlin"
+  },
+  "relationships" : [
+    {
+      "kind" : "conformance",
+      "source" : "com.example.shop.Item",
+      "target" : "com.example.shop.Priced"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "com.example.shop.Product",
+      "target" : "com.example.shop.Item"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Priced",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Priced",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Priced"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Item",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "com.example.shop.Priced"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 7
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 8
+          },
+          "modifiers" : [
+            "abstract",
+            "override"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 69,
+                "filePath" : "shop.kt",
+                "line" : 9
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 9
+          },
+          "modifiers" : [
+            "open"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Item",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Item"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 13
+          },
+          "name" : "FOOD",
+          "rawValue" : "\"food\""
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 14
+          },
+          "name" : "TOOL",
+          "rawValue" : "\"tool\""
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Category",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 12
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Category"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 17
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+            {
+              "internalName" : "amount",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Double"
+              }
+            },
+            {
+              "defaultValue" : "\"EUR\"",
+              "internalName" : "currency",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "data"
+      ],
+      "name" : "Money",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Money"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "com.example.shop.Item"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 19
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Double"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0.0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 21
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Logger()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 22
+          },
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 34
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 34
+              },
+              "name" : "audit"
+            },
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "shop.kt",
+                "line" : 35
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "shop.kt",
+                "line" : 35
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 33
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "audit",
+            "base",
+            "discount",
+            "log"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 53,
+                "filePath" : "shop.kt",
+                "line" : 39
+              },
+              "methodName" : "price",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 38
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Money",
+            "amount",
+            "money",
+            "name",
+            "price"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "shop.kt",
+                "line" : 50
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "discount += index"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "shop.kt",
+                "line" : 50
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 43
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Category",
+            "FOOD",
+            "TOOL",
+            "discount",
+            "index",
+            "until",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Category"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "com.example.shop.Product.Builder",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "class",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 24
+          },
+          "members" : [
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "initialValue" : {
+                "kind" : "stringLiteral",
+                "text" : "\"\""
+              },
+              "isComputed" : false,
+              "kind" : "property",
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 25
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "name",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "cyclomaticComplexity" : 1,
+              "fieldReads" : [
+                {
+                  "location" : {
+                    "column" : 79,
+                    "filePath" : "shop.kt",
+                    "line" : 26
+                  },
+                  "name" : "name"
+                }
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 26
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "build",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+                "Product",
+                "name"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Product"
+              }
+            }
+          ],
+          "modifiers" : [
+
+          ],
+          "name" : "Builder",
+          "namespace" : "com.example.shop.Product",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "com.example.shop.Product.Builder"
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "com.example.shop.Product.Companion",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "object",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 29
+          },
+          "members" : [
+            {
+              "accessLevel" : "public",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "cyclomaticComplexity" : 1,
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 30
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "empty",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+                "Product"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Product"
+              }
+            }
+          ],
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "Companion",
+          "namespace" : "com.example.shop.Product",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "com.example.shop.Product.Companion"
+        }
+      ],
+      "qualifiedName" : "com.example.shop.Product"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 56
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 57
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Logger"
+    }
+  ]
+}

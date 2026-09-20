@@ -20,12 +20,7 @@ extension KotlinExtractor {
         defer { currentNamespace = savedNamespace }
 
         // Pre-scan: build property → type map for call-site resolution.
-        var knownProperties: [String: String] = [:]
-        for member in typeDecl.members where member.kind == .property {
-            if let typeName = member.type?.name {
-                knownProperties[member.name] = typeName
-            }
-        }
+        var knownProperties = MemberIndex(members: typeDecl.members).propertyTypes
         for child in node.namedChildren()
             where child.nodeType == "property_declaration" {
             let prop = extractPropertyDeclaration(child)
@@ -37,16 +32,16 @@ extension KotlinExtractor {
 
         // Pre-scan: build methodName → returnType map (unambiguous overloads only), so a same-type
         // method call, including one declared later in the type, can seed a local's type.
-        var returnTypesByName: [String: Set<String>] = [:]
+        var returnTypes = UnambiguousTypeNames()
         for child in node.namedChildren() where child.nodeType == "function_declaration" {
             guard let nameNode = child.firstChild(withType: "simple_identifier"),
                   let returnTypeNode = findReturnType(in: child)
             else { continue }
             let returnType = extractTypeReferenceFromAny(returnTypeNode)
             guard returnType.name != "Unit" else { continue }
-            returnTypesByName[text(nameNode), default: []].insert(returnType.name)
+            returnTypes.record(returnType.name, for: text(nameNode))
         }
-        let knownMethodReturnTypes = returnTypesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+        let knownMethodReturnTypes = returnTypes.resolved
 
         let scope = CallSiteScope(
             knownProperties: knownProperties,
