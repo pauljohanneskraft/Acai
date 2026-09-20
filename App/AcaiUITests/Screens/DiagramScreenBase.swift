@@ -99,6 +99,19 @@ class DiagramScreenBase {
         return freeform
     }
 
+    #if os(iOS)
+    /// UIKit's own identifier: one set on the activity controller's view isn't reliably in the tree.
+    var shareSheet: XCUIElement { app.otherElements["ActivityListView"] }
+
+    /// Taps exactly once and waits for the system share sheet the export hands its file to.
+    @discardableResult
+    func exportImage(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        revealInSettings(exportImageButton, "the Export Image button", file: file, line: line)
+        exportImageButton.tapWhenReady("Export Image", file: file, line: line)
+        return shareSheet.waitOrFail("the share sheet for the exported image", file: file, line: line)
+    }
+    #endif
+
     /// Falls back to iOS's "More" toolbar overflow item when the toolbar has collapsed the button into
     /// it — macOS's `NSToolbar` never collapses into overflow, so that branch is iOS/iPadOS-only. One
     /// query matching either element waits for whichever the toolbar rendered.
