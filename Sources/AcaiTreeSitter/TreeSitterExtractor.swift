@@ -3,6 +3,21 @@ import AcaiCore
 
 // MARK: - TreeSitterExtracting
 
+/// The monolithic extractor shape the Tree-sitter plugins were originally written against: one
+/// type that owns all of a file's declaration state *and* reaches every shared algorithm through
+/// this conformance.
+///
+/// That coupling is the thing being removed. A shared algorithm reachable only by conforming to
+/// this protocol can only ever be used by the one type that is the extractor, which is why
+/// splitting a language into small collaborators never produced anything reusable: the
+/// collaborators could not call the shared code. Every member below now forwards to a value type
+/// that owns the algorithm and can be handed to anyone — ``DeclarationBuilder``, ``MemberIndex``,
+/// ``CallSiteResolver``, ``AssignmentResolver``, ``TypeNamePrepass``,
+/// ``ParseDiagnosticsCollector``.
+///
+/// A migrated plugin holds a ``DeclarationBuilder`` and its collaborators as properties and does
+/// not conform to this at all (see `AcaiPython`). This protocol exists only so the plugins that
+/// have not been migrated yet keep compiling unchanged; it is deleted with the last conformer.
 public protocol TreeSitterExtracting {
 
     // MARK: - Required State
@@ -11,8 +26,8 @@ public protocol TreeSitterExtracting {
 
     var types: [TypeDeclaration] { get set }
 
-    /// Collected in one pre-pass before bodies are extracted so call-site resolution sees the complete
-    /// set, including forward-declared siblings. Populate via
+    /// Collected in one pre-pass before bodies are extracted so call-site resolution sees the
+    /// complete set, including forward-declared siblings. Populate via
     /// ``collectDeclaredTypeNames(from:declarationNodeTypes:name:)``.
     var declaredTypeNames: Set<String> { get set }
 
@@ -37,21 +52,11 @@ extension TreeSitterExtracting {
     // MARK: Convenience Helpers
 
     public func text(_ node: Node) -> String {
-        let nsStr = context.source as NSString
-        let nsRange = node.range
-        guard nsRange.location != NSNotFound,
-              nsRange.location + nsRange.length <= nsStr.length
-        else { return "" }
-        return nsStr.substring(with: nsRange)
+        node.text(in: context)
     }
 
     public func loc(_ node: Node) -> SourceLocation {
-        let point = node.pointRange.lowerBound
-        return SourceLocation(
-            filePath: context.fileName,
-            line: Int(point.row) + 1,
-            column: Int(point.column) + 1
-        )
+        node.location(in: context)
     }
 
     public func qualifiedName(_ name: String) -> String {
@@ -77,16 +82,7 @@ extension TreeSitterExtracting {
     public func buildArtifact(
         language: CodeArtifact.SourceLanguage
     ) -> CodeArtifact {
-        CodeArtifact(
-            metadata: .init(
-                sourceLanguage: language,
-                filePaths: [context.fileName]
-            ),
-            types: types,
-            relationships: relationships,
-            freestandingFunctions: freestandingFunctions,
-            globalVariables: globalVariables
-        )
+        declarationBuilder.artifact(language: language, filePath: context.fileName)
     }
 
     /// Adds a leading `@` when the grammar's token omits it; grammars that instead include the `@`
@@ -97,16 +93,17 @@ extension TreeSitterExtracting {
 
     // MARK: Supertype Relationships
 
-    /// The edges' `target` is each supertype's simple name; `resolveRelationshipNames()` later maps it
-    /// to a qualified id.
+    /// The edges' `target` is each supertype's simple name; ``resolveRelationshipNames()`` later
+    /// maps it to a qualified id.
     public mutating func recordSupertypeRelationships(
         from owner: String,
         to supertypes: [TypeReference],
         kind: Relationship.Kind
     ) {
-        for supertype in supertypes {
-            relationships.append(Relationship(kind: kind, source: owner, target: supertype.name))
-        }
+        // Appends directly rather than through `DeclarationBuilder`: this runs once per declared
+        // type, and round-tripping the arrays through a temporary builder would copy them each
+        // time. Both paths build the edge with the same `TypeReference.relationship`.
+        relationships.append(contentsOf: supertypes.map { $0.relationship(kind: kind, source: owner) })
     }
 
     // MARK: Relationship Resolution
@@ -114,28 +111,23 @@ extension TreeSitterExtracting {
     /// Supertype names are taken verbatim from source text (e.g. `Animal`) while type IDs are fully
     /// qualified (e.g. `com.example.Animal`); this maps short names to qualified IDs.
     public mutating func resolveRelationshipNames() {
-        // Delegates to `TypeIdentityResolver` so per-file resolution uses the same name→id mapping
-        // and ambiguity rule as the agnostic enrichment pass.
-        let resolver = TypeIdentityResolver(types: types)
+        var builder = declarationBuilder
+        builder.resolveRelationshipNames()
+        relationships = builder.relationships
+        types = builder.types
+    }
 
-        relationships = relationships.map { rel in
-            var resolved = rel
-            resolved.source = resolver.canonicalName(for: rel.source)
-            resolved.target = resolver.canonicalName(for: rel.target)
-            return resolved
-        }
-
-        // Also resolve inherited-type names for consistent naming in the codebase detail view.
-        func resolveInheritedTypes(in types: inout [TypeDeclaration]) {
-            for index in types.indices {
-                for refIndex in types[index].inheritedTypes.indices {
-                    let name = types[index].inheritedTypes[refIndex].name
-                    types[index].inheritedTypes[refIndex].name = resolver.canonicalName(for: name)
-                }
-                resolveInheritedTypes(in: &types[index].nestedTypes)
-            }
-        }
-        resolveInheritedTypes(in: &types)
+    /// The subset of this extractor's state ``DeclarationBuilder`` owns, so the forwarders above
+    /// share its single implementation. A migrated plugin stores the builder instead of rebuilding
+    /// one here.
+    private var declarationBuilder: DeclarationBuilder {
+        var builder = DeclarationBuilder()
+        builder.types = types
+        builder.relationships = relationships
+        builder.freestandingFunctions = freestandingFunctions
+        builder.globalVariables = globalVariables
+        builder.declaredTypeNames = declaredTypeNames
+        return builder
     }
 
     // MARK: Property Map
@@ -143,13 +135,7 @@ extension TreeSitterExtracting {
     public func buildPropertyMap(
         from members: [Member]
     ) -> [String: String] {
-        var map: [String: String] = [:]
-        for member in members where member.kind == .property {
-            if let typeName = member.type?.name {
-                map[member.name] = typeName
-            }
-        }
-        return map
+        MemberIndex(members: members).propertyTypes
     }
 
     /// Unambiguous overloads only, so a same-type method call can seed a local's type like a direct
@@ -157,13 +143,7 @@ extension TreeSitterExtracting {
     /// resolving any body (CFamily, Dart) — one that resolves bodies inline needs its own per-type
     /// pre-pass instead, since a forward-declared method wouldn't yet be in `members` here.
     public func methodReturnTypeMap(from members: [Member]) -> [String: String] {
-        var typesByName: [String: Set<String>] = [:]
-        for member in members where member.kind == .method {
-            if let typeName = member.type?.name {
-                typesByName[member.name, default: []].insert(typeName)
-            }
-        }
-        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+        MemberIndex(members: members).methodReturnTypes
     }
 
     /// Declarations whose name can't be read via `name` are skipped.
@@ -172,21 +152,11 @@ extension TreeSitterExtracting {
         declarationNodeTypes: Set<String>,
         name: (Node) -> String?
     ) -> Set<String> {
-        var names: Set<String> = []
-        func walk(_ node: Node) {
-            if let type = node.nodeType, declarationNodeTypes.contains(type), let typeName = name(node) {
-                names.insert(typeName)
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
-        }
-        walk(root)
-        return names
+        TypeNamePrepass(declarationNodeTypes: declarationNodeTypes).names(in: root, name: name)
     }
 
-    /// Over-captures every identifier by design; the engine keeps only names that resolve to a known
-    /// type.
+    /// Over-captures every identifier by design; the engine keeps only names that resolve to a
+    /// known type.
     public func referencedTypeNames(in body: Node?) -> [String] {
         body?.referencedTypeNames(in: context) ?? []
     }
@@ -197,27 +167,8 @@ extension TreeSitterExtracting {
         body?.cyclomaticComplexity(branchKinds: branchKinds)
     }
 
-    /// Collects concrete parse problems from a best-effort tree: `ERROR` nodes and `missing` nodes
-    /// (a required token the source omitted). Walks all children, not just named ones, since
-    /// error/missing nodes are frequently unnamed. Call only when `root.hasError`.
+    /// Collects concrete parse problems from a best-effort tree. Call only when `root.hasError`.
     public func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
-        var diagnostics: [ParseDiagnostic] = []
-        func walk(_ node: Node) {
-            if node.isMissing {
-                diagnostics.append(ParseDiagnostic(
-                    location: loc(node), kind: .missing,
-                    message: "missing \(node.nodeType ?? "token")"
-                ))
-            } else if node.nodeType == "ERROR" {
-                diagnostics.append(ParseDiagnostic(
-                    location: loc(node), kind: .error, message: "unexpected syntax"
-                ))
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
-        }
-        walk(root)
-        return diagnostics
+        ParseDiagnosticsCollector(context: context).diagnostics(in: root)
     }
 }

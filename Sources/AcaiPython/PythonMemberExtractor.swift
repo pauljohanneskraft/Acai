@@ -96,15 +96,15 @@ struct PythonMemberExtractor {
     /// Built only from methods with an explicit `-> Type` (Python has no return-type inference to
     /// fall back to); ambiguous overloaded names are dropped rather than guessed.
     func methodReturnTypeMap(fromMethodNodes methodNodes: [(node: Node, decorators: [String])]) -> [String: String] {
-        var typesByName: [String: Set<String>] = [:]
+        var returnTypes = UnambiguousTypeNames()
         for method in methodNodes {
             guard let nameNode = method.node.child(byFieldName: "name"),
                   let returnTypeNode = method.node.child(byFieldName: "return_type"),
                   let returnType = typeReferences.resolve(fromTypeField: returnTypeNode)
             else { continue }
-            typesByName[nameNode.text(in: context), default: []].insert(returnType.name)
+            returnTypes.record(returnType.name, for: nameNode.text(in: context))
         }
-        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
+        return returnTypes.resolved
     }
 
     func propertyMap(from fields: [Member]) -> [String: String] {

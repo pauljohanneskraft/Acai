@@ -1,0 +1,1664 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 85
+          },
+          "methodName" : "price",
+          "receiver" : {
+            "type" : {
+              "_0" : "Product"
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 84
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "topLevelDiscount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Double"
+      }
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "\"EUR\""
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 88
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "kDefaultCurrency",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "Shop.swift"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "swift"
+  },
+  "relationships" : [
+    {
+      "kind" : "conformance",
+      "source" : "Category",
+      "target" : "String"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "Item",
+      "target" : "Priced"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "Product",
+      "target" : "Item"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Priced",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "protocol",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Priced",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Priced"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 8
+          },
+          "name" : "food"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 9
+          },
+          "name" : "tool"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Category",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "String"
+        }
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 7
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Category"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Money",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 12
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 13
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "amount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "stringLiteral",
+            "text" : "\"EUR\""
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 14
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "currency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Money",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Money"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 17
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 18
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "final"
+      ],
+      "name" : "Logger",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Logger"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Item",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Priced"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 21
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 23
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 26
+              },
+              "op" : "assign",
+              "targetName" : "name",
+              "value" : {
+                "kind" : "expression",
+                "text" : "name"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 14,
+                "filePath" : "Shop.swift",
+                "line" : 26
+              },
+              "name" : "name"
+            },
+            {
+              "location" : {
+                "column" : 21,
+                "filePath" : "Shop.swift",
+                "line" : 26
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+            {
+              "externalName" : "name",
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 29
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 33,
+                "filePath" : "Shop.swift",
+                "line" : 31
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 31
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Item",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Item"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Item"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 34
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Logger()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 41
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 42
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 43
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "[]"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 44
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "tags",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "setAccessLevel" : "private",
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "Array"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "stringLiteral",
+            "text" : "\"EUR\""
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 45
+          },
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "defaultCurrency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 48
+              },
+              "op" : "assign",
+              "targetName" : "base",
+              "value" : {
+                "kind" : "expression",
+                "text" : "base"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 14,
+                "filePath" : "Shop.swift",
+                "line" : 48
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 21,
+                "filePath" : "Shop.swift",
+                "line" : 48
+              },
+              "name" : "base"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 47
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+            {
+              "externalName" : "name",
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "externalName" : "base",
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Double"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 53
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 53
+              },
+              "name" : "audit"
+            },
+            {
+              "location" : {
+                "column" : 16,
+                "filePath" : "Shop.swift",
+                "line" : 54
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 23,
+                "filePath" : "Shop.swift",
+                "line" : 54
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 52
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Double"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 59
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 57
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "Shop.swift",
+                "line" : 70
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "discount += Double(index)"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "Shop.swift",
+                "line" : 70
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 63
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "externalName" : "value",
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Double"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Category"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 75
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "isFree",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Bool"
+          }
+        },
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+            {
+              "constraints" : [
+
+              ],
+              "name" : "T"
+            }
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 77
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "identity",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        }
+      ],
+      "modifiers" : [
+        "final"
+      ],
+      "name" : "Product",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "Product.Builder",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "struct",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 36
+          },
+          "members" : [
+            {
+              "accessLevel" : "internal",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "fieldReads" : [
+
+              ],
+              "genericParameters" : [
+
+              ],
+              "initialValue" : {
+                "kind" : "stringLiteral",
+                "text" : "\"\""
+              },
+              "isComputed" : false,
+              "kind" : "property",
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 37
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "name",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "accessLevel" : "internal",
+              "annotations" : [
+
+              ],
+              "assignments" : [
+
+              ],
+              "callSites" : [
+
+              ],
+              "cyclomaticComplexity" : 1,
+              "fieldReads" : [
+                {
+                  "location" : {
+                    "column" : 49,
+                    "filePath" : "Shop.swift",
+                    "line" : 38
+                  },
+                  "name" : "name"
+                }
+              ],
+              "genericParameters" : [
+
+              ],
+              "isComputed" : false,
+              "kind" : "method",
+              "location" : {
+                "column" : 9,
+                "filePath" : "Shop.swift",
+                "line" : 38
+              },
+              "modifiers" : [
+
+              ],
+              "name" : "build",
+              "parameters" : [
+
+              ],
+              "referencedTypeNames" : [
+                "Product"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Product"
+              }
+            }
+          ],
+          "modifiers" : [
+
+          ],
+          "name" : "Builder",
+          "namespace" : "Product",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "Product.Builder"
+        }
+      ],
+      "qualifiedName" : "Product"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "extensionOf" : "Product",
+      "genericParameters" : [
+
+      ],
+      "id" : "extension.Product",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "extension",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Shop.swift",
+        "line" : 80
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 35,
+                "filePath" : "Shop.swift",
+                "line" : 81
+              },
+              "methodName" : "describe",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Shop.swift",
+            "line" : 81
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "shortLabel",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Product"
+    }
+  ]
+}
