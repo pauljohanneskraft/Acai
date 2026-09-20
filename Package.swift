@@ -347,6 +347,16 @@ let package = Package(
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
         .testTarget(name: "AcaiMCPTests", dependencies: ["AcaiMCP", "AcaiLibrary", "AcaiCore"]),
 
+        // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
+        // `exclude`, not `resources`: the tests read both directories by path (via `#filePath`, like
+        // `AcaiExamplesTests`), and the fixtures include `.swift`/`.c`/`.cpp` files that SwiftPM
+        // would otherwise compile into this target instead of leaving as parser input.
+        .testTarget(
+            name: "AcaiParserGoldenTests",
+            dependencies: ["AcaiLibrary", "AcaiCore"],
+            exclude: ["Fixtures", "__Goldens__"]
+        ),
+
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])
