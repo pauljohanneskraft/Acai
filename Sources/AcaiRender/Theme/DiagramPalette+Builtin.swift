@@ -9,15 +9,7 @@ import AcaiDiagram
 extension DiagramPalette {
 
     static func make(isDark: Bool) -> DiagramPalette {
-        let typeColors: @Sendable (TypeKind) -> KindColors = { builtinKindColors(Tint($0), isDark: isDark) }
-        let participantColors: @Sendable (SequenceDiagram.Participant.Kind) -> KindColors = {
-            builtinKindColors(Tint($0), isDark: isDark)
-        }
-        let containerColors: @Sendable (ContainerTint) -> ContainerColors = {
-            builtinContainerColors($0, isDark: isDark)
-        }
-
-        return DiagramPalette(
+        DiagramPalette(
             canvasInk: CanvasInkColors(
                 background: isDark ? Color(white: 0.12) : .white,
                 primaryInk: isDark ? Color(white: 0.92) : Color(white: 0.10),
@@ -60,9 +52,9 @@ extension DiagramPalette {
                 artifactIcon: tone(isDark, dark: (0.53, 0.48, 0.80), light: rgb(0.30, 0.55, 0.65))
             ),
             exportTheme: isDark ? .dark : .default,
-            typeColors: typeColors,
-            participantColors: participantColors,
-            containerColors: containerColors
+            typeColors: { builtinKindColors(Tint($0), isDark: isDark) },
+            participantColors: { builtinKindColors(Tint($0), isDark: isDark) },
+            containerColors: { builtinContainerColors($0, isDark: isDark) }
         )
     }
 
