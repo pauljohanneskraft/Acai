@@ -11,7 +11,7 @@ final class HardwareKeyboardShortcutsJourneyTests: UIJourneyTestCase {
         try XCTSkipIf(SnapshotPlatform().usesCompactLayout, "Hardware-keyboard parity is an iPad and Mac concern")
     }
 
-    func testQuickOpenOpensWithCommandK() {
+    func testQuickOpenOpensWithCommandL() {
         launchSeeded(analysis: .parsed).openQuickOpenWithKeyboard()
     }
 

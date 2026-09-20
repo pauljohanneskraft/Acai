@@ -78,7 +78,9 @@ extension KeyboardShortcutReference {
         id: "cancelDialog", shortcut: .cancelAction,
         name: .app("KeyboardShortcutReference.CancelDialog"))
     static let quickOpen = KeyboardShortcutReference(
-        id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
+        // The browser address bar's key. Not ⌘K: iPadOS keeps it, like ⇧⌘/ and ⌘, — a keyboard
+        // shortcut that iPadOS claims for itself never reaches the app.
+        id: "quickOpen", shortcut: KeyboardShortcut("l", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),

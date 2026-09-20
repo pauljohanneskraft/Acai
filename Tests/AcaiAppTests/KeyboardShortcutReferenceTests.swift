@@ -39,7 +39,7 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
         #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⌘/")
-        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
+        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘L")
     }
 
     /// An iPad's hardware keyboard fires the same menu commands the Mac's menu bar does, so a command that

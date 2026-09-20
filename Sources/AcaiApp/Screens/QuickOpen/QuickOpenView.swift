@@ -7,7 +7,7 @@ import AcaiCore
 /// doesn't invent a second way to turn "a type" into "a diagram," it's just another entry point into
 /// the one that already shipped.
 ///
-/// Presented as a sheet on every platform: ⌘K on macOS, the sidebar's search button on iOS.
+/// Presented as a sheet on every platform: ⌘L, or the sidebar's search button on iOS.
 struct QuickOpenView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
     /// Lets a chosen result close the hosting sheet after applying it.
