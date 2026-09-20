@@ -15,10 +15,10 @@ final class CallGraphScreen: DiagramScreenBase {
         )).firstMatch
     }
 
-    /// Any call edge VoiceOver can reach, with a label and a description.
+    /// Any call edge VoiceOver can reach, whose label says it is a call and not just which ends it joins.
     var describedCall: XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(
-            format: "identifier BEGINSWITH 'diagram.callEdge.' AND label != '' AND value != ''"
+            format: "identifier BEGINSWITH 'diagram.callEdge.' AND label CONTAINS[c] 'call'"
         )).firstMatch
     }
 

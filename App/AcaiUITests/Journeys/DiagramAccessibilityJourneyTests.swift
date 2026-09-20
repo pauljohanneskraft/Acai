@@ -11,7 +11,8 @@ final class DiagramAccessibilityJourneyTests: UIJourneyTestCase {
 
         diagram.describedTypeNode(named: "Base").waitOrFail("the described Base type node", timeout: .uiWork)
         diagram.describedTypeNode(named: "Derived").waitOrFail("the described Derived type node")
-        diagram.relationship(from: "Derived", to: "Base").waitOrFail("the Derived → Base relationship")
+        diagram.relationship(from: "Derived", to: "Base", describing: "Inheritance")
+            .waitOrFail("the Derived → Base relationship, described as inheritance")
     }
 
     func testCallGraphNodesAndCallsDescribeThemselves() {

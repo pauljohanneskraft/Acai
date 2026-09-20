@@ -88,7 +88,11 @@ struct DiagramElementDescriptionTests {
         ])
         let accessibility = description.edgeAccessibility(identifier: "diagram.edge.Order->Line")
         #expect(accessibility.identifier == "diagram.edge.Order->Line")
-        #expect(!accessibility.value.isEmpty)
+        // Every detail belongs in the label: macOS speaks no accessibility value for a drawn edge.
+        #expect(accessibility.label.contains("Order"))
+        for detail in description.details {
+            #expect(accessibility.label.contains(String(localized: detail)))
+        }
     }
 
     @Test("A package node reads its size and coupling")

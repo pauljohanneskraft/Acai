@@ -14,11 +14,16 @@ final class ClassDiagramScreen: DiagramScreenBase {
         )).firstMatch
     }
 
-    /// Matched by its spoken label, which names both ends in whatever language the app runs in.
-    func relationship(from source: String, to target: String) -> XCUIElement {
+    /// Matched by its spoken label, which names both ends and what kind of relationship it is. An edge is
+    /// drawn rather than a control, so macOS exposes no accessibility value for it — the label is all
+    /// VoiceOver gets, and `describing` proves the details reached it.
+    func relationship(from source: String, to target: String, describing kind: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(
-            format: "identifier BEGINSWITH 'diagram.edge.' AND label CONTAINS %@ AND label CONTAINS %@ AND value != ''",
-            source, target
+            format: """
+                identifier BEGINSWITH 'diagram.edge.' AND label CONTAINS %@ AND label CONTAINS %@ \
+                AND label CONTAINS %@
+                """,
+            source, target, kind
         )).firstMatch
     }
 

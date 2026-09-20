@@ -127,7 +127,7 @@ extension DiagramElementDescription {
     }
 
     func edgeAccessibility(identifier: String? = nil) -> EdgeAccessibility {
-        EdgeAccessibility(label: label, value: value, identifier: identifier)
+        EdgeAccessibility(label: summary, identifier: identifier)
     }
 }
 

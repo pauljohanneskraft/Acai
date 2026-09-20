@@ -151,7 +151,6 @@ public struct RelationshipEdgeView: View, Equatable {
             .allowsHitTesting(false)
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: description.label))
-            .accessibilityValue(Text(verbatim: description.value))
             .if(description.identifier != nil) { $0.accessibilityIdentifier(description.identifier ?? "") }
     }
 
