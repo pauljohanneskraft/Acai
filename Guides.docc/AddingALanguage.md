@@ -16,10 +16,19 @@ A language plugin is one new module that brings five things together.
 
 Conform a stateless `struct` to [CodeParser](/documentation/acaicore/codeparser): declare its
 `fileExtensions`, implement `parse(source:fileName:)` to produce a
-[CodeArtifact](/documentation/acaicore/codeartifact), and supply its `configuration`. For anything
-other than Swift this is a Tree-sitter grammar plus the shared helpers in
-[AcaiTreeSitter](/documentation/acaitreesitter/) (`SourceFileContext`, `TreeSitterExtracting`, and
-the call-site / assignment resolvers).
+[CodeArtifact](/documentation/acaicore/codeartifact), and supply its `configuration`.
+
+For anything other than Swift this is a Tree-sitter grammar plus the shared extraction layer in
+[AcaiTreeSitter](/documentation/acaitreesitter/). That layer is split so you write as little as
+possible: the recursive walks, the call-receiver decision tree, literal classification and the
+declared-type pre-pass are shared values you construct once and keep, and what your plugin supplies
+is a pair of narrow adapters — `CallSiteSyntax` and `AssignmentSyntax` — that answer questions about
+a *single node*. Declaration bookkeeping and naming live one level up, in
+[DeclarationBuilder](/documentation/acaicore/declarationbuilder), which your extractor **owns rather
+than conforms to**.
+
+`AcaiPython` is the worked example to copy. The older plugins still use a single monolithic
+extractor type; they are being migrated, and a new language should not follow them.
 
 ### 2. A `SourceLanguage` constant
 
@@ -51,9 +60,17 @@ Add your parser and detector to `AnalysisService.standard` here in `AcaiLibrary`
 place that names the built-in languages. That keeps the agnostic boundary intact: the engine
 stays free of language names, and external consumers register a language the same way.
 
+### 6. A place in the shared test suites
+
+Register your parser in `ParserConformanceTests` — which holds every language to the producer
+contract documented on [CodeParser](/documentation/acaicore/codeparser) — and add one fixture to the
+parser golden suite, which pins a parser's whole encoded artifact so a later refactor of the shared
+layer has to reproduce your output exactly. Both are a few lines, and both then guard your plugin
+without you maintaining them.
+
 > The fastest path is the `/add-language` workflow, which scaffolds the module, the test target,
-> and the registration. The existing Tree-sitter plugins under `AcaiDart`, `AcaiPython`, and
-> `AcaiCFamily` are good templates to read first.
+> and the registration. Read `Sources/AcaiPython/` first — it is the plugin shaped the way a new one
+> should be.
 
 ## See Also
 

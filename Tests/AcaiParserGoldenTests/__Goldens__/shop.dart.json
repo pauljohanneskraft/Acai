@@ -1,0 +1,1489 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 76
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "topLevelDiscount",
+      "parameters" : [
+        {
+          "internalName" : "product",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Product"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "'EUR'"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 27,
+        "filePath" : "shop.dart",
+        "line" : 78
+      },
+      "modifiers" : [
+        "const",
+        "final"
+      ],
+      "name" : "kDefaultCurrency",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "kDefaultCurrency"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "String"
+      }
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "shop.dart"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "dart"
+  },
+  "relationships" : [
+    {
+      "kind" : "conformance",
+      "source" : "shop.Item",
+      "target" : "Priced"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "shop.Product",
+      "target" : "Item"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "shop.Product",
+      "target" : "Auditable"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Priced",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 4
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Priced",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Priced"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 33,
+            "filePath" : "shop.dart",
+            "line" : 7
+          },
+          "name" : "food"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 45,
+            "filePath" : "shop.dart",
+            "line" : 7
+          },
+          "name" : "tool"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Category",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 7
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Category",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Category"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Auditable",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "mixin",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 9
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "audit",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Auditable",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Auditable"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 13
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 14
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "log",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Logger",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Logger"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Item",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Priced"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 17
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 31,
+            "filePath" : "shop.dart",
+            "line" : 18
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 20
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Item",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 23
+          },
+          "modifiers" : [
+            "override",
+            "abstract"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 47,
+                "filePath" : "shop.dart",
+                "line" : 25
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Item",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Item"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Product",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Item"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Auditable"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 28
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Logger()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 31,
+            "filePath" : "shop.dart",
+            "line" : 29
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "_audit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger",
+            "_audit",
+            "_audit = Logger()"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Logger"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 19,
+            "filePath" : "shop.dart",
+            "line" : 30
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "base",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "base"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 19,
+            "filePath" : "shop.dart",
+            "line" : 31
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "discount",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "discount",
+            "discount = 0"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "stringLiteral",
+            "text" : "'EUR'"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 45,
+            "filePath" : "shop.dart",
+            "line" : 32
+          },
+          "modifiers" : [
+            "static",
+            "const",
+            "final"
+          ],
+          "name" : "defaultCurrency",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "defaultCurrency"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 34
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Product",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            },
+            {
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 40
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 40
+              },
+              "name" : "_audit"
+            },
+            {
+              "location" : {
+                "column" : 23,
+                "filePath" : "shop.dart",
+                "line" : 41
+              },
+              "name" : "base"
+            },
+            {
+              "location" : {
+                "column" : 37,
+                "filePath" : "shop.dart",
+                "line" : 41
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 39
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "price",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_audit",
+            "base",
+            "discount",
+            "log"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 47
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 45
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Logger",
+            "local",
+            "log",
+            "name"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 79,
+                "filePath" : "shop.dart",
+                "line" : 57
+              },
+              "op" : "compound",
+              "targetName" : "index",
+              "value" : {
+                "kind" : "expression",
+                "text" : "index++"
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "shop.dart",
+                "line" : 58
+              },
+              "op" : "compound",
+              "targetName" : "discount",
+              "value" : {
+                "kind" : "expression",
+                "text" : "discount += index"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 4,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "shop.dart",
+                "line" : 58
+              },
+              "name" : "discount"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 51
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "classify",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Category",
+            "discount",
+            "food",
+            "index",
+            "tool",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Category"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 43,
+                "filePath" : "shop.dart",
+                "line" : 63
+              },
+              "name" : "base"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 63
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "isFree",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "base"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "bool"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 66
+              },
+              "op" : "assign",
+              "targetName" : "base",
+              "value" : {
+                "kind" : "expression",
+                "text" : "value"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 66
+              },
+              "name" : "base"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 65
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "price2",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "base",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+            {
+              "constraints" : [
+
+              ],
+              "name" : "T"
+            }
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 69
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "identity",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Product",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Product"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "extensionOf" : "Product",
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.ProductDescription",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "extension",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 72
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "shop.dart",
+                "line" : 73
+              },
+              "methodName" : "describe",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 73
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "shortLabel",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "describe"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "ProductDescription",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.ProductDescription"
+    }
+  ]
+}

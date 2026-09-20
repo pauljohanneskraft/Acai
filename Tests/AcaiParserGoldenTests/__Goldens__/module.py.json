@@ -1,0 +1,901 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 23,
+            "filePath" : "module.py",
+            "line" : 24
+          },
+          "methodName" : "Settings",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 23
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "build_settings",
+      "parameters" : [
+        {
+          "internalName" : "name",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "Settings",
+        "name"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Settings"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 23,
+            "filePath" : "module.py",
+            "line" : 28
+          },
+          "methodName" : "build_settings",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 27
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "with_defaults",
+      "parameters" : [
+        {
+          "defaultValue" : "\"default\"",
+          "internalName" : "name",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        },
+        {
+          "defaultValue" : "RETRIES",
+          "internalName" : "retries",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "build_settings",
+        "name"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Settings"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 23,
+            "filePath" : "module.py",
+            "line" : 32
+          },
+          "methodName" : "build_settings",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 31
+      },
+      "modifiers" : [
+        "async"
+      ],
+      "name" : "load_settings",
+      "parameters" : [
+        {
+          "internalName" : "path",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "build_settings",
+        "path"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Settings"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 35
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "decorated_target",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+        "decorated_target"
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 40
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "decorated_function",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "None"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "cyclomaticComplexity" : 3,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 44
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "branching_free_function",
+      "parameters" : [
+        {
+          "internalName" : "value",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+        "value"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "str"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 31,
+            "filePath" : "module.py",
+            "line" : 53
+          },
+          "methodName" : "build_settings",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 9,
+            "filePath" : "module.py",
+            "line" : 54
+          },
+          "methodName" : "print",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "modifiers" : [
+
+      ],
+      "name" : "<top-level>",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "\"1.2.3\""
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 6
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "VERSION",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "str"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "3"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 7
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "RETRIES",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "2.5"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 8
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "TIMEOUT",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "float"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "booleanLiteral",
+        "text" : "False"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 9
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "DEBUG",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "expression",
+        "text" : "{\"a\": 1}"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 10
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "DEFAULTS",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "nilLiteral",
+        "text" : "None"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 11
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "MISSING",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : true,
+        "name" : "str"
+      }
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "module.py"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "python"
+  },
+  "relationships" : [
+
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Settings",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "module.py",
+        "line" : 14
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 17,
+            "filePath" : "module.py",
+            "line" : 17
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "module.py",
+                "line" : 17
+              },
+              "op" : "assign",
+              "targetName" : "name",
+              "value" : {
+                "kind" : "expression",
+                "text" : "name"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "module.py",
+                "line" : 17
+              },
+              "name" : "name"
+            },
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "module.py",
+                "line" : 17
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "module.py",
+            "line" : 16
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "__init__",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "str"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "name",
+            "self"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "filePath" : "module.py",
+                "line" : 20
+              },
+              "name" : "name"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "module.py",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "name",
+            "self"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "str"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Settings",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Settings"
+    }
+  ]
+}
