@@ -203,6 +203,14 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
     }
 
+    /// The system text size changed while this diagram was open. Node boxes will re-measure at
+    /// their new (larger or smaller) rendered size, but `updateMeasuredSizes` only re-runs layout
+    /// once per invalidation — without this, positions computed for the old size category would be
+    /// left in place under boxes that no longer fit them, overlapping their neighbours.
+    func dynamicTypeSizeDidChange() {
+        hasPerformedMeasuredLayout = false
+    }
+
     var isDeltaMode: Bool { diff != nil }
 
     /// The delta tint for an edge (added green / removed red / changed amber), or `nil` when the

@@ -132,6 +132,39 @@ struct ClassDiagramViewModelTests {
         #expect(vm.currentSearchNodeID == nil)
     }
 
+    // MARK: - Dynamic Type relayout (#203)
+
+    /// `updateMeasuredSizes` only re-runs layout once per invalidation (so a user's dragged
+    /// positions aren't fought on every minor re-measurement) — but without `dynamicTypeSizeDidChange`
+    /// resetting that latch, a text-size change that grows a node's rendered box after the first
+    /// layout would leave every position computed for the old, smaller box, overlapping neighbours.
+    @Test func dynamicTypeSizeChangeAllowsOneMoreRelayoutAfterGrowth() {
+        let types = [type("A", .public), type("B", .public)]
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: types,
+            relationships: [Relationship(kind: .association, source: "B", target: "A")]
+        )
+        let vm = ClassDiagramViewModel(codebase: Codebase(name: "c", directoryPath: "/tmp"), artifact: artifact)
+
+        // The first measured pass (as SwiftUI reports on initial render) performs the one-shot layout.
+        vm.updateMeasuredSizes(["A": CGSize(width: 200, height: 100), "B": CGSize(width: 200, height: 100)])
+        let positionsAfterFirstMeasurement = vm.nodePositions
+
+        // Growth from here on is absorbed into the box but doesn't move anything — the one-shot
+        // latch already fired, so positions computed for the smaller box are left in place.
+        vm.updateMeasuredSizes(["A": CGSize(width: 200, height: 260)])
+        #expect(vm.nodePositions == positionsAfterFirstMeasurement)
+        #expect(vm.effectiveSize(for: "A").height == 260)
+
+        // A Dynamic Type size change resets the latch, so the next measurement — now reflecting the
+        // larger rendered box — is allowed to relayout again instead of leaving stale positions
+        // under a box that grew out from under them.
+        vm.dynamicTypeSizeDidChange()
+        vm.updateMeasuredSizes(["A": CGSize(width: 200, height: 400)])
+        #expect(vm.nodePositions != positionsAfterFirstMeasurement)
+    }
+
     /// `dependents(for:)` must reuse `ImpactAnalysis` rather than a reimplementation — this pins
     /// its behavior (transitive, root excluded) through the view model rather than the engine type.
     @Test func dependentsReflectsTransitiveImpactAnalysis() {

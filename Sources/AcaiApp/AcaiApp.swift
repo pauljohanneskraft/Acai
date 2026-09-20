@@ -22,6 +22,7 @@ public struct AcaiRootScene: Scene {
                 // Links open in an existing main window rather than a new one each.
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+                .forcingDynamicTypeSize(UITestFixtureResolver().resolveDynamicTypeSize())
                 #if os(iOS)
                 // The clock, date and battery would otherwise differ in every UI-test screenshot.
                 .statusBarHidden(UITestFixtureResolver().resolveBaseDir() != nil)
@@ -47,6 +48,7 @@ public struct AcaiRootScene: Scene {
             ProjectBrowserView(store: projectStore, windowAddress: $address)
                 .modifier(DiagramThemeProvider())
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
+                .forcingDynamicTypeSize(UITestFixtureResolver().resolveDynamicTypeSize())
         }
         // Links go to a main window, never spawn one of these.
         .handlesExternalEvents(matching: [])

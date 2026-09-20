@@ -23,40 +23,47 @@ extension UIJourneyTestCase {
 
     @discardableResult
     func launchSeeded(
-        analysis: SeededFixture.Analysis = .canned, language: String? = nil,
+        analysis: SeededFixture.Analysis = .canned, language: String? = nil, dynamicTypeSize: String? = nil,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) -> ProjectBrowserScreen {
         let codebaseID = seeded.codebaseID
-        app.launchWithFixture("seeded", language: language, configure: { app, destination in
-            let artifacts = destination.appendingPathComponent("artifacts")
-            switch analysis {
-            case .parsed:
-                break
-            case .canned:
-                app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
-                    [codebaseID, artifacts.appendingPathComponent("seeded.json").path]
-                ])
-            case .cannedComparedWithHEAD:
-                app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
-                    [codebaseID, artifacts.appendingPathComponent("seeded-with-added.json").path]
-                ])
-                app.launchEnvironment["ACAI_UITEST_COMPARISON_ARTIFACTS"] = app.environmentRecords([
-                    [codebaseID, "HEAD", artifacts.appendingPathComponent("comparison-HEAD.json").path]
-                ])
-            }
-            try configure(app, destination)
-        }, file: file, line: line, function: function)
+        app.launchWithFixture(
+            "seeded", language: language, dynamicTypeSize: dynamicTypeSize,
+            configure: { app, destination in
+                let artifacts = destination.appendingPathComponent("artifacts")
+                switch analysis {
+                case .parsed:
+                    break
+                case .canned:
+                    app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                        [codebaseID, artifacts.appendingPathComponent("seeded.json").path]
+                    ])
+                case .cannedComparedWithHEAD:
+                    app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
+                        [codebaseID, artifacts.appendingPathComponent("seeded-with-added.json").path]
+                    ])
+                    app.launchEnvironment["ACAI_UITEST_COMPARISON_ARTIFACTS"] = app.environmentRecords([
+                        [codebaseID, "HEAD", artifacts.appendingPathComponent("comparison-HEAD.json").path]
+                    ])
+                }
+                try configure(app, destination)
+            },
+            file: file, line: line, function: function
+        )
         return ProjectBrowserScreen(app: app)
     }
 
     /// Launches the seeded fixture and opens its project, landing on `ProjectDetailScreen`.
     @discardableResult
     func openSeededProject(
-        analysis: SeededFixture.Analysis = .canned, language: String? = nil,
+        analysis: SeededFixture.Analysis = .canned, language: String? = nil, dynamicTypeSize: String? = nil,
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) -> ProjectDetailScreen {
-        let browser = launchSeeded(analysis: analysis, language: language, file: file, line: line, function: function)
+        let browser = launchSeeded(
+            analysis: analysis, language: language, dynamicTypeSize: dynamicTypeSize,
+            file: file, line: line, function: function
+        )
         let detail = ProjectDetailScreen(app: app)
         browser.projectRow(id: seeded.projectID).tap(
             "the seeded project's sidebar row", until: detail.codebaseRow(id: seeded.codebaseID), file: file, line: line
@@ -67,10 +74,13 @@ extension UIJourneyTestCase {
     /// Launches the seeded fixture and opens its codebase, not yet indexed.
     @discardableResult
     func openSeededCodebase(
-        analysis: SeededFixture.Analysis = .canned, language: String? = nil,
+        analysis: SeededFixture.Analysis = .canned, language: String? = nil, dynamicTypeSize: String? = nil,
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) -> CodebaseDetailScreen {
-        let detail = openSeededProject(analysis: analysis, language: language, file: file, line: line, function: function)
+        let detail = openSeededProject(
+            analysis: analysis, language: language, dynamicTypeSize: dynamicTypeSize,
+            file: file, line: line, function: function
+        )
         let codebaseDetail = CodebaseDetailScreen(app: app)
         detail.codebaseRow(id: seeded.codebaseID).tap(
             "the seeded codebase's row", until: codebaseDetail.reindexButton, file: file, line: line
@@ -81,10 +91,12 @@ extension UIJourneyTestCase {
     /// Launches the seeded fixture, opens its codebase and waits for a reindex to finish.
     @discardableResult
     func openIndexedSeededCodebase(
-        analysis: SeededFixture.Analysis = .canned,
+        analysis: SeededFixture.Analysis = .canned, dynamicTypeSize: String? = nil,
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) -> CodebaseDetailScreen {
-        let codebaseDetail = openSeededCodebase(analysis: analysis, file: file, line: line, function: function)
+        let codebaseDetail = openSeededCodebase(
+            analysis: analysis, dynamicTypeSize: dynamicTypeSize, file: file, line: line, function: function
+        )
         codebaseDetail.reindex(file: file, line: line)
         return codebaseDetail
     }

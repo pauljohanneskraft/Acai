@@ -102,6 +102,29 @@ struct UITestFixtureResolver {
         }
     }
 
+    static let dynamicTypeSizeVariable = "ACAI_UITEST_DYNAMIC_TYPE_SIZE"
+
+    /// Forces a specific Dynamic Type size, so a journey can prove layouts hold at the largest
+    /// accessibility sizes deterministically, rather than depending on the runner's own text-size
+    /// setting.
+    func resolveDynamicTypeSize() -> DynamicTypeSize? {
+        switch environment[Self.dynamicTypeSizeVariable] {
+        case "xSmall": return .xSmall
+        case "small": return .small
+        case "medium": return .medium
+        case "large": return .large
+        case "xLarge": return .xLarge
+        case "xxLarge": return .xxLarge
+        case "xxxLarge": return .xxxLarge
+        case "accessibility1": return .accessibility1
+        case "accessibility2": return .accessibility2
+        case "accessibility3": return .accessibility3
+        case "accessibility4": return .accessibility4
+        case "accessibility5": return .accessibility5
+        default: return nil
+        }
+    }
+
     private func url(_ variable: String) -> URL? {
         guard let path = environment[variable], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true)
@@ -118,5 +141,20 @@ struct UITestFixtureResolver {
                     .map(String.init)
             }
             .filter { $0.count == fieldCount }
+    }
+}
+
+extension View {
+    /// Unlike `preferredColorScheme(_:)`, SwiftUI's `dynamicTypeSize(_:)` has no optional-accepting
+    /// overload — `nil` leaves the system's own size in effect, as `resolveDynamicTypeSize()` returns
+    /// outside a UI test. A distinct name, not an overload of `dynamicTypeSize`, so the `if let`
+    /// branch below unambiguously calls SwiftUI's own non-optional modifier rather than itself.
+    @ViewBuilder
+    func forcingDynamicTypeSize(_ size: DynamicTypeSize?) -> some View {
+        if let size {
+            dynamicTypeSize(size)
+        } else {
+            self
+        }
     }
 }
