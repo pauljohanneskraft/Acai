@@ -13,12 +13,6 @@ struct ProjectStoreGitStorageTests {
         return url
     }
 
-    private func gitHubSource() -> GitHubSource {
-        GitHubSource(
-            owner: "octocat", repo: "widgets", ref: "main", refKind: .branch,
-            lastSyncedCommitSHA: nil, lastSyncedAt: nil)
-    }
-
     private let remoteURL = URL(string: "https://github.com/octocat/widgets.git")!
 
     @Test func loadingDiscardsACodebaseWithItsOwnCloneAndKeepsTheOthers() throws {
@@ -26,9 +20,9 @@ struct ProjectStoreGitStorageTests {
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var perCodebaseClone = Codebase(name: "old", directoryPath: dir.appendingPathComponent("github-clones/x").path)
-        perCodebaseClone.githubSource = gitHubSource()
+        perCodebaseClone.managedCheckout = ManagedCheckout()
         var sharedClone = Codebase(name: "new", directoryPath: dir.appendingPathComponent("git-worktrees/y").path)
-        sharedClone.githubSource = gitHubSource()
+        sharedClone.managedCheckout = ManagedCheckout()
         sharedClone.repository = CodebaseRepositoryReference(remoteURL: remoteURL, ref: "main")
         let local = Codebase(name: "local", directoryPath: "/tmp/local")
 
@@ -69,7 +63,7 @@ struct ProjectStoreGitStorageTests {
         let store = ProjectStore(baseDir: dir)
 
         var codebase = Codebase(name: "widgets", directoryPath: "")
-        codebase.githubSource = gitHubSource()
+        codebase.managedCheckout = ManagedCheckout()
         codebase.repository = CodebaseRepositoryReference(remoteURL: remoteURL, ref: "main")
         var project = Project(title: "Demo", subtitle: "")
         project.codebases = [codebase]

@@ -49,9 +49,16 @@ struct UITestFixtureResolver {
 
     static let gitHubFastFixtureRootVariable = "ACAI_UITEST_GITHUB_FAST_FIXTURE_ROOT"
 
-    /// Selects `FastFixtureGitHubRepositoryService` over the real-git `FixtureGitHubRepositoryService`.
+    /// Selects `FastFixtureGitRemoteService` over the real-git `FixtureGitRemoteService`.
     func resolveGitHubFastFixtureRoot() -> URL? {
         url(Self.gitHubFastFixtureRootVariable)
+    }
+
+    static let gitHubRepositorySizeVariable = "ACAI_UITEST_GITHUB_REPOSITORY_SIZE_KB"
+
+    /// The size the fixture GitHub repository reports, to exercise the large-clone warning.
+    func resolveGitHubRepositorySizeKilobytes() -> Int? {
+        environment[Self.gitHubRepositorySizeVariable].flatMap { Int($0) }
     }
 
     static let codebaseArtifactsVariable = "ACAI_UITEST_CODEBASE_ARTIFACTS"

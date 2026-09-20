@@ -1,4 +1,5 @@
 import AcaiCore
+import AcaiGit
 import Foundation
 
 /// Loads the churn data off the main actor (this is a git-history walk, real filesystem/
@@ -14,6 +15,9 @@ final class HotspotViewModel: ObservableObject {
     /// repository that simply has none to report) — distinguishes the "not a git repo"/"not yet
     /// cloned" empty state from a genuinely-empty chart.
     @Published private(set) var hasGitHistory = true
+    /// The repository is a shallow clone: its churn would count only the commits that happen to
+    /// be present, so no chart is drawn until the full history has been fetched.
+    @Published private(set) var isHistoryNotFetched = false
 
     private let artifact: CodeArtifact
 
@@ -24,6 +28,7 @@ final class HotspotViewModel: ObservableObject {
     func load(codebase: Codebase, gitRepositoriesDir: URL) async {
         isLoading = true
         loadError = nil
+        isHistoryNotFetched = false
         defer { isLoading = false }
         let resolver = HotspotChurnResolver(codebase: codebase, gitRepositoriesDir: gitRepositoriesDir)
         do {
@@ -37,6 +42,9 @@ final class HotspotViewModel: ObservableObject {
             }
             hasGitHistory = true
             chartData = HotspotChartData(artifact: artifact, churnByFile: churn)
+        } catch is HistoryNotFetched {
+            chartData = nil
+            isHistoryNotFetched = true
         } catch {
             loadError = error.localizedDescription
         }

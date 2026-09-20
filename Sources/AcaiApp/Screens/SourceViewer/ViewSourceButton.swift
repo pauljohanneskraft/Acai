@@ -15,6 +15,7 @@ struct ViewSourceButton: View {
     /// the file lazily while the sheet stays up, so access must stay open until dismissal.
     @State private var longLivedAccess: ScopedResourceAccess.LongLivedAccess?
     @State private var errorMessage: String?
+    @State private var shownURL: URL?
 
     var body: some View {
         Button {
@@ -36,7 +37,7 @@ struct ViewSourceButton: View {
                 Label(.app("View.ViewSourceButton.ViewSource"), systemImage: "doc.text.magnifyingglass")
             }
         }
-        .sheet(item: $target, onDismiss: { longLivedAccess = nil }, content: { target in
+        .sheet(item: $target, onDismiss: dismissed, content: { target in
             SourceViewerSheet(url: target.url)
         })
         .alert(
@@ -50,6 +51,15 @@ struct ViewSourceButton: View {
         .onDisappear {
             resolveTask?.cancel()
         }
+    }
+
+    /// A file shown at a pinned revision is a temporary copy read from history; nothing else owns it.
+    private func dismissed() {
+        longLivedAccess = nil
+        if codebase.pinnedRevision != nil, let shown = shownURL {
+            try? FileManager.default.removeItem(at: shown.deletingLastPathComponent())
+        }
+        shownURL = nil
     }
 
     private func resolve() {
@@ -68,6 +78,7 @@ struct ViewSourceButton: View {
                 longLivedAccess = ScopedResourceAccess.LongLivedAccess(
                     ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
                 )
+                shownURL = url
                 target = SourceViewerTarget(url: url)
             case .failure(let error):
                 errorMessage = error.localizedDescription
