@@ -47,7 +47,7 @@ public struct AcaiRootScene: Scene {
         .environmentObject(browserWindows)
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
-            ProjectBrowserView(store: store, windowAddress: $address)
+            ProjectBrowserView(store: projectStore, windowAddress: $address)
                 .modifier(DiagramThemeProvider())
                 .preferredColorScheme(UITestFixtureResolver().resolveColorScheme())
         }
