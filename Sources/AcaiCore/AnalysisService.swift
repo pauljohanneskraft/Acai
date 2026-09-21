@@ -89,14 +89,19 @@ public struct AnalysisService: Sendable {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
             )
-            print("Warning: No parser registered for language \(spec.language.rawValue); skipping it.")
             return nil
         }
         let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
         guard !files.isEmpty else { return nil }
 
         let parsed = try parseFiles(files, using: codeParser, rootURL: rootURL)
-        return enrichPerLanguage(parsed, spec: spec, fallback: codeParser.configuration)
+        let enriched = enrichPerLanguage(
+            (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
+        )
+        guard !parsed.diagnostics.isEmpty else { return enriched }
+        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
+        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
@@ -123,9 +128,14 @@ public struct AnalysisService: Sendable {
     /// first-seen order so the merged artifact's top-level language is stable.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) throws -> (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]) {
+    ) throws -> (
+        byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
+        order: [CodeArtifact.SourceLanguage],
+        diagnostics: [ParseDiagnostic]
+    ) {
         var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
+        var diagnostics: [ParseDiagnostic] = []
         for file in files {
             try Task.checkCancellation()
             let relativePath = file.relativePath(from: rootURL)
@@ -140,10 +150,14 @@ public struct AnalysisService: Sendable {
                     order.append(language)
                 }
             } catch {
-                print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
+                diagnostics.append(ParseDiagnostic(
+                    location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+                    kind: .unreadable,
+                    message: error.localizedDescription
+                ))
             }
         }
-        return (byLanguage, order)
+        return (byLanguage, order, diagnostics)
     }
 
     /// Runs the enrichment pipeline once per detected language, each with that language's configuration

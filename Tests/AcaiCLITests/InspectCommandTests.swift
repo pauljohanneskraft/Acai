@@ -40,8 +40,35 @@ struct InspectCommandTests {
                  "--member-kind", "method", "--min-parameters", "5", "--output", output.path])
             try cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
-            #expect(contents.hasPrefix("["))
+            #expect(contents.contains("\"types\""))
             #expect(!contents.contains("\"qualifiedName\""))
+        }
+    }
+
+    @Test func healthFieldIsPerfectOnCleanParse() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("inspect.json")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
+
+    @Test func healthFieldReflectsLowTrustParse() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeLowTrustSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("inspect.json")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
         }
     }
 }

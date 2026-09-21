@@ -129,6 +129,14 @@ Deliberately returns a compact snapshot, not the full model — the whole artifa
 
 > **Run `health: true` before trusting anything else.** A low score means the parse is incomplete, and every metric, cycle and diagram built on it is unreliable.
 
+You don't have to run it separately every time: `acai_metrics`, `acai_quality`, `acai_callgraph`,
+`acai_inspect`, `acai_diff` and `acai_impact` each embed a compact `health` object (`score`,
+`diagnosticCount`, `countsByKind` — the same shape `acai_analyze`'s `health: true` report uses, without
+its full per-diagnostic list) in their JSON result, so a caller reads one field regardless of which
+tool produced it. `acai_diff` combines both sides into the weaker-trust view. `acai_diagram` has no
+JSON result to embed a field in, so below `HealthCheck.trustThreshold` (`0.8`) it instead returns an
+extra leading text block naming the diagnostic count before the diagram text.
+
 ### `acai_metrics`
 
 Per-module coupling and instability; per-type fan-in/out, weighted methods, inheritance depth, cohesion (LCOM) and data-class score. Use it to find god classes and coupling hotspots before a refactor.
@@ -136,6 +144,8 @@ Per-module coupling and instability; per-type fan-in/out, weighted methods, inhe
 Properties: `path` *, `languages`, `refresh`, `includeGenerated`.
 
 Rank client-side: high `fanOut` means too many collaborators (an SRP risk), high `fanIn` means a change-magnet hub, high `weightedMethods` means a god class.
+
+Result shape: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
 
 ### `acai_quality`
 
@@ -156,6 +166,8 @@ Cycle findings are appended only when `explore` is set *and* the rules file does
 
 Note it has no `includeGenerated` — generated-type filtering goes through the rules' own `includeGeneratedTypes` key instead.
 
+Result shape: `{ "quality": <QualityReport>, "health": <HealthCheck.Summary> }`.
+
 ### `acai_callgraph`
 
 Three cuts of the static call graph.
@@ -170,6 +182,8 @@ Three cuts of the static call graph.
 - **`metrics`** — per-method fan-in/out, recursion, resolution coverage. Finds hot methods.
 - **`cycles`** — method-level mutual recursion and tangled clusters.
 - **`deadcode`** — uncalled methods not reachable by contract (public API, overrides, protocol requirements, entry points). **Always read the reported coverage** — it's the false-positive floor.
+
+Result shape wraps each mode's data alongside `health`: `{ "callGraph": <CallGraphMetrics.Report>, "health": ... }`, `{ "cycles": [<MethodCycles.Cluster>], "health": ... }`, or `{ "deadCode": <DeadCodeScan.Report>, "health": ... }`.
 
 ### `acai_inspect`
 
@@ -188,6 +202,8 @@ Enumerate types and members matching a selector, each with a `file:line` jump ta
 
 Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI enumerates (see [AcaiCLI](/documentation/acaicli/)). They're declared as plain strings here, so an unrecognised value is **silently ignored** rather than rejected. Likewise `publicVars: false` means "no constraint", not "exclude".
 
+Result shape: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with `enums: true`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
+
 ### `acai_impact`
 
 The blast radius of a type: every type that transitively depends on it, with `file:line`. Use it before refactoring or deleting something.
@@ -201,6 +217,8 @@ The blast radius of a type: every type that transitively depends on it, with `fi
 
 The only tool with two required properties.
 
+Result shape: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }`.
+
 ### `acai_diff`
 
 Structural delta between two revisions — added/removed types, changed relationships, metric movement.
@@ -213,6 +231,8 @@ Structural delta between two revisions — added/removed types, changed relation
 | `refresh` | boolean | Applies to both sides. |
 
 Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path.
+
+Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
 
 ### `acai_diagram`
 
@@ -233,7 +253,8 @@ Render a diagram as DOT or Mermaid text you can embed in a reply.
 
 `sequenceFrom` and `stateFrom` are required in practice for their kinds, but the schema doesn't express that. Setting `focus` forces `groupBy` off and traverses in both directions — a focused view is a local neighbourhood, and grouping would split it into mismatched clusters.
 
-Returns raw text with no structured content.
+Returns raw text with no structured content, except a leading text block warning of low parse health
+(see [The tools](#The-tools)) when the score is below `HealthCheck.trustThreshold`.
 
 ### `acai_image` — macOS only
 
