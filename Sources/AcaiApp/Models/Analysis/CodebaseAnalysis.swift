@@ -14,7 +14,9 @@ struct CodebaseAnalysis: Sendable {
     let quality: QualityReport
     let usesConfiguredRules: Bool
     let qualityError: String?
+}
 
+extension CodebaseAnalysis {
     /// Pure and `nonisolated`, so callers run it off the main actor.
     ///
     /// The rules' `includeGeneratedTypes` (default `false`) governs the whole statistics pane —

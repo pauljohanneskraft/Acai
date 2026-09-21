@@ -12,10 +12,7 @@ struct FindingsView: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
-    @State private var selectedKinds: Set<Finding.Kind> = Set(Finding.Kind.allCases)
-    @State private var selectedCodebaseID: UUID?
-    @State private var showSuppressed = false
-    @State private var suppression = FindingsSuppressionBaseline()
+    @State private var list = FindingsListState()
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
     @State private var suppressionSavePhase: AsyncOperationPhase = .idle
@@ -111,7 +108,7 @@ struct FindingsView: View {
     private func listContent(
         project: Project, allFindings: [Finding], stillAnalyzing: [Codebase], notIndexed: [Codebase]
     ) -> some View {
-        let visible = filteredAndSorted(allFindings)
+        let visible = list.visible(from: allFindings)
         VStack(alignment: .leading, spacing: 0) {
             filterBar(project: project)
             AsyncOperationStatusView(identifierPrefix: "findings.suppressionSave", phase: suppressionSavePhase)
@@ -130,7 +127,7 @@ struct FindingsView: View {
                     FindingRow(
                         finding: finding,
                         codebase: model.codebase(for: finding.codebaseID),
-                        isSuppressed: suppression.suppressedFindingIDs.contains(finding.id),
+                        isSuppressed: list.isSuppressed(finding),
                         // `nil` while the baseline is still loading — hides the action rather than
                         // risking a suppress/un-suppress tap racing the in-flight load and having
                         // its result silently overwritten once that load completes.
@@ -177,7 +174,7 @@ struct FindingsView: View {
                 }
             }
             HStack {
-                Picker(.app("View.FindingsView.Codebase"), selection: $selectedCodebaseID) {
+                Picker(.app("View.FindingsView.Codebase"), selection: $list.codebaseID) {
                     Text(.app("View.FindingsView.AllCodebases")).tag(UUID?.none)
                     ForEach(project.codebases.sorted { $0.name < $1.name }) { codebase in
                         Text(verbatim: codebase.name).tag(Optional(codebase.id))
@@ -185,7 +182,7 @@ struct FindingsView: View {
                 }
                 .accessibilityIdentifier("findings.codebaseFilter")
                 Spacer()
-                Toggle(.app("View.FindingsView.ShowSuppressedToo"), isOn: $showSuppressed)
+                Toggle(.app("View.FindingsView.ShowSuppressedToo"), isOn: $list.showSuppressed)
                     .toggleStyle(.button)
                     .accessibilityIdentifier("findings.showSuppressedToggle")
             }
@@ -195,13 +192,9 @@ struct FindingsView: View {
     }
 
     private func kindChip(_ kind: Finding.Kind) -> some View {
-        let isSelected = selectedKinds.contains(kind)
+        let isSelected = list.kinds.contains(kind)
         return Button {
-            if isSelected {
-                selectedKinds.remove(kind)
-            } else {
-                selectedKinds.insert(kind)
-            }
+            list = list.toggling(kind)
         } label: {
             Label(kind.title, systemImage: kind.systemImage)
                 .font(.caption.weight(isSelected ? .semibold : .regular))
@@ -212,20 +205,6 @@ struct FindingsView: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("findings.kindFilter.\(kind.rawValue)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
-
-    private func filteredAndSorted(_ findings: [Finding]) -> [Finding] {
-        findings
-            .filter { selectedKinds.contains($0.kind) }
-            .filter { selectedCodebaseID == nil || $0.codebaseID == selectedCodebaseID }
-            .filter { showSuppressed || !suppression.suppressedFindingIDs.contains($0.id) }
-            .sorted { lhs, rhs in
-                if lhs.severity != rhs.severity { return lhs.severity > rhs.severity }
-                let leftDate = lhs.indexedAt ?? .distantPast
-                let rightDate = rhs.indexedAt ?? .distantPast
-                if leftDate != rightDate { return leftDate > rightDate }
-                return lhs.id < rhs.id
-            }
     }
 
     // MARK: - Loading analyses / suppression
@@ -243,7 +222,7 @@ struct FindingsView: View {
         isLoadingSuppression = true
         let baseDir = model.store.baseDir
         let projectID = projectID
-        suppression = await Task.detached(priority: .userInitiated) {
+        list.baseline = await Task.detached(priority: .userInitiated) {
             FindingsSuppressionStore(baseDir: baseDir).load(projectID: projectID)
         }.value
         isLoadingSuppression = false
@@ -261,19 +240,10 @@ struct FindingsView: View {
     }
 
     private func toggleSuppressed(_ finding: Finding) {
-        var updated = suppression
-        if updated.suppressedFindingIDs.contains(finding.id) {
-            updated.suppressedFindingIDs.remove(finding.id)
-        } else {
-            updated.suppressedFindingIDs.insert(finding.id)
-        }
-        suppression = updated  // optimistic: the row's state flips immediately
+        list = list.toggling(finding)  // optimistic: the row's state flips immediately
         let baseDir = model.store.baseDir
         let projectID = projectID
-        // A fresh `let` (not the `var` mutated above) so this Sendable value crosses the isolation
-        // boundary as an immutable copy, not a captured mutable variable — the same rebinding
-        // `ViewSourceButton.resolve()` uses for its own detached-task capture.
-        let toSave = updated
+        let toSave = list.baseline
         suppressionSavePhase = .loading(.app("View.FindingsView.Saving"))
         Task {
             do {
