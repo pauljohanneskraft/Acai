@@ -13,7 +13,12 @@ struct CFamilyDeclarator {
     var isArray = false
 }
 
-extension CFamilyExtractor {
+// MARK: - CFamilyTypeReferenceResolver
+
+/// Parses C/C++ declarators, type references, and template parameter lists. Stateless beyond
+/// `context`.
+struct CFamilyTypeReferenceResolver {
+    let context: SourceFileContext
 
     private static let declaratorNodeTypes: Set<String> = [
         "identifier", "field_identifier", "type_identifier", "qualified_identifier",
@@ -27,7 +32,7 @@ extension CFamilyExtractor {
         switch nodeType {
         case "identifier", "field_identifier", "type_identifier", "namespace_identifier",
              "operator_name", "destructor_name", "qualified_identifier", "template_function":
-            return CFamilyDeclarator(name: text(node))
+            return CFamilyDeclarator(name: node.text(in: context))
         case "function_declarator":
             var info = parseDeclarator(node.child(byFieldName: "declarator"))
             info.isFunction = true
@@ -42,7 +47,7 @@ extension CFamilyExtractor {
         case "init_declarator":
             return parseDeclarator(node.child(byFieldName: "declarator"))
         default:
-            return CFamilyDeclarator(name: text(node))
+            return CFamilyDeclarator(name: node.text(in: context))
         }
     }
 
@@ -96,7 +101,7 @@ extension CFamilyExtractor {
     func baseTypeReference(_ node: Node) -> TypeReference? {
         switch node.nodeType {
         case "struct_specifier", "union_specifier", "enum_specifier", "class_specifier":
-            return node.child(byFieldName: "name").map { TypeReference(name: text($0)) }
+            return node.child(byFieldName: "name").map { TypeReference(name: $0.text(in: context)) }
         default:
             return genericTypeReference(node)
         }
@@ -106,7 +111,7 @@ extension CFamilyExtractor {
     /// `qualified_identifier` wrapping a `template_type`, …) is split at the first `<` into its base
     /// name (`std::vector`, matched against `collectionTypeNames`) and its arguments (`Player`).
     private func genericTypeReference(_ node: Node) -> TypeReference? {
-        let full = normalizeWhitespace(text(node))
+        let full = normalizeWhitespace(node.text(in: context))
         guard !full.isEmpty else { return nil }
         guard let angle = full.firstIndex(of: "<") else {
             return TypeReference(name: full)
@@ -149,7 +154,7 @@ extension CFamilyExtractor {
             case "type_parameter_declaration", "optional_type_parameter_declaration",
                  "variadic_type_parameter_declaration":
                 if let nameNode = child.namedChildren().first(where: { $0.nodeType == "type_identifier" }) {
-                    parameters.append(GenericParameter(name: text(nameNode)))
+                    parameters.append(GenericParameter(name: nameNode.text(in: context)))
                 }
             case "parameter_declaration", "optional_parameter_declaration":
                 let info = parseDeclarator(child.child(byFieldName: "declarator"))

@@ -1,14 +1,15 @@
 import AcaiCore
 import AcaiTreeSitter
 
-/// Walks a tree-sitter C or C++ AST and produces AcaiCore model types.
+/// Walks a tree-sitter C or C++ AST and builds its `CodeArtifact`, sequencing collaborators that
+/// each own one concern. Every collaborator is built once, in `init`.
 ///
 /// C and C++ share one extractor because tree-sitter-cpp reuses tree-sitter-c's node types
 /// (`struct_specifier`, `enum_specifier`, `function_definition`, `field_declaration`, …). The
 /// `dialect` only decides which `SourceLanguage` the artifact reports; the C++-only node types
 /// (`class_specifier`, `namespace_definition`, `template_declaration`, `access_specifier`,
 /// `base_class_clause`) never appear in a C tree, so handling them unconditionally is safe.
-struct CFamilyExtractor: TreeSitterExtracting {
+struct CFamilyExtractor {
 
     /// C/C++ structural decision-point node types for cyclomatic complexity.
     static let branchNodeKinds: Set<String> = [
@@ -18,49 +19,77 @@ struct CFamilyExtractor: TreeSitterExtracting {
 
     let context: SourceFileContext
     let dialect: CFamilyDialect
+    let typeReferences: CFamilyTypeReferenceResolver
+    let assignmentSyntax: CFamilyAssignmentSyntax
+    let callSites: CallSiteResolver
+    let assignments: AssignmentResolver
+    let fieldReads: FieldReadResolver
 
-    var types: [TypeDeclaration] = []
-    var relationships: [Relationship] = []
-    var freestandingFunctions: [Member] = []
-    var globalVariables: [Member] = []
-    var currentNamespace: String?
-    var declaredTypeNames: Set<String> = []
-    /// Simple names of every function/method declared in the file, collected in a pre-pass so an
-    /// unqualified call `foo()` can be resolved to a free function / same-type method (and only then).
-    var declaredFunctionNames: Set<String> = []
-    /// Names of every enum constant declared in the file, collected in a pre-pass so a bare
-    /// identifier on the right of an assignment (C's unscoped `state = DOWNLOADING`) can be
-    /// classified as an enumerable `.enumCase` value rather than an opaque expression.
-    var declaredEnumConstants: Set<String> = []
-    /// `parameterName: typeName` for the free function currently being analysed, so a
-    /// `param->field = …` write can be attributed to the parameter's struct type (state-machine
-    /// analysis). Empty outside a free-function body.
-    var currentReceiverTypes: [String: String] = [:]
+    var declarations = DeclarationBuilder()
 
-    init(source: String, fileName: String, dialect: CFamilyDialect) {
-        self.context = SourceFileContext(source: source, fileName: fileName)
+    /// Takes the tree so the declared-type, declared-function and enum-constant pre-passes run
+    /// before the collaborators that read them.
+    init(source: String, fileName: String, dialect: CFamilyDialect, root: Node) {
+        let context = SourceFileContext(source: source, fileName: fileName)
+        let typeReferences = CFamilyTypeReferenceResolver(context: context)
+
+        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: [
+            "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
+        ]).names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
+
+        // Collects the simple name behind every `function_declarator` in the file (free functions,
+        // prototypes, and member functions alike).
+        var declaredFunctionNames: Set<String> = []
+        func collectFunctionNames(_ node: Node) {
+            if node.nodeType == "function_declarator" {
+                let name = typeReferences.lastComponent(
+                    of: typeReferences.parseDeclarator(node.child(byFieldName: "declarator")).name)
+                if !name.isEmpty { declaredFunctionNames.insert(name) }
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(collectFunctionNames)
+            }
+        }
+        collectFunctionNames(root)
+
+        // Collects the name of every `enumerator` in the file.
+        var declaredEnumConstants: Set<String> = []
+        func collectEnumConstants(_ node: Node) {
+            if node.nodeType == "enumerator", let nameNode = node.child(byFieldName: "name") {
+                declaredEnumConstants.insert(nameNode.text(in: context))
+            }
+            for index in 0..<node.childCount {
+                node.child(at: index).map(collectEnumConstants)
+            }
+        }
+        collectEnumConstants(root)
+
+        self.context = context
         self.dialect = dialect
+        self.typeReferences = typeReferences
+        assignmentSyntax = CFamilyAssignmentSyntax(context: context, declaredEnumConstants: declaredEnumConstants)
+        callSites = CallSiteResolver(syntax: CFamilyCallSiteSyntax(
+            context: context, typeReferences: typeReferences, declaredFunctionNames: declaredFunctionNames))
+        assignments = AssignmentResolver(syntax: assignmentSyntax)
+        // Bare identifiers, plus the `field_identifier` of a `this->field`/`obj.field` access, are
+        // both identifier-shaped nodes.
+        fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier", "field_identifier"])
+
+        declarations.declaredTypeNames = declaredTypeNames
     }
 
+    // MARK: - Public Entry Point
+
     mutating func extract(from root: Node) -> CodeArtifact {
-        declaredTypeNames = collectDeclaredTypeNames(
-            from: root,
-            declarationNodeTypes: [
-                "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
-            ],
-            name: { $0.child(byFieldName: "name").map { self.text($0) } }
-        )
-        declaredFunctionNames = collectDeclaredFunctionNames(from: root)
-        declaredEnumConstants = collectEnumConstantNames(from: root)
         walkSourceFile(root)
-        resolveRelationshipNames()
-        return CodeArtifact(
-            metadata: .init(sourceLanguage: dialect.sourceLanguage, filePaths: [context.fileName]),
-            types: types,
-            relationships: relationships,
-            freestandingFunctions: freestandingFunctions,
-            globalVariables: globalVariables
-        )
+        declarations.resolveRelationshipNames()
+        return declarations.artifact(language: dialect.sourceLanguage, filePath: context.fileName)
+    }
+
+    // MARK: - Parse Diagnostics
+
+    func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
+        ParseDiagnosticsCollector(context: context).diagnostics(in: root)
     }
 
     // MARK: - Top-level traversal
@@ -79,7 +108,7 @@ struct CFamilyExtractor: TreeSitterExtracting {
             extractTypedef(node)
         case "function_definition":
             if let function = extractFunctionDefinition(node, defaultAccess: .public) {
-                freestandingFunctions.append(function)
+                declarations.freestandingFunctions.append(function)
             }
         case "namespace_definition":
             visitNamespace(node)
@@ -100,9 +129,9 @@ struct CFamilyExtractor: TreeSitterExtracting {
     private mutating func appendTopLevelSpecifier(_ node: Node) {
         switch node.nodeType {
         case "struct_specifier", "union_specifier", "class_specifier":
-            if let decl = extractRecord(node) { types.append(decl) }
+            if let decl = extractRecord(node) { declarations.types.append(decl) }
         case "enum_specifier":
-            if let decl = extractEnum(node) { types.append(decl) }
+            if let decl = extractEnum(node) { declarations.types.append(decl) }
         default:
             break
         }
@@ -115,11 +144,11 @@ struct CFamilyExtractor: TreeSitterExtracting {
             switch typeNode.nodeType {
             case "struct_specifier", "union_specifier", "class_specifier":
                 if typeNode.child(byFieldName: "body") != nil, let decl = extractRecord(typeNode) {
-                    types.append(decl)
+                    declarations.types.append(decl)
                 }
             case "enum_specifier":
                 if typeNode.child(byFieldName: "body") != nil, let decl = extractEnum(typeNode) {
-                    types.append(decl)
+                    declarations.types.append(decl)
                 }
             default:
                 break
@@ -131,31 +160,31 @@ struct CFamilyExtractor: TreeSitterExtracting {
     // MARK: - Namespaces / templates / linkage
 
     private mutating func visitNamespace(_ node: Node) {
-        let previous = currentNamespace
+        let previous = declarations.currentNamespace
         if let nameNode = node.child(byFieldName: "name") {
-            let name = text(nameNode)
-            currentNamespace = previous.map { "\($0).\(name)" } ?? name
+            let name = nameNode.text(in: context)
+            _ = declarations.enter(namespace: previous.map { "\($0).\(name)" } ?? name)
         }
         if let body = node.child(byFieldName: "body") {
             visitChildrenAsTopLevel(body)
         }
-        currentNamespace = previous
+        declarations.leave(previous)
     }
 
     /// A `template_declaration` wraps the entity it parameterises (class/struct, function, or a
     /// plain declaration). Extract the inner entity, attaching the template parameters as generics.
     private mutating func visitTemplate(_ node: Node) {
-        let generics = templateParameters(node)
+        let generics = typeReferences.templateParameters(node)
         for child in node.namedChildren() {
             switch child.nodeType {
             case "class_specifier", "struct_specifier", "union_specifier":
                 if var decl = extractRecord(child) {
                     decl.genericParameters = generics + decl.genericParameters
-                    types.append(decl)
+                    declarations.types.append(decl)
                 }
             case "function_definition":
                 if let function = extractFunctionDefinition(child, defaultAccess: .public) {
-                    freestandingFunctions.append(function)
+                    declarations.freestandingFunctions.append(function)
                 }
             case "declaration":
                 visitTopLevelDeclaration(child)
@@ -169,37 +198,5 @@ struct CFamilyExtractor: TreeSitterExtracting {
         for child in node.children() {
             visitTopLevel(child)
         }
-    }
-
-    /// Collects the simple name behind every `function_declarator` in the file (free functions,
-    /// prototypes, and member functions alike).
-    private func collectDeclaredFunctionNames(from root: Node) -> Set<String> {
-        var names: Set<String> = []
-        func walk(_ node: Node) {
-            if node.nodeType == "function_declarator" {
-                let name = lastComponent(of: parseDeclarator(node.child(byFieldName: "declarator")).name)
-                if !name.isEmpty { names.insert(name) }
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
-        }
-        walk(root)
-        return names
-    }
-
-    /// Collects the name of every `enumerator` in the file.
-    private func collectEnumConstantNames(from root: Node) -> Set<String> {
-        var names: Set<String> = []
-        func walk(_ node: Node) {
-            if node.nodeType == "enumerator", let name = node.child(byFieldName: "name").map({ text($0) }) {
-                names.insert(name)
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
-        }
-        walk(root)
-        return names
     }
 }

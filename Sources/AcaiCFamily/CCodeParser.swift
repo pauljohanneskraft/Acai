@@ -37,7 +37,7 @@ struct CFamilyTreeSitterParse {
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: dialect.sourceLanguage, filePaths: [fileName]))
         }
-        var extractor = CFamilyExtractor(source: source, fileName: fileName, dialect: dialect)
+        var extractor = CFamilyExtractor(source: source, fileName: fileName, dialect: dialect, root: root)
         var artifact = extractor.extract(from: root)
         if root.hasError {
             artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
