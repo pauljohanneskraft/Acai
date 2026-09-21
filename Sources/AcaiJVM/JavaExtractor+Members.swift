@@ -5,13 +5,16 @@ import AcaiTreeSitter
 
 extension JavaExtractor {
 
-    private func buildPropertyMap(from existingMembers: [Member], node: Node) -> [String: String] {
+    /// `fieldName → typeName` from the type's own members plus its direct `field_declaration`
+    /// children, so a same-type method call through a typed stored property (`this.cache.process()`)
+    /// resolves. `existingMembers` lets a record's already-collected component properties count too.
+    private func propertyMap(existingMembers: [Member], fromBody node: Node) -> [String: String] {
         var knownProperties: [String: String] = [:]
         for member in existingMembers where member.kind == .property {
             if let typeName = member.type?.name { knownProperties[member.name] = typeName }
         }
         for child in node.children() where child.nodeType == "field_declaration" {
-            for field in extractFieldDeclaration(child) where field.kind == .property {
+            for field in fieldMembers(from: child, scope: nil) where field.kind == .property {
                 if let typeName = field.type?.name { knownProperties[field.name] = typeName }
             }
         }
@@ -19,16 +22,16 @@ extension JavaExtractor {
     }
 
     /// A `methodName → returnTypeName` map from the type's direct method declarations (a one-level
-    /// pre-pass, mirroring `buildPropertyMap` above), so a same-type method call with an unambiguous
+    /// pre-pass, mirroring `propertyMap` above), so a same-type method call with an unambiguous
     /// return type can seed a local's type. Overloaded names with differing return types are dropped.
-    private func buildMethodReturnTypeMap(node: Node) -> [String: String] {
+    private func methodReturnTypeMap(fromBody node: Node) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
         for child in node.children() where child.nodeType == "method_declaration" {
             guard let nameNode = child.child(byFieldName: "name"),
                   let typeNode = child.child(byFieldName: "type"),
-                  let typeName = extractTypeReference(typeNode)?.name
+                  let typeName = typeReferences.extractTypeReference(typeNode)?.name
             else { continue }
-            typesByName[text(nameNode), default: []].insert(typeName)
+            typesByName[nameNode.text(in: context), default: []].insert(typeName)
         }
         return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
@@ -39,9 +42,8 @@ extension JavaExtractor {
         parentQualifiedName: String
     ) -> TypeDeclaration? {
         // Parent type's qualified name as namespace, so nested types get correct IDs.
-        let savedNamespace = currentNamespace
-        currentNamespace = parentQualifiedName
-        defer { currentNamespace = savedNamespace }
+        let outer = declarations.enter(namespace: parentQualifiedName)
+        defer { declarations.leave(outer) }
 
         switch nodeType {
         case "class_declaration":
@@ -153,19 +155,17 @@ extension JavaExtractor {
                 to: &context.members
             )
         case .constructor:
-            appendIfPresent(
-                extractConstructorDeclaration(child, scope: context.scope),
-                to: &context.members
-            )
+            context.members.append(extractConstructorDeclaration(child, scope: context.scope))
         case .field:
-            context.members.append(contentsOf: extractFieldDeclaration(child, scope: context.scope))
+            context.members.append(contentsOf: fieldMembers(from: child, scope: context.scope))
         case .initializerBlock:
             // A `static { … }` / instance `{ … }` initializer block. Its calls run during
             // construction, so record them on an `.initializer` member, never a dead-code candidate.
             context.members.append(
                 Member(
-                    name: "init", kind: .initializer, accessLevel: .internal, location: loc(child),
-                    callSites: extractCallSites(from: child, scope: context.scope)
+                    name: "init", kind: .initializer, accessLevel: .internal,
+                    location: child.location(in: self.context),
+                    callSites: callSites.callSites(in: child, scope: context.scope)
                 )
             )
         case .nestedType:
@@ -192,9 +192,9 @@ extension JavaExtractor {
         context: inout BodyExtractionContext
     ) {
         context.scope = CallSiteScope(
-            knownProperties: buildPropertyMap(from: context.members, node: node),
-            knownTypeNames: declaredTypeNames,
-            knownMethodReturnTypes: buildMethodReturnTypeMap(node: node)
+            knownProperties: propertyMap(existingMembers: context.members, fromBody: node),
+            knownTypeNames: declarations.declaredTypeNames,
+            knownMethodReturnTypes: methodReturnTypeMap(fromBody: node)
         )
         extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
     }
@@ -221,43 +221,25 @@ extension JavaExtractor {
     }
 
     private func extractAnnotationTypeElement(_ node: Node) -> Member? {
-        let modifierInfo = extractModifiersFromParent(node)
-        let nodeLoc = loc(node)
-        var returnType: TypeReference?
-        var name = ""
-
-        if let typeNode = node.child(byFieldName: "type") { returnType = extractTypeReference(typeNode) }
-        if let nameNode = node.child(byFieldName: "name") { name = text(nameNode) }
-        guard !name.isEmpty else { return nil }
-
-        return Member(
-            name: name, kind: .method,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            type: returnType, annotations: modifierInfo.annotations, location: nodeLoc
-        )
+        let modifierInfo = modifiers.info(fromParentOf: node)
+        let returnType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
+        return memberExtractor.annotationTypeElement(node, modifierInfo: modifierInfo, returnType: returnType)
     }
 
     // MARK: - Enum Constant
 
     private func extractEnumConstant(_ node: Node) -> EnumCase? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
+        let name = nameNode.text(in: context)
         guard !name.isEmpty else { return nil }
-        let nodeLoc = loc(node)
+        let nodeLoc = node.location(in: context)
 
         var arguments: [Parameter] = []
         if let argsNode = node.child(byFieldName: "arguments") {
-            arguments = extractArgumentsAsParameters(argsNode)
+            arguments = parameterExtractor.argumentsAsParameters(argsNode)
         }
 
         return EnumCase(name: name, associatedValues: arguments, location: nodeLoc)
-    }
-
-    private func extractArgumentsAsParameters(_ node: Node) -> [Parameter] {
-        return node.namedChildren().compactMap { child in
-            let argText = text(child)
-            return argText.isEmpty ? nil : Parameter(internalName: argText)
-        }
     }
 
     // MARK: - Method Declaration
@@ -266,37 +248,25 @@ extension JavaExtractor {
         _ node: Node,
         scope: CallSiteScope = CallSiteScope()
     ) -> Member? {
-        let modifierInfo = extractModifiersFromParent(node)
-        let nodeLoc = loc(node)
-
-        guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        guard !name.isEmpty else { return nil }
-
-        var returnType: TypeReference?
-        if let typeNode = node.child(byFieldName: "type") {
-            returnType = extractTypeReference(typeNode)
-        }
-
-        let genericParams = extractTypeParameters(from: node)
-        var parameters: [Parameter] = []
-        if let paramsNode = node.child(byFieldName: "parameters") {
-            parameters = extractFormalParameters(paramsNode)
-        }
+        let modifierInfo = modifiers.info(fromParentOf: node)
+        let returnType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
+        let generics = typeReferences.extractTypeParameters(from: node)
+        let parameters = node.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: parameters))
+        let mergedScope = scope.merging(parameters: parameters)
 
-        return Member(
-            name: name, kind: .method,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            type: returnType, parameters: parameters, genericParameters: genericParams,
-            annotations: modifierInfo.annotations, location: nodeLoc,
-            callSites: callSites,
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body),
-            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
+        return memberExtractor.methodDeclaration(
+            node,
+            signature: .init(
+                modifierInfo: modifierInfo, generics: generics, parameters: parameters, returnType: returnType),
+            references: .init(
+                callSites: callSites.callSites(in: body, scope: mergedScope),
+                assignments: assignments.assignments(in: body),
+                fieldReads: fieldReads.reads(in: body, scope: scope),
+                referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
+                cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
+            )
         )
     }
 
@@ -305,151 +275,58 @@ extension JavaExtractor {
     func extractConstructorDeclaration(
         _ node: Node,
         scope: CallSiteScope = CallSiteScope()
-    ) -> Member? {
-        let modifierInfo = extractModifiersFromParent(node)
-        let nodeLoc = loc(node)
-
-        let name = node.child(byFieldName: "name").map { text($0) } ?? ""
-        let genericParams = extractTypeParameters(from: node)
-        var parameters: [Parameter] = []
-        if let paramsNode = node.child(byFieldName: "parameters") {
-            parameters = extractFormalParameters(paramsNode)
-        }
+    ) -> Member {
+        let modifierInfo = modifiers.info(fromParentOf: node)
+        let generics = typeReferences.extractTypeParameters(from: node)
+        let parameters = node.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: parameters))
+        let mergedScope = scope.merging(parameters: parameters)
 
-        return Member(
-            name: name, kind: .initializer,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            parameters: parameters, genericParameters: genericParams,
-            annotations: modifierInfo.annotations, location: nodeLoc,
-            callSites: callSites,
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body),
-            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
+        return memberExtractor.constructorDeclaration(
+            node,
+            signature: .init(modifierInfo: modifierInfo, generics: generics, parameters: parameters),
+            references: .init(
+                callSites: callSites.callSites(in: body, scope: mergedScope),
+                assignments: assignments.assignments(in: body),
+                fieldReads: fieldReads.reads(in: body, scope: scope),
+                referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
+                cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
+            )
         )
     }
 
     // MARK: - Field Declaration
 
-    func extractFieldDeclaration(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> [Member] {
-        let modifierInfo = extractModifiersFromParent(node)
-        let nodeLoc = loc(node)
-
-        var fieldType: TypeReference?
-        if let typeNode = node.child(byFieldName: "type") {
-            fieldType = extractTypeReference(typeNode)
-        }
+    /// `scope` is `nil` for the type-body pre-pass (only each field's type is read; references are
+    /// left empty rather than resolving real call sites against a scope that isn't ready yet).
+    private func fieldMembers(from node: Node, scope: CallSiteScope?) -> [Member] {
+        let modifierInfo = modifiers.info(fromParentOf: node)
+        let nodeLoc = node.location(in: context)
+        let fieldType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
 
         // Collect all variable_declarator children (handles: int x, y, z;)
         let declarators = node.allChildren(withType: "variable_declarator")
-        if !declarators.isEmpty {
-            return declarators.compactMap {
-                extractVariableDeclarator(
-                    $0, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc, scope: scope)
-            }
-        }
+        let declaratorNodes = declarators.isEmpty
+            ? node.child(byFieldName: "declarator").map { [$0] } ?? [] // Fallback: try declarator field name
+            : declarators
 
-        // Fallback: try declarator field name
-        if let declaratorNode = node.child(byFieldName: "declarator") {
-            if let member = extractVariableDeclarator(
-                declaratorNode, fieldType: fieldType, modifierInfo: modifierInfo, loc: nodeLoc, scope: scope
-            ) {
-                return [member]
-            }
+        return declaratorNodes.compactMap { declarator in
+            memberExtractor.fieldMember(
+                declarator, fieldType: fieldType, modifierInfo: modifierInfo, location: nodeLoc,
+                references: scope.map { fieldValueReferences(for: declarator, scope: $0) } ?? .init()
+            )
         }
-        return []
     }
 
-    private func extractVariableDeclarator(
-        _ node: Node,
-        fieldType: TypeReference?,
-        modifierInfo: ModifierInfo,
-        loc: SourceLocation,
-        scope: CallSiteScope
-    ) -> Member? {
-        guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        guard !name.isEmpty else { return nil }
-
-        var actualType = fieldType
-        if let dimensionsNode = node.child(byFieldName: "dimensions") {
-            let dimText = text(dimensionsNode)
-            let bracketPairs = dimText.components(separatedBy: "[]").count - 1
-            if bracketPairs > 0, let arrayFieldType = actualType {
-                actualType = TypeReference(
-                    name: arrayFieldType.name, genericArguments: arrayFieldType.genericArguments,
-                    isOptional: arrayFieldType.isOptional, isArray: true
-                )
-            }
-        }
-
-        return Member(
-            name: name, kind: .property,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            type: actualType, annotations: modifierInfo.annotations, location: loc,
-            callSites: extractCallSites(from: node.child(byFieldName: "value"), scope: scope),
-            initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
-            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
+    private func fieldValueReferences(
+        for declarator: Node, scope: CallSiteScope
+    ) -> JavaMemberExtractor.ValueReferences {
+        let value = declarator.child(byFieldName: "value")
+        return .init(
+            callSites: callSites.callSites(in: value, scope: scope),
+            initialValue: value.map { assignmentSyntax.classifyValue($0) },
+            referencedTypeNames: value?.referencedTypeNames(in: context) ?? []
         )
-    }
-
-    // MARK: - Formal Parameters
-
-    func extractFormalParameters(_ node: Node) -> [Parameter] {
-        var params: [Parameter] = []
-        for child in node.children() {
-            guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "formal_parameter":
-                if let param = extractFormalParameter(child) { params.append(param) }
-            case "spread_parameter":
-                if let param = extractSpreadParameter(child) { params.append(param) }
-            case "receiver_parameter":
-                break // Skip 'this' parameter
-            default:
-                break
-            }
-        }
-        return params
-    }
-
-    func extractFormalParameter(_ node: Node) -> Parameter? {
-        var paramType: TypeReference?
-        var name = ""
-        var paramModifiers: [Modifier] = []
-
-        if let modNode = node.firstChild(withType: "modifiers") {
-            paramModifiers = extractModifiers(modNode).modifiers
-        }
-
-        if let typeNode = node.child(byFieldName: "type") { paramType = extractTypeReference(typeNode) }
-        if let nameNode = node.child(byFieldName: "name") { name = text(nameNode) }
-        guard !name.isEmpty else { return nil }
-
-        if let dimensionsNode = node.child(byFieldName: "dimensions") {
-            let dimText = text(dimensionsNode)
-            if !dimText.isEmpty, let parameterType = paramType {
-                paramType = TypeReference(
-                    name: parameterType.name, genericArguments: parameterType.genericArguments,
-                    isOptional: parameterType.isOptional, isArray: true
-                )
-            }
-        }
-
-        return Parameter(internalName: name, type: paramType, modifiers: paramModifiers)
-    }
-
-    private func extractSpreadParameter(_ node: Node) -> Parameter? {
-        var paramType: TypeReference?
-        var name = ""
-        if let typeNode = node.child(byFieldName: "type") { paramType = extractTypeReference(typeNode) }
-        if let nameNode = node.child(byFieldName: "name") { name = text(nameNode) }
-        // Fallback: last named child is usually the name in varargs
-        if name.isEmpty, let lastNamed = node.namedChildren().last { name = text(lastNamed) }
-        guard !name.isEmpty else { return nil }
-        return Parameter(internalName: name, type: paramType, isVariadic: true)
     }
 }

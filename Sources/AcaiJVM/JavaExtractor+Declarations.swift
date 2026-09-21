@@ -23,10 +23,12 @@ extension JavaExtractor {
         for (child, action) in NodeDispatch(Self.sourceFileDispatch).matches(in: node) {
             switch action {
             case .setPackage:
-                currentNamespace = extractPackageName(child)
+                if let name = extractPackageName(child) {
+                    _ = declarations.enter(namespace: name)
+                }
             case .extractType:
                 if let nodeType = child.nodeType, let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
-                    types.append(typeDecl)
+                    declarations.types.append(typeDecl)
                 }
             }
         }
@@ -55,7 +57,7 @@ extension JavaExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             if nodeType == "scoped_identifier" || nodeType == "identifier" {
-                return text(child)
+                return child.text(in: context)
             }
         }
         return nil
@@ -63,73 +65,30 @@ extension JavaExtractor {
 
     // MARK: - Qualified Name Helpers
 
-    func typeId(_ name: String) -> String { qualifiedName(name) }
-
-    // MARK: - Modifiers
-
-    // Lookup tables for modifier extraction (reduces cyclomatic complexity).
-    private static let accessLevelMap: [String: AccessLevel] = [
-        "public": .public, "private": .private, "protected": .protected
-    ]
-    private static let modifierMap: [String: Modifier] = [
-        "static": .static, "final": .final, "abstract": .abstract,
-        "synchronized": .synchronized, "volatile": .volatile,
-        "transient": .transient, "native": .native,
-        "strictfp": .strictfp, "default": .default
-    ]
-
-    // Java's default (no explicit modifier) is package-private — resolved here so the engine never
-    // sees a nil visibility. `@Override` maps to the `.override` modifier, so the dead-code scan
-    // exempts an override of a supertype/interface member the same way it does for other languages.
-    private static let modifierClassifier = ModifierClassifier(
-        defaultAccessLevel: .packagePrivate,
-        annotationNodeTypes: ["marker_annotation", "annotation"],
-        classify: { nodeType, _ in
-            if let access = accessLevelMap[nodeType] { return .accessLevel(access) }
-            if let modifier = modifierMap[nodeType] { return .modifier(modifier) }
-            return nil
-        },
-        postProcess: { info in
-            let hasOverrideAnnotation = info.annotations.contains { $0.lowercased() == "@override" }
-            if !info.modifiers.contains(.override), hasOverrideAnnotation {
-                info.modifiers.append(.override)
-            }
-        }
-    )
-
-    func extractModifiers(_ node: Node) -> ModifierInfo {
-        Self.modifierClassifier.modifierInfo(for: node, in: context)
-    }
-
-    func extractModifiersFromParent(_ node: Node) -> ModifierInfo {
-        if let modifiersNode = node.firstChild(withType: "modifiers") {
-            return extractModifiers(modifiersNode)
-        }
-        return ModifierInfo(accessLevel: .packagePrivate, modifiers: [], annotations: [])
-    }
+    func typeId(_ name: String) -> String { declarations.qualifiedName(name) }
 
     // MARK: - Class Declaration
 
     mutating func extractClassDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiersFromParent(node)
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
 
-        let genericParams = extractTypeParameters(from: node)
+        let genericParams = typeReferences.extractTypeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
 
         if let superclassNode = node.child(byFieldName: "superclass") {
-            let superTypes = extractSuperclassTypes(superclassNode)
+            let superTypes = typeReferences.extractSuperclassTypes(superclassNode)
             inheritedTypes.append(contentsOf: superTypes)
-            recordSupertypeRelationships(from: qualifiedTypeName, to: superTypes, kind: .inheritance)
+            declarations.recordSupertypeRelationships(from: qualifiedTypeName, to: superTypes, kind: .inheritance)
         }
 
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            let ifaceTypes = extractTypeList(interfacesNode)
+            let ifaceTypes = typeReferences.extractTypeList(interfacesNode)
             inheritedTypes.append(contentsOf: ifaceTypes)
-            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
+            declarations.recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -144,27 +103,27 @@ extension JavaExtractor {
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: bodyContext.members, enumCases: bodyContext.enumCases,
             nestedTypes: bodyContext.nestedTypes,
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Interface Declaration
 
     mutating func extractInterfaceDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiersFromParent(node)
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
 
-        let genericParams = extractTypeParameters(from: node)
+        let genericParams = typeReferences.extractTypeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
 
         for child in node.children() {
             guard child.nodeType == "extends_interfaces" else { continue }
-            let extTypes = extractTypeList(child)
+            let extTypes = typeReferences.extractTypeList(child)
             inheritedTypes.append(contentsOf: extTypes)
-            recordSupertypeRelationships(from: qualifiedTypeName, to: extTypes, kind: .conformance)
+            declarations.recordSupertypeRelationships(from: qualifiedTypeName, to: extTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -179,24 +138,24 @@ extension JavaExtractor {
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: bodyContext.members, enumCases: bodyContext.enumCases,
             nestedTypes: bodyContext.nestedTypes,
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Enum Declaration
 
     mutating func extractEnumDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiersFromParent(node)
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
 
         var inheritedTypes: [TypeReference] = []
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            let ifaceTypes = extractTypeList(interfacesNode)
+            let ifaceTypes = typeReferences.extractTypeList(interfacesNode)
             inheritedTypes.append(contentsOf: ifaceTypes)
-            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
+            declarations.recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
@@ -210,30 +169,30 @@ extension JavaExtractor {
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             inheritedTypes: inheritedTypes, members: bodyContext.members,
             enumCases: bodyContext.enumCases, nestedTypes: bodyContext.nestedTypes,
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
     // MARK: - Record Declaration
 
     mutating func extractRecordDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiersFromParent(node)
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
 
-        let genericParams = extractTypeParameters(from: node)
+        let genericParams = typeReferences.extractTypeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            let ifaceTypes = extractTypeList(interfacesNode)
+            let ifaceTypes = typeReferences.extractTypeList(interfacesNode)
             inheritedTypes.append(contentsOf: ifaceTypes)
-            recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
+            declarations.recordSupertypeRelationships(from: qualifiedTypeName, to: ifaceTypes, kind: .conformance)
         }
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
         if let paramsNode = node.child(byFieldName: "parameters") {
-            for component in extractRecordComponents(paramsNode) {
+            for component in parameterExtractor.recordComponents(paramsNode) {
                 bodyContext.members.append(Member(
                     name: component.internalName, kind: .property,
                     accessLevel: .public, type: component.type, location: nodeLoc
@@ -251,29 +210,18 @@ extension JavaExtractor {
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: bodyContext.members, enumCases: bodyContext.enumCases,
             nestedTypes: bodyContext.nestedTypes,
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace, location: nodeLoc
         )
-    }
-
-    private func extractRecordComponents(_ node: Node) -> [Parameter] {
-        var params: [Parameter] = []
-        for child in node.children() {
-            guard let nodeType = child.nodeType else { continue }
-            if nodeType == "formal_parameter" || nodeType == "spread_parameter" {
-                if let param = extractFormalParameter(child) { params.append(param) }
-            }
-        }
-        return params
     }
 
     // MARK: - Annotation Type Declaration
 
     mutating func extractAnnotationTypeDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiersFromParent(node)
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
 
         var bodyContext = BodyExtractionContext(parentQualifiedName: qualifiedTypeName)
 
@@ -285,7 +233,7 @@ extension JavaExtractor {
             id: typeId(name), name: name, qualifiedName: qualifiedTypeName, kind: .annotation,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             members: bodyContext.members, nestedTypes: bodyContext.nestedTypes,
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: nodeLoc
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 }
