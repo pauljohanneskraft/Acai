@@ -18,15 +18,18 @@ struct FixtureComparisonArtifact: ComparisonArtifactProviding {
     }
 }
 
+protocol ComparisonArtifactSourcing: Sendable {
+    func provider(codebaseID: UUID, ref: String, directory: URL) -> ComparisonArtifactProviding
+}
+
 /// A `(codebaseID, ref)` pair only gets `FixtureComparisonArtifact` if the launch staged a canned
 /// comparison artifact for it specifically — an unstaged pair still gets the real `GitRevisionSnapshot`.
-struct ComparisonArtifactResolver {
-    func resolve(codebaseID: UUID, ref: String, directory: URL) -> ComparisonArtifactProviding {
-        guard UITestFixtureResolver().resolveBaseDir() != nil else {
-            return GitRevisionSnapshot(directory: directory, reference: ref)
-        }
+struct ComparisonArtifactResolver: ComparisonArtifactSourcing {
+    var fixtures = UITestFixtureResolver()
+
+    func provider(codebaseID: UUID, ref: String, directory: URL) -> ComparisonArtifactProviding {
         let key = UITestFixtureResolver.ComparisonArtifactKey(codebaseID: codebaseID, ref: ref)
-        guard let artifactURL = UITestFixtureResolver().resolveComparisonArtifactURLs()[key] else {
+        guard fixtures.resolveBaseDir() != nil, let artifactURL = fixtures.resolveComparisonArtifactURLs()[key] else {
             return GitRevisionSnapshot(directory: directory, reference: ref)
         }
         return FixtureComparisonArtifact(artifactURL: artifactURL)

@@ -210,6 +210,7 @@ struct ProjectCodebaseEditor {
     let invalidateAnalysis: (UUID) -> Void
     /// Real network clone/fetch, swapped for a fixture under a UI test — see `GitRemoteService`.
     var remoteService: GitRemoteService = GitRemoteServiceResolver().resolve()
+    var analyzers: CodebaseAnalyzerProviding = CodebaseAnalyzingResolver()
 
     // MARK: Projects
 

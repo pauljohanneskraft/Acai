@@ -48,7 +48,7 @@ extension ProjectCodebaseEditor {
         let bookmark = codebase.securityScopedBookmark
         let fileFilter = codebase.fileFilter
         let revision = codebase.pinnedRevision
-        let analyzer = CodebaseAnalyzingResolver().resolve(codebaseID: codebaseID)
+        let analyzer = analyzers.analyzer(for: codebaseID)
         let store = store
         // `Task.detached` doesn't inherit cancellation, so the parse is cancelled explicitly when
         // the wrapping `run` task is; `AnalysisService` and `GitDiffSnapshot` both observe it.
