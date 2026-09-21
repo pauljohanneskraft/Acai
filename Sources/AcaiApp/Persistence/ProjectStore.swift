@@ -94,6 +94,9 @@ final class ProjectStore: ObservableObject {
     let activityCenter = ActivityCenter()
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
+    /// Remotes whose hub clone changed on disk (a worktree attached or removed, history deepened),
+    /// which `projects` alone doesn't show since the git work finishes after the store changes.
+    let repositoryChanges = PassthroughSubject<URL, Never>()
 
     init(baseDir: URL? = nil, analysisStore: AnalysisStore = .standard) {
         self.analysisStore = analysisStore

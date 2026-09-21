@@ -40,6 +40,7 @@ extension ProjectCodebaseEditor {
                 repository: CodebaseRepositoryReference(remoteURL: persistedRemoteURL, ref: ref)
             ))
             persist()
+            store.repositoryChanges.send(persistedRemoteURL)
             await reindex(codebaseID: codebaseID)
         } catch {
             report(error, for: endpoint, generic: { .app("Error.ProjectBrowserViewModel.CloneFailed \($0)") })
@@ -122,6 +123,9 @@ extension ProjectCodebaseEditor {
                     endpoint, hubStoreDirectory: hubStoreDirectory, locks: locks, onProgress: onProgress)
             } != nil
             notify()
+            if finished {
+                store.repositoryChanges.send(remoteURL)
+            }
             return finished
         } catch {
             report(

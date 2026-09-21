@@ -283,20 +283,22 @@ struct ProjectCodebaseEditor {
         return Task { await reindex(codebaseID: id) }
     }
 
-    func removeCodebase(_ codebaseID: UUID) {
+    /// The codebase leaves the store before its worktree is removed, so the row disappears at once
+    /// and the git work that follows can be awaited.
+    func removeCodebase(_ codebaseID: UUID) async {
         let removedCodebase = codebase(for: codebaseID)
         for i in store.projects.indices {
             store.deleteCodebaseData(codebaseID, fromProjectAt: i)
         }
-        if removedCodebase?.managedCheckout != nil {
-            removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
-        }
         persist()
+        if removedCodebase?.managedCheckout != nil {
+            await removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
+        }
     }
 
     /// Deregisters and deletes a codebase's linked worktree, and the shared hub clone with it once no
     /// other codebase's worktree is left on it.
-    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) {
+    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) async {
         let worktreeDirectory = store.gitWorktreeURL(for: codebaseID)
         guard let repository else {
             try? FileManager.default.removeItem(at: worktreeDirectory)
@@ -305,18 +307,15 @@ struct ProjectCodebaseEditor {
         let sync = GitWorktreeSync(
             transportURL: repository.remoteURL, ref: repository.ref,
             hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
-        let worktreeName = store.gitWorktreeName(for: codebaseID)
-        let store = store
-        Task {
-            guard sync.hub.isCloned else {
-                try? FileManager.default.removeItem(at: worktreeDirectory)
-                return
-            }
-            do {
-                try await sync.removeWorktree(named: worktreeName)
-            } catch {
-                store.report(.app("Error.ProjectBrowserViewModel.RemoveCloneFailed \(error.localizedDescription)"))
-            }
+        defer { store.repositoryChanges.send(repository.remoteURL) }
+        guard sync.hub.isCloned else {
+            try? FileManager.default.removeItem(at: worktreeDirectory)
+            return
+        }
+        do {
+            try await sync.removeWorktree(named: store.gitWorktreeName(for: codebaseID))
+        } catch {
+            store.report(.app("Error.ProjectBrowserViewModel.RemoveCloneFailed \(error.localizedDescription)"))
         }
     }
 

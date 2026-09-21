@@ -97,5 +97,75 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(after.repository?.ref == "main")
         #expect(after.managedCheckout == before.managedCheckout)
     }
+
+    @Test func twoCodebasesOfOneRemoteShareACloneAndDeletingTheLastRemovesIt() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let editor = makeEditor(store: store)
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+
+        await editor.addRemoteCodebase(
+            to: projectID, name: "main", remoteURL: remote.directory, ref: "main", refKind: .branch)
+        await editor.addRemoteCodebase(
+            to: projectID, name: "feature", remoteURL: remote.directory, ref: "feature", refKind: .branch)
+
+        let codebases = try #require(store.projects.first?.codebases)
+        #expect(codebases.count == 2)
+        #expect(directoryNames(in: store.gitRepositoriesDir).count == 1)
+        #expect(directoryNames(in: store.gitWorktreesDir).count == 2)
+        let mainCodebase = try #require(codebases.first { $0.name == "main" })
+        let featureCodebase = try #require(codebases.first { $0.name == "feature" })
+        #expect(!FileManager.default.fileExists(atPath: mainCodebase.directoryPath + "/Feature.swift"))
+        #expect(FileManager.default.fileExists(atPath: featureCodebase.directoryPath + "/Feature.swift"))
+
+        await editor.removeCodebase(mainCodebase.id)
+        #expect(directoryNames(in: store.gitRepositoriesDir).count == 1)
+        #expect(directoryNames(in: store.gitWorktreesDir).count == 1)
+
+        await editor.removeCodebase(featureCodebase.id)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(RepositoryIndex(projects: store.projects).entries().isEmpty)
+    }
+
+    /// `FixtureGitRemoteService` rather than the live one: libgit2's local transport can't clone
+    /// shallowly, and the fixture leaves exactly the on-disk state a real shallow clone does.
+    @Test func aLatestSnapshotCloneIsShallowUntilFullHistoryIsFetched() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let service = FixtureGitRemoteService(fixtureRemoteURL: nil)
+        let editor = makeEditor(store: store, remoteService: service)
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+        let endpoint = RemoteEndpoint(remoteURL: remote.directory, gitHubCredential: nil)
+        let absent = await service.inspectClone(endpoint, hubStoreDirectory: store.gitRepositoriesDir)
+        #expect(absent == .absent)
+
+        await editor.addRemoteCodebase(
+            to: projectID, name: "widgets", remoteURL: remote.directory, ref: "main", refKind: .branch,
+            depth: .latestSnapshot)
+
+        let codebaseID = try #require(store.projects.first?.codebases.first?.id)
+        let shallow = await service.inspectClone(endpoint, hubStoreDirectory: store.gitRepositoriesDir)
+        #expect(shallow.isCloned)
+        #expect(shallow.isShallow)
+        #expect(shallow.worktreeNames == [store.gitWorktreeName(for: codebaseID)])
+
+        let fetched = await editor.fetchFullHistory(remoteURL: remote.directory)
+        #expect(fetched)
+        let deepened = await service.inspectClone(endpoint, hubStoreDirectory: store.gitRepositoriesDir)
+        #expect(deepened.isCloned)
+        #expect(!deepened.isShallow)
+        let size = await service.onDiskSize(of: endpoint, hubStoreDirectory: store.gitRepositoriesDir)
+        #expect((size ?? 0) > 0)
+    }
+
+    private func directoryNames(in directory: URL) -> [String] {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return names.filter { !$0.hasPrefix(".") }
+    }
 }
 #endif

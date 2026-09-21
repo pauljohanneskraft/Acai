@@ -123,7 +123,7 @@ struct CodebaseDetailView: View {
                 isPresented: $showDeleteConfirmation
             ) {
                 Button(.app("View.CodebaseDetailView.DeleteCodebase"), role: .destructive) {
-                    model.editing.removeCodebase(codebaseID)
+                    Task { await model.editing.removeCodebase(codebaseID) }
                 }
                 .accessibilityIdentifier("codebaseDetail.codebase.delete.confirmButton")
             } message: {
