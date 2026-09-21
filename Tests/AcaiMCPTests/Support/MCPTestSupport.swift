@@ -51,6 +51,16 @@ enum MCPTestSupport {
         return fileURL
     }
 
+    /// A source with a real parse diagnostic (an unclosed brace), driving `HealthCheck` below
+    /// `HealthCheck.trustThreshold` so a low-trust `health` field is exercised.
+    @discardableResult
+    static func writeLowTrustSwiftSource(in directory: URL) throws -> URL {
+        let source = "struct Broken { func m( {"
+        let fileURL = directory.appendingPathComponent("Broken.swift")
+        try source.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
     static func arguments(path: URL, _ extra: [String: Value] = [:]) -> [String: Value] {
         var values: [String: Value] = ["path": .string(path.path)]
         for (key, value) in extra {

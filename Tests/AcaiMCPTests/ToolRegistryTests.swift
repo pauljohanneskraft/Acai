@@ -62,26 +62,30 @@ struct ToolRegistryTests {
     }
 
     /// MCP requires `structuredContent` to be a JSON object. The tools whose report is a top-level
-    /// list (`acai_inspect`'s rows, `acai_callgraph --mode cycles`' clusters) must wrap it in an object
-    /// envelope — a bare array is rejected by the client's schema validation. Guards the regression
-    /// that made half the tools unusable from an MCP client.
+    /// list (`acai_inspect`'s rows, `acai_callgraph --mode cycles`' clusters) wrap it, alongside a
+    /// `health` field, in a named-key object rather than a bare array — a bare array is rejected by
+    /// the client's schema validation. Guards the regression that made half the tools unusable from an
+    /// MCP client.
     @Test func listReportingToolsWrapStructuredContentInAnObject() async throws {
-        let listCalls: [(String, [String: Value])] = [
-            ("acai_inspect", [:]),
-            ("acai_callgraph", ["mode": .string("cycles")])
+        let listCalls: [(name: String, extra: [String: Value], listKey: String)] = [
+            ("acai_inspect", [:], "types"),
+            ("acai_callgraph", ["mode": .string("cycles")], "cycles")
         ]
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            for (name, extraArgs) in listCalls {
+            for call in listCalls {
                 var arguments: [String: Value] = ["path": .string(dir.path)]
-                arguments.merge(extraArgs) { _, new in new }
-                let result = try await MCPTestSupport.testRegistry.call(name: name, arguments: arguments)
+                arguments.merge(call.extra) { _, new in new }
+                let result = try await MCPTestSupport.testRegistry.call(name: call.name, arguments: arguments)
                 let structured = try #require(
-                    result.structuredContent, "\(name) must attach structuredContent")
+                    result.structuredContent, "\(call.name) must attach structuredContent")
                 #expect(
                     structured.objectValue != nil,
-                    "\(name) structuredContent must be a JSON object, not \(structured)")
-                #expect(structured.objectValue?["items"]?.arrayValue != nil, "\(name) missing items list")
+                    "\(call.name) structuredContent must be a JSON object, not \(structured)")
+                #expect(
+                    structured.objectValue?[call.listKey]?.arrayValue != nil,
+                    "\(call.name) missing \(call.listKey) list")
+                #expect(structured.objectValue?["health"] != nil, "\(call.name) missing health field")
             }
         }
     }

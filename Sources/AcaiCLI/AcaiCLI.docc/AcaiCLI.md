@@ -87,6 +87,15 @@ acai diagram  --from myproj --output arch.dot
 A stored analysis is also your **baseline** for drift checks — see [`diff`](#diff) and `quality --baseline`.
 
 > **Trust the parse first.** `acai analyze --health` scores how cleanly your code parsed. A low score means every metric, cycle and diagram built on it is unreliable. Run it before you act on anything else.
+>
+> You don't have to run it separately: `metrics`, `quality`, `callgraph`, `inspect`, `diff` and `impact`
+> each embed a compact `health` object (`score`, `diagnosticCount`, `countsByKind`) — the same shape
+> `analyze --health` uses, without its full per-diagnostic list — in their `--format json` output, under
+> a `health` key alongside the command's own data. `diff` combines both sides into the weaker-trust
+> view. Below `HealthCheck.trustThreshold` (`0.8`), every command that loads an artifact (including
+> `diagram`, which has no JSON output to embed a field in) also prints a one-line warning to stderr
+> naming the diagnostic count and pointing at `acai analyze --health` for the list — piped stdout stays
+> clean either way.
 
 ---
 
@@ -279,6 +288,8 @@ acai image --source-old ./before --source ./after --output delta.png
 
 `--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`.
 
+`--format json` output: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
+
 ```sh
 acai metrics --from myproj --format human --sort weightedMethods --top 20
 ```
@@ -328,6 +339,15 @@ movements:
 
 **Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
 
+**Scoping a budget to one language.** A type-scoped budget's `target` may carry a `language` (e.g. `swift`, `c`, `kotlin` — the same values as `--language`), so it only matches types parsed from that language. Omitted, the budget applies to every language, as before. This matters most for a metric a language without encapsulation can't mean the same thing by — C gives every struct field `.public` since it has no access-control keywords, so an unscoped `mutablePublicState` budget in a codebase with any C is set by C's meaningless maximum rather than the OO languages it's meant to protect. `acai rules` seeds one `mutablePublicState` hint per language present when the codebase has more than one, each `target`-scoped to it.
+
+```yaml
+budgets:
+  - target: { language: swift }
+    metric: mutablePublicState
+    max: 0
+```
+
 Each breach carries a fix hint — `maxParameters` suggests a parameter object, `lcom` suggests splitting the type.
 
 **Built-in defaults** (used when `--rules` is omitted): `maxParameters ≤ 5`, `dataClassScore ≤ 0.8`, `nestingDepth ≤ 2`, `lcom ≤ 1`, `featureEnvyMethods ≤ 2`, `maxCyclomaticComplexity ≤ 10`. `mutablePublicState` is deliberately left out — it's idiomatic in value types and would flood struct-heavy code.
@@ -349,6 +369,8 @@ budgets:
 The colours themselves are fixed (green at `fine`, red at `critical`, amber between) and shared with
 the rest of the app. `--color-by` requires a per-type metric with a `budgets` entry that sets `max`; a
 module-scoped metric, or one with no such budget, is a validation error.
+
+`--format json` output: `{ "quality": <QualityReport>, "drift": <ArtifactDiff>?, "health": <HealthCheck.Summary> }` (`drift` is present only with `--baseline`).
 
 ### `rules`
 
@@ -384,6 +406,9 @@ acai inspect --from myproj --min-access public --min-parameters 4
 acai inspect --from myproj --enums
 ```
 
+`--format json` output: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with
+`--enums`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
+
 ### `callgraph`
 
 > Call-graph analysis: metrics, method cycles, or dead-code candidates.
@@ -402,6 +427,8 @@ acai callgraph --from myproj --mode deadcode
 ```
 
 > **Read the coverage figure in `deadcode` output.** It's the false-positive floor: methods reachable only through dynamic dispatch or reflection look uncalled to a static analyser. Treat the result as a candidate list, not a verdict.
+
+`--format json` output wraps each mode's data alongside `health`: `{ "callGraph": <CallGraphMetrics.Report>, "health": ... }`, `{ "cycles": [<MethodCycles.Cluster>], "health": ... }`, or `{ "deadCode": <DeadCodeScan.Report>, "health": ... }`.
 
 ### `impact`
 
@@ -422,6 +449,8 @@ acai impact [options] <type>
 acai impact --from myproj Playlist
 acai impact --from myproj --depth 2 --format human MediaItem
 ```
+
+`--format json` output: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }`.
 
 ### `diff`
 
@@ -446,6 +475,9 @@ acai diff --source-old ./before --source-new ./after --diagram dot --output delt
 ```
 
 Delta colouring: **added green, removed red, changed amber**, with `+` / `−` / `~` badges so status is never conveyed by colour alone. Class, package and call-graph deltas are coloured in both DOT and Mermaid; sequence and state deltas are coloured in DOT only, because Mermaid's syntax for those has no per-edge colour.
+
+`--format json` output (non-`--diagram`): `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` —
+`health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
 
 ---
 

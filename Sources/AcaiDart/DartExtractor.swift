@@ -36,4 +36,10 @@ struct DartExtractor: TreeSitterExtracting {
         walkSourceFile(root)
         return buildArtifact(language: .dart)
     }
+
+    /// A `function_body` node carries its own optional `async`/`async*`/`sync*` marker as an
+    /// anonymous leaf child, ahead of its `=>` expression or `block`.
+    func isAsyncFunctionBody(_ node: Node) -> Bool {
+        ["async", "async*", "sync*"].contains { node.hasAnonymousChild($0, in: context) }
+    }
 }
