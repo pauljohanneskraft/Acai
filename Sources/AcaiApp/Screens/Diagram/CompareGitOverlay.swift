@@ -373,7 +373,9 @@ struct CompareGitPanel: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(
-                reviewed ? "Mark \(entry.filePath) as not reviewed" : "Mark \(entry.filePath) as reviewed")
+                reviewed
+                    ? .app("View.CompareGitPanel.MarkFileNotReviewed \(entry.filePath)")
+                    : .app("View.CompareGitPanel.MarkFileReviewed \(entry.filePath)"))
             .accessibilityIdentifier("delta.changedFile.reviewToggle.\(entry.filePath)")
 
             Text(verbatim: entry.filePath)
