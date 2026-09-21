@@ -214,4 +214,30 @@ struct QualityCommandTests {
             try cmd.run()
         }
     }
+
+    @Test func healthFieldReflectsLowTrustParse() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeLowTrustSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("quality.json")
+            var cmd = try parseQuality(
+                ["--source", dir.path, "--language", "swift", "--explore", "--format", "json", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
+        }
+    }
+
+    @Test func healthFieldIsPerfectOnCleanParse() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("quality.json")
+            var cmd = try parseQuality(
+                ["--source", dir.path, "--language", "swift", "--explore", "--format", "json", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
 }

@@ -31,7 +31,7 @@ extension AcaiCommand {
 
             let allowedLanguages = language.map { $0.sourceLanguage }
             let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
-            artifact.warnIfParseErrors()
+            artifact.warnIfLowHealth()
 
             let fingerprint = SourceTreeFingerprint(directory: url).compute()
             let filePath = try AnalysisStore.standard.write(
