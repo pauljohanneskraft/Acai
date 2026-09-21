@@ -14,10 +14,12 @@ extension ProjectCodebaseEditor {
                 return .cancelled
             }
         } catch {
+            let unreachable = error is ScopedResourceAccess.Failure
             // An app-managed directory must never be re-pointed at a folder of the user's choosing.
-            let relocatable = error is ScopedResourceAccess.Failure && codebase.managedCheckout == nil
+            let relocatable = unreachable && codebase.managedCheckout == nil
             store.report(
                 .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
+                reason: unreachable ? .codebaseUnreachable : .indexingFailed,
                 relocating: relocatable ? codebaseID : nil)
             return .failed
         }
