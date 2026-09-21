@@ -1,7 +1,7 @@
 {
   "freestandingFunctions" : [
     {
-      "accessLevel" : "public",
+      "accessLevel" : "filePrivate",
       "annotations" : [
 
       ],
