@@ -73,6 +73,18 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
+    /// The codebase's branches and tags for the Compare panel's list. Best-effort: a folder outside
+    /// any repository yields none, leaving the list with HEAD and Custom.
+    func comparisonRefs(codebaseID: UUID) async -> [GitCheckout.Ref] {
+        guard let codebase = codebase(for: codebaseID) else { return [] }
+        let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
+        let directory = URL(fileURLWithPath: codebase.directoryPath)
+        let checkouts = checkouts
+        return await Task.detached(priority: .userInitiated) {
+            (try? access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
+        }.value
+    }
+
     /// With `comparisonBaseRef` unset (HEAD/ref/custom mode), loads just the "old" side, diffed
     /// against the live working tree. With it set (pull-request mode), first resolves the
     /// merge-base of `comparisonBaseRef` and `comparisonGitRef`, then loads both that merge-base and

@@ -1,12 +1,6 @@
 import AcaiGit
 import SwiftUI
 
-/// A local folder's branches and tags, and what is checked out in it right now.
-struct LocalRevisions: Equatable {
-    var refs: [GitCheckout.Ref]
-    var checkedOut: String?
-}
-
 extension CodebaseDetailView {
 
     // MARK: - Managed checkout
@@ -142,12 +136,9 @@ extension CodebaseDetailView {
 
     func loadLocalRevisions(codebase: Codebase) async {
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
-        localRevisions = await Task.detached(priority: .utility) { () -> LocalRevisions? in
-            let revisions = try? access.withResolvedURL { url -> LocalRevisions? in
-                guard let checkout = try? GitCheckout(directory: url) else { return nil }
-                return LocalRevisions(refs: (try? checkout.refs()) ?? [], checkedOut: try? checkout.currentRef)
-            }
-            return revisions.flatMap { $0 }
+        let lister = LocalRevisionLister(checkouts: model.checkouts)
+        localRevisions = await Task.detached(priority: .utility) {
+            (try? access.withResolvedURL { lister.revisions(in: $0) }).flatMap { $0 }
         }.value
     }
 }

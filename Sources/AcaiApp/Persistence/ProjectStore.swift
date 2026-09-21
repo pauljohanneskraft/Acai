@@ -35,22 +35,33 @@ final class ProjectStore: ObservableObject {
 
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
     struct StoreError: Identifiable {
+        /// The cause, separate from the presented `message`, so a caller can act on it.
+        enum Reason: Equatable, Sendable {
+            /// The codebase's folder is gone, moved, or refused by the sandbox.
+            case codebaseUnreachable
+            case indexingFailed
+            case other
+        }
+
         let id = UUID()
         let message: String
+        var reason: Reason = .other
         /// Set when the failure was "this codebase's folder can't be reached", which the user can
         /// fix by pointing it at another folder — the alert then offers that instead of just "OK".
         var relocatableCodebaseID: UUID?
     }
 
-    func report(_ message: LocalizedStringResource, relocating codebaseID: UUID? = nil) {
-        report(String(localized: message), relocating: codebaseID)
+    func report(
+        _ message: LocalizedStringResource, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil
+    ) {
+        report(String(localized: message), reason: reason, relocating: codebaseID)
     }
 
     /// The `String` overload carries text the app did not write — an engine or system error's own
     /// `localizedDescription`, which is shown untranslated rather than guessed at.
-    func report(_ message: String, relocating codebaseID: UUID? = nil) {
+    func report(_ message: String, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil) {
         print(message)
-        lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
+        lastError = StoreError(message: message, reason: reason, relocatableCodebaseID: codebaseID)
     }
 
     /// Codebases the app cloned from GitHub — the ones the signed-in account's token reaches.
