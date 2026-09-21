@@ -92,7 +92,7 @@ public struct DiagramSnapshotView: View {
         }
         .frame(width: contentSize.width, height: contentSize.height)
         .padding(padding)
-        .background(palette.canvasBackground)
+        .background(palette.canvasInk.background)
         .environment(\.diagramPalette, palette)
     }
 }

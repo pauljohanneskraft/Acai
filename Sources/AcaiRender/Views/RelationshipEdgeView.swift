@@ -15,7 +15,7 @@ public struct RelationshipEdgeView: View, Equatable {
     /// Multiplies the kind's default line width — used by the package diagram to encode a
     /// dependency's weight as thickness.
     let lineWidthScale: CGFloat
-    /// Optional colour override for the line and arrow/diamond strokes; wins over `palette.edgeLine`.
+    /// Optional colour override for the line and arrow/diamond strokes; wins over `palette.edges.line`.
     let strokeColor: Color?
 
     public init(
@@ -87,13 +87,13 @@ public struct RelationshipEdgeView: View, Equatable {
                     dashPhase: baseStyle.dashPhase
                 )
 
-                let lineColor = strokeColor ?? palette.edgeLine
+                let lineColor = strokeColor ?? palette.edges.line
 
                 linePath.stroke(lineColor, style: style)
 
                 switch kind {
                 case .inheritance, .conformance, .extension:
-                    arrowPath.fill(palette.edgeDecorationFill)
+                    arrowPath.fill(palette.edges.decorationFill)
                     arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
                 case .association, .dependency, .nesting:
                     arrowPath.stroke(lineColor, lineWidth: style.lineWidth)
@@ -105,7 +105,7 @@ public struct RelationshipEdgeView: View, Equatable {
                     sourcePath.fill(
                         kind.isSourceDecorationFilled
                             ? lineColor
-                            : palette.edgeDecorationFill
+                            : palette.edges.decorationFill
                     )
                     sourcePath.stroke(lineColor, lineWidth: style.lineWidth)
                 }
@@ -115,7 +115,7 @@ public struct RelationshipEdgeView: View, Equatable {
                 // Explicit ink so the label stays readable in dark mode against the light canvas.
                 Text(label)
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(palette.edgeLabelInk)
+                    .foregroundColor(palette.edges.labelInk)
                     .position(
                         x: (startPoint.x + endPoint.x) / 2,
                         y: (startPoint.y + endPoint.y) / 2 - 8
@@ -139,7 +139,7 @@ public struct RelationshipEdgeView: View, Equatable {
         let (ux, uy) = (dx / length, dy / length)
         return Text(text)
             .font(.system(size: 9, design: .monospaced))
-            .foregroundColor(palette.edgeLabelInk)
+            .foregroundColor(palette.edges.labelInk)
             .position(x: anchor.x + ux * 16 - uy * 9, y: anchor.y + uy * 16 + ux * 9)
     }
 

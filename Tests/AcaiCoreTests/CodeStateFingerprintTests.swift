@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import AcaiApp
+@testable import AcaiCore
 
 @Suite("CodeStateFingerprint")
 struct CodeStateFingerprintTests {

@@ -25,6 +25,174 @@
         }
       }
     },
+    "Intent.DiagramEntity.TypeName" : {
+      "comment" : "What a diagram is called where Shortcuts lists the kinds of things the app offers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramme"
+          }
+        }
+      }
+    },
+    "Intent.ExportDiagram.Description" : {
+      "comment" : "Shortcuts' description of the Export Diagram action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportiert ein Diagramm aus Açaí als PNG-Bild."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exports a diagram from Açaí as a PNG image."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporte un diagramme d’Açaí sous forme d’image PNG."
+          }
+        }
+      }
+    },
+    "Intent.ExportDiagram.Diagram" : {
+      "comment" : "The Export Diagram action's parameter: which diagram to export.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramme"
+          }
+        }
+      }
+    },
+    "Intent.ExportDiagram.Title" : {
+      "comment" : "The name of the Export Diagram action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm exportieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter le diagramme"
+          }
+        }
+      }
+    },
+    "Intent.OpenDiagram.Description" : {
+      "comment" : "Shortcuts' description of the Open Diagram action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet ein Diagramm in Açaí."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens a diagram in Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre un diagramme dans Açaí."
+          }
+        }
+      }
+    },
+    "Intent.OpenDiagram.Diagram" : {
+      "comment" : "The Open Diagram action's parameter: which diagram to open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramme"
+          }
+        }
+      }
+    },
+    "Intent.OpenDiagram.Title" : {
+      "comment" : "The name of the Open Diagram action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir le diagramme"
+          }
+        }
+      }
+    },
     "Intent.ReindexCodebase.Codebase" : {
       "comment" : "The Reindex Codebase action's parameter: which codebase to reindex.",
       "extractionState" : "manual",
