@@ -93,8 +93,10 @@ public struct StarterQualityRules {
     /// unscoped hint, matching the `rfc`/`lcom` hints above.
     private var mutablePublicStateHints: [String] {
         let types = graph.metrics.types
-        let languageByID = Dictionary(graph.nodes.map { ($0.id, $0.language) }, uniquingKeysWith: { first, _ in first })
-        let languages = Set(types.compactMap { languageByID[$0.id] ?? nil }).sorted { $0.rawValue < $1.rawValue }
+        let languageByID: [String: CodeArtifact.SourceLanguage] = Dictionary(
+            graph.nodes.compactMap { node in node.language.map { (node.id, $0) } },
+            uniquingKeysWith: { first, _ in first })
+        let languages = Set(languageByID.values).sorted { $0.rawValue < $1.rawValue }
 
         guard languages.count > 1 else {
             let max = types.map(\.mutablePublicState).max() ?? 0
@@ -104,7 +106,7 @@ public struct StarterQualityRules {
             ]
         }
         return languages.flatMap { language -> [String] in
-            let max = types.filter { languageByID[$0.id] ?? nil == language }.map(\.mutablePublicState).max() ?? 0
+            let max = types.filter { languageByID[$0.id] == language }.map(\.mutablePublicState).max() ?? 0
             return [
                 "#  - metric: mutablePublicState   # \(language.rawValue): publicly settable stored properties",
                 "#    target: { language: \(language.rawValue) }",
