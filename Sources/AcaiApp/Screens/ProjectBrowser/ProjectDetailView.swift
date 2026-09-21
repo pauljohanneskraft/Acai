@@ -80,7 +80,7 @@ struct ProjectDetailView: View {
                 presenting: codebasePendingDeletion
             ) { codebase in
                 Button(.app("View.ProjectDetailView.DeleteCodebase"), role: .destructive) {
-                    model.editing.removeCodebase(codebase.id)
+                    Task { await model.editing.removeCodebase(codebase.id) }
                 }
                 .accessibilityIdentifier("projectDetail.codebase.delete.confirmButton")
             } message: { _ in

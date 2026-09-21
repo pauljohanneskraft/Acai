@@ -164,7 +164,7 @@ public struct ProjectBrowserView: View {
             presenting: codebasePendingDeletion
         ) { codebase in
             Button(.app("View.ProjectBrowserView.DeleteCodebase"), role: .destructive) {
-                model.editing.removeCodebase(codebase.id)
+                Task { await model.editing.removeCodebase(codebase.id) }
             }
             .accessibilityIdentifier("sidebar.codebase.delete.confirmButton")
         } message: { _ in
