@@ -271,6 +271,10 @@ final class ProjectBrowserViewModel: ObservableObject {
         return nil
     }
 
+    func showsStaleBanner(codebaseID: UUID) -> Bool {
+        freshness(for: codebaseID) == .stale
+    }
+
     /// No-op when a matching (same token) result is already cached or in flight.
     func ensureFreshnessLoaded(codebaseID: UUID) async {
         let token = freshnessToken(for: codebaseID)

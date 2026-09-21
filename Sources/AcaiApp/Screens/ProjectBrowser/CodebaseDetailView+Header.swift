@@ -23,7 +23,7 @@ extension CodebaseDetailView {
                     }
                 }
             }
-            if model.freshness(for: codebaseID) == .stale {
+            if model.showsStaleBanner(codebaseID: codebaseID) {
                 staleBanner(codebase: codebase)
             }
         }
