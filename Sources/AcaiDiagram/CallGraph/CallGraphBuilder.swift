@@ -32,7 +32,9 @@ public struct CallGraphBuilder: Sendable {
 }
 
 private struct CallGraphAccumulator {
-    private let typesByName: [String: TypeDeclaration]
+    private let identityResolver: TypeIdentityResolver
+    private let nodeIdentity: CallGraphNodeIdentity
+    private let typesByID: [String: TypeDeclaration]
     private let methodKeys: Set<String>
     private let freeFunctionNames: Set<String>
     private let allTypes: [TypeDeclaration]
@@ -48,10 +50,12 @@ private struct CallGraphAccumulator {
     init(types: [TypeDeclaration], freeFunctions: [Member]) {
         allTypes = types
         self.freeFunctions = freeFunctions
-        typesByName = Dictionary(types.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        identityResolver = TypeIdentityResolver(types: types)
+        nodeIdentity = CallGraphNodeIdentity(types: types)
+        typesByID = Dictionary(uniqueKeysWithValues: types.map { ($0.id, $0) })
         var keys: Set<String> = []
         for type in types {
-            for member in type.members { keys.insert("\(type.name).\(member.name)") }
+            for member in type.members { keys.insert("\(type.id).\(member.name)") }
         }
         methodKeys = keys
         freeFunctionNames = Set(freeFunctions.map(\.name))
@@ -59,20 +63,20 @@ private struct CallGraphAccumulator {
 
     mutating func run(scope: CallGraphScope) {
         let inScopeTypes = scopedTypes(scope)
-        let inScopeNames = Set(inScopeTypes.map(\.name))
+        let inScopeIDs = Set(inScopeTypes.map(\.id))
         for type in inScopeTypes {
             for member in type.members where !member.callSites.isEmpty {
-                let fromID = ensureNode(type.name, member.name, inScope: true)
+                let fromID = ensureNode(for: type, methodName: member.name, inScope: true)
                 accumulate(
-                    callSites: member.callSites, callerType: type.name,
-                    fromID: fromID, inScopeNames: inScopeNames
+                    callSites: member.callSites, callerType: type,
+                    fromID: fromID, inScopeIDs: inScopeIDs
                 )
             }
         }
         // Free functions are callers everywhere except a single-type focus.
         for function in scopedFreeFunctions(scope) where !function.callSites.isEmpty {
-            let fromID = ensureNode("", function.name, inScope: true)
-            accumulate(callSites: function.callSites, callerType: "", fromID: fromID, inScopeNames: inScopeNames)
+            let fromID = ensureNode(for: nil, methodName: function.name, inScope: true)
+            accumulate(callSites: function.callSites, callerType: nil, fromID: fromID, inScopeIDs: inScopeIDs)
         }
     }
 
@@ -92,36 +96,39 @@ private struct CallGraphAccumulator {
     // MARK: - Accumulation
 
     private mutating func accumulate(
-        callSites: [CallSite], callerType: String, fromID: String, inScopeNames: Set<String>
+        callSites: [CallSite], callerType: TypeDeclaration?, fromID: String, inScopeIDs: Set<String>
     ) {
         for site in callSites {
             total += 1
-            guard let target = resolve(site: site, callerType: callerType, inScopeNames: inScopeNames) else { continue }
+            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else { continue }
             resolved += 1
-            let toID = ensureNode(target.typeName, target.methodName, inScope: target.inScope)
+            let toID = ensureNode(for: target.type, methodName: target.methodName, inScope: target.inScope)
             weights[Pair(from: fromID, to: toID), default: 0] += 1
         }
     }
 
     private func resolve(
-        site: CallSite, callerType: String, inScopeNames: Set<String>
-    ) -> (typeName: String, methodName: String, inScope: Bool)? {
+        site: CallSite, callerType: TypeDeclaration?, inScopeIDs: Set<String>
+    ) -> (type: TypeDeclaration?, methodName: String, inScope: Bool)? {
         switch site.receiver {
         case .type(let receiver):
-            guard typesByName[receiver] != nil, methodKeys.contains("\(receiver).\(site.methodName)") else {
+            // A bare receiver name shared by two or more declared types can't be attributed to
+            // either without guessing, so it is left unresolved rather than bound to a first match.
+            guard case .resolved(let id) = identityResolver.resolve(receiver), let type = typesByID[id.value],
+                  methodKeys.contains("\(id.value).\(site.methodName)") else {
                 return nil
             }
-            return (receiver, site.methodName, inScopeNames.contains(receiver))
+            return (type, site.methodName, inScopeIDs.contains(id.value))
         case .selfDispatch:
-            if !callerType.isEmpty, methodKeys.contains("\(callerType).\(site.methodName)") {
-                return (callerType, site.methodName, inScopeNames.contains(callerType))
+            if let callerType, methodKeys.contains("\(callerType.id).\(site.methodName)") {
+                return (callerType, site.methodName, inScopeIDs.contains(callerType.id))
             }
             // A bare `foo()` tagged `.selfDispatch` may actually be a free function.
             guard freeFunctionNames.contains(site.methodName) else { return nil }
-            return ("", site.methodName, false)
+            return (nil, site.methodName, false)
         case .free:
             guard freeFunctionNames.contains(site.methodName) else { return nil }
-            return ("", site.methodName, false)
+            return (nil, site.methodName, false)
         case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             // `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
             // `.type`; anything still deferred here is genuinely unresolvable.
@@ -159,7 +166,8 @@ private struct CallGraphAccumulator {
 
     // MARK: - Nodes
 
-    private mutating func ensureNode(_ typeName: String, _ methodName: String, inScope: Bool) -> String {
+    private mutating func ensureNode(for type: TypeDeclaration?, methodName: String, inScope: Bool) -> String {
+        let typeName = type.map(nodeIdentity.nodeName) ?? ""
         let id = typeName.isEmpty ? methodName : "\(typeName).\(methodName)"
         if var existing = nodes[id] {
             if inScope && !existing.inScope {
