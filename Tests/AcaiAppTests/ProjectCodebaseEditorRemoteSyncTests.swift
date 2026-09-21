@@ -97,5 +97,42 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(after.repository?.ref == "main")
         #expect(after.managedCheckout == before.managedCheckout)
     }
+
+    @Test func twoCodebasesOfOneRemoteShareACloneAndDeletingTheLastRemovesIt() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let editor = makeEditor(store: store)
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+
+        await editor.addRemoteCodebase(
+            to: projectID, name: "main", remoteURL: remote.directory, ref: "main", refKind: .branch)
+        await editor.addRemoteCodebase(
+            to: projectID, name: "feature", remoteURL: remote.directory, ref: "feature", refKind: .branch)
+
+        let codebases = try #require(store.projects.first?.codebases)
+        #expect(codebases.count == 2)
+        #expect(directoryNames(in: store.gitRepositoriesDir).count == 1)
+        #expect(directoryNames(in: store.gitWorktreesDir).count == 2)
+        let mainCodebase = try #require(codebases.first { $0.name == "main" })
+        let featureCodebase = try #require(codebases.first { $0.name == "feature" })
+        #expect(!FileManager.default.fileExists(atPath: mainCodebase.directoryPath + "/Feature.swift"))
+        #expect(FileManager.default.fileExists(atPath: featureCodebase.directoryPath + "/Feature.swift"))
+
+        await editor.removeCodebase(mainCodebase.id)
+        #expect(directoryNames(in: store.gitRepositoriesDir).count == 1)
+        #expect(directoryNames(in: store.gitWorktreesDir).count == 1)
+
+        await editor.removeCodebase(featureCodebase.id)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(RepositoryIndex(projects: store.projects).entries().isEmpty)
+    }
+
+    private func directoryNames(in directory: URL) -> [String] {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return names.filter { !$0.hasPrefix(".") }
+    }
 }
 #endif
