@@ -1,9 +1,25 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Assignment Extraction
+struct JSAssignmentSyntax: AssignmentSyntax {
 
-extension JSExtractor: AssignmentResolving {
+    let context: SourceFileContext
+    private let literals: LiteralClassifier
+
+    /// JS literal node types. A `template_string` with a `template_substitution` child (`x${y}`) is
+    /// runtime-dependent and falls through to an opaque expression.
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["true", "false"],
+        numeric: ["number"],
+        string: ["string", "template_string"],
+        nilLiteral: ["null", "undefined"],
+        interpolationChildTypes: ["template_substitution"]
+    )
+
+    init(context: SourceFileContext) {
+        self.context = context
+        literals = LiteralClassifier(context: context, literals: Self.literalNodeTypes)
+    }
 
     /// Resolves JS/TS `assignment_expression` (`x = …`),
     /// `augmented_assignment_expression` (`x += …`), and
@@ -27,51 +43,41 @@ extension JSExtractor: AssignmentResolving {
     ) -> VariableAssignment? {
         guard let left = node.child(byFieldName: "left"),
               let right = node.child(byFieldName: "right"),
-              let target = parseAssignmentTarget(text(left))
+              let target = left.text(in: context).assignmentTarget
         else { return nil }
         // Compound results depend on the previous value: record the whole
         // statement as a non-enumerable expression.
         let value: VariableAssignment.Value = op == .compound
-            ? .init(kind: .expression, text: expressionSnippet(node))
+            ? .init(kind: .expression, text: node.expressionSnippet(in: context))
             : classifyValue(right)
         return VariableAssignment(
             targetName: target.name,
             targetReceiver: target.receiver,
             op: op,
             value: value,
-            location: loc(node)
+            location: node.location(in: context)
         )
     }
 
     private func resolveUpdateExpression(_ node: Node) -> VariableAssignment? {
         guard let operand = node.child(byFieldName: "argument") ?? node.namedChildren().first,
-              let target = parseAssignmentTarget(text(operand))
+              let target = operand.text(in: context).assignmentTarget
         else { return nil }
         return VariableAssignment(
             targetName: target.name,
             targetReceiver: target.receiver,
             op: .compound,
-            value: .init(kind: .expression, text: expressionSnippet(node)),
-            location: loc(node)
+            value: .init(kind: .expression, text: node.expressionSnippet(in: context)),
+            location: node.location(in: context)
         )
     }
 
-    /// JS literal node types. A `template_string` with a `template_substitution` child (`x${y}`) is
-    /// runtime-dependent and falls through to an opaque expression.
-    private static let literalNodeTypes = LiteralNodeTypes(
-        boolean: ["true", "false"],
-        numeric: ["number"],
-        string: ["string", "template_string"],
-        nilLiteral: ["null", "undefined"],
-        interpolationChildTypes: ["template_substitution"]
-    )
-
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = trimmedText(node)
-        if let enumCase = enumCaseValue(fromAccessText: valueText) {
+        if let literal = literals.value(of: node) { return literal }
+        let valueText = node.trimmedText(in: context)
+        if let enumCase = valueText.enumCaseValue {
             return enumCase
         }
-        return .init(kind: .expression, text: expressionSnippet(node))
+        return .init(kind: .expression, text: node.expressionSnippet(in: context))
     }
 }

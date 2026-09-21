@@ -27,7 +27,7 @@ public struct JSCodeParser: CodeParser {
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]))
         }
-        var extractor = JSExtractor(source: source, fileName: fileName, isTypeScript: isTypeScript)
+        var extractor = JSExtractor(source: source, fileName: fileName, isTypeScript: isTypeScript, root: root)
         var artifact = extractor.extract(from: root)
         // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
         if root.hasError {
