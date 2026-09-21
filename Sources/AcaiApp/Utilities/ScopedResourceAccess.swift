@@ -50,8 +50,8 @@ struct ScopedResourceAccess {
     /// stored one has gone stale or resolved to a different location than `path`.
     func withResolvedURL<T>(
         onRefresh: ((Refreshed) -> Void)? = nil,
-        _ body: (URL) throws -> T
-    ) throws -> T {
+        _ body: (URL) async throws -> T
+    ) async throws -> T {
         if let scoped = try? resolvedScopedURL() {
             defer { scoped.url.stopAccessingSecurityScopedResource() }
             try probe(scoped.url)
@@ -59,22 +59,22 @@ struct ScopedResourceAccess {
             if scoped.isStale || moved, let refreshed = try? SecurityScopedBookmark(resolving: scoped.url) {
                 onRefresh?(Refreshed(bookmark: refreshed, url: scoped.url))
             }
-            return try body(scoped.url)
+            return try await body(scoped.url)
         }
         // No bookmark, or one that no longer resolves: the plain path still works while the
         // sandbox grants access some other way (a picker grant from this session, or the app's
         // own container), so try it before giving up.
         let plain = URL(fileURLWithPath: path).standardizedFileURL
         try probe(plain)
-        return try body(plain)
+        return try await body(plain)
     }
 
     /// Holds the bookmark's scope open, when it can be, around work that reaches the location by
     /// its stored path. Unlike `withResolvedURL`, it neither probes nor fails when there's no scope.
-    func whileAccessible<T>(_ body: () throws -> T) rethrows -> T {
+    func whileAccessible<T>(_ body: () async throws -> T) async rethrows -> T {
         let scoped = try? resolvedScopedURL()
         defer { scoped?.url.stopAccessingSecurityScopedResource() }
-        return try body()
+        return try await body()
     }
 
     /// A resolved bookmark whose security scope is open — the caller owns balancing it with

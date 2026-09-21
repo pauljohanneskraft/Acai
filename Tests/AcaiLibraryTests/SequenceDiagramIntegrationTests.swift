@@ -12,27 +12,28 @@ import AcaiDiagram
 struct SequenceDiagramIntegrationTests {
 
     /// Parse the repo's `Sources/` once and share across tests (parsing is the expensive part).
-    /// Stored as a `Result` so an analysis failure (e.g. a CI filesystem-layout difference)
-    /// fails every test with the *original* error instead of confusing empty-artifact asserts.
-    private static let analysisResult = Result { () throws -> CodeArtifact in
+    /// A `Task` memoizes its result after the first `await` — every caller after that gets the same
+    /// cached artifact or the same rethrown failure (e.g. a CI filesystem-layout difference), so
+    /// every test fails with the *original* error instead of confusing empty-artifact asserts.
+    private static let analysisTask = Task { () throws -> CodeArtifact in
         // Tests/AcaiLibraryTests/SequenceDiagramIntegrationTests.swift → repo root is two up.
         let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let sources = repoRoot.appendingPathComponent("Sources")
-        return try AnalysisService.standard.analyzeProject(at: sources, allowedLanguages: [])
+        return try await AnalysisService.standard.analyzeProject(at: sources, allowedLanguages: [])
     }
 
-    private static func artifact() throws -> CodeArtifact {
-        try analysisResult.get()
+    private static func artifact() async throws -> CodeArtifact {
+        try await analysisTask.value
     }
 
     @Test("A known concrete-receiver call appears as a cross-participant message")
-    func knownEntryPointTracesCrossTypeCall() throws {
+    func knownEntryPointTracesCrossTypeCall() async throws {
         // `ProjectBrowserViewModel.persistChanges` calls `store.save()` through the
         // explicitly-typed `store: ProjectStore` property.
-        let diagram = try SequenceDiagramBuilder(
+        let diagram = try await SequenceDiagramBuilder(
             entryPoint: ("ProjectBrowserViewModel", "persistChanges")
         ).build(from: Self.artifact())
 
@@ -45,8 +46,8 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("typeMapping resolves an existential receiver to a concrete detector")
-    func typeMappingResolvesExistentialReceiver() throws {
-        let artifact = try Self.artifact()
+    func typeMappingResolvesExistentialReceiver() async throws {
+        let artifact = try await Self.artifact()
         // `ProjectDiscovery.discoverSourceSpecs` dispatches through `any BuildSystemDetector`;
         // mapping it to the concrete `FallbackDetector` must redirect the lifeline and follow
         // the concrete implementation's body.
@@ -68,8 +69,8 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("Every unambiguous concrete-receiver call site is traceable from its owning method")
-    func allUnambiguousCallSitesProduceCrossParticipantMessages() throws {
-        let artifact = try Self.artifact()
+    func allUnambiguousCallSitesProduceCrossParticipantMessages() async throws {
+        let artifact = try await Self.artifact()
         let types = artifact.types
         // Only uniquely-named types: the generator keys lookups by simple name (first wins),
         // so duplicated names would make the assertion ambiguous rather than wrong.

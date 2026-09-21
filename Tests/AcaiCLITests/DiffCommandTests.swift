@@ -37,8 +37,8 @@ struct DiffCommandTests {
         }
     }
 
-    @Test func runReportsAddedAndRemovedEdges() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func runReportsAddedAndRemovedEdges() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let before = dir.appendingPathComponent("before", isDirectory: true)
             let after = dir.appendingPathComponent("after", isDirectory: true)
             try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
@@ -53,7 +53,7 @@ struct DiffCommandTests {
                 "--source-old", before.path, "--source-new", after.path,
                 "--language", "swift", "--output", outURL.path
             ])
-            try cmd.run()
+            try await cmd.run()
 
             let report = try String(contentsOf: outURL, encoding: .utf8)
             #expect(report.contains("inheritance removed"))

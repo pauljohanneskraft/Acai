@@ -6,14 +6,14 @@ import AcaiQuality
 @Suite("CLI: rules")
 struct RulesCommandTests {
 
-    @Test func generatesADraftThatReloadsViaTheChecker() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func generatesADraftThatReloadsViaTheChecker() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("quality.yml")
 
             var cmd = try CLITestSupport.parseRules(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
 
             let yaml = try String(contentsOf: output, encoding: .utf8)
             #expect(yaml.contains("cycles:"))

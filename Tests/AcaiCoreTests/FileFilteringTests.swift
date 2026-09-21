@@ -31,14 +31,14 @@ struct FileFilteringTests {
     }
 
     @Test("A file excluded by includingFile is never parsed")
-    func excludedFileIsNeverParsed() throws {
+    func excludedFileIsNeverParsed() async throws {
         let root = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
         try "".write(to: root.appendingPathComponent("Keep.fx"), atomically: true, encoding: .utf8)
         try "".write(to: root.appendingPathComponent("Skip.fx"), atomically: true, encoding: .utf8)
 
         let service = AnalysisService(parsers: [SingleFileParser()])
-        let artifact = try service.analyzeProject(at: root, allowedLanguages: []) { relativePath in
+        let artifact = try await service.analyzeProject(at: root, allowedLanguages: []) { relativePath in
             relativePath != "Skip.fx"
         }
 
@@ -47,14 +47,14 @@ struct FileFilteringTests {
     }
 
     @Test("Omitting includingFile parses every file, unchanged from before it existed")
-    func omittingFilterParsesEverything() throws {
+    func omittingFilterParsesEverything() async throws {
         let root = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
         try "".write(to: root.appendingPathComponent("A.fx"), atomically: true, encoding: .utf8)
         try "".write(to: root.appendingPathComponent("B.fx"), atomically: true, encoding: .utf8)
 
         let service = AnalysisService(parsers: [SingleFileParser()])
-        let artifact = try service.analyzeProject(at: root, allowedLanguages: [])
+        let artifact = try await service.analyzeProject(at: root, allowedLanguages: [])
 
         #expect(artifact.types.contains { $0.name == "A" })
         #expect(artifact.types.contains { $0.name == "B" })

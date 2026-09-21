@@ -14,13 +14,13 @@ struct InspectCommandTests {
         }
     }
 
-    @Test func emitsTypesAndMembersWithLocations() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func emitsTypesAndMembersWithLocations() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("inspect.json")
             var cmd = try CLITestSupport.parseInspect(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"qualifiedName\""))
             #expect(contents.contains("Service"))
@@ -30,15 +30,15 @@ struct InspectCommandTests {
         }
     }
 
-    @Test func memberFilterNarrowsToMatchingTypes() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func memberFilterNarrowsToMatchingTypes() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("inspect.json")
             // No member has 5+ parameters, so the active member filter drops every type.
             var cmd = try CLITestSupport.parseInspect(
                 ["--source", dir.path, "--language", "swift",
                  "--member-kind", "method", "--min-parameters", "5", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.hasPrefix("["))
             #expect(!contents.contains("\"qualifiedName\""))

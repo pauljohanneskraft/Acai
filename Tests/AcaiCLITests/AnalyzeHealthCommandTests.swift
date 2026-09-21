@@ -6,13 +6,13 @@ import Testing
 @Suite("Analyze Health Command")
 struct AnalyzeHealthCommandTests {
 
-    @Test func cleanSourceScoresPerfect() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func cleanSourceScoresPerfect() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("health.json")
             var cmd = try CLITestSupport.parseAnalyze(
                 ["--source", dir.path, "--language", "swift", "--health", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"score\" : 1"))
             #expect(contents.contains("\"diagnosticCount\" : 0"))

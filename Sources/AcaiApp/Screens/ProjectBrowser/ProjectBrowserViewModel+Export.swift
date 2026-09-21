@@ -55,7 +55,7 @@ extension ProjectBrowserViewModel {
 
     // MARK: DOT Export
 
-    func generateDOT(for codebaseID: UUID) -> String {
+    func generateDOT(for codebaseID: UUID) async -> String {
         guard let codebase = codebase(for: codebaseID) else { return "digraph Acai { }" }
 
         if let artifact = artifact(for: codebaseID) {
@@ -65,8 +65,8 @@ extension ProjectBrowserViewModel {
 
         do {
             let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
-            return try access.withResolvedURL { url in
-                let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
+            return try await access.withResolvedURL { url in
+                let artifact = try await AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
                 return ClassDiagramDOTRenderer(options: exportOptions(for: artifact))
                     .generate(from: hidingGeneratedTypes(artifact))
             }
@@ -87,15 +87,15 @@ extension ProjectBrowserViewModel {
         artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
-    func exportDOT(for codebaseID: UUID) {
-        let dot = generateDOT(for: codebaseID)
+    func exportDOT(for codebaseID: UUID) async {
+        let dot = await generateDOT(for: codebaseID)
         let name = codebase(for: codebaseID)?.name ?? "diagram"
         pendingExport = PendingExport(filename: "\(name).txt", contentType: .plainText, data: Data(dot.utf8))
     }
 
     // MARK: Mermaid Export
 
-    func generateMermaid(for codebaseID: UUID) -> String {
+    func generateMermaid(for codebaseID: UUID) async -> String {
         guard let codebase = codebase(for: codebaseID) else { return "classDiagram\n" }
 
         if let artifact = artifact(for: codebaseID) {
@@ -105,8 +105,8 @@ extension ProjectBrowserViewModel {
 
         do {
             let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
-            return try access.withResolvedURL { url in
-                let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
+            return try await access.withResolvedURL { url in
+                let artifact = try await AnalysisService.standard.analyzeProject(at: url, allowedLanguages: [])
                 return ClassDiagramMermaidRenderer(options: exportOptions(for: artifact))
                     .generate(from: hidingGeneratedTypes(artifact))
             }
@@ -117,8 +117,8 @@ extension ProjectBrowserViewModel {
         }
     }
 
-    func exportMermaid(for codebaseID: UUID) {
-        let mermaid = generateMermaid(for: codebaseID)
+    func exportMermaid(for codebaseID: UUID) async {
+        let mermaid = await generateMermaid(for: codebaseID)
         let name = codebase(for: codebaseID)?.name ?? "diagram"
         pendingExport = PendingExport(filename: "\(name).mmd", contentType: .plainText, data: Data(mermaid.utf8))
     }

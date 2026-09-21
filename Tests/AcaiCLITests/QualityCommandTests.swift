@@ -30,8 +30,8 @@ struct QualityCommandTests {
         #expect(cmd.rules == nil)
     }
 
-    @Test func baselineDriftAppearsInReport() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func baselineDriftAppearsInReport() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)
             try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
             try "class A {}\nclass B {}\nclass C { var a: A }\n"
@@ -52,7 +52,7 @@ struct QualityCommandTests {
                 "--source", src.path, "--language", "swift",
                 "--rules", rulesURL.path, "--baseline", baseURL.path, "--output", outURL.path
             ])
-            try cmd.run()
+            try await cmd.run()
             let report = try String(contentsOf: outURL, encoding: .utf8)
             #expect(report.contains("Drift since baseline"))
         }
@@ -64,8 +64,8 @@ struct QualityCommandTests {
         }
     }
 
-    @Test func defaultBudgetsFlagSmellsInExploreMode() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func defaultBudgetsFlagSmellsInExploreMode() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let source = """
             class Widget {
                 func configure(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int) {}
@@ -77,7 +77,7 @@ struct QualityCommandTests {
             // No --rules: the built-in smell budgets apply. --explore so the breach doesn't fail exit.
             var cmd = try parseQuality(
                 ["--source", dir.path, "--language", "swift", "--explore", "--format", "json", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"ruleKind\" : \"budget\""))
             #expect(contents.contains("maxParameters"))
@@ -120,8 +120,8 @@ struct QualityCommandTests {
         }
     }
 
-    @Test func failingCheckThrowsNonZeroExit() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func failingCheckThrowsNonZeroExit() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)
             try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
             try "class A { var b: B }\nclass B {}\n"
@@ -136,7 +136,7 @@ struct QualityCommandTests {
                 "--rules", rulesURL.path, "--output", outURL.path
             ])
             // A real violation must surface as a non-zero ExitCode so CI fails the build.
-            #expect(throws: ExitCode.self) { try cmd.run() }
+            await #expect(throws: ExitCode.self) { try await cmd.run() }
             let report = try String(contentsOf: outURL, encoding: .utf8)
             #expect(report.contains("forbidden-dependency"))
         }
@@ -144,8 +144,8 @@ struct QualityCommandTests {
 
     // MARK: - Movements
 
-    @Test func movementsWithoutBaselineIsRejected() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func movementsWithoutBaselineIsRejected() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)
             try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
             try "class A {}\n".write(to: src.appendingPathComponent("m.swift"), atomically: true, encoding: .utf8)
@@ -153,16 +153,16 @@ struct QualityCommandTests {
             try "movements:\n  - metric: fanOut\n".write(to: rulesURL, atomically: true, encoding: .utf8)
 
             var cmd = try parseQuality(["--source", src.path, "--language", "swift", "--rules", rulesURL.path])
-            #expect {
-                try cmd.run()
+            await #expect {
+                try await cmd.run()
             } throws: { error in
                 CLITestSupport.message(for: error).contains("require --baseline")
             }
         }
     }
 
-    @Test func movementRegressionFailsBuild() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func movementRegressionFailsBuild() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)
             try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
             // Current: Hub depends on X and Y (fanOut 2) — worse than the baseline's 1.
@@ -190,15 +190,15 @@ struct QualityCommandTests {
                 "--source", src.path, "--language", "swift",
                 "--rules", rulesURL.path, "--baseline", baseURL.path, "--output", outURL.path
             ])
-            #expect(throws: ExitCode.self) { try cmd.run() }
+            await #expect(throws: ExitCode.self) { try await cmd.run() }
             let report = try String(contentsOf: outURL, encoding: .utf8)
             #expect(report.contains("movement"))
             #expect(report.contains("fanOut"))
         }
     }
 
-    @Test func exploreSuppressesExitCode() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func exploreSuppressesExitCode() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let src = dir.appendingPathComponent("src", isDirectory: true)
             try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
             try "class A { var b: B }\nclass B {}\n"
@@ -211,7 +211,7 @@ struct QualityCommandTests {
                 "--source", src.path, "--language", "swift",
                 "--rules", rulesURL.path, "--explore", "--output", dir.appendingPathComponent("o.txt").path
             ])
-            try cmd.run()
+            try await cmd.run()
         }
     }
 }

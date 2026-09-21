@@ -96,7 +96,7 @@ extension ProjectBrowserViewModel {
         if resolvedMergeBases[mergeBaseKey] == nil {
             do {
                 let sha = try await Task.detached(priority: .userInitiated) {
-                    try access.whileAccessible { try GitCheckout(directory: url).mergeBase(baseRef, ref) }
+                    try await access.whileAccessible { try GitCheckout(directory: url).mergeBase(baseRef, ref) }
                 }.value
                 resolvedMergeBases[mergeBaseKey] = sha
             } catch {
@@ -122,7 +122,9 @@ extension ProjectBrowserViewModel {
             let access = ScopedResourceAccess(
                 path: directory, bookmark: codebase(for: codebaseID)?.securityScopedBookmark)
             let semantic = try await Task.detached(priority: .userInitiated) {
-                try access.whileAccessible { try provider.artifact(analyzer: analyzer, fileFilter: fileFilter) }
+                try await access.whileAccessible {
+                    try await provider.artifact(analyzer: analyzer, fileFilter: fileFilter)
+                }
             }.value
             comparisonArtifacts[key] = semantic
             reportComparison(nil)

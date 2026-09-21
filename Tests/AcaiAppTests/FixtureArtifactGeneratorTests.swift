@@ -25,13 +25,13 @@ struct FixtureArtifactGeneratorTests {
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ACAI_RECORD_FIXTURE_ARTIFACTS"] != nil))
-    func regenerateSeededFixtureArtifacts() throws {
+    func regenerateSeededFixtureArtifacts() async throws {
         try FileManager.default.createDirectory(at: artifactsDirectory, withIntermediateDirectories: true)
 
         // Current on-disk state (Base/Helper/Worker/Derived, no `Added.swift`) is both the plain
         // "reindex the seeded codebase" result most journeys need, and what `CompareGitRevisionTests`
         // commits as `HEAD` before adding `Added.swift`.
-        let headArtifact = try CodebaseAnalyzer().enrichedArtifact(at: sampleSwiftPackageDirectory)
+        let headArtifact = try await CodebaseAnalyzer().enrichedArtifact(at: sampleSwiftPackageDirectory)
         try write(headArtifact, to: "seeded.json")
         try write(headArtifact, to: "comparison-HEAD.json")
 
@@ -40,7 +40,7 @@ struct FixtureArtifactGeneratorTests {
             .appendingPathComponent("Sources/SampleSwiftPackage/Added.swift")
         try "public class Added {}\n".write(to: addedFile, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: addedFile) }
-        let currentArtifact = try CodebaseAnalyzer().enrichedArtifact(at: sampleSwiftPackageDirectory)
+        let currentArtifact = try await CodebaseAnalyzer().enrichedArtifact(at: sampleSwiftPackageDirectory)
         try write(currentArtifact, to: "seeded-with-added.json")
     }
 

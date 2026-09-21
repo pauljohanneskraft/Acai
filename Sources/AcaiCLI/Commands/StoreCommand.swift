@@ -3,7 +3,7 @@ import Foundation
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Store: ParsableCommand {
+    struct Store: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Analyze source code and store the result under a given name"
         )
@@ -22,7 +22,7 @@ extension AcaiCommand {
         ))
         var language: [LanguageOption] = []
 
-        mutating func run() throws {
+        mutating func run() async throws {
             let url = URL(fileURLWithPath: sourceDir).standardizedFileURL
             guard FileManager.default.fileExists(atPath: url.path) else {
                 throw ValidationError("Source directory does not exist: \(sourceDir)")
@@ -30,7 +30,8 @@ extension AcaiCommand {
             let resolvedPath = url.resolvingSymlinksInPath().path
 
             let allowedLanguages = language.map { $0.sourceLanguage }
-            let artifact = try AnalysisService.standard.analyzeProject(at: url, allowedLanguages: allowedLanguages)
+            let artifact = try await AnalysisService.standard.analyzeProject(
+                at: url, allowedLanguages: allowedLanguages)
             artifact.warnIfParseErrors()
 
             let fingerprint = SourceTreeFingerprint(directory: url).compute()
