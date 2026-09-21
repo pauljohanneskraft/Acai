@@ -15,8 +15,8 @@ extension KotlinExtractor {
         }
 
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
         let ctorNode = node.firstChild(withType: "primary_constructor")
@@ -27,14 +27,15 @@ extension KotlinExtractor {
         let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         let isAnnotation = node.firstChild(withType: "modifiers")?.namedChildren()
-            .contains { $0.nodeType == "class_modifier" && text($0) == "annotation" } ?? false
+            .contains { $0.nodeType == "class_modifier" && $0.text(in: context) == "annotation" } ?? false
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName,
             kind: isAnnotation ? .annotation : .class,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace,
+            location: node.location(in: context)
         )
 
         // Promoted constructor properties — each carries its own access level.
@@ -56,7 +57,7 @@ extension KotlinExtractor {
         }
 
         for supertype in supertypes {
-            relationships.append(supertype.typeRef.relationship(
+            declarations.relationships.append(supertype.typeRef.relationship(
                 kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
             ))
         }
@@ -71,8 +72,8 @@ extension KotlinExtractor {
     mutating func extractInterfaceDeclaration(_ node: Node) -> TypeDeclaration? {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
         let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
@@ -81,10 +82,13 @@ extension KotlinExtractor {
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .interface,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace,
+            location: node.location(in: context)
         )
         for supertype in supertypes {
-            relationships.append(supertype.typeRef.relationship(kind: .conformance, source: qualifiedTypeName))
+            declarations.relationships.append(
+                supertype.typeRef.relationship(kind: .conformance, source: qualifiedTypeName)
+            )
         }
         if let body = node.firstChild(withType: "class_body") {
             extractBody(body, into: &typeDecl)
@@ -97,18 +101,19 @@ extension KotlinExtractor {
     mutating func extractObjectDeclaration(_ node: Node) -> TypeDeclaration? {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
         let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .object,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             inheritedTypes: supertypes.map(\.typeRef),
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace,
+            location: node.location(in: context)
         )
         for supertype in supertypes {
-            relationships.append(supertype.typeRef.relationship(
+            declarations.relationships.append(supertype.typeRef.relationship(
                 kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
             ))
         }
@@ -121,18 +126,18 @@ extension KotlinExtractor {
     // MARK: - Companion Object
 
     mutating func extractCompanionObject(_ node: Node) -> TypeDeclaration? {
-        let name = node.firstChild(withType: "type_identifier").map { text($0) } ?? "Companion"
-        let qualifiedTypeName = qualifiedName(name)
+        let name = node.firstChild(withType: "type_identifier").map { $0.text(in: context) } ?? "Companion"
+        let qualifiedTypeName = declarations.qualifiedName(name)
         let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName,
             kind: .object, accessLevel: .public, modifiers: [.static],
             inheritedTypes: supertypes.map(\.typeRef),
-            namespace: currentNamespace, location: loc(node)
+            namespace: declarations.currentNamespace, location: node.location(in: context)
         )
         for supertype in supertypes {
-            relationships.append(supertype.typeRef.relationship(
+            declarations.relationships.append(supertype.typeRef.relationship(
                 kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
             ))
         }
@@ -149,8 +154,8 @@ extension KotlinExtractor {
         modifierInfo: ModifierInfo
     ) -> TypeDeclaration? {
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
 
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
         let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
@@ -159,10 +164,11 @@ extension KotlinExtractor {
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .enum,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             genericParameters: generics, inheritedTypes: supertypes.map(\.typeRef),
-            annotations: modifierInfo.annotations, namespace: currentNamespace, location: loc(node)
+            annotations: modifierInfo.annotations, namespace: declarations.currentNamespace,
+            location: node.location(in: context)
         )
         for supertype in supertypes {
-            relationships.append(supertype.typeRef.relationship(
+            declarations.relationships.append(supertype.typeRef.relationship(
                 kind: supertype.isClassInheritance ? .inheritance : .conformance, source: qualifiedTypeName
             ))
         }
@@ -181,8 +187,8 @@ extension KotlinExtractor {
 
     func extractTypeAlias(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
-        let name = text(nameNode)
-        let qualifiedTypeName = qualifiedName(name)
+        let name = nameNode.text(in: context)
+        let qualifiedTypeName = declarations.qualifiedName(name)
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
 
@@ -197,7 +203,7 @@ extension KotlinExtractor {
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .typeAlias,
             accessLevel: modifierInfo.accessLevel, genericParameters: generics,
             inheritedTypes: targetType, annotations: modifierInfo.annotations,
-            namespace: currentNamespace, location: loc(node)
+            namespace: declarations.currentNamespace, location: node.location(in: context)
         )
     }
 }

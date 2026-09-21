@@ -34,24 +34,24 @@ extension KotlinExtractor {
     private mutating func performSourceFileAction(_ action: SourceFileAction, on node: Node) {
         switch action {
         case .setPackage:
-            currentNamespace = node
-                .firstChild(withType: "identifier")
-                .map { text($0) }
+            if let packageName = node.firstChild(withType: "identifier")?.text(in: context) {
+                _ = declarations.enter(namespace: packageName)
+            }
         case .classDeclaration:
             handleClassDeclaration(node)
         case .objectDeclaration:
             if let typeDecl = extractObjectDeclaration(node) {
-                types.append(typeDecl)
+                declarations.types.append(typeDecl)
             }
         case .functionDeclaration:
-            freestandingFunctions.append(
+            declarations.freestandingFunctions.append(
                 extractFunctionDeclaration(node)
             )
         case .propertyDeclaration:
-            globalVariables.append(extractPropertyDeclaration(node))
+            declarations.globalVariables.append(extractPropertyDeclaration(node))
         case .typeAlias:
             if let typeDecl = extractTypeAlias(node) {
-                types.append(typeDecl)
+                declarations.types.append(typeDecl)
             }
         }
     }
@@ -59,11 +59,11 @@ extension KotlinExtractor {
     private mutating func handleClassDeclaration(_ child: Node) {
         if child.hasDirectChildText("interface", in: context) {
             if let typeDecl = extractInterfaceDeclaration(child) {
-                types.append(typeDecl)
+                declarations.types.append(typeDecl)
             }
         } else {
             if let typeDecl = extractClassDeclaration(child) {
-                types.append(typeDecl)
+                declarations.types.append(typeDecl)
             }
         }
     }

@@ -16,11 +16,13 @@ public struct KotlinCodeParser: CodeParser {
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: .kotlin, filePaths: [fileName]))
         }
-        var extractor = KotlinExtractor(source: source, fileName: fileName)
+        var extractor = KotlinExtractor(source: source, fileName: fileName, root: root)
         var artifact = extractor.extract(from: root)
         // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
         if root.hasError {
-            artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
+            artifact.metadata.parseDiagnostics = ParseDiagnosticsCollector(
+                context: SourceFileContext(source: source, fileName: fileName)
+            ).diagnostics(in: root)
         }
         return artifact
     }

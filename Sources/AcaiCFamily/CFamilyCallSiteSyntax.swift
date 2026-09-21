@@ -1,9 +1,15 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Call-site resolution
+struct CFamilyCallSiteSyntax: CallSiteSyntax {
 
-extension CFamilyExtractor: CallSiteResolving {
+    let context: SourceFileContext
+    let typeReferences: CFamilyTypeReferenceResolver
+
+    /// Simple names of every function/method declared in the file, from the pre-pass, so an
+    /// unqualified call `foo()` can be resolved to a free function / same-type method (and only
+    /// then) — keeps stdlib calls (`printf`, …) out of the coverage denominator.
+    let declaredFunctionNames: Set<String>
 
     /// Resolves statically-determinable C/C++ call patterns from a `call_expression`:
     /// - `receiver.method(args)` / `receiver->method(args)` where `receiver` is a known property,
@@ -19,17 +25,16 @@ extension CFamilyExtractor: CallSiteResolving {
 
         switch function.nodeType {
         case "field_expression":
-            return fieldExpressionCallSite(function, scope: scope, location: loc(node))
+            return fieldExpressionCallSite(function, scope: scope, location: node.location(in: context))
         case "qualified_identifier":
-            return qualifiedCallSite(function, scope: scope, location: loc(node))
+            return qualifiedCallSite(function, scope: scope, location: node.location(in: context))
         case "identifier":
             // Bare `foo(args)` — a C free function, or (C++) an implicit `this->foo()` sibling call.
             // Tagged `.selfDispatch`: the call-graph builder tries the enclosing type first, then
-            // falls back to a free function. `declaredFunctionNames` keeps stdlib calls (`printf`, …)
-            // out of the coverage denominator.
-            let name = text(function)
+            // falls back to a free function.
+            let name = function.text(in: context)
             guard declaredFunctionNames.contains(name) else { return nil }
-            return CallSite(receiver: .selfDispatch, methodName: name, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: name, location: node.location(in: context))
         default:
             return nil
         }
@@ -41,14 +46,14 @@ extension CFamilyExtractor: CallSiteResolving {
         guard let field = node.child(byFieldName: "field"),
               let receiver = node.child(byFieldName: "argument")
         else { return nil }
-        let methodName = text(field)
+        let methodName = field.text(in: context)
 
         if receiver.nodeType == "this" {
             return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
         }
         guard receiver.nodeType == "identifier" else { return nil }
         return scope.resolvedCallSite(
-            receiverName: text(receiver), methodName: methodName, location: location
+            receiverName: receiver.text(in: context), methodName: methodName, location: location
         )
     }
 
@@ -59,8 +64,8 @@ extension CFamilyExtractor: CallSiteResolving {
               let nameNode = node.child(byFieldName: "name")
         else { return nil }
         return scope.resolvedCallSite(
-            receiverName: lastComponent(of: text(scopeNode)),
-            methodName: text(nameNode),
+            receiverName: typeReferences.lastComponent(of: scopeNode.text(in: context)),
+            methodName: nameNode.text(in: context),
             location: location
         )
     }
@@ -76,18 +81,18 @@ extension CFamilyExtractor: CallSiteResolving {
                   let name = declaratorIdentifier(declarator)
             else { return nil }
             if let typeNode = node.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
-                return (name, text(typeNode))
+                return (name, typeNode.text(in: context))
             }
             guard declarator.nodeType == "init_declarator",
                   let value = declarator.child(byFieldName: "value")
             else { return nil }
             if value.nodeType == "new_expression",
                let typeNode = value.child(byFieldName: "type"), typeNode.nodeType == "type_identifier" {
-                return (name, text(typeNode))
+                return (name, typeNode.text(in: context))
             }
             if value.nodeType == "call_expression",
                let function = value.child(byFieldName: "function"), function.nodeType == "identifier",
-               let returnType = scope.knownMethodReturnTypes[text(function)] {
+               let returnType = scope.knownMethodReturnTypes[function.text(in: context)] {
                 return (name, returnType)
             }
             return nil
@@ -99,12 +104,12 @@ extension CFamilyExtractor: CallSiteResolving {
     private func declaratorIdentifier(_ node: Node) -> String? {
         switch node.nodeType {
         case "identifier", "field_identifier":
-            return text(node)
+            return node.text(in: context)
         case "init_declarator", "pointer_declarator", "reference_declarator", "array_declarator":
             if let inner = node.child(byFieldName: "declarator") { return declaratorIdentifier(inner) }
-            return node.firstChild(withType: "identifier").map { text($0) }
+            return node.firstChild(withType: "identifier").map { $0.text(in: context) }
         default:
-            return node.firstChild(withType: "identifier").map { text($0) }
+            return node.firstChild(withType: "identifier").map { $0.text(in: context) }
         }
     }
 }

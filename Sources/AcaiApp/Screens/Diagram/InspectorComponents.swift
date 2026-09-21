@@ -9,14 +9,28 @@ struct ComparisonStatusRow: View {
     let status: DeltaStatus
 
     var body: some View {
-        HStack(spacing: 6) {
-            DeltaBadgeView(status: status)
-            Text(.app("View.ComparisonStatusRow.Comparison"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(verbatim: status.rawValue.capitalized)
-                .font(.caption.weight(.semibold))
+        // `ViewThatFits` falls back to the stacked arrangement once the label and value no longer
+        // fit beside the badge on one line — at the largest accessibility text sizes, in practice.
+        ViewThatFits {
+            HStack(spacing: 6) {
+                DeltaBadgeView(status: status)
+                Text(.app("View.ComparisonStatusRow.Comparison"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(verbatim: status.rawValue.capitalized)
+                    .font(.caption.weight(.semibold))
+            }
+            HStack(alignment: .top, spacing: 6) {
+                DeltaBadgeView(status: status)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(.app("View.ComparisonStatusRow.Comparison"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(verbatim: status.rawValue.capitalized)
+                        .font(.caption.weight(.semibold))
+                }
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("diagram.inspector.comparisonStatus")
@@ -34,13 +48,24 @@ struct MetricRow: View {
     }
 
     var body: some View {
-        HStack {
-            Text(localized: label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(verbatim: value)
-                .font(.system(.caption, design: .monospaced))
+        // See `ComparisonStatusRow` — same fallback to a stacked arrangement once the label and
+        // value no longer both fit on one line.
+        ViewThatFits {
+            HStack {
+                Text(localized: label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(verbatim: value)
+                    .font(.system(.caption, design: .monospaced))
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(localized: label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(verbatim: value)
+                    .font(.system(.caption, design: .monospaced))
+            }
         }
     }
 }

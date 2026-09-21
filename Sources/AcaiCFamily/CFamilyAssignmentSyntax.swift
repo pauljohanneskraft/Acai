@@ -1,9 +1,39 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Assignment extraction
+struct CFamilyAssignmentSyntax: AssignmentSyntax {
 
-extension CFamilyExtractor: AssignmentResolving {
+    let context: SourceFileContext
+    private let literals: LiteralClassifier
+
+    /// Names of every enum constant in the file, so an unscoped enum constant assigned to a variable
+    /// (C's `state = DOWNLOADING`) is recognised as an enumerable value for state-machine analysis.
+    private let declaredEnumConstants: Set<String>
+
+    /// `parameterName: typeName` for the free function currently being analysed, so a
+    /// `param->field = …` write can be attributed to the parameter's struct type (state-machine
+    /// analysis) even though C has no methods. Empty for every other body.
+    private let receiverTypes: [String: String]
+
+    private static let literalNodeTypes = LiteralNodeTypes(
+        boolean: ["true", "false"],
+        numeric: ["number_literal"],
+        string: ["string_literal", "concatenated_string", "raw_string_literal"],
+        nilLiteral: ["null", "nullptr"]
+    )
+
+    init(context: SourceFileContext, declaredEnumConstants: Set<String>, receiverTypes: [String: String] = [:]) {
+        self.context = context
+        self.declaredEnumConstants = declaredEnumConstants
+        self.receiverTypes = receiverTypes
+        literals = LiteralClassifier(context: context, literals: Self.literalNodeTypes)
+    }
+
+    /// A copy scoped to one free function's typed parameters — see `receiverTypes`.
+    func withReceiverTypes(_ receiverTypes: [String: String]) -> CFamilyAssignmentSyntax {
+        CFamilyAssignmentSyntax(
+            context: context, declaredEnumConstants: declaredEnumConstants, receiverTypes: receiverTypes)
+    }
 
     /// Resolves C/C++ `assignment_expression` nodes (`x = …`, `x += …`) and `update_expression`
     /// increments/decrements (`x++`, `++x`). Targets a plain identifier or a `this->field` access;
@@ -24,20 +54,20 @@ extension CFamilyExtractor: AssignmentResolving {
               let target = assignmentTarget(left)
         else { return nil }
 
-        let opText = node.child(byFieldName: "operator").map { text($0) } ?? "="
+        let opText = node.child(byFieldName: "operator").map { $0.text(in: context) } ?? "="
         let op: VariableAssignment.Operator = opText == "=" ? .assign : .compound
         let value: VariableAssignment.Value
         if op == .compound {
             // Compound results depend on the previous value: record as a non-enumerable expression.
-            value = .init(kind: .expression, text: expressionSnippet(node))
+            value = .init(kind: .expression, text: node.expressionSnippet(in: context))
         } else if let right = node.child(byFieldName: "right") {
             value = classifyValue(right)
         } else {
-            value = .init(kind: .expression, text: expressionSnippet(node))
+            value = .init(kind: .expression, text: node.expressionSnippet(in: context))
         }
         return VariableAssignment(
             targetName: target.name, targetReceiver: target.receiver,
-            op: op, value: value, location: loc(node)
+            op: op, value: value, location: node.location(in: context)
         )
     }
 
@@ -47,8 +77,8 @@ extension CFamilyExtractor: AssignmentResolving {
         else { return nil }
         return VariableAssignment(
             targetName: target.name, targetReceiver: target.receiver,
-            op: .compound, value: .init(kind: .expression, text: expressionSnippet(node)),
-            location: loc(node)
+            op: .compound, value: .init(kind: .expression, text: node.expressionSnippet(in: context)),
+            location: node.location(in: context)
         )
     }
 
@@ -59,53 +89,45 @@ extension CFamilyExtractor: AssignmentResolving {
     private func assignmentTarget(_ node: Node) -> (name: String, receiver: String?)? {
         switch node.nodeType {
         case "identifier", "field_identifier":
-            return (text(node), nil)
+            return (node.text(in: context), nil)
         case "field_expression":
             guard let receiver = node.child(byFieldName: "argument"),
                   let field = node.child(byFieldName: "field")
             else { return nil }
             if receiver.nodeType == "this" {
-                return (text(field), nil)
+                return (field.text(in: context), nil)
             }
             // `param->field` / `param.field` resolves to the parameter's type, so the write feeds
             // that struct's state machine even though it happens in a free function (C has no
             // methods). Only the current free function's typed parameters are in scope.
-            if receiver.nodeType == "identifier", let receiverType = currentReceiverTypes[text(receiver)] {
-                return (text(field), receiverType)
+            if receiver.nodeType == "identifier", let receiverType = receiverTypes[receiver.text(in: context)] {
+                return (field.text(in: context), receiverType)
             }
             return nil
         case "qualified_identifier":
-            return parseAssignmentTarget(
-                text(node).replacingOccurrences(of: "::", with: "."))
+            return node.text(in: context).replacingOccurrences(of: "::", with: ".").assignmentTarget
         default:
             return nil
         }
     }
 
-    private static let literalNodeTypes = LiteralNodeTypes(
-        boolean: ["true", "false"],
-        numeric: ["number_literal"],
-        string: ["string_literal", "concatenated_string", "raw_string_literal"],
-        nilLiteral: ["null", "nullptr"]
-    )
-
     /// Classifies an assigned value node for static state analysis: enum constant accesses
     /// (scoped `State::ready` or unscoped) become `.enumCase` values.
     func classifyValue(_ node: Node) -> VariableAssignment.Value {
-        if let literal = classifyLiteral(node, Self.literalNodeTypes) { return literal }
-        let valueText = trimmedText(node)
+        if let literal = literals.value(of: node) { return literal }
+        let valueText = node.trimmedText(in: context)
         switch node.nodeType {
         case "qualified_identifier":
-            return enumCaseValue(fromAccessText: valueText.replacingOccurrences(of: "::", with: "."))
-                ?? .init(kind: .expression, text: expressionSnippet(node))
+            return valueText.replacingOccurrences(of: "::", with: ".").enumCaseValue
+                ?? .init(kind: .expression, text: node.expressionSnippet(in: context))
         case "identifier":
             // An unscoped enum constant (C's `state = DOWNLOADING`) is a bare identifier; classify
             // it as an enumerable case when it names a known constant, else an opaque expression.
             return declaredEnumConstants.contains(valueText)
                 ? .init(kind: .enumCase, text: valueText)
-                : .init(kind: .expression, text: expressionSnippet(node))
+                : .init(kind: .expression, text: node.expressionSnippet(in: context))
         default:
-            return .init(kind: .expression, text: expressionSnippet(node))
+            return .init(kind: .expression, text: node.expressionSnippet(in: context))
         }
     }
 }

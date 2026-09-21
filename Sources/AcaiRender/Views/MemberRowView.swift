@@ -10,6 +10,11 @@ public struct MemberRowView: View {
     let compact: Bool
 
     @Environment(\.diagramPalette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var compactFontSize: CGFloat { 11 * dynamicTypeSize.scaleFactor }
+    private var iconFontSize: CGFloat { 9 * dynamicTypeSize.scaleFactor }
+    private var expandedFontSize: CGFloat { 12 * dynamicTypeSize.scaleFactor }
 
     public init(item: MemberDisplayItem, compact: Bool) {
         self.item = item
@@ -19,7 +24,7 @@ public struct MemberRowView: View {
     public var body: some View {
         if compact {
             Text(item.text)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.system(size: compactFontSize, design: .monospaced))
                 .if(item.isStatic) { $0.underline() }
                 .if(item.isAbstract) { $0.italic() }
                 .foregroundColor(palette.canvasInk.secondaryInk)
@@ -27,11 +32,11 @@ public struct MemberRowView: View {
         } else {
             HStack(spacing: 4) {
                 Image(systemName: item.accessLevel.rowSymbolName)
-                    .font(.system(size: 9))
+                    .font(.system(size: iconFontSize))
                     .foregroundColor(.secondary)
                     .frame(width: 12)
                 Text(item.text)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.system(size: expandedFontSize, design: .monospaced))
                     .fontWeight(item.accessLevel.isEmphasized ? .semibold : .regular)
                     .if(item.isStatic) { $0.underline() }
                     .if(item.isAbstract) { $0.italic() }

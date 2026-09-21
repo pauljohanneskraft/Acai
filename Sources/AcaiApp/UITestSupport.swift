@@ -109,6 +109,30 @@ struct UITestFixtureResolver {
         }
     }
 
+    static let dynamicTypeSizeVariable = "ACAI_UITEST_DYNAMIC_TYPE_SIZE"
+
+    private static let dynamicTypeSizesByName: [String: DynamicTypeSize] = [
+        "xSmall": .xSmall,
+        "small": .small,
+        "medium": .medium,
+        "large": .large,
+        "xLarge": .xLarge,
+        "xxLarge": .xxLarge,
+        "xxxLarge": .xxxLarge,
+        "accessibility1": .accessibility1,
+        "accessibility2": .accessibility2,
+        "accessibility3": .accessibility3,
+        "accessibility4": .accessibility4,
+        "accessibility5": .accessibility5
+    ]
+
+    /// Forces a specific Dynamic Type size, so a journey can prove layouts hold at the largest
+    /// accessibility sizes deterministically, rather than depending on the runner's own text-size
+    /// setting.
+    func resolveDynamicTypeSize() -> DynamicTypeSize? {
+        environment[Self.dynamicTypeSizeVariable].flatMap { Self.dynamicTypeSizesByName[$0] }
+    }
+
     private func url(_ variable: String) -> URL? {
         guard let path = environment[variable], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true)
@@ -125,5 +149,20 @@ struct UITestFixtureResolver {
                     .map(String.init)
             }
             .filter { $0.count == fieldCount }
+    }
+}
+
+extension View {
+    /// Unlike `preferredColorScheme(_:)`, SwiftUI's `dynamicTypeSize(_:)` has no optional-accepting
+    /// overload — `nil` leaves the system's own size in effect, as `resolveDynamicTypeSize()` returns
+    /// outside a UI test. A distinct name, not an overload of `dynamicTypeSize`, so the `if let`
+    /// branch below unambiguously calls SwiftUI's own non-optional modifier rather than itself.
+    @ViewBuilder
+    func forcingDynamicTypeSize(_ size: DynamicTypeSize?) -> some View {
+        if let size {
+            dynamicTypeSize(size)
+        } else {
+            self
+        }
     }
 }

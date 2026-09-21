@@ -48,6 +48,13 @@ public struct TypeNodeView: View {
     let badge: DeltaStatus?
 
     @Environment(\.diagramPalette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var stereotypeFontSize: CGFloat { 10 * dynamicTypeSize.scaleFactor }
+    private var nameFontSize: CGFloat { 13 * dynamicTypeSize.scaleFactor }
+    /// The 11pt size shared by the empty-section placeholder and every enum-case row — kept as one
+    /// value so an empty section still reserves exactly the height a populated one would use.
+    private var memberLineFontSize: CGFloat { 11 * dynamicTypeSize.scaleFactor }
 
     /// Primitive designated initializer. Both the generated-diagram and freeform-diagram
     /// convenience initializers (the latter lives in `AcaiApp`) delegate here, so it must
@@ -114,11 +121,11 @@ public struct TypeNodeView: View {
         VStack(spacing: 2) {
             if let stereotype {
                 Text("<<\(stereotype)>>")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.system(size: stereotypeFontSize, design: .monospaced))
                     .foregroundColor(palette.accent(for: kind))
             }
             Text(displayName)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(.system(size: nameFontSize, weight: .semibold, design: .monospaced))
                 .foregroundColor(palette.canvasInk.primaryInk)
                 .if(isInterface) { $0.italic() }
         }
@@ -146,7 +153,7 @@ public struct TypeNodeView: View {
         VStack(alignment: .leading, spacing: 1) {
             if properties.isEmpty {
                 Text(" ")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: memberLineFontSize, design: .monospaced))
                     .foregroundColor(.clear)
             } else {
                 ForEach(properties) { member in
@@ -164,7 +171,7 @@ public struct TypeNodeView: View {
         VStack(alignment: .leading, spacing: 1) {
             if methods.isEmpty {
                 Text(" ")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: memberLineFontSize, design: .monospaced))
                     .foregroundColor(.clear)
             } else {
                 ForEach(methods) { member in
@@ -182,7 +189,7 @@ public struct TypeNodeView: View {
         VStack(alignment: .leading, spacing: 1) {
             ForEach(enumCases) { ec in
                 Text(ec.text)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: memberLineFontSize, design: .monospaced))
                     .foregroundColor(palette.canvasInk.secondaryInk)
             }
         }
