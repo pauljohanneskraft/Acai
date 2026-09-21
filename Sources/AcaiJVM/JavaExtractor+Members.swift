@@ -163,7 +163,8 @@ extension JavaExtractor {
             // construction, so record them on an `.initializer` member, never a dead-code candidate.
             context.members.append(
                 Member(
-                    name: "init", kind: .initializer, accessLevel: .internal, location: child.location(in: self.context),
+                    name: "init", kind: .initializer, accessLevel: .internal,
+                    location: child.location(in: self.context),
                     callSites: callSites.callSites(in: child, scope: context.scope)
                 )
             )
@@ -315,7 +316,9 @@ extension JavaExtractor {
         }
     }
 
-    private func fieldValueReferences(for declarator: Node, scope: CallSiteScope) -> JavaMemberExtractor.ValueReferences {
+    private func fieldValueReferences(
+        for declarator: Node, scope: CallSiteScope
+    ) -> JavaMemberExtractor.ValueReferences {
         let value = declarator.child(byFieldName: "value")
         return .init(
             callSites: callSites.callSites(in: value, scope: scope),
