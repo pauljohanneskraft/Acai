@@ -33,9 +33,9 @@ extension CFamilyExtractor {
                     // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
                     // body; walk it so calls made during construction aren't lost.
                     if let initList = child.firstChild(withType: "field_initializer_list") {
-                        method.callSites += extractCallSites(
-                            from: initList,
-                            scope: CallSiteScope(knownTypeNames: declaredTypeNames)
+                        method.callSites += callSites.callSites(
+                            in: initList,
+                            scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)
                                 .merging(parameters: method.parameters))
                     }
                     members.append(method)
@@ -59,20 +59,21 @@ extension CFamilyExtractor {
     /// every stored property is available to the scope.
     private func attachBodies(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
         guard !pendingBodies.isEmpty else { return }
+        let index = MemberIndex(members: members)
         let scope = CallSiteScope(
-            knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: declaredTypeNames,
-            knownMethodReturnTypes: methodReturnTypeMap(from: members)
+            knownProperties: index.propertyTypes,
+            knownTypeNames: declarations.declaredTypeNames,
+            knownMethodReturnTypes: index.methodReturnTypes
         )
         for pending in pendingBodies where pending.index < members.count {
             // `+=`: a constructor may already carry member-initializer-list call sites set at append time.
-            members[pending.index].callSites += extractCallSites(
-                from: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
-            members[pending.index].assignments = extractAssignments(from: pending.body)
-            members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
-            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
+            members[pending.index].callSites += callSites.callSites(
+                in: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
+            members[pending.index].assignments = assignments.assignments(in: pending.body)
+            members[pending.index].fieldReads = fieldReads.reads(in: pending.body, scope: scope)
+            members[pending.index].referencedTypeNames = pending.body.referencedTypeNames(in: context)
             members[pending.index].cyclomaticComplexity =
-                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
+                pending.body.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
         }
     }
 
@@ -84,7 +85,7 @@ extension CFamilyExtractor {
             appendNestedType(typeNode, into: &nestedTypes)
         }
         for declarator in declarators(of: node) {
-            let info = parseDeclarator(declarator)
+            let info = typeReferences.parseDeclarator(declarator)
             guard !info.name.isEmpty else { continue }
             if info.isFunction {
                 members.append(methodMember(node: node, info: info, ownerName: ownerName, access: access))
@@ -133,33 +134,33 @@ extension CFamilyExtractor {
 
     mutating func extractTopLevelDeclarators(_ node: Node) {
         for declarator in declarators(of: node) {
-            let info = parseDeclarator(declarator)
+            let info = typeReferences.parseDeclarator(declarator)
             guard !info.name.isEmpty else { continue }
             if info.isFunction {
-                freestandingFunctions.append(
+                declarations.freestandingFunctions.append(
                     methodMember(node: node, info: info, ownerName: nil, access: .public))
             } else {
-                let typeRef = typeReference(from: node.child(byFieldName: "type"), declarator: info)
-                globalVariables.append(Member(
-                    name: lastComponent(of: info.name), kind: .property,
+                let typeRef = typeReferences.typeReference(from: node.child(byFieldName: "type"), declarator: info)
+                declarations.globalVariables.append(Member(
+                    name: typeReferences.lastComponent(of: info.name), kind: .property,
                     accessLevel: .public, modifiers: modifiers(from: node),
-                    type: typeRef, location: loc(node)))
+                    type: typeRef, location: node.location(in: context)))
             }
         }
     }
 
-    mutating func extractFunctionDefinition(_ node: Node, defaultAccess: AccessLevel) -> Member? {
+    func extractFunctionDefinition(_ node: Node, defaultAccess: AccessLevel) -> Member? {
         guard var member = functionMember(from: node, ownerName: nil, access: defaultAccess) else {
             return nil
         }
         if let body = node.child(byFieldName: "body") {
-            let scope = CallSiteScope(knownProperties: [:], knownTypeNames: declaredTypeNames)
-            member.callSites = extractCallSites(from: body, scope: scope.merging(parameters: member.parameters))
+            let scope = CallSiteScope(knownProperties: [:], knownTypeNames: declarations.declaredTypeNames)
+            member.callSites = callSites.callSites(in: body, scope: scope.merging(parameters: member.parameters))
             // Expose the function's typed parameters so a `param->field = …` write inside the body
-            // can be attributed to the parameter's struct type; cleared once the body is analysed.
-            currentReceiverTypes = parameterReceiverTypes(member.parameters)
-            member.assignments = extractAssignments(from: body)
-            currentReceiverTypes = [:]
+            // can be attributed to the parameter's struct type; scoped to this one resolution.
+            let receiverAssignments = AssignmentResolver(
+                syntax: assignmentSyntax.withReceiverTypes(parameterReceiverTypes(member.parameters)))
+            member.assignments = receiverAssignments.assignments(in: body)
         }
         return member
     }
@@ -176,8 +177,8 @@ extension CFamilyExtractor {
         return map
     }
 
-    private mutating func functionMember(from node: Node, ownerName: String?, access: AccessLevel) -> Member? {
-        let info = parseDeclarator(node.child(byFieldName: "declarator"))
+    private func functionMember(from node: Node, ownerName: String?, access: AccessLevel) -> Member? {
+        let info = typeReferences.parseDeclarator(node.child(byFieldName: "declarator"))
         guard info.isFunction, !info.name.isEmpty else { return nil }
         return methodMember(node: node, info: info, ownerName: ownerName, access: access)
     }
@@ -185,32 +186,33 @@ extension CFamilyExtractor {
     private func methodMember(
         node: Node, info: CFamilyDeclarator, ownerName: String?, access: AccessLevel
     ) -> Member {
-        let simpleName = lastComponent(of: info.name)
-        let returnType = typeReference(from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
+        let simpleName = typeReferences.lastComponent(of: info.name)
+        let returnType = typeReferences.typeReference(
+            from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
         let kind = memberKind(name: simpleName, ownerName: ownerName, hasReturnType: returnType != nil)
         return Member(
             name: simpleName, kind: kind, accessLevel: access,
             modifiers: modifiers(from: node),
             type: kind == .method ? returnType : nil,
-            parameters: info.parameters, location: loc(node))
+            parameters: info.parameters, location: node.location(in: context))
     }
 
     private func propertyMember(node: Node, info: CFamilyDeclarator, access: AccessLevel) -> Member {
         // A C++ default member initializer (`State state = State::idle;`) seeds the field's value,
         // which the state-diagram value-flow analysis reads as the machine's initial state.
-        let initialValue = node.child(byFieldName: "default_value").map { classifyValue($0) }
+        let initialValue = node.child(byFieldName: "default_value").map { assignmentSyntax.classifyValue($0) }
         return Member(
-            name: lastComponent(of: info.name), kind: .property, accessLevel: access,
+            name: typeReferences.lastComponent(of: info.name), kind: .property, accessLevel: access,
             modifiers: modifiers(from: node),
-            type: typeReference(from: node.child(byFieldName: "type"), declarator: info),
-            location: loc(node),
+            type: typeReferences.typeReference(from: node.child(byFieldName: "type"), declarator: info),
+            location: node.location(in: context),
             // A default member initializer's calls (`int n = compute();`) are recorded so their targets
             // aren't false-flagged dead. File-level type names cover static/`Type::method()` calls.
-            callSites: extractCallSites(
-                from: node.child(byFieldName: "default_value"),
-                scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
+            callSites: callSites.callSites(
+                in: node.child(byFieldName: "default_value"),
+                scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)),
             initialValue: initialValue,
-            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "default_value")))
+            referencedTypeNames: node.child(byFieldName: "default_value")?.referencedTypeNames(in: context) ?? [])
     }
 
     // MARK: - Helpers
@@ -231,7 +233,7 @@ extension CFamilyExtractor {
     }
 
     private func accessLevel(from node: Node) -> AccessLevel? {
-        switch text(node).trimmingCharacters(in: .whitespaces) {
+        switch node.text(in: context).trimmingCharacters(in: .whitespaces) {
         case "public":
             return .public
         case "protected":
@@ -247,15 +249,16 @@ extension CFamilyExtractor {
         var modifiers: [Modifier] = []
         var isVirtual = false
         for child in node.children() {
-            if let modifier = modifier(forChildType: child.nodeType, text: text(child)) {
+            if let modifier = modifier(forChildType: child.nodeType, text: child.text(in: context)) {
                 modifiers.append(modifier)
-            } else if isVirtualMarker(nodeType: child.nodeType, text: text(child), isNamed: child.isNamed) {
+            } else if isVirtualMarker(nodeType: child.nodeType, text: child.text(in: context), isNamed: child.isNamed) {
                 isVirtual = true
             }
         }
         // No plain `virtual` modifier exists in the closed `Modifier` enum; a pure virtual (`= 0`)
         // maps to `.abstract`, an ordinary virtual is left unmarked.
-        if isVirtual, let defaultValue = node.child(byFieldName: "default_value"), text(defaultValue) == "0" {
+        if isVirtual, let defaultValue = node.child(byFieldName: "default_value"),
+           defaultValue.text(in: context) == "0" {
             modifiers.append(.abstract)
         }
         return modifiers
