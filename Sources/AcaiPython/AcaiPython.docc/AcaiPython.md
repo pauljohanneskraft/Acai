@@ -16,6 +16,13 @@ attributes are still captured, just without a type), instance attributes are dis
 `self.x = …` assignments in `__init__`, and `ABC` subclasses count as abstract types for
 package-abstractness metrics.
 
+A method decorated `@override`, `@typing.override` or `@typing_extensions.override` carries the
+`.override` modifier, so the dead-code scan exempts it like it does for every other language's
+override keyword. This is a known, inherent gap: a method that overrides a base-class member
+without the decorator (Python has no `override` keyword) carries no such signal and can still be
+misreported as dead. Deliberately not papered over with a name-matching heuristic, which would
+misclassify same-named, unrelated methods across sibling types.
+
 ## Topics
 
 ### Parsing
