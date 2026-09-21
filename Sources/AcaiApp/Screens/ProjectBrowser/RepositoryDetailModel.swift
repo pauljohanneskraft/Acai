@@ -20,6 +20,7 @@ final class RepositoryDetailModel: ObservableObject {
     private let store: ProjectStore
     private let remoteService: GitRemoteService
     private var subscriptions: Set<AnyCancellable> = []
+    private var reload: Task<Void, Never>?
 
     init(remoteURL: URL, store: ProjectStore, remoteService: GitRemoteService) {
         self.remoteURL = remoteURL
@@ -45,13 +46,26 @@ final class RepositoryDetailModel: ObservableObject {
         RemoteEndpoint(remoteURL: remoteURL, gitHubCredential: nil)
     }
 
+    /// Single-flight: a load started later supersedes one still in flight, so the details never
+    /// settle on an older inspection.
     func loadDetails() async {
+        reload?.cancel()
+        let load = Task { [weak self] in
+            guard let self else { return }
+            await performLoad()
+        }
+        reload = load
+        await load.value
+    }
+
+    private func performLoad() async {
         isLoadingDetails = true
-        defer { isLoadingDetails = false }
+        defer { if !Task.isCancelled { isLoadingDetails = false } }
         let hubStoreDirectory = store.gitRepositoriesDir
         async let inspection = remoteService.inspectClone(endpoint, hubStoreDirectory: hubStoreDirectory)
         async let size = remoteService.onDiskSize(of: endpoint, hubStoreDirectory: hubStoreDirectory)
         let (loaded, loadedSize) = await (inspection, size)
+        guard !Task.isCancelled else { return }
         isShallow = loaded.isShallow
         lastFetchedAt = loaded.lastFetchedAt
         worktreeNames = loaded.worktreeNames

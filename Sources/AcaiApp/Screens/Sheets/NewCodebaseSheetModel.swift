@@ -183,25 +183,29 @@ final class NewCodebaseSheetModel: ObservableObject {
 
     // MARK: - Remote URL
 
-    /// A keystroke drops the listing in flight; an invalid address never reaches the remote.
+    /// A keystroke drops the listing in flight; an invalid address never reaches the remote, and a
+    /// valid one is neither listed nor inspected on disk until typing pauses.
     private func addressChanged() {
         pendingListing?.cancel()
         pendingListing = nil
         selectedRemoteRef = nil
-        refreshCandidateClone()
         guard !remoteAddress.isEmpty else {
             remoteListing = .idle
+            refreshCandidateClone()
             return
         }
         if case .failure(let problem) = RemoteAddress(text: remoteAddress).result {
             remoteListing = .invalid(problem)
+            refreshCandidateClone()
             return
         }
         pendingListing = Task { [weak self, listingDebounce] in
             if listingDebounce > .zero {
                 guard (try? await Task.sleep(for: listingDebounce)) != nil else { return }
             }
-            await self?.listRemote()
+            guard let self else { return }
+            refreshCandidateClone()
+            await listRemote()
         }
     }
 

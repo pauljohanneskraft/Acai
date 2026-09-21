@@ -96,7 +96,8 @@ struct NewCodebaseSheetContent: View {
             }
             // `.task(id:)`, not `.onChange(of:)`: `account` is typically already non-nil the first
             // time this sheet appears, which `.onChange` would never see.
-            .task(id: accountStore.account) {
+            .onChange(of: accountStore.account) { _, account in sheet.account = account }
+            .task(id: accountStore.account?.login) {
                 sheet.account = accountStore.account
                 await sheet.loadRepositories()
             }
