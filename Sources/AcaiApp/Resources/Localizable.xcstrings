@@ -309,6 +309,50 @@
         }
       }
     },
+    "Intent.ExportDiagram.CodebaseNotIndexed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde noch nicht indiziert, daher gibt es nichts zu exportieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn’t been indexed yet, so there’s nothing to export."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’a pas encore été indexée, il n’y a donc rien à exporter."
+          }
+        }
+      }
+    },
+    "Intent.ExportDiagram.UnsupportedType %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-Diagramme können noch nicht als Bild exportiert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ diagrams can’t be exported as an image yet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les diagrammes %@ ne peuvent pas encore être exportés en image."
+          }
+        }
+      }
+    },
     "Intent.ReindexCodebase.Cancelled %@" : {
       "localizations" : {
         "de" : {

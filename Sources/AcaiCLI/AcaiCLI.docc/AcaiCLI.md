@@ -72,7 +72,8 @@ Contributors build from a checkout instead:
 Every analysis command needs **one artifact**, supplied one of two ways:
 
 - `--source <dir>` — parse a directory now, or
-- `--from <name-or-path>` — reuse a stored analysis (by name) or a `.json` artifact (by path).
+- `--from <name-or-path>` — reuse a stored analysis, by name, by a `.json` artifact's path, or by the
+  path of a source directory that already has one stored.
 
 They're mutually exclusive, and one is required. Parsing a large repo repeatedly is wasteful, so the usual pattern is: **store once, query many times.**
 
@@ -97,13 +98,17 @@ These appear on nearly every command.
 
 | Flag | Meaning |
 | --- | --- |
-| `--from <from>` | Name of a stored analysis, or path to a `.json` file. |
+| `--from <from>` | Name of a stored analysis, or path to a `.json` file or a source directory. |
 | `--source <source>` | Path to a source directory to analyze on the fly. |
 | `--language <language>` | Restrict analysis to one or more languages. Repeatable. |
 
 `--language` accepts: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`. Repeat for several: `--language kotlin --language java`. Unknown values are rejected at parse time.
 
-`--from` resolves in order: an existing file path wins; otherwise it's looked up as a name under the stored-analysis directory. An artifact written by an older Açaí version reports that it must be regenerated rather than failing obscurely.
+`--from` resolves in order: an existing `.json` file path; an existing directory, looked up in the
+shared analysis store by its resolved path (this is how the CLI picks up an analysis the app or an MCP
+session already produced for that directory, with no name needed); otherwise it's looked up as a name
+under the store. An artifact written by an older Açaí version reports that it must be regenerated
+rather than failing obscurely.
 
 ### Output and formatting
 
@@ -187,7 +192,10 @@ acai analyze --source . --output model.json
 acai store <name> <source-dir> [--language <language> ...]
 ```
 
-Both arguments are positional. Writes `<name>.json` into the stored-analysis directory and prints the path.
+Both arguments are positional. Writes `<name>.json` into the shared analysis store and prints the path.
+The store also records the source directory's resolved path, so the same analysis is found — no
+re-parsing needed — by an MCP session or the app pointed at that directory, and by `--from <source-dir>`
+below.
 
 ```sh
 acai store main-baseline ./MyProject
@@ -200,7 +208,8 @@ acai store mobile ./MyProject --language kotlin --language java
 
 > List all stored analyses.
 
-No options. Prints a `NAME · LANGUAGE · TYPES · FILES` table, or `No stored analyses found.` An artifact that can't be decoded shows `(error reading)` rather than aborting the listing.
+No options. Prints a `NAME · LANGUAGE · TYPES · FILES · PATH` table, or `No stored analyses found.` An
+artifact that can't be decoded shows `(error reading)` rather than aborting the listing.
 
 ### `diagram`
 

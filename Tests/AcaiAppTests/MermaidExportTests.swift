@@ -10,7 +10,8 @@ struct MermaidExportTests {
     private func makeModel() -> (ProjectBrowserViewModel, UUID) {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("acai-mermaid-export-\(UUID().uuidString)", isDirectory: true)
-        let store = ProjectStore(baseDir: tempDir)
+        let store = ProjectStore(
+            baseDir: tempDir, analysisStore: AnalysisStore(directory: tempDir.appendingPathComponent("analysis-store")))
         let codebaseID = UUID()
         store.projects = [
             Project(

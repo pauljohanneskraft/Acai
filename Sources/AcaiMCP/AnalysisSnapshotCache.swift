@@ -1,97 +1,32 @@
 import Foundation
 import MCP
+import AcaiCore
 import AcaiLibrary
 
-/// A cheap change-signature for a source tree: newest modification time, file count, and an
-/// order-independent digest folding each file's `(relativePath, mtime, size)` (skipping build/VCS
-/// output). The digest is what catches a rename/move or content-swap — those preserve mtime and
-/// count alone.
-struct SourceTreeSignature: Equatable, Sendable {
-    let latestModification: TimeInterval
-    let fileCount: Int
-    /// Commutative sum, so it's enumeration-order-independent.
-    let contentDigest: UInt64
-
-    private static let skippedDirectories: Set<String> = [
-        ".build", ".git", ".swiftpm", "node_modules", "DerivedData", "build",
-        ".gradle", "dist", "Pods", "__pycache__", ".venv", "venv"
-    ]
-
-    init(root: URL) {
-        let keys: Set<URLResourceKey> = [
-            .contentModificationDateKey, .isDirectoryKey, .isRegularFileKey, .fileSizeKey]
-        let rootPath = root.standardizedFileURL.path
-        var latest: TimeInterval = 0
-        var count = 0
-        var digest: UInt64 = 0
-        // `root` may be a single `.json` baseline file rather than a directory.
-        if let values = try? root.resourceValues(forKeys: keys), values.isRegularFile == true {
-            let mtime = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
-            self.latestModification = mtime
-            self.fileCount = 1
-            self.contentDigest = FileFingerprint(
-                relativePath: root.lastPathComponent, mtime: mtime, size: values.fileSize ?? 0).stableHash
-            return
-        }
-        let enumerator = FileManager.default.enumerator(
-            at: root,
-            includingPropertiesForKeys: Array(keys),
-            options: [.skipsHiddenFiles])
-        while let url = enumerator?.nextObject() as? URL {
-            let values = try? url.resourceValues(forKeys: keys)
-            if values?.isDirectory == true {
-                if Self.skippedDirectories.contains(url.lastPathComponent) {
-                    enumerator?.skipDescendants()
-                }
-                continue
-            }
-            guard values?.isRegularFile == true else { continue }
-            count += 1
-            let mtime = values?.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
-            if mtime > latest { latest = mtime }
-            let relativePath = String(url.standardizedFileURL.path.dropFirst(rootPath.count))
-            digest &+= FileFingerprint(
-                relativePath: relativePath, mtime: mtime, size: values?.fileSize ?? 0).stableHash
-        }
-        self.latestModification = latest
-        self.fileCount = count
-        self.contentDigest = digest
-    }
-}
-
-private struct FileFingerprint {
-    let relativePath: String
-    let mtime: TimeInterval
-    let size: Int
-
-    /// FNV-1a hash, seed-free so it's deterministic across the process's lifetime.
-    var stableHash: UInt64 {
-        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
-        for byte in "\(relativePath)|\(mtime.bitPattern)|\(size)".utf8 {
-            hash = (hash ^ UInt64(byte)) &* 0x0000_0100_0000_01b3
-        }
-        return hash
-    }
-}
-
 /// The in-process parse cache behind every tool: one enriched `CodeArtifact` per project path, reused
-/// across a task until the tree changes (or a tool passes `refresh`). An `actor` so concurrent tool
-/// calls serialize safely on the cache.
+/// across a task until the tree changes (or a tool passes `refresh`). On an in-memory miss it consults
+/// the shared `AnalysisStore` before re-analyzing — so a second MCP session over the same tree, or one
+/// already indexed by the CLI or the app, starts warm — and writes back what it analyzes so the next
+/// session (in this process or another) can do the same. An `actor` so concurrent tool calls serialize
+/// safely on the cache.
 actor AnalysisSnapshotCache {
     private struct Entry {
-        let signature: SourceTreeSignature
+        let fingerprint: CodeStateFingerprint
         let artifact: CodeArtifact
     }
 
     private let service: AnalysisService
+    private let store: AnalysisStore
     private let languageResolver = SourceLanguageResolver()
     private var entries: [String: Entry] = [:]
 
-    /// Counts cache misses only, so this is the observable proof a snapshot is being reused.
+    /// Counts fresh analyses only (in-memory and on-disk misses alike), so this is the observable
+    /// proof a snapshot is being reused rather than recomputed.
     private(set) var analysisCount = 0
 
-    init(service: AnalysisService = .standard) {
+    init(service: AnalysisService = .standard, store: AnalysisStore = .standard) {
         self.service = service
+        self.store = store
     }
 
     /// `path` is a source directory to analyze, or a `.json` artifact file to decode (a stored
@@ -103,9 +38,15 @@ actor AnalysisSnapshotCache {
             throw MCPError.invalidParams("Path does not exist: \(path)")
         }
         let key = url.path
-        let signature = SourceTreeSignature(root: url)
-        if !refresh, let cached = entries[key], cached.signature == signature {
+        let fingerprint = SourceTreeFingerprint(directory: url).compute()
+        if !refresh, let cached = entries[key], cached.fingerprint == fingerprint {
             return cached.artifact
+        }
+        let toolVersion = AcaiConstants.standard.toolVersion
+        if !refresh, case .entry(let stored) = store.lookup(forResolvedPath: key),
+           stored.isCurrent(sourcePath: key, fingerprint: fingerprint, toolVersion: toolVersion) {
+            entries[key] = Entry(fingerprint: fingerprint, artifact: stored.artifact)
+            return stored.artifact
         }
         let artifact: CodeArtifact
         if !isDirectory.boolValue && url.pathExtension == "json" {
@@ -113,9 +54,10 @@ actor AnalysisSnapshotCache {
         } else {
             artifact = try service.analyzeProject(
                 at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
+            _ = try? store.write(artifact, sourcePath: key, fingerprint: fingerprint)
         }
         analysisCount += 1
-        entries[key] = Entry(signature: signature, artifact: artifact)
+        entries[key] = Entry(fingerprint: fingerprint, artifact: artifact)
         return artifact
     }
 

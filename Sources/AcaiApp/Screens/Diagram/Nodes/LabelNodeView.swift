@@ -29,9 +29,11 @@ struct LabelNodeView: View {
 
     @Environment(\.diagramPalette) private var palette
 
-    private var fill: Color { role == .actor ? palette.actorFill : palette.databaseFill }
-    private var border: Color { role == .actor ? palette.actorBorder : palette.databaseBorder }
-    private var icon: Color { role == .actor ? palette.actorIcon : palette.databaseIcon }
+    private var decorations: FreeformDecorationColors { palette.freeformDecorations }
+
+    private var fill: Color { role == .actor ? decorations.actorFill : decorations.databaseFill }
+    private var border: Color { role == .actor ? decorations.actorBorder : decorations.databaseBorder }
+    private var icon: Color { role == .actor ? decorations.actorIcon : decorations.databaseIcon }
 
     var body: some View {
         VStack(spacing: 4) {
@@ -40,7 +42,7 @@ struct LabelNodeView: View {
                 .foregroundColor(icon)
             Text(verbatim: name)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(palette.primaryInk)
+                .foregroundColor(palette.canvasInk.primaryInk)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

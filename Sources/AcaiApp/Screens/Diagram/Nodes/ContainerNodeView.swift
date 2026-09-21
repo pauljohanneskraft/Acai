@@ -62,7 +62,7 @@ struct ContainerNodeView: View {
                     .foregroundColor(styleBorder)
                 Text(verbatim: name)
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(palette.primaryInk)
+                    .foregroundColor(palette.canvasInk.primaryInk)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 5)

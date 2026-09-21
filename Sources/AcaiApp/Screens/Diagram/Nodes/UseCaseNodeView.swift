@@ -10,14 +10,17 @@ struct UseCaseNodeView: View {
     var body: some View {
         Text(verbatim: name)
             .font(.system(size: 12, weight: .medium, design: .monospaced))
-            .foregroundColor(palette.primaryInk)
+            .foregroundColor(palette.canvasInk.primaryInk)
             .padding(.horizontal, 24)
             .padding(.vertical, 14)
-            .background(palette.useCaseFill)
+            .background(palette.freeformDecorations.useCaseFill)
             .clipShape(Ellipse())
             .overlay(
                 Ellipse()
-                    .stroke(isSelected ? Color.accentColor : palette.useCaseBorder, lineWidth: isSelected ? 2 : 1)
+                    .stroke(
+                        isSelected ? Color.accentColor : palette.freeformDecorations.useCaseBorder,
+                        lineWidth: isSelected ? 2 : 1
+                    )
             )
             .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }

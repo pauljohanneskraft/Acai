@@ -54,26 +54,55 @@ struct ArtifactSource: ParsableArguments {
         return artifact
     }
 
-    /// A `DecodingError` means the file predates a schema change, so it's reported as "regenerate it"
-    /// rather than a raw decode dump.
+    /// Resolves `--from` against, in order: a path to a `.json` artifact file (today's behavior,
+    /// kept as-is), a path to a source directory that has a stored entry, and the name of a stored
+    /// analysis. A `DecodingError` on a direct file, or a named entry that exists but fails to
+    /// decode as either the current or the legacy shape, is reported as "regenerate it" rather
+    /// than a raw decode dump.
     static func loadStored(_ value: String) throws -> CodeArtifact {
         let directURL = URL(fileURLWithPath: value)
-        let url: URL
-        if FileManager.default.fileExists(atPath: directURL.path) {
-            url = directURL
-        } else {
-            let storedURL = AcaiConstants.standard.analysisDirectory.appendingPathComponent("\(value).json")
-            guard FileManager.default.fileExists(atPath: storedURL.path) else {
+        var isDirectory: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: directURL.path, isDirectory: &isDirectory)
+
+        if exists, !isDirectory.boolValue {
+            do {
+                return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: directURL))
+            } catch is DecodingError {
+                throw ValidationError(
+                    "Stored analysis '\(value)' was produced by an older Açaí version and can no longer be read. "
+                    + "Re-run `acai analyze` / `acai store` to regenerate it."
+                )
+            }
+        }
+
+        let store = AnalysisStore.standard
+
+        if exists, isDirectory.boolValue {
+            let resolvedPath = directURL.standardizedFileURL.resolvingSymlinksInPath().path
+            switch store.lookup(forResolvedPath: resolvedPath) {
+            case .entry(let entry):
+                return entry.artifact
+            case .legacyArtifact(let artifact):
+                return artifact
+            case .absent:
+                throw ValidationError(
+                    "No stored analysis found for '\(value)'. Run `acai store` or pass --source to analyze it."
+                )
+            }
+        }
+
+        switch store.lookup(named: value) {
+        case .entry(let entry):
+            return entry.artifact
+        case .legacyArtifact(let artifact):
+            return artifact
+        case .absent:
+            guard FileManager.default.fileExists(atPath: store.url(forName: value).path) else {
                 throw ValidationError(
                     "Could not find analysis '\(value)'. "
                     + "Provide a path to a .json file or the name of a stored analysis."
                 )
             }
-            url = storedURL
-        }
-        do {
-            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))
-        } catch is DecodingError {
             throw ValidationError(
                 "Stored analysis '\(value)' was produced by an older Açaí version and can no longer be read. "
                 + "Re-run `acai analyze` / `acai store` to regenerate it."
