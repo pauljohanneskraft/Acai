@@ -1,61 +1,12 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Type References, Generics & Call Sites
+// MARK: - JavaTypeReferenceResolver
 
-extension JavaExtractor {
-
-    /// Matches Java `method_invocation` nodes: `receiver.method(args)` (object is a known property or
-    /// type), `this.receiver.method(args)`, `this.method(args)`, `TypeName.method(args)`.
-    func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
-        guard node.nodeType == "method_invocation",
-              let nameNode = node.child(byFieldName: "name")
-        else { return nil }
-
-        // Bare `foo()` — no `object` field: an implicit `this.foo()` (or a static import). Tag it
-        // `.selfDispatch`; the call-graph builder falls back to a free function if it is a static import.
-        guard let objectNode = node.child(byFieldName: "object") else {
-            return scope.bareCall(named: text(nameNode), implicitSelf: true, location: loc(node))
-        }
-
-        return resolveMemberCall(
-            receiver: objectNode,
-            methodName: text(nameNode),
-            grammar: MemberCallGrammar(
-                selfNodeType: "this", memberAccessType: "field_access", memberField: "field"
-            ),
-            scope: scope,
-            location: loc(node)
-        )
-    }
-
-    /// Provable local-variable types: an explicit annotation (`Foo x = …`), a `new Foo()` construction
-    /// (`var x = new Foo()`), or a same-type method call with an unambiguous return type (`var x =
-    /// compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
-    func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] {
-        collectLocalBindings(in: body) { node in
-            guard node.nodeType == "local_variable_declaration",
-                  let declarator = node.child(byFieldName: "declarator"),
-                  let nameNode = declarator.child(byFieldName: "name")
-            else { return nil }
-            let name = text(nameNode)
-            if let typeNode = node.child(byFieldName: "type"),
-               typeNode.nodeType == "type_identifier", text(typeNode) != "var" {
-                return (name, text(typeNode))
-            }
-            guard let value = declarator.child(byFieldName: "value") else { return nil }
-            if value.nodeType == "object_creation_expression",
-               let typeNode = value.child(byFieldName: "type") {
-                return (name, text(typeNode))
-            }
-            if value.nodeType == "method_invocation", value.child(byFieldName: "object") == nil,
-               let methodName = value.child(byFieldName: "name").map({ text($0) }),
-               let returnType = scope.knownMethodReturnTypes[methodName] {
-                return (name, returnType)
-            }
-            return nil
-        }
-    }
+/// Resolves a Java type node into a `TypeReference`, and reads generic type-parameter lists.
+/// Stateless beyond `context`.
+struct JavaTypeReferenceResolver {
+    let context: SourceFileContext
 
     // MARK: - Type References
 
@@ -65,7 +16,7 @@ extension JavaExtractor {
         switch nodeType {
         case "type_identifier", "integral_type", "floating_point_type",
              "scoped_type_identifier":
-            return TypeReference(name: text(node))
+            return TypeReference(name: node.text(in: context))
         case "void_type":
             return TypeReference(name: "void")
         case "boolean_type":
@@ -81,7 +32,7 @@ extension JavaExtractor {
         case "dimensions":
             return nil
         default:
-            let typeName = text(node)
+            let typeName = node.text(in: context)
             return typeName.isEmpty ? nil : TypeReference(name: typeName)
         }
     }
@@ -93,7 +44,7 @@ extension JavaExtractor {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "type_identifier", "scoped_type_identifier":
-                name = text(child)
+                name = child.text(in: context)
             case "type_arguments":
                 genericArgs = extractTypeArguments(child)
             default:
@@ -111,7 +62,7 @@ extension JavaExtractor {
                 isOptional: elementRef.isOptional, isArray: true
             )
         }
-        let trimmed = text(node).replacingOccurrences(of: "[]", with: "")
+        let trimmed = node.text(in: context).replacingOccurrences(of: "[]", with: "")
         return TypeReference(name: trimmed, isArray: true)
     }
 
@@ -137,7 +88,7 @@ extension JavaExtractor {
             }
         }
 
-        let fullText = text(node)
+        let fullText = node.text(in: context)
         if fullText.contains("extends") || fullText.contains("super") {
             wildcardName = fullText
         }
@@ -172,7 +123,7 @@ extension JavaExtractor {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "type_identifier", "identifier":
-                if name.isEmpty { name = text(child) }
+                if name.isEmpty { name = child.text(in: context) }
             case "type_bound":
                 constraints = extractTypeBound(child)
             default:
