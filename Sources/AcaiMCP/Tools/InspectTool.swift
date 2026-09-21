@@ -25,8 +25,10 @@ struct InspectTool: AnalysisTool {
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await analysisArtifact(arguments, cache)
+        let health = HealthCheck(artifact: artifact).summary
         if try arguments.bool("enums") ?? false {
-            return .json(try Value(EnumInventory(artifact: artifact).entries))
+            let entries = EnumInventory(artifact: artifact).entries
+            return .json(try Value(EnumInventoryPayload(enums: entries, health: health)))
         }
         let rows = TypeQuery(
             artifact: artifact,
@@ -38,6 +40,16 @@ struct InspectTool: AnalysisTool {
                 isOverride: (try arguments.bool("overrides") ?? false) ? true : nil),
             languageResolver: artifact.standardLanguageResolver
         ).rows
-        return .json(try Value(rows))
+        return .json(try Value(InspectPayload(types: rows, health: health)))
+    }
+
+    private struct InspectPayload: Codable {
+        var types: [TypeQuery.TypeRow]
+        var health: HealthCheck.Summary
+    }
+
+    private struct EnumInventoryPayload: Codable {
+        var enums: [EnumInventory.Entry]
+        var health: HealthCheck.Summary
     }
 }

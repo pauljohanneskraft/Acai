@@ -108,17 +108,20 @@ extension AcaiCommand {
             if let diagram {
                 rendered = try deltaDiagram(old: oldArtifact, new: newArtifact, format: diagram)
             } else {
-                rendered = try report(for: ArtifactDiffer().diff(old: oldArtifact, new: newArtifact))
+                let diff = ArtifactDiffer().diff(old: oldArtifact, new: newArtifact)
+                let health = HealthCheck(artifact: oldArtifact).summary
+                    .combined(with: HealthCheck(artifact: newArtifact).summary)
+                rendered = try report(for: diff, health: health)
             }
             try rendered.writeOutput(to: output, label: "diff")
         }
 
-        private func report(for diff: ArtifactDiff) throws -> String {
+        private func report(for diff: ArtifactDiff, health: HealthCheck.Summary) throws -> String {
             switch format {
             case .human:
                 return diff.humanReport()
             case .json:
-                return try JSONReport(diff).text
+                return try JSONReport(DiffPayload(diff: diff, health: health)).text
             }
         }
 
@@ -143,4 +146,12 @@ extension AcaiCommand {
             return ClassDeltaExporter().render(old: old, new: new, format: diagramFormat)
         }
     }
+}
+
+/// `health` combines both sides (weaker-trust view) so a consumer of `acai diff --format json` can
+/// tell whether the delta rests on a trustworthy parse without a separate `acai analyze --health` run
+/// per side.
+private struct DiffPayload: Encodable {
+    var diff: ArtifactDiff
+    var health: HealthCheck.Summary
 }

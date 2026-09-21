@@ -13,7 +13,13 @@ struct MetricsTool: AnalysisTool {
     var inputSchema: Value { objectSchema(extraProperties: generatedScopeProperty) }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let metrics = try await analysisArtifact(arguments, cache).computeMetrics()
-        return .json(try Value(metrics))
+        let artifact = try await analysisArtifact(arguments, cache)
+        let payload = Payload(metrics: artifact.computeMetrics(), health: HealthCheck(artifact: artifact).summary)
+        return .json(try Value(payload))
+    }
+
+    private struct Payload: Codable {
+        var metrics: CodeMetrics
+        var health: HealthCheck.Summary
     }
 }
