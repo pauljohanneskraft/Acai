@@ -257,7 +257,9 @@ extension JavaExtractor {
         let mergedScope = scope.merging(parameters: parameters)
 
         return memberExtractor.methodDeclaration(
-            node, modifierInfo: modifierInfo, generics: generics, parameters: parameters, returnType: returnType,
+            node,
+            signature: .init(
+                modifierInfo: modifierInfo, generics: generics, parameters: parameters, returnType: returnType),
             references: .init(
                 callSites: callSites.callSites(in: body, scope: mergedScope),
                 assignments: assignments.assignments(in: body),
@@ -282,7 +284,8 @@ extension JavaExtractor {
         let mergedScope = scope.merging(parameters: parameters)
 
         return memberExtractor.constructorDeclaration(
-            node, modifierInfo: modifierInfo, generics: generics, parameters: parameters,
+            node,
+            signature: .init(modifierInfo: modifierInfo, generics: generics, parameters: parameters),
             references: .init(
                 callSites: callSites.callSites(in: body, scope: mergedScope),
                 assignments: assignments.assignments(in: body),

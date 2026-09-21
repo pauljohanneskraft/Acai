@@ -11,6 +11,15 @@ import AcaiTreeSitter
 struct JavaMemberExtractor {
     let context: SourceFileContext
 
+    /// A method or constructor's already-resolved signature pieces. `returnType` is always `nil`
+    /// for a constructor.
+    struct Signature {
+        var modifierInfo: ModifierInfo
+        var generics: [GenericParameter] = []
+        var parameters: [Parameter] = []
+        var returnType: TypeReference?
+    }
+
     /// Fully resolved pieces a method/constructor body contributes to its `Member`.
     struct References {
         var callSites: [CallSite] = []
@@ -29,23 +38,16 @@ struct JavaMemberExtractor {
 
     // MARK: - Method Declaration
 
-    func methodDeclaration(
-        _ node: Node,
-        modifierInfo: ModifierInfo,
-        generics: [GenericParameter],
-        parameters: [Parameter],
-        returnType: TypeReference?,
-        references: References
-    ) -> Member? {
+    func methodDeclaration(_ node: Node, signature: Signature, references: References) -> Member? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = nameNode.text(in: context)
         guard !name.isEmpty else { return nil }
 
         return Member(
             name: name, kind: .method,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            type: returnType, parameters: parameters, genericParameters: generics,
-            annotations: modifierInfo.annotations, location: node.location(in: context),
+            accessLevel: signature.modifierInfo.accessLevel, modifiers: signature.modifierInfo.modifiers,
+            type: signature.returnType, parameters: signature.parameters, genericParameters: signature.generics,
+            annotations: signature.modifierInfo.annotations, location: node.location(in: context),
             callSites: references.callSites,
             assignments: references.assignments,
             fieldReads: references.fieldReads,
@@ -56,20 +58,14 @@ struct JavaMemberExtractor {
 
     // MARK: - Constructor Declaration
 
-    func constructorDeclaration(
-        _ node: Node,
-        modifierInfo: ModifierInfo,
-        generics: [GenericParameter],
-        parameters: [Parameter],
-        references: References
-    ) -> Member {
+    func constructorDeclaration(_ node: Node, signature: Signature, references: References) -> Member {
         let name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? ""
 
         return Member(
             name: name, kind: .initializer,
-            accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
-            parameters: parameters, genericParameters: generics,
-            annotations: modifierInfo.annotations, location: node.location(in: context),
+            accessLevel: signature.modifierInfo.accessLevel, modifiers: signature.modifierInfo.modifiers,
+            parameters: signature.parameters, genericParameters: signature.generics,
+            annotations: signature.modifierInfo.annotations, location: node.location(in: context),
             callSites: references.callSites,
             assignments: references.assignments,
             fieldReads: references.fieldReads,
