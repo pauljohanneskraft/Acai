@@ -93,75 +93,6 @@ struct CompareClearButton: View {
 /// writes the diagram's `comparisonGitRef` through the model; the actual snapshot load is driven
 /// by the host view's `.task`. Presented inside `CompareOverlayButton`'s popover/sheet.
 struct CompareGitPanel: View {
-    /// One row in the inline ref list: picking a ref enables the diff directly, no on/off step.
-    /// There's no "None" row — the leading `Clear` button turns comparison back off.
-    private enum RefRow: Hashable, Identifiable {
-        case head
-        case ref(GitCheckout.Ref)
-        /// A pull request: picking this row compares its merge-base against its head, not a single
-        /// ref against the live working tree — both sides become explicit historical revisions.
-        case changeRequest(ChangeRequest)
-        case custom
-
-        var id: String {
-            switch self {
-            case .head:
-                "HEAD"
-            case .ref(let ref):
-                ref.id
-            case .changeRequest(let pullRequest):
-                "pr-\(pullRequest.number)"
-            case .custom:
-                "custom"
-            }
-        }
-
-        var kind: Text? {
-            switch self {
-            case .custom:
-                nil
-            case .head:
-                Text(verbatim: "HEAD")
-            case .ref(let ref):
-                if ref.kind == .branch {
-                    Text(.app("View.CompareGitPanel.KindBranch"))
-                } else {
-                    Text(.app("View.CompareGitPanel.KindTag"))
-                }
-            case .changeRequest:
-                Text(.app("View.CompareGitPanel.KindChangeRequest"))
-            }
-        }
-
-        var accessibilityTitle: Text {
-            switch self {
-            case .head:
-                Text(verbatim: "HEAD")
-            case .ref(let ref):
-                Text(verbatim: ref.name)
-            case .changeRequest(let pullRequest):
-                pullRequest.pickerAccessibilityLabel
-            case .custom:
-                Text(.app("View.CompareGitPanel.Custom"))
-            }
-        }
-
-        /// The accessibility-identifier suffix — the plain ref name (not `id`'s kind-prefixed form),
-        /// so a UI test can target a known fixture ref name without guessing its kind.
-        var testIdentifier: String {
-            switch self {
-            case .head:
-                "HEAD"
-            case .ref(let ref):
-                ref.name
-            case .changeRequest(let pullRequest):
-                "pr-\(pullRequest.number)"
-            case .custom:
-                "custom"
-            }
-        }
-    }
-
     let diagram: GeneratedDiagram
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?
     @EnvironmentObject var model: ProjectBrowserViewModel
@@ -171,39 +102,35 @@ struct CompareGitPanel: View {
     @State private var isEditingCustomRef = false
     @State private var customRefText = ""
 
-    private var rows: [RefRow] {
-        // Exclude a literal branch/tag named "HEAD" — the dedicated `.head` row above already covers it.
-        [.head] + changeRequests.map(RefRow.changeRequest)
-            + availableRefs.filter { $0.name != "HEAD" }.map(RefRow.ref) + [.custom]
-    }
-
-    private var selectedRow: RefRow? {
-        guard let ref = diagram.comparisonGitRef else { return nil }
-        if let baseRef = diagram.comparisonBaseRef {
-            return changeRequests.first { $0.headRef == ref && $0.baseRef == baseRef }.map(RefRow.changeRequest)
-        }
-        if ref == "HEAD" { return .head }
-        if let match = availableRefs.first(where: { $0.name == ref }) { return .ref(match) }
-        return .custom
+    private var state: ComparePanelState {
+        ComparePanelState(
+            refs: availableRefs,
+            changeRequests: changeRequests,
+            comparisonGitRef: diagram.comparisonGitRef,
+            comparisonBaseRef: diagram.comparisonBaseRef,
+            hasOldArtifact: model.comparisonArtifact(for: diagram) != nil,
+            hasNewArtifact: model.comparisonNewArtifact(for: diagram) != nil,
+            error: model.comparisonError)
     }
 
     var body: some View {
+        let state = state
         VStack(alignment: .leading, spacing: 0) {
-            List(rows) { row in
+            List(state.rows) { row in
                 Button {
                     select(row)
                 } label: {
-                    rowLabel(row)
+                    rowLabel(row, isSelected: row == state.selectedRow)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(row.accessibilityTitle)
-                .accessibilityValue(row.kind ?? Text(verbatim: ""))
-                .accessibilityAddTraits(row == selectedRow ? .isSelected : [])
+                .accessibilityValue(row.kindLabel ?? Text(verbatim: ""))
+                .accessibilityAddTraits(row == state.selectedRow ? .isSelected : [])
                 .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
             }
             .listStyle(.plain)
             .task {
-                await loadAvailableRefs()
+                availableRefs = await model.comparisonRefs(codebaseID: diagram.codebaseID)
                 await loadChangeRequests()
             }
             .frame(minHeight: 150, maxHeight: 260)
@@ -223,11 +150,11 @@ struct CompareGitPanel: View {
                     .accessibilityIdentifier("delta.customRefField")
                 }
 
-                if diagram.comparisonGitRef != nil {
+                if let status = state.status {
                     legend
-                    statusLine
+                    statusLine(status)
                 }
-                if isFullyLoaded {
+                if state.isFullyLoaded {
                     changedFilesSection
                     findingsSections
                 }
@@ -240,16 +167,16 @@ struct CompareGitPanel: View {
         }
     }
 
-    private func rowLabel(_ row: RefRow) -> some View {
+    private func rowLabel(_ row: ComparePanelState.Row, isSelected: Bool) -> some View {
         HStack {
             rowTitle(row)
             Spacer()
-            if let kind = row.kind {
+            if let kind = row.kindLabel {
                 kind
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            if row == selectedRow {
+            if isSelected {
                 Image(systemName: "checkmark")
                     .foregroundStyle(Color.accentColor)
             }
@@ -258,7 +185,7 @@ struct CompareGitPanel: View {
     }
 
     @ViewBuilder
-    private func rowTitle(_ row: RefRow) -> some View {
+    private func rowTitle(_ row: ComparePanelState.Row) -> some View {
         switch row {
         case .head:
             Text(verbatim: "HEAD")
@@ -279,7 +206,7 @@ struct CompareGitPanel: View {
         }
     }
 
-    private func select(_ row: RefRow) {
+    private func select(_ row: ComparePanelState.Row) {
         switch row {
         case .head:
             isEditingCustomRef = false
@@ -297,14 +224,10 @@ struct CompareGitPanel: View {
         }
     }
 
-    private var isFullyLoaded: Bool {
-        model.comparisonArtifact(for: diagram) != nil
-            && (diagram.comparisonBaseRef == nil || model.comparisonNewArtifact(for: diagram) != nil)
-    }
-
     @ViewBuilder
-    private var statusLine: some View {
-        if let error = model.comparisonError {
+    private func statusLine(_ status: ComparePanelState.Status) -> some View {
+        switch status {
+        case .failed(let error):
             Label(error, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
@@ -317,7 +240,7 @@ struct CompareGitPanel: View {
                     Task { await model.ensureComparisonLoaded(for: diagram) }
                 }
             }
-        } else if !isFullyLoaded {
+        case .loading:
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
                 Text(.app("View.CompareGitPanel.Loading \(diagram.comparisonGitRef ?? "")"))
@@ -329,7 +252,7 @@ struct CompareGitPanel: View {
             // recognizable comparison state at all" (a different bug) — both currently surface
             // identically as a bare timeout with `comparisonError` unset.
             .accessibilityIdentifier("delta.loading")
-        } else {
+        case .loaded:
             Text(.app("View.CompareGitPanel.Loaded")).font(.caption).foregroundStyle(.secondary)
                 .accessibilityIdentifier("delta.loaded")
         }
@@ -399,17 +322,6 @@ struct CompareGitPanel: View {
         .accessibilityIdentifier("delta.changedFile.\(entry.filePath)")
     }
 
-    /// Loads the codebase's branch/tag refs for the list. Best-effort: a failure (e.g. not a git
-    /// repository) just leaves the list showing only HEAD/Custom.
-    private func loadAvailableRefs() async {
-        guard let codebase = model.codebase(for: diagram.codebaseID) else { return }
-        let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
-        let directory = URL(fileURLWithPath: codebase.directoryPath)
-        availableRefs = await Task.detached(priority: .userInitiated) {
-            (try? access.whileAccessible { try GitCheckout(directory: directory).refs() }) ?? []
-        }.value
-    }
-
     /// Offered when the codebase's remote is on a host whose provider lists change requests —
     /// whether the app cloned it or it's a local folder tracking it. Best-effort: a failure (not
     /// signed in, no network) just leaves those rows empty.
@@ -420,6 +332,38 @@ struct CompareGitPanel: View {
         else { return }
         changeRequests = (try? await GitHubHostingServiceResolver().resolve().pullRequests(
             credential: credential, owner: owner, repo: repo)) ?? []
+    }
+}
+
+private extension ComparePanelState.Row {
+    var kindLabel: Text? {
+        switch self {
+        case .custom:
+            nil
+        case .head:
+            Text(verbatim: "HEAD")
+        case .ref(let ref):
+            if ref.kind == .branch {
+                Text(.app("View.CompareGitPanel.KindBranch"))
+            } else {
+                Text(.app("View.CompareGitPanel.KindTag"))
+            }
+        case .changeRequest:
+            Text(.app("View.CompareGitPanel.KindChangeRequest"))
+        }
+    }
+
+    var accessibilityTitle: Text {
+        switch self {
+        case .head:
+            Text(verbatim: "HEAD")
+        case .ref(let ref):
+            Text(verbatim: ref.name)
+        case .changeRequest(let pullRequest):
+            pullRequest.pickerAccessibilityLabel
+        case .custom:
+            Text(.app("View.CompareGitPanel.Custom"))
+        }
     }
 }
 
