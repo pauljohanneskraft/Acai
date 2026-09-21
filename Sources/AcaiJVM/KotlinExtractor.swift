@@ -1,7 +1,9 @@
 import AcaiCore
 import AcaiTreeSitter
 
-struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
+/// Walks a Kotlin file and builds its `CodeArtifact`, sequencing collaborators that each own one
+/// concern. Every collaborator is built once, in `init`.
+struct KotlinExtractor {
 
     /// Kotlin structural decision-point node types for cyclomatic complexity (`when` entries, `if`/
     /// loops, `catch`).
@@ -10,44 +12,51 @@ struct KotlinExtractor: TreeSitterExtracting, CallSiteResolving {
         "when_entry", "catch_block"
     ]
 
-    // MARK: - State
-
     let context: SourceFileContext
-    var types: [TypeDeclaration] = []
-    var relationships: [Relationship] = []
-    var freestandingFunctions: [Member] = []
-    var globalVariables: [Member] = []
-    var currentNamespace: String?
-    var declaredTypeNames: Set<String> = []
+    let assignmentSyntax: KotlinAssignmentSyntax
+    let callSites: CallSiteResolver
+    let assignments: AssignmentResolver
+    let fieldReads: FieldReadResolver
 
-    init(source: String, fileName: String) {
-        self.context = SourceFileContext(source: source, fileName: fileName)
+    var declarations = DeclarationBuilder()
+
+    /// Takes the tree so the declared-type pre-pass runs before the collaborators that read it.
+    init(source: String, fileName: String, root: Node) {
+        let context = SourceFileContext(source: source, fileName: fileName)
+        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: ["class_declaration", "object_declaration"])
+            .names(in: root) { $0.firstChild(withType: "type_identifier").map { $0.text(in: context) } }
+
+        self.context = context
+        assignmentSyntax = KotlinAssignmentSyntax(context: context)
+        callSites = CallSiteResolver(
+            syntax: KotlinCallSiteSyntax(context: context, declaredTypeNames: declaredTypeNames)
+        )
+        assignments = AssignmentResolver(syntax: assignmentSyntax)
+        // Bare references and `this.<prop>` navigation members are both `simple_identifier` nodes.
+        fieldReads = FieldReadResolver(context: context, identifierTypes: ["simple_identifier"])
+
+        declarations.declaredTypeNames = declaredTypeNames
     }
 
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
-        declaredTypeNames = collectDeclaredTypeNames(
-            from: root,
-            declarationNodeTypes: ["class_declaration", "object_declaration"],
-            name: { $0.firstChild(withType: "type_identifier").map { self.text($0) } }
-        )
         walkSourceFile(root)
-        resolveRelationshipNames()
-        return buildArtifact(language: .kotlin)
+        declarations.resolveRelationshipNames()
+        return declarations.artifact(language: .kotlin, filePath: context.fileName)
     }
 
     // MARK: - Kotlin-Specific Helpers
 
     func hasKeyword(_ keyword: String, in node: Node) -> Bool {
-        hasAnonymousKeyword(keyword, in: node)
+        node.hasAnonymousChild(keyword, in: context)
     }
 
     /// Returns whether the node declares `val` or `var` via a `binding_pattern_kind` child.
     /// Tree-sitter-kotlin wraps `val`/`var` in `[binding_pattern_kind] → [val]`.
     func bindingKind(of node: Node) -> String? {
         guard let bindingPatternNode = node.firstChild(withType: "binding_pattern_kind") else { return nil }
-        let bindingText = text(bindingPatternNode).trimmingCharacters(in: .whitespaces)
+        let bindingText = bindingPatternNode.text(in: context).trimmingCharacters(in: .whitespaces)
         return (bindingText == "val" || bindingText == "var") ? bindingText : nil
     }
 }

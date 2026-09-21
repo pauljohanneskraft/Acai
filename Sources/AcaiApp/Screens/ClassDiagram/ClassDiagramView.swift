@@ -11,6 +11,7 @@ struct ClassDiagramView: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var viewModel: ClassDiagramViewModel
 
     @State var canvasScale: CGFloat
@@ -70,6 +71,8 @@ struct ClassDiagramView: View {
                 centerOnceMeasured()
             }
             .onChange(of: canvasViewportSize) { _, _ in centerOnceMeasured() }
+            .onAppear { viewModel.updateDynamicTypeSize(dynamicTypeSize) }
+            .onChange(of: dynamicTypeSize) { _, newValue in viewModel.updateDynamicTypeSize(newValue) }
             .toolbar {
                 ToolbarItemGroup {
                     UndoRedoToolbarButtons(model: viewModel, onChange: savePositions)
