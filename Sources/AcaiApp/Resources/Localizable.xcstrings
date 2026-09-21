@@ -595,6 +595,28 @@
         }
       }
     },
+    "View.QueryView.IndexingFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
     "View.QueryView.ShowOnly" : {
       "localizations" : {
         "de" : {
@@ -8605,6 +8627,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Indexation…"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.IndexingFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.PullFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Pull wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pull didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La récupération n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.SwitchFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Umstellung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The switch didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La bascule n'a pas abouti."
           }
         }
       }

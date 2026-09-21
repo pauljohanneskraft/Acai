@@ -57,8 +57,8 @@ extension CodebaseDetailView {
             Button {
                 reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                 Task {
-                    await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = .loaded
+                    let outcome = await model.editing.reindex(codebaseID: codebase.id)
+                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
                 }
             } label: {
                 Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
@@ -133,8 +133,9 @@ extension CodebaseDetailView {
                 Button {
                     reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                     Task {
-                        await model.editing.reindex(codebaseID: codebase.id)
-                        reindexPhase = .loaded
+                        let outcome = await model.editing.reindex(codebaseID: codebase.id)
+                        reindexPhase = AsyncOperationPhase(
+                            outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
                     }
                 } label: {
                     Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")

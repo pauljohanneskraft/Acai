@@ -3,16 +3,23 @@ import AcaiCore
 import AcaiGit
 
 extension ProjectCodebaseEditor {
-    func reindex(codebaseID: UUID) async {
-        guard let codebase = codebase(for: codebaseID) else { return }
+    @discardableResult
+    func reindex(codebaseID: UUID) async -> OperationOutcome {
+        guard let codebase = codebase(for: codebaseID) else { return .cancelled }
         do {
-            _ = try await reindexOutcome(codebaseID: codebaseID)
+            switch try await reindexOutcome(codebaseID: codebaseID) {
+            case .completed:
+                return .completed
+            case .cancelled:
+                return .cancelled
+            }
         } catch {
             // An app-managed directory must never be re-pointed at a folder of the user's choosing.
             let relocatable = error is ScopedResourceAccess.Failure && codebase.managedCheckout == nil
             store.report(
                 .app("Error.ProjectBrowserViewModel.ReindexFailed \(error.localizedDescription)"),
                 relocating: relocatable ? codebaseID : nil)
+            return .failed
         }
     }
 
@@ -79,13 +86,13 @@ extension ProjectCodebaseEditor {
 
     /// Analyses a local folder at `revision` instead of its working tree (`nil` clears the pin),
     /// then reindexes. The checkout is never touched either way.
-    func setAnalysedRevision(_ revision: String?, codebaseID: UUID) async {
-        guard let codebase = codebase(for: codebaseID), codebase.managedCheckout == nil,
-              codebase.analysedRevision != revision
-        else { return }
+    @discardableResult
+    func setAnalysedRevision(_ revision: String?, codebaseID: UUID) async -> OperationOutcome {
+        guard let codebase = codebase(for: codebaseID), codebase.managedCheckout == nil else { return .cancelled }
+        guard codebase.analysedRevision != revision else { return .completed }
         mutateCodebase(codebaseID) { $0.analysedRevision = revision }
         invalidateAnalysis(codebaseID)
-        await reindex(codebaseID: codebaseID)
+        return await reindex(codebaseID: codebaseID)
     }
 
     /// Re-resolves indices after the suspension above — the user may have mutated the

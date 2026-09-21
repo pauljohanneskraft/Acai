@@ -26,8 +26,9 @@ extension CodebaseDetailView {
                 else { return }
                 refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(selected.name)"))
                 Task {
-                    await model.editing.switchRef(codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
-                    refSwitchPhase = .loaded
+                    let outcome = await model.editing.switchRef(
+                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
+                    refSwitchPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.SwitchFailed"))
                 }
             }
         )) {
@@ -52,8 +53,8 @@ extension CodebaseDetailView {
         Button {
             pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
             Task {
-                await model.editing.pull(codebaseID: codebase.id)
-                pullPhase = .loaded
+                let outcome = await model.editing.pull(codebaseID: codebase.id)
+                pullPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.PullFailed"))
             }
         } label: {
             Label(.app("View.CodebaseDetailView.Pull"), systemImage: "arrow.triangle.2.circlepath")
@@ -104,8 +105,9 @@ extension CodebaseDetailView {
                 set: { revision in
                     refSwitchPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                     Task {
-                        await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
-                        refSwitchPhase = .loaded
+                        let outcome = await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
+                        refSwitchPhase = AsyncOperationPhase(
+                            outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
                     }
                 }
             )) {
