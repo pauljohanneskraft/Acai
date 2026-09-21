@@ -15,7 +15,7 @@ extension JSExtractor {
             detectPrototypePatterns(node)
         }
         if !topLevelCallSites.isEmpty {
-            freestandingFunctions.append(Member(
+            declarations.freestandingFunctions.append(Member(
                 name: "<top-level>", kind: .method, accessLevel: .public, callSites: topLevelCallSites))
         }
     }
@@ -35,17 +35,17 @@ extension JSExtractor {
                 guard let nodeType = inner.nodeType,
                       nodeType == "internal_module" || nodeType == "module" else { continue }
                 let (newTypes, newFunctions) = dispatchDeclaration(inner, isExported: false)
-                types += newTypes; freestandingFunctions += newFunctions
+                declarations.types += newTypes; declarations.freestandingFunctions += newFunctions
             }
         } else if nodeType == "expression_statement" {
             // A bare top-level statement (`bootstrap();`) — its call's target has nowhere to attach
             // as a caller, so it's collected separately and given a synthetic reachable member in
             // `walkSourceFile`.
-            topLevelCallSites.append(contentsOf: extractCallSites(
-                from: node, scope: CallSiteScope(knownTypeNames: declaredTypeNames)))
+            topLevelCallSites.append(contentsOf: callSites.callSites(
+                in: node, scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)))
         } else {
             let (newTypes, newFunctions) = dispatchDeclaration(node, isExported: false)
-            types += newTypes; freestandingFunctions += newFunctions
+            declarations.types += newTypes; declarations.freestandingFunctions += newFunctions
         }
     }
 
@@ -53,11 +53,11 @@ extension JSExtractor {
 
     private mutating func visitExportStatement(_ node: Node) {
         let isDefault = node.hasDirectChildText("default", in: context)
-        let exportDecorators = extractDecorators(node)
+        let exportDecorators = memberExtractor.decorators(node)
         for child in node.children() {
             let (newTypes, newFunctions) = dispatchDeclaration(child, isExported: true, isDefault: isDefault,
                                               decorators: exportDecorators)
-            types += newTypes; freestandingFunctions += newFunctions
+            declarations.types += newTypes; declarations.freestandingFunctions += newFunctions
         }
     }
 
@@ -130,7 +130,7 @@ extension JSExtractor {
         for child in node.namedChildren() {
             guard child.nodeType == "variable_declarator" else { continue }
             let nameNode = child.child(byFieldName: "name")
-            let varName = nameNode.map { text($0) }
+            let varName = nameNode.map { $0.text(in: context) }
             let value = child.child(byFieldName: "value")
             if let value, value.nodeType == "class" {
                 var typeDecl = extractClassLikeDeclaration(value, isExported: false, isDefault: false)
@@ -141,7 +141,7 @@ extension JSExtractor {
                 }
                 allTypes.append(applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace))
             } else if nameNode?.nodeType == "identifier", let varName {
-                globalVariables.append(extractGlobalVariable(child, name: varName, isExported: isExported))
+                declarations.globalVariables.append(extractGlobalVariable(child, name: varName, isExported: isExported))
             }
         }
         return (allTypes, [])
@@ -194,17 +194,17 @@ extension JSExtractor {
     private mutating func extractClassLikeDeclaration(
         _ node: Node, isExported: Bool, isDefault: Bool, isAbstract: Bool = false
     ) -> TypeDeclaration {
-        let nodeLoc = loc(node)
-        var name = node.child(byFieldName: "name").map { text($0) } ?? ""
+        let nodeLoc = node.location(in: context)
+        var name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? ""
         if name.isEmpty { name = isDefault ? "default" : "_Anonymous" }
 
         let modifiers: [Modifier] = isAbstract ? [.abstract] : []
-        var annotations = extractDecorators(node)
+        var annotations = memberExtractor.decorators(node)
         if isDefault { annotations.append("default") }
 
-        let generics = isTypeScript ? extractTypeParameters(node) : []
+        let generics = isTypeScript ? typeReferences.extractTypeParameters(node) : []
         let (inherited, rels) = extractClassHeritage(node, className: name)
-        relationships.append(contentsOf: rels)
+        declarations.relationships.append(contentsOf: rels)
 
         var typeDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .class,
@@ -248,34 +248,18 @@ extension JSExtractor {
         switch node.nodeType {
         case "extends_clause":
             if let valueNode = node.child(byFieldName: "value") ?? node.namedChildren().first {
-                let ref = extractTypeReferenceFromExpression(valueNode)
+                let ref = typeReferences.extractTypeReferenceFromExpression(valueNode)
                 inherited.append(ref)
                 rels.append(Relationship(kind: .inheritance, source: className, target: ref.name))
             }
         case "implements_clause":
             for typeNode in node.namedChildren() {
-                let ref = extractTypeReferenceFromExpression(typeNode)
+                let ref = typeReferences.extractTypeReferenceFromExpression(typeNode)
                 inherited.append(ref)
                 rels.append(Relationship(kind: .conformance, source: className, target: ref.name))
             }
         default:
             break
         }
-    }
-
-    // MARK: - Decorators / Annotations
-
-    func extractDecorators(_ node: Node) -> [String] {
-        var annotations: [String] = []
-        for child in node.children() {
-            guard child.nodeType == "decorator" else { continue }
-            let fullText = text(child)
-            if let parenIdx = fullText.firstIndex(of: "(") {
-                annotations.append(String(fullText[fullText.startIndex..<parenIdx]))
-            } else {
-                annotations.append(fullText)
-            }
-        }
-        return annotations
     }
 }

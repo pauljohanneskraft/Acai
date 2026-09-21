@@ -8,19 +8,19 @@ extension JSExtractor {
     // MARK: - Interface Declaration
 
     mutating func extractInterfaceDeclaration(_ node: Node, isExported: Bool) -> TypeDeclaration {
-        let nodeLoc = loc(node)
+        let nodeLoc = node.location(in: context)
         let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? "_Anonymous"
+        let name = nameNode.map { $0.text(in: context) } ?? "_Anonymous"
 
-        let generics = extractTypeParameters(node)
+        let generics = typeReferences.extractTypeParameters(node)
         var inherited: [TypeReference] = []
 
         for child in node.children() {
             guard let childType = child.nodeType else { continue }
             if childType == "extends_type_clause" || childType == "extends_clause" {
-                let refs = child.namedChildren().map { extractTypeReferenceFromExpression($0) }
+                let refs = child.namedChildren().map { typeReferences.extractTypeReferenceFromExpression($0) }
                 inherited.append(contentsOf: refs)
-                recordSupertypeRelationships(from: name, to: refs, kind: .conformance)
+                declarations.recordSupertypeRelationships(from: name, to: refs, kind: .conformance)
             }
         }
 
@@ -45,17 +45,17 @@ extension JSExtractor {
             guard let childType = child.nodeType else { continue }
             switch childType {
             case "property_signature":
-                typeDecl.members.append(extractPropertySignature(child))
+                typeDecl.members.append(memberExtractor.propertySignature(child))
             case "method_signature":
-                typeDecl.members.append(extractMethodSignature(child))
+                typeDecl.members.append(memberExtractor.methodSignature(child))
             case "call_signature":
-                let params = extractParameters(child.child(byFieldName: "parameters") ?? child)
-                let ret = extractReturnTypeAnnotation(child)
+                let params = parameterExtractor.parameters(child.child(byFieldName: "parameters") ?? child)
+                let ret = typeReferences.extractReturnTypeAnnotation(child)
                 typeDecl.members.append(
                     Member(name: "call", kind: .method, accessLevel: .internal, type: ret, parameters: params))
             case "construct_signature":
-                let params = extractParameters(child.child(byFieldName: "parameters") ?? child)
-                let ret = extractReturnTypeAnnotation(child)
+                let params = parameterExtractor.parameters(child.child(byFieldName: "parameters") ?? child)
+                let ret = typeReferences.extractReturnTypeAnnotation(child)
                 typeDecl.members.append(
                     Member(name: "new", kind: .initializer, accessLevel: .internal, type: ret, parameters: params))
             case "index_signature":
@@ -64,63 +64,5 @@ extension JSExtractor {
                 break
             }
         }
-    }
-
-    // MARK: - Property Signature
-
-    func extractPropertySignature(_ node: Node) -> Member {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
-
-        var accessLevel: AccessLevel?
-        var modifiers: [Modifier] = []
-
-        if let acc = extractAccessibilityModifier(node) {
-            accessLevel = acc
-        }
-        if node.hasDirectChildText("readonly", in: context) {
-            modifiers.append(.readonly)
-        }
-
-        var propType = extractTypeAnnotation(node)
-        if node.hasDirectChildText("?", in: context) {
-            propType?.isOptional = true
-        }
-
-        return Member(
-            name: name, kind: .property,
-            accessLevel: accessLevel ?? .internal,
-            modifiers: modifiers,
-            type: propType,
-            location: nodeLoc
-        )
-    }
-
-    // MARK: - Method Signature
-
-    func extractMethodSignature(_ node: Node) -> Member {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
-
-        let accessLevel = extractAccessibilityModifier(node)
-        let generics = extractTypeParameters(node)
-        let params: [Parameter]
-        if let paramsNode = node.child(byFieldName: "parameters") {
-            params = extractParameters(paramsNode)
-        } else {
-            params = []
-        }
-        let returnType = extractReturnTypeAnnotation(node)
-
-        return Member(
-            name: name, kind: .method,
-            accessLevel: accessLevel ?? .internal,
-            type: returnType,
-            parameters: params,
-            genericParameters: generics,
-            location: nodeLoc
-        )
     }
 }
