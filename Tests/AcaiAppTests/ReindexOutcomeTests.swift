@@ -1,4 +1,3 @@
-import AcaiTestSupport
 import Foundation
 import Testing
 import AcaiCore
@@ -64,15 +63,15 @@ struct ReindexOutcomeTests {
             types: [TypeDeclaration(id: "Old", name: "Old", qualifiedName: "Old", kind: .class, accessLevel: .public)])
         model.editing.mutateCodebase(codebaseID) { $0.hasArtifact = true }
 
-        model.editing.relocateCodebase(id: codebaseID, directoryURL: source, securityScopedBookmark: nil)
+        let reindex = model.editing.relocateCodebase(
+            id: codebaseID, directoryURL: source, securityScopedBookmark: nil)
 
         #expect(model.codebase(for: codebaseID)?.directoryPath == source.path)
         #expect(model.codebase(for: codebaseID)?.hasArtifact == false)
         #expect(model.store.artifacts[codebaseID] == nil)
 
-        try await Eventually().waitUntil("the relocated folder is indexed") {
-            model.codebase(for: codebaseID)?.hasArtifact == true
-        }
+        #expect(await reindex.value == .completed)
+        #expect(model.codebase(for: codebaseID)?.hasArtifact == true)
         #expect(model.store.artifacts[codebaseID]?.types.map(\.name) == ["Widget"])
         #expect(model.store.lastError == nil)
     }
