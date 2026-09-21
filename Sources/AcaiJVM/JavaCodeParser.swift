@@ -16,7 +16,7 @@ public struct JavaCodeParser: CodeParser {
         guard let tree = parser.parse(source), let root = tree.rootNode else {
             return CodeArtifact(metadata: .init(sourceLanguage: .java, filePaths: [fileName]))
         }
-        var extractor = JavaExtractor(source: source, fileName: fileName)
+        var extractor = JavaExtractor(source: source, fileName: fileName, root: root)
         var artifact = extractor.extract(from: root)
         // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
         if root.hasError {
