@@ -79,4 +79,21 @@ struct CTests {
         #expect(node?.members.contains { $0.name == "next" } == true)
         #expect(artifact.freestandingFunctions.contains { $0.name == "compute" } == true)
     }
+
+    @Test func staticFreeFunctionHasFilePrivateAccess() {
+        let source = """
+        static int helper(int a) {
+            return a * 2;
+        }
+
+        int publicApi(int a) {
+            return helper(a);
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "linkage.c")
+        let helper = artifact.freestandingFunctions.first { $0.name == "helper" }
+        #expect(helper?.accessLevel == .filePrivate)
+        let publicApi = artifact.freestandingFunctions.first { $0.name == "publicApi" }
+        #expect(publicApi?.accessLevel == .public)
+    }
 }

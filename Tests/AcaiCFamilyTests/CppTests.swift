@@ -122,4 +122,26 @@ struct CppTests {
         }
         #expect(aggregation != nil)
     }
+
+    @Test func staticNamespaceFunctionHasFilePrivateAccessButStaticMethodDoesNot() {
+        let source = """
+        namespace detail {
+        static int helper(int a) {
+            return a * 2;
+        }
+        }
+
+        class Counter {
+        public:
+            static int next();
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "linkage.cpp")
+        let helper = artifact.freestandingFunctions.first { $0.name == "helper" }
+        #expect(helper?.accessLevel == .filePrivate)
+        let counter = artifact.types.first { $0.name == "Counter" }
+        let next = counter?.members.first { $0.name == "next" }
+        #expect(next?.accessLevel == .public)
+        #expect(next?.modifiers.contains(.static) == true)
+    }
 }
