@@ -109,6 +109,41 @@ struct PythonMemberTests {
         #expect(fetch?.modifiers.contains(.async) == true)
     }
 
+    @Test func overrideDecoratorMapsToOverrideModifier() {
+        let source = """
+        import typing
+        import typing_extensions
+
+        class Base:
+            def bare(self): pass
+            def viaTyping(self): pass
+            def viaTypingExtensions(self): pass
+            def shadowed(self): pass
+
+        class Derived(Base):
+            @override
+            def bare(self): pass
+
+            @typing.override
+            def viaTyping(self): pass
+
+            @typing_extensions.override
+            def viaTypingExtensions(self): pass
+
+            def shadowed(self): pass
+        """
+        let derived = type(named: "Derived", in: source)
+        func overrides(_ name: String) -> Bool? {
+            derived?.members.first { $0.name == name }?.modifiers.contains(.override)
+        }
+        #expect(overrides("bare") == true)
+        #expect(overrides("viaTyping") == true)
+        #expect(overrides("viaTypingExtensions") == true)
+        // An undecorated method that shadows a base-class member is an inherent, documented gap:
+        // Python has no `override` keyword, so this carries no `.override` modifier.
+        #expect(overrides("shadowed") == false)
+    }
+
     @Test func variadicParameters() {
         let source = """
         class Logger:

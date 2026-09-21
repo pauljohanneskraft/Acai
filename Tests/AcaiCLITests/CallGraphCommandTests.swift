@@ -71,4 +71,48 @@ struct CallGraphCommandTests {
             #expect(contents.contains("Service.helper"))
         }
     }
+
+    @Test func deadcodeModeReportsUncalledStaticCFunction() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            // `unused` has internal linkage (`static`) and is never called → a dead-code candidate.
+            let source = """
+            static int unused(int a) {
+                return a * 2;
+            }
+
+            int publicApi(int a) {
+                return a + 1;
+            }
+            """
+            try source.write(to: dir.appendingPathComponent("linkage.c"), atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("deadcode.json")
+            var cmd = try CLITestSupport.parseCallGraph(
+                ["--source", dir.path, "--language", "c", "--mode", "deadcode", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("unused"))
+            #expect(!contents.contains("publicApi"))
+        }
+    }
+
+    @Test func deadcodeModeReportsNothingWhenStaticCFunctionIsCalled() throws {
+        try CLITestSupport.withTempDirectory { dir in
+            let source = """
+            static int helper(int a) {
+                return a * 2;
+            }
+
+            int publicApi(int a) {
+                return helper(a);
+            }
+            """
+            try source.write(to: dir.appendingPathComponent("linkage.c"), atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("deadcode.json")
+            var cmd = try CLITestSupport.parseCallGraph(
+                ["--source", dir.path, "--language", "c", "--mode", "deadcode", "--output", output.path])
+            try cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(!contents.contains("helper"))
+        }
+    }
 }
