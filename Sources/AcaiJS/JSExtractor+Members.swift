@@ -9,17 +9,14 @@ extension JSExtractor {
 
     func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
         let scope = CallSiteScope(
-            knownProperties: buildPropertyMapFromBody(bodyNode),
-            knownTypeNames: declaredTypeNames,
-            knownMethodReturnTypes: buildMethodReturnTypeMapFromBody(bodyNode)
+            knownProperties: memberExtractor.propertyMap(fromBody: bodyNode),
+            knownTypeNames: declarations.declaredTypeNames,
+            knownMethodReturnTypes: memberExtractor.methodReturnTypeMap(fromBody: bodyNode)
         )
 
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
-            if let member = extractClassBodyMember(child, childType: childType,
-                                                   parentName: typeDecl.name,
-                                                   scope: scope,
-                                                   typeDecl: &typeDecl) {
+            if let member = extractClassBodyMember(child, childType: childType, scope: scope, typeDecl: &typeDecl) {
                 typeDecl.members.append(member)
             }
         }
@@ -28,297 +25,108 @@ extension JSExtractor {
     private func extractClassBodyMember(
         _ child: Node,
         childType: String,
-        parentName: String,
         scope: CallSiteScope,
         typeDecl: inout TypeDeclaration
     ) -> Member? {
         switch childType {
         case "method_definition", "abstract_method_definition":
-            var member = extractMethodDefinition(child, parentName: parentName,
-                                                 scope: scope)
+            var member = methodDefinition(child, scope: scope)
             if childType == "abstract_method_definition", isTypeScript,
                !member.modifiers.contains(.abstract) {
                 member.modifiers.append(.abstract)
             }
             if member.kind == .initializer, isTypeScript {
-                extractConstructorParameterProperties(child, into: &typeDecl)
+                typeDecl.members.append(contentsOf: memberExtractor.constructorParameterProperties(child))
             }
             return member
 
         case "field_definition", "public_field_definition":
-            return extractFieldDefinition(child, scope: scope)
+            return fieldDefinition(child, scope: scope)
 
         case "method_signature" where isTypeScript:
-            return extractMethodSignature(child)
+            return memberExtractor.methodSignature(child)
 
         case "abstract_method_signature" where isTypeScript:
-            var member = extractMethodSignature(child)
+            var member = memberExtractor.methodSignature(child)
             if !member.modifiers.contains(.abstract) {
                 member.modifiers.append(.abstract)
             }
             return member
 
         case "property_signature" where isTypeScript:
-            return extractPropertySignature(child)
+            return memberExtractor.propertySignature(child)
 
         default:
             return nil
         }
     }
 
-    private func buildPropertyMapFromBody(_ bodyNode: Node) -> [String: String] {
-        var map: [String: String] = [:]
+    // MARK: - Method Definition (Orchestration)
 
-        for child in bodyNode.children() {
-            guard let childType = child.nodeType else { continue }
-
-            if childType == "field_definition" || childType == "public_field_definition" {
-                let member = extractFieldDefinition(child)
-                if !member.modifiers.contains(.static), let typeName = member.type?.name {
-                    map[member.name] = typeName
-                }
-            } else if childType == "method_definition", isTypeScript,
-                      child.child(byFieldName: "name").map({ text($0) }) == "constructor",
-                      let paramsNode = child.child(byFieldName: "parameters") {
-                // TypeScript constructor parameter properties (public/private/protected/readonly).
-                for param in paramsNode.children() {
-                    guard let pType = param.nodeType,
-                          pType == "required_parameter" || pType == "optional_parameter"
-                    else { continue }
-                    let accessMod = extractAccessibilityModifier(param)
-                    let hasReadonly = param.hasDirectChildText("readonly", in: context)
-                    guard accessMod != nil || hasReadonly else { continue }
-                    let name = extractParameterName(param)
-                    if !name.isEmpty, let typeRef = extractTypeAnnotation(param) {
-                        map[name] = typeRef.name
-                    }
-                }
-            }
-        }
-        return map
-    }
-
-    /// A `methodName → returnTypeName` map from the class body's direct `method_definition` children
-    /// (TypeScript only — JS has no return-type annotations), so a same-type method call with an
-    /// unambiguous return type can seed a local's type. Overloaded names with differing return types
-    /// are dropped rather than guessed.
-    private func buildMethodReturnTypeMapFromBody(_ bodyNode: Node) -> [String: String] {
-        guard isTypeScript else { return [:] }
-        var typesByName: [String: Set<String>] = [:]
-        for child in bodyNode.children() where child.nodeType == "method_definition" {
-            guard let nameNode = child.child(byFieldName: "name"),
-                  let returnType = extractReturnTypeAnnotation(child)
-            else { continue }
-            typesByName[text(nameNode), default: []].insert(returnType.name)
-        }
-        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
-    }
-
-    // MARK: - Method Definition
-
-    private static let methodKeywordModifiers: [String: Modifier] = [
-        "static": .static, "async": .async, "override": .override
-    ]
-
-    private func extractMethodDefinition(
-        _ node: Node,
-        parentName: String,
-        scope: CallSiteScope = CallSiteScope()
-    ) -> Member {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
-        let annotations = extractDecorators(node)
-
-        let sig = extractMethodKindAndModifiers(
-            node, name: name
-        )
-
-        let generics = isTypeScript ? extractTypeParameters(node) : []
-        let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
-        let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
+    private func methodDefinition(_ node: Node, scope: CallSiteScope) -> Member {
+        let generics = isTypeScript ? typeReferences.extractTypeParameters(node) : []
+        let params = node.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
+        let returnType = isTypeScript ? typeReferences.extractReturnTypeAnnotation(node) : nil
 
         let body = node.child(byFieldName: "body")
-        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: params))
-
-        return Member(
-            name: name.isEmpty ? "_anonymous" : name,
-            kind: sig.kind,
-            accessLevel: sig.accessLevel ?? .internal,
-            modifiers: sig.modifiers,
-            type: returnType,
+        let mergedScope = scope.merging(parameters: params)
+        return memberExtractor.methodDefinition(
+            node,
+            generics: generics,
             parameters: params,
-            genericParameters: generics,
-            isComputed: sig.isComputed,
-            annotations: annotations,
-            location: nodeLoc,
-            callSites: callSites,
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body),
-            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
+            returnType: returnType,
+            references: .init(
+                callSites: callSites.callSites(in: body, scope: mergedScope),
+                assignments: assignments.assignments(in: body),
+                fieldReads: fieldReads.reads(in: body, scope: mergedScope),
+                referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
+                cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: JSMemberExtractor.branchNodeKinds)
+            )
         )
     }
 
-    private struct MethodSignatureInfo {
-        var kind: MemberKind
-        var accessLevel: AccessLevel?
-        var modifiers: [Modifier]
-        var isComputed: Bool
-    }
+    // MARK: - Field Definition (Orchestration)
 
-    private func extractMethodKindAndModifiers(
-        _ node: Node,
-        name: String
-    ) -> MethodSignatureInfo {
-        var kind: MemberKind = .method
-        var modifiers: [Modifier] = []
-        var isComputed = false
-
-        for child in node.children() {
-            let childText = text(child)
-            if let modifier = Self.methodKeywordModifiers[childText] {
-                modifiers.append(modifier)
-            } else if childText == "get" || childText == "set" {
-                isComputed = true
-                kind = .property
-            } else if childText == "abstract", isTypeScript {
-                modifiers.append(.abstract)
-            }
-        }
-
-        var accessLevel: AccessLevel?
-        if isTypeScript { accessLevel = extractAccessibilityModifier(node) }
-        if name.hasPrefix("#") { accessLevel = .private }
-        if name == "constructor" { kind = .initializer }
-        if isTypeScript, node.hasDirectChildText("readonly", in: context) {
-            modifiers.append(.readonly)
-        }
-
-        return MethodSignatureInfo(kind: kind, accessLevel: accessLevel, modifiers: modifiers, isComputed: isComputed)
-    }
-
-    // MARK: - Field Definition
-
-    private func extractFieldDefinition(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> Member {
-        let nodeLoc = loc(node)
-        let nameNode = node.child(byFieldName: "property") ?? node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
-
-        var accessLevel: AccessLevel? = name.hasPrefix("#") ? .private : nil
-        if isTypeScript, let acc = extractAccessibilityModifier(node) {
-            accessLevel = acc
-        }
-
-        var propType = isTypeScript ? extractTypeAnnotation(node) : nil
-        // No (or no TypeScript) annotation — infer from a direct construction initializer (`private
-        // cache = new ImageCache();`), same heuristic `localBindings` applies to locals. Without
-        // this, calls through a composed collaborator field (`this.cache.process()`) can't resolve.
-        if propType == nil {
-            propType = constructedType(fromFieldValue: node.child(byFieldName: "value"))
-        }
-        if node.hasDirectChildText("?", in: context) {
-            propType?.isOptional = true
-        }
-
-        return Member(
-            name: name.isEmpty ? "_unknown" : name,
-            kind: .property,
-            accessLevel: accessLevel ?? .internal,
-            modifiers: fieldModifiers(node),
-            type: propType,
-            annotations: extractDecorators(node),
-            location: nodeLoc,
-            callSites: extractCallSites(from: node.child(byFieldName: "value"), scope: scope),
-            initialValue: node.child(byFieldName: "value").map { classifyValue($0) },
-            referencedTypeNames: referencedTypeNames(in: node.child(byFieldName: "value"))
+    private func fieldDefinition(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> Member {
+        let value = node.child(byFieldName: "value")
+        return memberExtractor.fieldDefinition(
+            node,
+            references: .init(
+                callSites: callSites.callSites(in: value, scope: scope),
+                initialValue: value.map { assignmentSyntax.classifyValue($0) },
+                referencedTypeNames: value?.referencedTypeNames(in: context) ?? []
+            )
         )
     }
 
-    private func fieldModifiers(_ node: Node) -> [Modifier] {
-        var modifiers: [Modifier] = []
-        if node.hasDirectChildText("static", in: context) { modifiers.append(.static) }
-        guard isTypeScript else { return modifiers }
-        if node.hasDirectChildText("readonly", in: context) { modifiers.append(.readonly) }
-        if node.hasDirectChildText("abstract", in: context) { modifiers.append(.abstract) }
-        if node.hasDirectChildText("override", in: context) { modifiers.append(.override) }
-        if node.hasDirectChildText("declare", in: context) { modifiers.append(.declare) }
-        return modifiers
-    }
-
-    /// Mirrors the construction check `localBindings` already applies to local declarations.
-    private func constructedType(fromFieldValue value: Node?) -> TypeReference? {
-        guard let value, value.nodeType == "new_expression",
-              let ctor = value.child(byFieldName: "constructor"), ctor.nodeType == "identifier"
-        else { return nil }
-        return TypeReference(name: text(ctor))
-    }
-
-    // MARK: - Top-Level Variable Declaration
+    // MARK: - Top-Level Variable Declaration (Orchestration)
 
     /// A top-level (module-scope) `const`/`let`/`var` declarator, or one inside a TS `namespace`
     /// body (mirroring how a nested top-level function there still feeds `freestandingFunctions`).
-    /// Reuses the same type-inference and value-classification `extractFieldDefinition` applies to
-    /// a class field, since JS/TS has no separate grammar node for global vs. instance state.
     func extractGlobalVariable(_ node: Node, name: String, isExported: Bool) -> Member {
-        let nodeLoc = loc(node)
         let value = node.child(byFieldName: "value")
-
-        var propType = isTypeScript ? extractTypeAnnotation(node) : nil
-        if propType == nil {
-            propType = constructedType(fromFieldValue: value)
-        }
-
-        return Member(
-            name: name,
-            kind: .property,
-            accessLevel: isExported ? .public : .internal,
-            type: propType,
-            location: nodeLoc,
-            callSites: extractCallSites(from: value, scope: CallSiteScope(knownTypeNames: declaredTypeNames)),
-            initialValue: value.map { classifyValue($0) },
-            referencedTypeNames: referencedTypeNames(in: value)
+        return memberExtractor.globalVariable(
+            node, name: name, isExported: isExported,
+            references: .init(
+                callSites: callSites.callSites(
+                    in: value, scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)),
+                initialValue: value.map { assignmentSyntax.classifyValue($0) },
+                referencedTypeNames: value?.referencedTypeNames(in: context) ?? []
+            )
         )
-    }
-
-    // MARK: - Constructor Parameter Properties (TypeScript)
-
-    private func extractConstructorParameterProperties(_ ctorNode: Node, into typeDecl: inout TypeDeclaration) {
-        guard let paramsNode = ctorNode.child(byFieldName: "parameters") else { return }
-        for child in paramsNode.children() {
-            guard let childType = child.nodeType else { continue }
-            guard childType == "required_parameter" || childType == "optional_parameter" else { continue }
-
-            let accessMod = extractAccessibilityModifier(child)
-            let hasReadonly = child.hasDirectChildText("readonly", in: context)
-            guard accessMod != nil || hasReadonly else { continue }
-
-            let paramName = extractParameterName(child)
-            var modifiers: [Modifier] = []
-            if hasReadonly { modifiers.append(.readonly) }
-
-            let paramType = extractTypeAnnotation(child)
-            typeDecl.members.append(Member(
-                name: paramName,
-                kind: .property,
-                accessLevel: accessMod ?? .internal,
-                modifiers: modifiers,
-                type: paramType
-            ))
-        }
     }
 
     // MARK: - Type Alias Declaration
 
     func extractTypeAliasDeclaration(_ node: Node, isExported: Bool) -> TypeDeclaration {
-        let nodeLoc = loc(node)
+        let nodeLoc = node.location(in: context)
         let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
-        let generics = extractTypeParameters(node)
+        let name = nameNode.map { $0.text(in: context) } ?? ""
+        let generics = typeReferences.extractTypeParameters(node)
 
         var targetText = ""
         if let valueNode = node.child(byFieldName: "value") {
-            targetText = text(valueNode)
+            targetText = valueNode.text(in: context)
         }
 
         return TypeDeclaration(
@@ -333,9 +141,9 @@ extension JSExtractor {
     // MARK: - Enum Declaration
 
     func extractEnumDeclaration(_ node: Node, isExported: Bool) -> TypeDeclaration {
-        let nodeLoc = loc(node)
+        let nodeLoc = node.location(in: context)
         let nameNode = node.child(byFieldName: "name")
-        let name = nameNode.map { text($0) } ?? ""
+        let name = nameNode.map { $0.text(in: context) } ?? ""
 
         var typeDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .enum,
@@ -349,17 +157,17 @@ extension JSExtractor {
                 if childType == "enum_assignment" {
                     let caseName: String
                     if let nameChild = child.child(byFieldName: "name") {
-                        caseName = text(nameChild)
+                        caseName = nameChild.text(in: context)
                     } else {
-                        caseName = child.namedChildren().first.map { text($0) } ?? ""
+                        caseName = child.namedChildren().first.map { $0.text(in: context) } ?? ""
                     }
                     var rawValue: String?
                     if let valueChild = child.child(byFieldName: "value") {
-                        rawValue = text(valueChild)
+                        rawValue = valueChild.text(in: context)
                     }
                     typeDecl.enumCases.append(EnumCase(name: caseName, rawValue: rawValue))
                 } else if childType == "property_identifier" || childType == "identifier" {
-                    typeDecl.enumCases.append(EnumCase(name: text(child)))
+                    typeDecl.enumCases.append(EnumCase(name: child.text(in: context)))
                 }
             }
         }
@@ -369,7 +177,7 @@ extension JSExtractor {
     // MARK: - Module / Namespace
 
     mutating func extractModule(_ node: Node, isExported: Bool) -> [TypeDeclaration] {
-        let name = node.child(byFieldName: "name").map { text($0) } ?? "_Module"
+        let name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? "_Module"
         var nestedTypes: [TypeDeclaration] = []
         var nestedFunctions: [Member] = []
 
@@ -378,7 +186,7 @@ extension JSExtractor {
                 guard let childType = child.nodeType else { continue }
                 if childType == "export_statement" {
                     let isDefault = child.hasDirectChildText("default", in: context)
-                    let exportDecorators = extractDecorators(child)
+                    let exportDecorators = memberExtractor.decorators(child)
                     for exportChild in child.children() {
                         let (newTypes, newFunctions) = dispatchDeclaration(
                         exportChild, isExported: true, isDefault: isDefault,
@@ -393,7 +201,7 @@ extension JSExtractor {
             }
         }
 
-        freestandingFunctions.append(contentsOf: nestedFunctions)
+        declarations.freestandingFunctions.append(contentsOf: nestedFunctions)
         let nsDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .module,
             accessLevel: isExported ? .public : .internal,
@@ -405,20 +213,67 @@ extension JSExtractor {
     // MARK: - Function Declaration
 
     func extractFunctionDeclaration(_ node: Node, isExported: Bool) -> Member {
-        let nodeLoc = loc(node)
-        let name = node.child(byFieldName: "name").map { text($0) } ?? "_anonymous"
+        let nodeLoc = node.location(in: context)
+        let name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? "_anonymous"
         var modifiers: [Modifier] = []
         if node.hasDirectChildText("async", in: context) { modifiers.append(.async) }
-        let generics = isTypeScript ? extractTypeParameters(node) : []
-        let params = node.child(byFieldName: "parameters").map { extractParameters($0) } ?? []
-        let returnType = isTypeScript ? extractReturnTypeAnnotation(node) : nil
+        let generics = isTypeScript ? typeReferences.extractTypeParameters(node) : []
+        let params = node.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
+        let returnType = isTypeScript ? typeReferences.extractReturnTypeAnnotation(node) : nil
         // A freestanding function has no enclosing instance, so only file-level type names resolve
         // receivers; its body is still walked so its outgoing calls (bare, `Type.method()`, …) count.
-        let callSites = extractCallSites(
-            from: node.child(byFieldName: "body"), scope: CallSiteScope(knownTypeNames: declaredTypeNames))
+        let bodyCallSites = callSites.callSites(
+            in: node.child(byFieldName: "body"), scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames))
         return Member(
             name: name, kind: .method, accessLevel: isExported ? .public : .internal,
             modifiers: modifiers, type: returnType, parameters: params,
-            genericParameters: generics, location: nodeLoc, callSites: callSites)
+            genericParameters: generics, location: nodeLoc, callSites: bodyCallSites)
+    }
+
+    // MARK: - Prototype Pattern Detection (JS only)
+
+    mutating func detectPrototypePatterns(_ root: Node) {
+        let assignments = collectPrototypeAssignments(root)
+        for assignment in assignments {
+            applyPrototypeAssignment(assignment)
+        }
+    }
+
+    private func collectPrototypeAssignments(
+        _ root: Node
+    ) -> [(className: String, memberName: String, node: Node)] {
+        var results: [(className: String, memberName: String, node: Node)] = []
+        for child in root.children() {
+            guard child.nodeType == "expression_statement",
+                  let expr = child.namedChildren().first,
+                  expr.nodeType == "assignment_expression",
+                  let leftNode = expr.child(byFieldName: "left"),
+                  leftNode.nodeType == "member_expression" else { continue }
+            let leftText = leftNode.text(in: context)
+            guard let protoRange = leftText.range(of: ".prototype.") else { continue }
+            let className = String(leftText[leftText.startIndex..<protoRange.lowerBound])
+            let memberName = String(leftText[protoRange.upperBound...])
+            if !className.isEmpty, !memberName.isEmpty {
+                results.append((className, memberName, expr))
+            }
+        }
+        return results
+    }
+
+    private mutating func applyPrototypeAssignment(
+        _ assignment: (className: String, memberName: String, node: Node)
+    ) {
+        ensureTypeExists(name: assignment.className)
+        let member = memberExtractor.prototypeMember(
+            name: assignment.memberName, assignedValue: assignment.node.child(byFieldName: "right"))
+        guard let index = declarations.types.firstIndex(where: { $0.name == assignment.className }) else { return }
+        declarations.types[index].members.append(member)
+    }
+
+    private mutating func ensureTypeExists(name: String) {
+        if !declarations.types.contains(where: { $0.name == name }) {
+            declarations.types.append(
+                TypeDeclaration(id: name, name: name, qualifiedName: name, kind: .class, accessLevel: .internal))
+        }
     }
 }
