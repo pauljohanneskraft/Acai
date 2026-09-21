@@ -163,7 +163,7 @@ extension JavaExtractor {
             // construction, so record them on an `.initializer` member, never a dead-code candidate.
             context.members.append(
                 Member(
-                    name: "init", kind: .initializer, accessLevel: .internal, location: child.location(in: context),
+                    name: "init", kind: .initializer, accessLevel: .internal, location: child.location(in: self.context),
                     callSites: callSites.callSites(in: child, scope: context.scope)
                 )
             )
