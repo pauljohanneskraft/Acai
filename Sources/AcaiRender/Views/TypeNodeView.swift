@@ -126,7 +126,7 @@ public struct TypeNodeView: View {
             }
             Text(displayName)
                 .font(.system(size: nameFontSize, weight: .semibold, design: .monospaced))
-                .foregroundColor(palette.primaryInk)
+                .foregroundColor(palette.canvasInk.primaryInk)
                 .if(isInterface) { $0.italic() }
         }
         .frame(maxWidth: .infinity)
@@ -190,7 +190,7 @@ public struct TypeNodeView: View {
             ForEach(enumCases) { ec in
                 Text(ec.text)
                     .font(.system(size: memberLineFontSize, design: .monospaced))
-                    .foregroundColor(palette.secondaryInk)
+                    .foregroundColor(palette.canvasInk.secondaryInk)
             }
         }
         .padding(.horizontal, 10)

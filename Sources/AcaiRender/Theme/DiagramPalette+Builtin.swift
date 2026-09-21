@@ -9,48 +9,52 @@ import AcaiDiagram
 extension DiagramPalette {
 
     static func make(isDark: Bool) -> DiagramPalette {
-        let typeColors: @Sendable (TypeKind) -> KindColors = { builtinKindColors(Tint($0), isDark: isDark) }
-        let participantColors: @Sendable (SequenceDiagram.Participant.Kind) -> KindColors = {
-            builtinKindColors(Tint($0), isDark: isDark)
-        }
-        let containerColors: @Sendable (ContainerTint) -> ContainerColors = {
-            builtinContainerColors($0, isDark: isDark)
-        }
-
-        return DiagramPalette(
-            canvasBackground: isDark ? Color(white: 0.12) : .white,
-            primaryInk: isDark ? Color(white: 0.92) : Color(white: 0.10),
-            secondaryInk: isDark ? Color(white: 0.82) : Color(white: 0.15),
-            mutedInk: isDark ? Color(white: 0.60) : Color(white: 0.35),
-            edgeLine: isDark ? Color(white: 0.62) : Color(white: 0.40),
-            edgeDecorationFill: isDark ? Color(white: 0.18) : Color(white: 0.96),
-            edgeLabelInk: isDark ? Color(white: 0.82) : Color(white: 0.15),
-            neutralBorder: isDark ? Color(white: 0.55) : Color(white: 0.45),
-            subtleSurface: isDark ? Color(white: 0.20) : Color(white: 0.93),
-            stateBackground: builtinKindColors(.blue, isDark: isDark).header,
-            choiceBackground: tone(isDark, dark: (0.11, 0.30, 0.28), light: rgb(1.0, 0.98, 0.9)),
-            stateSolidFill: isDark ? Color(white: 0.82) : Color(white: 0.15),
-            callGraphInScopeFill: builtinKindColors(.blue, isDark: isDark).header,
-            callGraphOutOfScopeFill: isDark ? Color(white: 0.22) : Color(white: 0.96),
-            useCaseFill: tone(isDark, dark: (0.70, 0.30, 0.26), light: rgb(0.96, 0.95, 1.0)),
-            useCaseBorder: tone(isDark, dark: (0.70, 0.42, 0.70), light: rgb(0.58, 0.52, 0.82)),
-            noteFill: tone(isDark, dark: (0.13, 0.28, 0.26), light: rgb(1.0, 0.99, 0.94)),
-            noteBorder: tone(isDark, dark: (0.13, 0.45, 0.68), light: rgb(0.82, 0.75, 0.42)),
-            methodFill: builtinKindColors(.blue, isDark: isDark).header,
-            methodBorder: isDark ? Color(white: 0.50) : Color(white: 0.60),
-            actorFill: tone(isDark, dark: (0.50, 0.24, 0.24), light: rgb(0.95, 0.99, 0.99)),
-            actorBorder: tone(isDark, dark: (0.50, 0.40, 0.68), light: rgb(0.45, 0.72, 0.72)),
-            actorIcon: tone(isDark, dark: (0.50, 0.46, 0.80), light: rgb(0.30, 0.60, 0.60)),
-            databaseFill: tone(isDark, dark: (0.97, 0.24, 0.26), light: rgb(1.0, 0.96, 0.97)),
-            databaseBorder: tone(isDark, dark: (0.97, 0.42, 0.70), light: rgb(0.82, 0.52, 0.58)),
-            databaseIcon: tone(isDark, dark: (0.97, 0.48, 0.80), light: rgb(0.72, 0.40, 0.48)),
-            artifactFill: tone(isDark, dark: (0.53, 0.24, 0.25), light: rgb(0.95, 0.98, 0.99)),
-            artifactBorder: tone(isDark, dark: (0.53, 0.42, 0.70), light: rgb(0.40, 0.65, 0.75)),
-            artifactIcon: tone(isDark, dark: (0.53, 0.48, 0.80), light: rgb(0.30, 0.55, 0.65)),
+        DiagramPalette(
+            canvasInk: CanvasInkColors(
+                background: isDark ? Color(white: 0.12) : .white,
+                primaryInk: isDark ? Color(white: 0.92) : Color(white: 0.10),
+                secondaryInk: isDark ? Color(white: 0.82) : Color(white: 0.15),
+                mutedInk: isDark ? Color(white: 0.60) : Color(white: 0.35)
+            ),
+            edges: EdgeColors(
+                line: isDark ? Color(white: 0.62) : Color(white: 0.40),
+                decorationFill: isDark ? Color(white: 0.18) : Color(white: 0.96),
+                labelInk: isDark ? Color(white: 0.82) : Color(white: 0.15)
+            ),
+            neutralStructure: NeutralStructureColors(
+                border: isDark ? Color(white: 0.55) : Color(white: 0.45),
+                subtleSurface: isDark ? Color(white: 0.20) : Color(white: 0.93)
+            ),
+            stateMachine: StateMachineColors(
+                background: builtinKindColors(.blue, isDark: isDark).header,
+                choiceBackground: tone(isDark, dark: (0.11, 0.30, 0.28), light: rgb(1.0, 0.98, 0.9)),
+                solidFill: isDark ? Color(white: 0.82) : Color(white: 0.15)
+            ),
+            callGraph: CallGraphColors(
+                inScopeFill: builtinKindColors(.blue, isDark: isDark).header,
+                outOfScopeFill: isDark ? Color(white: 0.22) : Color(white: 0.96)
+            ),
+            freeformDecorations: FreeformDecorationColors(
+                useCaseFill: tone(isDark, dark: (0.70, 0.30, 0.26), light: rgb(0.96, 0.95, 1.0)),
+                useCaseBorder: tone(isDark, dark: (0.70, 0.42, 0.70), light: rgb(0.58, 0.52, 0.82)),
+                noteFill: tone(isDark, dark: (0.13, 0.28, 0.26), light: rgb(1.0, 0.99, 0.94)),
+                noteBorder: tone(isDark, dark: (0.13, 0.45, 0.68), light: rgb(0.82, 0.75, 0.42)),
+                methodFill: builtinKindColors(.blue, isDark: isDark).header,
+                methodBorder: isDark ? Color(white: 0.50) : Color(white: 0.60),
+                actorFill: tone(isDark, dark: (0.50, 0.24, 0.24), light: rgb(0.95, 0.99, 0.99)),
+                actorBorder: tone(isDark, dark: (0.50, 0.40, 0.68), light: rgb(0.45, 0.72, 0.72)),
+                actorIcon: tone(isDark, dark: (0.50, 0.46, 0.80), light: rgb(0.30, 0.60, 0.60)),
+                databaseFill: tone(isDark, dark: (0.97, 0.24, 0.26), light: rgb(1.0, 0.96, 0.97)),
+                databaseBorder: tone(isDark, dark: (0.97, 0.42, 0.70), light: rgb(0.82, 0.52, 0.58)),
+                databaseIcon: tone(isDark, dark: (0.97, 0.48, 0.80), light: rgb(0.72, 0.40, 0.48)),
+                artifactFill: tone(isDark, dark: (0.53, 0.24, 0.25), light: rgb(0.95, 0.98, 0.99)),
+                artifactBorder: tone(isDark, dark: (0.53, 0.42, 0.70), light: rgb(0.40, 0.65, 0.75)),
+                artifactIcon: tone(isDark, dark: (0.53, 0.48, 0.80), light: rgb(0.30, 0.55, 0.65))
+            ),
             exportTheme: isDark ? .dark : .default,
-            typeColors: typeColors,
-            participantColors: participantColors,
-            containerColors: containerColors
+            typeColors: { builtinKindColors(Tint($0), isDark: isDark) },
+            participantColors: { builtinKindColors(Tint($0), isDark: isDark) },
+            containerColors: { builtinContainerColors($0, isDark: isDark) }
         )
     }
 
