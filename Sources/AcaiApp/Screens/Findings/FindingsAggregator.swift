@@ -47,7 +47,8 @@ struct FindingsAggregator {
         results.append(contentsOf: violationFindings(analysis.quality, codebase: codebase, artifact: artifact))
         results.append(contentsOf: deadCodeFindings(analysis.deadCode, codebase: codebase, artifact: artifact))
         results.append(contentsOf: healthFindings(analysis.health, codebase: codebase))
-        return results
+        // Two reports of the very same breach are one finding.
+        return results.removingDuplicates(by: \.id)
     }
 
     private func violationFindings(

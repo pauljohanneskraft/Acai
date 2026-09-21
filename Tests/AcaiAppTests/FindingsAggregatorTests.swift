@@ -109,6 +109,17 @@ struct FindingsAggregatorTests {
         #expect(before.map(\.id) == after.map(\.id))
     }
 
+    @Test func identicalViolationsCollapseIntoOneFinding() {
+        let codebase = Codebase(name: "C", directoryPath: "/c")
+        let (model, project) = makeModel(codebases: [codebase])
+        let aggregator = FindingsAggregator(project: project, model: model)
+
+        let findings = aggregator.findings(
+            for: codebase, analysis: analysis(violations: [budget("A"), budget("A")]), artifact: nil)
+
+        #expect(findings.filter { $0.kind == .violation }.count == 1)
+    }
+
     @Test func distinguishesNotIndexedFromStillAnalyzing() async {
         let notIndexed = Codebase(name: "Fresh", directoryPath: "/fresh")
         let analyzing = Codebase(name: "Analyzing", directoryPath: "/analyzing", hasArtifact: true)
