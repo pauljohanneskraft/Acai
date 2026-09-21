@@ -4,12 +4,14 @@ import Foundation
 @testable import AcaiApp
 
 /// Canned answers keyed by remote URL, plus a log of every call, so a model over `GitRemoteService`
-/// is proven without git. `listingGate`, when set, holds every listing open until the test opens it.
+/// is proven without git. `listingEntered`, when set, opens as soon as a listing starts;
+/// `listingGate`, when set, holds every listing open until the test opens it.
 final class FakeGitRemoteService: GitRemoteService, @unchecked Sendable {
     struct UnknownRemote: Error {}
 
     let listings = Locked<[URL: GitRemoteListing.Result]>([:])
     let failure = Locked<Error?>(nil)
+    let listingEntered = Locked<AsyncGate?>(nil)
     let listingGate = Locked<AsyncGate?>(nil)
     let inspections = Locked<[URL: CloneInspection]>([:])
     let sizes = Locked<[URL: Int64]>([:])
@@ -17,6 +19,7 @@ final class FakeGitRemoteService: GitRemoteService, @unchecked Sendable {
 
     func listRemote(_ endpoint: RemoteEndpoint) async throws -> GitRemoteListing.Result {
         record("listRemote", endpoint)
+        if let entered = listingEntered.value { await entered.open() }
         if let gate = listingGate.value { await gate.wait() }
         if let error = failure.value { throw error }
         guard let listing = listings.value[endpoint.remoteURL] else { throw UnknownRemote() }

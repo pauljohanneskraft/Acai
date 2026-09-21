@@ -3,37 +3,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct NewCodebaseSheet: View {
-    enum Source: String, CaseIterable, Identifiable {
-        case localFolder
-        case remoteURL
-        case gitHub
-        var id: String { rawValue }
-
-        var title: LocalizedStringResource {
-            switch self {
-            case .localFolder:
-                .app("View.NewCodebaseSheet.SourceLocalFolder")
-            case .remoteURL:
-                .app("View.NewCodebaseSheet.SourceRemoteURL")
-            case .gitHub:
-                .app("View.NewCodebaseSheet.SourceGitHub")
-            }
-        }
-    }
-
     let projectID: UUID
     let remoteService: GitRemoteService
     let hostingService: GitHubHostingService
     let sizePolicy: CloneSizePolicy
-    @EnvironmentObject var model: ProjectBrowserViewModel
-    // Reads signed-in state from the shared store, so signing in/out in Settings is reflected
-    // here immediately — see `gitHubSection` for the signed-out prompt.
-    @EnvironmentObject var accountStore: GitHubAccountStore
-    @EnvironmentObject private var settingsPresenter: SettingsPresenter
-    @Environment(\.dismiss) var dismiss
-    #if os(macOS)
-    @Environment(\.openSettings) private var openSettings
-    #endif
+    @EnvironmentObject private var model: ProjectBrowserViewModel
 
     /// Defaults to real git and the real GitHub API, swapped for fixtures under a UI test.
     init(
@@ -46,40 +20,38 @@ struct NewCodebaseSheet: View {
         self.sizePolicy = sizePolicy
     }
 
-    @State var source: Source = .localFolder
-    @State var name = ""
+    var body: some View {
+        NewCodebaseSheetContent(sheet: NewCodebaseSheetModel(
+            projectID: projectID, editor: model.editing, hubStoreDirectory: model.store.gitRepositoriesDir,
+            remoteService: remoteService, hostingService: hostingService, sizePolicy: sizePolicy))
+    }
+}
+
+struct NewCodebaseSheetContent: View {
+    @StateObject var sheet: NewCodebaseSheetModel
+    @EnvironmentObject var model: ProjectBrowserViewModel
+    // Reads signed-in state from the shared store, so signing in/out in Settings is reflected
+    // here immediately — see `gitHubSection` for the signed-out prompt.
+    @EnvironmentObject private var accountStore: GitHubAccountStore
+    @EnvironmentObject private var settingsPresenter: SettingsPresenter
+    @Environment(\.dismiss) var dismiss
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
+
+    init(sheet: @autoclosure @escaping () -> NewCodebaseSheetModel) {
+        _sheet = StateObject(wrappedValue: sheet())
+    }
+
     @FocusState private var isNameFieldFocused: Bool
-
-    @State var directoryURL: URL?
-    @State var securityScopedBookmark: SecurityScopedBookmark?
     @State var isChoosingDirectory = false
-    /// Set when the picked folder turns out to already be a git working directory with an
-    /// `origin` remote. `nil` for a plain folder.
-    @State var repositoryReference: CodebaseRepositoryReference?
-
-    @State var remoteAddress = ""
-    @State var remoteListing: RemoteListingState = .idle
-    @State var selectedRemoteRef: GitCheckout.Ref?
-
-    @State var repositories: [GitHubAPIClient.Repository] = []
     @State private var repositorySearch = ""
-    @State var selectedRepository: GitHubAPIClient.Repository?
-    @State var refs: [GitCheckout.Ref] = []
-    @State var selectedRef: GitCheckout.Ref?
-    @State var isLoadingRepositories = false
-    @State var isLoadingRefs = false
-    @State var clonePhase: AsyncOperationPhase = .idle
-    @State var gitHubErrorMessage: String?
-    @State var pendingLargeClone: PendingClone?
-    @State var isCandidateAlreadyCloned = false
-
-    var account: GitHubTokenStore.StoredAccount? { accountStore.account }
 
     var body: some View {
         NavigationStack {
             Form {
-                Picker(.app("View.NewCodebaseSheet.Source"), selection: $source) {
-                    ForEach(Source.allCases) { source in
+                Picker(.app("View.NewCodebaseSheet.Source"), selection: $sheet.source) {
+                    ForEach(NewCodebaseSheetModel.Source.allCases) { source in
                         Text(localized: source.title)
                             .tag(source)
                             .accessibilityIdentifier("newCodebase.source.\(source.rawValue)")
@@ -88,7 +60,7 @@ struct NewCodebaseSheet: View {
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("newCodebase.sourcePicker")
 
-                switch source {
+                switch sheet.source {
                 case .localFolder:
                     localFolderSection
                 case .remoteURL:
@@ -108,6 +80,7 @@ struct NewCodebaseSheet: View {
             .presentationDetents([.large])
             #endif
             .onAppear { isNameFieldFocused = true }
+            .onDisappear { sheet.cancelPendingWork() }
             .navigationTitle(.app("View.NewCodebaseSheet.AddCodebase"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -123,23 +96,14 @@ struct NewCodebaseSheet: View {
             }
             // `.task(id:)`, not `.onChange(of:)`: `account` is typically already non-nil the first
             // time this sheet appears, which `.onChange` would never see.
-            .task(id: account?.login) {
-                guard account != nil else { return }
-                await loadRepositories()
-            }
-            .onChange(of: selectedRepository) { _, newValue in
-                if let newValue { Task { await loadRefs(for: newValue) } }
-            }
-            .task(id: remoteAddress) {
-                await listRemoteDebounced()
-            }
-            .task(id: candidateRemoteURL) {
-                await checkCandidateClone()
+            .task(id: accountStore.account) {
+                sheet.account = accountStore.account
+                await sheet.loadRepositories()
             }
             .confirmationDialog(
                 largeCloneTitle, isPresented: Binding(
-                    get: { pendingLargeClone != nil }, set: { if !$0 { pendingLargeClone = nil } }),
-                titleVisibility: .visible, presenting: pendingLargeClone
+                    get: { sheet.pendingLargeClone != nil }, set: { if !$0 { sheet.pendingLargeClone = nil } }),
+                titleVisibility: .visible, presenting: sheet.pendingLargeClone
             ) { pending in
                 Button(.app("View.NewCodebaseSheet.CloneLatestSnapshot")) {
                     clone(pending, depth: .latestSnapshot)
@@ -157,8 +121,15 @@ struct NewCodebaseSheet: View {
     }
 
     private var largeCloneTitle: Text {
-        let size = Int64(pendingLargeClone?.sizeKilobytes ?? 0) * 1024
+        let size = Int64(sheet.pendingLargeClone?.sizeKilobytes ?? 0) * 1024
         return Text(.app("View.NewCodebaseSheet.LargeCloneTitle \(size.formatted(.byteCount(style: .file)))"))
+    }
+
+    private func clone(_ pending: PendingClone, depth: GitHistoryDepth) {
+        Task {
+            await sheet.clone(pending, depth: depth)
+            dismiss()
+        }
     }
 
     /// Not a bare `TextField(text:label:)` on macOS: inside a `Form` its title renders as an extra
@@ -168,7 +139,7 @@ struct NewCodebaseSheet: View {
     func nameField(isOptional: Bool, identifier: String) -> some View {
         #if os(macOS)
         LabeledContent {
-            TextField("", text: $name, prompt: Text(localized: isOptional
+            TextField("", text: $sheet.name, prompt: Text(localized: isOptional
                 ? .app("View.NewCodebaseSheet.Optional") : .app("View.NewCodebaseSheet.EGMyLibrary")))
                 .multilineTextAlignment(.trailing)
                 .focused($isNameFieldFocused)
@@ -177,7 +148,7 @@ struct NewCodebaseSheet: View {
             Text(.app("View.NewCodebaseSheet.Name"))
         }
         #else
-        TextField(text: $name) {
+        TextField(text: $sheet.name) {
             Text(localized: isOptional
                 ? .app("View.NewCodebaseSheet.NameOptional") : .app("View.NewCodebaseSheet.Name"))
         }
@@ -189,7 +160,7 @@ struct NewCodebaseSheet: View {
     @ViewBuilder
     private var gitHubSection: some View {
         Section {
-            if let account {
+            if let account = sheet.account {
                 // Read-only summary — the full sign-in UI lives in Settings.
                 HStack {
                     Text(.app("View.NewCodebaseSheet.Signed \(account.login)"))
@@ -205,7 +176,7 @@ struct NewCodebaseSheet: View {
                 }
             }
         }
-        if account != nil {
+        if sheet.account != nil {
             Section {
                 nameField(isOptional: true, identifier: "newCodebase.nameField")
                 #if os(macOS)
@@ -222,10 +193,10 @@ struct NewCodebaseSheet: View {
                     Text(.app("View.NewCodebaseSheet.SearchRepositories"))
                 }
                 #endif
-                if isLoadingRepositories {
+                if sheet.isLoadingRepositories {
                     ProgressView()
                 } else {
-                    Picker(.app("View.NewCodebaseSheet.Repository"), selection: $selectedRepository) {
+                    Picker(.app("View.NewCodebaseSheet.Repository"), selection: $sheet.selectedRepository) {
                         Text(.app("View.NewCodebaseSheet.None")).tag(GitHubAPIClient.Repository?.none)
                         ForEach(filteredRepositories) { repository in
                             Text(verbatim: repository.fullName).tag(Optional(repository))
@@ -233,25 +204,24 @@ struct NewCodebaseSheet: View {
                     }
                     .accessibilityIdentifier("newCodebase.repositoryPicker")
                 }
-                if selectedRepository != nil {
-                    if isLoadingRefs {
+                if sheet.selectedRepository != nil {
+                    if sheet.isLoadingRefs {
                         ProgressView()
                     } else {
-                        Picker(.app("View.NewCodebaseSheet.BranchTag"), selection: $selectedRef) {
-                            ForEach(refs) { ref in
+                        Picker(.app("View.NewCodebaseSheet.BranchTag"), selection: $sheet.selectedRef) {
+                            ForEach(sheet.refs) { ref in
                                 Text(verbatim: ref.name).tag(Optional(ref))
                             }
                         }
                         .accessibilityIdentifier("newCodebase.refPicker")
                     }
                 }
-                // Adding attaches a new worktree to the existing shared clone instead of cloning.
-                if isAlreadyCloned(selectedRepository.flatMap(gitHubRemoteURL)) {
+                if sheet.isAlreadyCloned(sheet.selectedRepository.flatMap(sheet.gitHubRemoteURL)) {
                     alreadyClonedHint
                 }
             }
         }
-        if let gitHubErrorMessage {
+        if let gitHubErrorMessage = sheet.gitHubErrorMessage {
             Section {
                 Text(verbatim: gitHubErrorMessage).foregroundStyle(.red)
             }
@@ -281,34 +251,32 @@ struct NewCodebaseSheet: View {
 
     @ViewBuilder
     private var confirmButton: some View {
-        switch source {
+        switch sheet.source {
         case .localFolder:
             Button(.app("View.NewCodebaseSheet.Add")) {
-                if let dir = directoryURL {
-                    model.editing.addCodebase(
-                        to: projectID, name: name, directoryURL: dir,
-                        securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
-                }
+                sheet.addLocalFolder()
                 dismiss()
             }
-            .disabled(name.isEmpty || directoryURL == nil)
+            .disabled(sheet.name.isEmpty || sheet.directoryURL == nil)
             .accessibilityIdentifier("newCodebase.addButton")
         case .remoteURL, .gitHub:
-            let pending = pendingClone
-            Button(isAlreadyCloned(pending?.remoteURL)
+            let pending = sheet.pendingClone
+            Button(sheet.isAlreadyCloned(pending?.remoteURL)
                 ? .app("View.NewCodebaseSheet.Add")
                 : .app("View.NewCodebaseSheet.Clone")) {
-                guard let pending, !clonePhase.isInFlight else { return }
-                requestClone(pending)
+                guard let pending, !sheet.clonePhase.isInFlight else { return }
+                Task {
+                    if await sheet.requestClone(pending) { dismiss() }
+                }
             }
-            .disabled(pending == nil || clonePhase.isInFlight)
+            .disabled(pending == nil || sheet.clonePhase.isInFlight)
             .accessibilityIdentifier("newCodebase.cloneButton")
-            AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: clonePhase)
+            AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: sheet.clonePhase)
         }
     }
 
     private var filteredRepositories: [GitHubAPIClient.Repository] {
-        guard !repositorySearch.isEmpty else { return repositories }
-        return repositories.filter { $0.fullName.localizedCaseInsensitiveContains(repositorySearch) }
+        guard !repositorySearch.isEmpty else { return sheet.repositories }
+        return sheet.repositories.filter { $0.fullName.localizedCaseInsensitiveContains(repositorySearch) }
     }
 }
