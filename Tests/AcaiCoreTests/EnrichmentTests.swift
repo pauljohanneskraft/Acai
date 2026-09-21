@@ -294,6 +294,45 @@ struct EnrichmentTests {
         #expect(toBase?.kind == .inheritance)
     }
 
+    // MARK: An ambiguous supertype name is reported like an ambiguous relationship endpoint
+
+    private func nestedBaseFixture(childInherits name: String) -> CodeArtifact {
+        let baseA = TypeDeclaration(
+            id: "OuterA.Base", name: "Base", qualifiedName: "OuterA.Base", kind: .class,
+            accessLevel: .public,
+            location: SourceLocation(filePath: "M/Sources/M/A.swift", line: 1, column: 1))
+        let outerA = TypeDeclaration(
+            id: "OuterA", name: "OuterA", qualifiedName: "OuterA", kind: .struct,
+            accessLevel: .public, nestedTypes: [baseA],
+            location: SourceLocation(filePath: "M/Sources/M/A.swift", line: 1, column: 1))
+        let baseB = TypeDeclaration(
+            id: "OuterB.Base", name: "Base", qualifiedName: "OuterB.Base", kind: .class,
+            accessLevel: .public,
+            location: SourceLocation(filePath: "M/Sources/M/B.swift", line: 1, column: 1))
+        let outerB = TypeDeclaration(
+            id: "OuterB", name: "OuterB", qualifiedName: "OuterB", kind: .struct,
+            accessLevel: .public, nestedTypes: [baseB],
+            location: SourceLocation(filePath: "M/Sources/M/B.swift", line: 1, column: 1))
+        let child = type("Child", kind: .class, accessLevel: .public, inherited: [name])
+        return artifact([outerA, outerB, child])
+    }
+
+    @Test func ambiguousSupertypeNameAppendsDiagnosticAndStaysUnresolved() {
+        let resolved = nestedBaseFixture(childInherits: "Base").resolvingRelationshipNames()
+        let diagnostics = resolved.metadata.parseDiagnostics.filter { $0.kind == .unresolvedReference }
+        #expect(diagnostics.count == 1)
+        #expect(diagnostics.first?.message.contains("Base") == true)
+        let child = resolved.types.first { $0.name == "Child" }
+        #expect(child?.inheritedTypes.first?.name == "Base")
+    }
+
+    @Test func qualifiedSupertypeNameResolvesWithoutDiagnostic() {
+        let resolved = nestedBaseFixture(childInherits: "OuterA.Base").resolvingRelationshipNames()
+        #expect(resolved.metadata.parseDiagnostics.isEmpty)
+        let child = resolved.types.first { $0.name == "Child" }
+        #expect(child?.inheritedTypes.first?.name == "OuterA.Base")
+    }
+
     // MARK: BUG-12 / GAP-7 — relationship endpoints resolve to ids incl. nested
 
     @Test func relationshipNamesResolveToNestedTypeIds() {

@@ -50,26 +50,44 @@ extension CodeArtifact {
             }
             return resolved
         }
-        copy.types = Self.resolvingInheritedTypeNames(types, using: resolver)
+        let (resolvedTypes, inheritedDiagnostics) = Self.resolvingInheritedTypeNames(types, using: resolver)
+        copy.types = resolvedTypes
+        diagnostics.append(contentsOf: inheritedDiagnostics)
         copy.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return copy
     }
 
     /// Rewrites each type's `inheritedTypes[].name` to its canonical id where known, recursing
-    /// into `nestedTypes`. Names with no mapping (external supertypes) are left untouched.
+    /// into `nestedTypes`. Names with no mapping (external supertypes) are left untouched; a name
+    /// shared by several declared types is left as-is and reported, matching the relationship
+    /// endpoint diagnostic below — an ambiguous supertype is worse than an ambiguous relationship
+    /// endpoint since it silently breaks depth-of-inheritance/number-of-children for the type.
     private static func resolvingInheritedTypeNames(
         _ types: [TypeDeclaration], using resolver: TypeIdentityResolver
-    ) -> [TypeDeclaration] {
-        types.map { type in
+    ) -> (types: [TypeDeclaration], diagnostics: [ParseDiagnostic]) {
+        var diagnostics: [ParseDiagnostic] = []
+        let resolvedTypes = types.map { type -> TypeDeclaration in
             var copy = type
             copy.inheritedTypes = type.inheritedTypes.map { ref in
                 var resolved = ref
-                resolved.name = resolver.canonicalName(for: ref.name)
+                let identity = resolver.resolve(ref.name)
+                resolved.name = identity.canonicalName
+                if case .ambiguous(let name) = identity {
+                    diagnostics.append(ParseDiagnostic(
+                        location: type.location ?? SourceLocation(filePath: "", line: 0, column: 0),
+                        kind: .unresolvedReference,
+                        message: "Ambiguous type reference '\(name)' (supertype of '\(type.name)'): "
+                            + "several declared types share this simple name, so the edge was left "
+                            + "unresolved. Qualify the name to disambiguate."))
+                }
                 return resolved
             }
-            copy.nestedTypes = resolvingInheritedTypeNames(type.nestedTypes, using: resolver)
+            let (nested, nestedDiagnostics) = resolvingInheritedTypeNames(type.nestedTypes, using: resolver)
+            copy.nestedTypes = nested
+            diagnostics.append(contentsOf: nestedDiagnostics)
             return copy
         }
+        return (resolvedTypes, diagnostics)
     }
 
     // MARK: - Inheritance vs conformance (in-codebase only)
