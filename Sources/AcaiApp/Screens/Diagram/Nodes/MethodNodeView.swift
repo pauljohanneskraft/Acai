@@ -12,16 +12,16 @@ struct MethodNodeView: View {
     var body: some View {
         Text(verbatim: name)
             .font(.system(.caption, design: .monospaced))
-            .foregroundColor(palette.primaryInk)
+            .foregroundColor(palette.canvasInk.primaryInk)
             .lineLimit(1)
             .truncationMode(.middle)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RoundedRectangle(cornerRadius: 8).fill(palette.methodFill))
+            .background(RoundedRectangle(cornerRadius: 8).fill(palette.freeformDecorations.methodFill))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(
-                        isSelected ? Color.accentColor : palette.methodBorder,
+                        isSelected ? Color.accentColor : palette.freeformDecorations.methodBorder,
                         lineWidth: isSelected ? 2 : 1
                     )
             )

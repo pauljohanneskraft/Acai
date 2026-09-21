@@ -37,7 +37,7 @@ public struct SequenceDiagramSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(palette.canvasBackground)
+        .background(palette.canvasInk.background)
         .environment(\.diagramPalette, palette)
     }
 }
@@ -92,8 +92,8 @@ public struct SequenceFragmentView: View {
 
     @Environment(\.diagramPalette) private var palette
 
-    private var ink: Color { palette.secondaryInk }
-    private var borderColor: Color { isSelected ? .accentColor : palette.neutralBorder }
+    private var ink: Color { palette.canvasInk.secondaryInk }
+    private var borderColor: Color { isSelected ? .accentColor : palette.neutralStructure.border }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -136,7 +136,7 @@ public struct SequenceFragmentView: View {
                 path.addLine(to: CGPoint(x: origin.x, y: origin.y + height))
                 path.closeSubpath()
             }
-            .fill(palette.subtleSurface)
+            .fill(palette.neutralStructure.subtleSurface)
             Path { path in
                 path.move(to: origin)
                 path.addLine(to: CGPoint(x: origin.x + width, y: origin.y))
@@ -148,7 +148,7 @@ public struct SequenceFragmentView: View {
             .stroke(borderColor, lineWidth: 1)
             Text(label)
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundColor(palette.primaryInk)
+                .foregroundColor(palette.canvasInk.primaryInk)
                 .position(x: origin.x + width / 2 - 3, y: origin.y + height / 2)
         }
     }
@@ -168,8 +168,8 @@ public struct SequenceActivationBarView: View {
 
     public var body: some View {
         Rectangle()
-            .fill(palette.subtleSurface)
-            .overlay(Rectangle().strokeBorder(palette.neutralBorder, lineWidth: 1))
+            .fill(palette.neutralStructure.subtleSurface)
+            .overlay(Rectangle().strokeBorder(palette.neutralStructure.border, lineWidth: 1))
             .frame(width: bar.rect.width, height: bar.rect.height)
             .position(x: bar.rect.midX, y: bar.rect.midY)
     }
@@ -191,7 +191,7 @@ public struct SequenceLifelineView: View {
             path.move(to: CGPoint(x: participant.lifelineX, y: participant.lifelineTop))
             path.addLine(to: CGPoint(x: participant.lifelineX, y: participant.lifelineBottom))
         }
-        .stroke(palette.edgeLine, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+        .stroke(palette.edges.line, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
     }
 }
 
@@ -235,7 +235,7 @@ public struct ParticipantHeaderView: View {
             }
             Text(name)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundColor(palette.primaryInk)
+                .foregroundColor(palette.canvasInk.primaryInk)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -269,7 +269,7 @@ public struct SequenceMessageView: View {
 
     @Environment(\.diagramPalette) private var palette
 
-    private var color: Color { deltaColor ?? palette.edgeLine }
+    private var color: Color { deltaColor ?? palette.edges.line }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -281,7 +281,7 @@ public struct SequenceMessageView: View {
             if let label = message.label {
                 Text(label)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(palette.secondaryInk)
+                    .foregroundColor(palette.canvasInk.secondaryInk)
                     .position(labelPosition)
             }
         }

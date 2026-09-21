@@ -40,7 +40,7 @@ public struct CallGraphSnapshotView: View {
         }
         .frame(width: layout.contentSize.width, height: layout.contentSize.height, alignment: .topLeading)
         .padding(padding)
-        .background(palette.canvasBackground)
+        .background(palette.canvasInk.background)
         .environment(\.diagramPalette, palette)
     }
 
@@ -48,17 +48,17 @@ public struct CallGraphSnapshotView: View {
         let method = node.node
         return Text(method.label)
             .font(.system(size: 12, design: .monospaced))
-            .foregroundColor(palette.primaryInk)
+            .foregroundColor(palette.canvasInk.primaryInk)
             .lineLimit(1)
             .truncationMode(.middle)
             .padding(.horizontal, 8)
             .frame(width: node.rect.width, height: node.rect.height)
-            .background(method.inScope ? palette.callGraphInScopeFill : palette.callGraphOutOfScopeFill)
+            .background(method.inScope ? palette.callGraph.inScopeFill : palette.callGraph.outOfScopeFill)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        nodeColor?(node.id) ?? palette.neutralBorder,
+                        nodeColor?(node.id) ?? palette.neutralStructure.border,
                         style: StrokeStyle(
                             lineWidth: nodeColor?(node.id) == nil ? 1 : 3, dash: method.inScope ? [] : [4, 3])
                     )
