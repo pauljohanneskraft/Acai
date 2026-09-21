@@ -1,18 +1,14 @@
 import SwiftUI
 
-/// ⌘L for Quick Open, from the Mac's menu bar or an iPad's hardware keyboard, in the File menu where
-/// Xcode keeps Open Quickly. Acts on a `QuickOpenPresenter` it doesn't own, since a `Commands` menu
-/// item lives outside any view hierarchy — see that type for where each platform's presenter comes from.
+#if os(macOS)
+/// macOS's ⌘K entry point for Quick Open — matches Xcode/every other developer tool's
+/// convention. Acts on the key window's `QuickOpenPresenter`. iPad binds the same shortcut on
+/// `ProjectBrowserView` itself, as its other hardware-keyboard shortcuts are bound.
 struct QuickOpenCommands: Commands {
-    #if os(macOS)
     @FocusedObject private var presenter: QuickOpenPresenter?
-    #else
-    @EnvironmentObject private var scenePresenter: QuickOpenPresenter
-    private var presenter: QuickOpenPresenter? { scenePresenter }
-    #endif
 
     var body: some Commands {
-        CommandGroup(after: .newItem) {
+        CommandGroup(after: .textEditing) {
             Button(.app("View.QuickOpenCommands.QuickOpen")) {
                 presenter?.isPresented = true
             }
@@ -21,3 +17,4 @@ struct QuickOpenCommands: Commands {
         }
     }
 }
+#endif

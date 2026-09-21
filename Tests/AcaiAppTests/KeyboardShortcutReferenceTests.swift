@@ -39,33 +39,41 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
         #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⌘/")
-        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘L")
+        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
     }
 
-    /// An iPad's hardware keyboard fires the same menu commands the Mac's menu bar does, so a command that
-    /// binds a shortcut but is attached only on macOS silently drops that shortcut on iPad — unless the
-    /// feature itself is macOS-only, which the reference declares as `Group.isMacOSOnly`.
-    @Test("A shortcut-binding menu command is attached on macOS only when its shortcuts are")
+    /// A shortcut bound only in a menu command that is attached on macOS alone is silently missing from
+    /// an iPad's hardware keyboard. That is fine when the feature itself is macOS-only (the reference
+    /// declares it as `Group.isMacOSOnly`) or when a view binds the same shortcut outside `#if os(macOS)`.
+    @Test("A macOS-only menu command binds nothing an iPad keyboard would miss")
     func shortcutCommandsAreAttachedOnEveryPlatform() throws {
         let sources = try swiftFiles().map { try String(contentsOf: $0, encoding: .utf8) }
         var checkedTypes = 0
         for source in sources where source.contains(".keyboardShortcut(") {
             // The commands a file declares bind the shortcuts that same file names.
             let bound = Set(shortcutArguments(in: source))
-            let isMacOSOnlyFeature = !bound.isEmpty && bound.allSatisfy(macOSOnlyShortcutIDs.contains)
+            let reachesIPad = bound.allSatisfy { id in
+                macOSOnlyShortcutIDs.contains(id) || isBoundOutsideMacOS(id, in: sources)
+            }
             for type in source.matches(of: /struct (\w+)\s*:\s*Commands/).map({ String($0.1) }) {
                 checkedTypes += 1
                 let attachments = sources.flatMap { MacOSOnlyRegions(source: $0).lines(containing: "\(type)()") }
                 #expect(!attachments.isEmpty, "`\(type)` binds a shortcut but is never attached")
                 #expect(
-                    isMacOSOnlyFeature || attachments.allSatisfy { !$0.isMacOSOnly },
+                    reachesIPad || attachments.allSatisfy { !$0.isMacOSOnly },
                     """
-                    `\(type)` binds a cross-platform shortcut but is attached inside `#if os(macOS)`, so an \
-                    iPad keyboard never fires it
+                    `\(type)` is attached inside `#if os(macOS)` and binds a shortcut nothing else binds \
+                    outside it, so an iPad keyboard never fires it
                     """)
             }
         }
         #expect(checkedTypes > 0)
+    }
+
+    private func isBoundOutsideMacOS(_ id: String, in sources: [String]) -> Bool {
+        sources.contains { source in
+            MacOSOnlyRegions(source: source).lines(containing: ".keyboardShortcut(.\(id))").contains { !$0.isMacOSOnly }
+        }
     }
 
     /// The other half: a group the panel hides off macOS must not have its shortcuts bound elsewhere, or

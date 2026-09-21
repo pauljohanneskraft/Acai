@@ -114,7 +114,7 @@ colour-coded and badged; the panel also lists changed files and the findings del
 
 ## Search
 
-Types, diagrams and codebases are searchable through quick-open — ⌘L on macOS and on an iPad with a
+Types, diagrams and codebases are searchable through quick-open — ⌘K on macOS and on an iPad with a
 hardware keyboard, the search field atop the sidebar otherwise. ⌘/ lists every shortcut the app binds.
 
 ## Links

@@ -13,9 +13,6 @@ public struct AcaiRootScene: Scene {
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
     @StateObject private var browserWindows = BrowserWindows()
-    #if !os(macOS)
-    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
-    #endif
 
     public init() {}
 
@@ -31,15 +28,14 @@ public struct AcaiRootScene: Scene {
                 .statusBarHidden(UITestFixtureResolver().resolveBaseDir() != nil)
                 #endif
         }
-        // Menu commands are what an iPad's hardware keyboard fires too, so every one is attached on
-        // every platform — `KeyboardShortcutReferenceTests` rejects a shortcut-binding command attached
-        // on macOS only unless its shortcuts sit in a group marked `isMacOSOnly`, as the extra browser
-        // windows behind `BrowserWindowCommands` do.
+        // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
+        // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
+        // `isMacOSOnly` (`BrowserWindowCommands`) or a view binds it too (`QuickOpenCommands`).
         .commands {
             DiagramThemeCommands()
-            QuickOpenCommands()
             KeyboardShortcutCommands()
             #if os(macOS)
+            QuickOpenCommands()
             BrowserWindowCommands()
             #endif
         }
@@ -52,10 +48,6 @@ public struct AcaiRootScene: Scene {
         .environmentObject(settingsPresenter)
         .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
-        #if !os(macOS)
-        // The one scene's Quick Open — see `QuickOpenPresenter` for why it isn't a focused-scene object here.
-        .environmentObject(quickOpenPresenter)
-        #endif
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: projectStore, windowAddress: $address)

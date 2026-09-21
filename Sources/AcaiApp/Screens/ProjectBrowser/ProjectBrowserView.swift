@@ -17,12 +17,9 @@ public struct ProjectBrowserView: View {
     let windowAddress: Binding<AppAddress?>?
 
     @EnvironmentObject var browserWindows: BrowserWindows
-    // See `QuickOpenPresenter` for why macOS's is per window and iOS's comes from the scene.
-    #if os(macOS)
+    // Published below as a focused scene object, so macOS's ⌘K reaches the key window's own — see
+    // `QuickOpenPresenter`'s doc comment.
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
-    #else
-    @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
-    #endif
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
@@ -137,6 +134,13 @@ public struct ProjectBrowserView: View {
         }
         #endif
         #if !os(macOS)
+        .background {
+            // ⌘K from an iPad's hardware keyboard, bound on the view like the app's other iPad
+            // shortcuts: a menu command outside the Help group never fired on iPadOS 26.
+            Button("") { quickOpenPresenter.isPresented = true }
+                .keyboardShortcut(.quickOpen)
+                .hidden()
+        }
         // ⌘/ from a hardware keyboard; touch reaches the same panel from Settings.
         .sheet(isPresented: $keyboardShortcutsPresenter.isPresented) {
             KeyboardShortcutsPanel()
