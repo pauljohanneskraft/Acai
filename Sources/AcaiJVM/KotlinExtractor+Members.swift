@@ -15,9 +15,8 @@ extension KotlinExtractor {
         skipEnumEntries: Bool = false
     ) {
         // Parent type's qualified ID as namespace, so nested types get correctly-qualified IDs.
-        let savedNamespace = currentNamespace
-        currentNamespace = typeDecl.id
-        defer { currentNamespace = savedNamespace }
+        let outerNamespace = declarations.enter(namespace: typeDecl.id)
+        defer { declarations.leave(outerNamespace) }
 
         // Pre-scan: build property → type map for call-site resolution.
         var knownProperties = MemberIndex(members: typeDecl.members).propertyTypes
@@ -39,13 +38,13 @@ extension KotlinExtractor {
             else { continue }
             let returnType = extractTypeReferenceFromAny(returnTypeNode)
             guard returnType.name != "Unit" else { continue }
-            returnTypes.record(returnType.name, for: text(nameNode))
+            returnTypes.record(returnType.name, for: nameNode.text(in: context))
         }
         let knownMethodReturnTypes = returnTypes.resolved
 
         let scope = CallSiteScope(
             knownProperties: knownProperties,
-            knownTypeNames: declaredTypeNames,
+            knownTypeNames: declarations.declaredTypeNames,
             knownMethodReturnTypes: knownMethodReturnTypes
         )
 
@@ -146,14 +145,14 @@ extension KotlinExtractor {
 
     func extractEnumEntry(_ node: Node) -> EnumCase? {
         guard let nameNode = node.firstChild(withType: "simple_identifier") else { return nil }
-        let name = text(nameNode)
+        let name = nameNode.text(in: context)
         var rawValue: String?
         if let valueArgs = node.firstChild(withType: "value_arguments") {
-            let argsText = text(valueArgs).trimmingCharacters(in: .whitespaces)
+            let argsText = valueArgs.text(in: context).trimmingCharacters(in: .whitespaces)
             rawValue = (argsText.hasPrefix("(") && argsText.hasSuffix(")"))
                 ? String(argsText.dropFirst().dropLast()) : argsText
         }
-        return EnumCase(name: name, rawValue: rawValue, location: loc(node))
+        return EnumCase(name: name, rawValue: rawValue, location: node.location(in: context))
     }
 
     // MARK: - Function Declaration
@@ -163,12 +162,12 @@ extension KotlinExtractor {
         scope: CallSiteScope = CallSiteScope()
     ) -> Member {
         let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
-        let name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? "_anonymous"
+        let name = node.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? "_anonymous"
         let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
 
         // Extension function receiver (e.g. `fun String.hello() {}`)
         if let receiverRef = extractReceiverType(node) {
-            relationships.append(
+            declarations.relationships.append(
                 Relationship(kind: .extension, source: name, target: receiverRef.name)
             )
         }
@@ -183,18 +182,18 @@ extension KotlinExtractor {
         }()
 
         let body = node.firstChild(withType: "function_body")
-        let callSites = extractCallSites(from: body, scope: scope.merging(parameters: params))
 
         return Member(
             name: name, kind: .method,
             accessLevel: modifierInfo.accessLevel, modifiers: modifierInfo.modifiers,
             type: returnType, parameters: params,
             genericParameters: generics, annotations: modifierInfo.annotations,
-            location: loc(node), callSites: callSites,
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope),
-            referencedTypeNames: referencedTypeNames(in: body),
-            cyclomaticComplexity: cyclomaticComplexity(in: body, branchKinds: Self.branchNodeKinds)
+            location: node.location(in: context),
+            callSites: callSites.callSites(in: body, scope: scope.merging(parameters: params)),
+            assignments: assignments.assignments(in: body),
+            fieldReads: fieldReads.reads(in: body, scope: scope),
+            referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
+            cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
         )
     }
 
@@ -204,7 +203,7 @@ extension KotlinExtractor {
     private func extractReceiverType(_ node: Node) -> TypeReference? {
         let children = node.children()
         guard let funIndex = children.firstIndex(where: {
-            !$0.isNamed && text($0) == "fun"
+            !$0.isNamed && $0.text(in: context) == "fun"
         }) else { return nil }
         var childIndex = children.index(after: funIndex)
         while childIndex < children.endIndex {
@@ -221,7 +220,7 @@ extension KotlinExtractor {
                 let nextIndex = children.index(after: childIndex)
                 if nextIndex < children.endIndex,
                    !children[nextIndex].isNamed,
-                   text(children[nextIndex]) == "." {
+                   children[nextIndex].text(in: context) == "." {
                     return extractTypeReferenceFromAny(child)
                 }
             }
@@ -239,7 +238,7 @@ extension KotlinExtractor {
                 foundParams = true
                 continue
             }
-            if foundParams && !child.isNamed && text(child) == ":" {
+            if foundParams && !child.isNamed && child.text(in: context) == ":" {
                 foundColon = true
                 continue
             }
@@ -272,10 +271,10 @@ extension KotlinExtractor {
         var typeRef: TypeReference?
 
         if let varDecl = node.firstChild(withType: "variable_declaration") {
-            name = varDecl.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
+            name = varDecl.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? ""
             typeRef = extractFirstTypeRef(from: varDecl)
         } else {
-            name = node.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
+            name = node.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? ""
             typeRef = extractFirstTypeRef(from: node)
         }
         // No explicit `: Type` annotation — infer from a direct construction initializer (`val helper
@@ -288,9 +287,9 @@ extension KotlinExtractor {
         // A custom accessor (`get()`/`set()`) nests as a child; walk each so accessor-only calls
         // aren't lost, and treat the property as computed.
         let accessors = node.namedChildren().filter { $0.nodeType == "getter" || $0.nodeType == "setter" }
-        var callSites = extractCallSites(from: propertyInitializerNode(of: node), scope: scope)
+        var propertyCallSites = callSites.callSites(in: propertyInitializerNode(of: node), scope: scope)
         for accessor in accessors {
-            callSites += extractCallSites(from: accessor, scope: scope)
+            propertyCallSites += callSites.callSites(in: accessor, scope: scope)
         }
 
         return Member(
@@ -298,10 +297,10 @@ extension KotlinExtractor {
             accessLevel: modifierInfo.accessLevel, modifiers: modifiers,
             type: typeRef,
             isComputed: isComputed || !accessors.isEmpty,
-            annotations: modifierInfo.annotations, location: loc(node),
-            callSites: callSites,
+            annotations: modifierInfo.annotations, location: node.location(in: context),
+            callSites: propertyCallSites,
             initialValue: propertyInitializerValue(of: node),
-            referencedTypeNames: referencedTypeNames(in: propertyInitializerNode(of: node))
+            referencedTypeNames: propertyInitializerNode(of: node)?.referencedTypeNames(in: context) ?? []
         )
     }
 
@@ -310,8 +309,8 @@ extension KotlinExtractor {
     func extractAnonymousInitializer(_ node: Node, scope: CallSiteScope) -> Member {
         Member(
             name: "init", kind: .initializer, accessLevel: .internal,
-            location: loc(node),
-            callSites: extractCallSites(from: node, scope: scope)
+            location: node.location(in: context),
+            callSites: callSites.callSites(in: node, scope: scope)
         )
     }
 
@@ -319,7 +318,7 @@ extension KotlinExtractor {
     private func propertyInitializerNode(of node: Node) -> Node? {
         var foundEq = false
         for child in node.children() {
-            if !child.isNamed && text(child) == "=" {
+            if !child.isNamed && child.text(in: context) == "=" {
                 foundEq = true
                 continue
             }
@@ -333,12 +332,12 @@ extension KotlinExtractor {
     private func propertyInitializerValue(of node: Node) -> VariableAssignment.Value? {
         var foundEq = false
         for child in node.children() {
-            if !child.isNamed && text(child) == "=" {
+            if !child.isNamed && child.text(in: context) == "=" {
                 foundEq = true
                 continue
             }
             if foundEq {
-                return classifyValue(child)
+                return assignmentSyntax.classifyValue(child)
             }
         }
         return nil
@@ -350,9 +349,9 @@ extension KotlinExtractor {
         guard let call = initializerNode, call.nodeType == "call_expression",
               call.firstChild(withType: "navigation_expression") == nil,
               let callee = call.firstChild(withType: "simple_identifier"),
-              declaredTypeNames.contains(text(callee))
+              declarations.declaredTypeNames.contains(callee.text(in: context))
         else { return nil }
-        return TypeReference(name: text(callee))
+        return TypeReference(name: callee.text(in: context))
     }
 
     private func extractFirstTypeRef(from node: Node) -> TypeReference? {
@@ -387,10 +386,10 @@ extension KotlinExtractor {
         return Member(
             name: "init", kind: .initializer,
             accessLevel: modifierInfo.accessLevel,
-            parameters: params, location: loc(node),
-            callSites: extractCallSites(from: body, scope: scope.merging(parameters: params)),
-            assignments: extractAssignments(from: body),
-            fieldReads: fieldReadResolver.reads(in: body, scope: scope)
+            parameters: params, location: node.location(in: context),
+            callSites: callSites.callSites(in: body, scope: scope.merging(parameters: params)),
+            assignments: assignments.assignments(in: body),
+            fieldReads: fieldReads.reads(in: body, scope: scope)
         )
     }
 
@@ -414,17 +413,17 @@ extension KotlinExtractor {
             let isVal = binding == "val"
             let isVar = binding == "var"
             let isProperty = isVal || isVar
-            let name = child.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
+            let name = child.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? ""
             let typeRef = extractFirstTypeRef(from: child)
             var defaultValue: String?
             var foundEq = false
             for innerChild in child.children() {
-                if !innerChild.isNamed && text(innerChild) == "=" {
+                if !innerChild.isNamed && innerChild.text(in: context) == "=" {
                     foundEq = true
                     continue
                 }
                 if foundEq && innerChild.isNamed {
-                    defaultValue = text(innerChild)
+                    defaultValue = innerChild.text(in: context)
                     break
                 }
             }
@@ -447,17 +446,17 @@ extension KotlinExtractor {
     func extractFunctionValueParameters(_ node: Node?) -> [Parameter] {
         guard let node else { return [] }
         return node.allChildren(withType: "parameter").map { child in
-            let name = child.firstChild(withType: "simple_identifier").map { text($0) } ?? ""
+            let name = child.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? ""
             let typeRef = extractFirstTypeRef(from: child)
             var defaultValue: String?
             var foundEq = false
             for innerChild in child.children() {
-                if !innerChild.isNamed && text(innerChild) == "=" {
+                if !innerChild.isNamed && innerChild.text(in: context) == "=" {
                     foundEq = true
                     continue
                 }
                 if foundEq && innerChild.isNamed {
-                    defaultValue = text(innerChild)
+                    defaultValue = innerChild.text(in: context)
                     break
                 }
             }
