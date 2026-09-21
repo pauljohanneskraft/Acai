@@ -328,6 +328,15 @@ movements:
 
 **Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
 
+**Scoping a budget to one language.** A type-scoped budget's `target` may carry a `language` (e.g. `swift`, `c`, `kotlin` — the same values as `--language`), so it only matches types parsed from that language. Omitted, the budget applies to every language, as before. This matters most for a metric a language without encapsulation can't mean the same thing by — C gives every struct field `.public` since it has no access-control keywords, so an unscoped `mutablePublicState` budget in a codebase with any C is set by C's meaningless maximum rather than the OO languages it's meant to protect. `acai rules` seeds one `mutablePublicState` hint per language present when the codebase has more than one, each `target`-scoped to it.
+
+```yaml
+budgets:
+  - target: { language: swift }
+    metric: mutablePublicState
+    max: 0
+```
+
 Each breach carries a fix hint — `maxParameters` suggests a parameter object, `lcom` suggests splitting the type.
 
 **Built-in defaults** (used when `--rules` is omitted): `maxParameters ≤ 5`, `dataClassScore ≤ 0.8`, `nestingDepth ≤ 2`, `lcom ≤ 1`, `featureEnvyMethods ≤ 2`, `maxCyclomaticComplexity ≤ 10`. `mutablePublicState` is deliberately left out — it's idiomatic in value types and would flood struct-heavy code.

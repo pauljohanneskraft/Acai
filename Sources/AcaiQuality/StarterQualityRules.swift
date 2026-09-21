@@ -82,10 +82,35 @@ public struct StarterQualityRules {
             "#  - metric: rfc            # response set; max seen: \(rfc)",
             "#    max: \(rfc)",
             "#  - metric: lcom           # LCOM4 components; max seen: \(lcom)",
-            "#    max: \(lcom)",
-            "#  - metric: mutablePublicState   # publicly settable stored properties (encapsulation leak)",
-            "#    max: 0"
-        ]
+            "#    max: \(lcom)"
+        ] + mutablePublicStateHints
+    }
+
+    /// One `mutablePublicState` hint per source language present, scoped via `target.language` — a
+    /// single global maximum would be set by whichever language has no encapsulation at all (C gives
+    /// every struct field `.public`, since it has no access-control keywords), drowning out a real
+    /// ceiling for the OO languages sharing the same codebase. A single-language artifact keeps one
+    /// unscoped hint, matching the `rfc`/`lcom` hints above.
+    private var mutablePublicStateHints: [String] {
+        let types = graph.metrics.types
+        let languageByID = Dictionary(graph.nodes.map { ($0.id, $0.language) }, uniquingKeysWith: { first, _ in first })
+        let languages = Set(types.compactMap { languageByID[$0.id] ?? nil }).sorted { $0.rawValue < $1.rawValue }
+
+        guard languages.count > 1 else {
+            let max = types.map(\.mutablePublicState).max() ?? 0
+            return [
+                "#  - metric: mutablePublicState   # publicly settable stored properties (encapsulation leak)",
+                "#    max: \(max)   # max seen: \(max)"
+            ]
+        }
+        return languages.flatMap { language -> [String] in
+            let max = types.filter { languageByID[$0.id] ?? nil == language }.map(\.mutablePublicState).max() ?? 0
+            return [
+                "#  - metric: mutablePublicState   # \(language.rawValue): publicly settable stored properties",
+                "#    target: { language: \(language.rawValue) }",
+                "#    max: \(max)   # max seen: \(max)"
+            ]
+        }
     }
 }
 
