@@ -16,7 +16,7 @@ struct ParityToolsTests {
                 try MCPTestSupport.writeSampleSwiftSource(in: new)
                 try "class Added {}".write(
                     to: new.appendingPathComponent("Added.swift"), atomically: true, encoding: .utf8)
-                let result = try await ToolRegistry.standard.call(
+                let result = try await MCPTestSupport.testRegistry.call(
                     name: "acai_diff",
                     arguments: ["pathOld": .string(old.path), "pathNew": .string(new.path)])
                 let object = try #require(result.structuredContent?.objectValue)
@@ -34,7 +34,7 @@ struct ParityToolsTests {
             let encoder = JSONEncoder()
             let baseline = dir.appendingPathComponent("baseline.json")
             try encoder.encode(artifact).write(to: baseline)
-            let result = try await ToolRegistry.standard.call(
+            let result = try await MCPTestSupport.testRegistry.call(
                 name: "acai_diff",
                 arguments: ["pathOld": .string(baseline.path), "pathNew": .string(dir.path)])
             #expect(result.structuredContent?.objectValue != nil)
@@ -45,7 +45,7 @@ struct ParityToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
-                "acai_callgraph", on: .standard, path: dir, ["mode": .string("cycles")])
+                "acai_callgraph", on: MCPTestSupport.testRegistry, path: dir, ["mode": .string("cycles")])
             // no method cycles in the fixture, but a well-formed list inside the `items` envelope
             #expect(value.objectValue?["items"]?.arrayValue != nil)
         }
@@ -56,7 +56,7 @@ struct ParityToolsTests {
             try "enum Direction { case north, south }".write(
                 to: dir.appendingPathComponent("Direction.swift"), atomically: true, encoding: .utf8)
             let value = try await MCPTestSupport.call(
-                "acai_inspect", on: .standard, path: dir, ["enums": .bool(true)])
+                "acai_inspect", on: MCPTestSupport.testRegistry, path: dir, ["enums": .bool(true)])
             let entries = try #require(value.objectValue?["items"]?.arrayValue)
             let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "Direction" })
             let cases = try #require(direction.objectValue?["cases"]?.arrayValue)
@@ -67,11 +67,12 @@ struct ParityToolsTests {
     @Test func diagramRendersMermaidAndDot() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let registry = MCPTestSupport.testRegistry
             let mermaid = try await MCPTestSupport.callResult(
-                "acai_diagram", on: .standard, path: dir, ["kind": .string("class"), "format": .string("mermaid")])
+                "acai_diagram", on: registry, path: dir, ["kind": .string("class"), "format": .string("mermaid")])
             #expect(MCPTestSupport.firstText(mermaid).contains("classDiagram"))
             let dot = try await MCPTestSupport.callResult(
-                "acai_diagram", on: .standard, path: dir, ["kind": .string("class"), "format": .string("dot")])
+                "acai_diagram", on: registry, path: dir, ["kind": .string("class"), "format": .string("dot")])
             #expect(MCPTestSupport.firstText(dot).contains("digraph"))
         }
     }
@@ -81,7 +82,7 @@ struct ParityToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let result = try await MCPTestSupport.callResult(
-                "acai_image", on: .standard, path: dir, ["kind": .string("class")])
+                "acai_image", on: MCPTestSupport.testRegistry, path: dir, ["kind": .string("class")])
             let content = try #require(result.content.first)
             guard case let .image(data, mimeType, _, _) = content else {
                 Issue.record("expected image content")

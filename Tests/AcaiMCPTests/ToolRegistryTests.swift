@@ -46,7 +46,7 @@ struct ToolRegistryTests {
 
     @Test func unknownToolIsMethodNotFound() async {
         await #expect(throws: MCPError.self) {
-            _ = try await ToolRegistry.standard.call(name: "acai_nope", arguments: nil)
+            _ = try await MCPTestSupport.testRegistry.call(name: "acai_nope", arguments: nil)
         }
     }
 
@@ -55,7 +55,7 @@ struct ToolRegistryTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             await #expect(throws: MCPError.self) {
-                _ = try await ToolRegistry.standard.call(
+                _ = try await MCPTestSupport.testRegistry.call(
                     name: "acai_impact", arguments: ["path": .string(dir.path)])
             }
         }
@@ -75,7 +75,7 @@ struct ToolRegistryTests {
             for (name, extraArgs) in listCalls {
                 var arguments: [String: Value] = ["path": .string(dir.path)]
                 arguments.merge(extraArgs) { _, new in new }
-                let result = try await ToolRegistry.standard.call(name: name, arguments: arguments)
+                let result = try await MCPTestSupport.testRegistry.call(name: name, arguments: arguments)
                 let structured = try #require(
                     result.structuredContent, "\(name) must attach structuredContent")
                 #expect(
@@ -89,7 +89,7 @@ struct ToolRegistryTests {
     @Test func callReturnsBothTextAndStructuredContent() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let result = try await ToolRegistry.standard.call(
+            let result = try await MCPTestSupport.testRegistry.call(
                 name: "acai_analyze", arguments: ["path": .string(dir.path)])
             #expect(result.structuredContent != nil)
             let text = try #require(result.content.first)
