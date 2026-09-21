@@ -51,6 +51,9 @@ struct PythonMemberExtractor {
         if decoratorTails.contains("staticmethod") { modifiers.append(.static) }
         if decoratorTails.contains("abstractmethod") { modifiers.append(.abstract) }
         if decoratorTails.contains("final") { modifiers.append(.final) }
+        // Catches `@override`, `@typing.override` and `@typing_extensions.override` alike, since
+        // decoratorTails already strips the module qualifier down to the bare decorator name.
+        if decoratorTails.contains("override") { modifiers.append(.override) }
         if node.hasDirectChildText("async", in: context) { modifiers.append(.async) }
 
         let body = node.child(byFieldName: "body")

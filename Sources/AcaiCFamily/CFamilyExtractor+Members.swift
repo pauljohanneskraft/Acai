@@ -190,11 +190,25 @@ extension CFamilyExtractor {
         let returnType = typeReferences.typeReference(
             from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
         let kind = memberKind(name: simpleName, ownerName: ownerName, hasReturnType: returnType != nil)
+        let functionModifiers = modifiers(from: node)
         return Member(
-            name: simpleName, kind: kind, accessLevel: access,
-            modifiers: modifiers(from: node),
+            name: simpleName, kind: kind,
+            accessLevel: freeFunctionAccessLevel(
+                default: access, ownerName: ownerName, modifiers: functionModifiers),
+            modifiers: functionModifiers,
             type: kind == .method ? returnType : nil,
             parameters: info.parameters, location: node.location(in: context))
+    }
+
+    /// A `static` free function (or prototype) has internal linkage: it is only reachable from its
+    /// own translation unit, C's closest equivalent to `private`. `.filePrivate` (rather than
+    /// `.private`) matches that "visible within this file" scope; a `static` *member* function is
+    /// an unrelated concept (a class-scoped function with no `self`), so `ownerName != nil` is left
+    /// at its passed-in access level.
+    private func freeFunctionAccessLevel(
+        default access: AccessLevel, ownerName: String?, modifiers: [Modifier]
+    ) -> AccessLevel {
+        ownerName == nil && modifiers.contains(.static) ? .filePrivate : access
     }
 
     private func propertyMember(node: Node, info: CFamilyDeclarator, access: AccessLevel) -> Member {
