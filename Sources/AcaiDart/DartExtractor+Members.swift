@@ -88,13 +88,10 @@ extension DartExtractor {
                 continue
             }
             if nodeType == "function_body" {
-                if previousChildAddedMember, !members.isEmpty {
-                    members[members.count - 1].assignments = extractAssignments(from: child)
-                    if isAsyncFunctionBody(child) {
-                        members[members.count - 1].modifiers.append(.async)
-                    }
-                    pendingBodies.append((members.count - 1, child))
-                }
+                attachFunctionBody(
+                    child, previousChildAddedMember: previousChildAddedMember,
+                    members: &members, pendingBodies: &pendingBodies
+                )
                 previousChildAddedMember = false
                 continue
             }
@@ -151,6 +148,22 @@ extension DartExtractor {
         }
     }
 
+    /// Attaches a `function_body` sibling to the member it belongs to: assignments extracted from
+    /// its statements, and `.async` when the body carries an `async`/`async*`/`sync*` marker.
+    private func attachFunctionBody(
+        _ node: Node,
+        previousChildAddedMember: Bool,
+        members: inout [Member],
+        pendingBodies: inout [(index: Int, body: Node)]
+    ) {
+        guard previousChildAddedMember, !members.isEmpty else { return }
+        members[members.count - 1].assignments = extractAssignments(from: node)
+        if isAsyncFunctionBody(node) {
+            members[members.count - 1].modifiers.append(.async)
+        }
+        pendingBodies.append((members.count - 1, node))
+    }
+
     // MARK: - Enum Body
 
     mutating func extractEnumBody(
@@ -175,13 +188,10 @@ extension DartExtractor {
             case "enum_constant":
                 if let enumCase = extractEnumConstant(child) { enumCases.append(enumCase) }
             case "function_body":
-                if previousChildAddedMember, !members.isEmpty {
-                    members[members.count - 1].assignments = extractAssignments(from: child)
-                    if isAsyncFunctionBody(child) {
-                        members[members.count - 1].modifiers.append(.async)
-                    }
-                    pendingBodies.append((members.count - 1, child))
-                }
+                attachFunctionBody(
+                    child, previousChildAddedMember: previousChildAddedMember,
+                    members: &members, pendingBodies: &pendingBodies
+                )
             case "declaration":
                 extractClassMemberDeclaration(
                     child, members: &members, nestedTypes: &ignored, parentName: parentName

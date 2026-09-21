@@ -54,9 +54,7 @@ extension DartExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             if nodeType == "function_body" {
-                if let index = pendingFunctionIndex, isAsyncFunctionBody(child) {
-                    freestandingFunctions[index].modifiers.append(.async)
-                }
+                attachAsyncModifier(to: pendingFunctionIndex, ifBodyIsAsync: child)
                 pendingFunctionIndex = nil
                 continue
             }
@@ -78,18 +76,35 @@ extension DartExtractor {
                  "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type":
                 applyDeclarationChild(child, nodeType: nodeType, to: &pendingGlobalInfo)
             default:
-                if !child.isNamed, text(child) == "late" {
-                    pendingGlobalInfo.isLate = true
-                } else if processTopLevelTypeNode(child, nodeType: nodeType) {
-                    pendingGlobalInfo = DeclarationInfo()
-                    if nodeType == "function_signature" {
-                        pendingFunctionIndex = freestandingFunctions.count - 1
-                    }
-                } else {
-                    extractTopLevelChildren(child)
-                }
+                pendingFunctionIndex = processTopLevelDefaultChild(
+                    child, nodeType: nodeType, pendingGlobalInfo: &pendingGlobalInfo
+                )
             }
         }
+    }
+
+    private mutating func attachAsyncModifier(to functionIndex: Int?, ifBodyIsAsync node: Node) {
+        guard let index = functionIndex, isAsyncFunctionBody(node) else { return }
+        freestandingFunctions[index].modifiers.append(.async)
+    }
+
+    /// Handles a top-level child that is neither a directive, a global-variable piece, nor a
+    /// declaration-info modifier: a type/function declaration, the `late` keyword, or a nested
+    /// wrapper to recurse into. Returns the appended function's index, for a directly-following
+    /// `function_body` sibling to apply its `async` marker to.
+    private mutating func processTopLevelDefaultChild(
+        _ child: Node, nodeType: String, pendingGlobalInfo: inout DeclarationInfo
+    ) -> Int? {
+        if !child.isNamed, text(child) == "late" {
+            pendingGlobalInfo.isLate = true
+            return nil
+        }
+        guard processTopLevelTypeNode(child, nodeType: nodeType) else {
+            extractTopLevelChildren(child)
+            return nil
+        }
+        pendingGlobalInfo = DeclarationInfo()
+        return nodeType == "function_signature" ? freestandingFunctions.count - 1 : nil
     }
 
     private mutating func extractTopLevelChildren(_ node: Node) {
