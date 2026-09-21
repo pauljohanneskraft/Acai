@@ -9,7 +9,8 @@ struct ProjectBrowserViewModelExportTests {
     private func makeModel() -> (ProjectBrowserViewModel, UUID, UUID) {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("acai-export-tests-\(UUID().uuidString)", isDirectory: true)
-        let store = ProjectStore(baseDir: tempDir)
+        let store = ProjectStore(
+            baseDir: tempDir, analysisStore: AnalysisStore(directory: tempDir.appendingPathComponent("analysis-store")))
         let projectID = UUID()
         let codebaseID = UUID()
         store.projects = [

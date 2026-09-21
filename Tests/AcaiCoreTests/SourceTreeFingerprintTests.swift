@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import AcaiApp
+@testable import AcaiCore
 
 @Suite("SourceTreeFingerprint")
 struct SourceTreeFingerprintTests {
@@ -71,5 +71,19 @@ struct SourceTreeFingerprintTests {
         let after = SourceTreeFingerprint(directory: dir).compute()
 
         #expect(before == after)
+    }
+
+    @Test("A single file (a stored .json baseline) fingerprints as one entry")
+    func fingerprintsASingleFile() throws {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appendingPathComponent("baseline.json")
+        try "{}".write(to: file, atomically: true, encoding: .utf8)
+
+        guard case .fileSystem(_, let count, _) = SourceTreeFingerprint(directory: file).compute() else {
+            Issue.record("Expected .fileSystem")
+            return
+        }
+        #expect(count == 1)
     }
 }

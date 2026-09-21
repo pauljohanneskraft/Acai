@@ -1,16 +1,32 @@
 import Foundation
 
-/// The digest catches a rename/content-swap that alone would preserve mtime and count.
-struct SourceTreeFingerprint {
-    let directory: URL
+/// Computes a ``CodeStateFingerprint/fileSystem(latestModification:fileCount:contentDigest:)`` over
+/// a source tree: the newest modification time, a file count, and an order-independent digest
+/// folding each file's `(relativePath, mtime, size)` — the digest is what catches a rename/move or
+/// content swap alone, which preserve mtime and count. ``directory`` may itself be a single file (a
+/// stored `.json` baseline), fingerprinted as one entry.
+public struct SourceTreeFingerprint: Sendable {
+    public let directory: URL
 
     private static let skippedDirectories: Set<String> = [
         ".build", ".git", ".swiftpm", "node_modules", "DerivedData", "build",
         ".gradle", "dist", "Pods", "__pycache__", ".venv", "venv"
     ]
 
-    func compute() -> CodeStateFingerprint {
+    public init(directory: URL) {
+        self.directory = directory
+    }
+
+    public func compute() -> CodeStateFingerprint {
         let keys: Set<URLResourceKey> = [.contentModificationDateKey, .isDirectoryKey, .isRegularFileKey, .fileSizeKey]
+        if let values = try? directory.resourceValues(forKeys: keys), values.isRegularFile == true {
+            let modified = values.contentModificationDate ?? .distantPast
+            let size = values.fileSize ?? 0
+            let digest = FileFingerprint(
+                relativePath: directory.lastPathComponent, modified: modified, size: size).stableHash
+            return .fileSystem(latestModification: modified, fileCount: 1, contentDigest: digest)
+        }
+
         let rootPath = directory.standardizedFileURL.path
         var latest = Date.distantPast
         var count = 0
