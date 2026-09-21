@@ -11,6 +11,9 @@ struct JavaExtractor {
         "catch_clause", "switch_label"
     ]
 
+    /// A `switch_label` carrying a `default` keyword is the fallback arm, not a decision.
+    static let complexityFallbackMarkers: [String: Set<String>] = ["switch_label": ["default"]]
+
     let context: SourceFileContext
     let modifiers: JavaModifiers
     let typeReferences: JavaTypeReferenceResolver
