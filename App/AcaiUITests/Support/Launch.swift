@@ -26,6 +26,7 @@ extension XCUIApplication {
     func launchWithFixture(
         _ name: String,
         language: String? = nil,
+        dynamicTypeSize: String? = nil,
         configure: (XCUIApplication, URL) throws -> Void = { _, _ in },
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) {
@@ -56,6 +57,9 @@ extension XCUIApplication {
 
         launchEnvironment["ACAI_UITEST_FIXTURE_BASE_DIR"] = destination.path
         launchEnvironment["ACAI_UITEST_COLOR_SCHEME"] = defaultUITestColorScheme
+        if let dynamicTypeSize {
+            launchEnvironment["ACAI_UITEST_DYNAMIC_TYPE_SIZE"] = dynamicTypeSize
+        }
         if let language {
             launchArguments += ["-AppleLanguages", "(\(language))", "-AppleLocale", language]
         }
