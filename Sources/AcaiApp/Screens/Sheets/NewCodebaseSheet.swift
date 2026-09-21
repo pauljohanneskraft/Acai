@@ -71,6 +71,7 @@ struct NewCodebaseSheet: View {
     @State var clonePhase: AsyncOperationPhase = .idle
     @State var gitHubErrorMessage: String?
     @State var pendingLargeClone: PendingClone?
+    @State var isCandidateAlreadyCloned = false
 
     var account: GitHubTokenStore.StoredAccount? { accountStore.account }
 
@@ -131,6 +132,9 @@ struct NewCodebaseSheet: View {
             }
             .task(id: remoteAddress) {
                 await listRemoteDebounced()
+            }
+            .task(id: candidateRemoteURL) {
+                await checkCandidateClone()
             }
             .confirmationDialog(
                 largeCloneTitle, isPresented: Binding(

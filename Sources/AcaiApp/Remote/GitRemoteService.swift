@@ -50,6 +50,12 @@ protocol GitRemoteService: Sendable {
         _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws
+
+    /// The hub clone's on-disk state; `.absent` when the remote was never cloned.
+    func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection
+
+    /// Walks the whole clone, so it is separate from `inspectClone` and only asked for when shown.
+    func onDiskSize(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> Int64?
 }
 
 struct LiveGitRemoteService: GitRemoteService {
@@ -95,6 +101,16 @@ struct LiveGitRemoteService: GitRemoteService {
         try await locks.run(for: hub) {
             try await hub.fetch(depth: .unshallow, onProgress: onProgress)
         }
+    }
+
+    func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
+        let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
+        return await Task.detached(priority: .userInitiated) { CloneInspection(hub: hub) }.value
+    }
+
+    func onDiskSize(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> Int64? {
+        let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
+        return await Task.detached(priority: .userInitiated) { hub.onDiskSize }.value
     }
 }
 
@@ -169,12 +185,24 @@ struct FixtureGitRemoteService: GitRemoteService {
             try await hub.fetch(onProgress: onProgress)
         }
     }
+
+    func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
+        let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
+        return await Task.detached(priority: .userInitiated) { CloneInspection(hub: hub) }.value
+    }
+
+    func onDiskSize(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> Int64? {
+        let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
+        return await Task.detached(priority: .userInitiated) { hub.onDiskSize }.value
+    }
 }
 
 /// Network-free *and* git-free: copies an already-staged directory per ref instead of running
 /// libgit2, so a journey that just needs a managed codebase to exist doesn't pay for git timing.
 struct FastFixtureGitRemoteService: GitRemoteService {
     let sourceDirectoriesByRef: [String: URL]
+    /// Nothing exists on disk to inspect, so what was "cloned" is remembered here.
+    let clones = FastFixtureCloneLog()
 
     enum Failure: LocalizedError {
         case noStagedContent(ref: String)
@@ -218,6 +246,8 @@ struct FastFixtureGitRemoteService: GitRemoteService {
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (headSHA: String, remoteURL: URL) {
         try copyStagedTree(for: target.ref, to: destination.worktreeDirectory)
+        await clones.recordAttach(
+            of: identity(target.endpoint), depth: target.depth, worktreeName: destination.worktreeName)
         onProgress?(1)
         return (cannedSHA(for: target.ref), target.endpoint.remoteURL)
     }
@@ -239,7 +269,46 @@ struct FastFixtureGitRemoteService: GitRemoteService {
     func fetchFullHistory(
         _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
         onProgress: (@Sendable (Double) -> Void)? = nil
-    ) async throws {}
+    ) async throws {
+        await clones.recordFullHistory(of: identity(endpoint))
+    }
+
+    func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
+        await clones.inspection(of: identity(endpoint))
+    }
+
+    func onDiskSize(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> Int64? {
+        nil
+    }
+
+    private func identity(_ endpoint: RemoteEndpoint) -> String {
+        GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: URL(fileURLWithPath: "/")).identity
+    }
+}
+
+actor FastFixtureCloneLog {
+    private var depthsByIdentity: [String: GitHistoryDepth] = [:]
+    private var worktreeNamesByIdentity: [String: [String]] = [:]
+
+    /// The first attach decides the depth, as the first codebase's clone does for a real hub.
+    func recordAttach(of identity: String, depth: GitHistoryDepth, worktreeName: String) {
+        if depthsByIdentity[identity] == nil {
+            depthsByIdentity[identity] = depth
+        }
+        worktreeNamesByIdentity[identity, default: []].append(worktreeName)
+    }
+
+    func recordFullHistory(of identity: String) {
+        guard depthsByIdentity[identity] != nil else { return }
+        depthsByIdentity[identity] = .full
+    }
+
+    func inspection(of identity: String) -> CloneInspection {
+        guard let depth = depthsByIdentity[identity] else { return .absent }
+        return CloneInspection(
+            isCloned: true, isShallow: depth == .latestSnapshot, lastFetchedAt: nil,
+            worktreeNames: (worktreeNamesByIdentity[identity] ?? []).sorted())
+    }
 }
 
 struct GitRemoteServiceResolver {

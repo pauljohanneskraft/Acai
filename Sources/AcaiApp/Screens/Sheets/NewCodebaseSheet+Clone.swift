@@ -52,8 +52,30 @@ extension NewCodebaseSheet {
         }
     }
 
+    /// The remote the chosen source points at, known before its ref is.
+    var candidateRemoteURL: URL? {
+        switch source {
+        case .localFolder:
+            nil
+        case .remoteURL:
+            RemoteAddress(text: remoteAddress).validURL
+        case .gitHub:
+            selectedRepository.flatMap(gitHubRemoteURL)
+        }
+    }
+
     func isAlreadyCloned(_ remoteURL: URL?) -> Bool {
-        guard let remoteURL else { return false }
-        return GitRepository(remoteURL: remoteURL, storeDirectory: model.store.gitRepositoriesDir).isCloned
+        remoteURL != nil && isCandidateAlreadyCloned
+    }
+
+    func checkCandidateClone() async {
+        guard let candidateRemoteURL else {
+            isCandidateAlreadyCloned = false
+            return
+        }
+        let endpoint = RemoteEndpoint(remoteURL: candidateRemoteURL, gitHubCredential: nil)
+        let inspection = await remoteService.inspectClone(endpoint, hubStoreDirectory: model.store.gitRepositoriesDir)
+        guard !Task.isCancelled else { return }
+        isCandidateAlreadyCloned = inspection.isCloned
     }
 }

@@ -73,8 +73,7 @@ extension CodebaseDetailView {
         let endpoint = RemoteEndpoint(remoteURL: repository.remoteURL, gitHubCredential: nil)
         let hubStoreDirectory = model.store.gitRepositoriesDir
         availableRefs = (try? await remoteService.refs(of: endpoint, hubStoreDirectory: hubStoreDirectory)) ?? []
-        let hub = GitRepository(remoteURL: repository.remoteURL, storeDirectory: hubStoreDirectory)
-        isShallowClone = await Task.detached(priority: .utility) { hub.isShallow }.value
+        isShallowClone = await remoteService.inspectClone(endpoint, hubStoreDirectory: hubStoreDirectory).isShallow
     }
 
     /// Says the clone carries only the latest snapshot, with the action that fetches the rest.

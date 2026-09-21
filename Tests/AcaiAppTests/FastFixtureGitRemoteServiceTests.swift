@@ -94,6 +94,32 @@ struct FastFixtureGitRemoteServiceTests {
         #expect(attachSHA != resyncSHA)
     }
 
+    @Test("A latest-snapshot attach reports shallow, and its worktree, until full history is fetched")
+    func recordsDepthAndWorktreesOfWhatItCloned() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = try makeService(root: root, refs: ["main": ["A.swift": "class A {}"]])
+        let destination = makeDestination(root: root)
+        let hub = destination.hubStoreDirectory
+
+        let before = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(before == .absent)
+
+        var target = target("main")
+        target.depth = .latestSnapshot
+        try await service.attachWorktree(target, destination: destination)
+
+        let shallow = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(shallow.isCloned)
+        #expect(shallow.isShallow)
+        #expect(shallow.worktreeNames == ["codebase-1"])
+
+        try await service.fetchFullHistory(endpoint, hubStoreDirectory: hub, locks: destination.locks)
+        let deepened = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(deepened.isCloned)
+        #expect(!deepened.isShallow)
+    }
+
     @Test("Listing reports exactly the staged refs, and attachWorktree throws for an unstaged ref")
     func listingReflectsStagedContentOnly() async throws {
         let root = try makeTempDirectory()
