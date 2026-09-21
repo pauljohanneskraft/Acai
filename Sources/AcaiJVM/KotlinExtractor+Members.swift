@@ -193,7 +193,8 @@ extension KotlinExtractor {
             assignments: assignments.assignments(in: body),
             fieldReads: fieldReads.reads(in: body, scope: scope),
             referencedTypeNames: body?.referencedTypeNames(in: context) ?? [],
-            cyclomaticComplexity: body?.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
+            cyclomaticComplexity: body?.cyclomaticComplexity(
+                branchKinds: Self.branchNodeKinds, fallbackMarkers: Self.complexityFallbackMarkers)
         )
     }
 
