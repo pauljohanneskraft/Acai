@@ -96,4 +96,29 @@ struct DeadCodeScanTests {
             languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
         #expect(report.candidates.map(\.id) == ["Tool.orphan"])
     }
+
+    /// Two declared types sharing a simple name each call their own method by self-dispatch; neither
+    /// call may be lost to the other's node, so neither `used` is reported dead.
+    @Test func sameSimpleNameInDifferentModulesAreScoredSeparately() {
+        let configA = TypeDeclaration(
+            id: "ModuleA.Config", name: "Config", qualifiedName: "ModuleA.Config", kind: .class,
+            accessLevel: .public,
+            members: [
+                method("run", access: .public, calls: [CallSite(receiver: .selfDispatch, methodName: "used")]),
+                method("used")
+            ],
+            location: SourceLocation(filePath: "ModuleA/Config.swift", line: 1, column: 1))
+        let configB = TypeDeclaration(
+            id: "ModuleB.Config", name: "Config", qualifiedName: "ModuleB.Config", kind: .class,
+            accessLevel: .public,
+            members: [
+                method("run", access: .public, calls: [CallSite(receiver: .selfDispatch, methodName: "used")]),
+                method("used")
+            ],
+            location: SourceLocation(filePath: "ModuleB/Config.swift", line: 1, column: 1))
+        let report = DeadCodeScan(
+            artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [configA, configB]),
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
+        #expect(report.candidates.isEmpty)
+    }
 }

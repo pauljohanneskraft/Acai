@@ -14,6 +14,24 @@ public struct HealthCheck: Sendable {
         public var diagnostics: [ParseDiagnostic]
     }
 
+    /// The compact form of ``Report`` other commands embed in their own output: the score and
+    /// diagnostic breakdown, without the full per-diagnostic list `acai analyze --health` provides.
+    public struct Summary: Codable, Equatable, Sendable {
+        public var score: Double
+        public var diagnosticCount: Int
+        public var countsByKind: [String: Int]
+
+        public init(score: Double, diagnosticCount: Int, countsByKind: [String: Int]) {
+            self.score = score
+            self.diagnosticCount = diagnosticCount
+            self.countsByKind = countsByKind
+        }
+    }
+
+    /// Below this score, a command consuming an artifact should surface that its analysis rests on an
+    /// untrustworthy parse rather than staying silent about it.
+    public static let trustThreshold: Double = 0.8
+
     private let artifact: CodeArtifact
 
     public init(artifact: CodeArtifact) {
@@ -34,5 +52,25 @@ public struct HealthCheck: Sendable {
             diagnostics: diagnostics.sorted {
                 ($0.location.filePath, $0.location.line) < ($1.location.filePath, $1.location.line)
             })
+    }
+
+    public var summary: Summary {
+        let full = report
+        return Summary(score: full.score, diagnosticCount: full.diagnosticCount, countsByKind: full.countsByKind)
+    }
+}
+
+extension HealthCheck.Summary {
+    /// Combines two summaries (e.g. a diff's old and new sides) into the weaker-trust view: the lower
+    /// score, and diagnostic counts summed kind-by-kind.
+    public func combined(with other: Self) -> Self {
+        var countsByKind = countsByKind
+        for (kind, count) in other.countsByKind {
+            countsByKind[kind, default: 0] += count
+        }
+        return Self(
+            score: min(score, other.score),
+            diagnosticCount: diagnosticCount + other.diagnosticCount,
+            countsByKind: countsByKind)
     }
 }
