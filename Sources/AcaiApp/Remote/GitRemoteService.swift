@@ -51,6 +51,12 @@ protocol GitRemoteService: Sendable {
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws
 
+    /// Fetches the shared hub clone without moving any worktree.
+    func fetch(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws
+
     /// The hub clone's on-disk state; `.absent` when the remote was never cloned.
     func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection
 
@@ -100,6 +106,16 @@ struct LiveGitRemoteService: GitRemoteService {
         let hub = GitRepository(remoteURL: endpoint.transportURL, storeDirectory: hubStoreDirectory)
         try await locks.run(for: hub) {
             try await hub.fetch(depth: .unshallow, onProgress: onProgress)
+        }
+    }
+
+    func fetch(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws {
+        let hub = GitRepository(remoteURL: endpoint.transportURL, storeDirectory: hubStoreDirectory)
+        try await locks.run(for: hub) {
+            try await hub.fetch(onProgress: onProgress)
         }
     }
 
@@ -186,6 +202,16 @@ struct FixtureGitRemoteService: GitRemoteService {
         }
     }
 
+    func fetch(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws {
+        let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
+        try await locks.run(for: hub) {
+            try await hub.fetch(onProgress: onProgress)
+        }
+    }
+
     func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
         let hub = GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: hubStoreDirectory)
         return await Task.detached(priority: .userInitiated) { CloneInspection(hub: hub) }.value
@@ -202,7 +228,7 @@ struct FixtureGitRemoteService: GitRemoteService {
 struct FastFixtureGitRemoteService: GitRemoteService {
     let sourceDirectoriesByRef: [String: URL]
     /// Nothing exists on disk to inspect, so what was "cloned" is remembered here.
-    let clones = FastFixtureCloneLog()
+    var clones = FastFixtureCloneLog.shared
 
     enum Failure: LocalizedError {
         case noStagedContent(ref: String)
@@ -273,6 +299,13 @@ struct FastFixtureGitRemoteService: GitRemoteService {
         await clones.recordFullHistory(of: identity(endpoint))
     }
 
+    func fetch(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws {
+        onProgress?(1)
+    }
+
     func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
         await clones.inspection(of: identity(endpoint))
     }
@@ -281,29 +314,33 @@ struct FastFixtureGitRemoteService: GitRemoteService {
         nil
     }
 
-    private func identity(_ endpoint: RemoteEndpoint) -> String {
-        GitRepository(remoteURL: endpoint.remoteURL, storeDirectory: URL(fileURLWithPath: "/")).identity
+    private func identity(_ endpoint: RemoteEndpoint) -> RemoteIdentity {
+        RemoteIdentity(remoteURL: endpoint.remoteURL)
     }
 }
 
+/// One per process by default: the resolver hands out a fresh service per screen, and they must
+/// agree on what was cloned the way one on-disk hub store would.
 actor FastFixtureCloneLog {
-    private var depthsByIdentity: [String: GitHistoryDepth] = [:]
-    private var worktreeNamesByIdentity: [String: [String]] = [:]
+    static let shared = FastFixtureCloneLog()
+
+    private var depthsByIdentity: [RemoteIdentity: GitHistoryDepth] = [:]
+    private var worktreeNamesByIdentity: [RemoteIdentity: [String]] = [:]
 
     /// The first attach decides the depth, as the first codebase's clone does for a real hub.
-    func recordAttach(of identity: String, depth: GitHistoryDepth, worktreeName: String) {
+    func recordAttach(of identity: RemoteIdentity, depth: GitHistoryDepth, worktreeName: String) {
         if depthsByIdentity[identity] == nil {
             depthsByIdentity[identity] = depth
         }
         worktreeNamesByIdentity[identity, default: []].append(worktreeName)
     }
 
-    func recordFullHistory(of identity: String) {
+    func recordFullHistory(of identity: RemoteIdentity) {
         guard depthsByIdentity[identity] != nil else { return }
         depthsByIdentity[identity] = .full
     }
 
-    func inspection(of identity: String) -> CloneInspection {
+    func inspection(of identity: RemoteIdentity) -> CloneInspection {
         guard let depth = depthsByIdentity[identity] else { return .absent }
         return CloneInspection(
             isCloned: true, isShallow: depth == .latestSnapshot, lastFetchedAt: nil,

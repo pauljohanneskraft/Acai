@@ -304,6 +304,7 @@ struct ProjectCodebaseEditor {
         let sync = GitWorktreeSync(
             transportURL: repository.remoteURL, ref: repository.ref,
             hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
+        defer { store.repositoryChanges.send(repository.remoteURL) }
         guard sync.hub.isCloned else {
             try? FileManager.default.removeItem(at: worktreeDirectory)
             return

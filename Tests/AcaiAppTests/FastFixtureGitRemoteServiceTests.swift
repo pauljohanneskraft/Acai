@@ -22,7 +22,8 @@ struct FastFixtureGitRemoteServiceTests {
             }
             sourceDirectoriesByRef[ref] = refDirectory
         }
-        return FastFixtureGitRemoteService(sourceDirectoriesByRef: sourceDirectoriesByRef)
+        return FastFixtureGitRemoteService(
+            sourceDirectoriesByRef: sourceDirectoriesByRef, clones: FastFixtureCloneLog())
     }
 
     private let endpoint = RemoteEndpoint(
