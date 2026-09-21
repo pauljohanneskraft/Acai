@@ -12,6 +12,9 @@ struct KotlinExtractor {
         "when_entry", "catch_block"
     ]
 
+    /// A `when_entry` carrying an `else` keyword is the fallback arm, not a decision.
+    static let complexityFallbackMarkers: [String: Set<String>] = ["when_entry": ["else"]]
+
     let context: SourceFileContext
     let assignmentSyntax: KotlinAssignmentSyntax
     let callSites: CallSiteResolver
