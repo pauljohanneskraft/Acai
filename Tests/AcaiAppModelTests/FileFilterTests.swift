@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import AcaiApp
+@testable import AcaiAppModel
 
 /// `FileFilter`: a per-codebase ordered glob/regex allow/blocklist.
 @Suite("FileFilter")

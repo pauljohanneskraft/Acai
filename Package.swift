@@ -88,6 +88,7 @@ optionalTargets.append(
             "AcaiLibrary",
             "AcaiRender",
             "AcaiGit",
+            "AcaiAppModel",
             .product(name: "Yams", package: "Yams"),
         ],
         // `.copy`, not `.process`: `Licenses.json` is data to decode, not an asset to transform.
@@ -139,6 +140,7 @@ let package = Package(
         .library(name: "AcaiDiff", targets: ["AcaiDiff"]),
         .library(name: "AcaiQuality", targets: ["AcaiQuality"]),
         .library(name: "AcaiLibrary", targets: ["AcaiLibrary"]),
+        .library(name: "AcaiAppModel", targets: ["AcaiAppModel"]),
         .executable(name: "AcaiMCP", targets: ["AcaiMCP"]),
     ] + optionalProducts,
     dependencies: [
@@ -329,6 +331,13 @@ let package = Package(
             ] + mcpOptionalDependencies
         ),
 
+        // MARK: The app's UI-free models — state and rules the app's views render, with no SwiftUI,
+        // AppKit, UIKit or AcaiGit dependency, so they build and are tested on Linux too.
+        .target(
+            name: "AcaiAppModel",
+            dependencies: ["AcaiCore", "AcaiDiagram", "AcaiDiff", "AcaiQuality"]
+        ),
+
         // MARK: Tests
         // Async waiting primitives shared by every test target that drives concurrent code. A pure
         // leaf — no swift-testing/XCTest dependency, so it stays usable from both.
@@ -346,6 +355,7 @@ let package = Package(
         .testTarget(name: "AcaiLibraryTests", dependencies: ["AcaiLibrary", "AcaiDiagram"]),
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
         .testTarget(name: "AcaiMCPTests", dependencies: ["AcaiMCP", "AcaiLibrary", "AcaiCore"]),
+        .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore"]),
 
         // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
         // `exclude`, not `resources`: the tests read both directories by path (via `#filePath`, like
