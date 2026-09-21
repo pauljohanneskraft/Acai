@@ -10413,6 +10413,50 @@
         }
       }
     },
+    "View.CompareGitPanel.MarkFileNotReviewed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ als ungeprüft markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %@ as not reviewed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer %@ comme non examiné"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.MarkFileReviewed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ als geprüft markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %@ as reviewed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer %@ comme examiné"
+          }
+        }
+      }
+    },
     "View.CompareGitPanel.NetFewer %lld" : {
       "localizations" : {
         "de" : {
