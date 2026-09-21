@@ -48,8 +48,19 @@ extension DartExtractor {
     /// a node to call it on.
     mutating func walkSourceFile(_ node: Node) {
         var pendingGlobalInfo = DeclarationInfo()
+        // Tracks the just-appended top-level function's index so a directly-following
+        // `function_body` sibling (its `async`/`async*`/`sync*` marker) can be applied to it.
+        var pendingFunctionIndex: Int?
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            if nodeType == "function_body" {
+                if let index = pendingFunctionIndex, isAsyncFunctionBody(child) {
+                    freestandingFunctions[index].modifiers.append(.async)
+                }
+                pendingFunctionIndex = nil
+                continue
+            }
+            pendingFunctionIndex = nil
             switch nodeType {
             case "library_name":
                 currentNamespace = extractLibraryName(child)
@@ -71,6 +82,9 @@ extension DartExtractor {
                     pendingGlobalInfo.isLate = true
                 } else if processTopLevelTypeNode(child, nodeType: nodeType) {
                     pendingGlobalInfo = DeclarationInfo()
+                    if nodeType == "function_signature" {
+                        pendingFunctionIndex = freestandingFunctions.count - 1
+                    }
                 } else {
                     extractTopLevelChildren(child)
                 }

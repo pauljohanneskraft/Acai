@@ -90,6 +90,9 @@ extension DartExtractor {
             if nodeType == "function_body" {
                 if previousChildAddedMember, !members.isEmpty {
                     members[members.count - 1].assignments = extractAssignments(from: child)
+                    if isAsyncFunctionBody(child) {
+                        members[members.count - 1].modifiers.append(.async)
+                    }
                     pendingBodies.append((members.count - 1, child))
                 }
                 previousChildAddedMember = false
@@ -174,6 +177,9 @@ extension DartExtractor {
             case "function_body":
                 if previousChildAddedMember, !members.isEmpty {
                     members[members.count - 1].assignments = extractAssignments(from: child)
+                    if isAsyncFunctionBody(child) {
+                        members[members.count - 1].modifiers.append(.async)
+                    }
                     pendingBodies.append((members.count - 1, child))
                 }
             case "declaration":
