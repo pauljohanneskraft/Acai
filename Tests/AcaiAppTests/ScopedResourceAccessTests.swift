@@ -17,52 +17,52 @@ struct ScopedResourceAccessTests {
     }
 
     @Test("Without a bookmark, a readable directory resolves to its plain path")
-    func plainPathResolves() throws {
+    func plainPathResolves() async throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let resolved = try ScopedResourceAccess(path: dir.path, bookmark: nil).withResolvedURL { $0 }
+        let resolved = try await ScopedResourceAccess(path: dir.path, bookmark: nil).withResolvedURL { $0 }
 
         #expect(resolved.standardizedFileURL.path == dir.path)
     }
 
     @Test("A directory that no longer exists throws, rather than reporting an empty codebase")
-    func missingDirectoryThrows() throws {
+    func missingDirectoryThrows() async throws {
         let dir = try makeTempDirectory()
         try FileManager.default.removeItem(at: dir)
 
-        #expect(throws: ScopedResourceAccess.Failure.directoryUnavailable(dir.path)) {
-            _ = try ScopedResourceAccess(path: dir.path, bookmark: nil).withResolvedURL { $0 }
+        await #expect(throws: ScopedResourceAccess.Failure.directoryUnavailable(dir.path)) {
+            _ = try await ScopedResourceAccess(path: dir.path, bookmark: nil).withResolvedURL { $0 }
         }
     }
 
     @Test("A bookmark that can't be resolved falls back to the still-readable plain path")
-    func unresolvableBookmarkFallsBackToPath() throws {
+    func unresolvableBookmarkFallsBackToPath() async throws {
         let gone = try makeTempDirectory()
         let bookmark = try SecurityScopedBookmark(resolving: gone)
         try FileManager.default.removeItem(at: gone)
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let resolved = try ScopedResourceAccess(path: dir.path, bookmark: bookmark).withResolvedURL { $0 }
+        let resolved = try await ScopedResourceAccess(path: dir.path, bookmark: bookmark).withResolvedURL { $0 }
 
         #expect(resolved.standardizedFileURL.path == dir.path)
     }
 
     @Test("A file path resolves; the probe only applies to directories")
-    func filePathResolves() throws {
+    func filePathResolves() async throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         let file = dir.appendingPathComponent("rules.yaml")
         try "rules: []\n".write(to: file, atomically: true, encoding: .utf8)
 
-        let resolved = try ScopedResourceAccess(path: file.path, bookmark: nil).withResolvedURL { $0 }
+        let resolved = try await ScopedResourceAccess(path: file.path, bookmark: nil).withResolvedURL { $0 }
 
         #expect(resolved.standardizedFileURL.path == file.standardizedFileURL.path)
     }
 
     @Test("A bookmark follows a renamed folder and reports the new location for persisting")
-    func bookmarkFollowsRenamedFolder() throws {
+    func bookmarkFollowsRenamedFolder() async throws {
         let dir = try makeTempDirectory()
         let bookmark = try SecurityScopedBookmark(resolving: dir)
         let moved = dir.deletingLastPathComponent()
@@ -71,7 +71,7 @@ struct ScopedResourceAccessTests {
         defer { try? FileManager.default.removeItem(at: moved) }
 
         var refreshed: ScopedResourceAccess.Refreshed?
-        let resolved = try ScopedResourceAccess(path: dir.path, bookmark: bookmark)
+        let resolved = try await ScopedResourceAccess(path: dir.path, bookmark: bookmark)
             .withResolvedURL(onRefresh: { refreshed = $0 }, { $0 })
 
         #expect(resolved.standardizedFileURL.path == moved.standardizedFileURL.path)

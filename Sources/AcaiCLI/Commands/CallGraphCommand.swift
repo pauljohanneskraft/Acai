@@ -3,7 +3,7 @@ import AcaiDiagram
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct CallGraph: ParsableCommand {
+    struct CallGraph: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "callgraph",
             abstract: "Call-graph analysis: metrics, method cycles, or dead-code candidates"
@@ -47,8 +47,8 @@ extension AcaiCommand {
             }
         }
 
-        mutating func run() throws {
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+        mutating func run() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             switch mode {
             case .metrics:
                 try renderMetrics(artifact)

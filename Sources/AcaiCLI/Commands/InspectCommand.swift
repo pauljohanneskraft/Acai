@@ -4,7 +4,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Inspect: ParsableCommand {
+    struct Inspect: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Enumerate types and members as JSON/human, filtered by a selector"
         )
@@ -39,12 +39,12 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
+        mutating func run() async throws {
             if enums {
-                try runEnumInventory()
+                try await runEnumInventory()
                 return
             }
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let rows = TypeQuery(
                 artifact: artifact,
                 selector: selector.selector,
@@ -67,8 +67,8 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "inspection")
         }
 
-        private func runEnumInventory() throws {
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+        private func runEnumInventory() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let entries = EnumInventory(artifact: artifact).entries
             let rendered: String
             if format == .json {

@@ -9,8 +9,8 @@ import Testing
 @Suite("Analysis Tools")
 struct AnalysisToolsTests {
 
-    private func engineArtifact(_ dir: URL) throws -> CodeArtifact {
-        try AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
+    private func engineArtifact(_ dir: URL) async throws -> CodeArtifact {
+        try await AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
     }
 
     /// A JSON number as a `Double`, whether it round-tripped as an integer (`1`) or a fraction — the
@@ -24,7 +24,7 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("acai_analyze", on: .standard, path: dir)
             let object = try #require(value.objectValue)
-            let expected = try engineArtifact(dir)
+            let expected = try await engineArtifact(dir)
             #expect(object["typeCount"]?.intValue == expected.flattened().count)
             #expect(object["relationshipCount"]?.intValue == expected.relationships.count)
             #expect(number(object["parseHealthScore"]) == 1)
@@ -37,7 +37,7 @@ struct AnalysisToolsTests {
             let value = try await MCPTestSupport.call("acai_metrics", on: .standard, path: dir)
             let object = try #require(value.objectValue)
             let metrics = try #require(object["metrics"]?.objectValue)
-            let expected = try engineArtifact(dir).computeMetrics()
+            let expected = try await engineArtifact(dir).computeMetrics()
             #expect(metrics["types"]?.arrayValue?.count == expected.types.count)
             #expect(metrics["modules"] != nil)
             #expect(number(object["health"]?.objectValue?["score"]) == 1)

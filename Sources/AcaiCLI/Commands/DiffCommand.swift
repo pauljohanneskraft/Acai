@@ -6,7 +6,7 @@ import AcaiDiff
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Diff: ParsableCommand {
+    struct Diff: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Show the structural delta between two revisions of a codebase",
             discussion: """
@@ -100,9 +100,9 @@ extension AcaiCommand {
             }
         }
 
-        mutating func run() throws {
-            let oldArtifact = try ArtifactSource.resolve(from: old, source: sourceOld, language: language)
-            let newArtifact = try ArtifactSource.resolve(from: new, source: sourceNew, language: language)
+        mutating func run() async throws {
+            let oldArtifact = try await ArtifactSource.resolve(from: old, source: sourceOld, language: language)
+            let newArtifact = try await ArtifactSource.resolve(from: new, source: sourceNew, language: language)
 
             let rendered: String
             if let diagram {

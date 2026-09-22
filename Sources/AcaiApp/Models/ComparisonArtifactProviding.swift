@@ -2,7 +2,7 @@ import AcaiCore
 import Foundation
 
 protocol ComparisonArtifactProviding: Sendable {
-    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) throws -> CodeArtifact
+    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) async throws -> CodeArtifact
 }
 
 extension GitRevisionSnapshot: ComparisonArtifactProviding {}
@@ -12,7 +12,7 @@ extension GitRevisionSnapshot: ComparisonArtifactProviding {}
 struct FixtureComparisonArtifact: ComparisonArtifactProviding {
     let artifactURL: URL
 
-    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) throws -> CodeArtifact {
+    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) async throws -> CodeArtifact {
         let data = try Data(contentsOf: artifactURL)
         return try JSONDecoder().decode(CodeArtifact.self, from: data)
     }

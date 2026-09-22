@@ -6,7 +6,7 @@ import AcaiLibrary
 extension MetricsSortKey: ExpressibleByArgument {}
 
 extension AcaiCommand {
-    struct Metrics: ParsableCommand {
+    struct Metrics: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Compute static-analysis metrics (counts, coupling, OO metrics) as JSON"
         )
@@ -35,8 +35,8 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+        mutating func run() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let metrics = artifact.computeMetrics()
             let rendered: String
             switch format {

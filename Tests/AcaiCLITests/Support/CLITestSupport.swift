@@ -80,10 +80,10 @@ enum CLITestSupport {
         return url
     }
 
-    static func withTempDirectory<T>(_ body: (URL) throws -> T) throws -> T {
+    static func withTempDirectory<T>(_ body: (URL) async throws -> T) async throws -> T {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
-        return try body(dir)
+        return try await body(dir)
     }
 
     /// Produces a codebase that yields non-trivial class/sequence/call-graph diagrams.

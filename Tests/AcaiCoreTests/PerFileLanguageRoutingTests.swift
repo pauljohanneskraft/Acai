@@ -50,7 +50,7 @@ private struct DialectBParser: CodeParser {
 struct PerFileLanguageRoutingTests {
 
     @Test("each file is enriched with its own detected language's configuration")
-    func perFileEnrichment() throws {
+    func perFileEnrichment() async throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("acai-perfile-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -59,7 +59,7 @@ struct PerFileLanguageRoutingTests {
         try "B widget".write(to: root.appendingPathComponent("b.dl"), atomically: true, encoding: .utf8)
 
         let service = AnalysisService(parsers: [DualDialectParser(), DialectBParser()])
-        let artifact = try service.analyzeProject(at: root, allowedLanguages: [])
+        let artifact = try await service.analyzeProject(at: root, allowedLanguages: [])
 
         // Only the dialectB file should yield an edge to `Special`: dialectA treats it as a primitive.
         let specialEdges = artifact.relationships.filter { $0.target == "Special" }

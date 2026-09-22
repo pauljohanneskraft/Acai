@@ -13,9 +13,9 @@ struct GitRevisionSnapshot: Sendable {
     /// file's types look like a spurious "removed" diff once a filter is configured.
     func artifact(
         analyzer: CodebaseAnalyzing = CodebaseAnalyzer(), fileFilter: FileFilter? = nil
-    ) throws -> CodeArtifact {
+    ) async throws -> CodeArtifact {
         let extracted = try GitDiffSnapshot(directory: directory, reference: reference).extractedDirectory()
         defer { try? FileManager.default.removeItem(at: extracted) }
-        return try analyzer.enrichedArtifact(at: extracted, fileFilter: fileFilter)
+        return try await analyzer.enrichedArtifact(at: extracted, fileFilter: fileFilter)
     }
 }

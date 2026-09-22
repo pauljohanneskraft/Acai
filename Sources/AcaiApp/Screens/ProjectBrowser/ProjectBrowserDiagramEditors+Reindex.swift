@@ -53,10 +53,10 @@ extension ProjectCodebaseEditor {
             let detached = Task.detached(priority: .userInitiated) {
                 var refreshed: ScopedResourceAccess.Refreshed?
                 let access = ScopedResourceAccess(path: path, bookmark: bookmark)
-                let (artifact, fingerprint) = try access.withResolvedURL(
+                let (artifact, fingerprint) = try await access.withResolvedURL(
                     onRefresh: { refreshed = $0 },
                     { url in
-                        try CodebaseIndexing(directory: url, revision: revision)
+                        try await CodebaseIndexing(directory: url, revision: revision)
                             .run(analyzer: analyzer, fileFilter: fileFilter)
                     }
                 )
@@ -120,16 +120,18 @@ struct CodebaseIndexing {
     let directory: URL
     let revision: String?
 
-    func run(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) throws -> (CodeArtifact, CodeStateFingerprint) {
+    func run(
+        analyzer: CodebaseAnalyzing, fileFilter: FileFilter?
+    ) async throws -> (CodeArtifact, CodeStateFingerprint) {
         let freshness = CodebaseFreshnessChecker(directoryPath: directory.path, revision: revision)
         guard let revision else {
-            let artifact = try analyzer.enrichedArtifact(at: directory, fileFilter: fileFilter)
+            let artifact = try await analyzer.enrichedArtifact(at: directory, fileFilter: fileFilter)
             return (artifact, freshness.currentFingerprint())
         }
         let snapshot = GitDiffSnapshot(directory: directory, reference: revision)
         let fingerprint = freshness.currentFingerprint()
         let extracted = try snapshot.extractedDirectory()
         defer { try? FileManager.default.removeItem(at: extracted) }
-        return (try analyzer.enrichedArtifact(at: extracted, fileFilter: fileFilter), fingerprint)
+        return (try await analyzer.enrichedArtifact(at: extracted, fileFilter: fileFilter), fingerprint)
     }
 }

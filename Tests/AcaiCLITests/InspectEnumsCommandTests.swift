@@ -14,8 +14,8 @@ struct InspectEnumsCommandTests {
         }
     }
 
-    @Test func listsCasesWithRawAndAssociatedValues() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func listsCasesWithRawAndAssociatedValues() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let source = """
             enum Suit: String {
                 case hearts = "H"
@@ -32,7 +32,7 @@ struct InspectEnumsCommandTests {
             let output = dir.appendingPathComponent("enums.json")
             var cmd = try CLITestSupport.parseInspect(
                 ["--source", dir.path, "--language", "swift", "--enums", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("Suit"))
             #expect(contents.contains("\"rawValue\""))
@@ -42,26 +42,26 @@ struct InspectEnumsCommandTests {
         }
     }
 
-    @Test func noEnumsProducesEmptyList() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func noEnumsProducesEmptyList() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("enums.json")
             var cmd = try CLITestSupport.parseInspect(
                 ["--source", dir.path, "--language", "swift", "--enums", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"enums\""))
             #expect(!contents.contains("\"cases\""))
         }
     }
 
-    @Test func healthFieldIsPerfectOnCleanParse() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("enums.json")
             var cmd = try CLITestSupport.parseInspect(
                 ["--source", dir.path, "--language", "swift", "--enums", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"health\""))
             #expect(contents.contains("\"score\" : 1"))

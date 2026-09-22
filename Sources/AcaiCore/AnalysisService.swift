@@ -13,6 +13,11 @@ public struct AnalysisService: Sendable {
 
     public let projectDiscovery: ProjectDiscovery
 
+    /// Caps how many files a spec parses at once. `nil` (the default) derives the cap from
+    /// `ProcessInfo.processInfo.activeProcessorCount`; exposed so tests can force strictly serial
+    /// parsing (`1`) for deterministic cancellation/ordering assertions.
+    public let fileParsingConcurrencyLimit: Int?
+
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
 
     // MARK: - Initialisation
@@ -22,13 +27,15 @@ public struct AnalysisService: Sendable {
     /// composition root supplies the concrete detectors.
     public init(
         parsers: [any CodeParser],
-        projectDiscovery: ProjectDiscovery? = nil
+        projectDiscovery: ProjectDiscovery? = nil,
+        fileParsingConcurrencyLimit: Int? = nil
     ) {
         self.parsers = parsers
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
             fallback: FallbackDetector(parsers: parsers)
         )
+        self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
     }
 
     // MARK: - Parser Registry
@@ -50,7 +57,7 @@ public struct AnalysisService: Sendable {
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
         includingFile: (String) -> Bool = { _ in true }
-    ) throws -> CodeArtifact {
+    ) async throws -> CodeArtifact {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
         }
@@ -67,7 +74,7 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            if let artifact = try parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
+            if let artifact = try await parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -84,7 +91,7 @@ public struct AnalysisService: Sendable {
         _ spec: SourceSpec,
         rootURL: URL,
         includingFile: (String) -> Bool
-    ) throws -> CodeArtifact? {
+    ) async throws -> CodeArtifact? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
@@ -94,7 +101,7 @@ public struct AnalysisService: Sendable {
         let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
         guard !files.isEmpty else { return nil }
 
-        let parsed = try parseFiles(files, using: codeParser, rootURL: rootURL)
+        let parsed = try await parseFiles(files, using: codeParser, rootURL: rootURL)
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
@@ -122,26 +129,52 @@ public struct AnalysisService: Sendable {
             .filter { includingFile($0.relativePath(from: rootURL)) }
     }
 
-    /// Parses every file and groups results by each file's *own* `metadata.sourceLanguage` rather than
-    /// the spec's nominal language — a parser may classify a file differently than the extension that
-    /// discovered it (e.g. the C parser owns `.h` but reports C++ for a C++ header). `order` preserves
-    /// first-seen order so the merged artifact's top-level language is stable.
+    /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
+    /// count when unset) and groups results by each file's *own* `metadata.sourceLanguage` rather
+    /// than the spec's nominal language — a parser may classify a file differently than the extension
+    /// that discovered it (e.g. the C parser owns `.h` but reports C++ for a C++ header). Files merge
+    /// back in their original order regardless of completion order, so the result — and therefore
+    /// `order`, which preserves first-seen order so the merged artifact's top-level language is
+    /// stable — is identical to serial parsing.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) throws -> (
+    ) async throws -> (
         byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
         order: [CodeArtifact.SourceLanguage],
         diagnostics: [ParseDiagnostic]
     ) {
+        guard !files.isEmpty else { return ([:], [], []) }
+        let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
+        let limit = max(1, min(files.count, concurrency))
+
+        var outcomeByIndex = [ParseOutcome?](repeating: nil, count: files.count)
+        try await withThrowingTaskGroup(of: (index: Int, outcome: ParseOutcome).self) { group in
+            var nextIndex = 0
+            func scheduleNext() {
+                guard nextIndex < files.count else { return }
+                let index = nextIndex
+                nextIndex += 1
+                let file = files[index]
+                group.addTask {
+                    try Task.checkCancellation()
+                    let outcome = self.parseFile(file, using: codeParser, rootURL: rootURL)
+                    try Task.checkCancellation()
+                    return (index, outcome)
+                }
+            }
+            for _ in 0..<limit { scheduleNext() }
+            while let next = try await group.next() {
+                outcomeByIndex[next.index] = next.outcome
+                scheduleNext()
+            }
+        }
+
         var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
         var diagnostics: [ParseDiagnostic] = []
-        for file in files {
-            try Task.checkCancellation()
-            let relativePath = file.relativePath(from: rootURL)
-            do {
-                let source = try String(contentsOf: file, encoding: .utf8)
-                let parsed = codeParser.parse(source: source, fileName: relativePath)
+        for case let outcome? in outcomeByIndex {
+            switch outcome {
+            case .parsed(let parsed):
                 let language = parsed.metadata.sourceLanguage
                 if let existing = byLanguage[language] {
                     byLanguage[language] = existing.merging(with: parsed)
@@ -149,15 +182,27 @@ public struct AnalysisService: Sendable {
                     byLanguage[language] = parsed
                     order.append(language)
                 }
-            } catch {
-                diagnostics.append(ParseDiagnostic(
-                    location: SourceLocation(filePath: relativePath, line: 0, column: 0),
-                    kind: .unreadable,
-                    message: error.localizedDescription
-                ))
+            case .diagnostic(let diagnostic):
+                diagnostics.append(diagnostic)
             }
         }
         return (byLanguage, order, diagnostics)
+    }
+
+    /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
+    /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
+    private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
+        let relativePath = file.relativePath(from: rootURL)
+        do {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            return .parsed(codeParser.parse(source: source, fileName: relativePath))
+        } catch {
+            return .diagnostic(ParseDiagnostic(
+                location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+                kind: .unreadable,
+                message: error.localizedDescription
+            ))
+        }
     }
 
     /// Runs the enrichment pipeline once per detected language, each with that language's configuration
@@ -191,6 +236,13 @@ public struct AnalysisService: Sendable {
         }
         return combined
     }
+}
+
+/// The result of reading and parsing one file: either a parsed artifact, or a diagnostic when the
+/// file itself couldn't be read.
+private enum ParseOutcome: Sendable {
+    case parsed(CodeArtifact)
+    case diagnostic(ParseDiagnostic)
 }
 
 extension URL {

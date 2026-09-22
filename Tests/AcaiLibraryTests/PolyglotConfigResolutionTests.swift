@@ -10,7 +10,7 @@ import AcaiCore
 @Suite("Polyglot per-type config resolution")
 struct PolyglotConfigResolutionTests {
 
-    private func analyzePolyglotFixture() throws -> CodeArtifact {
+    private func analyzePolyglotFixture() async throws -> CodeArtifact {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiPolyglot-\(UUID().uuidString)", isDirectory: true)
         let swiftDir = root.appendingPathComponent("swiftapp", isDirectory: true)
@@ -27,19 +27,19 @@ struct PolyglotConfigResolutionTests {
             def __init__(self):
                 self.values = []
         """.write(to: pyDir.appendingPathComponent("service.py"), atomically: true, encoding: .utf8)
-        return try AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
+        return try await AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
     }
 
-    @Test func stampsEachTypeWithItsOwnLanguage() throws {
-        let artifact = try analyzePolyglotFixture()
+    @Test func stampsEachTypeWithItsOwnLanguage() async throws {
+        let artifact = try await analyzePolyglotFixture()
         let swiftType = try #require(artifact.types.first { $0.name == "SwiftModel" })
         let pyType = try #require(artifact.types.first { $0.name == "PyService" })
         #expect(swiftType.sourceLanguage == .swift)
         #expect(pyType.sourceLanguage == .python)
     }
 
-    @Test func resolverReturnsEachLanguagesOwnConfiguration() throws {
-        let artifact = try analyzePolyglotFixture()
+    @Test func resolverReturnsEachLanguagesOwnConfiguration() async throws {
+        let artifact = try await analyzePolyglotFixture()
         let resolver = artifact.standardLanguageResolver
         let swiftType = try #require(artifact.types.first { $0.name == "SwiftModel" })
         let pyType = try #require(artifact.types.first { $0.name == "PyService" })
@@ -54,10 +54,10 @@ struct PolyglotConfigResolutionTests {
         #expect(pyCollections.contains("list"))
     }
 
-    @Test func perTypeReEnrichmentIsIdempotentOnAPolyglotArtifact() throws {
+    @Test func perTypeReEnrichmentIsIdempotentOnAPolyglotArtifact() async throws {
         // Re-enriching the already-enriched artifact through the per-type resolver must be a no-op —
         // a single dominant config would re-infer the non-dominant language's edges and change the set.
-        let artifact = try analyzePolyglotFixture()
+        let artifact = try await analyzePolyglotFixture()
         let reEnriched = artifact.enriched(using: artifact.standardLanguageResolver)
         let key: (Relationship) -> String = { "\($0.source)→\($0.target):\($0.kind.rawValue)" }
         #expect(Set(reEnriched.relationships.map(key)) == Set(artifact.relationships.map(key)))

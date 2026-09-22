@@ -14,14 +14,14 @@ struct ImpactCommandTests {
         }
     }
 
-    @Test func reportsDependentsForKnownType() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func reportsDependentsForKnownType() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             // Service depends on Repository, so Repository's blast radius includes Service.
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("impact.json")
             var cmd = try CLITestSupport.parseImpact(
                 ["Repository", "--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"found\" : true"))
             #expect(contents.contains("Service"))
@@ -29,13 +29,13 @@ struct ImpactCommandTests {
         }
     }
 
-    @Test func healthFieldIsPerfectOnCleanParse() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("impact.json")
             var cmd = try CLITestSupport.parseImpact(
                 ["Repository", "--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"health\""))
             #expect(contents.contains("\"score\" : 1"))
@@ -43,13 +43,13 @@ struct ImpactCommandTests {
         }
     }
 
-    @Test func healthFieldReflectsLowTrustParse() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func healthFieldReflectsLowTrustParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeLowTrustSwiftSource(in: dir)
             let output = dir.appendingPathComponent("impact.json")
             var cmd = try CLITestSupport.parseImpact(
                 ["Broken", "--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"health\""))
             #expect(!contents.contains("\"score\" : 1"))

@@ -17,7 +17,7 @@ struct FixtureCodebaseAnalyzer: CodebaseAnalyzing {
         }
     }
 
-    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) throws -> CodeArtifact {
+    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) async throws -> CodeArtifact {
         do {
             return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: artifactURL))
         } catch {

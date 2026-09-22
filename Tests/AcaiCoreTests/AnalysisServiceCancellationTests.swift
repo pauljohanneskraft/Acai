@@ -57,10 +57,12 @@ struct AnalysisServiceCancellationTests {
         }
 
         let parser = CountingParser(cancelAfter: 2)
-        let service = AnalysisService(parsers: [parser])
+        // Forces strictly serial parsing so cancelling mid-parse has a deterministic file count —
+        // with real concurrency, several files can already be in flight when cancellation fires.
+        let service = AnalysisService(parsers: [parser], fileParsingConcurrencyLimit: 1)
 
         let task = Task {
-            try service.analyzeProject(at: root, allowedLanguages: [])
+            try await service.analyzeProject(at: root, allowedLanguages: [])
         }
 
         await #expect(throws: (any Error).self) {
