@@ -14,34 +14,32 @@ public struct CCodeParser: CodeParser {
     public let language: CodeArtifact.SourceLanguage = .c
     public let fileExtensions: [String] = ["c", "h"]
 
+    private let cGrammar = CFamilyGrammar(dialect: .c, language: Language(language: tree_sitter_c()))
+    private let cppGrammar = CFamilyGrammar(dialect: .cpp, language: Language(language: tree_sitter_cpp()))
+
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
         let asCpp = fileName.hasSuffix(".h") && CFamilyHeaderClassifier(source: source).looksLikeCpp
-        let dialect: CFamilyDialect = asCpp ? .cpp : .c
-        let grammar = asCpp ? Language(language: tree_sitter_cpp()) : Language(language: tree_sitter_c())
-        return CFamilyTreeSitterParse(dialect: dialect, grammar: grammar)
-            .parse(source: source, fileName: fileName)
+        return (asCpp ? cppGrammar : cGrammar).parse(source: source, fileName: fileName)
     }
 }
 
-struct CFamilyTreeSitterParse {
+/// One dialect's grammar plus the extractor run over its trees; shared by both parsers so a C++
+/// header discovered through `.h` is parsed exactly as a `.cpp` file would be.
+struct CFamilyGrammar {
     let dialect: CFamilyDialect
-    let grammar: Language
+    let grammar: TreeSitterGrammar
+
+    init(dialect: CFamilyDialect, language: Language) {
+        self.dialect = dialect
+        grammar = TreeSitterGrammar(language: language, sourceLanguage: dialect.sourceLanguage)
+    }
 
     func parse(source: String, fileName: String) -> CodeArtifact {
-        let loader = TreeSitterGrammar(language: grammar, sourceLanguage: dialect.sourceLanguage)
-        guard let parser = loader.makeParser() else {
-            return loader.loadFailureArtifact(fileName: fileName)
+        grammar.parse(source: source, fileName: fileName) { root in
+            var extractor = CFamilyExtractor(source: source, fileName: fileName, dialect: dialect, root: root)
+            return extractor.extract(from: root)
         }
-        guard let tree = parser.parse(source), let root = tree.rootNode else {
-            return CodeArtifact(metadata: .init(sourceLanguage: dialect.sourceLanguage, filePaths: [fileName]))
-        }
-        var extractor = CFamilyExtractor(source: source, fileName: fileName, dialect: dialect, root: root)
-        var artifact = extractor.extract(from: root)
-        if root.hasError {
-            artifact.metadata.parseDiagnostics = extractor.collectParseDiagnostics(from: root)
-        }
-        return artifact
     }
 }

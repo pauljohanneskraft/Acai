@@ -2,15 +2,9 @@ import Foundation
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Member, global, and function extraction
+// MARK: - Record bodies, globals and free functions
 
 extension CFamilyExtractor {
-
-    private static let memberDeclaratorTypes: Set<String> = [
-        "identifier", "field_identifier", "pointer_declarator", "array_declarator",
-        "function_declarator", "init_declarator", "reference_declarator",
-        "qualified_identifier", "operator_name", "destructor_name"
-    ]
 
     // MARK: - Record body
 
@@ -24,12 +18,12 @@ extension CFamilyExtractor {
         for child in body.namedChildren() {
             switch child.nodeType {
             case "access_specifier":
-                access = accessLevel(from: child) ?? access
+                access = memberExtractor.accessLevel(from: child) ?? access
             case "field_declaration":
                 appendField(child, ownerName: ownerName, access: access,
                             members: &members, nestedTypes: &nestedTypes)
             case "function_definition":
-                if var method = functionMember(from: child, ownerName: ownerName, access: access) {
+                if var method = memberExtractor.functionMember(from: child, ownerName: ownerName, access: access) {
                     // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
                     // body; walk it so calls made during construction aren't lost.
                     if let initList = child.firstChild(withType: "field_initializer_list") {
@@ -84,13 +78,14 @@ extension CFamilyExtractor {
         if let typeNode = node.child(byFieldName: "type") {
             appendNestedType(typeNode, into: &nestedTypes)
         }
-        for declarator in declarators(of: node) {
+        for declarator in typeReferences.memberDeclarators(of: node) {
             let info = typeReferences.parseDeclarator(declarator)
             guard !info.name.isEmpty else { continue }
             if info.isFunction {
-                members.append(methodMember(node: node, info: info, ownerName: ownerName, access: access))
+                members.append(
+                    memberExtractor.methodMember(node: node, info: info, ownerName: ownerName, access: access))
             } else {
-                members.append(propertyMember(node: node, info: info, access: access))
+                members.append(memberExtractor.propertyMember(node: node, info: info, access: access))
             }
         }
     }
@@ -116,7 +111,7 @@ extension CFamilyExtractor {
         for child in node.namedChildren() {
             switch child.nodeType {
             case "function_definition":
-                if let method = functionMember(from: child, ownerName: ownerName, access: access) {
+                if let method = memberExtractor.functionMember(from: child, ownerName: ownerName, access: access) {
                     members.append(method)
                 }
             case "field_declaration":
@@ -133,24 +128,20 @@ extension CFamilyExtractor {
     // MARK: - Top-level globals & prototypes
 
     mutating func extractTopLevelDeclarators(_ node: Node) {
-        for declarator in declarators(of: node) {
+        for declarator in typeReferences.memberDeclarators(of: node) {
             let info = typeReferences.parseDeclarator(declarator)
             guard !info.name.isEmpty else { continue }
             if info.isFunction {
                 declarations.freestandingFunctions.append(
-                    methodMember(node: node, info: info, ownerName: nil, access: .public))
+                    memberExtractor.methodMember(node: node, info: info, ownerName: nil, access: .public))
             } else {
-                let typeRef = typeReferences.typeReference(from: node.child(byFieldName: "type"), declarator: info)
-                declarations.globalVariables.append(Member(
-                    name: typeReferences.lastComponent(of: info.name), kind: .property,
-                    accessLevel: .public, modifiers: modifiers(from: node),
-                    type: typeRef, location: node.location(in: context)))
+                declarations.globalVariables.append(memberExtractor.globalVariable(node: node, info: info))
             }
         }
     }
 
     func extractFunctionDefinition(_ node: Node, defaultAccess: AccessLevel) -> Member? {
-        guard var member = functionMember(from: node, ownerName: nil, access: defaultAccess) else {
+        guard var member = memberExtractor.functionMember(from: node, ownerName: nil, access: defaultAccess) else {
             return nil
         }
         if let body = node.child(byFieldName: "body") {
@@ -175,158 +166,5 @@ extension CFamilyExtractor {
             if let typeName = parameter.type?.name { map[parameter.internalName] = typeName }
         }
         return map
-    }
-
-    private func functionMember(from node: Node, ownerName: String?, access: AccessLevel) -> Member? {
-        let info = typeReferences.parseDeclarator(node.child(byFieldName: "declarator"))
-        guard info.isFunction, !info.name.isEmpty else { return nil }
-        return methodMember(node: node, info: info, ownerName: ownerName, access: access)
-    }
-
-    private func methodMember(
-        node: Node, info: CFamilyDeclarator, ownerName: String?, access: AccessLevel
-    ) -> Member {
-        let simpleName = typeReferences.lastComponent(of: info.name)
-        let returnType = typeReferences.typeReference(
-            from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
-        let kind = memberKind(name: simpleName, ownerName: ownerName, hasReturnType: returnType != nil)
-        let functionModifiers = modifiers(from: node)
-        return Member(
-            name: simpleName, kind: kind,
-            accessLevel: freeFunctionAccessLevel(
-                default: access, ownerName: ownerName, modifiers: functionModifiers),
-            modifiers: functionModifiers,
-            type: kind == .method ? returnType : nil,
-            parameters: info.parameters, location: node.location(in: context))
-    }
-
-    /// A `static` free function (or prototype) has internal linkage: it is only reachable from its
-    /// own translation unit, C's closest equivalent to `private`. `.filePrivate` (rather than
-    /// `.private`) matches that "visible within this file" scope; a `static` *member* function is
-    /// an unrelated concept (a class-scoped function with no `self`), so `ownerName != nil` is left
-    /// at its passed-in access level.
-    private func freeFunctionAccessLevel(
-        default access: AccessLevel, ownerName: String?, modifiers: [Modifier]
-    ) -> AccessLevel {
-        ownerName == nil && modifiers.contains(.static) ? .filePrivate : access
-    }
-
-    private func propertyMember(node: Node, info: CFamilyDeclarator, access: AccessLevel) -> Member {
-        // A C++ default member initializer (`State state = State::idle;`) seeds the field's value,
-        // which the state-diagram value-flow analysis reads as the machine's initial state.
-        let initialValue = node.child(byFieldName: "default_value").map { assignmentSyntax.classifyValue($0) }
-        return Member(
-            name: typeReferences.lastComponent(of: info.name), kind: .property, accessLevel: access,
-            modifiers: modifiers(from: node),
-            type: typeReferences.typeReference(from: node.child(byFieldName: "type"), declarator: info),
-            location: node.location(in: context),
-            // A default member initializer's calls (`int n = compute();`) are recorded so their targets
-            // aren't false-flagged dead. File-level type names cover static/`Type::method()` calls.
-            callSites: callSites.callSites(
-                in: node.child(byFieldName: "default_value"),
-                scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)),
-            initialValue: initialValue,
-            referencedTypeNames: node.child(byFieldName: "default_value")?.referencedTypeNames(in: context) ?? [])
-    }
-
-    // MARK: - Helpers
-
-    private func declarators(of node: Node) -> [Node] {
-        // Exclude the `type` field: a type can itself be a `qualified_identifier`/`type_identifier`,
-        // which also appears in `memberDeclaratorTypes` (needed for out-of-line `Foo::bar` names).
-        let typeRange = node.child(byFieldName: "type")?.range
-        return node.namedChildren().filter { child in
-            Self.memberDeclaratorTypes.contains(child.nodeType ?? "") && child.range != typeRange
-        }
-    }
-
-    private func memberKind(name: String, ownerName: String?, hasReturnType: Bool) -> MemberKind {
-        if name.hasPrefix("~") { return .deinitializer }
-        if let ownerName, name == ownerName, !hasReturnType { return .initializer }
-        return .method
-    }
-
-    private func accessLevel(from node: Node) -> AccessLevel? {
-        switch node.text(in: context).trimmingCharacters(in: .whitespaces) {
-        case "public":
-            return .public
-        case "protected":
-            return .protected
-        case "private":
-            return .private
-        default:
-            return nil
-        }
-    }
-
-    private func modifiers(from node: Node) -> [Modifier] {
-        var modifiers: [Modifier] = []
-        var isVirtual = false
-        for child in node.children() {
-            if let modifier = modifier(forChildType: child.nodeType, text: child.text(in: context)) {
-                modifiers.append(modifier)
-            } else if isVirtualMarker(nodeType: child.nodeType, text: child.text(in: context), isNamed: child.isNamed) {
-                isVirtual = true
-            }
-        }
-        // No plain `virtual` modifier exists in the closed `Modifier` enum; a pure virtual (`= 0`)
-        // maps to `.abstract`, an ordinary virtual is left unmarked.
-        if isVirtual, let defaultValue = node.child(byFieldName: "default_value"),
-           defaultValue.text(in: context) == "0" {
-            modifiers.append(.abstract)
-        }
-        return modifiers
-    }
-
-    private func modifier(forChildType nodeType: String?, text: String) -> Modifier? {
-        switch nodeType {
-        case "storage_class_specifier":
-            return storageClassModifier(text)
-        case "type_qualifier":
-            return typeQualifierModifier(text)
-        case "virtual_specifier":
-            return virtualSpecifierModifier(text)
-        default:
-            return nil
-        }
-    }
-
-    private func storageClassModifier(_ text: String) -> Modifier? {
-        switch text {
-        case "static":
-            return .static
-        case "extern":
-            return .external
-        case "inline":
-            return .inline
-        default:
-            return nil
-        }
-    }
-
-    private func typeQualifierModifier(_ text: String) -> Modifier? {
-        switch text {
-        case "const":
-            return .const
-        case "volatile":
-            return .volatile
-        default:
-            return nil
-        }
-    }
-
-    private func virtualSpecifierModifier(_ text: String) -> Modifier? {
-        switch text {
-        case "override":
-            return .override
-        case "final":
-            return .final
-        default:
-            return nil
-        }
-    }
-
-    private func isVirtualMarker(nodeType: String?, text: String, isNamed: Bool) -> Bool {
-        nodeType == "virtual_function_specifier" || (!isNamed && text == "virtual")
     }
 }

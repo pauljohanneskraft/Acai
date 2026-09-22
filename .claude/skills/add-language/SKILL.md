@@ -32,12 +32,12 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
 4. **Parser** — create `Sources/Acai<Lang>/<Lang>CodeParser.swift`: a stateless
    `public struct <Lang>CodeParser: CodeParser` exposing `language`, `fileExtensions` (lowercase, no
    dot), `parse(source:fileName:) -> CodeArtifact`, and `configuration`. Hold the
-   `TreeSitterGrammar` as a `let` on the parser — it is loaded once per run, not once per file.
+   `TreeSitterGrammar` as a `let` on the parser — it is loaded once per run, not once per file — and
+   implement `parse` as `grammar.parse(source:fileName:) { root in … }`, which owns the
+   load-failure, empty-tree and parse-diagnostics handling; the closure only builds the artifact.
 
-5. **Extraction** — **use `Sources/AcaiPython/` as the reference, not Dart/JVM/JS/CFamily.** Those
-   are still the old monolithic shape (one type owning every concern, reaching shared code by
-   conforming to `TreeSitterExtracting`); migrating them is tracked per language. A new plugin is
-   composed instead:
+5. **Extraction** — use `Sources/AcaiPython/` as the reference; every plugin is composed the same
+   way:
 
    - Your extractor owns a `DeclarationBuilder` (`AcaiCore`) — the types, relationships,
      freestanding functions, globals, declared type names and namespace discipline — and conforms to

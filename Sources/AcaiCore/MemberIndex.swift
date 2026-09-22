@@ -56,4 +56,10 @@ public struct UnambiguousTypeNames: Sendable {
     public var resolved: [String: String] {
         candidates.compactMapValues { $0.count == 1 ? $0.first : nil }
     }
+
+    /// The names `resolved` drops for having several candidates — kept apart from names never
+    /// recorded, so a caller can decline to guess rather than defer an ambiguous name elsewhere.
+    public var ambiguous: Set<String> {
+        Set(candidates.filter { $0.value.count > 1 }.keys)
+    }
 }
