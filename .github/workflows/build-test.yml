@@ -9,7 +9,39 @@ concurrency:
   group: build-test-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Each iOS journey device runs as this many parallel jobs; each takes every Nth enumerated test.
+  UI_TEST_SHARDS: 4
+
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      journeys: ${{ steps.journeys.outputs.journeys }}
+      shards: ${{ steps.shards.outputs.shards }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether journeys run
+        id: journeys
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            JOURNEYS=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | Scripts/ci_needs_journeys.sh)
+          else
+            JOURNEYS=true
+          fi
+          echo "journeys=$JOURNEYS" >> "$GITHUB_OUTPUT"
+          echo "UI journeys: $JOURNEYS" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: List shard indices
+        id: shards
+        run: echo "shards=$(seq -s, 1 "$UI_TEST_SHARDS" | sed 's/.*/[&]/')" >> "$GITHUB_OUTPUT"
+
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest
@@ -23,8 +55,11 @@ jobs:
       - name: Run SwiftLint
         run: swiftlint lint --strict
 
+  # One job builds the journeys' bundle and runs the iOS unit tests, sharing one DerivedData so the
+  # package is compiled once and only one macOS runner slot is taken.
   build-test-ios:
     name: Unit Test iOS
+    needs: [changes]
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -52,10 +87,38 @@ jobs:
           key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
           restore-keys: spm-xcode-v2-${{ runner.os }}-
 
-      # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
+      # The ui-test-ios matrix reuses this via test-without-building instead of recompiling. Built for
+      # the same concrete simulator as the unit tests below: a `generic/` destination adds x86_64 and
+      # makes that step recompile the whole package.
       # `-disablePackageRepositoryCache` on every xcodebuild using `.spm-cache`: otherwise a restored
       # checkout points into ~/Library/Caches/org.swift.swiftpm, which a fresh runner doesn't have, and
       # package resolution fails ("cannot change to …/repositories/tree-sitter-dart-…").
+      - name: Build for testing (UI test bundle)
+        if: needs.changes.outputs.journeys == 'true'
+        run: |
+          xcodebuild build-for-testing \
+            -project Acai.xcodeproj \
+            -scheme Acai-iOSUITests \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -derivedDataPath DerivedData \
+            -clonedSourcePackagesDirPath .spm-cache \
+            -disablePackageRepositoryCache \
+            CODE_SIGNING_ALLOWED=NO
+        working-directory: App
+
+      - name: Package build-for-testing artifact
+        if: needs.changes.outputs.journeys == 'true'
+        run: tar -czf ui-test-products.tar.gz -C DerivedData Build
+        working-directory: App
+
+      - uses: actions/upload-artifact@v7
+        if: needs.changes.outputs.journeys == 'true'
+        with:
+          name: ios-ui-test-products
+          path: App/ui-test-products.tar.gz
+          retention-days: 1
+
+      # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
       - name: Run SPM unit tests on iOS Simulator
         run: |
           xcodebuild test \
@@ -67,58 +130,6 @@ jobs:
             -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
-
-  prepare-ui-test-ios:
-    name: Prepare UI Test iOS
-    runs-on: macos-26
-    timeout-minutes: 30
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Configure Git to use HTTPS
-        run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
-
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "26.6"
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        run: xcodegen generate --spec project.yml
-        working-directory: App
-
-      - name: Cache SPM dependencies
-        uses: actions/cache@v6
-        with:
-          path: App/.spm-cache
-          key: spm-xcode-v2-${{ runner.os }}-${{ hashFiles('Package.resolved', 'App/project.yml') }}
-          restore-keys: spm-xcode-v2-${{ runner.os }}-
-
-      # The ui-test-ios matrix reuses this via test-without-building instead of recompiling.
-      - name: Build for testing (UI test bundle)
-        run: |
-          xcodebuild build-for-testing \
-            -project Acai.xcodeproj \
-            -scheme Acai-iOSUITests \
-            -destination "generic/platform=iOS Simulator" \
-            -derivedDataPath DerivedData \
-            -clonedSourcePackagesDirPath .spm-cache \
-            -disablePackageRepositoryCache \
-            CODE_SIGNING_ALLOWED=NO
-        working-directory: App
-
-      - name: Package build-for-testing artifact
-        run: tar -czf ui-test-products.tar.gz -C DerivedData Build
-        working-directory: App
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ios-ui-test-products
-          path: App/ui-test-products.tar.gz
-          retention-days: 1
 
   build-test-macos:
     name: Unit Test macOS
@@ -150,9 +161,7 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Build
-        run: swift build -v
-
+      # No separate `swift build`: coverage instrumentation makes `swift test` rebuild everything anyway.
       - name: Run tests
         run: swift test --parallel --enable-code-coverage
 
@@ -202,22 +211,25 @@ jobs:
         run: swift test --parallel
 
   ui-test-ios:
-    name: UI Test ${{ matrix.platform }}
-    needs: [prepare-ui-test-ios]
+    name: UI Test ${{ matrix.platform }} (${{ matrix.shard }})
+    needs: [changes, build-test-ios]
+    # Runs even if the iOS unit tests failed: journeys report on their own, and a missing bundle fails
+    # the download step below instead of silently skipping.
+    if: ${{ !cancelled() && needs.changes.outputs.journeys == 'true' }}
     runs-on: macos-26
-    # A healthy serial iPad run has taken 43 minutes on this runner. A hung test is bounded by the
-    # per-test allowance below, so the job limit only has to leave margin for a passing suite.
-    timeout-minutes: 60
+    # A whole serial iPad suite has taken 56 minutes on this runner; a shard gets its share plus margin.
+    # A hung test is bounded by the per-test allowance below, not by this.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
+        platform: [iPhone, iPad]
+        shard: ${{ fromJSON(needs.changes.outputs.shards) }}
         include:
           - platform: iPhone
             device: iPhone 17
-            results: xcresult-iphone
           - platform: iPad
             device: iPad (A16)
-            results: xcresult-ipad
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -246,16 +258,41 @@ jobs:
           [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
           Scripts/simulator_prepare.sh "${{ matrix.device }}" "$APP"
 
-      # Deliberately serial: simulator clones for `-parallel-testing-enabled` made each test 3-8x
+      # Enumerating launches the test runner on the simulator, so it reflects exactly what would run.
+      - name: Select this shard's tests
+        run: |
+          XCTESTRUN=$(find DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }}" \
+            -enumerate-tests \
+            -test-enumeration-style flat \
+            -test-enumeration-format json \
+            -test-enumeration-output-path ui-tests.json
+          ../Scripts/ui_test_shard.sh "${{ matrix.shard }}" "$UI_TEST_SHARDS" ui-tests.json > shard-tests.txt
+          {
+            echo "### Shard ${{ matrix.shard }} of $UI_TEST_SHARDS"
+            sed 's/^/- `/; s/$/`/' shard-tests.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+        working-directory: App
+
+      # Serial within a shard: simulator clones for `-parallel-testing-enabled` made each test 3-8x
       # slower on this runner and failed app launches outright. No `-retry-tests-on-failure` either:
       # a retry hid real failures inside green jobs and re-ran non-idempotent actions. A hung test
       # fails after its allowance instead of consuming the job's timeout.
       - name: Run UI tests
         run: |
-          XCTESTRUN=$(find DerivedData -name '*.xctestrun' | head -1)
+          if [ ! -s shard-tests.txt ]; then
+            echo "No tests in this shard."
+            exit 0
+          fi
+          ONLY_TESTING=()
+          while IFS= read -r TEST; do ONLY_TESTING+=("-only-testing:$TEST"); done < shard-tests.txt
+          XCTESTRUN=$(find DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
             -destination "platform=iOS Simulator,name=${{ matrix.device }}" \
+            "${ONLY_TESTING[@]}" \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
@@ -270,7 +307,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.results }}
+          name: xcresult-${{ matrix.platform }}-shard-${{ matrix.shard }}
           path: App/TestResults.xcresult
           if-no-files-found: warn
 
@@ -280,7 +317,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.platform }}
+          name: ${{ matrix.platform }}-shard-${{ matrix.shard }}
           path: App/AcaiUITests/__RecordedSnapshots__/${{ matrix.platform }}/
           if-no-files-found: warn
 
@@ -292,6 +329,8 @@ jobs:
 
   ui-test-macos:
     name: UI Test macOS
+    needs: [changes]
+    if: needs.changes.outputs.journeys == 'true'
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -372,3 +411,18 @@ jobs:
           name: macOS
           path: /private/tmp/AcaiUITestSnapshots/macOS/
           if-no-files-found: warn
+
+  # The one required status check: journeys are skipped for changes they can't be affected by and
+  # sharded under matrix names, so requiring individual jobs would block or miss runs.
+  ci-result:
+    name: CI Result
+    if: always()
+    needs: [changes, lint, build-test-ios, build-test-macos, build-test-linux, ui-test-ios, ui-test-macos]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every job to have passed or been skipped
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "✗ A required job failed or was cancelled." >&2
+          exit 1

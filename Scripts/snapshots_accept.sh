@@ -23,16 +23,20 @@ fi
 STAGING=$(mktemp -d)
 trap 'rm -rf "$STAGING"' EXIT
 
+# macOS uploads one artifact; each iOS journey shard uploads its own, e.g. `iPhone-shard-2`.
+ARTIFACTS=$(gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID/artifacts?per_page=100" \
+    --jq '.artifacts[].name | select(test("^(macOS|iPhone|iPad)(-shard-[0-9]+)?$"))')
+
 FOUND=0
-for PLATFORM in macOS iPhone iPad; do
-    if gh run download "$RUN_ID" -n "$PLATFORM" -D "$STAGING/$PLATFORM" 2>/dev/null; then
-        FOUND=1
-    else
-        echo "  ⚠️  no '$PLATFORM' artifact on run $RUN_ID — skipping"
+for ARTIFACT in $ARTIFACTS; do
+    PLATFORM="${ARTIFACT%%-shard-*}"
+    if ! gh run download "$RUN_ID" -n "$ARTIFACT" -D "$STAGING/$ARTIFACT"; then
+        echo "  ⚠️  couldn't download '$ARTIFACT' from run $RUN_ID — skipping"
         continue
     fi
+    FOUND=1
     while IFS= read -r CAPTURE; do
-        RELATIVE="${CAPTURE#"$STAGING/$PLATFORM/"}"
+        RELATIVE="${CAPTURE#"$STAGING/$ARTIFACT/"}"
         TARGET="$GOLDENS/$PLATFORM/$RELATIVE"
         if cmp -s "$CAPTURE" "$TARGET"; then
             echo "  unchanged  $PLATFORM/$RELATIVE"
@@ -41,7 +45,7 @@ for PLATFORM in macOS iPhone iPad; do
             cp "$CAPTURE" "$TARGET"
             echo "  updated    $PLATFORM/$RELATIVE"
         fi
-    done < <(find "$STAGING/$PLATFORM" -name '*.png')
+    done < <(find "$STAGING/$ARTIFACT" -name '*.png')
 done
 
 [ "$FOUND" -eq 1 ] || { echo "No screenshot artifacts on run $RUN_ID." >&2; exit 1; }

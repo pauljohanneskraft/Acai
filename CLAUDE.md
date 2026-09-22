@@ -249,6 +249,12 @@ the fix is to find it, never to re-run, add a retry, raise a timeout or widen a 
 Every past "flake" here had a concrete cause: a dropped navigation in the app, a tap on an unsettled
 control, a retried action that created a duplicate, a stale golden, an unpinned status bar.
 
+CI splits each iOS device's journeys across `UI_TEST_SHARDS` jobs by enumerating the built bundle
+(`Scripts/ui_test_shard.sh`), so a new journey needs no registration — and may run in any shard, beside
+any other journey, so it can never rely on another having run first. A pull request skips journeys
+only when `Scripts/ci_needs_journeys.sh` finds every changed path outside what they exercise; keep that
+list to paths a journey provably can't reach.
+
 **Structure.** Subclass `UIJourneyTestCase`. Start from the fixture helpers in
 `Support/SeededFixture.swift` (`openSeededCodebase`, `openIndexedSeededCodebase`, …) instead of
 re-deriving navigation, and reach screens through their screen object in `Screens/`. A screen object
