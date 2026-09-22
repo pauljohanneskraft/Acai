@@ -45,6 +45,7 @@ actor AnalysisSnapshotCache {
         let toolVersion = AcaiConstants.standard.toolVersion
         if !refresh, case .entry(let stored) = store.lookup(forResolvedPath: key),
            stored.isCurrent(sourcePath: key, fingerprint: fingerprint, toolVersion: toolVersion) {
+            try validateSchemaVersion(of: stored.artifact, at: key)
             entries[key] = Entry(fingerprint: fingerprint, artifact: stored.artifact)
             return stored.artifact
         }
@@ -62,11 +63,25 @@ actor AnalysisSnapshotCache {
     }
 
     private func decodeArtifact(at url: URL) throws -> CodeArtifact {
+        let artifact: CodeArtifact
         do {
-            return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))
+            artifact = try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: url))
         } catch {
             throw MCPError.invalidParams(
                 "Could not read an Açaí artifact from \(url.path): \(error.localizedDescription)")
+        }
+        try validateSchemaVersion(of: artifact, at: url.path)
+        return artifact
+    }
+
+    /// Rejects an artifact newer than this build understands, naming both versions rather than
+    /// letting the mismatch surface later as some unrelated tool failure.
+    private func validateSchemaVersion(of artifact: CodeArtifact, at path: String) throws {
+        guard artifact.schemaVersion <= CodeArtifact.currentSchemaVersion else {
+            throw MCPError.invalidParams(
+                "Açaí artifact at \(path) has schema version \(artifact.schemaVersion), but this build of Açaí "
+                + "supports up to \(CodeArtifact.currentSchemaVersion). Regenerate it with a newer build."
+            )
         }
     }
 }

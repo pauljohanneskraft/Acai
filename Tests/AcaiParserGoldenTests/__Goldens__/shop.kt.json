@@ -142,6 +142,7 @@
       "target" : "com.example.shop.Item"
     }
   ],
+  "schemaVersion" : 1,
   "types" : [
     {
       "accessLevel" : "public",

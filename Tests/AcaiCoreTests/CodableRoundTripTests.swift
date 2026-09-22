@@ -185,6 +185,21 @@ struct CodableRoundTripTests {
         #expect(original == decoded)
     }
 
+    @Test func codeArtifactSchemaVersion() throws {
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift))
+        #expect(artifact.schemaVersion == CodeArtifact.currentSchemaVersion)
+
+        let encoded = try JSONEncoder().encode(artifact)
+        var withoutSchemaVersion = try #require(
+            try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        withoutSchemaVersion.removeValue(forKey: "schemaVersion")
+        let legacyData = try JSONSerialization.data(withJSONObject: withoutSchemaVersion)
+
+        let decoded = try JSONDecoder().decode(CodeArtifact.self, from: legacyData)
+        #expect(decoded.schemaVersion == 0)
+    }
+
     @Test func sourceLanguages() throws {
         // `SourceLanguage` is an open struct with no `.allCases`, so raw values are round-tripped by hand.
         let rawValues = ["swift", "kotlin", "java", "typeScript", "javaScript", "dart", "python"]
