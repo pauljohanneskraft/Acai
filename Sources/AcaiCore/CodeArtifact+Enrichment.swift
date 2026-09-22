@@ -27,13 +27,21 @@ extension CodeArtifact {
     /// qualified names, not just tree-sitter extractors that opt in.
     public func resolvingRelationshipNames() -> CodeArtifact {
         let resolver = TypeIdentityResolver(types: types)
+        // `source` is already the referencing type's own id/qualified name, so its module locates
+        // the reference for both endpoints — `target` is what that type's own file/module wrote.
+        let moduleByID = Dictionary(
+            Self.allTypes(types).map {
+                ($0.id, ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? ""))
+            },
+            uniquingKeysWith: { first, _ in first })
         var copy = self
         var diagnostics: [ParseDiagnostic] = []
 
         copy.relationships = relationships.map { rel in
             var resolved = rel
-            let source = resolver.resolve(rel.source)
-            let target = resolver.resolve(rel.target)
+            let module = moduleByID[rel.source]
+            let source = resolver.resolve(rel.source, referencingModule: module)
+            let target = resolver.resolve(rel.target, referencingModule: module)
             resolved.source = source.canonicalName
             resolved.target = target.canonicalName
             // Only ambiguous names (shared by several declared types, left unresolved) are flagged;
@@ -68,9 +76,10 @@ extension CodeArtifact {
         var diagnostics: [ParseDiagnostic] = []
         let resolvedTypes = types.map { type -> TypeDeclaration in
             var copy = type
+            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
             copy.inheritedTypes = type.inheritedTypes.map { ref in
                 var resolved = ref
-                let identity = resolver.resolve(ref.name)
+                let identity = resolver.resolve(ref.name, referencingModule: module)
                 resolved.name = identity.canonicalName
                 if case .ambiguous(let name) = identity {
                     diagnostics.append(ParseDiagnostic(
@@ -122,9 +131,10 @@ extension CodeArtifact {
 
         var edges: [Relationship] = []
         for type in Self.allTypes(types) {
+            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
             let inference = StructuralEdgeInference(
                 configuration: resolver.configuration(for: type),
-                resolveId: { identity.canonicalName(for: $0) })
+                resolveId: { identity.canonicalName(for: $0, referencingModule: module) })
             edges.append(contentsOf: inference.edges(for: type))
         }
 
