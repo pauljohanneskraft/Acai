@@ -15,7 +15,7 @@ permissions:
 jobs:
   build-macos:
     name: Build (macOS ${{ matrix.arch }})
-    runs-on: macos-26
+    runs-on: macos-27
     strategy:
       matrix:
         arch: [arm64, x86_64]
@@ -170,14 +170,14 @@ jobs:
           git push origin HEAD:main
 
   release-ios:
-    runs-on: macos-26
+    runs-on: macos-27
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "27.0"
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
@@ -270,14 +270,14 @@ jobs:
         run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
 
   release-macOS:
-    runs-on: macos-26
+    runs-on: macos-27
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "27.0"
 
       - name: Configure Git to use HTTPS
         run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
