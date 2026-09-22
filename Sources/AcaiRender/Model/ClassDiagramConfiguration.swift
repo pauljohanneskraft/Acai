@@ -1,5 +1,6 @@
 import Foundation
 import AcaiCore
+import AcaiDiagram
 import AcaiQuality
 
 /// Rendering configuration for a generated class diagram. Shared by the macOS app (persisted
@@ -47,6 +48,11 @@ public struct ClassDiagramConfiguration: Codable, Hashable, Sendable {
     /// `AcaiQuality`'s rules use, reused instead of a second, diagram-specific filter. `nil` shows
     /// every type.
     public var filter: AcaiQuality.Selector?
+    /// Rendering fails once the diagram would exceed this many nodes, naming the count instead of
+    /// laying out an unbounded graph. `nil` means unlimited — what a configuration persisted before
+    /// this field existed decodes as, keeping its old behaviour; `init()` gives every newly created
+    /// diagram the shared default instead.
+    public var maxNodes: Int? = DiagramNodeLimit.defaultMaximum
 
     public init() {}
 }

@@ -160,15 +160,21 @@ public struct PackageImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
     public let languages: LanguageConfigurationResolver
+    /// Rendering fails once the diagram would exceed this many nodes. `nil` means unlimited.
+    public let maxNodes: Int?
 
-    public init(scale: Double, palette: DiagramPalette, languages: LanguageConfigurationResolver) {
+    public init(
+        scale: Double, palette: DiagramPalette, languages: LanguageConfigurationResolver, maxNodes: Int? = nil
+    ) {
         self.scale = scale
         self.palette = palette
         self.languages = languages
+        self.maxNodes = maxNodes
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
         let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
+        try DiagramNodeLimit(maximum: maxNodes).validate(nodeCount: diagram.nodes.count)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try PackageImageRenderer().renderPNG(
@@ -182,6 +188,7 @@ public struct PackageImageExporter: Sendable {
         let diff = PackageDiagramDiff(
             old: request.build(from: old, languages: languages),
             new: request.build(from: new, languages: languages))
+        try DiagramNodeLimit(maximum: maxNodes).validate(nodeCount: diff.union.nodes.count)
         let nodeColor: @Sendable (String) -> Color? = { diff.status(ofNode: $0).deltaColor }
         let edgeColor: @Sendable (String, String) -> Color? = { diff.status(ofEdgeFrom: $0, to: $1).deltaColor }
         let (scale, palette) = (scale, palette)

@@ -241,6 +241,7 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--package` | Package/module dependency diagram with coupling metrics. |
 | `--call-graph` | Static call graph. |
 | `--call-graph-scope <s>` | `type:Name` or `module:Name`. Whole codebase if omitted. |
+| `--max-nodes <n>` | Fail a class/package diagram beyond this many nodes, naming the count (default `2000`). Narrow with `--focus` instead of raising it. |
 
 ```sh
 acai diagram --source . --output arch.dot

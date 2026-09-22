@@ -31,6 +31,10 @@ struct DiagramTool: AnalysisTool {
             "stateFrom": ["type": "string", "description": "State: 'Type.variable' or a global variable."],
             "maxDepth": ["type": "integer", "description": "Sequence: max call-graph depth (default 5)."],
             "maxStates": ["type": "integer", "description": "State: max distinct states (default 20)."],
+            "maxNodes": [
+                "type": "integer",
+                "description": "Class/package: max node count before generation fails (default 2000)."
+            ],
             "map": [
                 "type": "array", "items": ["type": "string"],
                 "description": "Sequence: 'Protocol=Concrete' receiver mappings."
@@ -70,9 +74,11 @@ struct DiagramTool: AnalysisTool {
         switch arguments.string("kind") ?? "class" {
         case "class":
             let options = try classOptions(arguments, languages: languages)
-            return ClassDiagramTextExporter(options: options).export(from: artifact)
+            return try ClassDiagramTextExporter(options: options).export(from: artifact)
         case "package":
-            return PackageDiagramTextExporter(languages: languages, theme: nil).export(from: artifact)
+            let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
+            return try PackageDiagramTextExporter(languages: languages, theme: nil, maxNodes: maxNodes)
+                .export(from: artifact)
         case "sequence":
             let request = SequenceDiagramRequest(
                 entryPoint: try arguments.requiredString("sequenceFrom"),
@@ -102,6 +108,7 @@ struct DiagramTool: AnalysisTool {
             // A focused view is a local neighbourhood; grouping splits it into mismatched clusters.
             options.groupBy = .none
         }
+        options.maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
         return options
     }
 }
