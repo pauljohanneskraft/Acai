@@ -37,30 +37,97 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
    load-failure, empty-tree and parse-diagnostics handling; the closure only builds the artifact.
 
 5. **Extraction** — use `Sources/AcaiPython/` as the reference; every plugin is composed the same
-   way:
+   way. The extractor is a `struct` that owns every collaborator as a stored `let` (its
+   `DeclarationBuilder` is the one `var`, since it accumulates as the walk proceeds) and builds all
+   of them **once**, in `init` — never per call site:
+
+   ```swift
+   struct <Lang>Extractor {
+       private let context: SourceFileContext
+       private let callSites: CallSiteResolver
+       private let assignments: AssignmentResolver
+       private let fieldReads: FieldReadResolver
+       private var declarations = DeclarationBuilder()
+
+       init(source: String, fileName: String, root: Node) {
+           let context = SourceFileContext(source: source, fileName: fileName)
+           // Runs before the collaborators below, which capture its result by value.
+           let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: ["class_declaration"])
+               .names(in: root) { $0.child(byFieldName: "name")?.text(in: context) }
+
+           self.context = context
+           callSites = CallSiteResolver(
+               syntax: <Lang>CallSiteSyntax(context: context, declaredTypeNames: declaredTypeNames)
+           )
+           assignments = AssignmentResolver(syntax: <Lang>AssignmentSyntax(context: context))
+           fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier"])
+           declarations.declaredTypeNames = declaredTypeNames
+       }
+   }
+   ```
 
    - Your extractor owns a `DeclarationBuilder` (`AcaiCore`) — the types, relationships,
      freestanding functions, globals, declared type names and namespace discipline — and conforms to
-     **nothing**. Nest a type with `declarations.enter(namespace:)` / `leave(_:)`; qualify ids with
-     `declarations.qualifiedName(_:)`; finish with `resolveRelationshipNames()` then
-     `artifact(language:filePath:)`.
-   - Write two small stateless adapters, mirroring `PythonCallSiteSyntax` / `PythonAssignmentSyntax`:
-     a `CallSiteSyntax` (classify one node as a call, recognise one local binding) and an
-     `AssignmentSyntax` (classify one node as an assignment). They answer questions about a *single
-     node*; never write a traversal in one.
+     **nothing**. Nest a type with `let outer = declarations.enter(namespace: qualified)` /
+     `defer { declarations.leave(outer) }`; qualify ids with `declarations.qualifiedName(_:)`; record
+     supertype edges with `declarations.recordSupertypeRelationships(from:to:kind:)`; finish with
+     `declarations.resolveRelationshipNames()` then `declarations.artifact(language:filePath:)`.
+   - Write two small stateless adapters, mirroring `PythonCallSiteSyntax` / `PythonAssignmentSyntax`,
+     conforming to the two narrow protocols `AcaiTreeSitter` declares:
+
+     ```swift
+     protocol CallSiteSyntax {
+         var context: SourceFileContext { get }
+         func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite?
+         // Has a default (no locals); override to recognise typed/constructed local declarations.
+         func localBindings(in body: Node, scope: CallSiteScope) -> [String: String]
+     }
+
+     protocol AssignmentSyntax {
+         var context: SourceFileContext { get }
+         func resolveAssignment(_ node: Node) -> VariableAssignment?
+     }
+     ```
+
+     Both answer questions about a *single node* and hold no mutable state; never write a traversal
+     in one — the recursion lives in `CallSiteResolver`/`AssignmentResolver`, which each wrap a
+     syntax value. `CallSiteScope` is the per-body lookup table (`knownProperties`, `knownTypeNames`,
+     `knownPropertyNames`, `knownMethodReturnTypes`) that keeps resolution conservative — a call site
+     is only captured when its receiver is provably a known type, everything else is dropped. Build
+     one per member from `MemberIndex(members:)` (`AcaiCore`), which turns a type's already-extracted
+     members into those four maps in one step:
+     `CallSiteScope(members: MemberIndex(members: fields), knownTypeNames: declarations.declaredTypeNames)`.
    - Construct each shared resolver **once**, in the extractor's `init`, and store it:
-     `CallSiteResolver`, `AssignmentResolver`, `FieldReadResolver`, and — if your grammar names its
-     member-access fields — `MemberCallResolver` with a `MemberCallGrammar`. Rebuilding a
-     collaborator per call site is the specific anti-pattern this shape replaced.
+     `CallSiteResolver(syntax:)`, `AssignmentResolver(syntax:)`,
+     `FieldReadResolver(context:identifierTypes:)`, and — if your grammar names its member-access
+     fields — `MemberCallResolver(context:grammar:)` with a
+     `MemberCallGrammar(selfNodeType:memberAccessType:memberField:)`. Rebuilding a collaborator per
+     call site is the specific anti-pattern this shape replaced.
+   - For assignment right-hand sides, classify literals with `LiteralClassifier(context:literals:)`
+     against a `LiteralNodeTypes(boolean:numeric:string:nilLiteral:interpolationChildTypes:)` table of
+     your grammar's node types, falling back to `node.expressionSnippet(in:context)` (an opaque
+     expression) when nothing matches.
+   - For modifier/access-level parsing, build one
+     `ModifierClassifier(defaultAccessLevel:annotationNodeTypes:classify:postProcess:)` and call
+     `.modifierInfo(for: modifiersNode, in: context)` per declaration — `JavaExtractor` and
+     `KotlinExtractor` each hold one instance with their own lookup table.
    - Reach for the shared pieces before writing your own: `TypeNamePrepass` (the declared-type
-     pre-pass), `MemberIndex` / `UnambiguousTypeNames` (property and return-type maps),
-     `LiteralClassifier` + `LiteralNodeTypes`, `ModifierClassifier`, `ParseDiagnosticsCollector`,
-     `Node.cyclomaticComplexity(branchKinds:)`, `Node.referencedTypeNames(in:)`, and
+     pre-pass, run in `init` before its result is captured), `MemberIndex` / `UnambiguousTypeNames`
+     (property and return-type maps), `LiteralClassifier` + `LiteralNodeTypes`, `ModifierClassifier`,
+     `ParseDiagnosticsCollector` (already wired for you by `TreeSitterGrammar.parse` — don't call it
+     yourself), `Node.cyclomaticComplexity(branchKinds:)`, `Node.referencedTypeNames(in:)`, and
      `TypeReference.relationship(kind:source:)`.
    - Split what remains by responsibility into stateless value types that take their dependencies as
-     stored `let`s — `<Lang>TypeReferenceResolver`, `<Lang>MemberExtractor`,
-     `<Lang>ParameterExtractor`, and so on. Anything with no state and no `Node` belongs on a value:
-     a method in an `extension` on `Node` or `String`, never a caseless enum of `static func`s.
+     stored `let`s — `<Lang>TypeDeclarationExtractor`, `<Lang>MemberExtractor`,
+     `<Lang>ParameterExtractor`, `<Lang>BaseClassResolver`, `<Lang>TypeReferenceResolver`. Each takes
+     only what it needs (`context`, plus any collaborator it depends on) and returns a value — never
+     a mutating method on the extractor itself. A method that assembles a `Member` from
+     already-resolved pieces takes a `Signature` (the declaration's own syntax — decorators,
+     parameters, access level) and a `ResolvedReferences` (the call sites/assignments/field reads the
+     caller already computed) rather than a long parameter list, e.g.
+     `PythonMemberExtractor.callable(_:signature:references:)`. Anything with no state and no `Node`
+     belongs on a value: a method in an `extension` on `Node` or `String`, never a caseless enum of
+     `static func`s.
 
 6. **Language identity + quirks** — create `Sources/Acai<Lang>/<Lang>Language.swift` with:
    - `extension CodeArtifact.SourceLanguage { public static let <lang> = .init(rawValue: "<lang>") }`

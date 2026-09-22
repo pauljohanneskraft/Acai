@@ -29,27 +29,51 @@ public struct StronglyConnectedComponents: Sendable {
         mutating func run() -> [Set<String>] {
             let nodes = Set(adjacency.keys).union(adjacency.values.flatMap { $0 }).sorted()
             for node in nodes where indices[node] == nil {
-                strongConnect(node)
+                strongConnect(from: node)
             }
             return components
         }
 
-        private mutating func strongConnect(_ node: String) {
+        /// Tarjan's algorithm with an explicit frame stack instead of recursion, so depth is
+        /// bounded by heap, not by call-stack size — a long dependency chain would otherwise
+        /// overflow the stack one recursive call per edge.
+        private mutating func strongConnect(from start: String) {
+            var frames: [SearchFrame] = [makeFrame(for: start)]
+
+            while var frame = frames.popLast() {
+                var didDescend = false
+                while frame.nextIndex < frame.neighbors.count {
+                    let next = frame.neighbors[frame.nextIndex]
+                    frame.nextIndex += 1
+                    if indices[next] == nil {
+                        frames.append(frame)
+                        frames.append(makeFrame(for: next))
+                        didDescend = true
+                        break
+                    } else if onStack.contains(next) {
+                        lowlinks[frame.node] = min(lowlinks[frame.node]!, indices[next]!)
+                    }
+                }
+                if didDescend { continue }
+
+                finishComponent(for: frame.node)
+                if let parentIndex = frames.indices.last {
+                    let parent = frames[parentIndex].node
+                    lowlinks[parent] = min(lowlinks[parent]!, lowlinks[frame.node]!)
+                }
+            }
+        }
+
+        private mutating func makeFrame(for node: String) -> SearchFrame {
             indices[node] = index
             lowlinks[node] = index
             index += 1
             stack.append(node)
             onStack.insert(node)
+            return SearchFrame(node: node, neighbors: (adjacency[node] ?? []).sorted())
+        }
 
-            for next in (adjacency[node] ?? []).sorted() {
-                if indices[next] == nil {
-                    strongConnect(next)
-                    lowlinks[node] = min(lowlinks[node]!, lowlinks[next]!)
-                } else if onStack.contains(next) {
-                    lowlinks[node] = min(lowlinks[node]!, indices[next]!)
-                }
-            }
-
+        private mutating func finishComponent(for node: String) {
             guard lowlinks[node] == indices[node] else { return }
             var component: Set<String> = []
             while let popped = stack.popLast() {
@@ -63,4 +87,12 @@ public struct StronglyConnectedComponents: Sendable {
             }
         }
     }
+}
+
+/// One in-progress `strongConnect` call: the node it's visiting, that node's sorted neighbors, and
+/// how far through them it had gotten before it was suspended in favor of an unvisited neighbor.
+private struct SearchFrame {
+    let node: String
+    let neighbors: [String]
+    var nextIndex = 0
 }
