@@ -38,7 +38,7 @@ struct NewProjectSheet: View {
             // macOS's Form leaves almost no gap before the toolbar buttons; add padding here on
             // the Form itself, not the Section (Section-level padding distributes per row and
             // throws off the Title field's vertical centering). iOS already has enough room.
-            .padding(.bottom, 8)
+            .padding(.bottom, Spacing.s)
             .frame(maxWidth: 360)
             #else
             .presentationDetents([.medium])

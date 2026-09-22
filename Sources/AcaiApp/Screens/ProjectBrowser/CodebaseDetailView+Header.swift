@@ -8,10 +8,10 @@ extension CodebaseDetailView {
     /// and the actions (index status + branch picker/Pull, or Reindex) don't both fit — so compact
     /// width gets its own actions row underneath instead of squeezing everything into one line.
     func headerSection(codebase: Codebase) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.m) {
             Group {
                 if horizontalSizeClass == .compact {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: Spacing.m) {
                         headerTitleRow(codebase: codebase)
                         headerActionsRow(codebase: codebase)
                     }
@@ -67,7 +67,7 @@ extension CodebaseDetailView {
             .accessibilityIdentifier("codebaseDetail.staleBanner.reindexButton")
             AsyncOperationStatusView(identifierPrefix: "codebaseDetail.staleBanner.reindex", phase: reindexPhase)
         }
-        .padding(8)
+        .padding(Spacing.s)
         .background(Color.orange.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityIdentifier("codebaseDetail.staleBanner")
@@ -82,7 +82,7 @@ extension CodebaseDetailView {
                 .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 TextField(text: Binding(
                     get: { codebase.name },
                     set: { model.editing.updateCodebase(id: codebase.id, name: $0) }
@@ -172,7 +172,7 @@ extension CodebaseDetailView {
     }
 
     private func indexStatus(codebase: Codebase) -> some View {
-        VStack(alignment: .trailing, spacing: 2) {
+        VStack(alignment: .trailing, spacing: Spacing.xxs) {
             if let date = codebase.lastIndexed {
                 let formatted = date.formatted(date: .abbreviated, time: .shortened)
                 Text(.app("View.CodebaseDetailView.LastIndexed \(formatted)"))

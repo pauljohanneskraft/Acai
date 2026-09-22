@@ -71,13 +71,13 @@ struct StateDiagramSidebar: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             Picker("", selection: $tab) {
                 Text(.app("View.StateDiagramSidebar.Settings")).tag(StateDiagramSidebarTab.settings)
                 Text(.app("View.StateDiagramSidebar.Inspector")).tag(StateDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(8)
+            .padding(Spacing.s)
 
             Divider()
 
@@ -117,7 +117,7 @@ struct StateDiagramSidebar: View {
                     .foregroundStyle(.secondary)
 
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         PickerFilterField(text: $scopeQuery)
                         Picker(.app("View.StateDiagramSidebar.Scope"), selection: $draftScope) {
                             Text(.app("View.StateDiagramSidebar.Select")).tag(Scope?.none)
@@ -141,7 +141,7 @@ struct StateDiagramSidebar: View {
                 }
 
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         PickerFilterField(text: $variableQuery)
                         Picker(.app("View.StateDiagramSidebar.Variable"), selection: $draftVariableName) {
                             Text(.app("View.StateDiagramSidebar.Select")).tag("")
@@ -285,7 +285,7 @@ extension StateDiagramSidebar {
     }
 
     private var emptyInspectorState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)

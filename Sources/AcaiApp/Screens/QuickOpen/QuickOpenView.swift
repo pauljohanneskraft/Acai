@@ -23,7 +23,7 @@ struct QuickOpenView: View {
     private var controller: QuickOpenController { QuickOpenController(model: model) }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             searchField
             Divider()
             resultsList
@@ -56,7 +56,7 @@ struct QuickOpenView: View {
                 .accessibilityLabel(.app("View.QuickOpenView.ClearSearch"))
             }
         }
-        .padding(10)
+        .padding(Spacing.s)
     }
 
     @ViewBuilder
@@ -172,7 +172,7 @@ private struct QuickOpenResultRow: View {
                 Image(systemName: entry.systemImage)
                     .foregroundStyle(.secondary)
                     .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(verbatim: entry.name)
                     Text(verbatim: entry.subtitle)
                         .font(.caption)

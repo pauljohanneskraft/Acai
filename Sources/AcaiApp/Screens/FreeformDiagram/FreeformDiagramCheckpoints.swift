@@ -67,7 +67,7 @@ struct FreeformDiagramCheckpointsView: View {
 
     private func checkpointRow(_ checkpoint: FreeformDiagram.Checkpoint) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(verbatim: checkpoint.name)
                     .font(.body)
                 Text(verbatim: checkpoint.createdDate.formatted(date: .abbreviated, time: .shortened))

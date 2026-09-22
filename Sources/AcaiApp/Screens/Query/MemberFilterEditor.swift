@@ -9,7 +9,7 @@ struct MemberFilterEditor: View {
     @Binding var filter: MemberFilter
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(localized: title).font(.caption.bold()).foregroundStyle(.secondary)
             Picker(.app("View.MemberFilterEditor.Kind"), selection: $filter.kind) {
                 Text(.app("View.MemberFilterEditor.AnyKind")).tag(MemberKind?.none)

@@ -15,7 +15,7 @@ struct MethodNodeView: View {
             .foregroundColor(palette.canvasInk.primaryInk)
             .lineLimit(1)
             .truncationMode(.middle)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, Spacing.s)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(RoundedRectangle(cornerRadius: 8).fill(palette.freeformDecorations.methodFill))
             .overlay(

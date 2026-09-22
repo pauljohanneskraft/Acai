@@ -74,7 +74,7 @@ extension FreeformDiagramInspector {
     }
 
     private func addPropertyRow(nodeID: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             TextField(text: $newPropertyName) {
                 Text(.app("View.FreeformDiagramInspector.MemberName"))
             }
@@ -143,7 +143,7 @@ extension FreeformDiagramInspector {
     }
 
     private func addMethodRow(nodeID: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             TextField(text: $newMethodName) {
                 Text(.app("View.FreeformDiagramInspector.MemberName"))
             }

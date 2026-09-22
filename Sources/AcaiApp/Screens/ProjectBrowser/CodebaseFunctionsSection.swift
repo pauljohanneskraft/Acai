@@ -10,7 +10,7 @@ struct CodebaseFunctionsSection: View {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.freestandingFunctions.count)"))
         } content: {
             let sortedFunctions = artifact.freestandingFunctions.sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: 1) {
+            LazyVStack(spacing: Spacing.xxs) {
                 ForEach(Array(sortedFunctions.enumerated()), id: \.offset) { _, function in
                     functionRow(function: function)
                 }
@@ -27,7 +27,7 @@ struct CodebaseFunctionsSection: View {
     }
 
     private func functionRow(function: Member) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             Text(.app("View.CodebaseFunctionsSection.Ƒ"))
                 .font(.caption.bold())
                 .foregroundStyle(.white)
@@ -45,13 +45,13 @@ struct CodebaseFunctionsSection: View {
             Text(verbatim: function.accessLevel.rawValue)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
+                .padding(.horizontal, Spacing.xs)
+                .padding(.vertical, Spacing.xxs)
                 .background(Color.secondary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 3))
         }
         .revealsInFinder(codebase: codebase, relativePath: function.location?.filePath)
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 }

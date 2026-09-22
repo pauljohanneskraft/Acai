@@ -51,7 +51,7 @@ struct StateConfigSheet: View {
 
                 Section {
                     LabeledContent {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: Spacing.xs) {
                             PickerFilterField(text: $scopeQuery)
                             Picker(.app("View.StateConfigSheet.Scope"), selection: $scope) {
                                 Text(.app("View.StateConfigSheet.Select")).tag(Scope?.none)
@@ -75,7 +75,7 @@ struct StateConfigSheet: View {
                     }
 
                     LabeledContent {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: Spacing.xs) {
                             PickerFilterField(text: $variableQuery)
                             Picker(.app("View.StateConfigSheet.Variable"), selection: $variableName) {
                                 Text(.app("View.StateConfigSheet.Select")).tag("")

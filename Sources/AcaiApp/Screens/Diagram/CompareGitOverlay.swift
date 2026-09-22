@@ -44,9 +44,9 @@ struct CompareOverlayButton: View {
         // silently ballooning while everything around it stays put.
         .dynamicTypeSize(.large)
         .buttonStyle(.plain)
-        .padding(8)
+        .padding(Spacing.s)
         .background(isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.thinMaterial), in: Circle())
-        .padding(10)
+        .padding(Spacing.s)
         .help(isOn
             ? .app("View.CompareGitOverlay.ComparingVs \(diagram.comparisonGitRef ?? "")")
             : .app("View.CompareGitOverlay.CompareVsGit"))
@@ -59,7 +59,7 @@ struct CompareOverlayButton: View {
             // Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
             // `NavigationStack` presented in a `.popover` renders its items in the presenting
             // window's own toolbar instead of inside the popover.
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 HStack {
                     Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
                     Spacer()
@@ -188,7 +188,7 @@ struct CompareGitPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             List(rows) { row in
                 Button {
                     select(row)
@@ -213,7 +213,7 @@ struct CompareGitPanel: View {
                 if newValue == nil { isEditingCustomRef = false }
             }
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.m) {
                 if isEditingCustomRef {
                     TextField(text: $customRefText) {
                         Text(.app("View.CompareGitPanel.RefPlaceholder"))
@@ -232,7 +232,7 @@ struct CompareGitPanel: View {
                     findingsSections
                 }
             }
-            .padding(16)
+            .padding(Spacing.l)
         }
         .frame(minWidth: 260, alignment: .leading)
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
@@ -265,7 +265,7 @@ struct CompareGitPanel: View {
         case .ref(let ref):
             Text(verbatim: ref.name)
         case .changeRequest(let pullRequest):
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(verbatim: "#\(pullRequest.number) \(pullRequest.title)")
                     .lineLimit(2)
                 pullRequest.pickerDetail
@@ -318,7 +318,7 @@ struct CompareGitPanel: View {
                 }
             }
         } else if !isFullyLoaded {
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.xs) {
                 ProgressView().controlSize(.small)
                 Text(.app("View.CompareGitPanel.Loading \(diagram.comparisonGitRef ?? "")"))
                     .font(.caption)
@@ -349,7 +349,7 @@ struct CompareGitPanel: View {
 
     private var changedFilesSection: some View {
         DisclosureGroup(.app("View.CompareGitPanel.ChangedFiles \(changedFiles.count)")) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 ForEach(changedFiles) { entry in
                     changedFileRow(entry)
                 }
@@ -364,7 +364,7 @@ struct CompareGitPanel: View {
         let reference: CodeElementReference? = entry.typeIDs.count == 1
             ? entry.typeIDs.first.map { .type(id: $0) } : nil
 
-        return HStack(spacing: 6) {
+        return HStack(spacing: Spacing.xs) {
             Button {
                 model.toggleComparisonFileReviewed(diagramID: diagram.id, filePath: entry.filePath)
             } label: {

@@ -106,7 +106,7 @@ struct ProjectDetailView: View {
 
     private func regularContent(project: Project, index: Int) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 projectHeader(project: project, index: index, showActions: !isEmpty(project))
 
                 Divider()
@@ -114,7 +114,7 @@ struct ProjectDetailView: View {
                 Divider()
                 deleteProjectSection
                     .padding(.horizontal)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, Spacing.m)
             }
             // On a wide window, an unconstrained VStack lets `Spacer()`s inside each row stretch
             // until content (e.g. a codebase row's status icon) sits far from the row it belongs
@@ -139,14 +139,14 @@ struct ProjectDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, Spacing.m)
             } else {
-                LazyVStack(spacing: 1) {
+                LazyVStack(spacing: Spacing.xxs) {
                     ForEach(sortedCodebases) { codebase in
                         codebaseRow(codebase: codebase)
                     }
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, Spacing.s)
             }
 
             Divider()
@@ -157,14 +157,14 @@ struct ProjectDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, Spacing.m)
             } else {
-                LazyVStack(spacing: 1) {
+                LazyVStack(spacing: Spacing.xxs) {
                     ForEach(freeformDiagrams) { diagram in
                         freeformDiagramRow(diagram: diagram)
                     }
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, Spacing.s)
             }
         }
     }
@@ -281,7 +281,7 @@ struct ProjectDetailView: View {
     }
 
     private var emptyProjectPlaceholder: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: "tray.full")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
@@ -300,7 +300,7 @@ struct ProjectDetailView: View {
             Spacer()
         }
         .padding(.horizontal)
-        .padding(.vertical, 12)
+        .padding(.vertical, Spacing.m)
     }
 
     // MARK: - Project Header (Editable)
@@ -310,7 +310,7 @@ struct ProjectDetailView: View {
     /// showing them here too would duplicate them. On iPad these actions live in the nav bar
     /// toolbar instead; macOS keeps them here, matching its persistent in-content controls pattern.
     private func projectHeader(project: Project, index: Int, showActions: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             Image(systemName: "tray.full")
                 .font(.title)
                 .foregroundStyle(.primary)
@@ -343,7 +343,7 @@ struct ProjectDetailView: View {
 
 private extension ProjectDetailView {
     func projectTitleFields(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             TextField(text: Binding(
                 get: { model.store.projects[safe: index]?.title ?? "" },
                 set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
@@ -385,7 +385,7 @@ extension ProjectDetailView {
                 // `List` row already gets its own row insets, so baking padding into the shared
                 // content would double it up there.
                 .padding(.horizontal)
-                .padding(.vertical, 6)
+                .padding(.vertical, Spacing.xs)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
@@ -400,7 +400,7 @@ extension ProjectDetailView {
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(verbatim: codebase.name)
                     .fontWeight(.medium)
                 Text(verbatim: URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)

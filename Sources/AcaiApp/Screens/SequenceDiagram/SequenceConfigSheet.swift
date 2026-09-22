@@ -101,7 +101,7 @@ struct SequenceConfigSheet: View {
 
             Section {
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         PickerFilterField(text: $typeQuery)
                         Picker(.app("View.SequenceConfigSheet.Type"), selection: $entryTypeName) {
                             Text(localized: freeFunctionNames.isEmpty
@@ -124,7 +124,7 @@ struct SequenceConfigSheet: View {
                 }
 
                 LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         PickerFilterField(text: $methodQuery)
                         Picker(.app("View.SequenceConfigSheet.Method"), selection: $entryMethodName) {
                             Text(.app("View.SequenceConfigSheet.Select")).tag("")

@@ -9,7 +9,7 @@ struct FreeformDiagramCatalog: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Spacing.l) {
                 Text(.app("View.FreeformDiagramCatalog.NodeCatalog"))
                     .font(.headline)
                     .padding(.horizontal)
@@ -50,7 +50,7 @@ struct FreeformDiagramCatalog: View {
     // MARK: - Node Type Catalog
 
     private var nodeTypeCatalog: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.m) {
             ForEach(FreeformDiagramNodeKind.CatalogGroup.allCases, id: \.rawValue) { group in
                 catalogSection(group.rawValue) {
                     ForEach(FreeformDiagramNodeKind.cases(in: group)) { kind in
@@ -65,12 +65,12 @@ struct FreeformDiagramCatalog: View {
         _ title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(verbatim: title)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
-                .padding(.top, 2)
+                .padding(.top, Spacing.xxs)
             content()
         }
     }
@@ -90,7 +90,7 @@ struct FreeformDiagramCatalog: View {
                 Spacer()
             }
             .padding(.horizontal)
-            .padding(.vertical, 6)
+            .padding(.vertical, Spacing.xs)
             .background(isPending ? Color.accentColor.opacity(0.15) : Color.clear)
         }
         .buttonStyle(.plain)
@@ -103,7 +103,7 @@ struct FreeformDiagramCatalog: View {
     // MARK: - Relationship Catalog
 
     private var relationshipCatalog: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Spacing.xs) {
             relationshipButton(label: "Inheritance", kind: .inheritance)
             relationshipButton(label: "Conformance", kind: .conformance)
             relationshipButton(label: "Composition", kind: .composition)
@@ -131,7 +131,7 @@ struct FreeformDiagramCatalog: View {
                 Spacer()
             }
             .padding(.horizontal)
-            .padding(.vertical, 6)
+            .padding(.vertical, Spacing.xs)
         }
         .buttonStyle(.plain)
         .disabled(viewModel.selectedNodeIDs.count != 2)
@@ -146,7 +146,7 @@ struct FreeformDiagramCatalog: View {
         let lifelines = viewModel.sequence.orderedLifelineSelection
         let twoSelected = lifelines.count == 2
         let oneSelected = lifelines.count == 1
-        return VStack(spacing: 4) {
+        return VStack(spacing: Spacing.xs) {
             messageButton(label: "Message (sync)", icon: "arrow.right", kind: .synchronous,
                           enabled: twoSelected)
             messageButton(label: "Message (async)", icon: "arrow.right.to.line", kind: .asynchronous,
@@ -173,7 +173,7 @@ struct FreeformDiagramCatalog: View {
         let states = viewModel.state.orderedStateSelection
         let twoSelected = states.count == 2
         let oneSelected = states.count == 1
-        return VStack(spacing: 4) {
+        return VStack(spacing: Spacing.xs) {
             Button {
                 if twoSelected {
                     viewModel.state.addTransition(from: states[0], to: states[1])
@@ -190,7 +190,7 @@ struct FreeformDiagramCatalog: View {
                     Spacer()
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 6)
+                .padding(.vertical, Spacing.xs)
             }
             .buttonStyle(.plain)
             .disabled(!twoSelected && !oneSelected)
@@ -227,7 +227,7 @@ struct FreeformDiagramCatalog: View {
                 Spacer()
             }
             .padding(.horizontal)
-            .padding(.vertical, 6)
+            .padding(.vertical, Spacing.xs)
         }
         .buttonStyle(.plain)
         .disabled(!enabled)

@@ -15,7 +15,7 @@ struct LicensesSection: View {
                     DisclosureGroup {
                         licenseDetail(dependency)
                     } label: {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
                             Text(verbatim: dependency.name)
                             Text(verbatim: dependency.licenseIdentifier)
                                 .font(.caption)
@@ -41,7 +41,7 @@ struct LicensesSection: View {
 
     @ViewBuilder
     private func licenseDetail(_ dependency: DependencyLicense) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.s) {
             if let notes = dependency.notes {
                 Text(verbatim: notes)
                     .font(.caption)
@@ -57,7 +57,7 @@ struct LicensesSection: View {
             .frame(maxHeight: 220)
             .accessibilityIdentifier("licenses.text.\(dependency.name)")
         }
-        .padding(.top, 4)
+        .padding(.top, Spacing.xs)
     }
 
     private func load() async {

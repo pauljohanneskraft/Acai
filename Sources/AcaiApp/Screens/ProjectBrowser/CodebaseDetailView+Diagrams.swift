@@ -13,19 +13,19 @@ extension CodebaseDetailView {
         let usableWidth = contentWidth - 32 // outer .padding(.horizontal) on each side
         let fitting = max(1, Int((usableWidth + 12) / (target + 12)))
         let columns = max(1, min(count, fitting))
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: columns)
+        return Array(repeating: GridItem(.flexible(), spacing: Spacing.m), count: columns)
     }
 
     // MARK: - Diagrams
 
     func diagramsBar(codebase: Codebase, artifact: CodeArtifact) -> some View {
-        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: 12) {
+        LazyVGrid(columns: cardColumns(count: DiagramType.allCases.count), spacing: Spacing.m) {
             ForEach(DiagramType.allCases) { type in
                 diagramButton(codebase: codebase, type: type)
             }
         }
         .padding(.horizontal)
-        .padding(.bottom, 12)
+        .padding(.bottom, Spacing.m)
         .onPreferenceChange(CardHeightPreferenceKey.self) { height in
             if abs(diagramCardHeight - height) > 0.5 { diagramCardHeight = height }
         }
@@ -54,7 +54,7 @@ extension CodebaseDetailView {
                 model.open(.generatedDiagram(id))
             }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.m) {
                 Image(systemName: type.systemImage)
                     .font(.title2.bold())
                 Text(localized: type.title)
@@ -62,8 +62,8 @@ extension CodebaseDetailView {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 12)
+            .padding(.vertical, Spacing.m)
+            .padding(.horizontal, Spacing.m)
             .background(GeometryReader { proxy in
                 Color.clear.preference(key: CardHeightPreferenceKey.self, value: proxy.size.height)
             })

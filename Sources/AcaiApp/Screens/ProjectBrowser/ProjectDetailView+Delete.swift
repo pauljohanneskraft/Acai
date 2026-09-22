@@ -11,7 +11,7 @@ extension ProjectDetailView {
             // Matches the 32×32 icon frame `codebaseRowContent`/`freeformDiagramRowContent` use
             // above, so this row's text lines up with theirs instead of a plain `Label`'s
             // line-height-sized icon shifting it out of alignment.
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.s) {
                 Image(systemName: "trash")
                     .font(.title2)
                     .frame(width: 32, height: 32)

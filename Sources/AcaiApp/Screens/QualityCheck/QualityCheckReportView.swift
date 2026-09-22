@@ -52,7 +52,7 @@ struct QualityCheckReportView: View {
     }
 
     private func violationList(_ report: QualityReport) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.s) {
             if showsSummary {
                 let findings = report.violations.count
                 let rules = report.checkedRuleCount
@@ -76,11 +76,11 @@ struct QualityCheckPlaceholder: View {
     var systemImage: String = "doc.text.magnifyingglass"
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: systemImage).font(.system(size: 28)).foregroundStyle(.secondary)
             Text(localized: text).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(24)
+        .padding(Spacing.xl)
     }
 }

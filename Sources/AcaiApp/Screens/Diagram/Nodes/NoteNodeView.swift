@@ -9,7 +9,7 @@ struct NoteNodeView: View {
     @Environment(\.diagramPalette) private var palette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             if !name.isEmpty {
                 Text(verbatim: name)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
@@ -20,7 +20,7 @@ struct NoteNodeView: View {
                 .foregroundColor(text.isEmpty ? palette.canvasInk.mutedInk : palette.canvasInk.secondaryInk)
                 .lineLimit(8)
         }
-        .padding(10)
+        .padding(Spacing.s)
         .frame(minWidth: 100, alignment: .leading)
         .background(palette.freeformDecorations.noteFill)
         .clipShape(RoundedRectangle(cornerRadius: 2))

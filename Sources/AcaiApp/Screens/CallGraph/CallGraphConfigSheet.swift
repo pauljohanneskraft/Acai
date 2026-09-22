@@ -25,17 +25,17 @@ struct CallGraphConfigSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.l) {
             Text(.app("View.CallGraphConfigSheet.NewCallGraph"))
                 .font(.title2.bold())
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.m) {
                 Text(.app("View.CallGraphConfigSheet.PickScopeEveryMethod"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         PickerFilterField(text: $scopeQuery)
                         Picker(.app("View.CallGraphConfigSheet.Scope"), selection: $scope) {
                             Text(.app("View.CallGraphConfigSheet.WholeCodebase")).tag(CallGraphScope.wholeCodebase)
@@ -72,7 +72,7 @@ struct CallGraphConfigSheet: View {
                     .accessibilityIdentifier("callGraphConfig.createButton")
             }
         }
-        .padding(20)
+        .padding(Spacing.l)
         .frame(maxWidth: 460)
     }
 

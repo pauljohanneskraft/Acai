@@ -5,13 +5,13 @@ import SwiftUI
 /// Split from `FreeformDiagramView.swift` only to stay under `type_body_length`.
 extension FreeformDiagramView {
     var sidebarContent: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             Picker("", selection: $sidebarTab) {
                 Text(.app("View.FreeformDiagramView.Catalog")).tag(SidebarTab.catalog)
                 Text(.app("View.FreeformDiagramView.Inspector")).tag(SidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(8)
+            .padding(Spacing.s)
 
             Divider()
 

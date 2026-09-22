@@ -67,7 +67,7 @@ struct MultiSelectionInspector<Item: Identifiable>: View where Item.ID == String
     }
 
     private func rowContent(_ item: Item) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             if let systemImage = rowIcon(item) {
                 Image(systemName: systemImage)
                     .foregroundStyle(.secondary)

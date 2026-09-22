@@ -181,7 +181,7 @@ struct StateDiagramView: View {
     // MARK: - Failure / unconfigured states
 
     private func failureState(_ error: StateDiagramAnalysisError) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.l) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -203,7 +203,7 @@ struct StateDiagramView: View {
     }
 
     private var unconfiguredState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.l) {
             Image(systemName: "circle.hexagonpath")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)

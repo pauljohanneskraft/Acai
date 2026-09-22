@@ -115,7 +115,7 @@ struct HotspotChartView: View {
     /// Only an app-managed clone offers to fetch more: deepening a local folder's own repository
     /// would change the user's checkout, which the app never does.
     private var historyNotFetchedState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: "clock.badge.exclamationmark").font(.system(size: 28)).foregroundStyle(.secondary)
             if codebase.managedCheckout != nil, let remoteURL = codebase.repository?.remoteURL {
                 Text(.app("View.HotspotChartView.HistoryNotFetched"))
@@ -135,14 +135,14 @@ struct HotspotChartView: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(24)
+        .padding(Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("hotspot.historyNotFetched")
     }
 
     private var loadingState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             ProgressView()
             Text(.app("View.HotspotChartView.WalkingCommitHistory")).foregroundStyle(.secondary)
         }
@@ -151,11 +151,11 @@ struct HotspotChartView: View {
     }
 
     private func statusState(identifier: String, systemImage: String, text: LocalizedStringResource) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: systemImage).font(.system(size: 28)).foregroundStyle(.secondary)
             Text(localized: text).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
-        .padding(24)
+        .padding(Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(identifier)
     }
@@ -207,7 +207,7 @@ struct HotspotChartView: View {
                         .padding()
                 } else {
                     List(data.hotspots) { point in
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: Spacing.xs) {
                             HStack {
                                 Image(systemName: "flame.fill")
                                 Text(verbatim: point.fileName).font(.callout.bold())
