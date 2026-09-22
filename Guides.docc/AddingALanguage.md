@@ -27,8 +27,7 @@ a *single node*. Declaration bookkeeping and naming live one level up, in
 [DeclarationBuilder](/documentation/acaicore/declarationbuilder), which your extractor **owns rather
 than conforms to**.
 
-`AcaiPython` is the worked example to copy. The older plugins still use a single monolithic
-extractor type; they are being migrated, and a new language should not follow them.
+`AcaiPython` is the worked example to copy; every other plugin follows the same shape.
 
 ### 2. A `SourceLanguage` constant
 
