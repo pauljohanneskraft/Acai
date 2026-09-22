@@ -64,7 +64,14 @@ extension AcaiCommand {
         private func renderMetrics(_ artifact: CodeArtifact) throws {
             let callScope = try CallGraphScopeOption(raw: scope).resolved()
             let report = CallGraphMetrics(artifact: artifact, scope: callScope).report
-            let rendered = format == .json ? try JSONReport(report).text : metricsHuman(report)
+            let rendered: String
+            if format == .json {
+                let payload = CallGraphMetricsPayload(
+                    callGraph: report, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
+            } else {
+                rendered = metricsHuman(report)
+            }
             try rendered.writeOutput(to: output, label: "call graph")
         }
 
@@ -88,7 +95,14 @@ extension AcaiCommand {
         private func renderCycles(_ artifact: CodeArtifact) throws {
             let callScope = try CallGraphScopeOption(raw: scope).resolved()
             let clusters = MethodCycles(artifact: artifact, scope: callScope).clusters
-            let rendered = format == .json ? try JSONReport(clusters).text : cyclesHuman(clusters)
+            let rendered: String
+            if format == .json {
+                let payload = CallGraphCyclesPayload(
+                    cycles: clusters, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
+            } else {
+                rendered = cyclesHuman(clusters)
+            }
             try rendered.writeOutput(to: output, label: "call cycles")
             if !clusters.isEmpty && !noFail { throw ExitCode.failure }
         }
@@ -109,7 +123,14 @@ extension AcaiCommand {
             let report = DeadCodeScan(
                 artifact: artifact,
                 languages: artifact.standardLanguageResolver).report
-            let rendered = format == .json ? try JSONReport(report).text : deadCodeHuman(report)
+            let rendered: String
+            if format == .json {
+                let payload = CallGraphDeadCodePayload(
+                    deadCode: report, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
+            } else {
+                rendered = deadCodeHuman(report)
+            }
             try rendered.writeOutput(to: output, label: "dead code")
         }
 
@@ -128,4 +149,21 @@ extension AcaiCommand {
             return lines.joined(separator: "\n") + "\n"
         }
     }
+}
+
+/// `health` lets a consumer of `acai callgraph --format json` (any mode) tell whether the report
+/// rests on a trustworthy parse without a separate `acai analyze --health` round trip.
+private struct CallGraphMetricsPayload: Encodable {
+    var callGraph: AcaiDiagram.CallGraphMetrics.Report
+    var health: HealthCheck.Summary
+}
+
+private struct CallGraphCyclesPayload: Encodable {
+    var cycles: [MethodCycles.Cluster]
+    var health: HealthCheck.Summary
+}
+
+private struct CallGraphDeadCodePayload: Encodable {
+    var deadCode: DeadCodeScan.Report
+    var health: HealthCheck.Summary
 }

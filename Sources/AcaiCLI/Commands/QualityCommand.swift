@@ -89,7 +89,8 @@ extension AcaiCommand {
             }
             let drift = baselineArtifact.map { ArtifactDiffer().diff(old: $0, new: artifact) }
 
-            try render(report: report, drift: drift).writeOutput(to: output, label: "quality report")
+            let health = HealthCheck(artifact: artifact).summary
+            try render(report: report, drift: drift, health: health).writeOutput(to: output, label: "quality report")
 
             // Emit the report before failing, so CI still shows it. --explore never fails.
             if !report.isPassing && !explore {
@@ -114,7 +115,7 @@ extension AcaiCommand {
             }
         }
 
-        private func render(report: QualityReport, drift: ArtifactDiff?) throws -> String {
+        private func render(report: QualityReport, drift: ArtifactDiff?, health: HealthCheck.Summary) throws -> String {
             switch format {
             case .human:
                 var text = report.humanReport()
@@ -123,14 +124,16 @@ extension AcaiCommand {
                 }
                 return text
             case .json:
-                return try JSONReport(QualityPayload(quality: report, drift: drift)).text
+                return try JSONReport(QualityPayload(quality: report, drift: drift, health: health)).text
             }
         }
     }
 }
 
-/// `drift` is omitted entirely from the JSON when no `--baseline` was given.
+/// `drift` is omitted entirely from the JSON when no `--baseline` was given. `health` lets a consumer
+/// tell whether the verdict rests on a trustworthy parse without a separate `acai analyze` round trip.
 private struct QualityPayload: Encodable {
     var quality: QualityReport
     var drift: ArtifactDiff?
+    var health: HealthCheck.Summary
 }

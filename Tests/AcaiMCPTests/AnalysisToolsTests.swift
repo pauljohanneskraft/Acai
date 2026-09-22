@@ -36,9 +36,11 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("acai_metrics", on: .standard, path: dir)
             let object = try #require(value.objectValue)
+            let metrics = try #require(object["metrics"]?.objectValue)
             let expected = try await engineArtifact(dir).computeMetrics()
-            #expect(object["types"]?.arrayValue?.count == expected.types.count)
-            #expect(object["modules"] != nil)
+            #expect(metrics["types"]?.arrayValue?.count == expected.types.count)
+            #expect(metrics["modules"] != nil)
+            #expect(number(object["health"]?.objectValue?["score"]) == 1)
         }
     }
 
@@ -46,12 +48,13 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("acai_inspect", on: .standard, path: dir)
-            let rows = try #require(value.objectValue?["items"]?.arrayValue)
+            let rows = try #require(value.objectValue?["types"]?.arrayValue)
             #expect(rows.contains { $0.objectValue?["qualifiedName"]?.stringValue == "Service" })
             let service = try #require(rows.first { $0.objectValue?["qualifiedName"]?.stringValue == "Service" })
             let location = try #require(service.objectValue?["location"]?.objectValue)
             #expect(location["filePath"]?.stringValue?.hasSuffix("Sample.swift") == true)
             #expect(location["line"]?.intValue != nil)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -60,9 +63,10 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
                 "acai_impact", on: .standard, path: dir, ["type": .string("Repository")])
-            let object = try #require(value.objectValue)
+            let object = try #require(value.objectValue?["impact"]?.objectValue)
             #expect(object["found"]?.boolValue == true)
             #expect((object["blastRadius"]?.intValue ?? 0) >= 1)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -71,8 +75,9 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             // No rules → the built-in curated smell budgets; the wide method breaches maxParameters.
             let value = try await MCPTestSupport.call("acai_quality", on: .standard, path: dir)
-            let findings = try #require(value.objectValue?["violations"]?.arrayValue)
+            let findings = try #require(value.objectValue?["quality"]?.objectValue?["violations"]?.arrayValue)
             #expect(findings.contains { ($0.objectValue?["message"]?.stringValue ?? "").contains("maxParameters") })
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -81,9 +86,10 @@ struct AnalysisToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
                 "acai_callgraph", on: .standard, path: dir, ["mode": .string("deadcode")])
-            let object = try #require(value.objectValue)
+            let object = try #require(value.objectValue?["deadCode"]?.objectValue)
             #expect(object["candidates"]?.arrayValue != nil)
             #expect(object["coverage"] != nil)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -91,9 +97,10 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call("acai_callgraph", on: .standard, path: dir)
-            let object = try #require(value.objectValue)
+            let object = try #require(value.objectValue?["callGraph"]?.objectValue)
             #expect((object["nodes"]?.arrayValue?.count ?? 0) >= 1)
             #expect(object["coverage"] != nil)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -104,7 +111,7 @@ struct AnalysisToolsTests {
             let value = try await MCPTestSupport.call(
                 "acai_quality", on: .standard, path: dir,
                 ["explore": .bool(true), "scope": .string("modules")])
-            #expect(value.objectValue?["violations"]?.arrayValue != nil)
+            #expect(value.objectValue?["quality"]?.objectValue?["violations"]?.arrayValue != nil)
         }
     }
 
@@ -136,6 +143,47 @@ struct AnalysisToolsTests {
             let value = try await MCPTestSupport.call(
                 "acai_analyze", on: .standard, path: dir, ["health": .bool(true)])
             #expect(number(value.objectValue?["score"]) == 1)
+        }
+    }
+
+    @Test func metricsHealthReflectsLowTrustParse() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call("acai_metrics", on: .standard, path: dir)
+            #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
+        }
+    }
+
+    @Test func qualityHealthReflectsLowTrustParse() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call("acai_quality", on: .standard, path: dir)
+            #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
+        }
+    }
+
+    @Test func callGraphHealthReflectsLowTrustParse() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call("acai_callgraph", on: .standard, path: dir)
+            #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
+        }
+    }
+
+    @Test func inspectHealthReflectsLowTrustParse() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call("acai_inspect", on: .standard, path: dir)
+            #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
+        }
+    }
+
+    @Test func impactHealthReflectsLowTrustParse() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call(
+                "acai_impact", on: .standard, path: dir, ["type": .string("Broken")])
+            #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
         }
     }
 

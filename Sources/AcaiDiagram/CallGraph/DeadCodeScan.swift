@@ -40,6 +40,7 @@ public struct DeadCodeScan: Sendable {
         let targeted = Set(graph.edges.map(\.to))
         let allTypes = Array(artifact.flattened())
         let witnesses = ProtocolWitnessIndex(types: allTypes)
+        let nodeIdentity = CallGraphNodeIdentity(types: allTypes)
 
         var candidates: [Candidate] = []
         for type in allTypes {
@@ -51,7 +52,7 @@ public struct DeadCodeScan: Sendable {
             // so never dead even without a direct call edge (the witness analogue of `override`).
             let requirementNames = witnesses.requirementNames(for: type)
             for member in type.members where member.kind == .method {
-                let id = "\(type.name).\(member.name)"
+                let id = "\(nodeIdentity.nodeName(for: type)).\(member.name)"
                 guard !targeted.contains(id),
                       !isEntryPoint(
                         member, inContract: isContract,

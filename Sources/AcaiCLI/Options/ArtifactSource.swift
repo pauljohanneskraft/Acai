@@ -50,7 +50,7 @@ struct ArtifactSource: ParsableArguments {
         } else {
             throw ValidationError("Either --from or --source must be specified.")
         }
-        artifact.warnIfParseErrors()
+        artifact.warnIfLowHealth()
         return artifact
     }
 

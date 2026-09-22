@@ -42,7 +42,7 @@ struct InspectEnumsCommandTests {
         }
     }
 
-    @Test func noEnumsProducesEmptyArray() async throws {
+    @Test func noEnumsProducesEmptyList() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("enums.json")
@@ -50,8 +50,21 @@ struct InspectEnumsCommandTests {
                 ["--source", dir.path, "--language", "swift", "--enums", "--output", output.path])
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
-            #expect(contents.hasPrefix("["))
+            #expect(contents.contains("\"enums\""))
             #expect(!contents.contains("\"cases\""))
+        }
+    }
+
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("enums.json")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--enums", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
         }
     }
 }

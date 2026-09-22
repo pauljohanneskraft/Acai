@@ -45,4 +45,31 @@ struct MetricsCommandTests {
             #expect(contents.contains("totalTypes"))
         }
     }
+
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.json")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
+
+    @Test func healthFieldReflectsLowTrustParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeLowTrustSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.json")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
+        }
+    }
 }

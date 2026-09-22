@@ -34,7 +34,8 @@ extension AcaiCommand {
             let rendered: String
             switch format {
             case .json:
-                rendered = try JSONReport(report).text
+                let payload = ImpactPayload(impact: report, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
             case .human:
                 rendered = humanReport(report)
             }
@@ -50,4 +51,11 @@ extension AcaiCommand {
             return lines.joined(separator: "\n") + "\n"
         }
     }
+}
+
+/// `health` lets a consumer of `acai impact --format json` tell whether the blast radius rests on a
+/// trustworthy parse without a separate `acai analyze --health` round trip.
+private struct ImpactPayload: Encodable {
+    var impact: ImpactAnalysis.Report
+    var health: HealthCheck.Summary
 }

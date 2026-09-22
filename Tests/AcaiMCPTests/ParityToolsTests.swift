@@ -20,9 +20,11 @@ struct ParityToolsTests {
                     name: "acai_diff",
                     arguments: ["pathOld": .string(old.path), "pathNew": .string(new.path)])
                 let object = try #require(result.structuredContent?.objectValue)
-                let addedIDs = (object["addedTypes"]?.arrayValue ?? [])
+                let diff = try #require(object["diff"]?.objectValue)
+                let addedIDs = (diff["addedTypes"]?.arrayValue ?? [])
                     .compactMap { $0.objectValue?["id"]?.stringValue ?? $0.stringValue }
                 #expect(addedIDs.contains { $0.contains("Added") })
+                #expect(object["health"] != nil)
             }
         }
     }
@@ -46,8 +48,9 @@ struct ParityToolsTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
                 "acai_callgraph", on: MCPTestSupport.testRegistry, path: dir, ["mode": .string("cycles")])
-            // no method cycles in the fixture, but a well-formed list inside the `items` envelope
-            #expect(value.objectValue?["items"]?.arrayValue != nil)
+            // no method cycles in the fixture, but a well-formed list alongside `health`
+            #expect(value.objectValue?["cycles"]?.arrayValue != nil)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -57,10 +60,11 @@ struct ParityToolsTests {
                 to: dir.appendingPathComponent("Direction.swift"), atomically: true, encoding: .utf8)
             let value = try await MCPTestSupport.call(
                 "acai_inspect", on: MCPTestSupport.testRegistry, path: dir, ["enums": .bool(true)])
-            let entries = try #require(value.objectValue?["items"]?.arrayValue)
+            let entries = try #require(value.objectValue?["enums"]?.arrayValue)
             let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "Direction" })
             let cases = try #require(direction.objectValue?["cases"]?.arrayValue)
             #expect(cases.count == 2)
+            #expect(value.objectValue?["health"] != nil)
         }
     }
 
@@ -74,6 +78,22 @@ struct ParityToolsTests {
             let dot = try await MCPTestSupport.callResult(
                 "acai_diagram", on: registry, path: dir, ["kind": .string("class"), "format": .string("dot")])
             #expect(MCPTestSupport.firstText(dot).contains("digraph"))
+        }
+    }
+
+    @Test func diagramAddsLowTrustNoticeBeforeDiagramText() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
+            let result = try await MCPTestSupport.callResult(
+                "acai_diagram", on: MCPTestSupport.testRegistry, path: dir,
+                ["kind": .string("class"), "format": .string("dot")])
+            #expect(result.content.count == 2)
+            #expect(MCPTestSupport.firstText(result).contains("Parse health"))
+            guard case let .text(diagram, _, _) = result.content.last else {
+                Issue.record("expected diagram text as the last content item")
+                return
+            }
+            #expect(diagram.contains("digraph"))
         }
     }
 

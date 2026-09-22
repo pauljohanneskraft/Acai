@@ -47,7 +47,8 @@ struct CallGraphCommandTests {
             // Sample source (Service → Repository) has no call cycle, so no failure exit.
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
-            #expect(contents.hasPrefix("["))
+            #expect(contents.hasPrefix("{"))
+            #expect(contents.contains("\"cycles\""))
         }
     }
 
@@ -113,6 +114,33 @@ struct CallGraphCommandTests {
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(!contents.contains("helper"))
+        }
+    }
+
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("callgraph.json")
+            var cmd = try CLITestSupport.parseCallGraph(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
+
+    @Test func healthFieldReflectsLowTrustParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeLowTrustSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("callgraph.json")
+            var cmd = try CLITestSupport.parseCallGraph(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
         }
     }
 }

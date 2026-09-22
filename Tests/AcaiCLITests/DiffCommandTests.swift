@@ -59,4 +59,47 @@ struct DiffCommandTests {
             #expect(report.contains("inheritance removed"))
         }
     }
+
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            let before = dir.appendingPathComponent("before", isDirectory: true)
+            let after = dir.appendingPathComponent("after", isDirectory: true)
+            try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: after, withIntermediateDirectories: true)
+            try CLITestSupport.writeSampleSwiftSource(in: before)
+            try CLITestSupport.writeSampleSwiftSource(in: after)
+
+            let outURL = dir.appendingPathComponent("out.json")
+            var cmd = try parseDiff([
+                "--source-old", before.path, "--source-new", after.path,
+                "--language", "swift", "--format", "json", "--output", outURL.path
+            ])
+            try await cmd.run()
+            let contents = try String(contentsOf: outURL, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
+
+    @Test func healthFieldReflectsLowTrustParseOnEitherSide() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            let before = dir.appendingPathComponent("before", isDirectory: true)
+            let after = dir.appendingPathComponent("after", isDirectory: true)
+            try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: after, withIntermediateDirectories: true)
+            try CLITestSupport.writeSampleSwiftSource(in: before)
+            try CLITestSupport.writeLowTrustSwiftSource(in: after)
+
+            let outURL = dir.appendingPathComponent("out.json")
+            var cmd = try parseDiff([
+                "--source-old", before.path, "--source-new", after.path,
+                "--language", "swift", "--format", "json", "--output", outURL.path
+            ])
+            try await cmd.run()
+            let contents = try String(contentsOf: outURL, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
+        }
+    }
 }

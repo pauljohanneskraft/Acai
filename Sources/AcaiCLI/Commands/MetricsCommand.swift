@@ -36,15 +36,24 @@ extension AcaiCommand {
         }
 
         mutating func run() async throws {
-            let metrics = try await generatedScope.applied(to: artifactSource.resolve()).computeMetrics()
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
+            let metrics = artifact.computeMetrics()
             let rendered: String
             switch format {
             case .json:
-                rendered = try JSONReport(metrics).text
+                let payload = MetricsPayload(metrics: metrics, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
             case .human:
                 rendered = MetricsTextReport(metrics: metrics, sort: sort, top: top).render() + "\n"
             }
             try rendered.writeOutput(to: output, label: "metrics")
         }
     }
+}
+
+/// `health` lets a consumer of `acai metrics --format json` tell whether the metrics rest on a
+/// trustworthy parse without a separate `acai analyze --health` round trip.
+private struct MetricsPayload: Encodable {
+    var metrics: CodeMetrics
+    var health: HealthCheck.Summary
 }

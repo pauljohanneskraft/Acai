@@ -96,14 +96,19 @@ public struct AnalysisService: Sendable {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
             )
-            print("Warning: No parser registered for language \(spec.language.rawValue); skipping it.")
             return nil
         }
         let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
         guard !files.isEmpty else { return nil }
 
         let parsed = try await parseFiles(files, using: codeParser, rootURL: rootURL)
-        return enrichPerLanguage(parsed, spec: spec, fallback: codeParser.configuration)
+        let enriched = enrichPerLanguage(
+            (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
+        )
+        guard !parsed.diagnostics.isEmpty else { return enriched }
+        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
+        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
@@ -133,13 +138,17 @@ public struct AnalysisService: Sendable {
     /// stable — is identical to serial parsing.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) async throws -> (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]) {
-        guard !files.isEmpty else { return ([:], []) }
+    ) async throws -> (
+        byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
+        order: [CodeArtifact.SourceLanguage],
+        diagnostics: [ParseDiagnostic]
+    ) {
+        guard !files.isEmpty else { return ([:], [], []) }
         let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
         let limit = max(1, min(files.count, concurrency))
 
-        var parsedByIndex = [CodeArtifact?](repeating: nil, count: files.count)
-        try await withThrowingTaskGroup(of: (index: Int, artifact: CodeArtifact?).self) { group in
+        var outcomeByIndex = [ParseOutcome?](repeating: nil, count: files.count)
+        try await withThrowingTaskGroup(of: (index: Int, outcome: ParseOutcome).self) { group in
             var nextIndex = 0
             func scheduleNext() {
                 guard nextIndex < files.count else { return }
@@ -148,42 +157,51 @@ public struct AnalysisService: Sendable {
                 let file = files[index]
                 group.addTask {
                     try Task.checkCancellation()
-                    let artifact = self.parseFile(file, using: codeParser, rootURL: rootURL)
+                    let outcome = self.parseFile(file, using: codeParser, rootURL: rootURL)
                     try Task.checkCancellation()
-                    return (index, artifact)
+                    return (index, outcome)
                 }
             }
             for _ in 0..<limit { scheduleNext() }
             while let next = try await group.next() {
-                parsedByIndex[next.index] = next.artifact
+                outcomeByIndex[next.index] = next.outcome
                 scheduleNext()
             }
         }
 
         var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
-        for case let parsed? in parsedByIndex {
-            let language = parsed.metadata.sourceLanguage
-            if let existing = byLanguage[language] {
-                byLanguage[language] = existing.merging(with: parsed)
-            } else {
-                byLanguage[language] = parsed
-                order.append(language)
+        var diagnostics: [ParseDiagnostic] = []
+        for case let outcome? in outcomeByIndex {
+            switch outcome {
+            case .parsed(let parsed):
+                let language = parsed.metadata.sourceLanguage
+                if let existing = byLanguage[language] {
+                    byLanguage[language] = existing.merging(with: parsed)
+                } else {
+                    byLanguage[language] = parsed
+                    order.append(language)
+                }
+            case .diagnostic(let diagnostic):
+                diagnostics.append(diagnostic)
             }
         }
-        return (byLanguage, order)
+        return (byLanguage, order, diagnostics)
     }
 
-    /// Reads and parses one file in isolation; a read/parse failure is logged and yields `nil`
+    /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
     /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
-    private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> CodeArtifact? {
+    private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
         let relativePath = file.relativePath(from: rootURL)
         do {
             let source = try String(contentsOf: file, encoding: .utf8)
-            return codeParser.parse(source: source, fileName: relativePath)
+            return .parsed(codeParser.parse(source: source, fileName: relativePath))
         } catch {
-            print("Warning: Failed to parse \(relativePath): \(error.localizedDescription)")
-            return nil
+            return .diagnostic(ParseDiagnostic(
+                location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+                kind: .unreadable,
+                message: error.localizedDescription
+            ))
         }
     }
 
@@ -218,6 +236,13 @@ public struct AnalysisService: Sendable {
         }
         return combined
     }
+}
+
+/// The result of reading and parsing one file: either a parsed artifact, or a diagnostic when the
+/// file itself couldn't be read.
+private enum ParseOutcome: Sendable {
+    case parsed(CodeArtifact)
+    case diagnostic(ParseDiagnostic)
 }
 
 extension URL {
