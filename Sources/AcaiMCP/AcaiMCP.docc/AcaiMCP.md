@@ -249,6 +249,7 @@ Render a diagram as DOT or Mermaid text you can embed in a reply.
 | `sequenceFrom` | string | Required for `kind: sequence`. |
 | `stateFrom` | string | Required for `kind: state`. |
 | `maxDepth`, `maxStates` | integer | Defaults 5 and 20. |
+| `maxNodes` | integer | Class/package only. Fails beyond this many nodes, naming the count (default `2000`). |
 | `map` | string[] | `Protocol=Concrete` receiver mappings for sequence tracing. |
 
 `sequenceFrom` and `stateFrom` are required in practice for their kinds, but the schema doesn't express that. Setting `focus` forces `groupBy` off and traverses in both directions — a focused view is a local neighbourhood, and grouping would split it into mismatched clusters.

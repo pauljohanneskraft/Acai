@@ -86,7 +86,8 @@ extension AcaiCommand {
                 return try await exporter.render(artifact: artifact)
             } else if shape.package {
                 let exporter = PackageImageExporter(
-                    scale: scale, palette: palette, languages: artifact.standardLanguageResolver)
+                    scale: scale, palette: palette, languages: artifact.standardLanguageResolver,
+                    maxNodes: shape.maxNodes)
                 if let old { return try await exporter.renderDelta(old: old, new: artifact) }
                 return try await exporter.render(artifact: artifact)
             } else if shape.callGraph {
@@ -117,6 +118,7 @@ extension AcaiCommand {
             if configuration.focus != nil {
                 configuration.grouping = .none
             }
+            configuration.maxNodes = shape.maxNodes
             return configuration
         }
     }

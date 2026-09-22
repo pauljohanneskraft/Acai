@@ -25,6 +25,7 @@ public struct ClassImageRenderer {
         colors: ClassColorOverrides = .plain
     ) throws -> Data {
         let model = DiagramLayoutModel(artifact: artifact, configuration: configuration, languages: languages)
+        try DiagramNodeLimit(maximum: configuration.maxNodes).validate(nodeCount: model.nodes.count)
         let sizes = nodeSizes(for: model.nodes)
         let positions = model.performLayout(sizes: sizes)
         let boxes = model.groupingBoxes(positions: positions, sizes: sizes)

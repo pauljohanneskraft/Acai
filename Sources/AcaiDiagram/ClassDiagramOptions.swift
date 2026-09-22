@@ -23,6 +23,8 @@ public struct ClassDiagramOptions: Sendable {
     public var showMultiplicities: Bool
     public var showAnnotationStereotypes: Bool
     public var focus: FocusConfiguration?
+    /// Generation fails once the diagram would exceed this many nodes. `nil` means unlimited.
+    public var maxNodes: Int?
 
     /// Resolves each type's language quirks from its own `sourceLanguage`, keeping this target
     /// agnostic to any specific language.
@@ -53,6 +55,7 @@ public struct ClassDiagramOptions: Sendable {
         showMultiplicities: Bool = true,
         showAnnotationStereotypes: Bool = true,
         focus: FocusConfiguration? = nil,
+        maxNodes: Int? = nil,
         languages: LanguageConfigurationResolver,
         edgeColorOverride: (@Sendable (Relationship) -> String?)? = nil,
         nodeColorOverride: (@Sendable (TypeDeclaration) -> String?)? = nil,
@@ -75,6 +78,7 @@ public struct ClassDiagramOptions: Sendable {
         self.showMultiplicities = showMultiplicities
         self.showAnnotationStereotypes = showAnnotationStereotypes
         self.focus = focus
+        self.maxNodes = maxNodes
         self.languages = languages
         self.edgeColorOverride = edgeColorOverride
         self.nodeColorOverride = nodeColorOverride

@@ -4,6 +4,7 @@ import ArgumentParser
 struct DiagramLimits {
     var depthRange = 1...100
     var statesRange = 1...1000
+    var nodesRange = 1...1_000_000
 
     func validate(maxDepth: Int, maxStates: Int) throws {
         guard depthRange.contains(maxDepth) else {
@@ -14,6 +15,14 @@ struct DiagramLimits {
         guard statesRange.contains(maxStates) else {
             throw ValidationError(
                 "--max-states must be between \(statesRange.lowerBound) and \(statesRange.upperBound)."
+            )
+        }
+    }
+
+    func validate(maxNodes: Int) throws {
+        guard nodesRange.contains(maxNodes) else {
+            throw ValidationError(
+                "--max-nodes must be between \(nodesRange.lowerBound) and \(nodesRange.upperBound)."
             )
         }
     }
