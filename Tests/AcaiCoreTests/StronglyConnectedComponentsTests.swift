@@ -36,7 +36,7 @@ struct StronglyConnectedComponentsTests {
         let adjacency: [String: Set<String>] = [
             "A": ["B"], "B": ["A"],
             "C": ["D"], "D": ["C"],
-            "E": [],
+            "E": []
         ]
         let scc = StronglyConnectedComponents(adjacency: adjacency)
         #expect(scc.cycles == [["A", "B"], ["C", "D"]])
