@@ -6,24 +6,16 @@ public struct KotlinCodeParser: CodeParser {
     public let language: CodeArtifact.SourceLanguage = .kotlin
     public let fileExtensions: [String] = ["kt", "kts"]
 
-    public init() {}
+    private let grammar: TreeSitterGrammar
+
+    public init() {
+        grammar = TreeSitterGrammar(language: Language(language: tree_sitter_kotlin()), sourceLanguage: .kotlin)
+    }
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        let grammar = TreeSitterGrammar(language: Language(language: tree_sitter_kotlin()), sourceLanguage: .kotlin)
-        guard let parser = grammar.makeParser() else {
-            return grammar.loadFailureArtifact(fileName: fileName)
+        grammar.parse(source: source, fileName: fileName) { root in
+            var extractor = KotlinExtractor(source: source, fileName: fileName, root: root)
+            return extractor.extract(from: root)
         }
-        guard let tree = parser.parse(source), let root = tree.rootNode else {
-            return CodeArtifact(metadata: .init(sourceLanguage: .kotlin, filePaths: [fileName]))
-        }
-        var extractor = KotlinExtractor(source: source, fileName: fileName, root: root)
-        var artifact = extractor.extract(from: root)
-        // Surface concrete ERROR/missing nodes from the best-effort tree so partial output is flagged.
-        if root.hasError {
-            artifact.metadata.parseDiagnostics = ParseDiagnosticsCollector(
-                context: SourceFileContext(source: source, fileName: fileName)
-            ).diagnostics(in: root)
-        }
-        return artifact
     }
 }

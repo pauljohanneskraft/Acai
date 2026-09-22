@@ -20,7 +20,8 @@ Extraction splits in two, along the line where per-language variation actually l
 recursive body walks (``CallSiteResolver``, ``AssignmentResolver``, ``FieldReadResolver``), the
 receiver decision tree (``MemberCallResolver``), literal classification (``LiteralClassifier``), the
 declared-type pre-pass (``TypeNamePrepass``) and error reporting
-(``ParseDiagnosticsCollector``). The declaration bookkeeping is shared too, one level up in
+(``ParseDiagnosticsCollector``). ``TreeSitterGrammar`` holds the loaded grammar and runs the parse
+pipeline around a plugin's extractor, so a parser's `parse(source:fileName:)` is one call. The declaration bookkeeping is shared too, one level up in
 [DeclarationBuilder](/documentation/acaicore/declarationbuilder) and
 [MemberIndex](/documentation/acaicore/memberindex) — they name no `Node`, so a SwiftSyntax parser
 can use them as well.
@@ -32,14 +33,9 @@ can use them as well.
 branch-node set for `Node.cyclomaticComplexity(branchKinds:)`.
 
 Because an adapter is a stateless value rather than a protocol the extractor conforms to, a
-plugin's own small collaborator types can be handed the same resolvers. `AcaiPython` is the worked
-example: `PythonExtractor` owns a `DeclarationBuilder` and one instance of each resolver, and
-conforms to nothing.
-
-``TreeSitterExtracting``, ``CallSiteResolving`` and ``AssignmentResolving`` are the previous,
-monolithic shape: one type owning every concern and reaching shared code by conforming. They now
-only forward to the values above, and exist so the plugins that have not been migrated yet keep
-compiling. Don't write a new plugin against them.
+plugin's own small collaborator types can be handed the same resolvers. Every plugin is built this
+way; `AcaiPython` is the worked example: `PythonExtractor` owns a `DeclarationBuilder` and one
+instance of each resolver, and conforms to nothing.
 
 ## Topics
 
@@ -53,6 +49,7 @@ compiling. Don't write a new plugin against them.
 
 ### Shared extraction algorithms
 
+- ``TreeSitterGrammar``
 - ``CallSiteResolver``
 - ``AssignmentResolver``
 - ``FieldReadResolver``
@@ -63,9 +60,3 @@ compiling. Don't write a new plugin against them.
 - ``ModifierClassifier``
 - ``CallSiteScope``
 - ``ModifierInfo``
-
-### Superseded
-
-- ``TreeSitterExtracting``
-- ``CallSiteResolving``
-- ``AssignmentResolving``

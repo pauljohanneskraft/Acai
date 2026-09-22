@@ -3,50 +3,44 @@ import AcaiCore
 
 final class DeclarationVisitor: SyntaxVisitor {
     let fileName: String
-    var types: [TypeDeclaration] = []
-    private var relationships: [Relationship] = []
-    private var freestandingFunctions: [Member] = []
-    var globalVariables: [Member] = []
+    /// The file's completed declarations; a type still being walked lives on `typeStack` until its
+    /// `visitPost`, so nesting is derived from the stack rather than the builder's namespace.
+    var declarations = DeclarationBuilder()
     var typeStack: [TypeDeclaration] = []
 
     /// How many function/initializer bodies we're currently inside. > 0 means collect call sites
     /// instead of treating nested declarations as new members.
     private var functionBodyDepth = 0
-    /// Simple names of every type declared in the file, seeded up front so `TypeName.method()` static
-    /// calls resolve regardless of declaration order, including forward-declared siblings.
-    private let knownTypeNames: Set<String>
     /// Each same-file protocol's requirement properties (`var x: T { get }`), keyed by protocol name —
     /// a protocol extension's default implementation calling through one of these otherwise can't
     /// resolve, since the property lives on the protocol, not the extension's own member list.
     let protocolProperties: [String: [String: String]]
 
     private let typeDeclarations = TypeDeclarationExtractor()
+    private let relationships = RelationshipExtractor()
     private let members: MemberExtractor
     let signatures = DeclarationSignatureExtractor()
     let scope: CallSiteTracker
 
+    /// `knownTypeNames` are the simple names of every type declared in the file, seeded up front so
+    /// `TypeName.method()` static calls resolve regardless of declaration order, including
+    /// forward-declared siblings.
     init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
         self.fileName = fileName
-        self.knownTypeNames = knownTypeNames
         self.protocolProperties = protocolProperties
         self.members = MemberExtractor(knownTypeNames: knownTypeNames)
         self.scope = CallSiteTracker(knownTypeNames: knownTypeNames)
+        declarations.declaredTypeNames = knownTypeNames
         super.init(viewMode: .sourceAccurate)
     }
 
     func buildArtifact() -> CodeArtifact {
-        var functions = freestandingFunctions
+        var completed = declarations
         if !scope.topLevelCallSites.isEmpty {
-            functions.append(Member(
+            completed.freestandingFunctions.append(Member(
                 name: "<top-level>", kind: .method, accessLevel: .public, callSites: scope.topLevelCallSites))
         }
-        return CodeArtifact(
-            metadata: .init(sourceLanguage: .swift, filePaths: [fileName]),
-            types: types,
-            relationships: relationships,
-            freestandingFunctions: functions,
-            globalVariables: globalVariables
-        )
+        return completed.artifact(language: .swift, filePath: fileName)
     }
 
     // MARK: - Type Declarations
@@ -55,7 +49,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractClass(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -68,7 +62,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractStruct(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -81,7 +75,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractEnum(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -94,7 +88,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractProtocol(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -112,7 +106,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractExtension(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -125,7 +119,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractTypeAlias(from: node, fileName: fileName, namespace: currentNamespace)
         if typeStack.isEmpty {
-            types.append(typeDecl)
+            declarations.types.append(typeDecl)
         } else {
             typeStack[typeStack.count - 1].nestedTypes.append(typeDecl)
         }
@@ -136,7 +130,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard functionBodyDepth == 0 else { return .skipChildren }
         let typeDecl = typeDeclarations.extractActor(from: node, fileName: fileName, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
-        relationships.append(contentsOf: RelationshipExtractor().extract(from: node, typeId: typeDecl.id))
+        declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
     }
 
@@ -173,7 +167,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         }
         scope.clearCallSiteState()
         if typeStack.isEmpty {
-            freestandingFunctions.append(member)
+            declarations.freestandingFunctions.append(member)
         } else {
             typeStack[typeStack.count - 1].members.append(member)
         }
@@ -208,7 +202,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         }
         if typeStack.isEmpty {
             scope.recordTopLevelGlobalReceiverOrigins(from: node.bindings)
-            globalVariables.append(contentsOf: extractedMembers)
+            declarations.globalVariables.append(contentsOf: extractedMembers)
         } else {
             typeStack[typeStack.count - 1].members.append(contentsOf: extractedMembers)
         }

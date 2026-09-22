@@ -1,32 +1,9 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Body Extraction & Member Signatures
+// MARK: - Body Extraction
 
 extension DartExtractor {
-
-    private func extractMemberFromSignature(
-        _ child: Node, nodeType: String, parentName: String
-    ) -> Member? {
-        switch nodeType {
-        case "method_signature":
-            return extractMethodSignature(child)
-        case "function_signature":
-            return extractFunctionSignature(child)
-        case "constructor_signature", "constant_constructor_signature":
-            return extractConstructorSignature(child, parentName: parentName)
-        case "factory_constructor_signature", "redirecting_factory_constructor_signature":
-            return extractFactoryConstructorSignature(child)
-        case "getter_signature":
-            return extractGetterSignature(child)
-        case "setter_signature":
-            return extractSetterSignature(child)
-        case "operator_signature":
-            return extractOperatorSignature(child)
-        default:
-            return nil
-        }
-    }
 
     private mutating func extractNestedType(
         _ child: Node, nodeType: String
@@ -51,9 +28,7 @@ extension DartExtractor {
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) -> Bool {
-        if let member = extractMemberFromSignature(
-            child, nodeType: nodeType, parentName: parentName
-        ) {
+        if let member = memberExtractor.member(fromSignature: child, nodeType: nodeType, parentName: parentName) {
             members.append(member)
             return true
         }
@@ -84,7 +59,7 @@ extension DartExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             if nodeType == "annotation" {
-                pendingAnnotations.append(annotationText(child))
+                pendingAnnotations.append(annotations.text(child))
                 continue
             }
             if nodeType == "function_body" {
@@ -106,7 +81,7 @@ extension DartExtractor {
                     nestedTypes: &nestedTypes, parentName: parentName
                 )
             }
-            assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
+            annotations.assign(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
@@ -129,7 +104,7 @@ extension DartExtractor {
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) {
-        let info = collectDeclarationInfo(node)
+        let info = typeReferences.declarationInfo(node)
 
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
@@ -157,7 +132,7 @@ extension DartExtractor {
         pendingBodies: inout [(index: Int, body: Node)]
     ) {
         guard previousChildAddedMember, !members.isEmpty else { return }
-        members[members.count - 1].assignments = extractAssignments(from: node)
+        members[members.count - 1].assignments = assignments.assignments(in: node)
         if isAsyncFunctionBody(node) {
             members[members.count - 1].modifiers.append(.async)
         }
@@ -180,13 +155,13 @@ extension DartExtractor {
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
             if nodeType == "annotation" {
-                pendingAnnotations.append(annotationText(child))
+                pendingAnnotations.append(annotations.text(child))
                 continue
             }
             let countBefore = members.count
             switch nodeType {
             case "enum_constant":
-                if let enumCase = extractEnumConstant(child) { enumCases.append(enumCase) }
+                if let enumCase = memberExtractor.enumConstant(child) { enumCases.append(enumCase) }
             case "function_body":
                 attachFunctionBody(
                     child, previousChildAddedMember: previousChildAddedMember,
@@ -202,7 +177,7 @@ extension DartExtractor {
                     nestedTypes: &ignored, parentName: parentName
                 )
             }
-            assignAnnotations(pendingAnnotations, toMembersFrom: countBefore, in: &members)
+            annotations.assign(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
@@ -215,13 +190,49 @@ extension DartExtractor {
         attachCallSites(pendingBodies, to: &members)
     }
 
-    private func extractEnumConstant(_ node: Node) -> EnumCase? {
-        var name = ""
-        for child in node.children() where child.nodeType == "identifier" {
-            name = text(child)
-            break
+    // MARK: - Body References
+
+    /// Appends a constructor initializer-list's call sites (`: x = compute()`) to the just-appended
+    /// member, with that member's own parameters available as receivers.
+    private func appendInitializerListCallSites(_ initializers: Node, to members: inout [Member]) {
+        let lastIndex = members.count - 1
+        members[lastIndex].callSites += callSites.callSites(
+            in: initializers,
+            scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)
+                .merging(parameters: members[lastIndex].parameters))
+    }
+
+    /// Resolves and attaches call sites for the recorded method bodies, using a scope built
+    /// from the type's fully-extracted members (so all stored properties are known) plus the
+    /// current file's known type names.
+    private func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
+        guard !pendingBodies.isEmpty else { return }
+        let index = MemberIndex(members: members)
+        let scope = CallSiteScope(
+            knownProperties: index.propertyTypes,
+            knownTypeNames: declarations.declaredTypeNames,
+            knownMethodReturnTypes: index.methodReturnTypes
+        )
+        for pending in pendingBodies where pending.index < members.count {
+            // `+=`: a constructor may already carry initializer-list call sites from the body walk.
+            members[pending.index].callSites += callSites.callSites(
+                in: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
+            members[pending.index].fieldReads = fieldReads.reads(in: pending.body, scope: scope)
+            members[pending.index].referencedTypeNames = pending.body.referencedTypeNames(in: context)
+            members[pending.index].cyclomaticComplexity =
+                pending.body.cyclomaticComplexity(branchKinds: Self.branchNodeKinds)
         }
-        guard !name.isEmpty else { return nil }
-        return EnumCase(name: name, location: loc(node))
+    }
+
+    /// A Dart method with no paired body is abstract (a body-less method is only legal as an abstract
+    /// requirement); mark it so the dead-code scan treats it as a reachable-by-contract member — the
+    /// analogue of an interface requirement, which Dart expresses with abstract classes.
+    private func markBodylessMethodsAbstract(_ members: inout [Member], bodiedIndices: Set<Int>) {
+        for index in members.indices
+        where members[index].kind == .method
+            && !bodiedIndices.contains(index)
+            && !members[index].modifiers.contains(.abstract) {
+            members[index].modifiers.append(.abstract)
+        }
     }
 }
