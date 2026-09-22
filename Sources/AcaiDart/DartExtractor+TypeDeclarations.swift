@@ -8,19 +8,19 @@ extension DartExtractor {
 
     mutating func extractClassDefinition(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let typeId = qualifiedName(name)
-        let nodeLoc = loc(node)
-        let modifiers = extractClassModifiers(node)
-        let genericParams = extractTypeParameters(from: node)
+        let name = nameNode.text(in: context)
+        let typeId = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
+        let modifiers = typeReferences.classModifiers(node)
+        let genericParams = typeReferences.typeParameters(from: node)
         var inheritedTypes: [TypeReference] = []
 
         if let superclassNode = node.child(byFieldName: "superclass") {
-            for ref in extractSuperclassTypes(superclassNode) {
+            for ref in typeReferences.superclassTypes(superclassNode) {
                 inheritedTypes.append(ref)
                 let label = ref.genericArguments.isEmpty ? nil
                     : "<" + ref.genericArguments.map(\.name).joined(separator: ", ") + ">"
-                relationships.append(ref.relationship(kind: .inheritance, source: typeId, label: label))
+                declarations.relationships.append(ref.relationship(kind: .inheritance, source: typeId, label: label))
             }
         }
 
@@ -30,16 +30,16 @@ extension DartExtractor {
             mixinNodes += superclassNode.allChildren(withType: "mixins")
         }
         for mixinsNode in mixinNodes {
-            for ref in extractTypeList(mixinsNode) {
+            for ref in typeReferences.typeList(mixinsNode) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .inheritance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .inheritance, source: typeId))
             }
         }
 
         if let interfacesNode = node.child(byFieldName: "interfaces") {
-            for ref in extractTypeList(interfacesNode) {
+            for ref in typeReferences.typeList(interfacesNode) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .conformance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -52,12 +52,12 @@ extension DartExtractor {
 
         return TypeDeclaration(
             id: typeId, name: name, qualifiedName: typeId, kind: .class,
-            accessLevel: accessLevel(for: name),
+            accessLevel: DartName(name).accessLevel,
             modifiers: modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            annotations: extractAnnotations(from: node),
-            namespace: currentNamespace, location: nodeLoc
+            annotations: annotations.annotations(of: node),
+            namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
@@ -65,22 +65,22 @@ extension DartExtractor {
 
     mutating func extractEnumDeclaration(_ node: Node) -> TypeDeclaration? {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
-        let name = text(nameNode)
-        let typeId = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let name = nameNode.text(in: context)
+        let typeId = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
         var inheritedTypes: [TypeReference] = []
 
         for child in node.children() where child.nodeType == "mixins" {
-            for ref in extractTypeList(child) {
+            for ref in typeReferences.typeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .inheritance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .inheritance, source: typeId))
             }
         }
 
         for child in node.children() where child.nodeType == "interfaces" {
-            for ref in extractTypeList(child) {
+            for ref in typeReferences.typeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .conformance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -93,11 +93,11 @@ extension DartExtractor {
 
         return TypeDeclaration(
             id: typeId, name: name, qualifiedName: typeId, kind: .enum,
-            accessLevel: accessLevel(for: name),
+            accessLevel: DartName(name).accessLevel,
             inheritedTypes: inheritedTypes,
             members: members, enumCases: enumCases,
-            annotations: extractAnnotations(from: node),
-            namespace: currentNamespace, location: nodeLoc
+            annotations: annotations.annotations(of: node),
+            namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
@@ -116,15 +116,15 @@ extension DartExtractor {
             guard seenOnKeyword, let nodeType = child.nodeType else { continue }
             switch nodeType {
             case "type_not_void_list", "_type_not_void_list":
-                for ref in extractTypeListFromChildren(child) {
+                for ref in typeReferences.typeListFromChildren(child) {
                     refs.append(ref)
-                    relationships.append(ref.relationship(kind: .inheritance, source: typeId))
+                    declarations.relationships.append(ref.relationship(kind: .inheritance, source: typeId))
                 }
                 seenOnKeyword = false
             case "type_identifier", "generic_type":
-                if let ref = extractTypeReference(child) {
+                if let ref = typeReferences.typeReference(child) {
                     refs.append(ref)
-                    relationships.append(ref.relationship(kind: .inheritance, source: typeId))
+                    declarations.relationships.append(ref.relationship(kind: .inheritance, source: typeId))
                 }
             default:
                 seenOnKeyword = false
@@ -136,17 +136,17 @@ extension DartExtractor {
     mutating func extractMixinDeclaration(_ node: Node) -> TypeDeclaration? {
         var name = ""
         for child in node.children() where child.nodeType == "identifier" && name.isEmpty {
-            name = text(child)
+            name = child.text(in: context)
         }
         guard !name.isEmpty else { return nil }
-        let typeId = qualifiedName(name)
-        let genericParams = extractTypeParametersFromChildren(node)
+        let typeId = declarations.qualifiedName(name)
+        let genericParams = typeReferences.typeParametersFromChildren(node)
         var inheritedTypes = extractMixinOnConstraints(node, typeId: typeId)
 
         for child in node.children() where child.nodeType == "interfaces" {
-            for ref in extractTypeList(child) {
+            for ref in typeReferences.typeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .conformance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -158,20 +158,20 @@ extension DartExtractor {
 
         return TypeDeclaration(
             id: typeId, name: name, qualifiedName: typeId, kind: .mixin,
-            accessLevel: accessLevel(for: name),
+            accessLevel: DartName(name).accessLevel,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            annotations: extractAnnotations(from: node),
-            namespace: currentNamespace, location: loc(node)
+            annotations: annotations.annotations(of: node),
+            namespace: declarations.currentNamespace, location: node.location(in: context)
         )
     }
 
     // MARK: - Extension Declaration
 
     mutating func extractExtensionDeclaration(_ node: Node) -> TypeDeclaration? {
-        let name = node.child(byFieldName: "name").map { text($0) }
-        let extendedType = node.child(byFieldName: "class").map { text($0) }
-        let nodeLoc = loc(node)
+        let name = node.child(byFieldName: "name").map { $0.text(in: context) }
+        let extendedType = node.child(byFieldName: "class").map { $0.text(in: context) }
+        let nodeLoc = node.location(in: context)
 
         let displayName = name ?? (extendedType.map { "\($0)Extension" }) ?? "Extension"
 
@@ -182,13 +182,14 @@ extension DartExtractor {
             extractClassBody(bodyNode, members: &members, nestedTypes: &nestedTypes, parentName: displayName)
         }
 
+        let typeId = declarations.qualifiedName(displayName)
         return TypeDeclaration(
-            id: qualifiedName(displayName), name: displayName, qualifiedName: qualifiedName(displayName),
-            kind: .extension, accessLevel: accessLevel(for: displayName),
+            id: typeId, name: displayName, qualifiedName: typeId,
+            kind: .extension, accessLevel: DartName(displayName).accessLevel,
             members: members, nestedTypes: nestedTypes,
-            annotations: extractAnnotations(from: node),
+            annotations: annotations.annotations(of: node),
             extensionOf: extendedType,
-            namespace: currentNamespace, location: nodeLoc
+            namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 
@@ -198,18 +199,18 @@ extension DartExtractor {
         var name = ""
         for child in node.children() {
             if child.nodeType == "identifier" && name.isEmpty {
-                name = text(child)
+                name = child.text(in: context)
             }
         }
         guard !name.isEmpty else { return nil }
-        let typeId = qualifiedName(name)
-        let nodeLoc = loc(node)
+        let typeId = declarations.qualifiedName(name)
+        let nodeLoc = node.location(in: context)
         var inheritedTypes: [TypeReference] = []
 
         for child in node.children() where child.nodeType == "interfaces" {
-            for ref in extractTypeList(child) {
+            for ref in typeReferences.typeList(child) {
                 inheritedTypes.append(ref)
-                relationships.append(ref.relationship(kind: .conformance, source: typeId))
+                declarations.relationships.append(ref.relationship(kind: .conformance, source: typeId))
             }
         }
 
@@ -224,11 +225,11 @@ extension DartExtractor {
 
         return TypeDeclaration(
             id: typeId, name: name, qualifiedName: typeId, kind: .class,
-            accessLevel: accessLevel(for: name),
+            accessLevel: DartName(name).accessLevel,
             inheritedTypes: inheritedTypes,
             members: members, nestedTypes: nestedTypes,
-            annotations: extractAnnotations(from: node),
-            namespace: currentNamespace, location: nodeLoc
+            annotations: annotations.annotations(of: node),
+            namespace: declarations.currentNamespace, location: nodeLoc
         )
     }
 }

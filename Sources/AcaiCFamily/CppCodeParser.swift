@@ -15,10 +15,11 @@ public struct CppCodeParser: CodeParser {
         "cpp", "cc", "cxx", "c++", "hpp", "hh", "hxx", "h++", "ipp", "tpp"
     ]
 
+    private let grammar = CFamilyGrammar(dialect: .cpp, language: Language(language: tree_sitter_cpp()))
+
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        CFamilyTreeSitterParse(dialect: .cpp, grammar: Language(language: tree_sitter_cpp()))
-            .parse(source: source, fileName: fileName)
+        grammar.parse(source: source, fileName: fileName)
     }
 }

@@ -20,7 +20,7 @@ extension DeclarationVisitor {
         guard let completed = typeStack.popLast() else { return }
         scope.popTypeScope()
         if typeStack.isEmpty {
-            types.append(completed)
+            declarations.types.append(completed)
         } else {
             typeStack[typeStack.count - 1].nestedTypes.append(completed)
         }
@@ -31,12 +31,7 @@ extension DeclarationVisitor {
     /// implementation calling through one (`history.undo()`) would otherwise be unresolvable.
     func buildPropertyMap() -> [String: String] {
         guard let currentType = typeStack.last else { return [:] }
-        var map: [String: String] = [:]
-        for member in currentType.members where member.kind == .property {
-            if let typeName = member.type?.name {
-                map[member.name] = typeName
-            }
-        }
+        var map = MemberIndex(members: currentType.members).propertyTypes
         if currentType.kind == .extension, let extendedProtocol = currentType.extensionOf,
            let requirements = protocolProperties[extendedProtocol] {
             map.merge(requirements) { existing, _ in existing }
@@ -57,7 +52,7 @@ extension DeclarationVisitor {
 
     func topLevelGlobalPropertyMap() -> [String: String] {
         Dictionary(
-            globalVariables.compactMap { global in global.type.map { (global.name, $0.name) } },
+            declarations.globalVariables.compactMap { global in global.type.map { (global.name, $0.name) } },
             uniquingKeysWith: { first, _ in first }
         )
     }

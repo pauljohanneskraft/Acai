@@ -1,0 +1,2447 @@
+{
+  "freestandingFunctions" : [
+
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "types.dart"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "dart"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Timestamped",
+      "target" : "Entity"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Named",
+      "target" : "Entity"
+    },
+    {
+      "kind" : "inheritance",
+      "label" : "<T>",
+      "source" : "geometry.Matrix",
+      "target" : "Vector"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Matrix",
+      "target" : "Serializable"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Matrix",
+      "target" : "Comparable"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Matrix",
+      "target" : "Matrix"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Success",
+      "target" : "Result"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Failure",
+      "target" : "Result"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Failure",
+      "target" : "Exception"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Store",
+      "target" : "Entity"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Store",
+      "target" : "Timestamped"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Store",
+      "target" : "Named"
+    },
+    {
+      "kind" : "inheritance",
+      "source" : "geometry.Priority",
+      "target" : "Serializable"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Priority",
+      "target" : "Comparable"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Priority",
+      "target" : "Priority"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Meters",
+      "target" : "Comparable"
+    },
+    {
+      "kind" : "conformance",
+      "source" : "geometry.Meters",
+      "target" : "Meters"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Entity",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "id",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Entity",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Entity"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Timestamped",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Entity"
+        }
+      ],
+      "kind" : "mixin",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 7
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 25,
+            "filePath" : "types.dart",
+            "line" : 8
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "updatedAt",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "updatedAt"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "DateTime"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "types.dart",
+                "line" : 11
+              },
+              "op" : "assign",
+              "targetName" : "updatedAt",
+              "value" : {
+                "kind" : "expression",
+                "text" : "DateTime.now()"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "types.dart",
+                "line" : 11
+              },
+              "name" : "updatedAt"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "touch",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "DateTime",
+            "now",
+            "updatedAt"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Timestamped",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Timestamped"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Named",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Entity"
+        }
+      ],
+      "kind" : "mixin",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 15
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 16
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "id"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Named",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Named"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Serializable",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "mixin",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 19
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 20
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "toJson",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Map"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Serializable",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Serializable"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "T"
+        }
+      ],
+      "id" : "geometry.Vector",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 23
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 33,
+            "filePath" : "types.dart",
+            "line" : 24
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "values",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "values"
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "List"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Vector",
+          "parameters" : [
+            {
+              "internalName" : "values",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 79,
+                "filePath" : "types.dart",
+                "line" : 27
+              },
+              "name" : "values"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 27
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "scaled",
+          "parameters" : [
+            {
+              "internalName" : "factor",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Vector",
+            "values"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Vector"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Vector",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Vector"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "T"
+        },
+        {
+          "constraints" : [
+
+          ],
+          "name" : "U"
+        }
+      ],
+      "id" : "geometry.Matrix",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "T"
+            }
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Vector"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Serializable"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Comparable"
+        },
+        {
+          "genericArguments" : [
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "T"
+            },
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "U"
+            }
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Matrix"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 30
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 25,
+            "filePath" : "types.dart",
+            "line" : 31
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "rows",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "rows"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 61,
+            "filePath" : "types.dart",
+            "line" : 32
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "cache",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "cache"
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "List"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Map"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 34
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Matrix",
+          "parameters" : [
+            {
+              "internalName" : "values",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "List"
+              }
+            },
+            {
+              "internalName" : "rows",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 73,
+                "filePath" : "types.dart",
+                "line" : 37
+              },
+              "methodName" : "compareTo",
+              "receiver" : {
+                "type" : {
+                  "_0" : "int"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 79,
+                "filePath" : "types.dart",
+                "line" : 37
+              },
+              "name" : "rows"
+            },
+            {
+              "location" : {
+                "column" : 121,
+                "filePath" : "types.dart",
+                "line" : 37
+              },
+              "name" : "rows"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 37
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "compareTo",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Matrix"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "compareTo",
+            "other",
+            "rows"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Matrix",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Matrix"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Result",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 40
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+        "sealed"
+      ],
+      "name" : "Result",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Result"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Success",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Result"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 42
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 31,
+            "filePath" : "types.dart",
+            "line" : 43
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "value",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 44
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Success",
+          "parameters" : [
+            {
+              "internalName" : "value",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "final"
+      ],
+      "name" : "Success",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Success"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Failure",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Result"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Exception"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 47
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 31,
+            "filePath" : "types.dart",
+            "line" : 48
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "error",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "error"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Object"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 49
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Failure",
+          "parameters" : [
+            {
+              "internalName" : "error",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "final"
+      ],
+      "name" : "Failure",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Failure"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Store",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Entity"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Timestamped"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Named"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 52
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 54
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "id",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 56
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "load",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Result"
+          }
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Store",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Store"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 60
+          },
+          "name" : "low"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 61
+          },
+          "name" : "high"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Priority",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Serializable"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Comparable"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Priority"
+        }
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 59
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 25,
+            "filePath" : "types.dart",
+            "line" : 63
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "weight",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "weight"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 64
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Priority",
+          "parameters" : [
+            {
+              "internalName" : "weight",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 71,
+                "filePath" : "types.dart",
+                "line" : 67
+              },
+              "name" : "weight"
+            },
+            {
+              "location" : {
+                "column" : 101,
+                "filePath" : "types.dart",
+                "line" : 67
+              },
+              "name" : "weight"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 67
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "compareTo",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Priority"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "other",
+            "weight"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Priority",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Priority"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "extensionOf" : "Vector",
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.VectorMath",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "extension",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 70
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 49,
+                "filePath" : "types.dart",
+                "line" : 71
+              },
+              "name" : "first"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 71
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "first",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "first",
+            "values"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "T"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "types.dart",
+                "line" : 73
+              },
+              "methodName" : "scaled",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 65,
+                "filePath" : "types.dart",
+                "line" : 73
+              },
+              "name" : "first"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 73
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "doubled",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "first",
+            "scaled"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Vector"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "VectorMath",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.VectorMath"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "extensionOf" : "String",
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.StringExtension",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "extension",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 76
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 43,
+                "filePath" : "types.dart",
+                "line" : 77
+              },
+              "methodName" : "toUpperCase",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 77
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "shouted",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "toUpperCase"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "StringExtension",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.StringExtension"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Meters",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Comparable"
+        },
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Meters"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 80
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 81
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "+",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Meters"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Meters",
+            "other",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Meters"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 84
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "compareTo",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Meters"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "compareTo",
+            "other",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Meters",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Meters"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Handler",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "types.dart",
+        "line" : 89
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 25,
+            "filePath" : "types.dart",
+            "line" : 90
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "onResult",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "onResult"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Callback"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 39,
+            "filePath" : "types.dart",
+            "line" : 91
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "onDone",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "onDone"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void Function()?"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 29,
+            "filePath" : "types.dart",
+            "line" : 92
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "store",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "store"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Store"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 93
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Handler",
+          "parameters" : [
+            {
+              "internalName" : "store",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "types.dart",
+                "line" : 98
+              },
+              "methodName" : "touch",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Store"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 39,
+                "filePath" : "types.dart",
+                "line" : 96
+              },
+              "name" : "store"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "types.dart",
+                "line" : 97
+              },
+              "name" : "onResult"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "types.dart",
+                "line" : 98
+              },
+              "name" : "store"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "types.dart",
+            "line" : 95
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "run",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Vector",
+            "call",
+            "int",
+            "load",
+            "onResult",
+            "result",
+            "scaled",
+            "store",
+            "touch"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Handler",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Handler"
+    }
+  ]
+}

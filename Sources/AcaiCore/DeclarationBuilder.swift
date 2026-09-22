@@ -41,6 +41,22 @@ public struct DeclarationBuilder: Sendable {
         currentNamespace = namespace
     }
 
+    /// Rewrites every type's `id`/`qualifiedName` to its structural path — a top-level type keeps
+    /// its simple name, a type nested in it becomes `Outer.Inner`, and so on down. For a parser
+    /// that walks bodies before it knows the enclosing name, this replaces `enter`/`leave`.
+    public mutating func qualifyNestedTypeIDs() {
+        qualifyIDs(&types, prefix: nil)
+    }
+
+    private func qualifyIDs(_ types: inout [TypeDeclaration], prefix: String?) {
+        for index in types.indices {
+            let qualified = prefix.map { "\($0).\(types[index].name)" } ?? types[index].name
+            types[index].id = qualified
+            types[index].qualifiedName = qualified
+            qualifyIDs(&types[index].nestedTypes, prefix: qualified)
+        }
+    }
+
     // MARK: - Relationships
 
     /// The edges' `target` is each supertype's simple name; ``resolveRelationshipNames()`` later

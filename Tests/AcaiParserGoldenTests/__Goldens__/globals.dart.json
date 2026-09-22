@@ -1,0 +1,862 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 20
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "makeRegistry",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Registry"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 22
+      },
+      "modifiers" : [
+        "async"
+      ],
+      "name" : "refresh",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Future"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 29
+      },
+      "modifiers" : [
+        "async"
+      ],
+      "name" : "ticks",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Stream"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 33
+      },
+      "modifiers" : [
+        "async"
+      ],
+      "name" : "range",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Iterable"
+      }
+    },
+    {
+      "accessLevel" : "private",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 37
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "_hidden",
+      "parameters" : [
+        {
+          "internalName" : "value",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "int"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 39
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "bootstrap",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "void"
+      }
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "100"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 21,
+        "filePath" : "globals.dart",
+        "line" : 6
+      },
+      "modifiers" : [
+        "const",
+        "final"
+      ],
+      "name" : "maxItems",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "maxItems"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "int"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "stringLiteral",
+        "text" : "'Main'"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 27,
+        "filePath" : "globals.dart",
+        "line" : 7
+      },
+      "modifiers" : [
+        "const",
+        "final"
+      ],
+      "name" : "storeName",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "storeName"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "String"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 25,
+        "filePath" : "globals.dart",
+        "line" : 8
+      },
+      "modifiers" : [
+        "late"
+      ],
+      "name" : "region",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "region"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "String"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "0"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 9,
+        "filePath" : "globals.dart",
+        "line" : 9
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "counter",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "counter",
+        "counter = 0"
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "0.5"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 15,
+        "filePath" : "globals.dart",
+        "line" : 10
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "ratio",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "ratio",
+        "ratio = 0.5"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "1.5"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 41,
+        "filePath" : "globals.dart",
+        "line" : 10
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "threshold",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "threshold",
+        "threshold = 1.5"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "double"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 29,
+        "filePath" : "globals.dart",
+        "line" : 11
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "tags",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "tags"
+      ],
+      "type" : {
+        "genericArguments" : [
+          {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        ],
+        "isArray" : true,
+        "isOptional" : true,
+        "name" : "List"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "expression",
+        "text" : "{}"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 35,
+        "filePath" : "globals.dart",
+        "line" : 12
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "stock",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "stock",
+        "stock = {}"
+      ],
+      "type" : {
+        "genericArguments" : [
+          {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          },
+          {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Map"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "expression",
+        "text" : "Registry()"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 31,
+        "filePath" : "globals.dart",
+        "line" : 13
+      },
+      "modifiers" : [
+        "const",
+        "final"
+      ],
+      "name" : "registry",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "Registry",
+        "registry"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Registry"
+      }
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "expression",
+        "text" : "makeRegistry()"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 31,
+        "filePath" : "globals.dart",
+        "line" : 14
+      },
+      "modifiers" : [
+        "const",
+        "final"
+      ],
+      "name" : "alias",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+        "alias",
+        "makeRegistry"
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Registry"
+      }
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "globals.dart"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "dart"
+  },
+  "relationships" : [
+
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "inventory.Registry",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "globals.dart",
+        "line" : 16
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 13,
+            "filePath" : "globals.dart",
+            "line" : 17
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "size",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "size",
+            "size = 0"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Registry",
+      "namespace" : "inventory",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "inventory.Registry"
+    }
+  ]
+}
