@@ -59,8 +59,13 @@ struct ScopedResourceAccess {
 
     /// The `async` twin of `withResolvedURL(onRefresh:_:)`, for a body that itself awaits — most
     /// often a call into `AnalysisService`, which parses a spec's files concurrently.
+    ///
+    /// `isolation` defaults to the caller's actor (`#isolation`) so this stays isolated to it —
+    /// `body` routinely closes over a `@MainActor` view model, and without that the compiler sees
+    /// a non-`Sendable` closure being sent across an isolation boundary into this generic function.
     func withResolvedURL<T>(
         onRefresh: ((Refreshed) -> Void)? = nil,
+        isolation: isolated (any Actor)? = #isolation,
         _ body: (URL) async throws -> T
     ) async throws -> T {
         let (url, close) = try openedAccessibleURL(onRefresh: onRefresh)
