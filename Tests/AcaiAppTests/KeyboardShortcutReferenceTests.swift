@@ -38,7 +38,61 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.deleteSelection.symbol == "⌫")
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
-        #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⇧⌘/")
+        #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⌘/")
+        #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
+    }
+
+    /// A shortcut bound only in a menu command that is attached on macOS alone is silently missing from
+    /// an iPad's hardware keyboard. That is fine when the feature itself is macOS-only (the reference
+    /// declares it as `Group.isMacOSOnly`) or when a view binds the same shortcut outside `#if os(macOS)`.
+    @Test("A macOS-only menu command binds nothing an iPad keyboard would miss")
+    func shortcutCommandsAreAttachedOnEveryPlatform() throws {
+        let sources = try swiftFiles().map { try String(contentsOf: $0, encoding: .utf8) }
+        var checkedTypes = 0
+        for source in sources where source.contains(".keyboardShortcut(") {
+            // The commands a file declares bind the shortcuts that same file names.
+            let bound = Set(shortcutArguments(in: source))
+            let reachesIPad = bound.allSatisfy { id in
+                macOSOnlyShortcutIDs.contains(id) || isBoundOutsideMacOS(id, in: sources)
+            }
+            for type in source.matches(of: /struct (\w+)\s*:\s*Commands/).map({ String($0.1) }) {
+                checkedTypes += 1
+                let attachments = sources.flatMap { MacOSOnlyRegions(source: $0).lines(containing: "\(type)()") }
+                #expect(!attachments.isEmpty, "`\(type)` binds a shortcut but is never attached")
+                #expect(
+                    reachesIPad || attachments.allSatisfy { !$0.isMacOSOnly },
+                    """
+                    `\(type)` is attached inside `#if os(macOS)` and binds a shortcut nothing else binds \
+                    outside it, so an iPad keyboard never fires it
+                    """)
+            }
+        }
+        #expect(checkedTypes > 0)
+    }
+
+    private func isBoundOutsideMacOS(_ id: String, in sources: [String]) -> Bool {
+        sources.contains { source in
+            MacOSOnlyRegions(source: source).lines(containing: ".keyboardShortcut(.\(id))").contains { !$0.isMacOSOnly }
+        }
+    }
+
+    /// The other half: a group the panel hides off macOS must not have its shortcuts bound elsewhere, or
+    /// the panel omits a shortcut the keyboard still fires.
+    @Test("A shortcut listed as macOS-only is bound on macOS only")
+    func macOSOnlyShortcutsAreBoundOnMacOSOnly() throws {
+        let sources = try swiftFiles().map { try String(contentsOf: $0, encoding: .utf8) }
+        for id in macOSOnlyShortcutIDs {
+            let marker = ".keyboardShortcut(.\(id))"
+            let bindings = sources.flatMap { MacOSOnlyRegions(source: $0).lines(containing: marker) }
+            #expect(!bindings.isEmpty, "`\(id)` is listed but never bound")
+            #expect(
+                bindings.allSatisfy { $0.isMacOSOnly },
+                "`\(id)` sits in a macOS-only group, so the panel hides it off macOS — bind it there only")
+        }
+    }
+
+    private var macOSOnlyShortcutIDs: Set<String> {
+        Set(KeyboardShortcutReference.allGroups.filter { $0.isMacOSOnly }.flatMap(\.shortcuts).map(\.id))
     }
 
     @Test("Every shortcut the app binds is listed in the reference")
@@ -87,25 +141,61 @@ struct KeyboardShortcutReferenceTests {
         let argument: String
     }
 
+    /// Tracks `#if`/`#else`/`#endif` line by line; a line is macOS-only when any enclosing branch is
+    /// `os(macOS)`, or the `#else` of `!os(macOS)`.
+    private struct MacOSOnlyRegions {
+        struct Line {
+            let text: String
+            let isMacOSOnly: Bool
+        }
+
+        let source: String
+
+        func lines(containing needle: String) -> [Line] {
+            var branches: [(condition: String, isElse: Bool)] = []
+            var result: [Line] = []
+            for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
+                let line = rawLine.trimmingCharacters(in: .whitespaces)
+                if line.hasPrefix("#if ") {
+                    branches.append((String(line.dropFirst(4)), false))
+                } else if line.hasPrefix("#elseif "), !branches.isEmpty {
+                    branches[branches.count - 1] = (String(line.dropFirst(8)), false)
+                } else if line == "#else", !branches.isEmpty {
+                    branches[branches.count - 1].isElse = true
+                } else if line == "#endif", !branches.isEmpty {
+                    branches.removeLast()
+                } else if line.contains(needle) {
+                    let isMacOSOnly = branches.contains { branch in
+                        branch.isElse ? branch.condition == "!os(macOS)" : branch.condition == "os(macOS)"
+                    }
+                    result.append(Line(text: line, isMacOSOnly: isMacOSOnly))
+                }
+            }
+            return result
+        }
+    }
+
     /// The argument of every `.keyboardShortcut(…)` call, reduced to the bare entry name when it is
     /// written `.entryName`, and kept verbatim otherwise so the listing check rejects it.
     private func shortcutUsages() throws -> [Usage] {
-        let marker = ".keyboardShortcut("
-        var usages: [Usage] = []
-        for file in try swiftFiles() {
-            let source = try String(contentsOf: file, encoding: .utf8)
-            var searchStart = source.startIndex
-            while let range = source.range(of: marker, range: searchStart..<source.endIndex) {
-                guard let close = source[range.upperBound...].firstIndex(of: ")") else { break }
-                let argument = source[range.upperBound..<close].trimmingCharacters(in: .whitespacesAndNewlines)
-                let isEntryName = argument.hasPrefix(".")
-                    && argument.dropFirst().allSatisfy { $0.isLetter || $0.isNumber }
-                usages.append(Usage(
-                    file: file.lastPathComponent,
-                    argument: isEntryName ? String(argument.dropFirst()) : argument))
-                searchStart = close
-            }
+        try swiftFiles().flatMap { file in
+            try shortcutArguments(in: String(contentsOf: file, encoding: .utf8))
+                .map { Usage(file: file.lastPathComponent, argument: $0) }
         }
-        return usages
+    }
+
+    private func shortcutArguments(in source: String) -> [String] {
+        let marker = ".keyboardShortcut("
+        var arguments: [String] = []
+        var searchStart = source.startIndex
+        while let range = source.range(of: marker, range: searchStart..<source.endIndex) {
+            guard let close = source[range.upperBound...].firstIndex(of: ")") else { break }
+            let argument = source[range.upperBound..<close].trimmingCharacters(in: .whitespacesAndNewlines)
+            let isEntryName = argument.hasPrefix(".")
+                && argument.dropFirst().allSatisfy { $0.isLetter || $0.isNumber }
+            arguments.append(isEntryName ? String(argument.dropFirst()) : argument)
+            searchStart = close
+        }
+        return arguments
     }
 }

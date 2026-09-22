@@ -81,17 +81,32 @@ final class ProjectBrowserScreen {
 
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
 
+    /// ⌘K, from a hardware keyboard on iPad. A key event goes to whatever is frontmost, so a system
+    /// banner swallows it the way it swallows a tap — the tap helpers clear one first, and typing must too.
+    func openQuickOpenWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
+        app.typeKey("k", modifierFlags: .command)
+        QuickOpenScreen(app: app).searchField.waitOrFail("the Quick Open search field", file: file, line: line)
+    }
+
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
-        let searchField = QuickOpenScreen(app: app).searchField
         #if os(macOS)
         // macOS's only entry point is ⌘K (`QuickOpenCommands`) — there is no toolbar button there.
-        newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        app.typeKey("k", modifierFlags: .command)
-        searchField.waitOrFail("the Quick Open search field", file: file, line: line)
+        openQuickOpenWithKeyboard(file: file, line: line)
         #else
-        quickOpenButton.tap("the Quick Open entry point", until: searchField, file: file, line: line)
+        quickOpenButton.tap(
+            "the Quick Open entry point", until: QuickOpenScreen(app: app).searchField, file: file, line: line)
         #endif
+    }
+
+    /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
+    func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
+        app.typeKey("/", modifierFlags: .command)
+        KeyboardShortcutsScreen(app: app).panel.waitOrFail("the Keyboard Shortcuts panel", file: file, line: line)
     }
 
     // MARK: - Links

@@ -24,6 +24,9 @@ public struct ProjectBrowserView: View {
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
+    // Scene-level, because ⌘/ comes from `KeyboardShortcutCommands` — a menu command sits outside this
+    // view hierarchy, so it cannot reach a `@State` here. Settings has its own route to the same panel.
+    @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     @State var windowToken = UUID()
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
@@ -116,9 +119,9 @@ public struct ProjectBrowserView: View {
         .onOpenURL { url in openLink(url) }
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
-        .focusedSceneObject(quickOpenPresenter)
         .focusedSceneValue(\.browserWindowActions, windowActions)
         #if os(macOS)
+        .focusedSceneObject(quickOpenPresenter)
         .background {
             HostingWindowReader { window in
                 browserWindows.windowOpened(windowToken) { [weak window] in
@@ -131,6 +134,22 @@ public struct ProjectBrowserView: View {
         }
         #endif
         #if !os(macOS)
+        .background {
+            // ⌘K from an iPad's hardware keyboard, bound on the view like the app's other iPad
+            // shortcuts: a menu command outside the Help group never fired on iPadOS 26. `.hidden()`
+            // also drops the button's `UIKeyCommand` from the responder chain, so it's invisible via
+            // `opacity` instead — with hit-testing and VoiceOver turned off by hand since `.hidden()`
+            // would otherwise have taken care of both.
+            Button("") { quickOpenPresenter.isPresented = true }
+                .keyboardShortcut(.quickOpen)
+                .opacity(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        // ⌘/ from a hardware keyboard; touch reaches the same panel from Settings.
+        .sheet(isPresented: $keyboardShortcutsPresenter.isPresented) {
+            KeyboardShortcutsPanel()
+        }
         .sheet(isPresented: $settingsPresenter.isPresented) {
             SettingsSheet()
                 .environmentObject(model)

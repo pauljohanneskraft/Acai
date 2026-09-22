@@ -161,7 +161,8 @@ struct PackageDiagramView: View {
     }
 
     private func packageEdges(_ layout: PackageLayoutModel) -> some View {
-        ZStack(alignment: .topLeading) {
+        let names = Dictionary(layout.nodes.map { ($0.id, $0.node.name) }, uniquingKeysWith: { first, _ in first })
+        return ZStack(alignment: .topLeading) {
             ForEach(layout.edges) { edge in
                 if let sourceRect = layout.frame(for: edge.from),
                    let targetRect = layout.frame(for: edge.to) {
@@ -170,11 +171,23 @@ struct PackageDiagramView: View {
                         sourceRect: sourceRect,
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
-                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to)
+                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
+                        accessibilityDescription: DiagramElementDescription(
+                            dependencyFrom: names[edge.from] ?? edge.from,
+                            to: names[edge.to] ?? edge.to,
+                            references: edge.weight,
+                            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
+                        ).edgeAccessibility(identifier: "diagram.packageEdge.\(edge.from)->\(edge.to)")
                     )
                 }
             }
         }
+    }
+
+    private func showDetails(for id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
     }
 
     @ViewBuilder
@@ -196,11 +209,16 @@ struct PackageDiagramView: View {
         .frame(width: node.rect.width, height: node.rect.height)
         .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
         .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
+        .diagramNodeAccessibility(
+            DiagramElementDescription(packageNode: node.node, delta: viewModel.nodeDeltaStatus(id: node.id)),
+            identifier: "diagram.containerNode.\(node.node.name)",
+            isSelected: viewModel.selectedNodeIDs.contains(node.id),
+            onSelect: { viewModel.selectNode(node.id, extending: false) },
+            onShowDetails: { showDetails(for: node.id) }
+        )
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
+            showDetails(for: node.id)
         }
         .diagramNodeInteraction(
             id: node.id,

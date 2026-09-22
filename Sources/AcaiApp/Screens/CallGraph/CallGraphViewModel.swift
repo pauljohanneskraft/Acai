@@ -70,6 +70,10 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         return Color(hex: hex)
     }
 
+    func edgeDeltaStatus(from: String, to: String) -> DeltaStatus? {
+        diff?.status(ofEdgeFrom: from, to: to)
+    }
+
     /// Non-color complement to `nodeDeltaColor(id:)`, feeding the node's badge overlay. `nil` when
     /// unchanged or not in delta mode.
     func nodeDeltaStatus(id: String) -> DeltaStatus? {
