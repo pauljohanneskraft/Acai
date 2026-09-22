@@ -101,10 +101,10 @@ struct InfiniteCanvas<Content: View>: View {
         Text(.app("View.InfiniteCanvas.ZoomPercent \(Int((scale * 100).rounded()))"))
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, Spacing.s)
+            .padding(.vertical, Spacing.xs)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-            .padding(10)
+            .padding(Spacing.s)
             .allowsHitTesting(false)
     }
 

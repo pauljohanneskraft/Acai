@@ -194,7 +194,7 @@ struct NewCodebaseSheet: View {
                     settingsLinkButton
                 }
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.s) {
                     Text(.app("View.NewCodebaseSheet.SignGitHubSettings"))
                         .foregroundStyle(.secondary)
                     settingsLinkButton

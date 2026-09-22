@@ -181,7 +181,7 @@ struct SequenceDiagramView: View {
     // MARK: - Empty state
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.l) {
             Image(systemName: "arrow.triangle.branch")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)

@@ -12,7 +12,7 @@ struct ComparisonStatusRow: View {
         // `ViewThatFits` falls back to the stacked arrangement once the label and value no longer
         // fit beside the badge on one line — at the largest accessibility text sizes, in practice.
         ViewThatFits {
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.xs) {
                 DeltaBadgeView(status: status)
                 Text(.app("View.ComparisonStatusRow.Comparison"))
                     .font(.caption)
@@ -21,9 +21,9 @@ struct ComparisonStatusRow: View {
                 Text(verbatim: status.rawValue.capitalized)
                     .font(.caption.weight(.semibold))
             }
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: .top, spacing: Spacing.xs) {
                 DeltaBadgeView(status: status)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(.app("View.ComparisonStatusRow.Comparison"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -59,7 +59,7 @@ struct MetricRow: View {
                 Text(verbatim: value)
                     .font(.system(.caption, design: .monospaced))
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(localized: label)
                     .font(.caption)
                     .foregroundStyle(.secondary)

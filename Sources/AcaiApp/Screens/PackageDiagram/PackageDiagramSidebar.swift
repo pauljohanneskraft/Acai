@@ -27,13 +27,13 @@ struct PackageDiagramSidebar: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             Picker("", selection: $tab) {
                 Text(.app("View.PackageDiagramSidebar.Settings")).tag(PackageDiagramSidebarTab.settings)
                 Text(.app("View.PackageDiagramSidebar.Inspector")).tag(PackageDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(8)
+            .padding(Spacing.s)
 
             Divider()
 

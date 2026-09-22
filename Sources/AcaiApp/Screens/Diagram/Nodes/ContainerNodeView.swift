@@ -55,8 +55,8 @@ struct ContainerNodeView: View {
         let border = isSelected ? Color.accentColor : styleBorder
         let lineWidth: CGFloat = isSelected ? 2 : 1
 
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(spacing: 1) {
+        VStack(alignment: .leading, spacing: .zero) {
+            VStack(spacing: Spacing.xxs) {
                 Text(verbatim: "<<\(stereotype)>>")
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundColor(styleBorder)
@@ -65,7 +65,7 @@ struct ContainerNodeView: View {
                     .foregroundColor(palette.canvasInk.primaryInk)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 5)
+            .padding(.vertical, Spacing.xs)
             .background(palette.containerHeader(style.tint))
 
             Rectangle()

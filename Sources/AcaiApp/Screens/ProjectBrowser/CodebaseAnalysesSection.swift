@@ -30,7 +30,7 @@ struct QualityCheckSection: View {
         let findings = report.violations.count
         let rules = report.checkedRuleCount
         CollapsibleSection(title: .app("View.QualityCheckSection.CodeQualityCheck")) {
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.s) {
                 if !report.isPassing {
                     SectionCountBadge(
                         text: .app("View.QualityCheckSection.FindingsAcrossRules \(findings) \(rules)"),
@@ -43,8 +43,8 @@ struct QualityCheckSection: View {
                 ) { editing = true }
             }
         } content: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: Spacing.s) {
+                HStack(spacing: Spacing.s) {
                     Text(localized: statusLine)
                         .font(.caption).foregroundStyle(.secondary)
                         .lineLimit(1).truncationMode(.middle)

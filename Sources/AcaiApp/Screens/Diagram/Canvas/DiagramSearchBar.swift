@@ -13,13 +13,13 @@ struct DiagramSearchBar: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             fieldSection
             stepButtons
             dismissButton
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Spacing.s)
+        .padding(.vertical, Spacing.xs)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
@@ -27,7 +27,7 @@ struct DiagramSearchBar: View {
     // MARK: - Field + Match Count
 
     private var fieldSection: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)

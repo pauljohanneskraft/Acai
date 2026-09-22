@@ -175,7 +175,7 @@ public struct ProjectBrowserView: View {
     // MARK: - Sidebar (Left Column)
 
     private var sidebarContent: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             List(selection: $model.selection) {
                 let projects = model.store.projects.sorted(byLocalizedName: \.title)
                 ForEach(projects) { project in
@@ -266,7 +266,7 @@ public struct ProjectBrowserView: View {
                 structuralDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
             }
         } else {
-            VStack(spacing: 12) {
+            VStack(spacing: Spacing.m) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)

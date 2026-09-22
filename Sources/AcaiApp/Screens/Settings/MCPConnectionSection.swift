@@ -14,7 +14,7 @@ struct MCPConnectionSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.m) {
             Text(.app("View.MCPConnectionSection.AçaíSMCPServer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -38,7 +38,7 @@ struct MCPConnectionSection: View {
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(10)
+                .padding(Spacing.s)
                 .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .accessibilityIdentifier("mcp.configSnippet")

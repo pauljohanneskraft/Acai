@@ -25,11 +25,11 @@ struct CallGraphInspector: View {
             multiSelectionList
         } else {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: Spacing.m) {
                     coverageCard
                     selectionContent
                 }
-                .padding(12)
+                .padding(Spacing.m)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -41,7 +41,7 @@ struct CallGraphInspector: View {
         if selectedNodeIDs.isEmpty {
             emptyState
         } else if let node = graph.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.m) {
                 methodCard(node, out: counts.out[node.id] ?? 0, incoming: counts.in[node.id] ?? 0, highlighted: true)
                 if let status = deltaStatus(node.id) {
                     ComparisonStatusRow(status: status)
@@ -53,7 +53,7 @@ struct CallGraphInspector: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)
@@ -80,7 +80,7 @@ struct CallGraphInspector: View {
     private var coverageCard: some View {
         let coverage = graph.coverage
         let percent = Int((coverage.fraction * 100).rounded())
-        return VStack(alignment: .leading, spacing: 4) {
+        return VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(.app("View.CallGraphInspector.Coverage"))
                 .font(.headline)
             HStack {
@@ -92,13 +92,13 @@ struct CallGraphInspector: View {
                     .font(.system(.caption, design: .monospaced))
             }
         }
-        .padding(10)
+        .padding(Spacing.s)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.06)))
     }
 
     private func methodCard(_ node: CallGraph.Node, out: Int, incoming: Int, highlighted: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack(spacing: Spacing.s) {
                 Image(systemName: node.isFreeFunction ? "function" : "f.cursive")
                     .foregroundStyle(.secondary)
                 Text(verbatim: node.label)
@@ -126,7 +126,7 @@ struct CallGraphInspector: View {
         let callers = graph.edges.filter { $0.to == node.id }
             .compactMap { edge in graph.nodes.first { $0.id == edge.from } }
 
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: Spacing.s) {
             if !callees.isEmpty {
                 relatedList(title: .app("View.CallGraphInspector.Calls \(callees.count)"), nodes: callees)
             }
@@ -137,7 +137,7 @@ struct CallGraphInspector: View {
     }
 
     private func relatedList(title: LocalizedStringResource, nodes: [CallGraph.Node]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(localized: title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -165,6 +165,6 @@ struct CallGraphInspector: View {
         Text(.app("View.CallGraphInspector.SolidScopeDashedLeaf"))
             .font(.caption2)
             .foregroundStyle(.tertiary)
-            .padding(.top, 4)
+            .padding(.top, Spacing.xs)
     }
 }

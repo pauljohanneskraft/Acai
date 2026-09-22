@@ -52,7 +52,7 @@ struct QueryView: View {
     // MARK: - Not indexed
 
     private func notIndexedState(codebase: Codebase) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.l) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -114,7 +114,7 @@ struct QueryView: View {
 
     private var filterSheet: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Spacing.l) {
                 SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
                 MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
                 if !isFilterEmpty {
@@ -145,7 +145,7 @@ struct QueryView: View {
         let text: LocalizedStringResource = codebaseHasNoTypes
             ? .app("View.QueryView.NoTypesInCodebase")
             : .app("View.QueryView.NoTypesMatchFilters")
-        return VStack(spacing: 12) {
+        return VStack(spacing: Spacing.m) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -153,7 +153,7 @@ struct QueryView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, Spacing.xxl)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("query.emptyState")
@@ -162,8 +162,8 @@ struct QueryView: View {
     // MARK: - Rows
 
     private func typeRow(_ row: TypeQuery.TypeRow, codebase: Codebase) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack(spacing: Spacing.s) {
                 Text(verbatim: row.kind.rawValue)
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
@@ -178,15 +178,15 @@ struct QueryView: View {
                 Text(verbatim: row.access.rawValue)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.vertical, Spacing.xxs)
                     .background(Color.secondary.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
             .contentShape(Rectangle())
             .openInCodeElement(.type(id: row.id), codebase: codebase, relativePath: row.location?.filePath)
             if let location = row.location {
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.s) {
                     Text(verbatim: "\(location.filePath):\(location.line)")
                         .font(.caption2.monospaced())
                         .foregroundStyle(.secondary)
@@ -203,22 +203,22 @@ struct QueryView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("query.row.\(row.id)")
     }
 
     private func memberRows(_ row: TypeQuery.TypeRow, codebase: Codebase) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             ForEach(Array(row.members.enumerated()), id: \.offset) { _, member in
                 memberRow(member, typeRow: row, codebase: codebase)
             }
         }
-        .padding(.leading, 16)
+        .padding(.leading, Spacing.l)
     }
 
     private func memberRow(_ member: TypeQuery.MemberRow, typeRow: TypeQuery.TypeRow, codebase: Codebase) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spacing.xs) {
             Text(verbatim: member.kind.rawValue)
                 .font(.caption2)
                 .foregroundStyle(.secondary)

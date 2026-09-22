@@ -25,11 +25,11 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.s) {
             Button {
                 withAnimation(Animation.disclosure.respecting(reduceMotion: reduceMotion)) { isExpanded.toggle() }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.s) {
                     Image(systemName: "chevron.right")
                         .font(.caption.bold())
                         .foregroundStyle(.secondary)
@@ -43,13 +43,13 @@ struct CollapsibleSection<Accessory: View, Content: View>: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal)
-            .padding(.top, 12)
+            .padding(.top, Spacing.m)
 
             if isExpanded {
                 content()
             }
         }
-        .padding(.bottom, isExpanded ? 8 : 12)
+        .padding(.bottom, isExpanded ? Spacing.s : Spacing.m)
     }
 }
 

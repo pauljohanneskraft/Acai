@@ -23,13 +23,13 @@ struct ViolationRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             // `openInCodeElement` wraps its content in a `Button` — kept scoped to just this block
             // (not the whole row) so the buttons below are sibling controls, not nested inside
             // another button, which SwiftUI doesn't reliably route taps through.
             findingSummary
                 .openInCodeElement(reference, codebase: codebase, relativePath: violation.source?.filePath)
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.s) {
                 if let codebase, let source = violation.source {
                     ViewSourceButton(codebase: codebase, relativePath: source.filePath)
                 }
@@ -42,17 +42,17 @@ struct ViolationRowView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(Spacing.s)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private var findingSummary: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack(spacing: Spacing.s) {
                 Text(verbatim: violation.ruleKind)
                     .font(.caption.monospaced())
-                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .padding(.horizontal, Spacing.xs).padding(.vertical, Spacing.xxs)
                     .background(tint.opacity(0.12))
                     .clipShape(Capsule())
                 Text(verbatim: violation.subject).font(.callout.bold())
@@ -80,7 +80,7 @@ private struct LocationRow: View {
     var reference: CodeElementReference?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             summary
                 .openInCodeElement(reference, codebase: codebase, relativePath: location?.filePath)
             if let codebase, let location {
@@ -88,13 +88,13 @@ private struct LocationRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(Spacing.s)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private var summary: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(verbatim: title).font(.callout)
             if let detail {
                 Text(verbatim: detail).font(.caption).foregroundStyle(.secondary)
@@ -125,7 +125,7 @@ struct DeadCodeReportView: View {
                 text: .app("View.DeadCodeSection.NoCandidates \(coverage)"),
                 systemImage: "checkmark.seal")
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spacing.s) {
                 Text(.app("View.DeadCodeReportView.CandidatesBelowCoverageFloor"))
                     .font(.caption).foregroundStyle(.secondary)
                 let candidates = Array(report.candidates.prefix(analysisReportLimit).enumerated())
@@ -153,7 +153,7 @@ struct HealthReportView: View {
                 text: .app("View.ParseHealthSection.NoDiagnostics \(percent) \(types)"),
                 systemImage: "checkmark.seal")
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spacing.s) {
                 let diagnostics = Array(report.diagnostics.prefix(analysisReportLimit).enumerated())
                 ForEach(diagnostics, id: \.offset) { _, diagnostic in
                     LocationRow(

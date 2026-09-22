@@ -13,7 +13,7 @@ struct CodebaseGlobalsSection: View {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.globalVariables.count)"))
         } content: {
             let sortedGlobals = artifact.globalVariables.sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: 1) {
+            LazyVStack(spacing: Spacing.xxs) {
                 ForEach(Array(sortedGlobals.enumerated()), id: \.offset) { _, global in
                     globalRow(global: global)
                 }
@@ -26,7 +26,7 @@ struct CodebaseGlobalsSection: View {
     }
 
     private func globalRow(global: Member) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             kindBadge(global)
             Text(verbatim: global.name)
                 .fontWeight(.medium)
@@ -45,7 +45,7 @@ struct CodebaseGlobalsSection: View {
         }
         .revealsInFinder(codebase: codebase, relativePath: global.location?.filePath)
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 
     private func kindBadge(_ global: Member) -> some View {
@@ -61,8 +61,8 @@ struct CodebaseGlobalsSection: View {
         Text(verbatim: text)
             .font(.caption2)
             .foregroundStyle(.tertiary)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1)
+            .padding(.horizontal, Spacing.xs)
+            .padding(.vertical, Spacing.xxs)
             .background(Color.secondary.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 3))
     }

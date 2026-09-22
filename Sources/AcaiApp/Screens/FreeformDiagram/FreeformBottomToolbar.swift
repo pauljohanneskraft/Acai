@@ -10,13 +10,13 @@ struct FreeformBottomToolbar: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.m) {
                 ForEach(FreeformDiagramNodeKind.allCases) { kind in
                     kindButton(kind)
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, Spacing.s)
         }
         .background {
             // A solid background, not a translucent material: keeps this strip snapshot-testable
@@ -34,7 +34,7 @@ struct FreeformBottomToolbar: View {
         return Button {
             viewModel.beginPlacement(kind: kind)
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: Spacing.xs) {
                 Image(systemName: kind.systemImage)
                     .font(.title3)
                 Text(verbatim: kind.displayName)

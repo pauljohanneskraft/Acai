@@ -7,14 +7,14 @@ struct LayersEditor: View {
     @Binding var rule: LayerRule?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.s) {
             Toggle(.app("View.LayersEditor.EnforceLayering"), isOn: enabled)
                 .font(.headline)
             if let binding = Binding($rule) {
                 enabledBody(binding)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 
     private var enabled: Binding<Bool> {

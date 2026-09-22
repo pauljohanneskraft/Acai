@@ -23,7 +23,7 @@ struct AsyncOperationStatusView: View {
         case .idle:
             EmptyView()
         case .loading(let title):
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.xs) {
                 ProgressView().controlSize(.small)
                 Text(localized: title).font(.caption).foregroundStyle(.secondary)
             }

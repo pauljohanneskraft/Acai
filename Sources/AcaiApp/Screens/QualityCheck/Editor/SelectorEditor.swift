@@ -9,7 +9,7 @@ struct SelectorEditor: View {
     @Binding var selector: AcaiQuality.Selector
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(localized: title).font(.caption.bold()).foregroundStyle(.secondary)
             TextField(text: $selector.module.orEmpty) {
                 Text(.app("View.SelectorEditor.ModuleGlobEG"))

@@ -29,7 +29,7 @@ struct PackageDiagramInspector: View {
         } else if selectedNodeIDs.count == 1,
                   let node = diagram.nodes.first(where: { $0.id == selectedNodeIDs.first }) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: Spacing.m) {
                     moduleCard(node, highlighted: true)
                     if let status = deltaStatus(node.id) {
                         ComparisonStatusRow(status: status)
@@ -37,7 +37,7 @@ struct PackageDiagramInspector: View {
                     relatedModulesSection(for: node)
                     legend
                 }
-                .padding(12)
+                .padding(Spacing.m)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         } else {
@@ -46,7 +46,7 @@ struct PackageDiagramInspector: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.m) {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)
@@ -71,8 +71,8 @@ struct PackageDiagramInspector: View {
     }
 
     private func moduleCard(_ node: PackageDiagram.Node, highlighted: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack(spacing: Spacing.s) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color(hex: node.zoneColorHex))
                     .frame(width: 14, height: 14)
@@ -105,7 +105,7 @@ struct PackageDiagramInspector: View {
         let dependedOnBy = diagram.edges.filter { $0.to == node.id }
             .compactMap { edge in diagram.nodes.first { $0.id == edge.from } }
 
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: Spacing.s) {
             if !dependsOn.isEmpty {
                 relatedList(
                     title: .app("View.PackageDiagramInspector.DependsOn \(dependsOn.count)"),
@@ -120,7 +120,7 @@ struct PackageDiagramInspector: View {
     }
 
     private func relatedList(title: LocalizedStringResource, nodes: [PackageDiagram.Node]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(localized: title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -143,7 +143,7 @@ struct PackageDiagramInspector: View {
     }
 
     private var legend: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(.app("View.PackageDiagramInspector.FillDistanceMainSequence"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -151,6 +151,6 @@ struct PackageDiagramInspector: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.top, 4)
+        .padding(.top, Spacing.xs)
     }
 }

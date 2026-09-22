@@ -40,7 +40,7 @@ struct ActivityIndicatorView: View {
                     Text(.app("View.ActivityIndicatorView.RunningCount \(activityCenter.operations.count)"))
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white)
-                        .padding(3)
+                        .padding(Spacing.xxs)
                         .background(Circle().fill(.blue))
                         .offset(x: 8, y: -8)
                         .accessibilityHidden(true)
@@ -94,7 +94,7 @@ private struct ActivityOperationRow: View {
         HStack {
             Image(systemName: operation.kind.systemImage)
                 .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(localized: operation.title)
                 if let progress = operation.progress {
                     ProgressView(value: progress)

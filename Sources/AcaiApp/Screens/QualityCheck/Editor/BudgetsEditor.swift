@@ -24,7 +24,7 @@ struct BudgetsEditor: View {
                     Text(verbatim: metric.rawValue).tag(metric)
                 }
             }
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.s) {
                 Text(.app("View.BudgetsEditor.Min")).font(.caption).foregroundStyle(.secondary)
                 TextField(text: $budgets[index].min.asText) {
                     Text(.app("View.BudgetsEditor.None"))

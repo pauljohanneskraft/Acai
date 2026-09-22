@@ -22,7 +22,7 @@ struct StatisticDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 if let description = detail.description {
                     Text(localized: description)
                         .font(.callout)
@@ -30,7 +30,7 @@ struct StatisticDetailSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, Spacing.s)
                     Divider()
                 }
                 content
@@ -56,8 +56,8 @@ struct StatisticDetailSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(detail.rows) { row in
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    HStack(spacing: Spacing.s) {
                         Text(verbatim: row.name)
                             .lineLimit(1)
                             .truncationMode(.middle)

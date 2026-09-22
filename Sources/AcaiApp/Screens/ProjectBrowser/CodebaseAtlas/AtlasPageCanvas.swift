@@ -21,7 +21,7 @@ struct AtlasPageCanvas {
 
     /// Truncates to the page width with an ellipsis rather than wrapping — the Atlas's findings/stats
     /// entries are one line each by design.
-    mutating func drawLine(_ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = 6) {
+    mutating func drawLine(_ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = Spacing.xs) {
         let font = CTFontCreateWithName((bold ? "Helvetica-Bold" : "Helvetica") as CFString, fontSize, nil)
         let fontKey = kCTFontAttributeName as NSAttributedString.Key
         let attributed = NSAttributedString(string: text, attributes: [fontKey: font])

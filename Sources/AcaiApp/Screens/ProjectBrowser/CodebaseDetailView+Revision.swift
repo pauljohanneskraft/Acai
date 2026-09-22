@@ -78,7 +78,7 @@ extension CodebaseDetailView {
 
     /// Says the clone carries only the latest snapshot, with the action that fetches the rest.
     private func latestSnapshotBadge(remoteURL: URL) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spacing.xs) {
             Label(.app("View.CodebaseDetailView.LatestSnapshotOnly"), systemImage: "clock.badge.exclamationmark")
                 .font(.caption)
                 .foregroundStyle(.secondary)

@@ -27,7 +27,7 @@ struct QualityCheckEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 Picker(.app("View.QualityCheckEditorSheet.Rules"), selection: $source) {
                     Text(.app("View.QualityCheckEditorSheet.DefinedHere")).tag(Source.definedHere)
                     Text(.app("View.QualityCheckEditorSheet.ExternalYAMLFile")).tag(Source.externalFile)
@@ -81,7 +81,7 @@ struct QualityCheckEditorSheet: View {
         switch source {
         case .definedHere:
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: Spacing.l) {
                     QualityRulesEditor(rules: $rules)
                     Divider()
                     Text(.app("View.QualityCheckEditorSheet.Preview")).font(.headline)
@@ -96,7 +96,7 @@ struct QualityCheckEditorSheet: View {
 
     @ViewBuilder
     private var externalContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.m) {
             HStack {
                 (externalPath.isEmpty
                     ? Text(.app("View.QualityCheckEditorSheet.NoFileSelected"))

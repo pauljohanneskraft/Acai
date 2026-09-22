@@ -25,7 +25,7 @@ struct CodebaseRelationshipsSection: View {
                 .sorted {
                     ($0.source, $0.target) < ($1.source, $1.target)
                 }
-            LazyVStack(spacing: 1) {
+            LazyVStack(spacing: Spacing.xxs) {
                 ForEach(Array(sortedRelationships.enumerated()), id: \.offset) { _, rel in
                     relationshipRow(rel: rel)
                 }
@@ -34,7 +34,7 @@ struct CodebaseRelationshipsSection: View {
     }
 
     private func relationshipRow(rel: Relationship) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             relationshipKindBadge(rel.kind)
             Text(verbatim: displayName(for: rel.source))
                 .fontWeight(.medium)
@@ -51,7 +51,7 @@ struct CodebaseRelationshipsSection: View {
         .openInCodeElement(
             .relationship(source: rel.source, target: rel.target, kind: rel.kind), codebase: codebase)
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 
     private func relationshipKindBadge(_ kind: Relationship.Kind) -> some View {
