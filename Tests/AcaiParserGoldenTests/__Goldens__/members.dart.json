@@ -1,0 +1,2638 @@
+{
+  "freestandingFunctions" : [
+
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "members.dart"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "dart"
+  },
+  "relationships" : [
+
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 4
+          },
+          "name" : "idle"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 5
+          },
+          "name" : "running"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 6
+          },
+          "name" : "done"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Status",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "members.dart",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 8
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "isTerminal",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Status",
+            "done"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "bool"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "next",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Status",
+            "index",
+            "length",
+            "values"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Status"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Status",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Status"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Shape",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "members.dart",
+        "line" : 13
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 14
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "area",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 15
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "describe",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 27,
+            "filePath" : "members.dart",
+            "line" : 16
+          },
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "created",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "created",
+            "created = 0"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 17
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Shape",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+        "abstract"
+      ],
+      "name" : "Shape",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Shape"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Point",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "members.dart",
+        "line" : 20
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 31,
+            "filePath" : "members.dart",
+            "line" : 21
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "x",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "x"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 37,
+            "filePath" : "members.dart",
+            "line" : 21
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "y",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "y"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "double"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 13,
+            "filePath" : "members.dart",
+            "line" : 23
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "hashCode",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "hashCode",
+            "hashCode = 0"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 24
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Point",
+          "parameters" : [
+            {
+              "internalName" : "x",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            },
+            {
+              "internalName" : "y",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Point",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Point"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Counter",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "members.dart",
+        "line" : 27
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "0"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 13,
+            "filePath" : "members.dart",
+            "line" : 28
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "_count",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_count",
+            "_count = 0"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 13,
+            "filePath" : "members.dart",
+            "line" : 29
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "limit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "limit"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "numericLiteral",
+            "text" : "10"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 39,
+            "filePath" : "members.dart",
+            "line" : 30
+          },
+          "modifiers" : [
+            "static",
+            "const",
+            "final"
+          ],
+          "name" : "defaultLimit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "defaultLimit"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 41,
+            "filePath" : "members.dart",
+            "line" : 31
+          },
+          "modifiers" : [
+            "late",
+            "final"
+          ],
+          "name" : "label",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "label"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "enumCase",
+            "receiverTypeName" : "Status",
+            "text" : "idle"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 19,
+            "filePath" : "members.dart",
+            "line" : 32
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "status",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Status",
+            "idle",
+            "status",
+            "status = Status.idle"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Status"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Point(0, 0)"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 29,
+            "filePath" : "members.dart",
+            "line" : 33
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "origin",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Point",
+            "origin",
+            "origin = Point(0, 0)"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Point"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 29,
+                "filePath" : "members.dart",
+                "line" : 34
+              },
+              "methodName" : "makePoint",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "makePoint()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 29,
+            "filePath" : "members.dart",
+            "line" : 34
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "computed",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "computed",
+            "computed = makePoint()",
+            "makePoint"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Point"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "[]"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 25,
+            "filePath" : "members.dart",
+            "line" : 35
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "history",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "history",
+            "history = []"
+          ],
+          "type" : {
+            "genericArguments" : [
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "List"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 21,
+            "filePath" : "members.dart",
+            "line" : 36
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "note",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "note"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 49,
+                "filePath" : "members.dart",
+                "line" : 38
+              },
+              "methodName" : "describeLimit",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 39
+              },
+              "methodName" : "reset",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 38
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Counter",
+          "parameters" : [
+            {
+              "internalName" : "limit",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "reset"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 42
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "unlimited",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 50
+          },
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "describeLimit",
+          "parameters" : [
+            {
+              "internalName" : "limit",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 52
+          },
+          "modifiers" : [
+            "static"
+          ],
+          "name" : "makePoint",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Point"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Point"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 39,
+                "filePath" : "members.dart",
+                "line" : 54
+              },
+              "name" : "_count"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 54
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "count",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_count"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 57
+              },
+              "op" : "assign",
+              "targetName" : "_count",
+              "value" : {
+                "kind" : "expression",
+                "text" : "value"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 57
+              },
+              "name" : "_count"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 56
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "count",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_count",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 45,
+                "filePath" : "members.dart",
+                "line" : 60
+              },
+              "name" : "limit"
+            },
+            {
+              "location" : {
+                "column" : 73,
+                "filePath" : "members.dart",
+                "line" : 60
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 93,
+                "filePath" : "members.dart",
+                "line" : 60
+              },
+              "name" : "limit"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 60
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "atLimit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_count",
+            "limit"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "bool"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 63
+              },
+              "op" : "compound",
+              "targetName" : "_count",
+              "value" : {
+                "kind" : "expression",
+                "text" : "_count++"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 65
+              },
+              "op" : "assign",
+              "targetName" : "status",
+              "value" : {
+                "kind" : "enumCase",
+                "receiverTypeName" : "Status",
+                "text" : "running"
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 67
+              },
+              "op" : "assign",
+              "targetName" : "status",
+              "value" : {
+                "kind" : "enumCase",
+                "receiverTypeName" : "Status",
+                "text" : "done"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 64
+              },
+              "methodName" : "add",
+              "receiver" : {
+                "type" : {
+                  "_0" : "List"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 2,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 63
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 64
+              },
+              "name" : "history"
+            },
+            {
+              "location" : {
+                "column" : 33,
+                "filePath" : "members.dart",
+                "line" : 64
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 65
+              },
+              "name" : "status"
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "members.dart",
+                "line" : 66
+              },
+              "name" : "atLimit"
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 67
+              },
+              "name" : "status"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 62
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "increment",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Status",
+            "_count",
+            "add",
+            "atLimit",
+            "done",
+            "history",
+            "running",
+            "status"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 72
+              },
+              "op" : "compound",
+              "targetName" : "_count",
+              "value" : {
+                "kind" : "expression",
+                "text" : "--_count"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 73
+              },
+              "op" : "compound",
+              "targetName" : "_count",
+              "value" : {
+                "kind" : "expression",
+                "text" : "_count -= 1"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 74
+              },
+              "op" : "assign",
+              "targetName" : "note",
+              "value" : {
+                "kind" : "expression",
+                "text" : "'went down to $_count'"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 75
+              },
+              "op" : "assign",
+              "targetName" : "note",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "'constant'"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 72
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 73
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 74
+              },
+              "name" : "note"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 75
+              },
+              "name" : "note"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 71
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "decrement",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "_count",
+            "note"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 79
+              },
+              "methodName" : "delayed",
+              "receiver" : {
+                "unresolvedTypeName" : {
+                  "_0" : "Future"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 23,
+                "filePath" : "members.dart",
+                "line" : 80
+              },
+              "name" : "_count"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 78
+          },
+          "modifiers" : [
+            "async"
+          ],
+          "name" : "load",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Duration",
+            "Future",
+            "_count",
+            "delayed",
+            "zero"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Future"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 84
+              },
+              "op" : "assign",
+              "targetName" : "_count",
+              "value" : {
+                "kind" : "numericLiteral",
+                "text" : "0"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 85
+              },
+              "op" : "assign",
+              "targetName" : "status",
+              "value" : {
+                "kind" : "enumCase",
+                "receiverTypeName" : "Status",
+                "text" : "idle"
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 86
+              },
+              "op" : "assign",
+              "targetName" : "history",
+              "value" : {
+                "kind" : "expression",
+                "text" : "[]"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 88
+              },
+              "methodName" : "increment",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 89
+              },
+              "methodName" : "describeLimit",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 91
+              },
+              "methodName" : "increment",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 93
+              },
+              "methodName" : "reset",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 97
+              },
+              "methodName" : "reset",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 84
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 85
+              },
+              "name" : "status"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 86
+              },
+              "name" : "history"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "members.dart",
+                "line" : 87
+              },
+              "name" : "origin"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 83
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "reset",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Counter",
+            "Status",
+            "_count",
+            "built",
+            "copy",
+            "derived",
+            "describeLimit",
+            "fixed",
+            "hashCode",
+            "history",
+            "idle",
+            "increment",
+            "makePoint",
+            "origin",
+            "other",
+            "reset",
+            "status",
+            "unlimited",
+            "x"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 57,
+                "filePath" : "members.dart",
+                "line" : 100
+              },
+              "name" : "limit"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 100
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "copy",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Counter",
+            "limit"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Counter"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@override"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 103
+          },
+          "modifiers" : [
+            "override"
+          ],
+          "name" : "toString",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+            "@Deprecated('use increment')"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 29,
+                "filePath" : "members.dart",
+                "line" : 106
+              },
+              "methodName" : "increment",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 106
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "bump",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "increment"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 95,
+                "filePath" : "members.dart",
+                "line" : 108
+              },
+              "name" : "limit"
+            },
+            {
+              "location" : {
+                "column" : 123,
+                "filePath" : "members.dart",
+                "line" : 108
+              },
+              "name" : "limit"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 108
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "+",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Counter"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Counter",
+            "limit",
+            "other"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Counter"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 125,
+                "filePath" : "members.dart",
+                "line" : 110
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 145,
+                "filePath" : "members.dart",
+                "line" : 110
+              },
+              "name" : "_count"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 110
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "==",
+          "parameters" : [
+            {
+              "internalName" : "other",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Object"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Counter",
+            "_count",
+            "other"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "bool"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 71,
+                "filePath" : "members.dart",
+                "line" : 112
+              },
+              "name" : "limit"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 112
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "-",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Counter",
+            "limit"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Counter"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 114
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "_internal",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 23,
+            "filePath" : "members.dart",
+            "line" : 116
+          },
+          "modifiers" : [
+            "abstract"
+          ],
+          "name" : "nativeHook",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 63,
+                "filePath" : "members.dart",
+                "line" : 119
+              },
+              "op" : "compound",
+              "targetName" : "i",
+              "value" : {
+                "kind" : "expression",
+                "text" : "i++"
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 139
+              },
+              "op" : "assign",
+              "targetName" : "note",
+              "value" : {
+                "kind" : "expression",
+                "text" : "error.toString()"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 120
+              },
+              "methodName" : "callback",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 123
+              },
+              "methodName" : "increment",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 126
+              },
+              "methodName" : "decrement",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 137
+              },
+              "methodName" : "load",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 8,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 23,
+                "filePath" : "members.dart",
+                "line" : 122
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 27,
+                "filePath" : "members.dart",
+                "line" : 127
+              },
+              "name" : "_count"
+            },
+            {
+              "location" : {
+                "column" : 25,
+                "filePath" : "members.dart",
+                "line" : 128
+              },
+              "name" : "status"
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "members.dart",
+                "line" : 139
+              },
+              "name" : "note"
+            },
+            {
+              "location" : {
+                "column" : 83,
+                "filePath" : "members.dart",
+                "line" : 141
+              },
+              "name" : "history"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "members.dart",
+            "line" : 118
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "withCallback",
+          "parameters" : [
+            {
+              "internalName" : "callback",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "void Function(int)"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Status",
+            "_count",
+            "callback",
+            "decrement",
+            "error",
+            "history",
+            "i",
+            "idle",
+            "increment",
+            "length",
+            "load",
+            "note",
+            "running",
+            "squares",
+            "status",
+            "times",
+            "toString",
+            "value"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Counter",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Counter"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ extension KotlinExtractor {
     // MARK: - Class Declaration
 
     mutating func extractClassDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
+        let modifierInfo = modifiers.info(fromParentOf: node)
 
         if node.hasChild(withType: "enum_class_body") {
             return extractEnumClassDeclaration(node, modifierInfo: modifierInfo)
@@ -18,13 +18,13 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
         let ctorNode = node.firstChild(withType: "primary_constructor")
         let ctorAccess = ctorNode
             .flatMap { $0.firstChild(withType: "modifiers") }
-            .map { extractModifiers($0).accessLevel } ?? modifierInfo.accessLevel
-        let ctorParams = extractPrimaryConstructorParams(ctorNode)
-        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
+            .map { modifiers.info(for: $0).accessLevel } ?? modifierInfo.accessLevel
+        let ctorParams = parameterExtractor.primaryConstructorParams(ctorNode)
+        let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         let isAnnotation = node.firstChild(withType: "modifiers")?.namedChildren()
             .contains { $0.nodeType == "class_modifier" && $0.text(in: context) == "annotation" } ?? false
@@ -70,13 +70,13 @@ extension KotlinExtractor {
     // MARK: - Interface
 
     mutating func extractInterfaceDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
+        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .interface,
@@ -99,11 +99,11 @@ extension KotlinExtractor {
     // MARK: - Object Declaration
 
     mutating func extractObjectDeclaration(_ node: Node) -> TypeDeclaration? {
-        let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
+        let modifierInfo = modifiers.info(fromParentOf: node)
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
-        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
+        let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .object,
@@ -128,7 +128,7 @@ extension KotlinExtractor {
     mutating func extractCompanionObject(_ node: Node) -> TypeDeclaration? {
         let name = node.firstChild(withType: "type_identifier").map { $0.text(in: context) } ?? "Companion"
         let qualifiedTypeName = declarations.qualifiedName(name)
-        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
+        let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName,
@@ -157,8 +157,8 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
-        let supertypes = classifySupertypes(node.allChildren(withType: "delegation_specifier"))
+        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
             id: qualifiedTypeName, name: name, qualifiedName: qualifiedTypeName, kind: .enum,
@@ -174,7 +174,7 @@ extension KotlinExtractor {
         }
         if let body = node.firstChild(withType: "enum_class_body") {
             for child in body.namedChildren() where child.nodeType == "enum_entry" {
-                if let enumCase = extractEnumEntry(child) { typeDecl.enumCases.append(enumCase) }
+                if let enumCase = memberExtractor.enumEntry(child) { typeDecl.enumCases.append(enumCase) }
             }
             extractBody(body, into: &typeDecl, skipEnumEntries: true)
         } else if let body = node.firstChild(withType: "class_body") {
@@ -189,14 +189,14 @@ extension KotlinExtractor {
         guard let nameNode = node.firstChild(withType: "type_identifier") else { return nil }
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
-        let modifierInfo = extractModifiers(node.firstChild(withType: "modifiers"))
-        let generics = extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let modifierInfo = modifiers.info(fromParentOf: node)
+        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
 
         var targetType: [TypeReference] = []
         if let userTypeNode = node.firstChild(withType: "user_type") {
-            targetType.append(extractTypeReference(userTypeNode))
+            targetType.append(typeReferences.extractTypeReference(userTypeNode))
         } else if let nullableTypeNode = node.firstChild(withType: "nullable_type") {
-            targetType.append(extractNullableType(nullableTypeNode))
+            targetType.append(typeReferences.extractNullableType(nullableTypeNode))
         }
 
         return TypeDeclaration(

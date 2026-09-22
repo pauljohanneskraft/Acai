@@ -20,6 +20,7 @@ struct CFamilyExtractor {
     let context: SourceFileContext
     let dialect: CFamilyDialect
     let typeReferences: CFamilyTypeReferenceResolver
+    let memberExtractor: CFamilyMemberExtractor
     let assignmentSyntax: CFamilyAssignmentSyntax
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
@@ -67,9 +68,15 @@ struct CFamilyExtractor {
         self.context = context
         self.dialect = dialect
         self.typeReferences = typeReferences
-        assignmentSyntax = CFamilyAssignmentSyntax(context: context, declaredEnumConstants: declaredEnumConstants)
-        callSites = CallSiteResolver(syntax: CFamilyCallSiteSyntax(
+        let assignmentSyntax = CFamilyAssignmentSyntax(context: context, declaredEnumConstants: declaredEnumConstants)
+        let callSites = CallSiteResolver(syntax: CFamilyCallSiteSyntax(
             context: context, typeReferences: typeReferences, declaredFunctionNames: declaredFunctionNames))
+        self.assignmentSyntax = assignmentSyntax
+        self.callSites = callSites
+        memberExtractor = CFamilyMemberExtractor(
+            context: context, typeReferences: typeReferences, assignmentSyntax: assignmentSyntax,
+            callSites: callSites, declaredTypeNames: declaredTypeNames
+        )
         assignments = AssignmentResolver(syntax: assignmentSyntax)
         // Bare identifiers, plus the `field_identifier` of a `this->field`/`obj.field` access, are
         // both identifier-shaped nodes.
@@ -84,12 +91,6 @@ struct CFamilyExtractor {
         walkSourceFile(root)
         declarations.resolveRelationshipNames()
         return declarations.artifact(language: dialect.sourceLanguage, filePath: context.fileName)
-    }
-
-    // MARK: - Parse Diagnostics
-
-    func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
-        ParseDiagnosticsCollector(context: context).diagnostics(in: root)
     }
 
     // MARK: - Top-level traversal

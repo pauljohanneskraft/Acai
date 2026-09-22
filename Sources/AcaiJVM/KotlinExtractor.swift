@@ -5,21 +5,11 @@ import AcaiTreeSitter
 /// concern. Every collaborator is built once, in `init`.
 struct KotlinExtractor {
 
-    /// Kotlin structural decision-point node types for cyclomatic complexity (`when` entries, `if`/
-    /// loops, `catch`).
-    static let branchNodeKinds: Set<String> = [
-        "if_expression", "for_statement", "while_statement", "do_while_statement",
-        "when_entry", "catch_block"
-    ]
-
-    /// A `when_entry` carrying an `else` keyword is the fallback arm, not a decision.
-    static let complexityFallbackMarkers: [String: Set<String>] = ["when_entry": ["else"]]
-
     let context: SourceFileContext
-    let assignmentSyntax: KotlinAssignmentSyntax
-    let callSites: CallSiteResolver
-    let assignments: AssignmentResolver
-    let fieldReads: FieldReadResolver
+    let modifiers: KotlinModifiers
+    let typeReferences: KotlinTypeReferenceResolver
+    let parameterExtractor: KotlinParameterExtractor
+    let memberExtractor: KotlinMemberExtractor
 
     var declarations = DeclarationBuilder()
 
@@ -30,13 +20,22 @@ struct KotlinExtractor {
             .names(in: root) { $0.firstChild(withType: "type_identifier").map { $0.text(in: context) } }
 
         self.context = context
-        assignmentSyntax = KotlinAssignmentSyntax(context: context)
-        callSites = CallSiteResolver(
-            syntax: KotlinCallSiteSyntax(context: context, declaredTypeNames: declaredTypeNames)
+        modifiers = KotlinModifiers(context: context)
+        typeReferences = KotlinTypeReferenceResolver(context: context)
+        parameterExtractor = KotlinParameterExtractor(
+            context: context, typeReferences: typeReferences, modifiers: modifiers)
+        let assignmentSyntax = KotlinAssignmentSyntax(context: context)
+        memberExtractor = KotlinMemberExtractor(
+            context: context, typeReferences: typeReferences, modifiers: modifiers,
+            parameterExtractor: parameterExtractor, assignmentSyntax: assignmentSyntax,
+            callSites: CallSiteResolver(
+                syntax: KotlinCallSiteSyntax(context: context, declaredTypeNames: declaredTypeNames)
+            ),
+            assignments: AssignmentResolver(syntax: assignmentSyntax),
+            // Bare references and `this.<prop>` navigation members are both `simple_identifier` nodes.
+            fieldReads: FieldReadResolver(context: context, identifierTypes: ["simple_identifier"]),
+            declaredTypeNames: declaredTypeNames
         )
-        assignments = AssignmentResolver(syntax: assignmentSyntax)
-        // Bare references and `this.<prop>` navigation members are both `simple_identifier` nodes.
-        fieldReads = FieldReadResolver(context: context, identifierTypes: ["simple_identifier"])
 
         declarations.declaredTypeNames = declaredTypeNames
     }
@@ -49,17 +48,17 @@ struct KotlinExtractor {
         return declarations.artifact(language: .kotlin, filePath: context.fileName)
     }
 
-    // MARK: - Kotlin-Specific Helpers
+    // MARK: - Function Declaration
 
-    func hasKeyword(_ keyword: String, in node: Node) -> Bool {
-        node.hasAnonymousChild(keyword, in: context)
-    }
-
-    /// Returns whether the node declares `val` or `var` via a `binding_pattern_kind` child.
-    /// Tree-sitter-kotlin wraps `val`/`var` in `[binding_pattern_kind] → [val]`.
-    func bindingKind(of node: Node) -> String? {
-        guard let bindingPatternNode = node.firstChild(withType: "binding_pattern_kind") else { return nil }
-        let bindingText = bindingPatternNode.text(in: context).trimmingCharacters(in: .whitespaces)
-        return (bindingText == "val" || bindingText == "var") ? bindingText : nil
+    /// An extension function (`fun String.hello() {}`) also records its receiver as an `.extension`
+    /// edge, which only the extractor's declaration state can hold.
+    mutating func extractFunctionDeclaration(_ node: Node, scope: CallSiteScope = CallSiteScope()) -> Member {
+        if let receiverRef = memberExtractor.receiverType(of: node) {
+            let name = node.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? "_anonymous"
+            declarations.relationships.append(
+                Relationship(kind: .extension, source: name, target: receiverRef.name)
+            )
+        }
+        return memberExtractor.functionDeclaration(node, scope: scope)
     }
 }
