@@ -12,8 +12,8 @@ import AcaiLibrary
 @Suite("Parser output goldens")
 struct ParserGoldenTests {
 
-    /// Python in depth; one broad fixture for every other language, since they share the tier being
-    /// replaced.
+    /// Python and Dart in depth (the two languages restructured against these goldens); one broad
+    /// fixture for every other language, since they share the tier being replaced.
     static let fixtures: [ParserGoldenCorpus.Fixture] = [
         .init(parser: PythonCodeParser(), fileName: "classes.py"),
         .init(parser: PythonCodeParser(), fileName: "annotations.py"),
@@ -24,6 +24,9 @@ struct ParserGoldenTests {
         .init(parser: JSCodeParser(), fileName: "shop.ts"),
         .init(parser: JSCodeParser(isTypeScript: false), fileName: "shop.js"),
         .init(parser: DartCodeParser(), fileName: "shop.dart"),
+        .init(parser: DartCodeParser(), fileName: "globals.dart"),
+        .init(parser: DartCodeParser(), fileName: "members.dart"),
+        .init(parser: DartCodeParser(), fileName: "types.dart"),
         .init(parser: CCodeParser(), fileName: "shop.c"),
         .init(parser: CppCodeParser(), fileName: "shop.cpp"),
         .init(parser: SwiftCodeParser(), fileName: "Shop.swift")
