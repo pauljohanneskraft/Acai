@@ -71,6 +71,31 @@ struct AnalysisSnapshotCacheTests {
         }
     }
 
+    /// A `.json` baseline whose `schemaVersion` is newer than this build understands names both the
+    /// found and expected versions, rather than being misread or failing some unrelated way downstream.
+    @Test func jsonBaselineFromANewerSchemaVersionNamesBothVersions() async throws {
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift))
+        var json = try #require(
+            try JSONSerialization.jsonObject(with: JSONEncoder().encode(artifact)) as? [String: Any]
+        )
+        json["schemaVersion"] = 999
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("future-schema-\(UUID().uuidString).json")
+        try JSONSerialization.data(withJSONObject: json).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let cache = AnalysisSnapshotCache(store: MCPTestSupport.freshStore())
+        var thrown: Error?
+        do {
+            _ = try await cache.artifact(path: url.path)
+        } catch {
+            thrown = error
+        }
+        let message = String(describing: try #require(thrown))
+        #expect(message.contains("999"))
+        #expect(message.contains("\(CodeArtifact.currentSchemaVersion)"))
+    }
+
     @Test func fingerprintChangesOnRenameWithPreservedMtime() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiMCP-rename-\(UUID().uuidString)", isDirectory: true)

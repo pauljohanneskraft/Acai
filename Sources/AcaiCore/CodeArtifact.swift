@@ -1,4 +1,12 @@
 public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
+    /// The shape this build writes. Bump on any change a reader could misinterpret (a field made
+    /// optional, a meaning changed under the same name, a new enum case an older reader defaults).
+    public static let currentSchemaVersion = 1
+
+    /// Which shape this artifact follows — not `metadata.toolVersion`, which says which binary wrote
+    /// it: two tool versions can share a schema. Missing on disk (written before this field existed)
+    /// decodes as `0`, which every reader accepts.
+    public var schemaVersion: Int
     public var metadata: Metadata
     public var types: [TypeDeclaration]
     public var relationships: [Relationship]
@@ -13,11 +21,36 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         freestandingFunctions: [Member] = [],
         globalVariables: [Member] = []
     ) {
+        self.schemaVersion = Self.currentSchemaVersion
         self.metadata = metadata
         self.types = types
         self.relationships = relationships
         self.freestandingFunctions = freestandingFunctions
         self.globalVariables = globalVariables
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, metadata, types, relationships, freestandingFunctions, globalVariables
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        self.metadata = try container.decode(Metadata.self, forKey: .metadata)
+        self.types = try container.decode([TypeDeclaration].self, forKey: .types)
+        self.relationships = try container.decode([Relationship].self, forKey: .relationships)
+        self.freestandingFunctions = try container.decode([Member].self, forKey: .freestandingFunctions)
+        self.globalVariables = try container.decode([Member].self, forKey: .globalVariables)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(types, forKey: .types)
+        try container.encode(relationships, forKey: .relationships)
+        try container.encode(freestandingFunctions, forKey: .freestandingFunctions)
+        try container.encode(globalVariables, forKey: .globalVariables)
     }
 
     public struct Metadata: Codable, Equatable, Hashable, Sendable {

@@ -117,7 +117,8 @@ These appear on nearly every command.
 shared analysis store by its resolved path (this is how the CLI picks up an analysis the app or an MCP
 session already produced for that directory, with no name needed); otherwise it's looked up as a name
 under the store. An artifact written by an older Açaí version reports that it must be regenerated
-rather than failing obscurely.
+rather than failing obscurely, and an artifact whose `schemaVersion` is newer than this build
+understands reports the found and expected version numbers rather than misreading it.
 
 ### Output and formatting
 
@@ -178,7 +179,10 @@ Narrow a class diagram to one type's neighbourhood.
 
 > Analyze source code and output the code model as JSON, or its parse health.
 
-The full `CodeArtifact` as JSON — or, with `--health`, a trust score over parse diagnostics.
+The full `CodeArtifact` as JSON — or, with `--health`, a trust score over parse diagnostics. Every
+`CodeArtifact` carries a top-level `schemaVersion` integer, so a reader can tell which shape it's
+looking at without guessing from a decode failure; a file written before this field existed reads as
+`schemaVersion: 0`.
 
 | Flag | Notes |
 | --- | --- |
@@ -204,7 +208,7 @@ acai store <name> <source-dir> [--language <language> ...]
 Both arguments are positional. Writes `<name>.json` into the shared analysis store and prints the path.
 The store also records the source directory's resolved path, so the same analysis is found — no
 re-parsing needed — by an MCP session or the app pointed at that directory, and by `--from <source-dir>`
-below.
+below. The stored `CodeArtifact` carries its `schemaVersion`, checked on every read.
 
 ```sh
 acai store main-baseline ./MyProject
@@ -370,7 +374,7 @@ The colours themselves are fixed (green at `fine`, red at `critical`, amber betw
 the rest of the app. `--color-by` requires a per-type metric with a `budgets` entry that sets `max`; a
 module-scoped metric, or one with no such budget, is a validation error.
 
-`--format json` output: `{ "quality": <QualityReport>, "drift": <ArtifactDiff>?, "health": <HealthCheck.Summary> }` (`drift` is present only with `--baseline`).
+`--format json` output: `{ "quality": <QualityReport>, "drift": <ArtifactDiff>?, "health": <HealthCheck.Summary> }` (`drift` is present only with `--baseline`). `QualityReport` carries its own top-level `schemaVersion`, independent of the artifact's.
 
 ### `rules`
 

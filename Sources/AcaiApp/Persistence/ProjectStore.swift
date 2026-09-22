@@ -199,6 +199,13 @@ final class ProjectStore: ObservableObject {
         // forward — the CLI and an MCP session over the same directory read and write it too.
         if let sourcePath = resolvedSourcePath(for: codebaseID),
            case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath) {
+            let foundSchema = entry.artifact.schemaVersion
+            guard foundSchema <= CodeArtifact.currentSchemaVersion else {
+                let expectedSchema = CodeArtifact.currentSchemaVersion
+                report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(foundSchema) \(expectedSchema)"))
+                markCodebaseNotIndexed(codebaseID)
+                return
+            }
             artifacts[codebaseID] = entry.artifact
             return
         }
@@ -210,6 +217,13 @@ final class ProjectStore: ObservableObject {
             let data = try Data(contentsOf: url)
             let stored = try JSONDecoder().decode(StoredArtifact.self, from: data)
             guard stored.formatVersion >= Self.currentArtifactFormat else {
+                markCodebaseNotIndexed(codebaseID)
+                return
+            }
+            let foundSchema = stored.artifact.schemaVersion
+            guard foundSchema <= CodeArtifact.currentSchemaVersion else {
+                let expectedSchema = CodeArtifact.currentSchemaVersion
+                report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(foundSchema) \(expectedSchema)"))
                 markCodebaseNotIndexed(codebaseID)
                 return
             }

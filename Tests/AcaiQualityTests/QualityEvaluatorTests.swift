@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import AcaiCore
 @testable import AcaiQuality
 
@@ -204,6 +205,26 @@ struct QualityEvaluatorTests {
             Member(name: "run", kind: .method, accessLevel: .public)
         ])])
         #expect(breaches(.publicApiSurface, max: 0, on: "App", in: art))
+    }
+
+    // MARK: Schema version
+
+    @Test func reportCarriesCurrentSchemaVersion() {
+        let report = QualityEvaluator(rules: QualityRules()).evaluate(artifact([type("Foo")]))
+        #expect(report.schemaVersion == QualityReport.currentSchemaVersion)
+    }
+
+    @Test func reportWithoutSchemaVersionKeyDecodesAsZero() throws {
+        let report = QualityReport(violations: [], checkedRuleCount: 0)
+        let encoded = try JSONEncoder().encode(report)
+        var withoutSchemaVersion = try #require(
+            try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        withoutSchemaVersion.removeValue(forKey: "schemaVersion")
+        let legacyData = try JSONSerialization.data(withJSONObject: withoutSchemaVersion)
+
+        let decoded = try JSONDecoder().decode(QualityReport.self, from: legacyData)
+        #expect(decoded.schemaVersion == 0)
     }
 }
 
