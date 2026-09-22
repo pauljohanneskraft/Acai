@@ -1,9 +1,12 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Call Site Resolution
+struct DartCallSiteSyntax: CallSiteSyntax {
 
-extension DartExtractor: CallSiteResolving {
+    let context: SourceFileContext
+
+    /// From the pre-pass: constructing one of these is what makes a local's type provable.
+    let declaredTypeNames: Set<String>
 
     /// Resolves statically-determinable Dart call patterns: `receiver.method(args)` where
     /// `receiver` is a known property, `this.method(args)`, or `TypeName.method(args)` (static call).
@@ -22,7 +25,9 @@ extension DartExtractor: CallSiteResolving {
                   kids[kids.count - 1].firstChild(withType: "argument_part") != nil,
                   kids[kids.count - 2].nodeType == "identifier"
             else { return nil }
-            return scope.bareCall(named: text(kids[kids.count - 2]), implicitSelf: true, location: loc(node))
+            return scope.bareCall(
+                named: kids[kids.count - 2].text(in: context), implicitSelf: true, location: node.location(in: context)
+            )
         }
 
         let named = node.namedChildren()
@@ -34,7 +39,9 @@ extension DartExtractor: CallSiteResolving {
            named[0].nodeType == "identifier",
            named[1].nodeType == "selector",
            named[1].firstChild(withType: "argument_part") != nil {
-            return scope.bareCall(named: text(named[0]), implicitSelf: true, location: loc(node))
+            return scope.bareCall(
+                named: named[0].text(in: context), implicitSelf: true, location: node.location(in: context)
+            )
         }
 
         guard named.count == 3 else { return nil }
@@ -50,61 +57,18 @@ extension DartExtractor: CallSiteResolving {
               let methodId = assignable.firstChild(withType: "identifier")
         else { return nil }
 
-        let methodName = text(methodId)
+        let methodName = methodId.text(in: context)
 
         if receiverNode.nodeType == "this" {
-            return CallSite(receiver: .selfDispatch, methodName: methodName, location: loc(node))
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: node.location(in: context))
         }
 
         guard receiverNode.nodeType == "identifier" else { return nil }
         return scope.resolvedCallSite(
-            receiverName: text(receiverNode),
+            receiverName: receiverNode.text(in: context),
             methodName: methodName,
-            location: loc(node)
+            location: node.location(in: context)
         )
-    }
-
-    /// Appends a constructor initializer-list's call sites (`: x = compute()`) to the just-appended
-    /// member, with that member's own parameters available as receivers.
-    func appendInitializerListCallSites(_ initializers: Node, to members: inout [Member]) {
-        let lastIndex = members.count - 1
-        members[lastIndex].callSites += extractCallSites(
-            from: initializers,
-            scope: CallSiteScope(knownTypeNames: declaredTypeNames)
-                .merging(parameters: members[lastIndex].parameters))
-    }
-
-    /// Resolves and attaches call sites for the recorded method bodies, using a scope built
-    /// from the type's fully-extracted members (so all stored properties are known) plus the
-    /// current file's known type names.
-    func attachCallSites(_ pendingBodies: [(index: Int, body: Node)], to members: inout [Member]) {
-        guard !pendingBodies.isEmpty else { return }
-        let scope = CallSiteScope(
-            knownProperties: buildPropertyMap(from: members),
-            knownTypeNames: declaredTypeNames,
-            knownMethodReturnTypes: methodReturnTypeMap(from: members)
-        )
-        for pending in pendingBodies where pending.index < members.count {
-            // `+=`: a constructor may already carry initializer-list call sites from the body walk.
-            members[pending.index].callSites += extractCallSites(
-                from: pending.body, scope: scope.merging(parameters: members[pending.index].parameters))
-            members[pending.index].fieldReads = fieldReadResolver.reads(in: pending.body, scope: scope)
-            members[pending.index].referencedTypeNames = referencedTypeNames(in: pending.body)
-            members[pending.index].cyclomaticComplexity =
-                cyclomaticComplexity(in: pending.body, branchKinds: Self.branchNodeKinds)
-        }
-    }
-
-    /// A Dart method with no paired body is abstract (a body-less method is only legal as an abstract
-    /// requirement); mark it so the dead-code scan treats it as a reachable-by-contract member — the
-    /// analogue of an interface requirement, which Dart expresses with abstract classes.
-    func markBodylessMethodsAbstract(_ members: inout [Member], bodiedIndices: Set<Int>) {
-        for index in members.indices
-        where members[index].kind == .method
-            && !bodiedIndices.contains(index)
-            && !members[index].modifiers.contains(.abstract) {
-            members[index].modifiers.append(.abstract)
-        }
     }
 
     /// Provable local-variable types: an explicit annotation (`Helper h = …`), an inferred
@@ -116,9 +80,9 @@ extension DartExtractor: CallSiteResolving {
             guard node.nodeType == "initialized_variable_definition",
                   let nameNode = node.child(byFieldName: "name")
             else { return nil }
-            let name = text(nameNode)
+            let name = nameNode.text(in: context)
             if let typeId = node.firstChild(withType: "type_identifier") {
-                return (name, text(typeId))
+                return (name, typeId.text(in: context))
             }
             // Inferred `var h = Helper()` / `var h = compute()`: a `value` identifier followed by a
             // `selector` argument part.
@@ -127,10 +91,11 @@ extension DartExtractor: CallSiteResolving {
                       $0.nodeType == "selector" && $0.firstChild(withType: "argument_part") != nil
                   })
             else { return nil }
-            if declaredTypeNames.contains(text(value)) {
-                return (name, text(value))
+            let valueText = value.text(in: context)
+            if declaredTypeNames.contains(valueText) {
+                return (name, valueText)
             }
-            if let returnType = scope.knownMethodReturnTypes[text(value)] {
+            if let returnType = scope.knownMethodReturnTypes[valueText] {
                 return (name, returnType)
             }
             return nil
