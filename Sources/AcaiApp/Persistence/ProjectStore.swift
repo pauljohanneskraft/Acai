@@ -199,13 +199,7 @@ final class ProjectStore: ObservableObject {
         // forward — the CLI and an MCP session over the same directory read and write it too.
         if let sourcePath = resolvedSourcePath(for: codebaseID),
            case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath) {
-            let foundSchema = entry.artifact.schemaVersion
-            guard foundSchema <= CodeArtifact.currentSchemaVersion else {
-                let expectedSchema = CodeArtifact.currentSchemaVersion
-                report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(foundSchema) \(expectedSchema)"))
-                markCodebaseNotIndexed(codebaseID)
-                return
-            }
+            guard !rejectingUnsupportedSchema(of: entry.artifact, for: codebaseID) else { return }
             artifacts[codebaseID] = entry.artifact
             return
         }
@@ -220,13 +214,7 @@ final class ProjectStore: ObservableObject {
                 markCodebaseNotIndexed(codebaseID)
                 return
             }
-            let foundSchema = stored.artifact.schemaVersion
-            guard foundSchema <= CodeArtifact.currentSchemaVersion else {
-                let expectedSchema = CodeArtifact.currentSchemaVersion
-                report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(foundSchema) \(expectedSchema)"))
-                markCodebaseNotIndexed(codebaseID)
-                return
-            }
+            guard !rejectingUnsupportedSchema(of: stored.artifact, for: codebaseID) else { return }
             artifacts[codebaseID] = stored.artifact
             migrateArtifactToSharedStore(stored.artifact, for: codebaseID)
         } catch is DecodingError {
@@ -236,6 +224,18 @@ final class ProjectStore: ObservableObject {
         } catch {
             report(.app("Error.ProjectStore.LoadStoredAnalysis \(error.localizedDescription)"))
         }
+    }
+
+    /// `true` when `artifact`'s schema is too new for this build to read — reports the specific
+    /// error, naming both versions, and drops the codebase back to "not indexed" so Reindex is
+    /// offered rather than showing a stale or partially-misread analysis.
+    private func rejectingUnsupportedSchema(of artifact: CodeArtifact, for codebaseID: UUID) -> Bool {
+        let found = artifact.schemaVersion
+        guard found > CodeArtifact.currentSchemaVersion else { return false }
+        let expected = CodeArtifact.currentSchemaVersion
+        report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(found) \(expected)"))
+        markCodebaseNotIndexed(codebaseID)
+        return true
     }
 
     /// Writes an artifact loaded from the pre-shared-store `artifacts/` file into the shared store,
