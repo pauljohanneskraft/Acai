@@ -38,16 +38,11 @@ struct ExamplePNGs {
     /// too — the opposite of what this cache is for.
     func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) async throws -> CodeArtifact {
         let key = CacheKey(directory: directory, languages: languages)
-        Self.cacheLock.lock()
-        if let cached = Self.cache[key] {
-            Self.cacheLock.unlock()
+        if let cached = Self.cacheLock.withLock({ Self.cache[key] }) {
             return cached
         }
-        Self.cacheLock.unlock()
         let artifact = try await AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
-        Self.cacheLock.lock()
-        Self.cache[key] = artifact
-        Self.cacheLock.unlock()
+        Self.cacheLock.withLock { Self.cache[key] = artifact }
         return artifact
     }
 
