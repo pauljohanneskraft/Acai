@@ -144,4 +144,31 @@ struct CppTests {
         #expect(next?.accessLevel == .public)
         #expect(next?.modifiers.contains(.static) == true)
     }
+
+    /// A constructor *declared* in the class body is the ordinary header shape, and tree-sitter-cpp
+    /// aliases it to `declaration` rather than `field_declaration` — so it needs its own case.
+    @Test func constructorDeclaredInClassBody() {
+        let source = """
+        class Genre {};
+
+        class Song {
+        public:
+            Song(const std::string &title, Genre genre);
+            explicit Song(int id);
+        private:
+            int id_;
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "song.cpp")
+        let song = artifact.types.first { $0.name == "Song" }
+        let initializers = song?.members.filter { $0.kind == .initializer } ?? []
+        #expect(initializers.count == 2, "both declared constructors should appear")
+        #expect(initializers.first?.accessLevel == .public)
+        #expect(initializers.first?.type == nil, "a constructor has no return type")
+        #expect(initializers.first?.parameters.map(\.internalName) == ["title", "genre"])
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        #expect(
+            enriched.relationships.contains { $0.kind == .dependency && $0.target == "Genre" },
+            "a constructor parameter's declared type is a dependency")
+    }
 }

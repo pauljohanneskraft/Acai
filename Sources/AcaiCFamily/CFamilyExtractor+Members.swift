@@ -28,21 +28,16 @@ extension CFamilyExtractor {
             case "field_declaration":
                 appendField(child, ownerName: ownerName, access: access,
                             members: &members, nestedTypes: &nestedTypes)
-            case "function_definition":
-                if var method = functionMember(from: child, ownerName: ownerName, access: access) {
-                    // A constructor's member-initializer list (`: x(compute())`) is a sibling of the
-                    // body; walk it so calls made during construction aren't lost.
-                    if let initList = child.firstChild(withType: "field_initializer_list") {
-                        method.callSites += callSites.callSites(
-                            in: initList,
-                            scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)
-                                .merging(parameters: method.parameters))
-                    }
-                    members.append(method)
-                    if let methodBody = child.child(byFieldName: "body") {
-                        pendingBodies.append((members.count - 1, methodBody))
-                    }
+            case "declaration":
+                // tree-sitter-cpp aliases a constructor/destructor *declaration* in a class body to
+                // `declaration`, not `field_declaration` — the shape `Song(std::string title);` takes.
+                if let member = functionMember(from: child, ownerName: ownerName, access: access) {
+                    members.append(member)
                 }
+            case "function_definition":
+                appendMethodDefinition(
+                    child, ownerName: ownerName, access: access,
+                    members: &members, pendingBodies: &pendingBodies)
             case "struct_specifier", "union_specifier", "class_specifier", "enum_specifier":
                 appendNestedType(child, into: &nestedTypes)
             case "template_declaration":
@@ -53,6 +48,25 @@ extension CFamilyExtractor {
             }
         }
         attachBodies(pendingBodies, to: &members)
+    }
+
+    private func appendMethodDefinition(
+        _ node: Node, ownerName: String, access: AccessLevel,
+        members: inout [Member], pendingBodies: inout [(index: Int, body: Node)]
+    ) {
+        guard var method = functionMember(from: node, ownerName: ownerName, access: access) else { return }
+        // A constructor's member-initializer list (`: x(compute())`) is a sibling of the body; walk it
+        // so calls made during construction aren't lost.
+        if let initList = node.firstChild(withType: "field_initializer_list") {
+            method.callSites += callSites.callSites(
+                in: initList,
+                scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames)
+                    .merging(parameters: method.parameters))
+        }
+        members.append(method)
+        if let methodBody = node.child(byFieldName: "body") {
+            pendingBodies.append((members.count - 1, methodBody))
+        }
     }
 
     /// Resolves and attaches call sites + assignments once the type's full member set is known, so
