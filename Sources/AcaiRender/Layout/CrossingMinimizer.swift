@@ -17,6 +17,10 @@ struct CrossingMinimizer {
             return lookup
         }
 
+        // A single direction converging isn't a fixed point: the other direction can still reorder
+        // layers it hasn't been tried against yet. Only two consecutive unchanged sweeps — one of
+        // each direction — mean neither would reorder anything the other has already seen.
+        var unchangedStreak = 0
         for iteration in 0..<effectiveIterations(forLayerCount: layers.count) {
             let positions = positionLookup()
             let beforeSweep = result
@@ -33,10 +37,12 @@ struct CrossingMinimizer {
                         result[layerIndex], referenceLayer: result[layerIndex + 1], referencePositions: positions)
                 }
             }
-            // A sweep that reordered nothing has reached a fixed point: every later sweep would
-            // re-sort the same already-sorted layers into themselves, so stopping here changes
-            // nothing about the result, only how much redundant work it takes to reach it.
-            if result == beforeSweep { break }
+            if result == beforeSweep {
+                unchangedStreak += 1
+                if unchangedStreak >= 2 { break }
+            } else {
+                unchangedStreak = 0
+            }
         }
         return result
     }
