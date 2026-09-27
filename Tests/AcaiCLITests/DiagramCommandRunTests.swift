@@ -179,14 +179,14 @@ struct DiagramCommandRunTests {
         }
     }
 
-    @Test func withinMaxNodesSucceeds() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func withinMaxNodesSucceeds() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram(
                 ["--source", dir.path, "--language", "swift", "--max-nodes", "1000", "--output", output.path]
             )
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("digraph"))
         }
