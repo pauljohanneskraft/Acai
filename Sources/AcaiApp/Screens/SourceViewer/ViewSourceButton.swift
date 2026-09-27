@@ -53,11 +53,11 @@ struct ViewSourceButton: View {
         }
     }
 
-    /// A file shown at a pinned revision is a temporary copy read from history; nothing else owns it.
     private func dismissed() {
         longLivedAccess = nil
-        if codebase.pinnedRevision != nil, let shown = shownURL {
-            try? FileManager.default.removeItem(at: shown.deletingLastPathComponent())
+        let session = SourceViewerSession(isPinnedRevision: codebase.pinnedRevision != nil, shownURL: shownURL)
+        if let temporary = session.temporaryDirectoryToRemove {
+            try? FileManager.default.removeItem(at: temporary)
         }
         shownURL = nil
     }
