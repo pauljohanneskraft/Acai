@@ -27,8 +27,15 @@ import AcaiCore
 ///    Inheritability is spelled by *presence* in Kotlin and Swift and by the *absence* of `final`
 ///    everywhere else, so the same inheritable class carries opposite markers; and an interface is
 ///    abstract by definition, which Dart's `abstract interface class` must say out loud and a Swift
-///    `protocol` or Java `interface` must not. `abstract` on a *class* is kept.
-/// 8. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
+///    `protocol` or Java `interface` must not. `abstract` on a *class* is kept. `static` is dropped
+///    from a *nested type* for the same reason: a nested type that does not capture its enclosing
+///    instance is `static class` in Java and an unmarked `class` in Kotlin, C++, Python and Swift.
+///    `static` on a *member* is kept — that is a feature of its own.
+/// 8. **An annotation that restates a modifier already present is dropped.** Java and Dart spell
+///    override as `@override` *and* Kotlin/Swift/C++ as a keyword; Python spells abstract and static
+///    as `@abstractmethod`/`@staticmethod`. The modifier is the shared fact, so the duplicate
+///    annotation goes. An annotation with no matching modifier is always kept.
+/// 9. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
 struct ContractNormalizer {
@@ -41,7 +48,7 @@ struct ContractNormalizer {
 
     func shape(of artifact: CodeArtifact) -> ContractShape {
         ContractShape(
-            types: artifact.types.map(declaration(of:)).sorted { $0.name < $1.name },
+            types: artifact.types.map { declaration(of: $0) }.sorted { $0.name < $1.name },
             freeFunctions: artifact.freestandingFunctions.map(signature(of:)).sorted(by: signatureOrder),
             globals: artifact.globalVariables.map(signature(of:)).sorted(by: signatureOrder),
             relationships: artifact.relationships.map(edge(of:)).sorted { lhs, rhs in
@@ -52,20 +59,23 @@ struct ContractNormalizer {
 
     // MARK: - Declarations
 
-    private func declaration(of type: TypeDeclaration) -> ContractShape.Declaration {
+    private func declaration(of type: TypeDeclaration, isNested: Bool = false) -> ContractShape.Declaration {
         let isInterface = type.kind == .interface || type.kind == .protocol
-        let implied: Set<Modifier> = isInterface ? [.open, .abstract] : [.open]
+        var implied: Set<Modifier> = isInterface ? [.open, .abstract] : [.open]
+        if isNested { implied.insert(.static) }
         return ContractShape.Declaration(
             name: simpleName(type.name),
             kind: type.kind.stereotypeString ?? type.kind.rawValue,
             access: type.accessLevel.umlSymbol,
             modifiers: type.modifiers.filter { !implied.contains($0) }.map(\.rawValue).sorted(),
             generics: type.genericParameters.map { simpleName($0.name) },
-            annotations: type.annotations.map(annotationName(of:)).sorted(),
+            annotations: annotationNames(type.annotations, restating: type.modifiers),
             supertypes: type.inheritedTypes.map { typeName(of: $0) }.sorted(),
             members: type.members.map(signature(of:)).sorted(by: signatureOrder),
             enumCases: type.enumCases.map(\.name).sorted(),
-            nested: type.nestedTypes.map(declaration(of:)).sorted { $0.name < $1.name }
+            nested: type.nestedTypes
+                .map { declaration(of: $0, isNested: true) }
+                .sorted { $0.name < $1.name }
         )
     }
 
@@ -75,7 +85,7 @@ struct ContractNormalizer {
             role: member.kind.rawValue,
             access: member.accessLevel.umlSymbol,
             modifiers: member.modifiers.map(\.rawValue).sorted(),
-            annotations: member.annotations.map(annotationName(of:)).sorted(),
+            annotations: annotationNames(member.annotations, restating: member.modifiers),
             type: member.type.map { typeName(of: $0) },
             parameters: member.parameters.map(parameter(of:)),
             calls: member.callSites.map(call(of:)).sorted(),
@@ -173,5 +183,22 @@ struct ContractNormalizer {
         let withoutAt = annotation.hasPrefix("@") ? String(annotation.dropFirst()) : annotation
         let withoutArguments = withoutAt.components(separatedBy: "(").first ?? withoutAt
         return simpleName(withoutArguments.trimmingCharacters(in: .whitespaces))
+    }
+
+    /// Rule 8: `@abstractmethod` beside `.abstract`, `@override` beside `.override` — the annotation is
+    /// the language's spelling of a modifier already recorded, so only the modifier survives. The
+    /// `method`/`property` suffix covers Python's `@staticmethod`/`@abstractmethod`.
+    private func annotationNames(_ annotations: [String], restating modifiers: [Modifier]) -> [String] {
+        let present = Set(modifiers.map { $0.rawValue.lowercased() })
+        return annotations
+            .map(annotationName(of:))
+            .filter { name in
+                let lowered = name.lowercased()
+                let stem = ["method", "property"].reduce(lowered) { stem, suffix in
+                    stem.hasSuffix(suffix) ? String(stem.dropLast(suffix.count)) : stem
+                }
+                return !present.contains(lowered) && !present.contains(stem)
+            }
+            .sorted()
     }
 }

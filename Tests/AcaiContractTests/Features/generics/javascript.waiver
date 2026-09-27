@@ -1,0 +1,1 @@
+JavaScript has no type parameters; generics exist only in TypeScript's annotations, which plain JS files do not carry.

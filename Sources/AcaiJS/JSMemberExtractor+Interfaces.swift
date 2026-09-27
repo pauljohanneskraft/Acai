@@ -28,7 +28,7 @@ extension JSMemberExtractor {
 
         return Member(
             name: name, kind: .property,
-            accessLevel: accessLevel ?? .internal,
+            accessLevel: accessLevel ?? .public,
             modifiers: modifiers,
             type: propType,
             location: node.location(in: context)
@@ -51,7 +51,7 @@ extension JSMemberExtractor {
 
         return Member(
             name: name, kind: .method,
-            accessLevel: accessLevel ?? .internal,
+            accessLevel: accessLevel ?? .public,
             type: returnType,
             parameters: params,
             genericParameters: generics,
@@ -80,7 +80,7 @@ extension JSMemberExtractor {
             members.append(Member(
                 name: paramName,
                 kind: .property,
-                accessLevel: accessMod ?? .internal,
+                accessLevel: accessMod ?? .public,
                 modifiers: modifiers,
                 type: paramType
             ))
@@ -92,12 +92,12 @@ extension JSMemberExtractor {
 
     func prototypeMember(name memberName: String, assignedValue rightNode: Node?) -> Member {
         guard let rightNode, let rightType = rightNode.nodeType, Self.functionNodeTypes.contains(rightType) else {
-            return Member(name: memberName, kind: .property, accessLevel: .internal)
+            return Member(name: memberName, kind: .property, accessLevel: .public)
         }
         var modifiers: [Modifier] = []
         if rightNode.hasDirectChildText("async", in: context) { modifiers.append(.async) }
         let params = rightNode.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
         return Member(
-            name: memberName, kind: .method, accessLevel: .internal, modifiers: modifiers, parameters: params)
+            name: memberName, kind: .method, accessLevel: .public, modifiers: modifiers, parameters: params)
     }
 }

@@ -9,6 +9,11 @@ import AcaiLibrary
 /// Read by `#filePath`, like `ParserGoldenCorpus` — the snippets are `excluded` in `Package.swift` so
 /// SwiftPM leaves the `.swift`/`.c`/`.cpp` ones as parser input instead of compiling them into this
 /// target.
+///
+/// A snippet's methods return a real value rather than void: "no result" is an *absent* return type in
+/// Swift and Kotlin and an explicit `void`/`None` in Java, Dart, TypeScript, Python and C++, and that
+/// difference is one the diagram faithfully shows, so the matrix keeps it out of the snippets instead
+/// of normalising it away.
 struct ContractFeatureCorpus {
 
     /// One language's place in the matrix: the file stem its snippets use, the extension it parses

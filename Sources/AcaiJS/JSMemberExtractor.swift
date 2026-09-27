@@ -68,7 +68,9 @@ struct JSMemberExtractor {
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
             kind: sig.kind,
-            accessLevel: sig.accessLevel ?? .internal,
+            // A class member with no accessibility modifier is public in both TypeScript and
+            // JavaScript; only a `#name` or an explicit `private`/`protected` narrows it.
+            accessLevel: sig.accessLevel ?? .public,
             modifiers: sig.modifiers,
             type: returnType,
             parameters: parameters,
