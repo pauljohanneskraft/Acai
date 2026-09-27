@@ -1,5 +1,7 @@
+import CoreGraphics
 import Foundation
 import Testing
+import UniformTypeIdentifiers
 import AcaiRender
 @testable import AcaiApp
 @testable import AcaiCore
@@ -88,5 +90,45 @@ struct ProjectBrowserViewModelExportTests {
         }
         let freeform = try #require(model.store.freeformDiagrams[newID])
         #expect(Set(freeform.nodes.map(\.name)) == ["A", "B"])
+    }
+
+    // MARK: - Image Export
+
+    @Test func exportingAnImageQueuesAPNGNamedAfterTheDiagram() throws {
+        let (model, _, _) = makeModel()
+        let png = Data([0x89, 0x50, 0x4E, 0x47])
+
+        model.exportImage(named: "My Classes", using: StubImageExporter(result: .success(png)))
+
+        let pending = try #require(model.pendingExport)
+        #expect(pending.filename == "My Classes.png")
+        #expect(pending.contentType == .png)
+        #expect(pending.data == png)
+        #expect(model.store.lastError == nil)
+    }
+
+    /// A failed render reaches the user through the store's alert rather than silently leaving the
+    /// file exporter unarmed.
+    @Test func aFailingExporterReportsAnError() throws {
+        let (model, _, _) = makeModel()
+
+        model.exportImage(named: "My Classes", using: StubImageExporter(result: .failure(ExportFailure())))
+
+        #expect(model.pendingExport == nil)
+        let error = try #require(model.store.lastError)
+        #expect(error.message.contains(ExportFailure().localizedDescription))
+    }
+}
+
+private struct ExportFailure: LocalizedError {
+    var errorDescription: String? { "The diagram is too large to render." }
+}
+
+@MainActor
+private struct StubImageExporter: DiagramImageExporting {
+    let result: Result<Data, any Error>
+
+    func exportPNGData(scale: CGFloat) throws -> Data {
+        try result.get()
     }
 }
