@@ -10,13 +10,13 @@ struct StereotypedBoxNodeView: View {
     @Environment(\.diagramPalette) private var palette
 
     var body: some View {
-        VStack(spacing: Spacing.xs) {
+        VStack(spacing: .spacingXS) {
             if let stereotype {
                 Text(verbatim: "<<\(stereotype)>>")
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundColor(palette.freeformDecorations.artifactBorder)
             }
-            HStack(spacing: Spacing.xs) {
+            HStack(spacing: .spacingXS) {
                 Image(systemName: systemImage)
                     .font(.system(size: 14))
                     .foregroundColor(palette.freeformDecorations.artifactIcon)
@@ -25,8 +25,8 @@ struct StereotypedBoxNodeView: View {
                     .foregroundColor(palette.canvasInk.primaryInk)
             }
         }
-        .padding(.horizontal, Spacing.m)
-        .padding(.vertical, Spacing.s)
+        .padding(.horizontal, .spacingM)
+        .padding(.vertical, .spacingS)
         .background(palette.freeformDecorations.artifactFill)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(

@@ -8,7 +8,7 @@ struct PickerFilterField: View {
     var placeholder: String = "Filter…"
 
     var body: some View {
-        HStack(spacing: Spacing.xs) {
+        HStack(spacing: .spacingXS) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField(placeholder, text: $text)
@@ -24,8 +24,8 @@ struct PickerFilterField: View {
             }
         }
         .font(.callout)
-        .padding(.horizontal, Spacing.xs)
-        .padding(.vertical, Spacing.xs)
+        .padding(.horizontal, .spacingXS)
+        .padding(.vertical, .spacingXS)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
     }
 }

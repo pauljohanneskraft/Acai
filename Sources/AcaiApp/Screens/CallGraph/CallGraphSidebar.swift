@@ -66,7 +66,7 @@ struct CallGraphSidebar: View {
                 Text(.app("View.CallGraphSidebar.Inspector")).tag(CallGraphSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(Spacing.s)
+            .padding(.spacingS)
 
             Divider()
 
@@ -98,7 +98,7 @@ struct CallGraphSidebar: View {
                     .foregroundStyle(.secondary)
 
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $scopeQuery)
                         Picker(.app("View.CallGraphSidebar.Scope"), selection: $draftScope) {
                             Text(.app("View.CallGraphSidebar.WholeCodebase")).tag(CallGraphScope.wholeCodebase)

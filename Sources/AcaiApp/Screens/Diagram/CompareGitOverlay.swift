@@ -44,9 +44,9 @@ struct CompareOverlayButton: View {
         // silently ballooning while everything around it stays put.
         .dynamicTypeSize(.large)
         .buttonStyle(.plain)
-        .padding(Spacing.s)
+        .padding(.spacingS)
         .background(isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.thinMaterial), in: Circle())
-        .padding(Spacing.s)
+        .padding(.spacingS)
         .help(isOn
             ? .app("View.CompareGitOverlay.ComparingVs \(diagram.comparisonGitRef ?? "")")
             : .app("View.CompareGitOverlay.CompareVsGit"))
@@ -213,7 +213,7 @@ struct CompareGitPanel: View {
                 if newValue == nil { isEditingCustomRef = false }
             }
 
-            VStack(alignment: .leading, spacing: Spacing.m) {
+            VStack(alignment: .leading, spacing: .spacingM) {
                 if isEditingCustomRef {
                     TextField(text: $customRefText) {
                         Text(.app("View.CompareGitPanel.RefPlaceholder"))
@@ -232,7 +232,7 @@ struct CompareGitPanel: View {
                     findingsSections
                 }
             }
-            .padding(Spacing.l)
+            .padding(.spacingL)
         }
         .frame(minWidth: 260, alignment: .leading)
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
@@ -265,7 +265,7 @@ struct CompareGitPanel: View {
         case .ref(let ref):
             Text(verbatim: ref.name)
         case .changeRequest(let pullRequest):
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+            VStack(alignment: .leading, spacing: .spacingXXS) {
                 Text(verbatim: "#\(pullRequest.number) \(pullRequest.title)")
                     .lineLimit(2)
                 pullRequest.pickerDetail
@@ -318,7 +318,7 @@ struct CompareGitPanel: View {
                 }
             }
         } else if !isFullyLoaded {
-            HStack(spacing: Spacing.xs) {
+            HStack(spacing: .spacingXS) {
                 ProgressView().controlSize(.small)
                 Text(.app("View.CompareGitPanel.Loading \(diagram.comparisonGitRef ?? "")"))
                     .font(.caption)
@@ -349,7 +349,7 @@ struct CompareGitPanel: View {
 
     private var changedFilesSection: some View {
         DisclosureGroup(.app("View.CompareGitPanel.ChangedFiles \(changedFiles.count)")) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
+            VStack(alignment: .leading, spacing: .spacingXS) {
                 ForEach(changedFiles) { entry in
                     changedFileRow(entry)
                 }
@@ -364,7 +364,7 @@ struct CompareGitPanel: View {
         let reference: CodeElementReference? = entry.typeIDs.count == 1
             ? entry.typeIDs.first.map { .type(id: $0) } : nil
 
-        return HStack(spacing: Spacing.xs) {
+        return HStack(spacing: .spacingXS) {
             Button {
                 model.toggleComparisonFileReviewed(diagramID: diagram.id, filePath: entry.filePath)
             } label: {

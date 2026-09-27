@@ -266,7 +266,7 @@ public struct ProjectBrowserView: View {
                 structuralDiagramDetail(diagram: diagram, artifact: artifact, codebase: codebase)
             }
         } else {
-            VStack(spacing: Spacing.m) {
+            VStack(spacing: .spacingM) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)

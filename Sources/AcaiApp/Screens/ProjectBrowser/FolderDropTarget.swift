@@ -14,7 +14,7 @@ struct FolderDropTarget: ViewModifier {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Color.accentColor.opacity(isTargeted ? 0.2 : 0))
                     .strokeBorder(Color.accentColor, lineWidth: isTargeted ? 2 : 0)
-                    .padding(-Spacing.xs)
+                    .padding(-CGFloat.spacingXS)
             }
             .onDrop(of: FolderDropLoader.acceptedTypes, isTargeted: $isTargeted) { providers in
                 Task { await add(providers) }

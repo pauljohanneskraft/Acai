@@ -33,7 +33,7 @@ struct PackageDiagramSidebar: View {
                 Text(.app("View.PackageDiagramSidebar.Inspector")).tag(PackageDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(Spacing.s)
+            .padding(.spacingS)
 
             Divider()
 

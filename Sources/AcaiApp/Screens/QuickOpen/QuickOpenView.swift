@@ -56,7 +56,7 @@ struct QuickOpenView: View {
                 .accessibilityLabel(.app("View.QuickOpenView.ClearSearch"))
             }
         }
-        .padding(Spacing.s)
+        .padding(.spacingS)
     }
 
     @ViewBuilder
@@ -172,7 +172,7 @@ private struct QuickOpenResultRow: View {
                 Image(systemName: entry.systemImage)
                     .foregroundStyle(.secondary)
                     .frame(width: 20)
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                VStack(alignment: .leading, spacing: .spacingXXS) {
                     Text(verbatim: entry.name)
                     Text(verbatim: entry.subtitle)
                         .font(.caption)

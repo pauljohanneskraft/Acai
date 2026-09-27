@@ -114,7 +114,7 @@ struct ProjectDetailView: View {
                 Divider()
                 deleteProjectSection
                     .padding(.horizontal)
-                    .padding(.vertical, Spacing.m)
+                    .padding(.vertical, .spacingM)
             }
             // On a wide window, an unconstrained VStack lets `Spacer()`s inside each row stretch
             // until content (e.g. a codebase row's status icon) sits far from the row it belongs
@@ -139,14 +139,14 @@ struct ProjectDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
-                    .padding(.bottom, Spacing.m)
+                    .padding(.bottom, .spacingM)
             } else {
-                LazyVStack(spacing: Spacing.xxs) {
+                LazyVStack(spacing: .spacingXXS) {
                     ForEach(sortedCodebases) { codebase in
                         codebaseRow(codebase: codebase)
                     }
                 }
-                .padding(.bottom, Spacing.s)
+                .padding(.bottom, .spacingS)
             }
 
             Divider()
@@ -157,14 +157,14 @@ struct ProjectDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
-                    .padding(.bottom, Spacing.m)
+                    .padding(.bottom, .spacingM)
             } else {
-                LazyVStack(spacing: Spacing.xxs) {
+                LazyVStack(spacing: .spacingXXS) {
                     ForEach(freeformDiagrams) { diagram in
                         freeformDiagramRow(diagram: diagram)
                     }
                 }
-                .padding(.bottom, Spacing.s)
+                .padding(.bottom, .spacingS)
             }
         }
     }
@@ -281,7 +281,7 @@ struct ProjectDetailView: View {
     }
 
     private var emptyProjectPlaceholder: some View {
-        VStack(spacing: Spacing.m) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "tray.full")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
@@ -300,7 +300,7 @@ struct ProjectDetailView: View {
             Spacer()
         }
         .padding(.horizontal)
-        .padding(.vertical, Spacing.m)
+        .padding(.vertical, .spacingM)
     }
 
     // MARK: - Project Header (Editable)
@@ -310,7 +310,7 @@ struct ProjectDetailView: View {
     /// showing them here too would duplicate them. On iPad these actions live in the nav bar
     /// toolbar instead; macOS keeps them here, matching its persistent in-content controls pattern.
     private func projectHeader(project: Project, index: Int, showActions: Bool) -> some View {
-        HStack(spacing: Spacing.s) {
+        HStack(spacing: .spacingS) {
             Image(systemName: "tray.full")
                 .font(.title)
                 .foregroundStyle(.primary)
@@ -343,7 +343,7 @@ struct ProjectDetailView: View {
 
 private extension ProjectDetailView {
     func projectTitleFields(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             TextField(text: Binding(
                 get: { model.store.projects[safe: index]?.title ?? "" },
                 set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
@@ -385,7 +385,7 @@ extension ProjectDetailView {
                 // `List` row already gets its own row insets, so baking padding into the shared
                 // content would double it up there.
                 .padding(.horizontal)
-                .padding(.vertical, Spacing.xs)
+                .padding(.vertical, .spacingXS)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("projectDetail.codebaseRow.\(codebase.id)")
@@ -400,7 +400,7 @@ extension ProjectDetailView {
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+            VStack(alignment: .leading, spacing: .spacingXXS) {
                 Text(verbatim: codebase.name)
                     .fontWeight(.medium)
                 Text(verbatim: URL(fileURLWithPath: codebase.directoryPath).lastPathComponent)

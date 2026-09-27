@@ -67,7 +67,7 @@ struct FreeformDiagramInspector: View {
             } else if viewModel.selectedNodeIDs.count > 1 {
                 multiNodeInspector
             } else {
-                VStack(spacing: Spacing.m) {
+                VStack(spacing: .spacingM) {
                     Image(systemName: "cursorarrow.click")
                         .font(.title)
                         .foregroundStyle(.secondary)

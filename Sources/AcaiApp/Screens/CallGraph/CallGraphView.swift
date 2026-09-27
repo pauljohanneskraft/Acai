@@ -182,16 +182,16 @@ private struct CallGraphCanvasView: View {
     private var coverageBanner: some View {
         let coverage = viewModel.graph.coverage
         let percent = Int((coverage.fraction * 100).rounded())
-        return HStack(spacing: Spacing.xs) {
+        return HStack(spacing: .spacingXS) {
             Image(systemName: percent == 100 ? "checkmark.seal" : "exclamationmark.triangle")
             Text(.app("View.CallGraphCanvasView.ResolvedCallSites \(coverage.resolved) \(coverage.total) \(percent)"))
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-        .padding(.horizontal, Spacing.s)
-        .padding(.vertical, Spacing.xs)
+        .padding(.horizontal, .spacingS)
+        .padding(.vertical, .spacingXS)
         .background(.thinMaterial, in: Capsule())
-        .padding(.top, Spacing.s)
+        .padding(.top, .spacingS)
     }
 
     // MARK: - Canvas
@@ -357,7 +357,7 @@ private struct CallGraphNodeView: View {
             .font(.system(.caption, design: .monospaced))
             .lineLimit(1)
             .truncationMode(.middle)
-            .padding(.horizontal, Spacing.s)
+            .padding(.horizontal, .spacingS)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .foregroundStyle(Color(white: 0.1))
             .background(RoundedRectangle(cornerRadius: 8).fill(fill))

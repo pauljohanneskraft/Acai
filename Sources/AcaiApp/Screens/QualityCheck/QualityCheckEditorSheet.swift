@@ -81,7 +81,7 @@ struct QualityCheckEditorSheet: View {
         switch source {
         case .definedHere:
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
+                VStack(alignment: .leading, spacing: .spacingL) {
                     QualityRulesEditor(rules: $rules)
                     Divider()
                     Text(.app("View.QualityCheckEditorSheet.Preview")).font(.headline)
@@ -96,7 +96,7 @@ struct QualityCheckEditorSheet: View {
 
     @ViewBuilder
     private var externalContent: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: .spacingM) {
             HStack {
                 (externalPath.isEmpty
                     ? Text(.app("View.QualityCheckEditorSheet.NoFileSelected"))

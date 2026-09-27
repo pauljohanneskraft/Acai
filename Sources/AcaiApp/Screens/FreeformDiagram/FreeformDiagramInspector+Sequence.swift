@@ -93,7 +93,7 @@ extension FreeformDiagramInspector {
         index: Int,
         operand: SequenceDiagram.Fragment.Operand
     ) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             HStack {
                 TextField(text: Binding(
                     get: { operand.guardLabel ?? "" },
@@ -121,7 +121,7 @@ extension FreeformDiagramInspector {
             }
             operandRangeRow(nodeID: nodeID, content: content, index: index, operand: operand)
         }
-        .padding(.vertical, Spacing.xxs)
+        .padding(.vertical, .spacingXXS)
     }
 
     /// The two steppers bounding a fragment operand — labelled "From"/"To", since two bare numbers

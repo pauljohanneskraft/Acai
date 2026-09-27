@@ -30,7 +30,7 @@ extension CompareGitPanel {
     }
 
     private func findingsSummary(resolvedCount: Int, addedCount: Int, netChange: Int) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xxs) {
+        VStack(alignment: .leading, spacing: .spacingXXS) {
             Text(.app("View.CompareGitPanel.FindingsSummary \(resolvedCount) \(addedCount)"))
             Label {
                 if netChange < 0 {
@@ -58,7 +58,7 @@ extension CompareGitPanel {
     }
 
     private func findingRows(_ findings: [Finding]) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             ForEach(findings) { finding in
                 findingDeltaRow(finding)
             }
@@ -67,7 +67,7 @@ extension CompareGitPanel {
 
     private func findingDeltaRow(_ finding: Finding) -> some View {
         let reviewed = model.isComparisonFindingReviewed(diagramID: diagram.id, findingID: finding.id)
-        return HStack(alignment: .top, spacing: Spacing.xs) {
+        return HStack(alignment: .top, spacing: .spacingXS) {
             Button {
                 model.toggleComparisonFindingReviewed(diagramID: diagram.id, findingID: finding.id)
             } label: {

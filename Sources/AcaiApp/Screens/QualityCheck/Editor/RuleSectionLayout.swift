@@ -21,7 +21,7 @@ struct RuleSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             HStack {
                 Text(localized: title).font(.headline)
                 if total > 0 {
@@ -34,7 +34,7 @@ struct RuleSection<Content: View>: View {
             }
             content
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, .spacingXS)
     }
 }
 
@@ -49,7 +49,7 @@ struct RuleCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             HStack {
                 Spacer()
                 Button(action: onRemove) {
@@ -60,7 +60,7 @@ struct RuleCard<Content: View>: View {
             }
             content
         }
-        .padding(Spacing.s)
+        .padding(.spacingS)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }

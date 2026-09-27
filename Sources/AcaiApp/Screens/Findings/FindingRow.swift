@@ -15,10 +15,10 @@ struct FindingRow: View {
     var onOpenCycle: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.l) {
+        VStack(alignment: .leading, spacing: .spacingL) {
             summary
                 .openInCodeElement(finding.reference, codebase: codebase, relativePath: finding.location?.filePath)
-            HStack(spacing: Spacing.m) {
+            HStack(spacing: .spacingM) {
                 if let codebase, let location = finding.location {
                     ViewSourceButton(codebase: codebase, relativePath: location.filePath)
                 }
@@ -39,7 +39,7 @@ struct FindingRow: View {
                 }
             }
         }
-        .padding(Spacing.s)
+        .padding(.spacingS)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .opacity(isSuppressed ? 0.6 : 1)
@@ -51,8 +51,8 @@ struct FindingRow: View {
     }
 
     private var summary: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            HStack(spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
+            HStack(spacing: .spacingS) {
                 badge(text: finding.kind.title, systemImage: finding.kind.systemImage, tint: .secondary)
                 badge(text: finding.severity.title, systemImage: finding.severity.systemImage, tint: severityTint)
                 Spacer()
@@ -92,7 +92,7 @@ struct FindingRow: View {
     private func badge(text: LocalizedStringResource, systemImage: String, tint: Color) -> some View {
         Label(text, systemImage: systemImage)
             .font(.caption.monospaced())
-            .padding(.horizontal, Spacing.xs).padding(.vertical, Spacing.xxs)
+            .padding(.horizontal, .spacingXS).padding(.vertical, .spacingXXS)
             .background(tint.opacity(0.12))
             .foregroundStyle(tint)
             .clipShape(Capsule())

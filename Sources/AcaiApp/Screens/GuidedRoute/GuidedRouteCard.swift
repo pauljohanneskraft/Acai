@@ -42,7 +42,7 @@ struct GuidedRouteCard: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: .spacingM) {
             HStack(alignment: .firstTextBaseline) {
                 Label(.app("View.GuidedRouteCard.Title"), systemImage: "map")
                     .font(.headline)
@@ -65,7 +65,7 @@ struct GuidedRouteCard: View {
                 }
             }
         }
-        .padding(Spacing.m)
+        .padding(.spacingM)
         .background(Color.gray.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .padding()
@@ -77,12 +77,12 @@ struct GuidedRouteCard: View {
         Button {
             open(stop)
         } label: {
-            HStack(alignment: .top, spacing: Spacing.m) {
+            HStack(alignment: .top, spacing: .spacingM) {
                 Image(systemName: stop.kind.systemImage)
                     .font(.title3)
                     .frame(width: 24)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: Spacing.xs) {
+                VStack(alignment: .leading, spacing: .spacingXS) {
                     Text(localized: stop.kind.title)
                         .font(.headline)
                     Text(verbatim: stop.subject)

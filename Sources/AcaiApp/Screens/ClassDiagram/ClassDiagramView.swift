@@ -214,7 +214,7 @@ struct ClassDiagramView: View {
                     onStepBackward: viewModel.stepSearchBackward,
                     onDismiss: hideSearchBar
                 )
-                .padding(.top, Spacing.s)
+                .padding(.top, .spacingS)
             }
         }
     }

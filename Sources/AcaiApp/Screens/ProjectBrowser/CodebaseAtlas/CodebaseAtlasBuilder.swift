@@ -110,22 +110,22 @@ struct CodebaseAtlasBuilder {
 
     private func drawTitlePage(in context: CGContext) {
         var canvas = AtlasPageCanvas(context: context, bounds: contentBounds)
-        canvas.drawLine(codebase.name, fontSize: 28, bold: true, spacing: Spacing.xs)
-        canvas.drawLine("Codebase Atlas", fontSize: 16, spacing: Spacing.xl)
+        canvas.drawLine(codebase.name, fontSize: 28, bold: true, spacing: .spacingXS)
+        canvas.drawLine("Codebase Atlas", fontSize: 16, spacing: .spacingXL)
         canvas.drawLine(
-            "Generated \(Self.generatedAtFormatter.string(from: Date()))", fontSize: 12, spacing: Spacing.xs
+            "Generated \(Self.generatedAtFormatter.string(from: Date()))", fontSize: 12, spacing: .spacingXS
         )
-        canvas.drawLine("Diagrams: \(diagrams.count)", fontSize: 12, spacing: Spacing.xxs)
-        canvas.drawLine("Findings: \(findings.count)", fontSize: 12, spacing: Spacing.xxs)
-        canvas.drawLine("Acai Codebase Atlas — Format \(Self.formatVersion)", fontSize: 10, spacing: Spacing.xxs)
+        canvas.drawLine("Diagrams: \(diagrams.count)", fontSize: 12, spacing: .spacingXXS)
+        canvas.drawLine("Findings: \(findings.count)", fontSize: 12, spacing: .spacingXXS)
+        canvas.drawLine("Acai Codebase Atlas — Format \(Self.formatVersion)", fontSize: 10, spacing: .spacingXXS)
     }
 
     private func drawDiagramPage(
         _ diagram: GeneratedDiagram, _ outcome: AtlasDiagramRenderOutcome, in context: CGContext
     ) {
         var canvas = AtlasPageCanvas(context: context, bounds: contentBounds)
-        canvas.drawLine(diagram.name, fontSize: 16, bold: true, spacing: Spacing.xs)
-        canvas.drawLine(diagram.type.displayName, fontSize: 11, spacing: Spacing.m)
+        canvas.drawLine(diagram.name, fontSize: 16, bold: true, spacing: .spacingXS)
+        canvas.drawLine(diagram.type.displayName, fontSize: 11, spacing: .spacingM)
         switch outcome {
         case .rendered(let data):
             if let image = data.cgImage {
@@ -143,22 +143,22 @@ struct CodebaseAtlasBuilder {
     private func drawStatsPage(lines: [String], pageIndex: Int, totalPages: Int, in context: CGContext) {
         var canvas = AtlasPageCanvas(context: context, bounds: contentBounds)
         let title = totalPages > 1 ? "Statistics (\(pageIndex + 1)/\(totalPages))" : "Statistics"
-        canvas.drawLine(title, fontSize: 18, bold: true, spacing: Spacing.l)
+        canvas.drawLine(title, fontSize: 18, bold: true, spacing: .spacingL)
         for line in lines {
-            canvas.drawLine(line, fontSize: 11, spacing: Spacing.s)
+            canvas.drawLine(line, fontSize: 11, spacing: .spacingS)
         }
     }
 
     private func drawFindingsPage(items: [Finding], pageIndex: Int, totalPages: Int, in context: CGContext) {
         var canvas = AtlasPageCanvas(context: context, bounds: contentBounds)
         let title = totalPages > 1 ? "Findings (\(pageIndex + 1)/\(totalPages))" : "Findings"
-        canvas.drawLine(title, fontSize: 18, bold: true, spacing: Spacing.l)
+        canvas.drawLine(title, fontSize: 18, bold: true, spacing: .spacingL)
         guard !items.isEmpty else {
             canvas.drawLine("No findings for this codebase.", fontSize: 12)
             return
         }
         for finding in items {
-            canvas.drawLine(findingLine(finding), fontSize: 11, spacing: Spacing.s)
+            canvas.drawLine(findingLine(finding), fontSize: 11, spacing: .spacingS)
         }
     }
 

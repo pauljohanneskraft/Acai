@@ -31,7 +31,7 @@ struct ClassDiagramSidebar: View {
                 Text(.app("View.ClassDiagramSidebar.Inspector")).tag(ClassDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(Spacing.s)
+            .padding(.spacingS)
 
             Divider()
 
@@ -157,7 +157,7 @@ struct ClassDiagramSidebar: View {
     @ViewBuilder
     private var selectionInspector: some View {
         if viewModel.selectedNodeIDs.isEmpty {
-            VStack(spacing: Spacing.m) {
+            VStack(spacing: .spacingM) {
                 Image(systemName: "cursorarrow.click")
                     .font(.title)
                     .foregroundStyle(.secondary)
@@ -357,7 +357,7 @@ private extension ClassDiagramSidebar {
                 }
             }
             ForEach(change.changedMembers, id: \.name) { memberChange in
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                VStack(alignment: .leading, spacing: .spacingXXS) {
                     Text(verbatim: "~ \(memberChange.name)")
                         .font(.caption.monospaced())
                     Text(verbatim: memberChange.before)

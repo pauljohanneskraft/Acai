@@ -75,7 +75,7 @@ struct SequenceDiagramSidebar: View {
                 Text(.app("View.SequenceDiagramSidebar.Inspector")).tag(SequenceDiagramSidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(Spacing.s)
+            .padding(.spacingS)
 
             Divider()
 
@@ -113,7 +113,7 @@ struct SequenceDiagramSidebar: View {
                     .foregroundStyle(.secondary)
 
                 LabeledContent {
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $typeQuery)
                         Picker(.app("View.SequenceDiagramSidebar.Type"), selection: $draftEntryTypeName) {
                             Text(localized: freeFunctionNames.isEmpty
@@ -136,7 +136,7 @@ struct SequenceDiagramSidebar: View {
                 }
 
                 LabeledContent(draftEntryTypeName.isEmpty ? "Function" : "Method") {
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $methodQuery)
                         Picker(.app("View.SequenceDiagramSidebar.Method"), selection: $draftEntryMethodName) {
                             Text(.app("View.SequenceDiagramSidebar.Select")).tag("")

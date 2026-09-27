@@ -7,7 +7,7 @@ struct QualityRulesEditor: View {
     @Binding var rules: QualityRules
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.l) {
+        VStack(alignment: .leading, spacing: .spacingL) {
             scopeEditor
             Divider()
             ForbiddenRulesEditor(rules: $rules.forbidden)
@@ -24,19 +24,19 @@ struct QualityRulesEditor: View {
 
     @ViewBuilder
     private var scopeEditor: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             Toggle(.app("View.QualityRulesEditor.IncludeGeneratedTypes"), isOn: $rules.includeGeneratedTypes)
                 .font(.headline)
             Text(.app("View.QualityRulesEditor.WhenOffDefaultMachine"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, .spacingXS)
     }
 
     @ViewBuilder
     private var cyclesEditor: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             Toggle(.app("View.QualityRulesEditor.DetectDependencyCycles"), isOn: cyclesEnabled)
                 .font(.headline)
             if let binding = Binding($rules.cycles) {
@@ -49,7 +49,7 @@ struct QualityRulesEditor: View {
                 .fixedSize()
             }
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, .spacingXS)
     }
 
     private var cyclesEnabled: Binding<Bool> {

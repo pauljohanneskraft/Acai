@@ -80,7 +80,7 @@ struct FindingsView: View {
     }
 
     private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
-        VStack(spacing: Spacing.m) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "checkmark.seal")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -88,14 +88,14 @@ struct FindingsView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, Spacing.xxl)
+                .padding(.horizontal, .spacingXXL)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(identifier)
     }
 
     private func loadingState(count: Int) -> some View {
-        VStack(spacing: Spacing.m) {
+        VStack(spacing: .spacingM) {
             ProgressView()
             Text(.app("View.FindingsView.AnalyzingCodebaseS \(count)"))
                 .font(.callout)
@@ -148,9 +148,9 @@ struct FindingsView: View {
     }
 
     private func statusNote(stillAnalyzing: [Codebase], notIndexed: [Codebase]) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             if !stillAnalyzing.isEmpty {
-                HStack(spacing: Spacing.xs) {
+                HStack(spacing: .spacingXS) {
                     ProgressView().controlSize(.small)
                     Text(.app("View.FindingsView.StillAnalyzingMoreCodebase \(stillAnalyzing.count)"))
                 }
@@ -164,13 +164,13 @@ struct FindingsView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, .spacingXS)
     }
 
     private func filterBar(project: Project) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.s) {
+                HStack(spacing: .spacingS) {
                     ForEach(Finding.Kind.allCases) { kind in
                         kindChip(kind)
                     }
@@ -191,7 +191,7 @@ struct FindingsView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, Spacing.s)
+        .padding(.top, .spacingS)
     }
 
     private func kindChip(_ kind: Finding.Kind) -> some View {
@@ -205,7 +205,7 @@ struct FindingsView: View {
         } label: {
             Label(kind.title, systemImage: kind.systemImage)
                 .font(.caption.weight(isSelected ? .semibold : .regular))
-                .padding(.horizontal, Spacing.s).padding(.vertical, Spacing.xs)
+                .padding(.horizontal, .spacingS).padding(.vertical, .spacingXS)
                 .background(isSelected ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08))
                 .clipShape(Capsule())
         }

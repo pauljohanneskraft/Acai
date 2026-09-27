@@ -11,7 +11,7 @@ extension FreeformDiagramView {
                 Text(.app("View.FreeformDiagramView.Inspector")).tag(SidebarTab.inspector)
             }
             .pickerStyle(.segmented)
-            .padding(Spacing.s)
+            .padding(.spacingS)
 
             Divider()
 

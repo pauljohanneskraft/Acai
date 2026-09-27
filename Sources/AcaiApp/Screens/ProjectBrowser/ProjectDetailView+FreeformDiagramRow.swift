@@ -7,7 +7,7 @@ extension ProjectDetailView {
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+            VStack(alignment: .leading, spacing: .spacingXXS) {
                 Text(verbatim: diagram.name)
                     .fontWeight(.medium)
                 Text(.app("View.ProjectDetailView.FreeformDiagram"))
@@ -27,7 +27,7 @@ extension ProjectDetailView {
         if renamingDiagramID == diagram.id {
             renamingField(diagram: diagram)
                 .padding(.horizontal)
-                .padding(.vertical, Spacing.xs)
+                .padding(.vertical, .spacingXS)
         } else {
             Button {
                 model.selection = .freeformDiagram(diagram.id)
@@ -36,7 +36,7 @@ extension ProjectDetailView {
                     // See `codebaseRow`'s matching comment: only the regular-width call site needs
                     // this padding, so it's applied here rather than baked into the shared content.
                     .padding(.horizontal)
-                    .padding(.vertical, Spacing.xs)
+                    .padding(.vertical, .spacingXS)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("projectDetail.freeformDiagramRow.\(diagram.id)")

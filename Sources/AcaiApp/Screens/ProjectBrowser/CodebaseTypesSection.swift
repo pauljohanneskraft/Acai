@@ -18,7 +18,7 @@ struct CodebaseTypesSection: View {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
                 .sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: Spacing.xxs) {
+            LazyVStack(spacing: .spacingXXS) {
                 ForEach(sortedTypes, id: \.id) { type in
                     typeRow(type: type)
                 }
@@ -27,10 +27,10 @@ struct CodebaseTypesSection: View {
     }
 
     private func typeRow(type: TypeDeclaration) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xxs) {
-            HStack(spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingXXS) {
+            HStack(spacing: .spacingS) {
                 typeKindBadge(type.kind)
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                VStack(alignment: .leading, spacing: .spacingXXS) {
                     Text(verbatim: type.name)
                         .fontWeight(.medium)
                     if !type.inheritedTypes.isEmpty {
@@ -49,8 +49,8 @@ struct CodebaseTypesSection: View {
                 Text(verbatim: type.accessLevel.rawValue)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.vertical, Spacing.xxs)
+                    .padding(.horizontal, .spacingXS)
+                    .padding(.vertical, .spacingXXS)
                     .background(Color.secondary.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
@@ -60,7 +60,7 @@ struct CodebaseTypesSection: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, .spacingXS)
     }
 
     private static let badgeInfo: [TypeKind: (letter: String, color: Color)] = [

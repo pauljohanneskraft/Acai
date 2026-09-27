@@ -30,7 +30,7 @@ struct StatisticDetailSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
-                        .padding(.vertical, Spacing.s)
+                        .padding(.vertical, .spacingS)
                     Divider()
                 }
                 content
@@ -56,8 +56,8 @@ struct StatisticDetailSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(detail.rows) { row in
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    HStack(spacing: Spacing.s) {
+                VStack(alignment: .leading, spacing: .spacingXXS) {
+                    HStack(spacing: .spacingS) {
                         Text(verbatim: row.name)
                             .lineLimit(1)
                             .truncationMode(.middle)

@@ -17,7 +17,7 @@ struct CIQualityCheckExportSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
+                VStack(alignment: .leading, spacing: .spacingL) {
                     if invocation.needsExportNote {
                         QualityCheckPlaceholder(
                             text: .app("View.CIQualityCheckExportSheet.RulesFileOutsideCodebase \(codebaseName)"),
@@ -51,14 +51,14 @@ struct CIQualityCheckExportSheet: View {
     private func snippetSection(
         title: LocalizedStringResource, caption: LocalizedStringResource, code: String, identifier: String
     ) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             Text(localized: title).font(.headline)
             Text(localized: caption).font(.caption).foregroundStyle(.secondary)
             Text(verbatim: code)
                 .font(.system(.callout, design: .monospaced))
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(Spacing.s)
+                .padding(.spacingS)
                 .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .accessibilityIdentifier(identifier)

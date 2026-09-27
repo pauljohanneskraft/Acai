@@ -30,7 +30,7 @@ struct GitHubAccountSection: View {
     #endif
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: .spacingM) {
             if let account = accountStore.account {
                 signedInView(account)
             } else {
@@ -48,7 +48,7 @@ struct GitHubAccountSection: View {
                         SafariView(url: url)
                     } else {
                         // Shown during the dismissal animation after deviceCode is set to nil
-                        VStack(spacing: Spacing.l) {
+                        VStack(spacing: .spacingL) {
                             ProgressView()
                             Text(.app("View.GitHubAccountSection.CompletingSign"))
                                 .foregroundStyle(.secondary)
@@ -63,7 +63,7 @@ struct GitHubAccountSection: View {
 
     @ViewBuilder
     private func signedInView(_ account: GitHubTokenStore.StoredAccount) -> some View {
-        HStack(spacing: Spacing.m) {
+        HStack(spacing: .spacingM) {
             AsyncImage(url: account.avatarURL) { image in
                 image.resizable()
             } placeholder: {
@@ -72,7 +72,7 @@ struct GitHubAccountSection: View {
             .frame(width: 40, height: 40)
             .clipShape(Circle())
             .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
+            VStack(alignment: .leading, spacing: .spacingXXS) {
                 Text(verbatim: account.login)
                     .font(.headline)
                     .accessibilityIdentifier("github.signedInRow")
@@ -114,7 +114,7 @@ struct GitHubAccountSection: View {
     /// PATs, which don't currently report this) show as "Unknown," never silently as "has every
     /// scope" or "has none."
     private func scopeChecklist(_ account: GitHubTokenStore.StoredAccount) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             Text(.app("View.GitHubAccountSection.Scopes")).font(.caption).foregroundStyle(.secondary)
             if let scopes = account.scopes {
                 ForEach([GitHubScope.contentsRead, .metadataRead, .pullRequestsRead], id: \.rawValue) { scope in
@@ -181,7 +181,7 @@ struct GitHubAccountSection: View {
     }
 
     private func deviceCodeView(_ code: GitHubDeviceAuthFlow.DeviceCode) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             Text(.app("View.GitHubAccountSection.EnterCodeLinkBelow"))
                 .font(.caption)
                 .foregroundStyle(.secondary)

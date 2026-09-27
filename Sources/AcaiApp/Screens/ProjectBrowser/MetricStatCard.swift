@@ -74,8 +74,8 @@ struct MetricStatCard: View {
     }
 
     private var cardBody: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            HStack(spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
+            HStack(spacing: .spacingS) {
                 Image(systemName: icon)
                     .font(.title3.bold())
                     .foregroundStyle(color)
@@ -84,7 +84,7 @@ struct MetricStatCard: View {
                     .foregroundStyle(.secondary)
                 Spacer()
             }
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
+            HStack(alignment: .firstTextBaseline, spacing: .spacingS) {
                 Text(localized: primary)
                     .font(.title2.bold())
                     .foregroundStyle(.primary)
@@ -102,7 +102,7 @@ struct MetricStatCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(Spacing.m)
+        .padding(.spacingM)
         .background(GeometryReader { proxy in
             Color.clear.preference(key: CardHeightPreferenceKey.self, value: proxy.size.height)
         })

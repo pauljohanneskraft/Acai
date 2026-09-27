@@ -89,7 +89,7 @@ struct ModuleCouplingChartView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: Spacing.m) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "chart.xyaxis.line").font(.system(size: 28)).foregroundStyle(.secondary)
             Text(.app("View.ModuleCouplingChartView.NoModulesPlotYet"))
                 .foregroundStyle(.secondary)
@@ -166,7 +166,7 @@ struct ModuleCouplingChartView: View {
 
     private var legendList: some View {
         List(data.rankedByDistance) { point in
-            VStack(alignment: .leading, spacing: Spacing.xs) {
+            VStack(alignment: .leading, spacing: .spacingXS) {
                 HStack {
                     Image(systemName: point.zone.symbolName)
                     Text(verbatim: point.name).font(.callout.bold())
