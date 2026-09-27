@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("GitHubAccountStore")
+@Suite("GitHubAccountStore", .timeLimit(.minutes(1)))
 @MainActor
 struct GitHubAccountStoreTests {
     private struct RejectedToken: Error {}

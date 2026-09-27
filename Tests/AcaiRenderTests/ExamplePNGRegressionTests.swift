@@ -137,7 +137,7 @@ struct ExampleGoldenComparator {
     }
 }
 
-@Suite("Class diagram PNG exports")
+@Suite("Class diagram PNG exports", .timeLimit(.minutes(1)))
 struct ClassDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
@@ -164,7 +164,7 @@ struct ClassDiagramPNGTests {
     }
 }
 
-@Suite("Sequence diagram PNG exports")
+@Suite("Sequence diagram PNG exports", .timeLimit(.minutes(1)))
 struct SequenceDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
@@ -195,7 +195,7 @@ struct SequenceDiagramPNGTests {
     }
 }
 
-@Suite("State diagram PNG exports")
+@Suite("State diagram PNG exports", .timeLimit(.minutes(1)))
 struct StateDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
@@ -220,7 +220,7 @@ struct StateDiagramPNGTests {
     }
 }
 
-@Suite("Package diagram PNG exports")
+@Suite("Package diagram PNG exports", .timeLimit(.minutes(1)))
 struct PackageDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
@@ -246,7 +246,7 @@ struct PackageDiagramPNGTests {
     }
 }
 
-@Suite("Call graph PNG exports")
+@Suite("Call graph PNG exports", .timeLimit(.minutes(1)))
 struct CallGraphPNGTests {
     static let comparator = ExampleGoldenComparator()
 

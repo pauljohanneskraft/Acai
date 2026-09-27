@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Codebase freshness (issue #178)")
+@Suite("Codebase freshness (issue #178)", .timeLimit(.minutes(1)))
 @MainActor
 struct CodebaseFreshnessViewModelTests {
     private func makeModel(sourceDir: URL, baseDir: URL, codebaseID: UUID) -> ProjectBrowserViewModel {

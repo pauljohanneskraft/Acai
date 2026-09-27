@@ -6,7 +6,7 @@ import AcaiRender
 @testable import AcaiApp
 @testable import AcaiCore
 
-@Suite("ProjectBrowserViewModel DOT export & save-as-freeform")
+@Suite("ProjectBrowserViewModel DOT export & save-as-freeform", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectBrowserViewModelExportTests {
     private func widgetArtifact() -> CodeArtifact {

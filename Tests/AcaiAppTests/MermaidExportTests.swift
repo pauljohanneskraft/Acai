@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 @testable import AcaiCore
 
-@Suite("Mermaid Export")
+@Suite("Mermaid Export", .timeLimit(.minutes(1)))
 @MainActor
 struct MermaidExportTests {
 

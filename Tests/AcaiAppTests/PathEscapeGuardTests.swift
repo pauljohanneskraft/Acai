@@ -6,7 +6,7 @@ import Testing
 /// `Codebase.resolvedFileURL(relativePath:)`. Any path resolved from external input (a parsed
 /// `SourceLocation`, ultimately traceable to a GitHub-sourced codebase's tree) must be validated
 /// before use.
-@Suite("PathEscapeGuard")
+@Suite("PathEscapeGuard", .timeLimit(.minutes(1)))
 struct PathEscapeGuardTests {
 
     private func makeTempDirectory() throws -> URL {

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Diagram duplicate")
+@Suite("Diagram duplicate", .timeLimit(.minutes(1)))
 @MainActor
 struct DiagramDuplicateTests {
     private func withTempStoreDir<T>(_ body: (URL) throws -> T) rethrows -> T {

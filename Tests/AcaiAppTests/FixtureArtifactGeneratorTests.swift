@@ -8,7 +8,7 @@ import AcaiCore
 /// `ACAI_UITEST_CODEBASE_ARTIFACTS`/`ACAI_UITEST_COMPARISON_ARTIFACTS`, instead of driving a real parse
 /// through the UI. Re-run this whenever `Fixtures/seeded/SampleSwiftPackage` changes; never hand-edit
 /// the generated JSON.
-@Suite("Fixture CodeArtifact generation (record mode)")
+@Suite("Fixture CodeArtifact generation (record mode)", .timeLimit(.minutes(1)))
 struct FixtureArtifactGeneratorTests {
     private var sampleSwiftPackageDirectory: URL {
         URL(fileURLWithPath: #filePath)

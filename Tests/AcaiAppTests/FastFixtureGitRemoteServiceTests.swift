@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("FastFixtureGitRemoteService")
+@Suite("FastFixtureGitRemoteService", .timeLimit(.minutes(1)))
 struct FastFixtureGitRemoteServiceTests {
     private func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

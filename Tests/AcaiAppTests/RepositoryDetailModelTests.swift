@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("RepositoryDetailModel")
+@Suite("RepositoryDetailModel", .timeLimit(.minutes(1)))
 @MainActor
 struct RepositoryDetailModelTests {
     private let remoteURL = URL(string: "https://example.com/octocat/widgets.git")!

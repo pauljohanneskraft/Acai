@@ -7,7 +7,7 @@ import AcaiCore
 /// before `ProjectStore.saveArtifact`'s fire-and-forget disk write had even started, so a caller
 /// keying an "is this settled" signal off `ActivityCenter` could observe "done" before the artifact
 /// actually landed on disk.
-@Suite("reindex artifact persistence")
+@Suite("reindex artifact persistence", .timeLimit(.minutes(1)))
 @MainActor
 struct ReindexArtifactPersistenceTests {
     @Test("The artifact is on disk the instant reindex() returns, not just eventually")

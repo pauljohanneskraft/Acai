@@ -4,7 +4,7 @@ import AcaiCore
 import AcaiQuality
 @testable import AcaiApp
 
-@Suite("Findings aggregator")
+@Suite("Findings aggregator", .timeLimit(.minutes(1)))
 @MainActor
 struct FindingsAggregatorTests {
     private let baseDir = FileManager.default.temporaryDirectory

@@ -20,7 +20,7 @@ private struct CannedComparisonSource: ComparisonArtifactSourcing, ComparisonArt
     }
 }
 
-@Suite("Comparison view model")
+@Suite("Comparison view model", .timeLimit(.minutes(1)))
 @MainActor
 struct ComparisonViewModelTests {
     private let baseDir = FileManager.default.temporaryDirectory

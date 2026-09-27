@@ -6,7 +6,7 @@ import AcaiCore
 /// Unit tests for every bundled build-system detector: `isPresent` (indicator-file presence), the
 /// "prefer conventional source dir, fall back to root" rule, file-existence verification, and the
 /// `requestedLanguages` filter. All bundled detector types are visible through `AcaiLibrary`'s re-exports.
-@Suite("Build-system detectors")
+@Suite("Build-system detectors", .timeLimit(.minutes(1)))
 struct DetectorTests {
 
     // MARK: - Fixture helpers

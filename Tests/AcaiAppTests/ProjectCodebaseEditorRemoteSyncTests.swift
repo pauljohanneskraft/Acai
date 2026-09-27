@@ -6,7 +6,7 @@ import Testing
 
 /// Real libgit2 against a local repository: a remote on no particular host, reached with no
 /// account, which is exactly what #179 promises works for every git remote.
-@Suite("ProjectCodebaseEditor remote sync")
+@Suite("ProjectCodebaseEditor remote sync", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectCodebaseEditorRemoteSyncTests {
     private func makeTempDirectory() throws -> URL {

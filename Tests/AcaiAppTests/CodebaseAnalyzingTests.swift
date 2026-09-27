@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("CodebaseAnalyzing")
+@Suite("CodebaseAnalyzing", .timeLimit(.minutes(1)))
 struct CodebaseAnalyzingTests {
     private func makeArtifact() -> CodeArtifact {
         CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Widget.swift"]))

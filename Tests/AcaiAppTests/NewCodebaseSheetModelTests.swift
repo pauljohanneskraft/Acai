@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("NewCodebaseSheetModel")
+@Suite("NewCodebaseSheetModel", .timeLimit(.minutes(1)))
 @MainActor
 struct NewCodebaseSheetModelTests {
     private let remoteURL = URL(string: "https://example.com/team/widgets.git")!

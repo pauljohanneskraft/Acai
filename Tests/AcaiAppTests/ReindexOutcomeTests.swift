@@ -3,7 +3,7 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-@Suite("Reindex outcome")
+@Suite("Reindex outcome", .timeLimit(.minutes(1)))
 @MainActor
 struct ReindexOutcomeTests {
     @Test func reindexingAMissingCodebaseThrowsInsteadOfSucceedingSilently() async {
