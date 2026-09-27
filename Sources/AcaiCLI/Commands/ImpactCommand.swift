@@ -3,7 +3,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Impact: ParsableCommand {
+    struct Impact: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Show the transitive dependents (blast radius) of a type"
         )
@@ -27,8 +27,8 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+        mutating func run() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let report = ImpactAnalysis(artifact: artifact, rootType: type, maxDepth: depth).report
 
             let rendered: String

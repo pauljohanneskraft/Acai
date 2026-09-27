@@ -27,8 +27,8 @@ enum ExampleExports {
         try String(contentsOf: url, encoding: .utf8)
     }
 
-    static func analyze(_ directory: URL, language: CodeArtifact.SourceLanguage) throws -> CodeArtifact {
-        try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: [language])
+    static func analyze(_ directory: URL, language: CodeArtifact.SourceLanguage) async throws -> CodeArtifact {
+        try await AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: [language])
     }
 }
 
@@ -50,8 +50,8 @@ struct ClassDiagramExportTests {
     ]
 
     @Test("regenerated class DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("ClassDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderClassDOT with default options.
@@ -64,8 +64,8 @@ struct ClassDiagramExportTests {
     }
 
     @Test("regenerated class Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("ClassDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderClass with `--format mermaid` and default options.
@@ -101,8 +101,8 @@ struct SequenceDiagramExportTests {
     @Test("regenerated sequence DOT matches the checked-in golden", arguments: cases)
     func matchesGolden(
         stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
-    ) throws {
-        let artifact = try ExampleExports.analyze(
+    ) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderSequenceDOT for the language's entry point with defaults.
@@ -118,8 +118,8 @@ struct SequenceDiagramExportTests {
     @Test("regenerated sequence Mermaid matches the checked-in golden", arguments: cases)
     func matchesMermaidGolden(
         stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
-    ) throws {
-        let artifact = try ExampleExports.analyze(
+    ) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagram"), language: language
         )
         let diagram = SequenceDiagramBuilder(entryPoint: entry, maxDepth: 5, typeMapping: [:]).build(from: artifact)
@@ -153,8 +153,8 @@ struct PackageDiagramExportTests {
     ]
 
     @Test("regenerated package DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("PackageDiagram", dir), language: language
         )
         // Mirrors DiagramCommand.renderPackage (enriched + default theme/font).
@@ -169,8 +169,8 @@ struct PackageDiagramExportTests {
     }
 
     @Test("regenerated package Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("PackageDiagram", dir), language: language
         )
         let diagram = PackageDiagramBuilder().build(
@@ -202,8 +202,8 @@ struct CallGraphExportTests {
     ]
 
     @Test("regenerated call-graph DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("CallGraph", dir), language: language
         )
         // Mirrors DiagramCommand.callGraphExport (whole-codebase scope, default title/theme).
@@ -217,8 +217,8 @@ struct CallGraphExportTests {
     }
 
     @Test("regenerated call-graph Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("CallGraph", dir), language: language
         )
         let graph = CallGraphBuilder(scope: .wholeCodebase, title: "Call graph").build(from: artifact)
@@ -250,8 +250,8 @@ struct StateDiagramExportTests {
     ]
 
     @Test("regenerated state DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("StateDiagram"), language: language
         )
         // Mirrors DiagramCommand.renderStateDOT (resolvingExtensions + default maxStates/theme).
@@ -265,8 +265,8 @@ struct StateDiagramExportTests {
     }
 
     @Test("regenerated state Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) throws {
-        let artifact = try ExampleExports.analyze(
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
             ExampleExports.examples("StateDiagram"), language: language
         )
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
