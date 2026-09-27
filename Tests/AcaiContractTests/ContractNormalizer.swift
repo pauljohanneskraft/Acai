@@ -134,10 +134,11 @@ struct ContractNormalizer {
         return String(name.drop(while: { $0 == "_" }))
     }
 
+    /// `defaultValue` is deliberately absent: no diagram, metric or diff reads it, so requiring every
+    /// parser to record it would pin something nothing renders. What the matrix does pin is that a
+    /// parameter carrying a default still appears at all, with its declared type.
     private func parameter(of parameter: Parameter) -> String {
-        let type = parameter.type.map { typeName(of: $0) } ?? "?"
-        let suffix = parameter.defaultValue == nil ? "" : " = …"
-        return "\(parameter.internalName): \(type)\(suffix)"
+        "\(parameter.internalName): \(parameter.type.map { typeName(of: $0) } ?? "?")"
     }
 
     private func call(of site: CallSite) -> String {

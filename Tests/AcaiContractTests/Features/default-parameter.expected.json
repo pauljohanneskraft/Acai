@@ -1,0 +1,15 @@
+{
+  "types": [
+    {
+      "name": "Song",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        {
+          "name": "rate", "role": "method", "access": "+", "type": "#primitive",
+          "parameters": ["stars: #primitive"]
+        }
+      ]
+    }
+  ]
+}

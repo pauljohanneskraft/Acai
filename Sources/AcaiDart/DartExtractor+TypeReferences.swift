@@ -30,7 +30,10 @@ extension DartExtractor {
                 if let parameter = extractFormalParameter(child) { params.append(parameter) }
             case "default_formal_parameter":
                 if let parameter = extractDefaultFormalParameter(child) { params.append(parameter) }
-            case "optional_positional_formal_parameters", "optional_named_formal_parameters":
+            // `optional_formal_parameters` is what the grammar produces for both `[a, b]` and
+            // `{a, b}`; without it an optional parameter was dropped from the signature entirely.
+            case "optional_formal_parameters",
+                 "optional_positional_formal_parameters", "optional_named_formal_parameters":
                 params.append(contentsOf: extractOptionalParameters(child))
             default:
                 break
@@ -39,6 +42,9 @@ extension DartExtractor {
         return params
     }
 
+    /// A field formal parameter (`this.artist`) states no type of its own — it takes the type of the
+    /// field it initialises, which `resolveFieldFormalParameterTypes` fills in once the class's
+    /// members are known (the field may be declared after the constructor).
     private func extractFieldFormalParameter(_ fullText: String) -> Parameter? {
         guard fullText.contains("this.") else { return nil }
         let parts = fullText.components(separatedBy: "this.")
@@ -47,6 +53,23 @@ extension DartExtractor {
         let paramName = afterThis
             .components(separatedBy: CharacterSet.alphanumerics.inverted).first ?? afterThis
         return Parameter(internalName: paramName, type: nil)
+    }
+
+    /// Fills in each untyped constructor parameter's type from the same-named stored property.
+    func resolveFieldFormalParameterTypes(in members: inout [Member]) {
+        let propertyTypes = members.reduce(into: [String: TypeReference]()) { types, member in
+            guard member.isStoredProperty, let type = member.type else { return }
+            types[member.name] = type
+        }
+        guard !propertyTypes.isEmpty else { return }
+        for index in members.indices where members[index].kind == .initializer {
+            for parameterIndex in members[index].parameters.indices {
+                guard members[index].parameters[parameterIndex].type == nil,
+                      let type = propertyTypes[members[index].parameters[parameterIndex].internalName]
+                else { continue }
+                members[index].parameters[parameterIndex].type = type
+            }
+        }
     }
 
     private func applyFormalParameterChild(

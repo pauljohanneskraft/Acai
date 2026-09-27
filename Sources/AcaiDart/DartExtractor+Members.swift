@@ -118,6 +118,7 @@ extension DartExtractor {
         }
         attachCallSites(pendingBodies, to: &members)
         markBodylessMethodsAbstract(&members, bodiedIndices: Set(pendingBodies.map(\.index)))
+        resolveFieldFormalParameterTypes(in: &members)
     }
 
     /// Handles `declaration` nodes inside class bodies: `[modifiers] [type] [nullable_type?]

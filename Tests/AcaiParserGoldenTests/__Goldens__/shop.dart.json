@@ -569,7 +569,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -960,7 +968,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "double"
+              }
             }
           ],
           "referencedTypeNames" : [
