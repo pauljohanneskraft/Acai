@@ -106,6 +106,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
+      # Enumerated once here, not per shard: enumeration launches the test runner, and a runner launch
+      # on a cold simulator intermittently never gets its accessibility-loaded notification — doing it
+      # in all 8 shard jobs made every one of them carry that risk. The test set is a property of the
+      # bundle, so it is identical for both devices. Warm the simulator first for the same reason.
+      - name: Enumerate UI tests
+        if: needs.changes.outputs.journeys == 'true'
+        run: |
+          APP=$(find App/DerivedData/Build/Products -maxdepth 2 -path '*-iphonesimulator/Acai.app' | head -1)
+          [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
+          Scripts/simulator_prepare.sh "iPhone 17" "$APP"
+          XCTESTRUN=$(find App/DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
+          xcodebuild test-without-building \
+            -xctestrun "$XCTESTRUN" \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -enumerate-tests \
+            -test-enumeration-style flat \
+            -test-enumeration-format json \
+            -test-enumeration-output-path App/ui-tests.json
+          Scripts/ui_test_shard.sh 1 1 App/ui-tests.json | wc -l | xargs echo "enumerated tests:"
+
       - name: Package build-for-testing artifact
         if: needs.changes.outputs.journeys == 'true'
         run: tar -czf ui-test-products.tar.gz -C DerivedData Build
@@ -115,7 +135,9 @@ jobs:
         if: needs.changes.outputs.journeys == 'true'
         with:
           name: ios-ui-test-products
-          path: App/ui-test-products.tar.gz
+          path: |
+            App/ui-test-products.tar.gz
+            App/ui-tests.json
           retention-days: 1
 
       # Real iOS Simulator coverage, not just macOS/Linux — some code genuinely differs by platform.
@@ -130,6 +152,11 @@ jobs:
             -disablePackageRepositoryCache \
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
+
+      # The runner's "Complete job" waits for orphaned processes; leave no simulator running behind.
+      - name: Shut down simulators
+        if: always()
+        run: xcrun simctl shutdown all || true
 
   build-test-macos:
     name: Unit Test macOS
@@ -258,17 +285,8 @@ jobs:
           [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
           Scripts/simulator_prepare.sh "${{ matrix.device }}" "$APP"
 
-      # Enumerating launches the test runner on the simulator, so it reflects exactly what would run.
       - name: Select this shard's tests
         run: |
-          XCTESTRUN=$(find DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
-          xcodebuild test-without-building \
-            -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=${{ matrix.device }}" \
-            -enumerate-tests \
-            -test-enumeration-style flat \
-            -test-enumeration-format json \
-            -test-enumeration-output-path ui-tests.json
           ../Scripts/ui_test_shard.sh "${{ matrix.shard }}" "$UI_TEST_SHARDS" ui-tests.json > shard-tests.txt
           {
             echo "### Shard ${{ matrix.shard }} of $UI_TEST_SHARDS"
