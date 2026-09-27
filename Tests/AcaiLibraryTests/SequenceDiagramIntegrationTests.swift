@@ -4,24 +4,27 @@ import AcaiCore
 import AcaiDiagram
 @testable import AcaiLibrary
 
-/// End-to-end sequence-diagram generation over this repository's own sources: parse the real
-/// codebase with `AnalysisService`, then trace call graphs from real entry points. This is the
-/// "universally works" check the synthetic-fixture tests can't give — the parsers' `callSites`
-/// must line up with what the generator expects.
-@Suite("Sequence Diagram Integration (own sources)")
+/// End-to-end sequence-diagram generation over a real parse of a real directory: `AnalysisService`
+/// discovers and parses `Fixtures/SequenceIntegration`, then call graphs are traced from real entry
+/// points. This is the "the parsers' `callSites` line up with what the generator expects" check the
+/// hand-built-artifact tests can't give.
+///
+/// The fixture carries the receiver shapes the generator has to resolve — a stored property, a
+/// method parameter, a typed local, an array of existentials and an existential property — rather
+/// than being this repository's own `Sources/`, whose size dominated the test target's runtime and
+/// whose content changed with every edit.
+@Suite("Sequence Diagram Integration (parsed fixture)", .timeLimit(.minutes(1)))
 struct SequenceDiagramIntegrationTests {
 
-    /// Parse the repo's `Sources/` once and share across tests (parsing is the expensive part).
-    /// Stored as a `Result` so an analysis failure (e.g. a CI filesystem-layout difference)
-    /// fails every test with the *original* error instead of confusing empty-artifact asserts.
+    /// Parse the fixture once and share across tests (parsing is the expensive part). Stored as a
+    /// `Result` so an analysis failure fails every test with the *original* error instead of
+    /// confusing empty-artifact asserts.
     private static let analysisResult = Result { () throws -> CodeArtifact in
-        // Tests/AcaiLibraryTests/SequenceDiagramIntegrationTests.swift → repo root is two up.
-        let repoRoot = URL(fileURLWithPath: #filePath)
+        let fixture = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let sources = repoRoot.appendingPathComponent("Sources")
-        return try AnalysisService.standard.analyzeProject(at: sources, allowedLanguages: [])
+            .appendingPathComponent("Fixtures")
+            .appendingPathComponent("SequenceIntegration")
+        return try AnalysisService.standard.analyzeProject(at: fixture, allowedLanguages: [])
     }
 
     private static func artifact() throws -> CodeArtifact {
@@ -30,40 +33,44 @@ struct SequenceDiagramIntegrationTests {
 
     @Test("A known concrete-receiver call appears as a cross-participant message")
     func knownEntryPointTracesCrossTypeCall() throws {
-        // `ProjectBrowserViewModel.persistChanges` calls `store.save()` through the
-        // explicitly-typed `store: ProjectStore` property.
+        // `ScreenModel.persistChanges` calls `store.save()` through the explicitly-typed
+        // `store: DocumentStore` property.
         let diagram = try SequenceDiagramBuilder(
-            entryPoint: ("ProjectBrowserViewModel", "persistChanges")
+            entryPoint: ("ScreenModel", "persistChanges")
         ).build(from: Self.artifact())
 
-        #expect(diagram.participants.map(\.name).contains("ProjectStore"))
+        #expect(diagram.participants.map(\.name).contains("DocumentStore"))
         #expect(diagram.messages.contains {
-            $0.from == "ProjectBrowserViewModel" && $0.to == "ProjectStore"
+            $0.from == "ScreenModel" && $0.to == "DocumentStore"
                 && $0.label == "save" && $0.kind == .synchronous
         })
-        #expect(diagram.messages.contains { $0.kind == .return && $0.to == "ProjectBrowserViewModel" })
+        #expect(diagram.messages.contains { $0.kind == .return && $0.to == "ScreenModel" })
     }
 
     @Test("typeMapping resolves an existential receiver to a concrete detector")
     func typeMappingResolvesExistentialReceiver() throws {
         let artifact = try Self.artifact()
-        // `ProjectDiscovery.discoverSourceSpecs` dispatches through `any BuildSystemDetector`;
-        // mapping it to the concrete `FallbackDetector` must redirect the lifeline and follow
-        // the concrete implementation's body.
+        // `SpecDiscovery.discoverSpecs` dispatches through `any SpecDetector`; mapping it to the
+        // concrete `FallbackSpecDetector` must redirect the lifeline and follow the concrete
+        // implementation's body.
         let unmapped = SequenceDiagramBuilder(
-            entryPoint: ("ProjectDiscovery", "discoverSourceSpecs")
+            entryPoint: ("SpecDiscovery", "discoverSpecs")
         ).build(from: artifact)
-        #expect(unmapped.participants.map(\.name).contains("any BuildSystemDetector"))
+        #expect(unmapped.participants.map(\.name).contains("any SpecDetector"))
 
         let mapped = SequenceDiagramBuilder(
-            entryPoint: ("ProjectDiscovery", "discoverSourceSpecs"),
-            typeMapping: ["any BuildSystemDetector": "FallbackDetector"]
+            entryPoint: ("SpecDiscovery", "discoverSpecs"),
+            typeMapping: ["any SpecDetector": "FallbackSpecDetector"]
         ).build(from: artifact)
-        #expect(mapped.participants.map(\.name).contains("FallbackDetector"))
-        #expect(!mapped.participants.map(\.name).contains("any BuildSystemDetector"))
+        #expect(mapped.participants.map(\.name).contains("FallbackSpecDetector"))
+        #expect(!mapped.participants.map(\.name).contains("any SpecDetector"))
         #expect(mapped.messages.contains {
-            $0.from == "ProjectDiscovery" && $0.to == "FallbackDetector"
-                && $0.label == "discoverSourceSpecs"
+            $0.from == "SpecDiscovery" && $0.to == "FallbackSpecDetector"
+                && $0.label == "discoverSpecs"
+        })
+        // Following the concrete body is what the mapping is for, so its own calls must show up.
+        #expect(mapped.messages.contains {
+            $0.from == "FallbackSpecDetector" && $0.to == "ChangeLog" && $0.label == "append"
         })
     }
 
@@ -106,7 +113,7 @@ struct SequenceDiagramIntegrationTests {
             }
         }
 
-        // The repo must keep providing real cross-type call sites for this test to mean anything.
-        #expect(checked >= 10, "expected ≥10 traceable call sites in own sources, found \(checked)")
+        // The fixture must keep providing real cross-type call sites for this test to mean anything.
+        #expect(checked >= 10, "expected ≥10 traceable call sites in the fixture, found \(checked)")
     }
 }

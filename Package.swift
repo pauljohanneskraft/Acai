@@ -362,7 +362,13 @@ let package = Package(
         .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality"]),
         .testTarget(name: "AcaiDiffTests", dependencies: ["AcaiDiff", "AcaiCore", "AcaiDiagram"]),
         .testTarget(name: "AcaiQualityTests", dependencies: ["AcaiQuality", "AcaiCore"]),
-        .testTarget(name: "AcaiLibraryTests", dependencies: ["AcaiLibrary", "AcaiDiagram"]),
+        // `exclude`, not `resources`: the fixtures are `.swift` files SwiftPM would otherwise compile
+        // into this target instead of leaving as parser input (read by `#filePath`).
+        .testTarget(
+            name: "AcaiLibraryTests",
+            dependencies: ["AcaiLibrary", "AcaiDiagram"],
+            exclude: ["Fixtures"]
+        ),
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
         .testTarget(name: "AcaiMCPTests", dependencies: ["AcaiMCP", "AcaiLibrary", "AcaiCore"]),
         .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
