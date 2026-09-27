@@ -30,12 +30,12 @@ struct ArtifactSource: ParsableArguments {
         }
     }
 
-    func resolve() throws -> CodeArtifact {
-        try Self.resolve(from: from, source: source, language: language)
+    func resolve() async throws -> CodeArtifact {
+        try await Self.resolve(from: from, source: source, language: language)
     }
 
     /// Also used by commands loading more than one artifact (e.g. `diff`'s old/new sides).
-    static func resolve(from: String?, source: String?, language: [LanguageOption]) throws -> CodeArtifact {
+    static func resolve(from: String?, source: String?, language: [LanguageOption]) async throws -> CodeArtifact {
         let artifact: CodeArtifact
         if let from {
             artifact = try loadStored(from)
@@ -44,7 +44,7 @@ struct ArtifactSource: ParsableArguments {
             guard FileManager.default.fileExists(atPath: url.path) else {
                 throw ValidationError("Source directory does not exist: \(source)")
             }
-            artifact = try AnalysisService.standard.analyzeProject(
+            artifact = try await AnalysisService.standard.analyzeProject(
                 at: url, allowedLanguages: language.map(\.sourceLanguage)
             )
         } else {

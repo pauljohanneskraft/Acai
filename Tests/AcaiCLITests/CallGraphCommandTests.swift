@@ -23,14 +23,14 @@ struct CallGraphCommandTests {
         }
     }
 
-    @Test func metricsModeEmitsMetricsJSON() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func metricsModeEmitsMetricsJSON() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("callgraph.json")
             // metrics is the default mode.
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"coverage\""))
             #expect(contents.contains("\"fanIn\""))
@@ -38,22 +38,22 @@ struct CallGraphCommandTests {
         }
     }
 
-    @Test func cyclesModeReportsNoneForAcyclicSource() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func cyclesModeReportsNoneForAcyclicSource() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("cycles.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "swift", "--mode", "cycles", "--output", output.path])
             // Sample source (Service → Repository) has no call cycle, so no failure exit.
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.hasPrefix("{"))
             #expect(contents.contains("\"cycles\""))
         }
     }
 
-    @Test func deadcodeModeReportsCandidatesAndCoverage() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func deadcodeModeReportsCandidatesAndCoverage() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             // `helper()` is private and never called → a dead-code candidate.
             let source = """
             public class Service {
@@ -65,7 +65,7 @@ struct CallGraphCommandTests {
             let output = dir.appendingPathComponent("deadcode.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "swift", "--mode", "deadcode", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"coverage\""))
             #expect(contents.contains("\"candidates\""))
@@ -73,8 +73,8 @@ struct CallGraphCommandTests {
         }
     }
 
-    @Test func deadcodeModeReportsUncalledStaticCFunction() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func deadcodeModeReportsUncalledStaticCFunction() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             // `unused` has internal linkage (`static`) and is never called → a dead-code candidate.
             let source = """
             static int unused(int a) {
@@ -89,15 +89,15 @@ struct CallGraphCommandTests {
             let output = dir.appendingPathComponent("deadcode.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "c", "--mode", "deadcode", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("unused"))
             #expect(!contents.contains("publicApi"))
         }
     }
 
-    @Test func deadcodeModeReportsNothingWhenStaticCFunctionIsCalled() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func deadcodeModeReportsNothingWhenStaticCFunctionIsCalled() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             let source = """
             static int helper(int a) {
                 return a * 2;
@@ -111,19 +111,19 @@ struct CallGraphCommandTests {
             let output = dir.appendingPathComponent("deadcode.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "c", "--mode", "deadcode", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(!contents.contains("helper"))
         }
     }
 
-    @Test func healthFieldIsPerfectOnCleanParse() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("callgraph.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"health\""))
             #expect(contents.contains("\"score\" : 1"))
@@ -131,13 +131,13 @@ struct CallGraphCommandTests {
         }
     }
 
-    @Test func healthFieldReflectsLowTrustParse() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func healthFieldReflectsLowTrustParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeLowTrustSwiftSource(in: dir)
             let output = dir.appendingPathComponent("callgraph.json")
             var cmd = try CLITestSupport.parseCallGraph(
                 ["--source", dir.path, "--language", "swift", "--output", output.path])
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.contains("\"health\""))
             #expect(!contents.contains("\"score\" : 1"))

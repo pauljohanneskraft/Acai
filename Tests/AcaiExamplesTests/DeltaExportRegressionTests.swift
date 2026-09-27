@@ -28,10 +28,10 @@ struct ClassDiagramDeltaExportTests {
     /// Mirrors `DiffCommand.deltaDiagram`.
     private func render(
         _ language: CodeArtifact.SourceLanguage, folder: String, mermaid: Bool
-    ) throws -> String {
-        let old = try ExampleExports.analyze(
+    ) async throws -> String {
+        let old = try await ExampleExports.analyze(
             ExampleExports.examples("ClassDiagramDiff", folder, "Before"), language: language)
-        let new = try ExampleExports.analyze(
+        let new = try await ExampleExports.analyze(
             ExampleExports.examples("ClassDiagramDiff", folder, "After"), language: language)
         let differ = ArtifactDiffer()
         let diff = differ.diff(old: old, new: new)
@@ -48,8 +48,8 @@ struct ClassDiagramDeltaExportTests {
     }
 
     @Test("regenerated delta DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, folder: String) throws {
-        let generated = try render(language, folder: folder, mermaid: false)
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, folder: String) async throws {
+        let generated = try await render(language, folder: folder, mermaid: false)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("ClassDiagramDiff", "Exports", "\(stem).delta.dot")
         )
@@ -57,8 +57,8 @@ struct ClassDiagramDeltaExportTests {
     }
 
     @Test("regenerated delta Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, folder: String) throws {
-        let generated = try render(language, folder: folder, mermaid: true)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, folder: String) async throws {
+        let generated = try await render(language, folder: folder, mermaid: true)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("ClassDiagramDiff", "Exports", "\(stem).delta.mmd")
         )
@@ -96,10 +96,10 @@ struct SequenceDiagramDeltaExportTests {
     ]
 
     /// Mirrors `DiffCommand.sequenceDelta`.
-    private func render(_ testCase: Case, mermaid: Bool) throws -> String {
-        let old = try ExampleExports.analyze(
+    private func render(_ testCase: Case, mermaid: Bool) async throws -> String {
+        let old = try await ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagramDiff", testCase.dir, "Before"), language: testCase.language)
-        let new = try ExampleExports.analyze(
+        let new = try await ExampleExports.analyze(
             ExampleExports.examples("SequenceDiagramDiff", testCase.dir, "After"), language: testCase.language)
         let diff = SequenceDiagramDiff(
             old: SequenceDiagramBuilder(entryPoint: testCase.entry).build(from: old),
@@ -111,16 +111,16 @@ struct SequenceDiagramDeltaExportTests {
     }
 
     @Test("regenerated sequence delta DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(_ testCase: Case) throws {
-        let generated = try render(testCase, mermaid: false)
+    func matchesGolden(_ testCase: Case) async throws {
+        let generated = try await render(testCase, mermaid: false)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("SequenceDiagramDiff", "Exports", "\(testCase.stem).delta.dot"))
         #expect(generated == expected, "Sequence delta DOT for \(testCase.stem) drifted; regenerate per README")
     }
 
     @Test("regenerated sequence delta Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(_ testCase: Case) throws {
-        let generated = try render(testCase, mermaid: true)
+    func matchesMermaidGolden(_ testCase: Case) async throws {
+        let generated = try await render(testCase, mermaid: true)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("SequenceDiagramDiff", "Exports", "\(testCase.stem).delta.mmd"))
         #expect(generated == expected, "Sequence delta Mermaid for \(testCase.stem) drifted; regenerate per README")
@@ -147,11 +147,11 @@ struct StateDiagramDeltaExportTests {
     ]
 
     /// Mirrors `DiffCommand.stateDelta`.
-    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
+    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) async throws -> String {
         let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state", maxStates: 20)
-        let old = try StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
+        let old = try await StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
             ExampleExports.examples("StateDiagramDiff", dir, "Before"), language: language).resolvingExtensions())
-        let new = try StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
+        let new = try await StateDiagramBuilder(configuration: configuration).build(from: ExampleExports.analyze(
             ExampleExports.examples("StateDiagramDiff", dir, "After"), language: language).resolvingExtensions())
         let diff = StateDiagramDiff(old: old, new: new)
         if mermaid { return StateDiagramMermaidRenderer().render(diff.union) }
@@ -161,16 +161,16 @@ struct StateDiagramDeltaExportTests {
     }
 
     @Test("regenerated state delta DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: false)
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: false)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("StateDiagramDiff", "Exports", "\(stem).delta.dot"))
         #expect(generated == expected, "State delta DOT for \(stem) drifted; regenerate per Examples/README.md")
     }
 
     @Test("regenerated state delta Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: true)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: true)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("StateDiagramDiff", "Exports", "\(stem).delta.mmd"))
         #expect(generated == expected, "State delta Mermaid for \(stem) drifted; regenerate per Examples/README.md")
@@ -195,10 +195,10 @@ struct PackageDiagramDeltaExportTests {
     ]
 
     /// Mirrors `DiffCommand.packageDelta`.
-    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
-        let oldArtifact = try ExampleExports.analyze(
+    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) async throws -> String {
+        let oldArtifact = try await ExampleExports.analyze(
             ExampleExports.examples("PackageDiagramDiff", dir, "Before"), language: language)
-        let newArtifact = try ExampleExports.analyze(
+        let newArtifact = try await ExampleExports.analyze(
             ExampleExports.examples("PackageDiagramDiff", dir, "After"), language: language)
         let old = PackageDiagramBuilder().build(
             from: oldArtifact.enriched(using: oldArtifact.standardLanguageResolver))
@@ -217,16 +217,16 @@ struct PackageDiagramDeltaExportTests {
     }
 
     @Test("regenerated package delta DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: false)
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: false)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("PackageDiagramDiff", "Exports", "\(stem).delta.dot"))
         #expect(generated == expected, "Package delta DOT for \(stem) drifted; regenerate per Examples/README.md")
     }
 
     @Test("regenerated package delta Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: true)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: true)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("PackageDiagramDiff", "Exports", "\(stem).delta.mmd"))
         #expect(generated == expected, "Package delta Mermaid for \(stem) drifted; regenerate per Examples/README.md")
@@ -251,10 +251,10 @@ struct CallGraphDeltaExportTests {
     ]
 
     /// Mirrors `DiffCommand.callGraphDelta`.
-    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) throws -> String {
-        let old = try CallGraphBuilder().build(from: ExampleExports.analyze(
+    private func render(_ language: CodeArtifact.SourceLanguage, dir: String, mermaid: Bool) async throws -> String {
+        let old = try await CallGraphBuilder().build(from: ExampleExports.analyze(
             ExampleExports.examples("CallGraphDiff", dir, "Before"), language: language))
-        let new = try CallGraphBuilder().build(from: ExampleExports.analyze(
+        let new = try await CallGraphBuilder().build(from: ExampleExports.analyze(
             ExampleExports.examples("CallGraphDiff", dir, "After"), language: language))
         let diff = CallGraphDiff(old: old, new: new)
         let nodeColor: @Sendable (String) -> String? = {
@@ -269,16 +269,16 @@ struct CallGraphDeltaExportTests {
     }
 
     @Test("regenerated call graph delta DOT matches the checked-in golden", arguments: cases)
-    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: false)
+    func matchesGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: false)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("CallGraphDiff", "Exports", "\(stem).delta.dot"))
         #expect(generated == expected, "Call graph delta DOT for \(stem) drifted; regenerate per Examples/README.md")
     }
 
     @Test("regenerated call graph delta Mermaid matches the checked-in golden", arguments: cases)
-    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) throws {
-        let generated = try render(language, dir: dir, mermaid: true)
+    func matchesMermaidGolden(stem: String, language: CodeArtifact.SourceLanguage, dir: String) async throws {
+        let generated = try await render(language, dir: dir, mermaid: true)
         let expected = try ExampleExports.golden(
             ExampleExports.examples("CallGraphDiff", "Exports", "\(stem).delta.mmd"))
         #expect(generated == expected, "Call graph delta Mermaid for \(stem) drifted; regenerate per README")

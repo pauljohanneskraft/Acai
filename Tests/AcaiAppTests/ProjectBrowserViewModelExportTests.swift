@@ -28,16 +28,16 @@ struct ProjectBrowserViewModelExportTests {
         return (ProjectBrowserViewModel(store: store), projectID, codebaseID)
     }
 
-    @Test func generatesDOTForKnownCodebase() {
+    @Test func generatesDOTForKnownCodebase() async {
         let (model, _, codebaseID) = makeModel()
-        let dot = model.generateDOT(for: codebaseID)
+        let dot = await model.generateDOT(for: codebaseID)
         #expect(dot.hasPrefix("digraph"))
         #expect(dot.contains("Widget"))
     }
 
-    @Test func unknownCodebaseYieldsEmptyDigraph() {
+    @Test func unknownCodebaseYieldsEmptyDigraph() async {
         let (model, _, _) = makeModel()
-        let dot = model.generateDOT(for: UUID())
+        let dot = await model.generateDOT(for: UUID())
         #expect(dot == "digraph Acai { }")
     }
 

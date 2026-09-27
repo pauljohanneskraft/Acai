@@ -406,7 +406,7 @@ struct CompareGitPanel: View {
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         let directory = URL(fileURLWithPath: codebase.directoryPath)
         availableRefs = await Task.detached(priority: .userInitiated) {
-            (try? access.whileAccessible { try GitCheckout(directory: directory).refs() }) ?? []
+            (try? await access.whileAccessible { try GitCheckout(directory: directory).refs() }) ?? []
         }.value
     }
 
