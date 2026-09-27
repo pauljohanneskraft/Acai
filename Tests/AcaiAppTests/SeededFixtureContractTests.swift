@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import AcaiCore
+import AcaiQuality
 @testable import AcaiApp
 
 /// The journeys' canned artifacts stand in for a real parse, so every canned journey is only as
@@ -32,6 +33,24 @@ struct SeededFixtureContractTests {
         #expect(head == (try canned("seeded.json")))
         #expect(Set(withAdded.types.map(\.name)).subtracting(head.types.map(\.name)) == ["Added"])
         #expect(Set(head.types.map(\.name)).subtracting(withAdded.types.map(\.name)).isEmpty)
+    }
+
+    /// The journeys assert these answers through the interface, so they hold only while the fixture
+    /// produces them: the Query journey expects the mutable-public-state filter to leave exactly
+    /// `Base`, and the guided-route journey expects `Helper` to be the most depended-upon type.
+    @Test func theFixtureStillGivesTheAnswersTheJourneysAssert() throws {
+        let artifact = try canned("seeded.json")
+
+        let publiclySettable = TypeQuery(
+            artifact: artifact,
+            members: MemberFilter(isPublicVar: true),
+            languageResolver: artifact.standardLanguageResolver
+        ).rows
+        #expect(publiclySettable.map(\.qualifiedName) == ["Base"])
+
+        let dependents = artifact.relationships.filter { $0.kind == .composition }
+        #expect(dependents.contains { $0.target == "Helper" && $0.source == "Derived" })
+        #expect(Set(artifact.types.map(\.name)) == ["Base", "Derived", "Helper", "Worker"])
     }
 
     private func canned(_ filename: String) throws -> CodeArtifact {
