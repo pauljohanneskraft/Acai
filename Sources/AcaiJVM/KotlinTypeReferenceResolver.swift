@@ -51,26 +51,21 @@ struct KotlinTypeReferenceResolver {
     }
 
     func extractTypeReference(_ node: Node) -> TypeReference {
-        var nameParts: [String] = []
+        // A qualified reference (`com.example.Animal`, `Outer.Inner`) nests its qualifier in a
+        // `user_type` child; only the trailing `type_identifier` at this level is the simple name.
+        var simpleName = ""
         var genericArgs: [TypeReference] = []
         for child in node.namedChildren() {
             switch child.nodeType {
             case "type_identifier":
-                nameParts.append(child.text(in: context))
-            case "user_type":
-                // Nested user_type nodes appear for qualified references
-                // like `com.example.Animal` or `Outer.Inner`.
-                let nested = extractTypeReference(child)
-                if !nested.name.isEmpty {
-                    nameParts.append(nested.name)
-                }
+                simpleName = child.text(in: context)
             case "type_arguments":
                 genericArgs = extractTypeArguments(child)
             default:
                 break
             }
         }
-        return TypeReference(name: nameParts.joined(separator: "."), genericArguments: genericArgs)
+        return TypeReference(name: simpleName, genericArguments: genericArgs)
     }
 
     func extractNullableType(_ node: Node) -> TypeReference {
