@@ -773,6 +773,7 @@
   "relationships" : [
 
   ],
+  "schemaVersion" : 1,
   "types" : [
     {
       "accessLevel" : "public",

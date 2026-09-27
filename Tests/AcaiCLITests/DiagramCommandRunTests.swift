@@ -164,6 +164,34 @@ struct DiagramCommandRunTests {
         }
     }
 
+    @Test func exceedingMaxNodesThrows() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            let source = """
+            class A {}
+            class B {}
+            class C {}
+            """
+            try source.write(to: dir.appendingPathComponent("Types.swift"), atomically: true, encoding: .utf8)
+            try await expectRunError(
+                ["--source", dir.path, "--language", "swift", "--max-nodes", "2"],
+                contains: "This diagram has 3 nodes, exceeding the limit of 2."
+            )
+        }
+    }
+
+    @Test func withinMaxNodesSucceeds() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("diagram.dot")
+            var cmd = try CLITestSupport.parseDiagram(
+                ["--source", dir.path, "--language", "swift", "--max-nodes", "1000", "--output", output.path]
+            )
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("digraph"))
+        }
+    }
+
     @Test func callGraphWithNoResolvableCallsThrows() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             // A lone type with no call sites yields a call graph with no edges.

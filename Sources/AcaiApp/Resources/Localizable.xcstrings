@@ -4745,6 +4745,28 @@
         }
       }
     },
+    "Error.ProjectStore.UnsupportedArtifactSchema %lld %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Analyse wurde in Schemaversion %lld gespeichert, diese Version von Açaí versteht aber nur bis %lld. Indiziere die Codebase neu, um sie zu aktualisieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This analysis was saved as schema version %lld, but this build of Açaí only understands up to %lld. Reindex the codebase to update it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette analyse a été enregistrée en version de schéma %lld, mais cette version d'Açaí ne comprend que jusqu'à %lld. Réindexez la codebase pour la mettre à jour."
+          }
+        }
+      }
+    },
     "Error.ProjectStore.UnsupportedFormatVersion %lld" : {
       "localizations" : {
         "de" : {
@@ -9515,6 +9537,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Détails"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.DiagramTooLarge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm zu groß"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram Too Large"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramme trop grand"
           }
         }
       }

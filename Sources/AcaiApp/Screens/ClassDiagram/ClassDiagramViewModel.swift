@@ -25,6 +25,10 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     @Published var isMultiSelectActive = false
     @Published private(set) var hasPerformedMeasuredLayout = false
     @Published var selectionRect: CGRect?
+    /// Set instead of building the diagram when `configuration.maxNodes` would be exceeded — laying
+    /// out and measuring that many nodes is the hang the ceiling exists to prevent, so this stops
+    /// short of it rather than attempting it behind the progress indicator.
+    @Published private(set) var nodeLimitError: DiagramRequestError?
 
     private(set) var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -99,6 +103,16 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
             artifact: renderArtifact, configuration: configuration,
             languages: renderArtifact.standardLanguageResolver
         )
+        do {
+            try DiagramNodeLimit(maximum: configuration.maxNodes).validate(nodeCount: model.nodes.count)
+            nodeLimitError = nil
+        } catch {
+            nodeLimitError = DiagramRequestError(error.localizedDescription)
+            nodes = []
+            edges = []
+            nodePositions = [:]
+            return
+        }
         nodes = model.nodes
         edges = model.edges
 

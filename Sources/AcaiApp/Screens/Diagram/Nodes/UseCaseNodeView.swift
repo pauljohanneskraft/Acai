@@ -11,8 +11,8 @@ struct UseCaseNodeView: View {
         Text(verbatim: name)
             .font(.system(size: 12, weight: .medium, design: .monospaced))
             .foregroundColor(palette.canvasInk.primaryInk)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
+            .padding(.horizontal, .spacingXL)
+            .padding(.vertical, .spacingM)
             .background(palette.freeformDecorations.useCaseFill)
             .clipShape(Ellipse())
             .overlay(

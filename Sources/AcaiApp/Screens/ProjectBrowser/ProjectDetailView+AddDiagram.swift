@@ -9,7 +9,7 @@ extension ProjectDetailView {
     /// neither codebases nor diagrams yet, reusing `FreeformDiagramView.emptyCanvasHint`'s visual
     /// language.
     var emptyProjectContentState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: .spacingL) {
             Image(systemName: "tray.full")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -18,14 +18,14 @@ extension ProjectDetailView {
                 .foregroundStyle(.secondary)
             // Bordered: inside iPhone's `List` row, a default-styled button makes the whole row its hit area.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) { emptyProjectActions }
-                VStack(spacing: 12) { emptyProjectActions }
+                HStack(spacing: .spacingM) { emptyProjectActions }
+                VStack(spacing: .spacingM) { emptyProjectActions }
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 48)
+        .padding(.vertical, .spacingXXL)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("projectDetail.emptyState")
     }
