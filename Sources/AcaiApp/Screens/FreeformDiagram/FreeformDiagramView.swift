@@ -278,7 +278,7 @@ struct FreeformDiagramView: View {
     }
 
     private var emptyCanvasHint: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "hand.draw")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)

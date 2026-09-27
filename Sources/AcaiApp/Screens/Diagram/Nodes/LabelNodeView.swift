@@ -36,7 +36,7 @@ struct LabelNodeView: View {
     private var icon: Color { role == .actor ? decorations.actorIcon : decorations.databaseIcon }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: .spacingXS) {
             Image(systemName: role.systemImageName)
                 .font(.system(size: 28))
                 .foregroundColor(icon)
@@ -44,8 +44,8 @@ struct LabelNodeView: View {
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundColor(palette.canvasInk.primaryInk)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, .spacingM)
+        .padding(.vertical, .spacingS)
         .background(fill)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(

@@ -76,8 +76,15 @@ struct DiagramShapeFlags: ParsableArguments {
     ))
     var noFocusInterconnections: Bool = false
 
+    @Option(name: .long, help: ArgumentHelp(
+        "Maximum node count for a class or package diagram before generation fails with a message"
+        + " naming the count. No effect on sequence/state/call-graph diagrams. Narrow the diagram"
+        + " with --focus instead of raising this."
+    ))
+    var maxNodes: Int = DiagramNodeLimit.defaultMaximum
+
     /// Mode exclusivity (`--sequence-from`/`--state-from`/`--package`/`--call-graph`), `--call-graph-
-    /// scope` requiring `--call-graph`, and the shared depth/state limits.
+    /// scope` requiring `--call-graph`, and the shared depth/state/node limits.
     func validate() throws {
         if sequenceFrom != nil && stateFrom != nil {
             throw ValidationError("Specify either --sequence-from or --state-from, not both.")
@@ -92,6 +99,7 @@ struct DiagramShapeFlags: ParsableArguments {
             throw ValidationError("--call-graph-scope requires --call-graph.")
         }
         try DiagramLimits().validate(maxDepth: maxDepth, maxStates: maxStates)
+        try DiagramLimits().validate(maxNodes: maxNodes)
     }
 
     var callGraphScopeOption: CallGraphScopeOption {

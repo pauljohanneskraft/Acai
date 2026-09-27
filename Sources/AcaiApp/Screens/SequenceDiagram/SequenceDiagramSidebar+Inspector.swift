@@ -20,7 +20,7 @@ extension SequenceDiagramSidebar {
     }
 
     var emptyInspectorState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "cursorarrow.click")
                 .font(.title)
                 .foregroundStyle(.secondary)

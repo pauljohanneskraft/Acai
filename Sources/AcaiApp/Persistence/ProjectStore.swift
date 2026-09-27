@@ -208,7 +208,20 @@ final class ProjectStore: ObservableObject {
             markCodebaseNotIndexed(codebaseID)
             return
         }
+        guard !rejectingUnsupportedSchema(of: entry.artifact, for: codebaseID) else { return }
         artifacts[codebaseID] = entry.artifact
+    }
+
+    /// `true` when `artifact`'s schema is too new for this build to read — reports the specific
+    /// error, naming both versions, and drops the codebase back to "not indexed" so Reindex is
+    /// offered rather than showing a stale or partially-misread analysis.
+    private func rejectingUnsupportedSchema(of artifact: CodeArtifact, for codebaseID: UUID) -> Bool {
+        let found = artifact.schemaVersion
+        guard found > CodeArtifact.currentSchemaVersion else { return false }
+        let expected = CodeArtifact.currentSchemaVersion
+        report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(found) \(expected)"))
+        markCodebaseNotIndexed(codebaseID)
+        return true
     }
 
     /// The standardized, symlink-resolved absolute path `AnalysisStore` keys entries on, for the

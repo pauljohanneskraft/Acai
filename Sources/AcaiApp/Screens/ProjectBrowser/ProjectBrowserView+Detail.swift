@@ -14,7 +14,7 @@ extension ProjectBrowserView {
     }
 
     var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "rectangle.3.group")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)

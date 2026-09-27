@@ -44,8 +44,12 @@ struct FixtureArtifactGeneratorTests {
         try write(currentArtifact, to: "seeded-with-added.json")
     }
 
+    /// Sorted and indented so a re-record shows only what actually changed — the encoder's key order
+    /// is otherwise arbitrary and rewrites the whole file. Only these committed fixtures are written
+    /// this way; the app's own persistence is untouched, and decoding ignores both.
     private func write(_ artifact: CodeArtifact, to filename: String) throws {
-        let data = try JSONEncoder().encode(artifact)
-        try data.write(to: artifactsDirectory.appendingPathComponent(filename))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(artifact).write(to: artifactsDirectory.appendingPathComponent(filename))
     }
 }

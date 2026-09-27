@@ -1,1 +1,673 @@
-{"globalVariables":[],"metadata":{"toolVersion":"1.0.0","sourceLanguage":"swift","filePaths":["Sources\/SampleSwiftPackage\/Base.swift","Sources\/SampleSwiftPackage\/Derived.swift","Sources\/SampleSwiftPackage\/Helper.swift","Sources\/SampleSwiftPackage\/Worker.swift"],"parseDiagnostics":[]},"types":[{"inheritedTypes":[],"name":"Base","genericParameters":[],"qualifiedName":"Base","id":"Base","members":[{"referencedTypeNames":[],"modifiers":[],"isComputed":false,"type":{"isArray":false,"isOptional":false,"genericArguments":[],"name":"String"},"genericParameters":[],"parameters":[],"fieldReads":[],"annotations":[],"assignments":[],"kind":"property","location":{"line":2,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Base.swift"},"name":"id","callSites":[],"accessLevel":"public","initialValue":{"text":"\"idle\"","kind":"stringLiteral"}},{"name":"init","assignments":[],"isComputed":false,"location":{"line":4,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Base.swift"},"cyclomaticComplexity":1,"kind":"initializer","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"public","fieldReads":[],"referencedTypeNames":[],"genericParameters":[]},{"name":"run","assignments":[{"op":"assign","value":{"text":"\"requested\"","kind":"stringLiteral"},"targetName":"id","location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":7,"column":9}},{"op":"assign","value":{"text":"\"running\"","kind":"stringLiteral"},"targetName":"id","location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":8,"column":9}},{"op":"assign","value":{"text":"\"finished\"","kind":"stringLiteral"},"targetName":"id","location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":9,"column":9}}],"isComputed":false,"location":{"line":6,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Base.swift"},"cyclomaticComplexity":1,"kind":"method","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"public","fieldReads":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":7,"column":9},"name":"id"},{"location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":8,"column":9},"name":"id"},{"location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":9,"column":9},"name":"id"}],"referencedTypeNames":[],"genericParameters":[]},{"name":"fail","assignments":[{"op":"assign","value":{"text":"\"failed\"","kind":"stringLiteral"},"targetName":"id","location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":13,"column":9}}],"isComputed":false,"location":{"line":12,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Base.swift"},"cyclomaticComplexity":1,"kind":"method","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"public","fieldReads":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Base.swift","line":13,"column":9},"name":"id"}],"referencedTypeNames":[],"genericParameters":[]}],"location":{"line":1,"column":1,"filePath":"Sources\/SampleSwiftPackage\/Base.swift"},"sourceLanguage":"swift","kind":"class","enumCases":[],"modifiers":[],"annotations":[],"associatedTypes":[],"accessLevel":"public","nestedTypes":[]},{"name":"Derived","genericParameters":[],"inheritedTypes":[{"isArray":false,"isOptional":false,"genericArguments":[],"name":"Base"}],"qualifiedName":"Derived","id":"Derived","members":[{"name":"helper","type":{"isArray":false,"isOptional":false,"genericArguments":[],"name":"Helper"},"assignments":[],"initialValue":{"text":"Helper()","kind":"expression"},"isComputed":false,"location":{"line":2,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Derived.swift"},"kind":"property","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"private","fieldReads":[],"referencedTypeNames":["Helper"],"genericParameters":[]},{"name":"doWork","assignments":[],"isComputed":false,"location":{"line":4,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Derived.swift"},"cyclomaticComplexity":1,"kind":"method","modifiers":[],"parameters":[],"annotations":[],"callSites":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Derived.swift","line":5,"column":9},"receiver":{"type":{"_0":"Helper"}},"methodName":"performTask"}],"accessLevel":"public","fieldReads":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Derived.swift","line":5,"column":9},"name":"helper"}],"referencedTypeNames":[],"genericParameters":[]}],"location":{"line":1,"column":1,"filePath":"Sources\/SampleSwiftPackage\/Derived.swift"},"sourceLanguage":"swift","kind":"class","enumCases":[],"modifiers":[],"annotations":[],"associatedTypes":[],"accessLevel":"public","nestedTypes":[]},{"name":"Helper","genericParameters":[],"inheritedTypes":[],"qualifiedName":"Helper","id":"Helper","members":[{"name":"worker","type":{"isArray":false,"isOptional":false,"genericArguments":[],"name":"Worker"},"assignments":[],"initialValue":{"text":"Worker()","kind":"expression"},"isComputed":false,"location":{"line":2,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Helper.swift"},"kind":"property","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"private","fieldReads":[],"referencedTypeNames":["Worker"],"genericParameters":[]},{"name":"performTask","assignments":[],"isComputed":false,"location":{"line":4,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Helper.swift"},"cyclomaticComplexity":1,"kind":"method","modifiers":[],"parameters":[],"annotations":[],"callSites":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Helper.swift","line":5,"column":9},"receiver":{"type":{"_0":"Worker"}},"methodName":"execute"}],"accessLevel":"public","fieldReads":[{"location":{"filePath":"Sources\/SampleSwiftPackage\/Helper.swift","line":5,"column":9},"name":"worker"}],"referencedTypeNames":[],"genericParameters":[]}],"location":{"line":1,"column":1,"filePath":"Sources\/SampleSwiftPackage\/Helper.swift"},"sourceLanguage":"swift","kind":"class","enumCases":[],"modifiers":[],"annotations":[],"associatedTypes":[],"accessLevel":"public","nestedTypes":[]},{"name":"Worker","inheritedTypes":[],"nestedTypes":[],"qualifiedName":"Worker","id":"Worker","members":[{"name":"execute","assignments":[],"isComputed":false,"location":{"line":2,"column":5,"filePath":"Sources\/SampleSwiftPackage\/Worker.swift"},"cyclomaticComplexity":1,"kind":"method","modifiers":[],"parameters":[],"annotations":[],"callSites":[],"accessLevel":"public","fieldReads":[],"referencedTypeNames":[],"genericParameters":[]}],"location":{"line":1,"column":1,"filePath":"Sources\/SampleSwiftPackage\/Worker.swift"},"sourceLanguage":"swift","kind":"class","enumCases":[],"modifiers":[],"annotations":[],"associatedTypes":[],"accessLevel":"public","genericParameters":[]}],"relationships":[{"source":"Derived","target":"Base","kind":"inheritance"},{"source":"Derived","target":"Helper","label":"helper","origin":"Sources\/SampleSwiftPackage\/Derived.swift","kind":"composition","targetLabel":"1"},{"source":"Helper","target":"Worker","label":"worker","origin":"Sources\/SampleSwiftPackage\/Helper.swift","kind":"composition","targetLabel":"1"}],"freestandingFunctions":[]}
+{
+  "freestandingFunctions" : [
+
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "Sources\/SampleSwiftPackage\/Base.swift",
+      "Sources\/SampleSwiftPackage\/Derived.swift",
+      "Sources\/SampleSwiftPackage\/Helper.swift",
+      "Sources\/SampleSwiftPackage\/Worker.swift"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "swift",
+    "toolVersion" : "1.0.0"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "Derived",
+      "target" : "Base"
+    },
+    {
+      "kind" : "composition",
+      "label" : "helper",
+      "origin" : "Sources\/SampleSwiftPackage\/Derived.swift",
+      "source" : "Derived",
+      "target" : "Helper",
+      "targetLabel" : "1"
+    },
+    {
+      "kind" : "composition",
+      "label" : "worker",
+      "origin" : "Sources\/SampleSwiftPackage\/Helper.swift",
+      "source" : "Helper",
+      "target" : "Worker",
+      "targetLabel" : "1"
+    }
+  ],
+  "schemaVersion" : 1,
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Base",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+        "line" : 1
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "stringLiteral",
+            "text" : "\"idle\""
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+            "line" : 2
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "id",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "String"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "init",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 7
+              },
+              "op" : "assign",
+              "targetName" : "id",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "\"requested\""
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 8
+              },
+              "op" : "assign",
+              "targetName" : "id",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "\"running\""
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 9
+              },
+              "op" : "assign",
+              "targetName" : "id",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "\"finished\""
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 7
+              },
+              "name" : "id"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 8
+              },
+              "name" : "id"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 9
+              },
+              "name" : "id"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+            "line" : 6
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "run",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 13
+              },
+              "op" : "assign",
+              "targetName" : "id",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "\"failed\""
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+                "line" : 13
+              },
+              "name" : "id"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
+            "line" : 12
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "fail",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Base",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Base",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Derived",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Base"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+        "line" : 1
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Helper()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+            "line" : 2
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "helper",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Helper"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Helper"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+                "line" : 5
+              },
+              "methodName" : "performTask",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Helper"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+                "line" : 5
+              },
+              "name" : "helper"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "doWork",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Derived",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Derived",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Helper",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+        "line" : 1
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Worker()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+            "line" : 2
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "worker",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Worker"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Worker"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+                "line" : 5
+              },
+              "methodName" : "execute",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Worker"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+                "line" : 5
+              },
+              "name" : "worker"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "performTask",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Helper",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Helper",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Worker",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Sources\/SampleSwiftPackage\/Worker.swift",
+        "line" : 1
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Sources\/SampleSwiftPackage\/Worker.swift",
+            "line" : 2
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "execute",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Worker",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Worker",
+      "sourceLanguage" : "swift"
+    }
+  ]
+}
