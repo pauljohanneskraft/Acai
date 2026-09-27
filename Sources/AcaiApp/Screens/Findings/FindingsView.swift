@@ -80,7 +80,7 @@ struct FindingsView: View {
     }
 
     private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: .spacingM) {
             Image(systemName: "checkmark.seal")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -88,14 +88,14 @@ struct FindingsView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, .spacingXXL)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(identifier)
     }
 
     private func loadingState(count: Int) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: .spacingM) {
             ProgressView()
             Text(.app("View.FindingsView.AnalyzingCodebaseS \(count)"))
                 .font(.callout)
@@ -112,7 +112,7 @@ struct FindingsView: View {
         project: Project, allFindings: [Finding], stillAnalyzing: [Codebase], notIndexed: [Codebase]
     ) -> some View {
         let visible = filteredAndSorted(allFindings)
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             filterBar(project: project)
             AsyncOperationStatusView(identifierPrefix: "findings.suppressionSave", phase: suppressionSavePhase)
             if !stillAnalyzing.isEmpty || !notIndexed.isEmpty {
@@ -148,9 +148,9 @@ struct FindingsView: View {
     }
 
     private func statusNote(stillAnalyzing: [Codebase], notIndexed: [Codebase]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             if !stillAnalyzing.isEmpty {
-                HStack(spacing: 6) {
+                HStack(spacing: .spacingXS) {
                     ProgressView().controlSize(.small)
                     Text(.app("View.FindingsView.StillAnalyzingMoreCodebase \(stillAnalyzing.count)"))
                 }
@@ -164,13 +164,13 @@ struct FindingsView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 6)
+        .padding(.vertical, .spacingXS)
     }
 
     private func filterBar(project: Project) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: .spacingS) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: .spacingS) {
                     ForEach(Finding.Kind.allCases) { kind in
                         kindChip(kind)
                     }
@@ -191,7 +191,7 @@ struct FindingsView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, 8)
+        .padding(.top, .spacingS)
     }
 
     private func kindChip(_ kind: Finding.Kind) -> some View {
@@ -205,7 +205,7 @@ struct FindingsView: View {
         } label: {
             Label(kind.title, systemImage: kind.systemImage)
                 .font(.caption.weight(isSelected ? .semibold : .regular))
-                .padding(.horizontal, 10).padding(.vertical, 5)
+                .padding(.horizontal, .spacingS).padding(.vertical, .spacingXS)
                 .background(isSelected ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08))
                 .clipShape(Capsule())
         }
