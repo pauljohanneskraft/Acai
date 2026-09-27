@@ -58,11 +58,7 @@ public struct AnalysisStore: Sendable {
     public enum Lookup: Equatable {
         /// A current-format entry, decoded whole.
         case entry(Entry)
-        /// A bare `CodeArtifact` predating the shared store (the CLI's original `acai store`
-        /// shape). Still usable via `--from`, but carries no fingerprint or recorded source path,
-        /// so it is always considered stale by a caller checking freshness.
-        case legacyArtifact(CodeArtifact)
-        /// Nothing stored at this location, or the file could not be decoded as either shape.
+        /// Nothing stored at this location, or the file could not be decoded.
         case absent
     }
 
@@ -149,13 +145,8 @@ public struct AnalysisStore: Sendable {
 
     private func load(at url: URL) -> Lookup {
         guard let data = try? Data(contentsOf: url) else { return .absent }
-        if let entry = try? JSONDecoder().decode(Entry.self, from: data) {
-            return .entry(entry)
-        }
-        if let artifact = try? JSONDecoder().decode(CodeArtifact.self, from: data) {
-            return .legacyArtifact(artifact)
-        }
-        return .absent
+        guard let entry = try? JSONDecoder().decode(Entry.self, from: data) else { return .absent }
+        return .entry(entry)
     }
 }
 

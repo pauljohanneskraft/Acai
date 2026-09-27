@@ -13,13 +13,10 @@ import Yams
 ///   diagrams/
 ///     generated_<diagramID>.json  – GeneratedDiagram
 ///     freeform_<diagramID>.json     – FreeformDiagram
-///   artifacts/
-///     codebase_<codebaseID>.json – pre-shared-store `CodeArtifact`, read once for migration
 /// ```
 /// A codebase's own analysis result lives in `AcaiCore.AnalysisStore` — `~/.acai/analysis`, shared
 /// with the CLI and an MCP session over the same directory — keyed by the codebase's resolved
-/// `directoryPath` rather than its id. `artifacts/` above is the format this store migrates away
-/// from on first load, kept only so an existing install's index isn't dropped.
+/// `directoryPath` rather than its id.
 @MainActor
 final class ProjectStore: ObservableObject {
     /// The one store every window and system action of the running app shares.
@@ -84,7 +81,6 @@ final class ProjectStore: ObservableObject {
     // Not `private`: `ProjectStore+DiagramFiles.swift`'s extension needs it too — same "not private,
     // another file's extension needs it too" pattern used throughout this app.
     var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
-    private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
     /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
     /// form; any other path is an external file the user referenced.
     var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
@@ -134,7 +130,6 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: projectsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
-        try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
@@ -202,61 +197,18 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    /// Versioned envelope around a persisted `CodeArtifact`. Bumping ``currentArtifactFormat`` makes
-    /// `loadArtifact` treat older stored analyses as stale so the UI offers Reindex. v2 persists the
-    /// semantic (un-flattened) artifact so nesting-depth metrics are correct; v1 stored the
-    /// display-flattened form and read nesting as 0.
-    private struct StoredArtifact: Codable {
-        var formatVersion: Int
-        var artifact: CodeArtifact
-    }
-
-    /// Current on-disk artifact format. A lower version — or a pre-envelope bare `CodeArtifact`
-    /// (fails to decode as ``StoredArtifact``) — is dropped back to "not indexed".
-    private static let currentArtifactFormat = 2
-
+    /// The shared analysis store (`AcaiCore.AnalysisStore`) is the only source of an artifact — the
+    /// CLI and an MCP session over the same directory read and write it too. A codebase with no entry
+    /// there reads as never indexed, so the UI offers Reindex.
     func loadArtifact(for codebaseID: UUID) {
         guard artifacts[codebaseID] == nil else { return }
-
-        // The shared analysis store (`AcaiCore.AnalysisStore`) is the source of truth going
-        // forward — the CLI and an MCP session over the same directory read and write it too.
-        if let sourcePath = resolvedSourcePath(for: codebaseID),
-           case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath) {
-            artifacts[codebaseID] = entry.artifact
+        guard let sourcePath = resolvedSourcePath(for: codebaseID),
+              case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath)
+        else {
+            markCodebaseNotIndexed(codebaseID)
             return
         }
-
-        // Predates the shared store: this codebase's private `artifacts/codebase_<UUID>.json`,
-        // migrated into the shared store below so this branch is never taken again for it.
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        do {
-            let data = try Data(contentsOf: url)
-            let stored = try JSONDecoder().decode(StoredArtifact.self, from: data)
-            guard stored.formatVersion >= Self.currentArtifactFormat else {
-                markCodebaseNotIndexed(codebaseID)
-                return
-            }
-            artifacts[codebaseID] = stored.artifact
-            migrateArtifactToSharedStore(stored.artifact, for: codebaseID)
-        } catch is DecodingError {
-            // Predates the versioned envelope, or a schema change — treat as never indexed so the
-            // UI offers Reindex rather than a decode error the user can't act on.
-            markCodebaseNotIndexed(codebaseID)
-        } catch {
-            report(.app("Error.ProjectStore.LoadStoredAnalysis \(error.localizedDescription)"))
-        }
-    }
-
-    /// Writes an artifact loaded from the pre-shared-store `artifacts/` file into the shared store,
-    /// so this codebase's next load finds it there directly. Best-effort and silent: a failure here
-    /// just means the next load migrates it again, since the private file is left untouched.
-    private func migrateArtifactToSharedStore(_ artifact: CodeArtifact, for codebaseID: UUID) {
-        guard let sourcePath = resolvedSourcePath(for: codebaseID) else { return }
-        let store = analysisStore
-        Task.detached(priority: .utility) {
-            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
-            _ = try? store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
-        }
+        artifacts[codebaseID] = entry.artifact
     }
 
     /// The standardized, symlink-resolved absolute path `AnalysisStore` keys entries on, for the
@@ -379,8 +331,6 @@ final class ProjectStore: ObservableObject {
     /// store's entry can no longer be found by resolved path.
     func deleteArtifactFile(for codebaseID: UUID, directoryPath: String? = nil) {
         artifacts.removeValue(forKey: codebaseID)
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        try? FileManager.default.removeItem(at: url)
         let sourcePath = directoryPath?.resolvedAsAnalysisSourcePath ?? resolvedSourcePath(for: codebaseID)
         if let sourcePath {
             try? analysisStore.removeEntry(forResolvedPath: sourcePath)

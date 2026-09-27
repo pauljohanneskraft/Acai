@@ -99,11 +99,14 @@ failure (generic frame, specific detail in a disclosure). Destructive actions ge
 naming the item and its specific consequence, plus "This cannot be undone" — unless a discoverable
 undo exists, in which case say so instead of demanding a modal.
 
-**Persistence.** Every shipped `Codable` model is a migration constraint: a new field must decode
-from already-persisted data lacking it, and a removed one is decoded-and-discarded for a release
-rather than dropped. Writes are atomic. Multi-step operations complete into a staging form and swap
-in only on full success — a partial failure leaves what was there untouched. Every export/import
-format carries a version marker from day one.
+**Persistence.** Persisted state that no longer decodes is **dropped, not migrated**: the codebase
+carries no compatibility shims for earlier on-disk shapes, and a store that can't read what it finds
+falls back to "not indexed" so the UI offers Reindex. Don't add a decode path, a legacy coding key or
+a snapshot corpus for a format the app no longer writes. A field that is merely optional today
+(`scopes` on a stored GitHub account) is optional because the *current* data can lack it, not for
+compatibility. Writes are atomic. Multi-step operations complete into a staging form and swap in only
+on full success — a partial failure leaves what was there untouched. Every export/import format
+carries a version marker from day one.
 
 **Security.** Secrets live in Keychain, never in `UserDefaults`, a plain file, or persisted app
 state, and are never logged or placed in a URL. Any path or archive entry built from external input

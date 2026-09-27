@@ -30,8 +30,7 @@ struct GitHubTokenStore {
         var avatarURL: URL?
         /// Read from the `X-OAuth-Scopes` response header at sign-in time — classic PATs and
         /// OAuth/device-flow tokens report this; fine-grained PATs currently don't, so `nil` here
-        /// means "unknown," distinct from `[]` ("confirmed to have none"). Also decodes to `nil`
-        /// for every account persisted before this field existed (see `GitHubTokenStoreMigrationTests`).
+        /// means "unknown," distinct from `[]` ("confirmed to have none").
         var scopes: [String]?
         /// `nil` means "no known expiry" (a classic PAT, or a fine-grained PAT whose expiry wasn't
         /// reported).

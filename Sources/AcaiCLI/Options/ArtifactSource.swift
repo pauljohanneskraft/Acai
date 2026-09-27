@@ -82,8 +82,6 @@ struct ArtifactSource: ParsableArguments {
             switch store.lookup(forResolvedPath: resolvedPath) {
             case .entry(let entry):
                 return entry.artifact
-            case .legacyArtifact(let artifact):
-                return artifact
             case .absent:
                 throw ValidationError(
                     "No stored analysis found for '\(value)'. Run `acai store` or pass --source to analyze it."
@@ -94,8 +92,6 @@ struct ArtifactSource: ParsableArguments {
         switch store.lookup(named: value) {
         case .entry(let entry):
             return entry.artifact
-        case .legacyArtifact(let artifact):
-            return artifact
         case .absent:
             guard FileManager.default.fileExists(atPath: store.url(forName: value).path) else {
                 throw ValidationError(

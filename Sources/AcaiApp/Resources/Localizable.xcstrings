@@ -1591,28 +1591,6 @@
         }
       }
     },
-    "Error.ProjectStore.LoadStoredAnalysis %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eine gespeicherte Analyse konnte nicht geladen werden: %@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Failed to load a stored analysis: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Échec du chargement d'une analyse enregistrée : %@"
-          }
-        }
-      }
-    },
     "Error.ProjectStore.SaveAnalysis %@" : {
       "localizations" : {
         "de" : {

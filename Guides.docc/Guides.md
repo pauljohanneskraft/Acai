@@ -104,8 +104,8 @@ so nothing in the package is a blank spot.
   scanner; see `Package.swift` for why it must be pinned to the grammar version.
 - **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by
   the render and app snapshot tests.
-- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives and the
-  legacy-decode corpus locator, shared by the test targets.
+- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives shared by the
+  test targets.
 - **[AcaiArtifactGenerator](/documentation/acaiartifactgenerator/)** — a seeded, deterministic
   generator of random-but-valid `CodeArtifact`s, for the property-based invariant tests.
 

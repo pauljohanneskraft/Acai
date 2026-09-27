@@ -1,1 +1,0 @@
-{"login":"corpus-user","avatarURL":"https:\/\/example.invalid\/avatar.png","credential":{"gitHubApp":{"refreshToken":"corpus-refresh-token","accessToken":"corpus-access-token","expiresAt":721693300}},"scopes":["repo","read:org"],"tokenExpiresAt":721693300}
