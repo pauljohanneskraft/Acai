@@ -1,0 +1,1323 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "methodName" : "init",
+          "receiver" : {
+            "type" : {
+              "_0" : "Corpus.Service"
+            }
+          }
+        }
+      ],
+      "cyclomaticComplexity" : 1,
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Service.swift",
+        "line" : 70
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "makeService",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Service"
+      }
+    }
+  ],
+  "globalVariables" : [
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "initialValue" : {
+        "kind" : "numericLiteral",
+        "text" : "42"
+      },
+      "isComputed" : false,
+      "kind" : "property",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Service.swift",
+        "line" : 1
+      },
+      "modifiers" : [
+        "static"
+      ],
+      "name" : "sharedLimit",
+      "parameters" : [
+
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "Int"
+      }
+    }
+  ],
+  "metadata" : {
+    "filePaths" : [
+      "Service.swift",
+      "Kind.swift"
+    ],
+    "parseDiagnostics" : [
+      {
+        "kind" : "missing",
+        "location" : {
+          "column" : 2,
+          "filePath" : "Kind.swift",
+          "line" : 9
+        },
+        "message" : "unexpected token"
+      }
+    ],
+    "sourceLanguage" : "swift",
+    "toolVersion" : "corpus-1.0"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "label" : "inheritance",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.inheritanceTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "conformance",
+      "label" : "conformance",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.conformanceTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "composition",
+      "label" : "composition",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.compositionTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "aggregation",
+      "label" : "aggregation",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.aggregationTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "association",
+      "label" : "association",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.associationTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "dependency",
+      "label" : "dependency",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.dependencyTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "extension",
+      "label" : "extension",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.extensionTarget",
+      "targetLabel" : "0..*"
+    },
+    {
+      "kind" : "nesting",
+      "label" : "nesting",
+      "origin" : "Service.swift",
+      "source" : "Corpus.Service",
+      "sourceLabel" : "1",
+      "target" : "Corpus.nestingTarget",
+      "targetLabel" : "0..*"
+    }
+  ],
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+        "@Observable",
+        "@MainActor"
+      ],
+      "associatedTypes" : [
+        {
+          "constraints" : [
+
+          ],
+          "name" : "Output"
+        }
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+            {
+              "kind" : "conformance",
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Codable"
+              }
+            },
+            {
+              "kind" : "superclass",
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "NSObject"
+              }
+            },
+            {
+              "kind" : "sameType",
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Element"
+              }
+            }
+          ],
+          "name" : "T"
+        }
+      ],
+      "id" : "Corpus.Service",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Base"
+        },
+        {
+          "genericArguments" : [
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "String"
+            },
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : true,
+              "isOptional" : true,
+              "name" : "Item"
+            }
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Dictionary"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Service.swift",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "internal",
+          "annotations" : [
+            "@Published"
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "nilLiteral",
+            "text" : "nil"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Service.swift",
+            "line" : 5
+          },
+          "modifiers" : [
+            "lazy",
+            "weak"
+          ],
+          "name" : "store",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Store"
+          ],
+          "setAccessLevel" : "private",
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Store"
+          }
+        },
+        {
+          "accessLevel" : "protected",
+          "annotations" : [
+            "@discardableResult"
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Service.swift",
+                "line" : 15
+              },
+              "op" : "assign",
+              "targetName" : "state",
+              "value" : {
+                "kind" : "enumCase",
+                "receiverTypeName" : "Kind",
+                "text" : "loading"
+              }
+            },
+            {
+              "op" : "compound",
+              "targetName" : "counter",
+              "targetReceiver" : "Metrics",
+              "value" : {
+                "kind" : "numericLiteral",
+                "text" : "1"
+              }
+            },
+            {
+              "op" : "assign",
+              "targetName" : "title",
+              "value" : {
+                "kind" : "stringLiteral",
+                "text" : "\"idle\""
+              }
+            },
+            {
+              "op" : "assign",
+              "targetName" : "isReady",
+              "value" : {
+                "kind" : "booleanLiteral",
+                "text" : "true"
+              }
+            },
+            {
+              "op" : "assign",
+              "targetName" : "result",
+              "value" : {
+                "kind" : "expression",
+                "text" : "compute()"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "methodName" : "step",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "Service.swift",
+                "line" : 14
+              },
+              "methodName" : "save",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Store"
+                }
+              }
+            },
+            {
+              "methodName" : "log",
+              "receiver" : {
+                "free" : {
+
+                }
+              }
+            },
+            {
+              "methodName" : "dynamicCall",
+              "receiver" : {
+                "unknown" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 7,
+          "fieldReads" : [
+            {
+              "name" : "state"
+            },
+            {
+              "location" : {
+                "column" : 13,
+                "filePath" : "Service.swift",
+                "line" : 16
+              },
+              "name" : "counter",
+              "receiver" : "Metrics"
+            }
+          ],
+          "genericParameters" : [
+            {
+              "constraints" : [
+
+              ],
+              "name" : "U"
+            }
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Service.swift",
+            "line" : 12
+          },
+          "modifiers" : [
+            "static",
+            "class",
+            "final",
+            "abstract",
+            "override",
+            "mutating",
+            "nonmutating",
+            "lazy",
+            "weak",
+            "unowned",
+            "optional",
+            "required",
+            "convenience",
+            "async",
+            "throws",
+            "rethrows",
+            "nonisolated",
+            "consuming",
+            "borrowing",
+            "open",
+            "sealed",
+            "data",
+            "inner",
+            "inline",
+            "suspend",
+            "readonly",
+            "declare",
+            "const",
+            "synchronized",
+            "volatile",
+            "transient",
+            "native",
+            "strictfp",
+            "default",
+            "factory",
+            "late",
+            "external",
+            "covariant",
+            "indirect",
+            "dynamic",
+            "prefix",
+            "postfix",
+            "infix",
+            "isolated"
+          ],
+          "name" : "run",
+          "parameters" : [
+            {
+              "defaultValue" : "Input()",
+              "externalName" : "with",
+              "internalName" : "input",
+              "isVariadic" : true,
+              "modifiers" : [
+                "borrowing"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Input"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "Input",
+            "Output"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : true,
+            "name" : "Output"
+          }
+        },
+        {
+          "accessLevel" : "packagePrivate",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "modifiers" : [
+            "convenience"
+          ],
+          "name" : "init",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "deinitializer",
+          "modifiers" : [
+
+          ],
+          "name" : "deinit",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "open",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "subscript",
+          "modifiers" : [
+
+          ],
+          "name" : "subscript",
+          "parameters" : [
+            {
+              "internalName" : "index",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Int"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Item"
+          }
+        }
+      ],
+      "modifiers" : [
+        "final",
+        "open"
+      ],
+      "name" : "Service",
+      "namespace" : "Corpus",
+      "nestedTypes" : [
+        {
+          "accessLevel" : "filePrivate",
+          "annotations" : [
+
+          ],
+          "associatedTypes" : [
+
+          ],
+          "enumCases" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "id" : "Corpus.Service.Inner",
+          "inheritedTypes" : [
+
+          ],
+          "kind" : "struct",
+          "location" : {
+            "column" : 5,
+            "filePath" : "Service.swift",
+            "line" : 40
+          },
+          "members" : [
+
+          ],
+          "modifiers" : [
+
+          ],
+          "name" : "Inner",
+          "namespace" : "Corpus.Service",
+          "nestedTypes" : [
+
+          ],
+          "qualifiedName" : "Corpus.Service.Inner",
+          "sourceLanguage" : "swift"
+        }
+      ],
+      "qualifiedName" : "Corpus.Service",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+        {
+          "associatedValues" : [
+
+          ],
+          "location" : {
+            "column" : 5,
+            "filePath" : "Kind.swift",
+            "line" : 2
+          },
+          "name" : "loading"
+        },
+        {
+          "associatedValues" : [
+
+          ],
+          "name" : "named",
+          "rawValue" : "NAMED"
+        },
+        {
+          "associatedValues" : [
+            {
+              "internalName" : "error",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Error"
+              }
+            },
+            {
+              "externalName" : "retries",
+              "internalName" : "count",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Int"
+              }
+            }
+          ],
+          "name" : "failed"
+        }
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kind",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Kind.swift",
+        "line" : 1
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+        "indirect"
+      ],
+      "name" : "Kind",
+      "namespace" : "Corpus",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kind",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "extensionOf" : "Corpus.Service",
+      "genericParameters" : [
+
+      ],
+      "id" : "extension.Corpus.Service",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "CustomStringConvertible"
+        }
+      ],
+      "kind" : "extension",
+      "location" : {
+        "column" : 1,
+        "filePath" : "Service.swift",
+        "line" : 60
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : true,
+          "kind" : "property",
+          "modifiers" : [
+
+          ],
+          "name" : "description",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Service",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Service",
+      "sourceLanguage" : "swift"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.class",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "class",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.class"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.actor",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "actor",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "actor",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.actor"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.struct",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "struct",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "struct",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.struct"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.enum",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "enum",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "enum",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.enum"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.protocol",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "protocol",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "protocol",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.protocol"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.interface",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "interface",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.interface"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.trait",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "trait",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "trait",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.trait"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.typeAlias",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "typeAlias",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "typeAlias",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.typeAlias"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.object",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "object",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "object",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.object"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.extension",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "extension",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "extension",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.extension"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.annotation",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "annotation",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "annotation",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.annotation"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.module",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "module",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "module",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.module"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.record",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "record",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "record",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.record"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Corpus.Kinds.mixin",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "mixin",
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "mixin",
+      "namespace" : "Corpus.Kinds",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Corpus.Kinds.mixin"
+    }
+  ]
+}

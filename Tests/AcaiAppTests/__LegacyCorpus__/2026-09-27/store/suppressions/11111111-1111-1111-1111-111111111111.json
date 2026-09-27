@@ -1,0 +1,7 @@
+{
+  "formatVersion" : 1,
+  "suppressedFindingIDs" : [
+    "cycle:AcaiCore->AcaiDiagram",
+    "budget:Corpus.Service:members"
+  ]
+}

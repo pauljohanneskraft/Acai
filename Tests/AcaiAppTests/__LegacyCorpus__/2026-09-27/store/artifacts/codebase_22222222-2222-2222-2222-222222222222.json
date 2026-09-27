@@ -1,0 +1,57 @@
+{
+  "artifact" : {
+    "freestandingFunctions" : [
+
+    ],
+    "globalVariables" : [
+
+    ],
+    "metadata" : {
+      "filePaths" : [
+        "Service.swift"
+      ],
+      "parseDiagnostics" : [
+
+      ],
+      "sourceLanguage" : "swift",
+      "toolVersion" : "corpus-1.0"
+    },
+    "relationships" : [
+
+    ],
+    "types" : [
+      {
+        "accessLevel" : "public",
+        "annotations" : [
+
+        ],
+        "associatedTypes" : [
+
+        ],
+        "enumCases" : [
+
+        ],
+        "genericParameters" : [
+
+        ],
+        "id" : "Corpus.Service",
+        "inheritedTypes" : [
+
+        ],
+        "kind" : "class",
+        "members" : [
+
+        ],
+        "modifiers" : [
+
+        ],
+        "name" : "Service",
+        "nestedTypes" : [
+
+        ],
+        "qualifiedName" : "Corpus.Service"
+      }
+    ]
+  },
+  "formatVersion" : 2
+}

@@ -104,6 +104,9 @@ optionalTargets.append(
         dependencies: [
             "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison", "AcaiTestSupport",
         ],
+        // `exclude`, not `resources`: the legacy-decode corpus is read by path (via `#filePath`)
+        // and declaring it keeps SwiftPM from warning about the JSON.
+        exclude: ["__LegacyCorpus__"],
         // The render snapshot tests' committed goldens (read by file path, not `Bundle.module` — see
         // `ViewSnapshot.swift`); declared so SwiftPM doesn't warn about unhandled non-Swift files.
         resources: [.copy("__Snapshots__")]
@@ -339,10 +342,17 @@ let package = Package(
         ),
 
         // MARK: Tests
-        // Async waiting primitives shared by every test target that drives concurrent code. A pure
-        // leaf — no swift-testing/XCTest dependency, so it stays usable from both.
+        // Async waiting primitives and the legacy-decode corpus locator, shared by every test target
+        // that drives concurrent code or reads a committed corpus. A pure leaf — no
+        // swift-testing/XCTest dependency, so it stays usable from both.
         .target(name: "AcaiTestSupport", dependencies: []),
-        .testTarget(name: "AcaiCoreTests", dependencies: ["AcaiCore"]),
+        // `exclude`, not `resources`: the corpus is read by path (via `#filePath`, like
+        // `AcaiParserGoldenTests`), and declaring it keeps SwiftPM from warning about the JSON.
+        .testTarget(
+            name: "AcaiCoreTests",
+            dependencies: ["AcaiCore", "AcaiTestSupport"],
+            exclude: ["__LegacyCorpus__"]
+        ),
         .testTarget(name: "AcaiSwiftTests", dependencies: ["AcaiSwift", "AcaiCore"]),
         .testTarget(name: "AcaiJSTests", dependencies: ["AcaiJS", "AcaiCore"]),
         .testTarget(name: "AcaiJVMTests", dependencies: ["AcaiJVM", "AcaiCore"]),
