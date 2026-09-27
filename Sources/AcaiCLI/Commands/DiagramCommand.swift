@@ -54,8 +54,8 @@ extension AcaiCommand {
                     theme: selectedTheme
                 ).export(from: artifact)
             } else if shape.package {
-                export = PackageDiagramTextExporter(
-                    languages: artifact.standardLanguageResolver, theme: selectedTheme
+                export = try PackageDiagramTextExporter(
+                    languages: artifact.standardLanguageResolver, theme: selectedTheme, maxNodes: shape.maxNodes
                 ).export(from: artifact)
             } else if shape.callGraph {
                 let scopeOption = shape.callGraphScopeOption
@@ -65,7 +65,7 @@ extension AcaiCommand {
                 ).export(from: artifact)
             } else {
                 let exporter = ClassDiagramTextExporter(options: try classDiagramOptions(for: artifact))
-                export = exporter.export(from: artifact)
+                export = try exporter.export(from: artifact)
             }
             let rendered = export.render(diagramFormat)
             try rendered.writeOutput(to: output, label: "diagram")
@@ -89,6 +89,7 @@ extension AcaiCommand {
                 options.groupBy = .none
             }
             try classFlags.applyColorBy(to: &options, artifact: artifact)
+            options.maxNodes = shape.maxNodes
             return options
         }
     }

@@ -11,9 +11,11 @@ public struct ClassDiagramTextExporter: Sendable {
         self.options = options
     }
 
-    public func export(from artifact: CodeArtifact) -> DiagramExport {
+    public func export(from artifact: CodeArtifact) throws -> DiagramExport {
         let options = options
         let diagram = ClassDiagramBuilder(options: options).build(from: artifact)
+        try DiagramNodeLimit(maximum: options.maxNodes)
+            .validate(nodeCount: diagram.types.count + diagram.externalTypes.count)
         return DiagramExport(
             dot: { ClassDiagramDOTRenderer(options: options).generate(from: diagram) },
             mermaid: { ClassDiagramMermaidRenderer(options: options).generate(from: diagram) }
@@ -64,14 +66,18 @@ public struct StateDiagramTextExporter: Sendable {
 public struct PackageDiagramTextExporter: Sendable {
     public let languages: LanguageConfigurationResolver
     public let theme: DiagramTheme?
+    /// Generation fails once the diagram would exceed this many nodes. `nil` means unlimited.
+    public let maxNodes: Int?
 
-    public init(languages: LanguageConfigurationResolver, theme: DiagramTheme?) {
+    public init(languages: LanguageConfigurationResolver, theme: DiagramTheme?, maxNodes: Int? = nil) {
         self.languages = languages
         self.theme = theme
+        self.maxNodes = maxNodes
     }
 
-    public func export(from artifact: CodeArtifact) -> DiagramExport {
+    public func export(from artifact: CodeArtifact) throws -> DiagramExport {
         let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
+        try DiagramNodeLimit(maximum: maxNodes).validate(nodeCount: diagram.nodes.count)
         let theme = theme
         return DiagramExport(
             dot: { PackageDiagramDOTRenderer(theme: theme).render(diagram) },

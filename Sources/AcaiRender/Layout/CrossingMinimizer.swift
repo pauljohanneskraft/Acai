@@ -17,8 +17,13 @@ struct CrossingMinimizer {
             return lookup
         }
 
-        for iteration in 0..<iterations {
+        // A single direction converging isn't a fixed point: the other direction can still reorder
+        // layers it hasn't been tried against yet. Only two consecutive unchanged sweeps — one of
+        // each direction — mean neither would reorder anything the other has already seen.
+        var unchangedStreak = 0
+        for iteration in 0..<effectiveIterations(forLayerCount: layers.count) {
             let positions = positionLookup()
+            let beforeSweep = result
             if iteration.isMultiple(of: 2) {
                 // Top-down sweep: fix upper layers, reorder lower layers.
                 for layerIndex in 1..<result.count {
@@ -32,8 +37,24 @@ struct CrossingMinimizer {
                         result[layerIndex], referenceLayer: result[layerIndex + 1], referencePositions: positions)
                 }
             }
+            if result == beforeSweep {
+                unchangedStreak += 1
+                if unchangedStreak >= 2 { break }
+            } else {
+                unchangedStreak = 0
+            }
         }
         return result
+    }
+
+    /// The 24-sweep default is cheap for the layer counts a class/package diagram normally has, but a
+    /// pathological graph that never reaches the fixed point above (oscillating between two barycenter
+    /// orderings) would otherwise run all 24 full sweeps over every layer. Scaling the ceiling down as
+    /// layers grow bounds that worst case without touching the (much smaller) layer counts every
+    /// `Examples/` golden actually has, so their output is unaffected.
+    private func effectiveIterations(forLayerCount layerCount: Int) -> Int {
+        guard layerCount > 50 else { return iterations }
+        return max(6, iterations * 50 / layerCount)
     }
 
     private func reorder(

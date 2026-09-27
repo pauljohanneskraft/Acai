@@ -1,5 +1,6 @@
 import SwiftUI
 import AcaiCore
+import AcaiDiagram
 import AcaiRender
 import UniformTypeIdentifiers
 
@@ -197,6 +198,11 @@ struct ClassDiagramView: View {
                 }
             }
         )
+        .overlay {
+            if let nodeLimitError = viewModel.nodeLimitError {
+                nodeLimitErrorState(message: nodeLimitError.message)
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
@@ -217,6 +223,30 @@ struct ClassDiagramView: View {
                 .padding(.top, 8)
             }
         }
+    }
+
+    /// Shown instead of the canvas when `configuration.maxNodes` is exceeded — the diagram was never
+    /// laid out, so there is nothing to draw and a blank canvas would read as "no data" rather than
+    /// "too much data". `message` names the exact count and comes from `AcaiDiagram`, which is shared
+    /// with the CLI/MCP and not localized, so it is shown verbatim as detail under a localized title.
+    private func nodeLimitErrorState(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "rectangle.expand.vertical")
+                .font(.system(size: 40))
+                .foregroundStyle(.secondary)
+            Text(.app("View.ClassDiagramView.DiagramTooLarge"))
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text(verbatim: message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("diagram.nodeLimitError")
     }
 }
 

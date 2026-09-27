@@ -7553,6 +7553,28 @@
         }
       }
     },
+    "View.ClassDiagramView.DiagramTooLarge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm zu groß"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram Too Large"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramme trop grand"
+          }
+        }
+      }
+    },
     "View.ClassDiagramView.Done" : {
       "localizations" : {
         "de" : {
