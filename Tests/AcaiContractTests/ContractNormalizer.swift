@@ -35,10 +35,13 @@ import AcaiCore
 ///    override as `@override` *and* Kotlin/Swift/C++ as a keyword; Python spells abstract and static
 ///    as `@abstractmethod`/`@staticmethod`. The modifier is the shared fact, so the duplicate
 ///    annotation goes. An annotation with no matching modifier is always kept.
-/// 9. **A private member's single leading underscore is dropped.** Dart and Python have no `private`
+/// 9. **`suspend` reads as `async`.** Kotlin's keyword for a suspending function is the same
+///    construct Swift, Python and JavaScript spell `async`; the closed `Modifier` enum keeps both
+///    spellings, and only the matrix has to see them as one.
+/// 10. **A private member's single leading underscore is dropped.** Dart and Python have no `private`
 ///    keyword; the underscore is it, so the same member is `shut` in Swift and `_shut` there. Applied
 ///    only where the parser already reports the member as private.
-/// 10. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
+/// 11. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
 struct ContractNormalizer {
@@ -91,7 +94,10 @@ struct ContractNormalizer {
             name: normalisedMemberName(member),
             role: member.kind.rawValue,
             access: member.accessLevel.umlSymbol,
-            modifiers: member.modifiers.filter { $0 != .open }.map(\.rawValue).sorted(),
+            modifiers: member.modifiers
+                .filter { $0 != .open }
+                .map { ($0 == .suspend ? Modifier.async : $0).rawValue }
+                .sorted(),
             annotations: annotationNames(member.annotations, restating: member.modifiers),
             type: member.type.map { typeName(of: $0) },
             parameters: member.parameters.map(parameter(of:)),
@@ -120,7 +126,7 @@ struct ContractNormalizer {
         }
     }
 
-    /// Rule 9: Dart and Python have no `private` keyword — a leading underscore *is* the marker
+    /// Rule 10: Dart and Python have no `private` keyword — a leading underscore *is* the marker
     /// (Dart's `_x`, Python's name-mangled `__x`), so the same member is `shut` in Swift and `_shut` or
     /// `__shut` there. Applied only where the parser already reports the member as private.
     private func privacyMarkerStripped(_ name: String, isPrivate: Bool) -> String {

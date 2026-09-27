@@ -201,7 +201,7 @@ extension KotlinExtractor {
     /// Extracts the receiver type from a Kotlin extension function declaration. In `fun
     /// String.hello() {}`, `String` is the receiver type: the AST places it as a type node child
     /// followed by an anonymous `"."` child before the function name.
-    private func extractReceiverType(_ node: Node) -> TypeReference? {
+    func extractReceiverType(_ node: Node) -> TypeReference? {
         let children = node.children()
         guard let funIndex = children.firstIndex(where: {
             !$0.isNamed && $0.text(in: context) == "fun"
