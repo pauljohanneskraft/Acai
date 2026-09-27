@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Project Store git storage")
+@Suite("Project Store git storage", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStoreGitStorageTests {
     private func makeTempDirectory() throws -> URL {

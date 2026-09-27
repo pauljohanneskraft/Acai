@@ -1,0 +1,1 @@
+C has no generics; the idioms are void pointers and preprocessor macros, neither of which declares a type parameter.

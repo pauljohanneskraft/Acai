@@ -13,16 +13,8 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     /// `UserDefaults` key shared by the `@AppStorage` binding and the (non-SwiftUI) export path.
     static let storageKey = "diagramTheme"
 
-    /// The `UserDefaults` domain to read/write — `.standard` for real users, but an isolated suite
-    /// scoped to the active UI test fixture's directory when one is active, so an automated test
-    /// toggling the theme picker never reads or overwrites a real user's saved preference. Falls
-    /// back to a still-isolated fixed suite name (never `.standard`) if the derived name is
-    /// somehow rejected.
     static var store: UserDefaults {
-        guard let baseDir = UITestFixtureResolver().resolveBaseDir() else { return .standard }
-        let suiteName = "de.kraftsoftware.Acai.uitest.\(baseDir.lastPathComponent)"
-        return UserDefaults(suiteName: suiteName)
-            ?? UserDefaults(suiteName: "de.kraftsoftware.Acai.uitest.fallback")!
+        DiagramThemeStore(fixtureBaseDir: UITestFixtureResolver().resolveBaseDir()).defaults
     }
 
     var label: LocalizedStringResource {
@@ -73,7 +65,7 @@ enum DiagramThemeSelection: String, CaseIterable, Identifiable {
     }
 
     static var current: DiagramThemeSelection {
-        store.string(forKey: storageKey).flatMap(DiagramThemeSelection.init) ?? .system
+        DiagramThemeStore(fixtureBaseDir: UITestFixtureResolver().resolveBaseDir()).selection
     }
 
     static var currentExportTheme: DiagramTheme? {

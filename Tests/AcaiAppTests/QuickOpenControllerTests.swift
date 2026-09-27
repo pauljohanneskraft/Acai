@@ -3,7 +3,7 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-@Suite("QuickOpenController")
+@Suite("QuickOpenController", .timeLimit(.minutes(1)))
 @MainActor
 struct QuickOpenControllerTests {
     private func makeModel() throws -> (model: ProjectBrowserViewModel, projectID: UUID, codebaseID: UUID) {

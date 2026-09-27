@@ -19,7 +19,10 @@ struct DartParameterExtractor {
                 if let parameter = formalParameter(child) { params.append(parameter) }
             case "default_formal_parameter":
                 if let parameter = defaultFormalParameter(child) { params.append(parameter) }
-            case "optional_positional_formal_parameters", "optional_named_formal_parameters":
+            // `optional_formal_parameters` is what the grammar produces for both `[a, b]` and
+            // `{a, b}`; without it an optional parameter was dropped from the signature entirely.
+            case "optional_formal_parameters",
+                 "optional_positional_formal_parameters", "optional_named_formal_parameters":
                 params.append(contentsOf: optionalParameters(child))
             default:
                 break

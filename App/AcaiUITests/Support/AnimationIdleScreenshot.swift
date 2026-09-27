@@ -10,14 +10,18 @@ extension XCUIApplication {
     /// capturing every 0.1s timed a screenshot request out — yet the interval must stay under half a
     /// text cursor's ~1s blink cycle, or consecutive captures of a focused field alternate forever.
     /// `element` narrows the capture to one element, for a screen whose surroundings vary per run.
+    /// A frame that never settles is reported as a failure rather than returned quietly: comparing or
+    /// recording a mid-animation capture fails by producing wrong pixels, which a passing run hides.
     func screenshotAfterAnimationsIdle(
         of element: XCUIElement? = nil,
-        pollInterval: TimeInterval = 0.3, stableSamplesRequired: Int = 2, timeout: TimeInterval = 10
+        pollInterval: TimeInterval = 0.3, stableSamplesRequired: Int = 2, timeout: TimeInterval = 10,
+        file: StaticString = #filePath, line: UInt = #line
     ) -> XCUIScreenshot {
         let target = element ?? windows.firstMatch
         var latest = target.screenshot()
         var previous = latest.pngRepresentation
         var stableCount = 0
+        var settled = false
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             Thread.sleep(forTimeInterval: pollInterval)
@@ -25,11 +29,19 @@ extension XCUIApplication {
             let current = latest.pngRepresentation
             if current == previous {
                 stableCount += 1
-                if stableCount >= stableSamplesRequired { break }
+                if stableCount >= stableSamplesRequired {
+                    settled = true
+                    break
+                }
             } else {
                 stableCount = 0
             }
             previous = current
+        }
+        if !settled {
+            XCTFail(
+                "The window kept changing for \(Int(timeout))s, so this capture is mid-animation",
+                file: file, line: line)
         }
         return latest
     }

@@ -1,0 +1,1457 @@
+{
+  "formatVersion" : 1,
+  "freeformDiagrams" : [
+    {
+      "canvasOffsetX" : -40,
+      "canvasOffsetY" : 17.5,
+      "canvasScale" : 1.25,
+      "checkpoints" : [
+        {
+          "createdDate" : 721693300,
+          "edges" : [
+            {
+              "id" : "corpus-edge-relationship",
+              "kind" : "aggregation",
+              "label" : "owns",
+              "sourceNodeID" : "corpus-node-0",
+              "targetNodeID" : "corpus-node-1"
+            },
+            {
+              "id" : "corpus-edge-message",
+              "kind" : "dependency",
+              "label" : "load",
+              "messageKind" : "asynchronous",
+              "messageOrder" : 3,
+              "sourceNodeID" : "corpus-node-12",
+              "targetNodeID" : "corpus-node-15"
+            },
+            {
+              "id" : "corpus-edge-transition",
+              "kind" : "association",
+              "sourceNodeID" : "corpus-node-14",
+              "targetNodeID" : "corpus-node-15",
+              "transition" : {
+                "action" : "persist()",
+                "event" : "finished",
+                "guardCondition" : "isValid"
+              }
+            }
+          ],
+          "id" : "44444444-4444-4444-4444-444444444444",
+          "name" : "Before the rewrite",
+          "nodes" : [
+            {
+              "content" : {
+                "type" : {
+                  "_0" : {
+                    "enumCases" : [
+                      {
+                        "associatedValues" : "Error",
+                        "id" : "99999999-9999-9999-9999-999999999999",
+                        "name" : "failed"
+                      }
+                    ],
+                    "genericParameters" : [
+                      "Element"
+                    ],
+                    "methods" : [
+                      {
+                        "accessLevel" : "public",
+                        "id" : "88888888-8888-8888-8888-888888888888",
+                        "isAbstract" : true,
+                        "isStatic" : false,
+                        "name" : "load",
+                        "parameters" : "legacy: String",
+                        "structuredParameters" : [
+                          {
+                            "name" : "id",
+                            "type" : "UUID"
+                          }
+                        ],
+                        "type" : "Void"
+                      }
+                    ],
+                    "properties" : [
+                      {
+                        "accessLevel" : "private",
+                        "id" : "77777777-7777-7777-7777-777777777777",
+                        "isAbstract" : false,
+                        "isStatic" : true,
+                        "name" : "items",
+                        "parameters" : "",
+                        "structuredParameters" : [
+
+                        ],
+                        "type" : "[Item]"
+                      }
+                    ],
+                    "stereotype" : "repository",
+                    "typeKind" : "protocol"
+                  }
+                }
+              },
+              "drawOrder" : 0,
+              "height" : 90,
+              "id" : "corpus-node-0",
+              "name" : "Node 0",
+              "positionX" : 0,
+              "positionY" : 0,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "actor" : {
+
+                }
+              },
+              "drawOrder" : 1,
+              "height" : 90,
+              "id" : "corpus-node-1",
+              "name" : "Node 1",
+              "positionX" : 10,
+              "positionY" : 20,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "useCase" : {
+
+                }
+              },
+              "drawOrder" : 2,
+              "height" : 90,
+              "id" : "corpus-node-2",
+              "name" : "Node 2",
+              "positionX" : 20,
+              "positionY" : 40,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "boundary" : {
+
+                }
+              },
+              "drawOrder" : 3,
+              "height" : 90,
+              "id" : "corpus-node-3",
+              "name" : "Node 3",
+              "positionX" : 30,
+              "positionY" : 60,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "component" : {
+
+                }
+              },
+              "drawOrder" : 4,
+              "height" : 90,
+              "id" : "corpus-node-4",
+              "name" : "Node 4",
+              "positionX" : 40,
+              "positionY" : 80,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "package" : {
+
+                }
+              },
+              "drawOrder" : 5,
+              "height" : 90,
+              "id" : "corpus-node-5",
+              "name" : "Node 5",
+              "positionX" : 50,
+              "positionY" : 100,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "deploymentNode" : {
+
+                }
+              },
+              "drawOrder" : 6,
+              "height" : 90,
+              "id" : "corpus-node-6",
+              "name" : "Node 6",
+              "positionX" : 60,
+              "positionY" : 120,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "database" : {
+
+                }
+              },
+              "drawOrder" : 7,
+              "height" : 90,
+              "id" : "corpus-node-7",
+              "name" : "Node 7",
+              "positionX" : 70,
+              "positionY" : 140,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "artifact" : {
+
+                }
+              },
+              "drawOrder" : 8,
+              "height" : 90,
+              "id" : "corpus-node-8",
+              "name" : "Node 8",
+              "positionX" : 80,
+              "positionY" : 160,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "subsystem" : {
+
+                }
+              },
+              "drawOrder" : 9,
+              "height" : 90,
+              "id" : "corpus-node-9",
+              "name" : "Node 9",
+              "positionX" : 90,
+              "positionY" : 180,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "entity" : {
+
+                }
+              },
+              "drawOrder" : 10,
+              "height" : 90,
+              "id" : "corpus-node-10",
+              "name" : "Node 10",
+              "positionX" : 100,
+              "positionY" : 200,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "note" : {
+                  "text" : "a recorded note"
+                }
+              },
+              "drawOrder" : 11,
+              "height" : 90,
+              "id" : "corpus-node-11",
+              "name" : "Node 11",
+              "positionX" : 110,
+              "positionY" : 220,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "lifeline" : {
+                  "_0" : "database"
+                }
+              },
+              "drawOrder" : 12,
+              "height" : 90,
+              "id" : "corpus-node-12",
+              "name" : "Node 12",
+              "positionX" : 120,
+              "positionY" : 240,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "fragment" : {
+                  "_0" : {
+                    "kind" : "critical",
+                    "operands" : [
+                      {
+                        "firstOrder" : 2,
+                        "guardLabel" : "retrying",
+                        "lastOrder" : 4
+                      }
+                    ]
+                  }
+                }
+              },
+              "drawOrder" : 13,
+              "height" : 90,
+              "id" : "corpus-node-13",
+              "name" : "Node 13",
+              "positionX" : 130,
+              "positionY" : 260,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "state" : {
+                  "_0" : "choice"
+                }
+              },
+              "drawOrder" : 14,
+              "height" : 90,
+              "id" : "corpus-node-14",
+              "name" : "Node 14",
+              "positionX" : 140,
+              "positionY" : 280,
+              "width" : 180
+            },
+            {
+              "content" : {
+                "method" : {
+
+                }
+              },
+              "drawOrder" : 15,
+              "height" : 90,
+              "id" : "corpus-node-15",
+              "name" : "Node 15",
+              "positionX" : 150,
+              "positionY" : 300,
+              "width" : 180
+            }
+          ]
+        }
+      ],
+      "createdDate" : 721692800,
+      "edges" : [
+        {
+          "id" : "corpus-edge-relationship",
+          "kind" : "aggregation",
+          "label" : "owns",
+          "sourceNodeID" : "corpus-node-0",
+          "targetNodeID" : "corpus-node-1"
+        },
+        {
+          "id" : "corpus-edge-message",
+          "kind" : "dependency",
+          "label" : "load",
+          "messageKind" : "asynchronous",
+          "messageOrder" : 3,
+          "sourceNodeID" : "corpus-node-12",
+          "targetNodeID" : "corpus-node-15"
+        },
+        {
+          "id" : "corpus-edge-transition",
+          "kind" : "association",
+          "sourceNodeID" : "corpus-node-14",
+          "targetNodeID" : "corpus-node-15",
+          "transition" : {
+            "action" : "persist()",
+            "event" : "finished",
+            "guardCondition" : "isValid"
+          }
+        }
+      ],
+      "id" : "33333333-3333-3333-3333-333333333333",
+      "lastModified" : 721693300,
+      "name" : "Corpus Freeform",
+      "nodes" : [
+        {
+          "content" : {
+            "type" : {
+              "_0" : {
+                "enumCases" : [
+                  {
+                    "associatedValues" : "Error",
+                    "id" : "99999999-9999-9999-9999-999999999999",
+                    "name" : "failed"
+                  }
+                ],
+                "genericParameters" : [
+                  "Element"
+                ],
+                "methods" : [
+                  {
+                    "accessLevel" : "public",
+                    "id" : "88888888-8888-8888-8888-888888888888",
+                    "isAbstract" : true,
+                    "isStatic" : false,
+                    "name" : "load",
+                    "parameters" : "legacy: String",
+                    "structuredParameters" : [
+                      {
+                        "name" : "id",
+                        "type" : "UUID"
+                      }
+                    ],
+                    "type" : "Void"
+                  }
+                ],
+                "properties" : [
+                  {
+                    "accessLevel" : "private",
+                    "id" : "77777777-7777-7777-7777-777777777777",
+                    "isAbstract" : false,
+                    "isStatic" : true,
+                    "name" : "items",
+                    "parameters" : "",
+                    "structuredParameters" : [
+
+                    ],
+                    "type" : "[Item]"
+                  }
+                ],
+                "stereotype" : "repository",
+                "typeKind" : "protocol"
+              }
+            }
+          },
+          "drawOrder" : 0,
+          "height" : 90,
+          "id" : "corpus-node-0",
+          "name" : "Node 0",
+          "positionX" : 0,
+          "positionY" : 0,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "actor" : {
+
+            }
+          },
+          "drawOrder" : 1,
+          "height" : 90,
+          "id" : "corpus-node-1",
+          "name" : "Node 1",
+          "positionX" : 10,
+          "positionY" : 20,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "useCase" : {
+
+            }
+          },
+          "drawOrder" : 2,
+          "height" : 90,
+          "id" : "corpus-node-2",
+          "name" : "Node 2",
+          "positionX" : 20,
+          "positionY" : 40,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "boundary" : {
+
+            }
+          },
+          "drawOrder" : 3,
+          "height" : 90,
+          "id" : "corpus-node-3",
+          "name" : "Node 3",
+          "positionX" : 30,
+          "positionY" : 60,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "component" : {
+
+            }
+          },
+          "drawOrder" : 4,
+          "height" : 90,
+          "id" : "corpus-node-4",
+          "name" : "Node 4",
+          "positionX" : 40,
+          "positionY" : 80,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "package" : {
+
+            }
+          },
+          "drawOrder" : 5,
+          "height" : 90,
+          "id" : "corpus-node-5",
+          "name" : "Node 5",
+          "positionX" : 50,
+          "positionY" : 100,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "deploymentNode" : {
+
+            }
+          },
+          "drawOrder" : 6,
+          "height" : 90,
+          "id" : "corpus-node-6",
+          "name" : "Node 6",
+          "positionX" : 60,
+          "positionY" : 120,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "database" : {
+
+            }
+          },
+          "drawOrder" : 7,
+          "height" : 90,
+          "id" : "corpus-node-7",
+          "name" : "Node 7",
+          "positionX" : 70,
+          "positionY" : 140,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "artifact" : {
+
+            }
+          },
+          "drawOrder" : 8,
+          "height" : 90,
+          "id" : "corpus-node-8",
+          "name" : "Node 8",
+          "positionX" : 80,
+          "positionY" : 160,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "subsystem" : {
+
+            }
+          },
+          "drawOrder" : 9,
+          "height" : 90,
+          "id" : "corpus-node-9",
+          "name" : "Node 9",
+          "positionX" : 90,
+          "positionY" : 180,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "entity" : {
+
+            }
+          },
+          "drawOrder" : 10,
+          "height" : 90,
+          "id" : "corpus-node-10",
+          "name" : "Node 10",
+          "positionX" : 100,
+          "positionY" : 200,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "note" : {
+              "text" : "a recorded note"
+            }
+          },
+          "drawOrder" : 11,
+          "height" : 90,
+          "id" : "corpus-node-11",
+          "name" : "Node 11",
+          "positionX" : 110,
+          "positionY" : 220,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "lifeline" : {
+              "_0" : "database"
+            }
+          },
+          "drawOrder" : 12,
+          "height" : 90,
+          "id" : "corpus-node-12",
+          "name" : "Node 12",
+          "positionX" : 120,
+          "positionY" : 240,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "fragment" : {
+              "_0" : {
+                "kind" : "critical",
+                "operands" : [
+                  {
+                    "firstOrder" : 2,
+                    "guardLabel" : "retrying",
+                    "lastOrder" : 4
+                  }
+                ]
+              }
+            }
+          },
+          "drawOrder" : 13,
+          "height" : 90,
+          "id" : "corpus-node-13",
+          "name" : "Node 13",
+          "positionX" : 130,
+          "positionY" : 260,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "state" : {
+              "_0" : "choice"
+            }
+          },
+          "drawOrder" : 14,
+          "height" : 90,
+          "id" : "corpus-node-14",
+          "name" : "Node 14",
+          "positionX" : 140,
+          "positionY" : 280,
+          "width" : 180
+        },
+        {
+          "content" : {
+            "method" : {
+
+            }
+          },
+          "drawOrder" : 15,
+          "height" : 90,
+          "id" : "corpus-node-15",
+          "name" : "Node 15",
+          "positionX" : 150,
+          "positionY" : 300,
+          "width" : 180
+        }
+      ]
+    }
+  ],
+  "generatedDiagrams" : [
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "classDiagram" : {
+          "_0" : {
+            "enumCaseVisibility" : {
+              "Corpus.Kind" : true
+            },
+            "filter" : {
+              "annotation" : "observable",
+              "explicitIDs" : [
+                "Corpus.Service"
+              ],
+              "explicitModules" : [
+                "AcaiCore"
+              ],
+              "kind" : "class",
+              "minMembers" : 2,
+              "minNesting" : 1,
+              "minimumAccess" : "public",
+              "module" : "Acai*",
+              "stereotype" : "entity",
+              "typeGlob" : "Corpus.*"
+            },
+            "focus" : {
+              "direction" : "both",
+              "includeInterconnections" : true,
+              "includedRelationshipKinds" : [
+                "dependency",
+                "inheritance"
+              ],
+              "maxDepth" : 2,
+              "rootTypeName" : "Corpus.Service"
+            },
+            "grouping" : "directory",
+            "hideGeneratedTypes" : false,
+            "methodVisibility" : {
+              "Corpus.Service" : false
+            },
+            "minimumAccessLevel" : "internal",
+            "propertyVisibility" : {
+              "Corpus.Service" : true
+            },
+            "showAnnotationStereotypes" : true,
+            "showComposition" : true,
+            "showDependency" : true,
+            "showEnumCases" : true,
+            "showExternalTypes" : true,
+            "showInheritance" : true,
+            "showMethods" : true,
+            "showMultiplicities" : true,
+            "showProperties" : false,
+            "showRelationships" : true
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666601-6666-6666-6666-666666666666",
+      "isNameUserDefined" : false,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 1",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "sequenceDiagram" : {
+          "_0" : {
+            "entryMethodName" : "run",
+            "entryTypeName" : "Corpus.Service",
+            "filter" : {
+              "annotation" : "observable",
+              "explicitIDs" : [
+                "Corpus.Service"
+              ],
+              "explicitModules" : [
+                "AcaiCore"
+              ],
+              "kind" : "class",
+              "minMembers" : 2,
+              "minNesting" : 1,
+              "minimumAccess" : "public",
+              "module" : "Acai*",
+              "stereotype" : "entity",
+              "typeGlob" : "Corpus.*"
+            },
+            "maxDepth" : 4,
+            "typeMapping" : {
+              "any Store" : "DiskStore"
+            }
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666602-6666-6666-6666-666666666666",
+      "isNameUserDefined" : true,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 2",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "stateDiagram" : {
+          "_0" : {
+            "filter" : {
+              "annotation" : "observable",
+              "explicitIDs" : [
+                "Corpus.Service"
+              ],
+              "explicitModules" : [
+                "AcaiCore"
+              ],
+              "kind" : "class",
+              "minMembers" : 2,
+              "minNesting" : 1,
+              "minimumAccess" : "public",
+              "module" : "Acai*",
+              "stereotype" : "entity",
+              "typeGlob" : "Corpus.*"
+            },
+            "maxStates" : 12,
+            "typeName" : "Download",
+            "variableName" : "state"
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666603-6666-6666-6666-666666666666",
+      "isNameUserDefined" : false,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 3",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "stateDiagram" : {
+
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666604-6666-6666-6666-666666666666",
+      "isNameUserDefined" : true,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 4",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "packageDiagram" : {
+
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666605-6666-6666-6666-666666666666",
+      "isNameUserDefined" : false,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 5",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "callGraph" : {
+          "_0" : {
+            "wholeCodebase" : {
+
+            }
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666606-6666-6666-6666-666666666666",
+      "isNameUserDefined" : true,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 6",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "callGraph" : {
+          "_0" : {
+            "type" : {
+              "_0" : "Corpus.Service"
+            }
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666607-6666-6666-6666-666666666666",
+      "isNameUserDefined" : false,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 7",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "callGraph" : {
+          "_0" : {
+            "module" : {
+              "_0" : "AcaiCore"
+            }
+          }
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666608-6666-6666-6666-666666666666",
+      "isNameUserDefined" : true,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 8",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "moduleCoupling" : {
+
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666609-6666-6666-6666-666666666666",
+      "isNameUserDefined" : false,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 9",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    },
+    {
+      "callGraphFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      },
+      "canvasOffsetX" : 5,
+      "canvasOffsetY" : -5,
+      "canvasScale" : 0.75,
+      "codebaseID" : "22222222-2222-2222-2222-222222222222",
+      "comparisonBaseRef" : "main",
+      "comparisonGitRef" : "feature/corpus",
+      "content" : {
+        "hotspot" : {
+
+        }
+      },
+      "createdDate" : 721692800,
+      "id" : "66666610-6666-6666-6666-666666666666",
+      "isNameUserDefined" : true,
+      "lastModified" : 721693300,
+      "name" : "Corpus Diagram 10",
+      "nodePositions" : {
+        "Corpus.Service" : {
+          "x" : 12,
+          "y" : 34
+        }
+      },
+      "nodeSizes" : {
+        "Corpus.Service" : {
+          "height" : 120,
+          "width" : 200
+        }
+      },
+      "packageDiagramFilter" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    }
+  ],
+  "managedQualityRules" : [
+    "22222222-2222-2222-2222-222222222222",
+    {
+      "budgets" : [
+
+      ],
+      "contracts" : [
+
+      ],
+      "forbidden" : [
+
+      ],
+      "includeGeneratedTypes" : true,
+      "movements" : [
+
+      ]
+    }
+  ],
+  "projects" : [
+    {
+      "codebases" : [
+        {
+          "analysedRevision" : "0123456789abcdef",
+          "directoryPath" : "/corpus/sources",
+          "fileFilter" : {
+            "rules" : [
+              {
+                "action" : "block",
+                "id" : "12206B5C-8E1D-4179-9347-3C5D80EF7B5D",
+                "pattern" : "*",
+                "syntax" : "glob"
+              },
+              {
+                "action" : "allow",
+                "id" : "3E28B5E8-FEB0-4369-B2D6-89F1EEB78AC7",
+                "pattern" : "^Sources/.*\\.swift$",
+                "syntax" : "regex"
+              }
+            ]
+          },
+          "guidedRoute" : "dismissed",
+          "hasArtifact" : true,
+          "hasParseErrors" : true,
+          "id" : "22222222-2222-2222-2222-222222222222",
+          "indexedFingerprint" : {
+            "git" : {
+              "headCommitSHA" : "abcdef0123456789",
+              "isDirty" : false
+            }
+          },
+          "lastIndexed" : 721692800,
+          "managedCheckout" : {
+            "lastSyncedAt" : 721693300,
+            "lastSyncedCommitSHA" : "abcdef0123456789",
+            "refKind" : "tag"
+          },
+          "name" : "Corpus Codebase",
+          "parseDiagnosticCount" : 3,
+          "qualityCheck" : {
+            "rulesPath" : "/corpus/rules.yml",
+            "securityScopedBookmark" : {
+              "data" : "BQY="
+            }
+          },
+          "repository" : {
+            "ref" : "v1.2.3",
+            "remoteURL" : "https://example.invalid/corpus.git",
+            "subpath" : "Sources"
+          },
+          "securityScopedBookmark" : {
+            "data" : "AQIDBA=="
+          }
+        }
+      ],
+      "freeformDiagramIDs" : [
+        "33333333-3333-3333-3333-333333333333"
+      ],
+      "generatedDiagramIDs" : [
+        "66666601-6666-6666-6666-666666666666",
+        "66666602-6666-6666-6666-666666666666",
+        "66666603-6666-6666-6666-666666666666",
+        "66666604-6666-6666-6666-666666666666",
+        "66666605-6666-6666-6666-666666666666",
+        "66666606-6666-6666-6666-666666666666",
+        "66666607-6666-6666-6666-666666666666",
+        "66666608-6666-6666-6666-666666666666",
+        "66666609-6666-6666-6666-666666666666",
+        "66666610-6666-6666-6666-666666666666"
+      ],
+      "id" : "11111111-1111-1111-1111-111111111111",
+      "subtitle" : "Recorded persistence",
+      "title" : "Corpus Project"
+    }
+  ]
+}

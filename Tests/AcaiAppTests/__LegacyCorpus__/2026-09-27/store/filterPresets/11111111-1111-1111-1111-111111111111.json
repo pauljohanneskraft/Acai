@@ -1,0 +1,35 @@
+{
+  "formatVersion" : 1,
+  "presets" : [
+    {
+      "fileFilter" : {
+        "rules" : [
+          {
+            "action" : "block",
+            "id" : "2CB198D2-0EB9-4FEF-B69D-98DA01815E0B",
+            "pattern" : "Tests\/**",
+            "syntax" : "glob"
+          }
+        ]
+      },
+      "id" : "55555555-5555-5555-5555-555555555555",
+      "name" : "Public core only",
+      "selector" : {
+        "annotation" : "observable",
+        "explicitIDs" : [
+          "Corpus.Service"
+        ],
+        "explicitModules" : [
+          "AcaiCore"
+        ],
+        "kind" : "class",
+        "minMembers" : 2,
+        "minNesting" : 1,
+        "minimumAccess" : "public",
+        "module" : "Acai*",
+        "stereotype" : "entity",
+        "typeGlob" : "Corpus.*"
+      }
+    }
+  ]
+}

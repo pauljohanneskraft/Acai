@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 @testable import AcaiCore
 
-@Suite("Mermaid Export")
+@Suite("Mermaid Export", .timeLimit(.minutes(1)))
 @MainActor
 struct MermaidExportTests {
 
@@ -28,16 +28,16 @@ struct MermaidExportTests {
         return (ProjectBrowserViewModel(store: store), codebaseID)
     }
 
-    @Test func generatesMermaidForKnownCodebase() {
+    @Test func generatesMermaidForKnownCodebase() async {
         let (model, codebaseID) = makeModel()
-        let mermaid = model.generateMermaid(for: codebaseID)
+        let mermaid = await model.generateMermaid(for: codebaseID)
         #expect(mermaid.hasPrefix("classDiagram"))
         #expect(mermaid.contains("Widget"))
     }
 
-    @Test func unknownCodebaseYieldsEmptyClassDiagram() {
+    @Test func unknownCodebaseYieldsEmptyClassDiagram() async {
         let (model, _) = makeModel()
-        let mermaid = model.generateMermaid(for: UUID())
+        let mermaid = await model.generateMermaid(for: UUID())
         #expect(mermaid == "classDiagram\n")
     }
 }

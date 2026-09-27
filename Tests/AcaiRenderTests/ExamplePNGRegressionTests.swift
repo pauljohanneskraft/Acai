@@ -9,6 +9,12 @@ import AcaiDiagram
 
 /// Path/pipeline conveniences for the proof PNGs committed under `Examples/`. The actual
 /// PNG-comparison math lives in `ExampleGoldenComparator` below, not here.
+///
+/// Each suite below compares one language per diagram type, across every committed theme. The other
+/// languages' PNGs stay on disk as `Examples/` proof material but are not re-rendered here: what
+/// differs per language is the *model* the parser produces, which `AcaiExamplesTests` byte-compares
+/// for every language's DOT and Mermaid export, while what differs per PNG case is the renderer —
+/// and that is the same code for every language.
 struct ExamplePNGs {
     static let standard = ExamplePNGs()
 
@@ -36,18 +42,13 @@ struct ExamplePNGs {
     /// The lock is deliberately released around `analyzeProject`: two suites racing the same key
     /// duplicate one parse, whereas holding it would serialize every *distinct* fixture's analysis
     /// too — the opposite of what this cache is for.
-    func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) throws -> CodeArtifact {
+    func analyze(_ directory: URL, languages: [CodeArtifact.SourceLanguage]) async throws -> CodeArtifact {
         let key = CacheKey(directory: directory, languages: languages)
-        Self.cacheLock.lock()
-        if let cached = Self.cache[key] {
-            Self.cacheLock.unlock()
+        if let cached = Self.cacheLock.withLock({ Self.cache[key] }) {
             return cached
         }
-        Self.cacheLock.unlock()
-        let artifact = try AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
-        Self.cacheLock.lock()
-        Self.cache[key] = artifact
-        Self.cacheLock.unlock()
+        let artifact = try await AnalysisService.standard.analyzeProject(at: directory, allowedLanguages: languages)
+        Self.cacheLock.withLock { Self.cache[key] = artifact }
         return artifact
     }
 
@@ -84,7 +85,7 @@ struct ExampleGoldenComparator {
     /// `render` mirrors the CLI's `acai image` code path for that diagram; it may throw a render
     /// error on a headless host.
     @MainActor
-    func validate(_ url: URL, render: () throws -> Data) throws {
+    func validate(_ url: URL, render: () async throws -> Data) async throws {
         let committed = try Data(contentsOf: url)
         #expect(!committed.isEmpty, "\(url.lastPathComponent) is empty")
 
@@ -97,7 +98,7 @@ struct ExampleGoldenComparator {
 
         let fresh: Data
         do {
-            fresh = try render()
+            fresh = try await render()
         } catch DiagramImageRenderError.renderingFailed, DiagramImageRenderError.encodingFailed {
             return
         }
@@ -131,25 +132,20 @@ struct ExampleGoldenComparator {
     }
 }
 
-@Suite("Class diagram PNG exports")
+@Suite("Class diagram PNG exports", .timeLimit(.minutes(1)))
 struct ClassDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    // JavaScript is omitted: with no type annotations its class diagram shows only inheritance.
-    static let perLanguage: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("dart", .dart), ("python", .python),
-        ("c", .c), ("cpp", .cpp)
-    ]
+    static let perLanguage: [(stem: String, language: CodeArtifact.SourceLanguage)] = [("swift", .swift)]
 
     @Test("per-language class PNG is valid and re-renders to the same size", arguments: perLanguage, ExamplePNGs.themes)
     @MainActor func perLanguageImage(
         _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
-    ) throws {
+    ) async throws {
         let png = ExamplePNGs.standard.examples("ClassDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
-        try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.standard.analyze(
+        try await Self.comparator.validate(png) {
+            let artifact = try await ExamplePNGs.standard.analyze(
                 ExamplePNGs.standard.examples("ClassDiagram"), languages: [entry.language]
             )
             var configuration = ClassDiagramConfiguration()
@@ -163,29 +159,27 @@ struct ClassDiagramPNGTests {
     }
 }
 
-@Suite("Sequence diagram PNG exports")
+@Suite("Sequence diagram PNG exports", .timeLimit(.minutes(1)))
 struct SequenceDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    // OO languages enter on `Checkout.placeOrder`; C has no methods, so it enters on the free
-    // function `place_order` (empty type name) and renders the chain as `.control` lifelines.
+    // C is kept alongside Swift rather than dropped with the other languages: it has no methods, so
+    // it enters on the free function `place_order` (empty type name) and renders the chain as
+    // `.control` lifelines — a renderer branch no other language's fixture reaches.
     static let cases: [(
         stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
     )] = [
-        ("swift", .swift, ("Checkout", "placeOrder")), ("kotlin", .kotlin, ("Checkout", "placeOrder")),
-        ("java", .java, ("Checkout", "placeOrder")), ("typescript", .typeScript, ("Checkout", "placeOrder")),
-        ("dart", .dart, ("Checkout", "placeOrder")), ("python", .python, ("Checkout", "placeOrder")),
-        ("cpp", .cpp, ("Checkout", "placeOrder")), ("c", .c, ("", "place_order"))
+        ("swift", .swift, ("Checkout", "placeOrder")), ("c", .c, ("", "place_order"))
     ]
 
     @Test("sequence PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
     @MainActor func image(
         _ entry: (stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)),
         _ theme: (suffix: String, palette: DiagramPalette)
-    ) throws {
+    ) async throws {
         let name = "\(entry.stem)\(theme.suffix).png"
-        try Self.comparator.validate(ExamplePNGs.standard.examples("SequenceDiagram", "Exports", name)) {
-            let artifact = try ExamplePNGs.standard.analyze(
+        try await Self.comparator.validate(ExamplePNGs.standard.examples("SequenceDiagram", "Exports", name)) {
+            let artifact = try await ExamplePNGs.standard.analyze(
                 ExamplePNGs.standard.examples("SequenceDiagram"), languages: [entry.language]
             )
             let diagram = SequenceDiagramBuilder(entryPoint: entry.entry, maxDepth: 5, typeMapping: [:])
@@ -196,24 +190,20 @@ struct SequenceDiagramPNGTests {
     }
 }
 
-@Suite("State diagram PNG exports")
+@Suite("State diagram PNG exports", .timeLimit(.minutes(1)))
 struct StateDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("javascript", .javaScript), ("dart", .dart), ("python", .python),
-        ("cpp", .cpp), ("c", .c)
-    ]
+    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [("swift", .swift)]
 
     @Test("state PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
     @MainActor func image(
         _ entry: (stem: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
-    ) throws {
+    ) async throws {
         let png = ExamplePNGs.standard.examples("StateDiagram", "Exports", "\(entry.stem)\(theme.suffix).png")
-        try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.standard.analyze(
+        try await Self.comparator.validate(png) {
+            let artifact = try await ExamplePNGs.standard.analyze(
                 ExamplePNGs.standard.examples("StateDiagram"), languages: [entry.language]
             )
             let configuration = StateDiagramConfiguration(typeName: "Download", variableName: "state")
@@ -225,24 +215,22 @@ struct StateDiagramPNGTests {
     }
 }
 
-@Suite("Package diagram PNG exports")
+@Suite("Package diagram PNG exports", .timeLimit(.minutes(1)))
 struct PackageDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python),
-        ("c", "C", .c), ("cpp", "Cpp", .cpp)
+        ("swift", "Swift", .swift)
     ]
 
     @Test("package PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
     @MainActor func image(
         _ entry: (stem: String, dir: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
-    ) throws {
+    ) async throws {
         let name = "\(entry.stem)\(theme.suffix).png"
-        try Self.comparator.validate(ExamplePNGs.standard.examples("PackageDiagram", "Exports", name)) {
-            let artifact = try ExamplePNGs.standard.analyze(
+        try await Self.comparator.validate(ExamplePNGs.standard.examples("PackageDiagram", "Exports", name)) {
+            let artifact = try await ExamplePNGs.standard.analyze(
                 ExamplePNGs.standard.examples("PackageDiagram", entry.dir), languages: [entry.language]
             )
             let diagram = PackageDiagramBuilder().build(
@@ -253,24 +241,22 @@ struct PackageDiagramPNGTests {
     }
 }
 
-@Suite("Call graph PNG exports")
+@Suite("Call graph PNG exports", .timeLimit(.minutes(1)))
 struct CallGraphPNGTests {
     static let comparator = ExampleGoldenComparator()
 
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python),
-        ("c", "C", .c), ("cpp", "Cpp", .cpp)
+        ("swift", "Swift", .swift)
     ]
 
     @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
     @MainActor func image(
         _ entry: (stem: String, dir: String, language: CodeArtifact.SourceLanguage),
         _ theme: (suffix: String, palette: DiagramPalette)
-    ) throws {
+    ) async throws {
         let png = ExamplePNGs.standard.examples("CallGraph", "Exports", "\(entry.stem)\(theme.suffix).png")
-        try Self.comparator.validate(png) {
-            let artifact = try ExamplePNGs.standard.analyze(
+        try await Self.comparator.validate(png) {
+            let artifact = try await ExamplePNGs.standard.analyze(
                 ExamplePNGs.standard.examples("CallGraph", entry.dir), languages: [entry.language]
             )
             let graph = CallGraphBuilder(scope: .wholeCodebase).build(from: artifact)

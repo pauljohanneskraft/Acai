@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-@Suite("AnalysisStore")
+@Suite("AnalysisStore", .timeLimit(.minutes(1)))
 struct AnalysisStoreTests {
     private func makeStore() throws -> (store: AnalysisStore, directory: URL) {
         let directory = FileManager.default.temporaryDirectory

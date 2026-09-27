@@ -575,6 +575,55 @@
 
           ],
           "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 32
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Item",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "std::string"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
           "kind" : "method",
           "location" : {
             "column" : 9,
@@ -877,6 +926,70 @@
           "callSites" : [
 
           ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.cpp",
+            "line" : 51
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "Product",
+          "parameters" : [
+            {
+              "internalName" : "name",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "std::string"
+              }
+            },
+            {
+              "internalName" : "base",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "double"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
             {
@@ -907,7 +1020,7 @@
             "line" : 53
           },
           "modifiers" : [
-
+            "override"
           ],
           "name" : "price",
           "parameters" : [
@@ -952,7 +1065,7 @@
             "line" : 57
           },
           "modifiers" : [
-
+            "override"
           ],
           "name" : "describe",
           "parameters" : [

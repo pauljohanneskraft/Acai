@@ -6,7 +6,7 @@ import AcaiGit
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
-@Suite("HotspotViewModel")
+@Suite("HotspotViewModel", .timeLimit(.minutes(1)))
 @MainActor
 struct HotspotViewModelTests {
     private func makeTempDirectory(_ name: String) throws -> URL {

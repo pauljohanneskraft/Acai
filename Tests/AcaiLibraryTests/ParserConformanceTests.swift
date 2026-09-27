@@ -58,16 +58,49 @@ struct ParserConformanceTests {
             void bark() { speak(); }
         }
         """),
+        // C has no member functions or inheritance; what it *does* have — a typedef'd record, an
+        // enum, a record-typed field and a free function over both — still has to produce resolvable
+        // endpoints, which `struct Point` alone never exercised.
         Fixture(name: "C", parser: CCodeParser(), fileName: "zoo.c", source: """
-        struct Point { int x; int y; };
+        typedef enum Species { SpeciesDog, SpeciesCat } Species;
+
+        typedef struct Collar { int size; } Collar;
+
+        struct Animal {
+            Collar collar;
+            Species species;
+        };
+
+        int animal_collar_size(const struct Animal *animal) { return animal->collar.size; }
         """),
+        // Constructors declared in the body, an `explicit` one, and the out-of-line definitions that
+        // a real `.cpp` pairs them with — the shapes tree-sitter-cpp aliases to `declaration` and
+        // `function_definition` rather than `field_declaration`.
         Fixture(name: "C++", parser: CppCodeParser(), fileName: "zoo.cpp", source: """
-        class Animal { public: void speak(); };
+        namespace zoo {
+
+        class Animal {
+        public:
+            Animal(int age);
+            virtual void speak();
+        protected:
+            int age;
+        };
+
         class Dog : public Animal {
         public:
+            explicit Dog(int age);
             void bark();
-            class Collar { public: int size; };
+            class Collar {
+            public:
+                Collar(int size);
+                int size;
+            };
         };
+
+        void Dog::bark() { this->speak(); }
+
+        }  // namespace zoo
         """)
     ]
 
@@ -168,5 +201,40 @@ struct ParserConformanceTests {
         let violations = ParserConformanceChecker().violations(in: bad)
         #expect(violations.contains { $0.invariant == 1 }, "should flag id != qualifiedName")
         #expect(violations.contains { $0.invariant == 12 }, "should flag unprefixed nested id")
+    }
+
+    /// Invariant #2's teeth: an endpoint left as a simple name that a declared type claims, and an
+    /// empty endpoint. Both render a phantom node beside the real type instead of an edge to it.
+    @Test func checkerCatchesUncanonicalisedEndpoints() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["Zoo.swift"]),
+            types: [
+                TypeDeclaration(
+                    id: "zoo.Animal", name: "Animal", qualifiedName: "zoo.Animal", kind: .class,
+                    accessLevel: .public),
+                TypeDeclaration(
+                    id: "zoo.Dog", name: "Dog", qualifiedName: "zoo.Dog", kind: .class,
+                    accessLevel: .public,
+                    inheritedTypes: [TypeReference(name: "Animal")])
+            ],
+            relationships: [
+                Relationship(kind: .inheritance, source: "zoo.Dog", target: "Animal"),
+                Relationship(kind: .dependency, source: "zoo.Dog", target: ""),
+                // Legitimately external: nothing is declared under this name.
+                Relationship(kind: .dependency, source: "zoo.Dog", target: "NSObject")
+            ])
+        let violations = ParserConformanceChecker().violations(in: artifact)
+        #expect(
+            violations.contains { $0.invariant == 2 && $0.detail.contains("target of a inheritance") },
+            "should flag the unresolved 'Animal' relationship endpoint")
+        #expect(
+            violations.contains { $0.invariant == 2 && $0.detail.contains("supertype of 'zoo.Dog'") },
+            "should flag the unresolved 'Animal' supertype")
+        #expect(
+            violations.contains { $0.invariant == 2 && $0.detail.contains("empty target") },
+            "should flag the empty endpoint")
+        #expect(
+            !violations.contains { $0.detail.contains("NSObject") },
+            "an external endpoint is legitimate and must not be flagged")
     }
 }

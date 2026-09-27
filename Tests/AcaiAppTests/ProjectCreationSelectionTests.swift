@@ -5,7 +5,7 @@ import Testing
 /// Creating a project should land the user in it immediately rather than leaving the prior
 /// selection in place. `addProject` returning the new id is unit-testable even though the full
 /// "sheet dismissal navigates to the new project" journey is a snapshot test.
-@Suite("Project creation selection")
+@Suite("Project creation selection", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectCreationSelectionTests {
 

@@ -62,8 +62,8 @@ struct QueryView: View {
             Button {
                 reindexPhase = .loading(.app("View.QueryView.Indexing"))
                 Task {
-                    await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = .loaded
+                    let outcome = await model.editing.reindex(codebaseID: codebase.id)
+                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.QueryView.IndexingFailed"))
                 }
             } label: {
                 Label(.app("View.QueryView.IndexNow"), systemImage: "arrow.clockwise")

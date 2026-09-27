@@ -5,7 +5,9 @@ extension XCUIElement {
     /// `typeText` alone would just append to an already-populated field.
     func clearAndTypeText(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         tapWhenReady("the text field", file: file, line: line)
-        if let currentValue = value as? String, !currentValue.isEmpty {
+        // An empty field reports its placeholder as its value, so comparing the two is what tells
+        // "has text" from "has a prompt" — otherwise every field pays a burst of deletes it doesn't need.
+        if let currentValue = value as? String, !currentValue.isEmpty, currentValue != placeholderValue {
             // A plain `tap()` lands mid-string, so backspacing from there can leave a tail behind. Move
             // the cursor to the trailing edge first, then delete comfortably more than the length.
             coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()

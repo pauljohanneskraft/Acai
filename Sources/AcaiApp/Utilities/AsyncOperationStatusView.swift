@@ -8,6 +8,17 @@ enum AsyncOperationPhase: Equatable {
     case loaded
     case failed(String)
 
+    init(_ outcome: OperationOutcome, failure: LocalizedStringResource) {
+        switch outcome {
+        case .completed:
+            self = .loaded
+        case .cancelled:
+            self = .idle
+        case .failed:
+            self = .failed(String(localized: failure))
+        }
+    }
+
     var isInFlight: Bool {
         if case .loading = self { return true }
         return false

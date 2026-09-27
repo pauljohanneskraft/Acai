@@ -62,7 +62,10 @@ struct PythonMemberExtractor {
             kind: kind,
             accessLevel: signature.accessLevel,
             modifiers: modifiers,
-            type: signature.returnType,
+            // A constructor has no return type, so an annotated `def __init__(…) -> None` must not
+            // record one — the diagram would otherwise print a return type no other language's
+            // constructor carries.
+            type: kind == .initializer ? nil : signature.returnType,
             parameters: params,
             isComputed: isComputed,
             annotations: signature.decorators,

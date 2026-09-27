@@ -15,7 +15,7 @@ import AcaiRender
 /// glyphs for anything that depends on those. `AcaiApp`'s freeform node views below are flat,
 /// pre-laid-out, materials-free content, so they render cleanly; real interactive screens are
 /// covered by the snapshot tests (XCUITest) instead.
-@Suite("App screen snapshots")
+@Suite("App screen snapshots", .timeLimit(.minutes(1)))
 struct AppScreenSnapshotTests {
 
     private static let goldenDirectory = URL(fileURLWithPath: #filePath)

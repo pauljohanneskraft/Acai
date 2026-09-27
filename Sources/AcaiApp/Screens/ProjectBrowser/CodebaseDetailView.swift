@@ -123,7 +123,7 @@ struct CodebaseDetailView: View {
                 isPresented: $showDeleteConfirmation
             ) {
                 Button(.app("View.CodebaseDetailView.DeleteCodebase"), role: .destructive) {
-                    model.editing.removeCodebase(codebaseID)
+                    Task { await model.editing.removeCodebase(codebaseID) }
                 }
                 .accessibilityIdentifier("codebaseDetail.codebase.delete.confirmButton")
             } message: {
@@ -194,8 +194,8 @@ extension CodebaseDetailView {
             Button {
                 reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                 Task {
-                    await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = .loaded
+                    let outcome = await model.editing.reindex(codebaseID: codebase.id)
+                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
                 }
             } label: {
                 Label(.app("View.CodebaseDetailView.IndexNow"), systemImage: "arrow.clockwise")

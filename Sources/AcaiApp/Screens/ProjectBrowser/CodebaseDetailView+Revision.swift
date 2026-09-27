@@ -1,12 +1,6 @@
 import AcaiGit
 import SwiftUI
 
-/// A local folder's branches and tags, and what is checked out in it right now.
-struct LocalRevisions: Equatable {
-    var refs: [GitCheckout.Ref]
-    var checkedOut: String?
-}
-
 extension CodebaseDetailView {
 
     // MARK: - Managed checkout
@@ -26,8 +20,9 @@ extension CodebaseDetailView {
                 else { return }
                 refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(selected.name)"))
                 Task {
-                    await model.editing.switchRef(codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
-                    refSwitchPhase = .loaded
+                    let outcome = await model.editing.switchRef(
+                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
+                    refSwitchPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.SwitchFailed"))
                 }
             }
         )) {
@@ -52,8 +47,8 @@ extension CodebaseDetailView {
         Button {
             pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
             Task {
-                await model.editing.pull(codebaseID: codebase.id)
-                pullPhase = .loaded
+                let outcome = await model.editing.pull(codebaseID: codebase.id)
+                pullPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.PullFailed"))
             }
         } label: {
             Label(.app("View.CodebaseDetailView.Pull"), systemImage: "arrow.triangle.2.circlepath")
@@ -72,8 +67,7 @@ extension CodebaseDetailView {
         let endpoint = RemoteEndpoint(remoteURL: repository.remoteURL, gitHubCredential: nil)
         let hubStoreDirectory = model.store.gitRepositoriesDir
         availableRefs = (try? await remoteService.refs(of: endpoint, hubStoreDirectory: hubStoreDirectory)) ?? []
-        let hub = GitRepository(remoteURL: repository.remoteURL, storeDirectory: hubStoreDirectory)
-        isShallowClone = await Task.detached(priority: .utility) { hub.isShallow }.value
+        isShallowClone = await remoteService.inspectClone(endpoint, hubStoreDirectory: hubStoreDirectory).isShallow
     }
 
     /// Says the clone carries only the latest snapshot, with the action that fetches the rest.
@@ -104,8 +98,9 @@ extension CodebaseDetailView {
                 set: { revision in
                     refSwitchPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
                     Task {
-                        await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
-                        refSwitchPhase = .loaded
+                        let outcome = await model.editing.setAnalysedRevision(revision, codebaseID: codebase.id)
+                        refSwitchPhase = AsyncOperationPhase(
+                            outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
                     }
                 }
             )) {
@@ -140,12 +135,9 @@ extension CodebaseDetailView {
 
     func loadLocalRevisions(codebase: Codebase) async {
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
-        localRevisions = await Task.detached(priority: .utility) { () -> LocalRevisions? in
-            let revisions = try? access.withResolvedURL { url -> LocalRevisions? in
-                guard let checkout = try? GitCheckout(directory: url) else { return nil }
-                return LocalRevisions(refs: (try? checkout.refs()) ?? [], checkedOut: try? checkout.currentRef)
-            }
-            return revisions.flatMap { $0 }
+        let lister = LocalRevisionLister(checkouts: model.checkouts)
+        localRevisions = await Task.detached(priority: .utility) {
+            (try? access.withResolvedURL { lister.revisions(in: $0) }).flatMap { $0 }
         }.value
     }
 }

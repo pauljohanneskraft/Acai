@@ -140,4 +140,62 @@ struct SequenceDiagramViewModelTests {
         vm.historySnapshot = ["Repository": CGPoint(x: 3, y: 0)]
         #expect(vm.positionOverrides == ["Repository": CGPoint(x: 3, y: 0)])
     }
+
+    // MARK: - Delta mode
+
+    /// `Repository` gains a `log` method that `Repository.save` calls, so only the newer revision's
+    /// trace reaches the `Logger` participant.
+    private func artifact(loggingFromSave: Bool) -> CodeArtifact {
+        let save = Member(
+            name: "save", kind: .method, accessLevel: .internal,
+            callSites: loggingFromSave ? [CallSite(receiver: .type("Logger"), methodName: "log")] : []
+        )
+        var types = [
+            TypeDeclaration(
+                id: "Service", name: "Service", qualifiedName: "Service", kind: .class,
+                accessLevel: .public,
+                members: [Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                    CallSite(receiver: .type("Repository"), methodName: "save")
+                ])]
+            ),
+            TypeDeclaration(
+                id: "Repository", name: "Repository", qualifiedName: "Repository", kind: .class,
+                accessLevel: .public, members: [save]
+            )
+        ]
+        if loggingFromSave {
+            types.append(TypeDeclaration(
+                id: "Logger", name: "Logger", qualifiedName: "Logger", kind: .class, accessLevel: .public,
+                members: [Member(name: "log", kind: .method, accessLevel: .internal)]
+            ))
+        }
+        return CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["Service.swift"]), types: types)
+    }
+
+    @Test func comparisonArtifactMarksAddedElements() throws {
+        let vm = SequenceDiagramViewModel(
+            artifact: artifact(loggingFromSave: true), configuration: config(),
+            comparisonArtifact: artifact(loggingFromSave: false))
+
+        #expect(vm.isDeltaMode)
+        // Rendered as the union of both revisions, so every participant is present to be tinted.
+        #expect(vm.diagram.participants.map(\.name) == ["Service", "Repository", "Logger"])
+        #expect(vm.participantDeltaStatus("Logger") == .added)
+        #expect(vm.participantDeltaStatus("Service") == nil)
+
+        let addedMessage = try #require(vm.orderedMessages.first { $0.to == "Logger" })
+        let unchangedMessage = try #require(vm.orderedMessages.first { $0.to == "Repository" })
+        #expect(vm.messageDeltaStatus(addedMessage) == .added)
+        #expect(vm.messageDeltaStatus(unchangedMessage) == nil)
+    }
+
+    @Test func noComparisonArtifactMeansNoDeltaStatus() throws {
+        let vm = SequenceDiagramViewModel(
+            artifact: artifact(loggingFromSave: true), configuration: config())
+        #expect(!vm.isDeltaMode)
+        #expect(vm.participantDeltaStatus("Logger") == nil)
+        let message = try #require(vm.orderedMessages.first)
+        #expect(vm.messageDeltaStatus(message) == nil)
+    }
 }

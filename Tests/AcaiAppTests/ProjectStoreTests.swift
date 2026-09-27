@@ -3,7 +3,7 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-@Suite("Project Store")
+@Suite("Project Store", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStoreTests {
 

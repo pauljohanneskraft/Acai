@@ -26,7 +26,9 @@ struct ParserConformanceChecker {
         checkCallSites(flat, declaredSimpleNames: declaredSimpleNames, into: &violations)
         checkRelationshipDedup(artifact.relationships, into: &violations)
         checkIdempotence(artifact, into: &violations)
-        checkResolvedEndpoints(artifact.relationships, declaredIDs: declaredIDs, into: &violations)
+        checkResolvedEndpoints(
+            artifact.relationships, supertypesOf: flat, declaredIDs: declaredIDs,
+            resolver: TypeIdentityResolver(types: artifact.types), into: &violations)
 
         return violations
     }
@@ -96,18 +98,55 @@ struct ParserConformanceChecker {
 
     // MARK: - Invariant 2/7: resolved endpoints reference real declared ids
 
-    /// An endpoint that looks like a declared type (matches a declared id) is fine; anything else is
-    /// treated as an external reference. This catches an endpoint left as a *simple* name that also
-    /// happens to collide with a declared simple name — i.e. resolution that should have qualified it.
+    /// The contract says a relationship or supertype endpoint is *either* a name the resolver maps to
+    /// a declared id *or* a legitimately-external name. So an endpoint that `TypeIdentityResolver`
+    /// still resolves to a declared id it does not already equal is a violation: enrichment left a
+    /// name behind where the canonical id was available, and the diagram renders a duplicate node
+    /// beside the real type. `.external` (nothing declared under that name) and `.ambiguous`
+    /// (deliberately left unresolved, and separately diagnosed) both pass.
     private func checkResolvedEndpoints(
-        _ relationships: [Relationship], declaredIDs: Set<String>, into violations: inout [Violation]
+        _ relationships: [Relationship], supertypesOf types: [TypeDeclaration], declaredIDs: Set<String>,
+        resolver: TypeIdentityResolver, into violations: inout [Violation]
     ) {
-        // No hard assertion (external endpoints are legitimate); this hook exists so the negative
-        // test can exercise a self-loop, which is never valid.
-        for rel in relationships where rel.source == rel.target && !rel.source.isEmpty {
-            violations.append(Violation(
-                invariant: 2, detail: "self-referential \(rel.kind.rawValue) edge on \(rel.source)"))
+        for rel in relationships {
+            for (endpoint, role) in [(rel.source, "source"), (rel.target, "target")] {
+                if endpoint.isEmpty {
+                    violations.append(Violation(
+                        invariant: 2, detail: "\(rel.kind.rawValue) edge has an empty \(role)"))
+                    continue
+                }
+                appendUnresolvedEndpoint(
+                    endpoint, declaredIDs: declaredIDs, resolver: resolver,
+                    describedAs: "\(role) of a \(rel.kind.rawValue) edge to "
+                        + "'\(role == "source" ? rel.target : rel.source)'",
+                    into: &violations)
+            }
+            if rel.source == rel.target && !rel.source.isEmpty {
+                violations.append(Violation(
+                    invariant: 2, detail: "self-referential \(rel.kind.rawValue) edge on \(rel.source)"))
+            }
         }
+
+        for type in types {
+            for supertype in type.inheritedTypes {
+                appendUnresolvedEndpoint(
+                    supertype.name, declaredIDs: declaredIDs, resolver: resolver,
+                    describedAs: "supertype of '\(type.id)'", into: &violations)
+            }
+        }
+    }
+
+    private func appendUnresolvedEndpoint(
+        _ endpoint: String, declaredIDs: Set<String>, resolver: TypeIdentityResolver,
+        describedAs description: String, into violations: inout [Violation]
+    ) {
+        guard !declaredIDs.contains(endpoint), let resolved = resolver.resolvedID(for: endpoint) else {
+            return
+        }
+        violations.append(Violation(
+            invariant: 2,
+            detail: "\(description) is '\(endpoint)', which is not a declared id but resolves to "
+                + "'\(resolved.value)' — enrichment should have canonicalised it"))
     }
 
     // MARK: - Enrichment idempotence

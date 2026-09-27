@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("App addresses")
+@Suite("App addresses", .timeLimit(.minutes(1)))
 @MainActor
 struct AppAddressTests {
     private func withTempStoreDir<T>(_ body: (URL) throws -> T) rethrows -> T {

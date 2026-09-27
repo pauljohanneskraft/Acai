@@ -595,6 +595,28 @@
         }
       }
     },
+    "View.QueryView.IndexingFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
     "View.QueryView.ShowOnly" : {
       "localizations" : {
         "de" : {
@@ -8609,6 +8631,72 @@
         }
       }
     },
+    "View.CodebaseDetailView.IndexingFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.PullFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Pull wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pull didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La récupération n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.SwitchFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Umstellung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The switch didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La bascule n'a pas abouti."
+          }
+        }
+      }
+    },
     "View.CodebaseDetailView.InheritanceDepth" : {
       "localizations" : {
         "de" : {
@@ -10321,6 +10409,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement de %@…"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.MarkFileNotReviewed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ als ungeprüft markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %@ as not reviewed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer %@ comme non examiné"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.MarkFileReviewed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ als geprüft markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %@ as reviewed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer %@ comme examiné"
           }
         }
       }

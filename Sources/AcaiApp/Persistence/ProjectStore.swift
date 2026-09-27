@@ -35,22 +35,33 @@ final class ProjectStore: ObservableObject {
 
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
     struct StoreError: Identifiable {
+        /// The cause, separate from the presented `message`, so a caller can act on it.
+        enum Reason: Equatable, Sendable {
+            /// The codebase's folder is gone, moved, or refused by the sandbox.
+            case codebaseUnreachable
+            case indexingFailed
+            case other
+        }
+
         let id = UUID()
         let message: String
+        var reason: Reason = .other
         /// Set when the failure was "this codebase's folder can't be reached", which the user can
         /// fix by pointing it at another folder — the alert then offers that instead of just "OK".
         var relocatableCodebaseID: UUID?
     }
 
-    func report(_ message: LocalizedStringResource, relocating codebaseID: UUID? = nil) {
-        report(String(localized: message), relocating: codebaseID)
+    func report(
+        _ message: LocalizedStringResource, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil
+    ) {
+        report(String(localized: message), reason: reason, relocating: codebaseID)
     }
 
     /// The `String` overload carries text the app did not write — an engine or system error's own
     /// `localizedDescription`, which is shown untranslated rather than guessed at.
-    func report(_ message: String, relocating codebaseID: UUID? = nil) {
+    func report(_ message: String, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil) {
         print(message)
-        lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
+        lastError = StoreError(message: message, reason: reason, relocatableCodebaseID: codebaseID)
     }
 
     /// Codebases the app cloned from GitHub — the ones the signed-in account's token reaches.
@@ -62,12 +73,17 @@ final class ProjectStore: ObservableObject {
     }
 
     let baseDir: URL
+    /// Writes generated diagrams, coalescing bursts. Injectable so a test can count writes and
+    /// shorten the debounce.
+    let diagramWriter: DebouncedDiagramWriter
     /// The shared analysis store an artifact is read from and written to — `AnalysisStore.standard`
     /// (`~/.acai/analysis`) in production, shared with the CLI and an MCP session over the same
     /// directory. Injectable so a test's writes never reach the real store.
     let analysisStore: AnalysisStore
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
-    private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
+    // Not `private`: `ProjectStore+DiagramFiles.swift`'s extension needs it too — same "not private,
+    // another file's extension needs it too" pattern used throughout this app.
+    var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
     /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
     /// form; any other path is an external file the user referenced.
@@ -83,9 +99,16 @@ final class ProjectStore: ObservableObject {
     let activityCenter = ActivityCenter()
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
+    /// Remotes whose hub clone changed on disk (a worktree attached or removed, history deepened),
+    /// which `projects` alone doesn't show since the git work finishes after the store changes.
+    let repositoryChanges = PassthroughSubject<URL, Never>()
 
-    init(baseDir: URL? = nil, analysisStore: AnalysisStore = .standard) {
+    init(
+        baseDir: URL? = nil, analysisStore: AnalysisStore = .standard,
+        diagramWriter: DebouncedDiagramWriter = DebouncedDiagramWriter()
+    ) {
         self.analysisStore = analysisStore
+        self.diagramWriter = diagramWriter
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
@@ -289,17 +312,6 @@ final class ProjectStore: ObservableObject {
             try encoder.encode(project).write(to: url, options: .atomic)
         } catch {
             report(.app("Error.ProjectStore.SaveProject \(project.title) \(error.localizedDescription)"))
-        }
-    }
-
-    func saveGeneratedDiagram(_ diagram: GeneratedDiagram) {
-        generatedDiagrams[diagram.id] = diagram
-        let encoder = JSONEncoder()
-        let url = diagramsDir.appendingPathComponent("generated_\(diagram.id.uuidString).json")
-        do {
-            try encoder.encode(diagram).write(to: url, options: .atomic)
-        } catch {
-            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
         }
     }
 

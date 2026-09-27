@@ -1,0 +1,2 @@
+@Marker
+export class Box {}
