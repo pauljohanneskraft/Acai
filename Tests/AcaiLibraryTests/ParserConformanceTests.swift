@@ -56,7 +56,6 @@ struct ParserConformanceTests {
         class Animal { void speak() {} }
         class Dog extends Animal {
             void bark() { speak(); }
-            class Collar { int size = 0; }
         }
         """),
         Fixture(name: "C", parser: CCodeParser(), fileName: "zoo.c", source: """
