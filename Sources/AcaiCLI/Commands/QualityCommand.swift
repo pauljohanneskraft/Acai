@@ -6,7 +6,7 @@ import AcaiDiff
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Quality: ParsableCommand {
+    struct Quality: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "quality",
             abstract: "Check the codebase against a declarative code-quality rules file",
@@ -67,8 +67,8 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try artifactSource.resolve()
+        mutating func run() async throws {
+            let artifact = try await artifactSource.resolve()
             let ruleSet = try rules.map { try QualityRules.load(contentsOf: $0) }
                 ?? QualityRules.defaultQuality
             guard baseline != nil || ruleSet.movements.isEmpty else {
