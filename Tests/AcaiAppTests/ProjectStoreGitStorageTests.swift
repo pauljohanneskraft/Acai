@@ -15,48 +15,6 @@ struct ProjectStoreGitStorageTests {
 
     private let remoteURL = URL(string: "https://github.com/octocat/widgets.git")!
 
-    @Test func loadingDiscardsACodebaseWithItsOwnCloneAndKeepsTheOthers() throws {
-        let dir = try makeTempDirectory()
-        defer { try? FileManager.default.removeItem(at: dir) }
-
-        var perCodebaseClone = Codebase(name: "old", directoryPath: dir.appendingPathComponent("github-clones/x").path)
-        perCodebaseClone.managedCheckout = ManagedCheckout()
-        var sharedClone = Codebase(name: "new", directoryPath: dir.appendingPathComponent("git-worktrees/y").path)
-        sharedClone.managedCheckout = ManagedCheckout()
-        sharedClone.repository = CodebaseRepositoryReference(remoteURL: remoteURL, ref: "main")
-        let local = Codebase(name: "local", directoryPath: "/tmp/local")
-
-        let diagram = GeneratedDiagram(
-            name: "Classes", content: .init(type: .classDiagram), codebaseID: perCodebaseClone.id)
-        var project = Project(title: "Demo", subtitle: "")
-        project.codebases = [perCodebaseClone, sharedClone, local]
-        project.generatedDiagramIDs = [diagram.id]
-
-        let store = ProjectStore(baseDir: dir)
-        store.projects.append(project)
-        store.saveProject(project)
-        store.saveGeneratedDiagram(diagram)
-
-        let reloaded = ProjectStore(baseDir: dir)
-
-        #expect(reloaded.projects.first?.codebases.map(\.name) == ["new", "local"])
-        #expect(reloaded.projects.first?.generatedDiagramIDs.isEmpty == true)
-        #expect(reloaded.generatedDiagrams[diagram.id] == nil)
-        #expect(ProjectStore(baseDir: dir).projects.first?.codebases.map(\.name) == ["new", "local"])
-    }
-
-    @Test func launchingDeletesThePerCodebaseCloneDirectory() throws {
-        let dir = try makeTempDirectory()
-        defer { try? FileManager.default.removeItem(at: dir) }
-        let clones = dir.appendingPathComponent("github-clones", isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: clones.appendingPathComponent(UUID().uuidString), withIntermediateDirectories: true)
-
-        _ = ProjectStore(baseDir: dir)
-
-        #expect(!FileManager.default.fileExists(atPath: clones.path))
-    }
-
     @Test func sweepDeletesOnlyUnreferencedClonesAndWorktrees() async throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }

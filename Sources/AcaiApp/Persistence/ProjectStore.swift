@@ -133,8 +133,6 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
-        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("recentlyViewed.json"))
-        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("github-clones", isDirectory: true))
         load()
         let gitStorageSweep = GitStorageSweep(store: self)
         if !gitStorageSweep.isEmpty {
@@ -161,7 +159,6 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.freeformDiagramIDs {
                         loadFreeformDiagram(diagramID)
                     }
-                    discardPerCodebaseClones(inProjectAt: projects.count - 1)
                     for codebase in projects[projects.count - 1].codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
@@ -366,16 +363,6 @@ final class ProjectStore: ObservableObject {
         deleteManagedRules(forCodebase: codebaseID)
     }
 
-    /// A managed codebase with no `repository` is one with its own independent clone, a layout the app
-    /// no longer supports. It is discarded rather than migrated.
-    private func discardPerCodebaseClones(inProjectAt projectIndex: Int) {
-        let discarded = projects[projectIndex].codebases.filter { $0.managedCheckout != nil && $0.repository == nil }
-        guard !discarded.isEmpty else { return }
-        for codebase in discarded {
-            deleteCodebaseData(codebase.id, fromProjectAt: projectIndex)
-        }
-        saveProject(projects[projectIndex])
-    }
 }
 
 /// Thrown by `ProjectStore.writeArtifactToDisk` when the codebase an analysis is being saved for

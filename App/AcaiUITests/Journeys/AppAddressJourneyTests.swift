@@ -5,7 +5,9 @@ import XCTest
 final class AppAddressJourneyTests: UIJourneyTestCase {
     private let freeformDiagramID = "33333333-3333-3333-3333-333333333333"
 
-    func testALinkOpensTheCodebaseOrDiagramItNames() {
+    /// One launch: opening a link never leaves state behind that the next one has to start clean of,
+    /// and the deleted-diagram alert is dismissed before the run ends.
+    func testALinkOpensWhatItNamesAndSaysSoWhenItIsGone() {
         let browser = launchSeeded()
         browser.newProjectButton.waitOrFail("the project browser")
 
@@ -14,11 +16,6 @@ final class AppAddressJourneyTests: UIJourneyTestCase {
 
         browser.openLink("acai://diagram/\(freeformDiagramID)")
         FreeformDiagramScreen(app: app).openedIndicator.waitOrFail("the linked freeform diagram")
-    }
-
-    func testALinkToADeletedDiagramSaysSo() {
-        let browser = launchSeeded()
-        browser.newProjectButton.waitOrFail("the project browser")
 
         browser.openLink("acai://diagram/44444444-4444-4444-4444-444444444444")
 

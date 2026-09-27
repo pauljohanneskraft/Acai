@@ -170,4 +170,15 @@ class DiagramScreenBase {
         compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
         compareOperation.waitUntilLoaded("Comparing against \(name)", timeout: timeout, file: file, line: line)
     }
+
+    /// Closes the compare panel, which otherwise covers the canvas it was opened over: the sheet's
+    /// Done button on iOS, Escape for the macOS popover.
+    func dismissCompare(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        app.typeKey(.escape, modifierFlags: [])
+        #else
+        app.buttons["delta.doneButton"].tapWhenReady("the compare panel's Done button", file: file, line: line)
+        #endif
+        compareRefRow("HEAD").waitForDisappearanceOrFail("the compare panel", file: file, line: line)
+    }
 }

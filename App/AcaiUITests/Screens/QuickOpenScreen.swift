@@ -23,14 +23,10 @@ final class QuickOpenScreen {
     /// query *changes* only, so a query landing before the index finished building filters an empty
     /// list and never re-runs — retyping is what recovers from that, which a plain wait can't do.
     /// Typing a query has no side effect, so the retry is safe.
-    func search(
-        _ text: String, until expected: XCUIElement, attempts: Int = 3,
-        file: StaticString = #filePath, line: UInt = #line
-    ) {
-        for _ in 0..<attempts {
-            searchField.clearAndTypeText(text, file: file, line: line)
-            if expected.appears(within: .uiTransition / Double(attempts)) { return }
-        }
+    /// Types once: a query entered before the index finished building now filters again when the
+    /// entries land, so there is nothing for a retype to recover from.
+    func search(_ text: String, until expected: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        searchField.clearAndTypeText(text, file: file, line: line)
         expected.waitOrFail("the Quick Open result for '\(text)'", file: file, line: line)
     }
 }
