@@ -252,11 +252,21 @@ the fix is to find it, never to re-run, add a retry, raise a timeout or widen a 
 Every past "flake" here had a concrete cause: a dropped navigation in the app, a tap on an unsettled
 control, a retried action that created a duplicate, a stale golden, an unpinned status bar.
 
-CI splits each iOS device's journeys across `UI_TEST_SHARDS` jobs by enumerating the built bundle
-(`Scripts/ui_test_shard.sh`), so a new journey needs no registration — and may run in any shard, beside
-any other journey, so it can never rely on another having run first. A pull request skips journeys
-only when `Scripts/ci_needs_journeys.sh` finds every changed path outside what they exercise; keep that
-list to paths a journey provably can't reach.
+CI splits each iOS device's journeys across `UI_TEST_SHARDS` jobs, from a list the build job enumerates
+once off the built bundle (`Scripts/ui_test_shard.sh`), so a new journey needs no registration — and
+may run in any shard, beside any other journey, so it can never rely on another having run first. A
+pull request skips journeys only when `Scripts/ci_needs_journeys.sh` finds every changed path outside
+what they exercise; keep that list to paths a journey provably can't reach.
+
+**A journey is a budgeted resource, not a free addition.** `JourneyBudgetTests` caps how many exist,
+because each one costs its own launch on three platforms and a shard's wall clock is dominated by
+launches rather than by the behaviour under test. Adding one means proving something in a unit test and
+deleting a journey, or folding the new steps into a journey that already reaches that screen; raising
+the budget needs a reason in the commit that raises it. What earns a journey is wiring (a tap reaches
+its action), presentation (sheets, alerts, focus, navigation), platform integration (Quick Look, the
+share sheet, file pickers) and screenshots — not logic, which belongs in the lowest layer that owns it.
+Real indexing, cloning, git history and PNG rendering each stay in exactly **one** named journey; every
+other journey uses the canned fixtures and instant fakes behind `UITestFixtureResolver`.
 
 **Structure.** Subclass `UIJourneyTestCase`. Start from the fixture helpers in
 `Support/SeededFixture.swift` (`openSeededCodebase`, `openIndexedSeededCodebase`, …) instead of

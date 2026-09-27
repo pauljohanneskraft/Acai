@@ -313,8 +313,8 @@ jobs:
             "${ONLY_TESTING[@]}" \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 300 \
-            -maximum-test-execution-time-allowance 600
+            -default-test-execution-time-allowance 180 \
+            -maximum-test-execution-time-allowance 300
         working-directory: App
 
       - name: Screenshot drift summary
@@ -395,8 +395,8 @@ jobs:
             -clonedSourcePackagesDirPath .spm-cache \
             -disablePackageRepositoryCache \
             -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 300 \
-            -maximum-test-execution-time-allowance 600 \
+            -default-test-execution-time-allowance 180 \
+            -maximum-test-execution-time-allowance 300 \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=""
         working-directory: App
 
