@@ -98,4 +98,20 @@ struct DiagramPositionSaveDebounceTests {
         #expect(writes.value.count == writesAfterCreation + 1)
         #expect(writes.value.last == 99)
     }
+
+    /// Deleting a diagram takes it out of the store, which is what the pending write reads — so the
+    /// file stays gone without deletion needing to know the writer exists.
+    @Test func deletingADiagramWithAPendingWriteLeavesItsFileDeleted() async throws {
+        let writes = Locked<[Double]>([])
+        let (model, diagramID) = makeModel(writes: writes)
+        let url = model.store.generatedDiagramURL(diagramID)
+
+        recenter(model, diagramID, offsetX: 10)
+        let writesBeforeDeletion = writes.value.count
+        model.diagrams.remove(diagramID)
+        await model.store.diagramWriter.flush()
+
+        #expect(writes.value.count == writesBeforeDeletion)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
 }

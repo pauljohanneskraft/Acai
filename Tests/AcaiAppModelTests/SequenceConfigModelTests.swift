@@ -163,6 +163,26 @@ struct SequenceConfigModelTests {
         #expect(model.mappings.first?.selection == "DiskStore")
     }
 
+    /// Going back and re-advancing rebuilds the mapping list for the *new* entry point. Reusing the
+    /// previous one would leak a mapping the new trace never reaches into the configuration.
+    @Test func reAdvancingToAnEntryWithNothingToResolveDropsTheEarlierMappings() {
+        var model = SequenceConfigModel(artifact: artifact())
+        model.selectEntryType("Service")
+        model.entryMethodName = "run"
+        _ = model.advance()
+        model.select("DiskStore", forAbstractionNamed: "Store")
+        model.back()
+
+        // `Service.reset` calls nothing, so its trace reaches no abstraction at all.
+        model.entryMethodName = "reset"
+        guard case .finished(let configuration) = model.advance() else {
+            Issue.record("expected the second advance to finish, having nothing to resolve")
+            return
+        }
+        #expect(configuration.typeMapping.isEmpty)
+        #expect(model.mappings.isEmpty)
+    }
+
     @Test func selectingAnAbstractionThatIsNotOfferedChangesNothing() {
         var model = SequenceConfigModel(artifact: artifact())
         model.selectEntryType("Service")

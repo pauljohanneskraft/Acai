@@ -29,8 +29,8 @@ final class DebouncedDiagramWriter {
         self.writer = writer
     }
 
-    /// Writes on the spot, dropping any pending debounced write for the same diagram so an older
-    /// snapshot can't land on top of this one.
+    /// Writes on the spot, dropping any debounced write for the same diagram that is still waiting
+    /// out its timer, so an older snapshot doesn't land on top of this one.
     func writeNow(_ diagram: GeneratedDiagram, to url: URL) throws {
         pending[diagram.id]?.cancel()
         try writer.write(diagram, to: url)
@@ -55,14 +55,8 @@ final class DebouncedDiagramWriter {
         }
     }
 
-    /// Drops a scheduled write without performing it — for a diagram about to be deleted, whose file
-    /// must not be written again after removal.
-    func cancel(_ diagramID: UUID) {
-        pending.removeValue(forKey: diagramID)?.cancel()
-    }
-
-    /// Awaits every scheduled write, so a caller that needs "saved" to have actually happened (a
-    /// scene going away, a test observing the trailing write) doesn't have to guess at the timing.
+    /// Awaits every scheduled write, so a caller that needs the trailing write to have happened
+    /// doesn't have to guess at the timing.
     func flush() async {
         let scheduled = Array(pending.values)
         pending.removeAll()

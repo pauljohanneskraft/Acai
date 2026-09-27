@@ -315,6 +315,17 @@ final class ProjectStore: ObservableObject {
         }
     }
 
+    func saveFreeformDiagram(_ diagram: FreeformDiagram) {
+        freeformDiagrams[diagram.id] = diagram
+        let encoder = JSONEncoder()
+        let url = diagramsDir.appendingPathComponent("freeform_\(diagram.id.uuidString).json")
+        do {
+            try encoder.encode(diagram).write(to: url, options: .atomic)
+        } catch {
+            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
+        }
+    }
+
     /// Updates the in-memory artifact immediately, then encodes and writes it to disk off the main
     /// actor — for a large codebase, JSON encode + atomic write can visibly stall the UI if done
     /// inline. Fire-and-forget; callers that need "saved" to be a real completion signal (not just a
@@ -344,6 +355,18 @@ final class ProjectStore: ObservableObject {
             let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
             try store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
         }.value
+    }
+
+    func deleteGeneratedDiagramFile(_ id: UUID) {
+        generatedDiagrams.removeValue(forKey: id)
+        let url = diagramsDir.appendingPathComponent("generated_\(id.uuidString).json")
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    func deleteFreeformDiagramFile(_ id: UUID) {
+        freeformDiagrams.removeValue(forKey: id)
+        let url = diagramsDir.appendingPathComponent("freeform_\(id.uuidString).json")
+        try? FileManager.default.removeItem(at: url)
     }
 
     func deleteProjectFile(_ id: UUID) {

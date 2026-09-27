@@ -4,15 +4,13 @@ import AcaiCore
 import AcaiRender
 @testable import AcaiApp
 
-/// Focus is the other way a class diagram narrows what it shows — `ClassFreeformConversionTests`
-/// covers the selector filter. The copy holds exactly what the live view had on screen, so the
-/// assertion is parity with `ClassDiagramViewModel`, not a hand-written node list.
-@Suite("Class Diagram → Freeform Conversion (focus)")
-@MainActor
-struct ClassFreeformFocusConversionTests {
+// Focus is the other way a class diagram narrows what it shows — the selector filter is covered in
+// `ClassFreeformConversionTests.swift`. An extension rather than a second suite so the test keeps its
+// suite, and so SwiftLint counts this body separately from that file's.
+extension ClassFreeformConversionTests {
 
     /// `A → B → C`, plus `D` unrelated to any of them.
-    private func artifact() -> CodeArtifact {
+    private func focusArtifact() -> CodeArtifact {
         CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift", "B.swift", "C.swift", "D.swift"]),
             types: ["A", "B", "C", "D"].map {
@@ -25,15 +23,18 @@ struct ClassFreeformFocusConversionTests {
         )
     }
 
-    private func focusedDiagram(on rootTypeName: String) -> GeneratedDiagram {
+    private func focusedDiagram(on rootTypeName: String, maxDepth: Int? = nil) -> GeneratedDiagram {
         var config = ClassDiagramConfiguration()
         config.setFocused(true, rootTypeName: rootTypeName)
+        config.focus?.maxDepth = maxDepth
         return GeneratedDiagram(name: "Classes", content: .classDiagram(config), codebaseID: UUID())
     }
 
+    /// The copy holds exactly what the live view had on screen, so the assertion is parity with
+    /// `ClassDiagramViewModel`, not a hand-written node list.
     @Test("Focus narrows the copy to the focused subgraph, exactly as the source view shows it")
     func focusNarrowsCopyToFocusedSubgraph() {
-        let artifact = artifact()
+        let artifact = focusArtifact()
         let diagram = focusedDiagram(on: "A")
 
         let freeform = diagram.convertToFreeform(
@@ -53,14 +54,8 @@ struct ClassFreeformFocusConversionTests {
 
     @Test("A depth-limited focus copies only as far as the source view walked")
     func depthLimitedFocusStopsAtTheSameDepth() {
-        let artifact = artifact()
-        var config = ClassDiagramConfiguration()
-        config.setFocused(true, rootTypeName: "A")
-        config.focus?.maxDepth = 1
-        let diagram = GeneratedDiagram(name: "Classes", content: .classDiagram(config), codebaseID: UUID())
-
-        let freeform = diagram.convertToFreeform(
-            artifact: artifact, positions: [:], scale: 1, offset: .zero
+        let freeform = focusedDiagram(on: "A", maxDepth: 1).convertToFreeform(
+            artifact: focusArtifact(), positions: [:], scale: 1, offset: .zero
         )
 
         #expect(Set(freeform.nodes.map(\.name)) == ["A", "B"])
