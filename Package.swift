@@ -355,7 +355,7 @@ let package = Package(
         .testTarget(name: "AcaiLibraryTests", dependencies: ["AcaiLibrary", "AcaiDiagram"]),
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
         .testTarget(name: "AcaiMCPTests", dependencies: ["AcaiMCP", "AcaiLibrary", "AcaiCore"]),
-        .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore"]),
+        .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
 
         // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
         // `exclude`, not `resources`: the tests read both directories by path (via `#filePath`, like

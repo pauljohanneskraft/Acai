@@ -52,25 +52,24 @@ struct DiagramSearchBar: View {
         }
     }
 
+    private var summary: DiagramSearchSummary {
+        DiagramSearchSummary(query: query, matchCount: matchCount)
+    }
+
     @ViewBuilder
     private var matchSummaryText: some View {
-        if let matchSummary {
-            Text(localized: matchSummary)
+        switch summary.message {
+        case .matches(let count):
+            Text(.app("View.DiagramSearchBar.MatchCount \(count)"))
                 .foregroundStyle(.secondary)
-        } else {
+        case .noMatches:
+            Text(.app("View.DiagramSearchBar.NoMatches"))
+                .foregroundStyle(.secondary)
+        case nil:
             // Keeps the bar's width/height stable before the first keystroke rather than popping
             // in once there's something to report.
             Text(verbatim: " ")
         }
-    }
-
-    /// `nil` before the first keystroke — nothing has been searched for yet, which reads
-    /// differently from a query that matched nothing.
-    private var matchSummary: LocalizedStringResource? {
-        guard !query.isEmpty else { return nil }
-        return matchCount > 0
-            ? .app("View.DiagramSearchBar.MatchCount \(matchCount)")
-            : .app("View.DiagramSearchBar.NoMatches")
     }
 
     // MARK: - Step Controls
@@ -94,7 +93,7 @@ struct DiagramSearchBar: View {
             .keyboardShortcut(.nextMatch)
         }
         .buttonStyle(.plain)
-        .disabled(matchCount == 0)
+        .disabled(!summary.canStep)
     }
 
     // MARK: - Dismiss
