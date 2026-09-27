@@ -87,10 +87,26 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
    - `Tests/AcaiLibraryTests/ParserConformanceTests.swift` — add a small fixture to `fixtures` (and
      to `readFixtures` if your language has methods). This checks the producer-contract invariants
      documented on `CodeParser`: `id == qualifiedName`, hierarchical nested ids, simple-name
-     receivers, relationship dedup, enrichment idempotence.
-   - `Tests/AcaiParserGoldenTests/` — add one broad fixture and record its golden with
-     `ACAI_RECORD_PARSER_GOLDENS=1 swift test --filter AcaiParserGoldenTests`. Read the recorded
-     JSON once before committing it: it is the thing a later refactor has to reproduce exactly.
+     receivers, relationship dedup, enrichment idempotence, and that every relationship and supertype
+     endpoint is either a declared id or a genuinely external name. Make the fixture cover your
+     language's real constructs — inheritance, a constructor, a nested type, a member call — and not
+     just one bare record: the checker can only bite what the fixture declares.
+   - `Tests/AcaiParserGoldenTests/` — add one broad fixture to `ParserGoldenTests.fixtures` and record
+     its goldens with `ACAI_RECORD_PARSER_GOLDENS=1 swift test --filter AcaiParserGoldenTests`. Each
+     fixture pins **two** snapshots: the raw parser output (`<file>.json`) and the same artifact after
+     enrichment (`<file>.enriched.json`), the latter run with the configuration the *registry* holds
+     for the language your parser reports. Read both recorded files once before committing them: they
+     are what a later refactor has to reproduce exactly, and the enriched one is also the corpus
+     `AcaiContractFixtures` hands to consumers that must not link a parser.
+   - `Tests/AcaiContractTests/Features/` — **the cross-language feature matrix**, and the one suite
+     that checks your language produces the *same* `CodeArtifact` shape as the others for the *same*
+     construct. Every feature directory needs either `<lang>.<ext>`, an idiomatic snippet of that
+     construct, or `<lang>.waiver`, one line saying why the language genuinely cannot express it — a
+     directory with neither fails the matrix, so this is not optional. Read
+     `ContractNormalizer`'s documented rules first: they list exactly which per-language variation is
+     erased, and a difference not on that list is a bug in your extractor, not a reason for a waiver.
+     Use the existing waivers as the bar for how precise a reason has to be ("C has no class type; its
+     only aggregate is a struct, a different `TypeKind`…"), never "not supported".
 
 10. **Documentation** — add a `Sources/Acai<Lang>/Acai<Lang>.docc/Acai<Lang>.md` catalog page (copy an
    existing plugin's), then **link it from the module map** in
@@ -100,4 +116,16 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
    nothing links to it until you add that line, so this step is what makes it reachable. Also add the
    language to the table in `README.md` under "Supported languages".
 
-Then run `swift build`, `swift test --filter Acai<Lang>Tests`, and `swiftlint lint --strict`.
+11. **`Examples/`** — the showroom is also a regression corpus, and its language coverage is a **list
+   per diagram type**, not a glob. To add your language to a diagram, write its sample under
+   `Examples/<Diagram>/<Lang>/` (using the same type and member names as the other languages —
+   `Examples/README.md` explains why), add it to that suite's `cases` list in
+   `Tests/AcaiExamplesTests/ExampleExportRegressionTests.swift` (and
+   `DeltaExportRegressionTests.swift` for the `*Diff` trees), then generate the checked-in exports
+   with the commands in `Examples/README.md`. The `.dot`/`.mmd` are byte-compared by
+   `AcaiExamplesTests`; the `.png`/`.dark.png` live in Git LFS and are compared on macOS by
+   `AcaiRenderTests`. Leaving your language out of a diagram is fine — say why in that README's
+   coverage table, as the existing omissions do.
+
+Then run `swift build`, `swift test --filter Acai<Lang>Tests`, `swift test --filter AcaiContractTests`,
+and `swiftlint lint --strict`.
