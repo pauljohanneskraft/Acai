@@ -11,6 +11,11 @@ extension CodeArtifact {
             .resolvingRelationshipNames()
             .reclassifyingRelationshipKinds()
             .inferringStructuralEdges(using: resolver)
+            // Inference synthesises edges from member and supertype names, so those endpoints need
+            // the same resolution — and the same ambiguity reporting — the parsed edges got above.
+            // Resolving an already-canonical endpoint is a no-op, so this only adds the diagnostics a
+            // single pass would otherwise leave to the next one.
+            .resolvingRelationshipNames()
             .deduplicatingRelationships()
     }
 
@@ -53,7 +58,12 @@ extension CodeArtifact {
         let (resolvedTypes, inheritedDiagnostics) = Self.resolvingInheritedTypeNames(types, using: resolver)
         copy.types = resolvedTypes
         diagnostics.append(contentsOf: inheritedDiagnostics)
-        copy.metadata.parseDiagnostics.append(contentsOf: diagnostics)
+        // Only diagnostics this pass hasn't already recorded: enrichment is documented as idempotent
+        // and re-running it must not grow the list. Duplicates *within* one pass are kept, since two
+        // edges sharing an ambiguous name are two findings.
+        let alreadyRecorded = Set(metadata.parseDiagnostics)
+        copy.metadata.parseDiagnostics.append(
+            contentsOf: diagnostics.filter { !alreadyRecorded.contains($0) })
         return copy
     }
 

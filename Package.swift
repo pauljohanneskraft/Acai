@@ -40,7 +40,8 @@ optionalTargets.append(
     .testTarget(
         name: "AcaiRenderTests",
         dependencies: [
-            "AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality", "AcaiPNGComparison"
+            "AcaiRender", "AcaiCore", "AcaiLibrary", "AcaiDiagram", "AcaiQuality", "AcaiPNGComparison",
+            "AcaiArtifactGenerator"
         ])
 )
 cliOptionalDependencies.append(.target(name: "AcaiRender", condition: .when(platforms: [.macOS])))
@@ -103,6 +104,7 @@ optionalTargets.append(
         // `ClassDiagramConfiguration` fixtures directly.
         dependencies: [
             "AcaiApp", "AcaiCore", "AcaiRender", "AcaiDiagram", "AcaiPNGComparison", "AcaiTestSupport",
+            "AcaiArtifactGenerator",
         ],
         // `exclude`, not `resources`: the legacy-decode corpus is read by path (via `#filePath`)
         // and declaring it keeps SwiftPM from warning about the JSON.
@@ -346,6 +348,10 @@ let package = Package(
         // that drives concurrent code or reads a committed corpus. A pure leaf — no
         // swift-testing/XCTest dependency, so it stays usable from both.
         .target(name: "AcaiTestSupport", dependencies: []),
+        // MARK: Seeded generator of random-but-valid `CodeArtifact`s, for the property-based
+        // invariant tests. Its own target rather than part of `AcaiTestSupport`, which is a pure leaf
+        // with no `AcaiCore` dependency. Used only by test targets.
+        .target(name: "AcaiArtifactGenerator", dependencies: ["AcaiCore"]),
         // `exclude`, not `resources`: the corpus is read by path (via `#filePath`, like
         // `AcaiParserGoldenTests`), and declaring it keeps SwiftPM from warning about the JSON.
         .testTarget(
@@ -359,14 +365,18 @@ let package = Package(
         .testTarget(name: "AcaiDartTests", dependencies: ["AcaiDart", "AcaiCore"]),
         .testTarget(name: "AcaiPythonTests", dependencies: ["AcaiPython", "AcaiCore"]),
         .testTarget(name: "AcaiCFamilyTests", dependencies: ["AcaiCFamily", "AcaiCore"]),
-        .testTarget(name: "AcaiDiagramTests", dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality"]),
-        .testTarget(name: "AcaiDiffTests", dependencies: ["AcaiDiff", "AcaiCore", "AcaiDiagram"]),
+        .testTarget(
+            name: "AcaiDiagramTests",
+            dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality", "AcaiArtifactGenerator"]),
+        .testTarget(
+            name: "AcaiDiffTests",
+            dependencies: ["AcaiDiff", "AcaiCore", "AcaiDiagram", "AcaiArtifactGenerator"]),
         .testTarget(name: "AcaiQualityTests", dependencies: ["AcaiQuality", "AcaiCore"]),
         // `exclude`, not `resources`: the fixtures are `.swift` files SwiftPM would otherwise compile
         // into this target instead of leaving as parser input (read by `#filePath`).
         .testTarget(
             name: "AcaiLibraryTests",
-            dependencies: ["AcaiLibrary", "AcaiDiagram"],
+            dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiArtifactGenerator"],
             exclude: ["Fixtures"]
         ),
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
