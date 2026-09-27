@@ -12,23 +12,23 @@ struct AnalyzeListStoreCommandTests {
 
     // MARK: - analyze
 
-    @Test func analyzeNonexistentSourceThrows() throws {
+    @Test func analyzeNonexistentSourceThrows() async throws {
         var cmd = try CLITestSupport.parseAnalyze(["--source", CLITestSupport.nonexistentPath()])
-        #expect {
-            try cmd.run()
+        await #expect {
+            try await cmd.run()
         } throws: { error in
             CLITestSupport.message(for: error).contains("Source directory does not exist:")
         }
     }
 
-    @Test func analyzeWritesDecodableArtifactToOutput() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func analyzeWritesDecodableArtifactToOutput() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("artifact.json")
             var cmd = try CLITestSupport.parseAnalyze(
                 ["--source", dir.path, "--language", "swift", "--output", output.path]
             )
-            try cmd.run()
+            try await cmd.run()
 
             let data = try Data(contentsOf: output)
             let artifact = try JSONDecoder().decode(CodeArtifact.self, from: data)
@@ -37,12 +37,12 @@ struct AnalyzeListStoreCommandTests {
         }
     }
 
-    @Test func analyzeRequiresSourceArgument() throws {
+    @Test func analyzeRequiresSourceArgument() async throws {
         // A source is required, but it may come from --source or --from, so the requirement is
         // enforced at run time rather than by ArgumentParser.
         var cmd = try CLITestSupport.parseAnalyze([])
-        #expect {
-            try cmd.run()
+        await #expect {
+            try await cmd.run()
         } throws: { error in
             CLITestSupport.message(for: error).contains("Either --from or --source")
         }
@@ -65,12 +65,12 @@ struct AnalyzeListStoreCommandTests {
         }
     }
 
-    @Test func storeNonexistentSourceThrowsBeforeWriting() throws {
+    @Test func storeNonexistentSourceThrowsBeforeWriting() async throws {
         // The source-dir guard runs before any write to `~/.config/acai`, so this is safe to run.
         let root = try AcaiCommand.parseAsRoot(["store", "name", CLITestSupport.nonexistentPath()])
         var cmd = try #require(root as? AcaiCommand.Store)
-        #expect {
-            try cmd.run()
+        await #expect {
+            try await cmd.run()
         } throws: { error in
             CLITestSupport.message(for: error).contains("Source directory does not exist:")
         }

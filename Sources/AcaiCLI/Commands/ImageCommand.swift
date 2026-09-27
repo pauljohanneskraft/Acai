@@ -56,14 +56,15 @@ extension AcaiCommand {
             try shape.validate()
         }
 
-        private func resolveOldArtifact() throws -> CodeArtifact? {
+        private func resolveOldArtifact() async throws -> CodeArtifact? {
             guard fromOld != nil || sourceOld != nil else { return nil }
-            return try ArtifactSource.resolve(from: fromOld, source: sourceOld, language: artifactSource.language)
+            return try await ArtifactSource.resolve(
+                from: fromOld, source: sourceOld, language: artifactSource.language)
         }
 
         mutating func run() async throws {
-            let artifact = try artifactSource.resolve()
-            let oldArtifact = try resolveOldArtifact()
+            let artifact = try await artifactSource.resolve()
+            let oldArtifact = try await resolveOldArtifact()
 
             let data = try await renderData(artifact: artifact, old: oldArtifact)
 

@@ -28,7 +28,7 @@ private struct StubParser: CodeParser {
 struct UnreadableFileDiagnosticTests {
 
     @Test("an unreadable file produces one diagnostic and does not abort the rest of the analysis")
-    func unreadableFileYieldsDiagnostic() throws {
+    func unreadableFileYieldsDiagnostic() async throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("acai-unreadable-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -40,7 +40,7 @@ struct UnreadableFileDiagnosticTests {
         FileManager.default.createFile(atPath: root.appendingPathComponent("bad.stub").path, contents: invalidUTF8)
 
         let service = AnalysisService(parsers: [StubParser()])
-        let artifact = try service.analyzeProject(at: root, allowedLanguages: [])
+        let artifact = try await service.analyzeProject(at: root, allowedLanguages: [])
 
         #expect(artifact.types.map(\.name) == ["Good"])
 

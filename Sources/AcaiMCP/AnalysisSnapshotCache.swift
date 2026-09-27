@@ -31,7 +31,7 @@ actor AnalysisSnapshotCache {
 
     /// `path` is a source directory to analyze, or a `.json` artifact file to decode (a stored
     /// baseline, used by `acai_diff`).
-    func artifact(path: String, languageNames: [String] = [], refresh: Bool = false) throws -> CodeArtifact {
+    func artifact(path: String, languageNames: [String] = [], refresh: Bool = false) async throws -> CodeArtifact {
         let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
@@ -52,7 +52,7 @@ actor AnalysisSnapshotCache {
         if !isDirectory.boolValue && url.pathExtension == "json" {
             artifact = try decodeArtifact(at: url)
         } else {
-            artifact = try service.analyzeProject(
+            artifact = try await service.analyzeProject(
                 at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
             _ = try? store.write(artifact, sourcePath: key, fingerprint: fingerprint)
         }

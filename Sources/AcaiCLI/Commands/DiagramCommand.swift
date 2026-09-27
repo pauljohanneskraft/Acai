@@ -4,7 +4,7 @@ import AcaiDiagram
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Diagram: ParsableCommand {
+    struct Diagram: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Generate a diagram (DOT or Mermaid) from an analysis or source directory"
         )
@@ -35,8 +35,8 @@ extension AcaiCommand {
             try shape.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try artifactSource.resolve()
+        mutating func run() async throws {
+            let artifact = try await artifactSource.resolve()
 
             let diagramFormat = format?.diagramFormat ?? .dot
             let selectedTheme = theme?.diagramTheme
