@@ -13,7 +13,7 @@ struct PythonMemberTests {
     @Test func initializerKindAndSelfDropped() {
         let source = """
         class User:
-            def __init__(self, name: str, age: int):
+            def __init__(self, name: str, age: int) -> None:
                 self.name = name
         """
         let user = type(named: "User", in: source)
@@ -21,6 +21,9 @@ struct PythonMemberTests {
         #expect(initializer?.name == "__init__")
         #expect(initializer?.parameters.map(\.internalName) == ["name", "age"])
         #expect(initializer?.accessLevel == .public)
+        // An annotated `-> None` is not a return type: a constructor has none, as in every other
+        // language, and the diagram must not print one.
+        #expect(initializer?.type == nil)
     }
 
     @Test func cyclomaticComplexityCountsDecisionPoints() {

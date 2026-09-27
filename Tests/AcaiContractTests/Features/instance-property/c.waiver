@@ -1,0 +1,1 @@
+C has no class, so a field lives in a struct — a different TypeKind the diagram renders differently.

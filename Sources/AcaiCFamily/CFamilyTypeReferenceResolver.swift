@@ -117,8 +117,19 @@ struct CFamilyTypeReferenceResolver {
             return TypeReference(name: full)
         }
         let base = String(full[..<angle]).trimmingCharacters(in: .whitespaces)
-        return TypeReference(name: base, genericArguments: templateArguments(under: node))
+        let arguments = templateArguments(under: node)
+        // `std::optional<T>` is C++'s optional, not a container of `T`: it holds nothing or one value.
+        // Reported as `T?` so it renders and relates like every other language's nullable type,
+        // instead of as an aggregation with `*` multiplicity.
+        if Self.optionalTemplateNames.contains(base), let wrapped = arguments.first, arguments.count == 1 {
+            return TypeReference(
+                name: wrapped.name, genericArguments: wrapped.genericArguments,
+                isOptional: true, isArray: wrapped.isArray)
+        }
+        return TypeReference(name: base, genericArguments: arguments)
     }
+
+    private static let optionalTemplateNames: Set<String> = ["optional", "std::optional"]
 
     private func templateArguments(under node: Node) -> [TypeReference] {
         guard let list = firstDescendant(of: node, nodeType: "template_argument_list") else { return [] }

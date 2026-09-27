@@ -1,0 +1,12 @@
+{
+  "types": [
+    {
+      "name": "Box",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "label", "role": "property", "access": "+", "type": "#primitive?" }
+      ]
+    }
+  ]
+}

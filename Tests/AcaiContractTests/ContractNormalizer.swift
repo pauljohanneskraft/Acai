@@ -157,11 +157,12 @@ struct ContractNormalizer {
     /// Rule 4, then rule 2: classification runs on the name the parser produced (a C++ primitive is
     /// spelled `std::string`), and only what survives it is reduced to a simple name.
     func typeName(of reference: TypeReference) -> String {
+        let optional = reference.isOptional ? "?" : ""
         let base = classify(reference.name)
-        guard base == Self.collectionToken || reference.isArray else { return base }
+        guard base == Self.collectionToken || reference.isArray else { return base + optional }
         let arguments = reference.genericArguments.map { typeName(of: $0) }
         let element = arguments.isEmpty ? nil : arguments.joined(separator: ",")
-        return element.map { "\(Self.collectionToken)<\($0)>" } ?? Self.collectionToken
+        return (element.map { "\(Self.collectionToken)<\($0)>" } ?? Self.collectionToken) + optional
     }
 
     private func classify(_ name: String) -> String {

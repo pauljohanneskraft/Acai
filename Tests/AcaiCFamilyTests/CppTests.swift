@@ -123,6 +123,28 @@ struct CppTests {
         #expect(aggregation != nil)
     }
 
+    /// `std::optional<T>` holds nothing or one `T`, so it is the language's optional rather than a
+    /// container: reported as `T?`, and related with single (not `*`) multiplicity.
+    @Test func optionalFieldIsNullableNotACollection() {
+        let source = """
+        #include <optional>
+        class Roster {
+        public:
+            std::optional<Player> captain;
+        };
+        class Player {};
+        """
+        let artifact = parser.parse(source: source, fileName: "roster.cpp")
+        let captain = artifact.types.first { $0.name == "Roster" }?
+            .members.first { $0.name == "captain" }
+        #expect(captain?.type?.name == "Player")
+        #expect(captain?.type?.isOptional == true)
+        #expect(captain?.type?.isArray == false)
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        let edge = enriched.relationships.first { $0.label == "captain" }
+        #expect(edge?.targetLabel != "*", "an optional is not a to-many relationship")
+    }
+
     @Test func staticNamespaceFunctionHasFilePrivateAccessButStaticMethodDoesNot() {
         let source = """
         namespace detail {
