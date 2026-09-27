@@ -114,8 +114,19 @@ struct ClassDiagramViewModelTests {
         #expect(vm.currentSearchNodeID == "Beta")
     }
 
+    /// Dismissing find is a search-state-only reset: it must not disturb the diagram the user was
+    /// looking at, including anything they had selected or dragged.
     @Test func dismissClearsQueryAndMatches() {
-        let vm = viewModel(types: [type("Base", .public)])
+        let vm = viewModel(types: [type("Base", .public), type("Derived", .public)])
+        vm.updateMeasuredSizes([
+            "Base": CGSize(width: 200, height: 100), "Derived": CGSize(width: 200, height: 100)
+        ])
+        vm.selectNode("Base", extending: false)
+        vm.moveNode("Derived", to: CGPoint(x: 321, y: 123))
+        let nodeIDs = vm.nodes.map(\.id)
+        let nodePositions = vm.nodePositions
+        let selectedNodeIDs = vm.selectedNodeIDs
+
         vm.searchQuery = "Base"
         #expect(!vm.searchMatchIDs.isEmpty)
 
@@ -123,6 +134,11 @@ struct ClassDiagramViewModelTests {
         #expect(vm.searchQuery.isEmpty)
         #expect(vm.searchMatchIDs.isEmpty)
         #expect(vm.currentSearchNodeID == nil)
+        #expect(vm.nodes.map(\.id) == nodeIDs)
+        #expect(vm.nodePositions == nodePositions)
+        #expect(vm.selectedNodeIDs == selectedNodeIDs)
+        #expect(vm.nodePositions["Derived"] == CGPoint(x: 321, y: 123))
+        #expect(vm.selectedNodeIDs == ["Base"])
     }
 
     @Test func steppingWithNoMatchesIsANoOp() {

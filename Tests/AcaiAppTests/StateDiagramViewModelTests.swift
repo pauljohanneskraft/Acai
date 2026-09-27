@@ -145,4 +145,63 @@ struct StateDiagramViewModelTests {
         vm.historySnapshot = ["state_loading": CGPoint(x: 9, y: 9)]
         #expect(vm.positionOverrides == ["state_loading": CGPoint(x: 9, y: 9)])
     }
+
+    // MARK: - Delta mode
+
+    /// `Loader` gains a `fail` method assigning `failed`, so only the newer revision's state space
+    /// holds that state and the transition into it.
+    private func artifact(withFailState: Bool) -> CodeArtifact {
+        let stateProperty = Member(
+            name: "state", kind: .property, accessLevel: .internal,
+            type: TypeReference(name: "State"),
+            initialValue: .init(kind: .enumCase, text: "idle")
+        )
+        let load = Member(
+            name: "load", kind: .method, accessLevel: .internal,
+            assignments: [
+                .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loading")),
+                .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loaded"))
+            ]
+        )
+        let fail = Member(
+            name: "fail", kind: .method, accessLevel: .internal,
+            assignments: [
+                .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loading")),
+                .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "failed"))
+            ]
+        )
+        return CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: [TypeDeclaration(
+                id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class, accessLevel: .public,
+                members: withFailState ? [stateProperty, load, fail] : [stateProperty, load]
+            )]
+        )
+    }
+
+    @Test func comparisonArtifactMarksAddedElements() throws {
+        let vm = StateDiagramViewModel(
+            artifact: artifact(withFailState: true), configuration: config(),
+            comparisonArtifact: artifact(withFailState: false))
+
+        #expect(vm.isDeltaMode)
+        // Rendered as the union of both revisions, so every state is present to be tinted.
+        #expect(vm.diagram?.states.contains { $0.id == "state_failed" } == true)
+        #expect(vm.stateDeltaStatus("state_failed") == .added)
+        #expect(vm.stateDeltaStatus("state_loading") == nil)
+
+        let transitions = try #require(vm.diagram?.transitions)
+        let added = try #require(transitions.first { $0.to == "state_failed" })
+        let unchanged = try #require(transitions.first { $0.to == "state_loaded" })
+        #expect(vm.transitionDeltaStatus(added) == .added)
+        #expect(vm.transitionDeltaStatus(unchanged) == nil)
+    }
+
+    @Test func noComparisonArtifactMeansNoDeltaStatus() throws {
+        let vm = StateDiagramViewModel(artifact: artifact(withFailState: true), configuration: config())
+        #expect(!vm.isDeltaMode)
+        #expect(vm.stateDeltaStatus("state_failed") == nil)
+        let transition = try #require(vm.diagram?.transitions.first)
+        #expect(vm.transitionDeltaStatus(transition) == nil)
+    }
 }
