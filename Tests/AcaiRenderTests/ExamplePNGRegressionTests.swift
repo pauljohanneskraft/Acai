@@ -9,6 +9,12 @@ import AcaiDiagram
 
 /// Path/pipeline conveniences for the proof PNGs committed under `Examples/`. The actual
 /// PNG-comparison math lives in `ExampleGoldenComparator` below, not here.
+///
+/// Each suite below compares one language per diagram type, across every committed theme. The other
+/// languages' PNGs stay on disk as `Examples/` proof material but are not re-rendered here: what
+/// differs per language is the *model* the parser produces, which `AcaiExamplesTests` byte-compares
+/// for every language's DOT and Mermaid export, while what differs per PNG case is the renderer —
+/// and that is the same code for every language.
 struct ExamplePNGs {
     static let standard = ExamplePNGs()
 
@@ -135,12 +141,7 @@ struct ExampleGoldenComparator {
 struct ClassDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    // JavaScript is omitted: with no type annotations its class diagram shows only inheritance.
-    static let perLanguage: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("dart", .dart), ("python", .python),
-        ("c", .c), ("cpp", .cpp)
-    ]
+    static let perLanguage: [(stem: String, language: CodeArtifact.SourceLanguage)] = [("swift", .swift)]
 
     @Test("per-language class PNG is valid and re-renders to the same size", arguments: perLanguage, ExamplePNGs.themes)
     @MainActor func perLanguageImage(
@@ -167,15 +168,13 @@ struct ClassDiagramPNGTests {
 struct SequenceDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    // OO languages enter on `Checkout.placeOrder`; C has no methods, so it enters on the free
-    // function `place_order` (empty type name) and renders the chain as `.control` lifelines.
+    // C is kept alongside Swift rather than dropped with the other languages: it has no methods, so
+    // it enters on the free function `place_order` (empty type name) and renders the chain as
+    // `.control` lifelines — a renderer branch no other language's fixture reaches.
     static let cases: [(
         stem: String, language: CodeArtifact.SourceLanguage, entry: (typeName: String, methodName: String)
     )] = [
-        ("swift", .swift, ("Checkout", "placeOrder")), ("kotlin", .kotlin, ("Checkout", "placeOrder")),
-        ("java", .java, ("Checkout", "placeOrder")), ("typescript", .typeScript, ("Checkout", "placeOrder")),
-        ("dart", .dart, ("Checkout", "placeOrder")), ("python", .python, ("Checkout", "placeOrder")),
-        ("cpp", .cpp, ("Checkout", "placeOrder")), ("c", .c, ("", "place_order"))
+        ("swift", .swift, ("Checkout", "placeOrder")), ("c", .c, ("", "place_order"))
     ]
 
     @Test("sequence PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
@@ -200,11 +199,7 @@ struct SequenceDiagramPNGTests {
 struct StateDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
-    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift), ("kotlin", .kotlin), ("java", .java),
-        ("typescript", .typeScript), ("javascript", .javaScript), ("dart", .dart), ("python", .python),
-        ("cpp", .cpp), ("c", .c)
-    ]
+    static let cases: [(stem: String, language: CodeArtifact.SourceLanguage)] = [("swift", .swift)]
 
     @Test("state PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
     @MainActor func image(
@@ -230,9 +225,7 @@ struct PackageDiagramPNGTests {
     static let comparator = ExampleGoldenComparator()
 
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python),
-        ("c", "C", .c), ("cpp", "Cpp", .cpp)
+        ("swift", "Swift", .swift)
     ]
 
     @Test("package PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
@@ -258,9 +251,7 @@ struct CallGraphPNGTests {
     static let comparator = ExampleGoldenComparator()
 
     static let cases: [(stem: String, dir: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", "Swift", .swift), ("kotlin", "Kotlin", .kotlin), ("java", "Java", .java),
-        ("typescript", "TypeScript", .typeScript), ("dart", "Dart", .dart), ("python", "Python", .python),
-        ("c", "C", .c), ("cpp", "Cpp", .cpp)
+        ("swift", "Swift", .swift)
     ]
 
     @Test("call-graph PNG is valid and re-renders to the same size", arguments: cases, ExamplePNGs.themes)
