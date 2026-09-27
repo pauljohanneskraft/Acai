@@ -1,0 +1,1 @@
+int compute() => 0;

@@ -91,7 +91,10 @@ struct JSMemberExtractor {
         var modifiers: [Modifier] = []
         var isComputed = false
 
-        for child in node.children() {
+        // Excluding the `name` field: a method *called* `get`, `set`, `static` or `async` is not a
+        // getter or a static member, and reading its name as a keyword misclassified it.
+        let nameRange = node.child(byFieldName: "name")?.range
+        for child in node.children() where child.range != nameRange {
             let childText = child.text(in: context)
             if let modifier = Self.methodKeywordModifiers[childText] {
                 modifiers.append(modifier)
