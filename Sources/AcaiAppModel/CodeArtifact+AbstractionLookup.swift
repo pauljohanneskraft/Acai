@@ -3,14 +3,14 @@ import AcaiCore
 // MARK: - Abstraction Lookup (interface resolution)
 
 extension CodeArtifact {
-    func abstractionType(named participantName: String) -> TypeDeclaration? {
-        let canonical = Self.canonicalTypeName(participantName)
+    public func abstractionType(named participantName: String) -> TypeDeclaration? {
+        let canonical = participantName.canonicalTypeName
         guard let type = types.first(where: { $0.name == canonical }),
               type.kind == .protocol || type.kind == .interface else { return nil }
         return type
     }
 
-    func conformerNames(ofAbstractionNamed participantName: String) -> [String] {
+    public func conformerNames(ofAbstractionNamed participantName: String) -> [String] {
         guard let abstraction = abstractionType(named: participantName) else { return [] }
         let conformerIDs = relationships
             .filter { $0.target == abstraction.id && ($0.kind == .conformance || $0.kind == .inheritance) }
@@ -21,11 +21,15 @@ extension CodeArtifact {
             .filter { seen.insert($0).inserted }
             .sorted()
     }
+}
 
-    private static func canonicalTypeName(_ name: String) -> String {
-        for prefix in ["any ", "some "] where name.hasPrefix(prefix) {
-            return String(name.dropFirst(prefix.count))
+extension String {
+    /// A participant name with an existential spelling (`any P`, `some P`) reduced to the bare type
+    /// name the artifact declares.
+    fileprivate var canonicalTypeName: String {
+        for prefix in ["any ", "some "] where hasPrefix(prefix) {
+            return String(dropFirst(prefix.count))
         }
-        return name
+        return self
     }
 }
