@@ -352,10 +352,6 @@ let package = Package(
         // invariant tests. Its own target rather than part of `AcaiTestSupport`, which is a pure leaf
         // with no `AcaiCore` dependency. Used only by test targets.
         .target(name: "AcaiArtifactGenerator", dependencies: ["AcaiCore"]),
-        // Reads the checked-in *enriched* parser goldens back as `CodeArtifact`s, so a test can assert
-        // against the shape the diagram layer sees without linking a parser. AcaiCore only — no
-        // swift-testing dependency, like `AcaiTestSupport`.
-        .target(name: "AcaiContractFixtures", dependencies: ["AcaiCore"]),
         // `exclude`, not `resources`: the corpus is read by path (via `#filePath`, like
         // `AcaiParserGoldenTests`), and declaring it keeps SwiftPM from warning about the JSON.
         .testTarget(
@@ -393,7 +389,7 @@ let package = Package(
         // would otherwise compile into this target instead of leaving as parser input.
         .testTarget(
             name: "AcaiParserGoldenTests",
-            dependencies: ["AcaiLibrary", "AcaiCore", "AcaiContractFixtures"],
+            dependencies: ["AcaiLibrary", "AcaiCore"],
             exclude: ["Fixtures", "__Goldens__"]
         ),
 
@@ -403,7 +399,7 @@ let package = Package(
         // `.swift`/`.c`/`.cpp` files SwiftPM would otherwise compile into this target.
         .testTarget(
             name: "AcaiContractTests",
-            dependencies: ["AcaiLibrary", "AcaiCore", "AcaiContractFixtures"],
+            dependencies: ["AcaiLibrary", "AcaiCore"],
             exclude: ["Features"]
         ),
 

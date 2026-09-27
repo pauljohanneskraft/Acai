@@ -2,7 +2,6 @@ import Foundation
 import Testing
 import AcaiCore
 import AcaiLibrary
-import AcaiContractFixtures
 
 /// Characterization tests: each fixture's whole encoded `CodeArtifact` is pinned to a checked-in
 /// golden, so a restructuring of the extraction layer has to reproduce output exactly rather than
@@ -33,22 +32,20 @@ struct ParserGoldenTests {
         .init(parser: SwiftCodeParser(), fileName: "Shop.swift")
     ]
 
-    @Test("parsed artifact matches its checked-in golden", arguments: fixtures, ParserGoldenCorpus.Stage.allCases)
-    func matchesGolden(fixture: ParserGoldenCorpus.Fixture, stage: ParserGoldenCorpus.Stage) throws {
+    @Test("parsed artifact matches its checked-in golden", arguments: fixtures)
+    func matchesGolden(fixture: ParserGoldenCorpus.Fixture) throws {
         let corpus = ParserGoldenCorpus()
-        let artifact = try corpus.artifact(of: fixture, stage: stage)
-        let snapshot = try CodeArtifactSnapshot(artifact: artifact).json()
+        let snapshot = try CodeArtifactSnapshot(artifact: try corpus.artifact(of: fixture)).json()
 
         guard !corpus.isRecording else {
-            try corpus.record(snapshot, for: fixture, stage: stage)
+            try corpus.record(snapshot, for: fixture)
             return
         }
 
-        let golden = try corpus.golden(of: fixture, stage: stage)
         #expect(
-            snapshot == golden,
+            snapshot == (try corpus.golden(of: fixture)),
             """
-            \(fixture.fileName) (\(stage)) parsed differently than its golden.
+            \(fixture.fileName) parsed differently than its golden.
             Read the diff before re-recording — see this suite's documentation.
             """
         )
@@ -66,16 +63,5 @@ struct ParserGoldenTests {
             artifact.types.contains { !$0.members.isEmpty },
             "\(fixture.fileName) produced no members"
         )
-    }
-
-    /// The enriched goldens are also the corpus `AcaiContractFixtures` hands to consumers that don't
-    /// link a parser, so every one has to decode back into the artifact it was recorded from.
-    @Test("the enriched golden round-trips through ContractCorpus", arguments: fixtures)
-    func enrichedGoldenRoundTrips(fixture: ParserGoldenCorpus.Fixture) throws {
-        let corpus = ParserGoldenCorpus()
-        let recorded = try corpus.artifact(of: fixture, stage: .enriched)
-        let decoded = try ContractCorpus().artifact(
-            for: fixture.fileName, language: recorded.metadata.sourceLanguage)
-        #expect(decoded == recorded, "\(fixture.fileName) did not decode back to the recorded artifact")
     }
 }

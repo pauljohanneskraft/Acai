@@ -108,9 +108,6 @@ so nothing in the package is a blank spot.
   legacy-decode corpus locator, shared by the test targets.
 - **[AcaiArtifactGenerator](/documentation/acaiartifactgenerator/)** — a seeded, deterministic
   generator of random-but-valid `CodeArtifact`s, for the property-based invariant tests.
-- **[AcaiContractFixtures](/documentation/acaicontractfixtures/)** — reads the checked-in *enriched*
-  parser goldens back as `CodeArtifact`s, so a test can assert against the shape the diagram layer
-  sees without linking a parser.
 
 ## Project discovery
 
