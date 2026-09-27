@@ -397,6 +397,16 @@ let package = Package(
             exclude: ["Fixtures", "__Goldens__"]
         ),
 
+        // MARK: The cross-language feature matrix: one hand-written expected shape per canonical
+        // language feature, one idiomatic snippet (or a waiver) per language.
+        // `exclude`, not `resources`: the snippets are read by path (via `#filePath`) and include
+        // `.swift`/`.c`/`.cpp` files SwiftPM would otherwise compile into this target.
+        .testTarget(
+            name: "AcaiContractTests",
+            dependencies: ["AcaiLibrary", "AcaiCore", "AcaiContractFixtures"],
+            exclude: ["Features"]
+        ),
+
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])

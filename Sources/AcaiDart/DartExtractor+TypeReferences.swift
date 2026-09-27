@@ -279,6 +279,13 @@ extension DartExtractor {
         return modifiers.uniqued()
     }
 
+    /// Dart 3's `interface class` / `abstract interface class`: a class that may only be implemented,
+    /// which is Dart's interface declaration and belongs under `TypeKind.interface` rather than being
+    /// rendered as an ordinary class. A plain `abstract class` stays a class.
+    func isInterfaceClass(_ node: Node) -> Bool {
+        node.children().contains { $0.nodeType == "interface" || text($0) == "interface" }
+    }
+
     // MARK: - Annotations
 
     /// Collects annotation names from the direct `annotation` children of a node

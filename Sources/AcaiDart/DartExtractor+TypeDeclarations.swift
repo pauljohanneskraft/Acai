@@ -51,7 +51,8 @@ extension DartExtractor {
         }
 
         return TypeDeclaration(
-            id: typeId, name: name, qualifiedName: typeId, kind: .class,
+            id: typeId, name: name, qualifiedName: typeId,
+            kind: isInterfaceClass(node) ? .interface : .class,
             accessLevel: accessLevel(for: name),
             modifiers: modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
