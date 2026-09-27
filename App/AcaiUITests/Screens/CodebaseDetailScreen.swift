@@ -184,6 +184,15 @@ final class CodebaseDetailScreen {
         app.descendants(matching: .any)["codebaseDetail.latestSnapshotBadge"].firstMatch
     }
 
+    /// Deepens a latest-snapshot clone from the badge that says it is one, and waits for the badge to
+    /// go: the clone is no longer shallow once the history is there.
+    func fetchFullHistory(file: StaticString = #filePath, line: UInt = #line) {
+        app.buttons["codebaseDetail.fullHistoryButton"]
+            .tapWhenReady("Fetch Full History", file: file, line: line)
+        latestSnapshotBadge.waitForDisappearanceOrFail(
+            "the latest-snapshot badge", failingOn: app.alerts.firstMatch, file: file, line: line)
+    }
+
     var deleteCodebaseButton: XCUIElement { app.buttons["codebaseDetail.deleteCodebaseButton"] }
     var deleteCodebaseConfirmButton: XCUIElement {
         app.buttons.matching(identifier: "codebaseDetail.codebase.delete.confirmButton").firstMatch
