@@ -137,7 +137,7 @@ public struct ProjectBrowserView: View {
         .background {
             // ⌘K from an iPad's hardware keyboard, bound on the view like the app's other iPad
             // shortcuts: a menu command outside the Help group never fired on iPadOS 26. `.hidden()`
-            // also drops the button's `UIKeyCommand` from the responder chain, so it's invisible via
+            // also drops the button's key binding from the responder chain, so it's invisible via
             // `opacity` instead — with hit-testing and VoiceOver turned off by hand since `.hidden()`
             // would otherwise have taken care of both.
             Button("") { quickOpenPresenter.isPresented = true }
