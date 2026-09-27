@@ -85,12 +85,15 @@ struct GeneratedDiagramEditor {
         mutate(diagramID, clearPositions: false) { $0.sequenceConfiguration?.filter = filter }
     }
 
+    /// `debounced` is for saves a user can produce in a burst — recentring the canvas on every
+    /// search match — where writing the file on each one stutters the pan animation.
     func updatePositions(
         diagramID: UUID,
         positions: [String: CGPoint],
         sizes: [String: CGSize] = [:],
         scale: CGFloat,
-        offset: CGPoint
+        offset: CGPoint,
+        debounced: Bool = false
     ) {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.nodePositions = positions.mapValues { .init(point: $0) }
@@ -101,7 +104,11 @@ struct GeneratedDiagramEditor {
         diagram.canvasOffsetX = Double(offset.x)
         diagram.canvasOffsetY = Double(offset.y)
         diagram.lastModified = Date()
-        store.saveGeneratedDiagram(diagram)
+        if debounced {
+            store.saveGeneratedDiagramDebounced(diagram)
+        } else {
+            store.saveGeneratedDiagram(diagram)
+        }
         notify()
     }
 

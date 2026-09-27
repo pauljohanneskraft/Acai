@@ -371,12 +371,17 @@ extension ClassDiagramView {
 
 extension ClassDiagramView {
     private func savePositions() {
+        savePositions(debounced: false)
+    }
+
+    private func savePositions(debounced: Bool) {
         model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.nodePositions,
             sizes: viewModel.userNodeSizes,
             scale: canvasScale,
-            offset: canvasOffset
+            offset: canvasOffset,
+            debounced: debounced
         )
     }
 
@@ -444,6 +449,8 @@ extension ClassDiagramView {
                 y: canvasViewportSize.height / 2 - position.y * canvasScale
             )
         }
-        savePositions()
+        // Held-down stepping walks matches faster than a file write completes, so the transform is
+        // saved on the trailing edge of the burst instead of once per match.
+        savePositions(debounced: true)
     }
 }

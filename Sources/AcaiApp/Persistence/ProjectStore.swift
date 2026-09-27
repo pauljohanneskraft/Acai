@@ -73,12 +73,17 @@ final class ProjectStore: ObservableObject {
     }
 
     let baseDir: URL
+    /// Writes generated diagrams, coalescing bursts. Injectable so a test can count writes and
+    /// shorten the debounce.
+    let diagramWriter: DebouncedDiagramWriter
     /// The shared analysis store an artifact is read from and written to — `AnalysisStore.standard`
     /// (`~/.acai/analysis`) in production, shared with the CLI and an MCP session over the same
     /// directory. Injectable so a test's writes never reach the real store.
     let analysisStore: AnalysisStore
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
-    private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
+    // Not `private`: `ProjectStore+DiagramFiles.swift`'s extension needs it too — same "not private,
+    // another file's extension needs it too" pattern used throughout this app.
+    var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
     /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
     /// form; any other path is an external file the user referenced.
@@ -98,8 +103,12 @@ final class ProjectStore: ObservableObject {
     /// which `projects` alone doesn't show since the git work finishes after the store changes.
     let repositoryChanges = PassthroughSubject<URL, Never>()
 
-    init(baseDir: URL? = nil, analysisStore: AnalysisStore = .standard) {
+    init(
+        baseDir: URL? = nil, analysisStore: AnalysisStore = .standard,
+        diagramWriter: DebouncedDiagramWriter = DebouncedDiagramWriter()
+    ) {
         self.analysisStore = analysisStore
+        self.diagramWriter = diagramWriter
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
@@ -306,28 +315,6 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    func saveGeneratedDiagram(_ diagram: GeneratedDiagram) {
-        generatedDiagrams[diagram.id] = diagram
-        let encoder = JSONEncoder()
-        let url = diagramsDir.appendingPathComponent("generated_\(diagram.id.uuidString).json")
-        do {
-            try encoder.encode(diagram).write(to: url, options: .atomic)
-        } catch {
-            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
-        }
-    }
-
-    func saveFreeformDiagram(_ diagram: FreeformDiagram) {
-        freeformDiagrams[diagram.id] = diagram
-        let encoder = JSONEncoder()
-        let url = diagramsDir.appendingPathComponent("freeform_\(diagram.id.uuidString).json")
-        do {
-            try encoder.encode(diagram).write(to: url, options: .atomic)
-        } catch {
-            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
-        }
-    }
-
     /// Updates the in-memory artifact immediately, then encodes and writes it to disk off the main
     /// actor — for a large codebase, JSON encode + atomic write can visibly stall the UI if done
     /// inline. Fire-and-forget; callers that need "saved" to be a real completion signal (not just a
@@ -357,18 +344,6 @@ final class ProjectStore: ObservableObject {
             let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
             try store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
         }.value
-    }
-
-    func deleteGeneratedDiagramFile(_ id: UUID) {
-        generatedDiagrams.removeValue(forKey: id)
-        let url = diagramsDir.appendingPathComponent("generated_\(id.uuidString).json")
-        try? FileManager.default.removeItem(at: url)
-    }
-
-    func deleteFreeformDiagramFile(_ id: UUID) {
-        freeformDiagrams.removeValue(forKey: id)
-        let url = diagramsDir.appendingPathComponent("freeform_\(id.uuidString).json")
-        try? FileManager.default.removeItem(at: url)
     }
 
     func deleteProjectFile(_ id: UUID) {
