@@ -32,12 +32,36 @@ public struct Violation: Codable, Equatable, Sendable {
 /// The outcome of evaluating a rules file against an artifact. `isPassing` is the fitness-function
 /// verdict the CLI turns into a process exit code.
 public struct QualityReport: Codable, Equatable, Sendable {
+    /// The shape this build writes. Bump on any change a reader could misinterpret. Missing on disk
+    /// (written before this field existed) decodes as `0`.
+    public static let currentSchemaVersion = 1
+
+    public var schemaVersion: Int
     public var violations: [Violation]
     public var checkedRuleCount: Int
 
     public init(violations: [Violation], checkedRuleCount: Int) {
+        self.schemaVersion = Self.currentSchemaVersion
         self.violations = violations
         self.checkedRuleCount = checkedRuleCount
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, violations, checkedRuleCount
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        self.violations = try container.decode([Violation].self, forKey: .violations)
+        self.checkedRuleCount = try container.decode(Int.self, forKey: .checkedRuleCount)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encode(violations, forKey: .violations)
+        try container.encode(checkedRuleCount, forKey: .checkedRuleCount)
     }
 
     public var isPassing: Bool { violations.isEmpty }

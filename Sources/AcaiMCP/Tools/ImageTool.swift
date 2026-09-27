@@ -30,6 +30,10 @@ struct ImageTool: AnalysisTool {
             "stateFrom": ["type": "string", "description": "State: 'Type.variable' or a global variable."],
             "maxDepth": ["type": "integer", "description": "Sequence: max call-graph depth (default 5)."],
             "maxStates": ["type": "integer", "description": "State: max distinct states (default 20)."],
+            "maxNodes": [
+                "type": "integer",
+                "description": "Class/package: max node count before rendering fails (default 2000)."
+            ],
             "map": [
                 "type": "array", "items": ["type": "string"],
                 "description": "Sequence: 'Protocol=Concrete' receiver mappings."
@@ -60,7 +64,9 @@ struct ImageTool: AnalysisTool {
                 configuration: try classConfiguration(arguments), languages: languages).render(artifact: artifact)
         case "package":
             return try await PackageImageExporter(
-                scale: scale, palette: palette, languages: languages).render(artifact: artifact)
+                scale: scale, palette: palette, languages: languages,
+                maxNodes: try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
+            ).render(artifact: artifact)
         case "sequence":
             return try await SequenceImageExporter(
                 scale: scale, palette: palette,
@@ -88,6 +94,7 @@ struct ImageTool: AnalysisTool {
                 rootTypeName: focus, maxDepth: try arguments.int("focusDepth"), direction: .both)
             configuration.grouping = .none
         }
+        configuration.maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
         return configuration
     }
 }

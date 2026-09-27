@@ -77,13 +77,13 @@ extension FreeformDiagramView {
     }
 
     private func placementChip(_ kind: FreeformDiagramNodeKind) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: .spacingXS) {
             Image(systemName: kind.systemImage)
             Text(verbatim: kind.displayName)
         }
         .font(.callout.weight(.medium))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, .spacingS)
+        .padding(.vertical, .spacingXS)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: 1))
         .opacity(0.9)
@@ -100,9 +100,9 @@ extension FreeformDiagramView {
                     .font(.title2)
             }
             .buttonStyle(.plain)
-            .padding(8)
+            .padding(.spacingS)
             .background(.regularMaterial, in: Circle())
-            .padding(10)
+            .padding(.spacingS)
             .accessibilityIdentifier("freeform.cancelPlacementButton")
             .accessibilityLabel(.app("View.FreeformDiagramView.CancelPlacement"))
         }

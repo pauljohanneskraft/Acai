@@ -82,12 +82,25 @@ struct DiagramCommandValidationTests {
         )
     }
 
+    @Test func rejectsMaxNodesBelowRange() {
+        expectValidationError(
+            ["--source", "/tmp/x", "--max-nodes", "0"],
+            contains: "--max-nodes must be between 1 and 1000000."
+        )
+    }
+
     @Test func acceptsInRangeBounds() throws {
         let cmd = try CLITestSupport.parseDiagram(
-            ["--source", "/tmp/x", "--max-depth", "100", "--max-states", "1000"]
+            ["--source", "/tmp/x", "--max-depth", "100", "--max-states", "1000", "--max-nodes", "1"]
         )
         #expect(cmd.shape.maxDepth == 100)
         #expect(cmd.shape.maxStates == 1000)
+        #expect(cmd.shape.maxNodes == 1)
+    }
+
+    @Test func maxNodesDefaultsTo2000() throws {
+        let cmd = try CLITestSupport.parseDiagram(["--source", "/tmp/x"])
+        #expect(cmd.shape.maxNodes == 2000)
     }
 
     @Test func validationErrorUsesValidationExitCode() {

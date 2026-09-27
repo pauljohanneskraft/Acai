@@ -166,7 +166,8 @@ Cycle findings are appended only when `explore` is set *and* the rules file does
 
 Note it has no `includeGenerated` — generated-type filtering goes through the rules' own `includeGeneratedTypes` key instead.
 
-Result shape: `{ "quality": <QualityReport>, "health": <HealthCheck.Summary> }`.
+Result shape: `{ "quality": <QualityReport>, "health": <HealthCheck.Summary> }`. `QualityReport` carries
+its own top-level `schemaVersion`, starting at `1`.
 
 ### `acai_callgraph`
 
@@ -230,7 +231,7 @@ Structural delta between two revisions — added/removed types, changed relation
 | `languages` | string[] | Applies to both sides. |
 | `refresh` | boolean | Applies to both sides. |
 
-Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path.
+Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path. A baseline whose `schemaVersion` is newer than this build understands is rejected with the found and expected version numbers, rather than being misread.
 
 Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
 
@@ -249,6 +250,7 @@ Render a diagram as DOT or Mermaid text you can embed in a reply.
 | `sequenceFrom` | string | Required for `kind: sequence`. |
 | `stateFrom` | string | Required for `kind: state`. |
 | `maxDepth`, `maxStates` | integer | Defaults 5 and 20. |
+| `maxNodes` | integer | Class/package only. Fails beyond this many nodes, naming the count (default `2000`). |
 | `map` | string[] | `Protocol=Concrete` receiver mappings for sequence tracing. |
 
 `sequenceFrom` and `stateFrom` are required in practice for their kinds, but the schema doesn't express that. Setting `focus` forces `groupBy` off and traverses in both directions — a focused view is a local neighbourhood, and grouping would split it into mismatched clusters.

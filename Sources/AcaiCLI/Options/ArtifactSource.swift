@@ -63,49 +63,76 @@ struct ArtifactSource: ParsableArguments {
         let directURL = URL(fileURLWithPath: value)
         var isDirectory: ObjCBool = false
         let exists = FileManager.default.fileExists(atPath: directURL.path, isDirectory: &isDirectory)
+        let description = "Stored analysis '\(value)'"
 
         if exists, !isDirectory.boolValue {
+            let artifact: CodeArtifact
             do {
-                return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: directURL))
+                artifact = try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: directURL))
             } catch is DecodingError {
                 throw ValidationError(
                     "Stored analysis '\(value)' was produced by an older Açaí version and can no longer be read. "
                     + "Re-run `acai analyze` / `acai store` to regenerate it."
                 )
             }
+            try artifact.validatingSchemaVersion(describedAs: description)
+            return artifact
         }
 
         let store = AnalysisStore.standard
 
         if exists, isDirectory.boolValue {
             let resolvedPath = directURL.standardizedFileURL.resolvingSymlinksInPath().path
-            switch store.lookup(forResolvedPath: resolvedPath) {
-            case .entry(let entry):
-                return entry.artifact
-            case .legacyArtifact(let artifact):
+            let lookup = store.lookup(forResolvedPath: resolvedPath)
+            if let artifact = try artifact(from: lookup, describedAs: description) {
                 return artifact
-            case .absent:
-                throw ValidationError(
-                    "No stored analysis found for '\(value)'. Run `acai store` or pass --source to analyze it."
-                )
-            }
-        }
-
-        switch store.lookup(named: value) {
-        case .entry(let entry):
-            return entry.artifact
-        case .legacyArtifact(let artifact):
-            return artifact
-        case .absent:
-            guard FileManager.default.fileExists(atPath: store.url(forName: value).path) else {
-                throw ValidationError(
-                    "Could not find analysis '\(value)'. "
-                    + "Provide a path to a .json file or the name of a stored analysis."
-                )
             }
             throw ValidationError(
-                "Stored analysis '\(value)' was produced by an older Açaí version and can no longer be read. "
-                + "Re-run `acai analyze` / `acai store` to regenerate it."
+                "No stored analysis found for '\(value)'. Run `acai store` or pass --source to analyze it."
+            )
+        }
+
+        if let artifact = try artifact(from: store.lookup(named: value), describedAs: description) {
+            return artifact
+        }
+        guard FileManager.default.fileExists(atPath: store.url(forName: value).path) else {
+            throw ValidationError(
+                "Could not find analysis '\(value)'. "
+                + "Provide a path to a .json file or the name of a stored analysis."
+            )
+        }
+        throw ValidationError(
+            "Stored analysis '\(value)' was produced by an older Açaí version and can no longer be read. "
+            + "Re-run `acai analyze` / `acai store` to regenerate it."
+        )
+    }
+
+    /// Unwraps a store lookup into its artifact, validating its schema version — `nil` only for
+    /// `.absent`, so each caller supplies its own "nothing there" message.
+    private static func artifact(
+        from lookup: AnalysisStore.Lookup, describedAs description: String
+    ) throws -> CodeArtifact? {
+        switch lookup {
+        case .entry(let entry):
+            try entry.artifact.validatingSchemaVersion(describedAs: description)
+            return entry.artifact
+        case .legacyArtifact(let artifact):
+            try artifact.validatingSchemaVersion(describedAs: description)
+            return artifact
+        case .absent:
+            return nil
+        }
+    }
+}
+
+extension CodeArtifact {
+    /// Rejects a stored analysis newer than this build understands, naming both versions rather than
+    /// letting the mismatch surface later as some unrelated decode or usage failure.
+    fileprivate func validatingSchemaVersion(describedAs description: String) throws {
+        guard schemaVersion <= Self.currentSchemaVersion else {
+            throw ValidationError(
+                "\(description) has schema version \(schemaVersion), but this build of Açaí supports up to "
+                + "\(Self.currentSchemaVersion). Update Açaí to read it."
             )
         }
     }

@@ -67,7 +67,7 @@ struct CodebaseDetailView: View {
     var body: some View {
         if let codebase {
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     headerSection(codebase: codebase)
 
                     if let artifact {
@@ -97,7 +97,7 @@ struct CodebaseDetailView: View {
                     Divider()
                     deleteCodebaseSection
                         .padding(.horizontal)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, .spacingXS)
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
             }
@@ -163,14 +163,14 @@ struct CodebaseDetailView: View {
     }
 
     private var analyzingPlaceholder: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: .spacingS) {
             ProgressView().controlSize(.small)
             Text(.app("View.CodebaseDetailView.AnalyzingCodebase"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 28)
+        .padding(.vertical, .spacingXL)
     }
 
 }
@@ -184,7 +184,7 @@ extension CodebaseDetailView {
     // MARK: - Not Indexed
 
     private func notIndexedSection(codebase: Codebase) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: .spacingL) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
@@ -204,6 +204,6 @@ extension CodebaseDetailView {
             AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+        .padding(.vertical, .spacingXXL)
     }
 }
