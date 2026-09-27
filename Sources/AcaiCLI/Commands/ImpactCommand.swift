@@ -3,7 +3,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Impact: ParsableCommand {
+    struct Impact: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Show the transitive dependents (blast radius) of a type"
         )
@@ -27,14 +27,15 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+        mutating func run() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let report = ImpactAnalysis(artifact: artifact, rootType: type, maxDepth: depth).report
 
             let rendered: String
             switch format {
             case .json:
-                rendered = try JSONReport(report).text
+                let payload = ImpactPayload(impact: report, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
             case .human:
                 rendered = humanReport(report)
             }
@@ -50,4 +51,11 @@ extension AcaiCommand {
             return lines.joined(separator: "\n") + "\n"
         }
     }
+}
+
+/// `health` lets a consumer of `acai impact --format json` tell whether the blast radius rests on a
+/// trustworthy parse without a separate `acai analyze --health` round trip.
+private struct ImpactPayload: Encodable {
+    var impact: ImpactAnalysis.Report
+    var health: HealthCheck.Summary
 }

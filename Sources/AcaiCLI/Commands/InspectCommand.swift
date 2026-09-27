@@ -4,7 +4,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Inspect: ParsableCommand {
+    struct Inspect: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Enumerate types and members as JSON/human, filtered by a selector"
         )
@@ -39,12 +39,12 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
+        mutating func run() async throws {
             if enums {
-                try runEnumInventory()
+                try await runEnumInventory()
                 return
             }
-            let artifact = try generatedScope.applied(to: artifactSource.resolve())
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
             let rows = TypeQuery(
                 artifact: artifact,
                 selector: selector.selector,
@@ -59,17 +59,24 @@ extension AcaiCommand {
             let rendered: String
             switch format {
             case .json:
-                rendered = try JSONReport(rows).text
+                let payload = InspectPayload(types: rows, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
             case .human:
                 rendered = humanReport(rows)
             }
             try rendered.writeOutput(to: output, label: "inspection")
         }
 
-        private func runEnumInventory() throws {
-            let entries = EnumInventory(
-                artifact: try generatedScope.applied(to: artifactSource.resolve())).entries
-            let rendered = format == .json ? try JSONReport(entries).text : enumHuman(entries)
+        private func runEnumInventory() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
+            let entries = EnumInventory(artifact: artifact).entries
+            let rendered: String
+            if format == .json {
+                let payload = EnumInventoryPayload(enums: entries, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
+            } else {
+                rendered = enumHuman(entries)
+            }
             try rendered.writeOutput(to: output, label: "enum inventory")
         }
 
@@ -109,4 +116,16 @@ extension AcaiCommand {
             return lines.joined(separator: "\n") + "\n"
         }
     }
+}
+
+/// `health` lets a consumer of `acai inspect --format json` (either mode) tell whether the listing
+/// rests on a trustworthy parse without a separate `acai analyze --health` round trip.
+private struct InspectPayload: Encodable {
+    var types: [TypeQuery.TypeRow]
+    var health: HealthCheck.Summary
+}
+
+private struct EnumInventoryPayload: Encodable {
+    var enums: [EnumInventory.Entry]
+    var health: HealthCheck.Summary
 }

@@ -427,10 +427,10 @@ extension ProjectDetailView {
         } label: {
             Label(.app("View.ProjectDetailView.ReindexMenu"), systemImage: "arrow.clockwise")
         }
-        Button { model.exportDOT(for: codebase.id) } label: {
+        Button { Task { await model.exportDOT(for: codebase.id) } } label: {
             Label(.app("View.ProjectDetailView.ExportDOT"), systemImage: "square.and.arrow.up")
         }
-        Button { model.exportMermaid(for: codebase.id) } label: {
+        Button { Task { await model.exportMermaid(for: codebase.id) } } label: {
             Label(.app("View.ProjectDetailView.ExportMermaid"), systemImage: "square.and.arrow.up")
         }
         Button { Task { await model.exportAtlas(for: codebase.id) } } label: {

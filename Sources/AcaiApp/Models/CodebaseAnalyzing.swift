@@ -2,7 +2,7 @@ import Foundation
 import AcaiCore
 
 protocol CodebaseAnalyzing: Sendable {
-    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) throws -> CodeArtifact
+    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) async throws -> CodeArtifact
 }
 
 protocol CodebaseAnalyzerProviding: Sendable {

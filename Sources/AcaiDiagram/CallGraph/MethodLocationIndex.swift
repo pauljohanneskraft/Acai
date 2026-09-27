@@ -9,9 +9,11 @@ struct MethodLocationIndex: Sendable {
 
     init(artifact: CodeArtifact) {
         var locations: [String: SourceLocation] = [:]
-        for type in artifact.flattened() {
+        let allTypes = artifact.flattened()
+        let nodeIdentity = CallGraphNodeIdentity(types: allTypes)
+        for type in allTypes {
             for member in type.members where member.isMethod {
-                let key = "\(type.name).\(member.name)"
+                let key = "\(nodeIdentity.nodeName(for: type)).\(member.name)"
                 if locations[key] == nil, let location = member.location {
                     locations[key] = location
                 }

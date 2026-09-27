@@ -81,7 +81,7 @@ extension ProjectBrowserViewModel {
         let directory = URL(fileURLWithPath: codebase.directoryPath)
         let checkouts = checkouts
         return await Task.detached(priority: .userInitiated) {
-            (try? access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
+            (try? await access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
         }.value
     }
 
@@ -109,7 +109,7 @@ extension ProjectBrowserViewModel {
             do {
                 let checkouts = checkouts
                 let sha = try await Task.detached(priority: .userInitiated) {
-                    try access.whileAccessible { try checkouts.mergeBase(baseRef, ref, in: url) }
+                    try await access.whileAccessible { try checkouts.mergeBase(baseRef, ref, in: url) }
                 }.value
                 resolvedMergeBases[mergeBaseKey] = sha
             } catch {
@@ -135,7 +135,9 @@ extension ProjectBrowserViewModel {
             let access = ScopedResourceAccess(
                 path: directory, bookmark: codebase(for: codebaseID)?.securityScopedBookmark)
             let semantic = try await Task.detached(priority: .userInitiated) {
-                try access.whileAccessible { try provider.artifact(analyzer: analyzer, fileFilter: fileFilter) }
+                try await access.whileAccessible {
+                    try await provider.artifact(analyzer: analyzer, fileFilter: fileFilter)
+                }
             }.value
             comparisonArtifacts[key] = semantic
             reportComparison(nil)

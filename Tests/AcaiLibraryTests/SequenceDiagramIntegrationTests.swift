@@ -16,26 +16,27 @@ import AcaiDiagram
 @Suite("Sequence Diagram Integration (parsed fixture)", .timeLimit(.minutes(1)))
 struct SequenceDiagramIntegrationTests {
 
-    /// Parse the fixture once and share across tests (parsing is the expensive part). Stored as a
-    /// `Result` so an analysis failure fails every test with the *original* error instead of
-    /// confusing empty-artifact asserts.
-    private static let analysisResult = Result { () throws -> CodeArtifact in
+    /// Parse the fixture once and share across tests (parsing is the expensive part). A `Task`
+    /// memoizes its result after the first `await` — every caller after that gets the same cached
+    /// artifact or the same rethrown failure, so every test fails with the *original* error instead
+    /// of confusing empty-artifact asserts.
+    private static let analysisTask = Task { () throws -> CodeArtifact in
         let fixture = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .appendingPathComponent("Fixtures")
             .appendingPathComponent("SequenceIntegration")
-        return try AnalysisService.standard.analyzeProject(at: fixture, allowedLanguages: [])
+        return try await AnalysisService.standard.analyzeProject(at: fixture, allowedLanguages: [])
     }
 
-    private static func artifact() throws -> CodeArtifact {
-        try analysisResult.get()
+    private static func artifact() async throws -> CodeArtifact {
+        try await analysisTask.value
     }
 
     @Test("A known concrete-receiver call appears as a cross-participant message")
-    func knownEntryPointTracesCrossTypeCall() throws {
+    func knownEntryPointTracesCrossTypeCall() async throws {
         // `ScreenModel.persistChanges` calls `store.save()` through the explicitly-typed
         // `store: DocumentStore` property.
-        let diagram = try SequenceDiagramBuilder(
+        let diagram = try await SequenceDiagramBuilder(
             entryPoint: ("ScreenModel", "persistChanges")
         ).build(from: Self.artifact())
 
@@ -48,8 +49,8 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("typeMapping resolves an existential receiver to a concrete detector")
-    func typeMappingResolvesExistentialReceiver() throws {
-        let artifact = try Self.artifact()
+    func typeMappingResolvesExistentialReceiver() async throws {
+        let artifact = try await Self.artifact()
         // `SpecDiscovery.discoverSpecs` dispatches through `any SpecDetector`; mapping it to the
         // concrete `FallbackSpecDetector` must redirect the lifeline and follow the concrete
         // implementation's body.
@@ -75,8 +76,8 @@ struct SequenceDiagramIntegrationTests {
     }
 
     @Test("Every unambiguous concrete-receiver call site is traceable from its owning method")
-    func allUnambiguousCallSitesProduceCrossParticipantMessages() throws {
-        let artifact = try Self.artifact()
+    func allUnambiguousCallSitesProduceCrossParticipantMessages() async throws {
+        let artifact = try await Self.artifact()
         let types = artifact.types
         // Only uniquely-named types: the generator keys lookups by simple name (first wins),
         // so duplicated names would make the assertion ambiguous rather than wrong.

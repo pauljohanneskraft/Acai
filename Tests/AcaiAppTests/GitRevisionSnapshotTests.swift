@@ -11,7 +11,7 @@ struct GitRevisionSnapshotTests {
     /// `git archive`-based snapshot returns the artifact as it was at the committed revision, while
     /// a plain analysis of the same directory sees the (uncommitted) working-tree edit — and the
     /// working tree is never mutated by taking the snapshot.
-    @Test func snapshotReflectsCommittedRevisionNotWorkingTree() throws {
+    @Test func snapshotReflectsCommittedRevisionNotWorkingTree() async throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         let source = dir.appendingPathComponent("model.swift")
@@ -25,8 +25,8 @@ struct GitRevisionSnapshotTests {
 
         try "class Bar {}\n".write(to: source, atomically: true, encoding: .utf8)
 
-        let old = try GitRevisionSnapshot(directory: dir, reference: "HEAD").artifact()
-        let new = try CodebaseAnalyzer().enrichedArtifact(at: dir)
+        let old = try await GitRevisionSnapshot(directory: dir, reference: "HEAD").artifact()
+        let new = try await CodebaseAnalyzer().enrichedArtifact(at: dir)
 
         #expect(old.types.contains { $0.name == "Foo" })
         #expect(!old.types.contains { $0.name == "Bar" })
@@ -37,11 +37,11 @@ struct GitRevisionSnapshotTests {
         #expect(onDisk.contains("Bar"))
     }
 
-    @Test func nonGitDirectoryThrows() throws {
+    @Test func nonGitDirectoryThrows() async throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
-        #expect(throws: (any Error).self) {
-            _ = try GitRevisionSnapshot(directory: dir, reference: "HEAD").artifact()
+        await #expect(throws: (any Error).self) {
+            _ = try await GitRevisionSnapshot(directory: dir, reference: "HEAD").artifact()
         }
     }
 

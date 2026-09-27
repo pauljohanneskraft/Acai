@@ -32,18 +32,36 @@ struct CallGraphTool: AnalysisTool {
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await analysisArtifact(arguments, cache)
+        let health = HealthCheck(artifact: artifact).summary
         switch arguments.string("mode") ?? "metrics" {
         case "metrics":
             let scope = try resolvedCallGraphScope(arguments.string("scope"))
-            return .json(try Value(CallGraphMetrics(artifact: artifact, scope: scope).report))
+            let report = CallGraphMetrics(artifact: artifact, scope: scope).report
+            return .json(try Value(MetricsPayload(callGraph: report, health: health)))
         case "cycles":
             let scope = try resolvedCallGraphScope(arguments.string("scope"))
-            return .json(try Value(MethodCycles(artifact: artifact, scope: scope).clusters))
+            let clusters = MethodCycles(artifact: artifact, scope: scope).clusters
+            return .json(try Value(CyclesPayload(cycles: clusters, health: health)))
         case "deadcode":
             let report = DeadCodeScan(artifact: artifact, languages: artifact.standardLanguageResolver).report
-            return .json(try Value(report))
+            return .json(try Value(DeadCodePayload(deadCode: report, health: health)))
         case let other:
             throw MCPError.invalidParams("mode must be metrics, cycles, or deadcode (got '\(other)').")
         }
+    }
+
+    private struct MetricsPayload: Codable {
+        var callGraph: CallGraphMetrics.Report
+        var health: HealthCheck.Summary
+    }
+
+    private struct CyclesPayload: Codable {
+        var cycles: [MethodCycles.Cluster]
+        var health: HealthCheck.Summary
+    }
+
+    private struct DeadCodePayload: Codable {
+        var deadCode: DeadCodeScan.Report
+        var health: HealthCheck.Summary
     }
 }

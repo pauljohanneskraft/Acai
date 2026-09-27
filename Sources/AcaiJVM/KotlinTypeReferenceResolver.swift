@@ -1,9 +1,12 @@
 import AcaiCore
 import AcaiTreeSitter
 
-// MARK: - Type References & Relationships
+// MARK: - KotlinTypeReferenceResolver
 
-extension KotlinExtractor {
+/// Parses Kotlin type syntax — user, nullable, function and parenthesized types, type arguments,
+/// generic parameters and supertype specifiers. Stateless beyond `context`.
+struct KotlinTypeReferenceResolver {
+    let context: SourceFileContext
 
     // MARK: - Supertype Classification
 
@@ -99,6 +102,23 @@ extension KotlinExtractor {
                 return nil
             }
         }
+    }
+
+    /// The first type node among `node`'s named children (a declaration's `: Type` annotation).
+    func extractFirstTypeRef(from node: Node) -> TypeReference? {
+        for child in node.namedChildren() {
+            switch child.nodeType {
+            case "user_type":
+                return extractTypeReference(child)
+            case "nullable_type":
+                return extractNullableType(child)
+            case "function_type":
+                return extractFunctionType(child)
+            default:
+                break
+            }
+        }
+        return nil
     }
 
     // MARK: - Generic Parameters

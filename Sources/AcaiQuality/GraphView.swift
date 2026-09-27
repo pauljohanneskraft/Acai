@@ -14,6 +14,9 @@ public struct GraphView: Sendable {
         public var module: String
         public var kind: TypeKind
         public var access: AccessLevel
+        /// The type's source language, when known — stamped during enrichment, `nil` for a type built
+        /// outside that pipeline. Lets a `Selector` scope a budget to one language in a polyglot codebase.
+        public var language: CodeArtifact.SourceLanguage?
         public var stereotype: String?
         /// Normalized annotation markers (`@Entity` → `entity`).
         public var annotations: [String]
@@ -48,6 +51,7 @@ public struct GraphView: Sendable {
                 module: moduleResolver.productName(forFilePath: type.location?.filePath ?? ""),
                 kind: type.kind,
                 access: type.accessLevel,
+                language: type.sourceLanguage,
                 stereotype: type.stereotype(
                     annotationStereotypes: languageResolver.configuration(for: type).annotationStereotypes),
                 annotations: type.annotations.map(\.normalizedAnnotation),

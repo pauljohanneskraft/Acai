@@ -80,10 +80,10 @@ enum CLITestSupport {
         return url
     }
 
-    static func withTempDirectory<T>(_ body: (URL) throws -> T) throws -> T {
+    static func withTempDirectory<T>(_ body: (URL) async throws -> T) async throws -> T {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
-        return try body(dir)
+        return try await body(dir)
     }
 
     /// Produces a codebase that yields non-trivial class/sequence/call-graph diagrams.
@@ -102,6 +102,16 @@ enum CLITestSupport {
         }
         """
         let fileURL = directory.appendingPathComponent("Sample.swift")
+        try source.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
+    /// A source with a real parse diagnostic (an unclosed brace), driving `HealthCheck` below
+    /// `HealthCheck.trustThreshold` so a low-trust `health` field/warning is exercised.
+    @discardableResult
+    static func writeLowTrustSwiftSource(in directory: URL) throws -> URL {
+        let source = "struct Broken { func m( {"
+        let fileURL = directory.appendingPathComponent("Broken.swift")
         try source.write(to: fileURL, atomically: true, encoding: .utf8)
         return fileURL
     }

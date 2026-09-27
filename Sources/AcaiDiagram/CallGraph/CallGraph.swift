@@ -13,9 +13,11 @@ public struct CallGraph: Codable, Hashable, Sendable {
     // MARK: - Node
 
     public struct Node: Codable, Hashable, Sendable, Identifiable {
-        /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions.
+        /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions. When
+        /// two declared types share a simple name, the qualified type id disambiguates instead.
         public var id: String
-        /// The owning type's simple name; empty for a free function.
+        /// The owning type's simple name, or its qualified id when another declared type shares that
+        /// simple name; empty for a free function.
         public var typeName: String
         public var methodName: String
         /// `true` when the method belongs to the scoped focus (vs. an out-of-scope callee

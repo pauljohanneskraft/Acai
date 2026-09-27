@@ -3,6 +3,8 @@
     "code-quality@acai": true
   },
   "attribution": {
-    "commit": ""
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   }
 }

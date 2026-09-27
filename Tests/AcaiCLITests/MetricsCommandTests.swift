@@ -22,27 +22,54 @@ struct MetricsCommandTests {
         }
     }
 
-    @Test func nonexistentSourceThrows() throws {
+    @Test func nonexistentSourceThrows() async throws {
         var cmd = try CLITestSupport.parseMetrics(["--source", CLITestSupport.nonexistentPath()])
-        #expect {
-            try cmd.run()
+        await #expect {
+            try await cmd.run()
         } throws: { error in
             CLITestSupport.message(for: error).contains("Source directory does not exist:")
         }
     }
 
-    @Test func writesMetricsJSONToOutputFile() throws {
-        try CLITestSupport.withTempDirectory { dir in
+    @Test func writesMetricsJSONToOutputFile() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("metrics.json")
             var cmd = try CLITestSupport.parseMetrics(
                 ["--source", dir.path, "--language", "swift", "--output", output.path]
             )
-            try cmd.run()
+            try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
             #expect(contents.hasPrefix("{"))
             #expect(contents.contains("counts"))
             #expect(contents.contains("totalTypes"))
+        }
+    }
+
+    @Test func healthFieldIsPerfectOnCleanParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.json")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(contents.contains("\"score\" : 1"))
+            #expect(contents.contains("\"diagnosticCount\" : 0"))
+        }
+    }
+
+    @Test func healthFieldReflectsLowTrustParse() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeLowTrustSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.json")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"health\""))
+            #expect(!contents.contains("\"score\" : 1"))
         }
     }
 }

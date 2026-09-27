@@ -16,8 +16,8 @@ struct SeededFixtureContractTests {
             .appendingPathComponent("App/AcaiUITests/Fixtures/seeded")
     }
 
-    @Test func theCannedArtifactMatchesARealParseOfTheSamplePackage() throws {
-        let parsed = try CodebaseAnalyzer().enrichedArtifact(
+    @Test func theCannedArtifactMatchesARealParseOfTheSamplePackage() async throws {
+        let parsed = try await CodebaseAnalyzer().enrichedArtifact(
             at: fixturesDirectory.appendingPathComponent("SampleSwiftPackage"))
 
         #expect(try canned("seeded.json") == parsed, "The canned seeded artifact no longer matches a real parse")

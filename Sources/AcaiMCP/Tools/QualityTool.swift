@@ -45,7 +45,13 @@ struct QualityTool: AnalysisTool {
         if explore, ruleSet.cycles == nil {
             report.violations += cycleFindings(artifact, scope: arguments.string("scope") ?? "all")
         }
-        return .json(try Value(report))
+        let payload = Payload(quality: report, health: HealthCheck(artifact: artifact).summary)
+        return .json(try Value(payload))
+    }
+
+    private struct Payload: Codable {
+        var quality: QualityReport
+        var health: HealthCheck.Summary
     }
 
     /// Decodes the YAML directly since the CLI's `.load` helper is AcaiCLI-internal.

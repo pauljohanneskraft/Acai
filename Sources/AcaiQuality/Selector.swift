@@ -17,6 +17,10 @@ public struct Selector: Codable, Hashable, Sendable {
     public var minimumAccess: AccessLevel?
     /// Required declaration kind (e.g. `class`) — lets a rule target only classes vs protocols.
     public var kind: TypeKind?
+    /// Required source language — scopes a budget to types parsed from one language, so a metric
+    /// that means something different per language (e.g. `mutablePublicState`, meaningless where the
+    /// language has no access control) isn't set by whichever language dominates a polyglot codebase.
+    public var language: CodeArtifact.SourceLanguage?
     /// Minimum member count — selects "god" types (e.g. classes with many members).
     public var minMembers: Int?
     /// Minimum nested-type depth — selects deeply nested types (scope a rule onto them).
@@ -37,6 +41,7 @@ public struct Selector: Codable, Hashable, Sendable {
         annotation: String? = nil,
         minimumAccess: AccessLevel? = nil,
         kind: TypeKind? = nil,
+        language: CodeArtifact.SourceLanguage? = nil,
         minMembers: Int? = nil,
         minNesting: Int? = nil,
         explicitIDs: Set<String>? = nil,
@@ -48,6 +53,7 @@ public struct Selector: Codable, Hashable, Sendable {
         self.annotation = annotation
         self.minimumAccess = minimumAccess
         self.kind = kind
+        self.language = language
         self.minMembers = minMembers
         self.minNesting = minNesting
         self.explicitIDs = explicitIDs
@@ -64,6 +70,7 @@ public struct Selector: Codable, Hashable, Sendable {
         if let annotation, !node.annotations.contains(annotation.normalizedAnnotation) { return false }
         if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
         if let kind, node.kind != kind { return false }
+        if let language, node.language != language { return false }
         if let minMembers, node.memberCount < minMembers { return false }
         if let minNesting, node.nestingDepth < minNesting { return false }
         return true

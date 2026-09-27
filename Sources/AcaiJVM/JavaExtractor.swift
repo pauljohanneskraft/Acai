@@ -69,10 +69,4 @@ struct JavaExtractor {
         declarations.resolveRelationshipNames()
         return declarations.artifact(language: .java, filePath: context.fileName)
     }
-
-    // MARK: - Parse Diagnostics
-
-    func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
-        ParseDiagnosticsCollector(context: context).diagnostics(in: root)
-    }
 }

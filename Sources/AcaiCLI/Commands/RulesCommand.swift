@@ -4,7 +4,7 @@ import AcaiQuality
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Rules: ParsableCommand {
+    struct Rules: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "rules",
             abstract: "Generate a candidate quality.yml from the current graph",
@@ -27,8 +27,8 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let artifact = try artifactSource.resolve()
+        mutating func run() async throws {
+            let artifact = try await artifactSource.resolve()
             let graph = GraphView(
                 artifact: artifact,
                 languageResolver: artifact.standardLanguageResolver)

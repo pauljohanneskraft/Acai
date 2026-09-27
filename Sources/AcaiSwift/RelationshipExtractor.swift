@@ -3,15 +3,17 @@ import AcaiCore
 
 struct RelationshipExtractor {
 
+    private let typeReferences = TypeReferenceExtractor()
+
     // MARK: - Composition Expansion
 
     private func expandTypeNames(_ typeSyntax: TypeSyntax) -> [String] {
         // Route through `extractTypeReference` so attributes and optional/array sugar are stripped,
         // keeping edge endpoints consistent with `TypeDeclaration.inheritedTypes`.
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
-            return composition.elements.map { TypeReferenceExtractor().extractTypeReference(from: $0.type).name }
+            return composition.elements.map { typeReferences.extractTypeReference(from: $0.type).name }
         }
-        return [TypeReferenceExtractor().extractTypeReference(from: typeSyntax).name]
+        return [typeReferences.extractTypeReference(from: typeSyntax).name]
     }
 
     // MARK: - Extraction

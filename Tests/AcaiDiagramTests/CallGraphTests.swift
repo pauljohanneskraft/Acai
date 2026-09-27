@@ -255,6 +255,52 @@ struct CallGraphTests {
         #expect(graph.edges == [CallGraph.Edge(from: "Inner.run", to: "Inner.helper", weight: 1)])
     }
 
+    @Test func ambiguousSimpleNameIsUnresolvedNotFirstWins() {
+        // Two declared types share the simple name "Config"; each calls its own "used" method via
+        // self-dispatch, and a third type calls `.type("Config")`, which cannot say which one it means.
+        let configA = TypeDeclaration(
+            id: "ModuleA.Config", name: "Config", qualifiedName: "ModuleA.Config", kind: .class,
+            accessLevel: .public,
+            members: [
+                Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                    CallSite(receiver: .selfDispatch, methodName: "used")
+                ]),
+                Member(name: "used", kind: .method, accessLevel: .internal)
+            ]
+        )
+        let configB = TypeDeclaration(
+            id: "ModuleB.Config", name: "Config", qualifiedName: "ModuleB.Config", kind: .class,
+            accessLevel: .public,
+            members: [
+                Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                    CallSite(receiver: .selfDispatch, methodName: "used")
+                ]),
+                Member(name: "used", kind: .method, accessLevel: .internal)
+            ]
+        )
+        let client = TypeDeclaration(
+            id: "Client", name: "Client", qualifiedName: "Client", kind: .class, accessLevel: .public,
+            members: [
+                Member(name: "run", kind: .method, accessLevel: .internal, callSites: [
+                    CallSite(receiver: .type("Config"), methodName: "used")
+                ])
+            ]
+        )
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+            types: [configA, configB, client]
+        )
+        let graph = CallGraphBuilder().build(from: artifact)
+
+        #expect(graph.coverage.total == 3)
+        #expect(graph.coverage.resolved == 2)
+        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleA.Config.run", to: "ModuleA.Config.used", weight: 1)))
+        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleB.Config.run", to: "ModuleB.Config.used", weight: 1)))
+        #expect(graph.nodes.map(\.id).sorted() == [
+            "Client.run", "ModuleA.Config.run", "ModuleA.Config.used", "ModuleB.Config.run", "ModuleB.Config.used"
+        ])
+    }
+
     @Test func emptyWhenNoCallSites() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),

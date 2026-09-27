@@ -43,6 +43,13 @@ struct DiffTool: AnalysisTool {
             path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh)
         let new = try await cache.artifact(
             path: try arguments.requiredString("pathNew"), languageNames: languages, refresh: refresh)
-        return .json(try Value(ArtifactDiffer().diff(old: old, new: new)))
+        let diff = ArtifactDiffer().diff(old: old, new: new)
+        let health = HealthCheck(artifact: old).summary.combined(with: HealthCheck(artifact: new).summary)
+        return .json(try Value(Payload(diff: diff, health: health)))
+    }
+
+    private struct Payload: Codable {
+        var diff: ArtifactDiff
+        var health: HealthCheck.Summary
     }
 }

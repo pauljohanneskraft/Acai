@@ -11,6 +11,8 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         /// unresolved (an ambiguous identity — see ``TypeIdentityResolver``) rather than bound to an
         /// arbitrary one. Not a parse failure: the artifact is usable, but an edge may be missing.
         case unresolvedReference
+        /// The file itself could not be read (permissions, invalid encoding) — parsing never ran.
+        case unreadable
     }
 
     public var location: SourceLocation

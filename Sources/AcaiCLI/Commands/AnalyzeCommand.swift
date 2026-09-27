@@ -4,7 +4,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Analyze: ParsableCommand {
+    struct Analyze: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Analyze source code and output the code model as JSON, or its parse health"
         )
@@ -35,14 +35,14 @@ extension AcaiCommand {
 
         @OptionGroup var generatedScope: GeneratedScopeOption
 
-        mutating func run() throws {
+        mutating func run() async throws {
             if from == nil && source == nil {
                 throw ValidationError("Either --from or --source must be specified.")
             }
             if from != nil && source != nil {
                 throw ValidationError("Specify either --from or --source, not both.")
             }
-            let artifact = try generatedScope.applied(
+            let artifact = try await generatedScope.applied(
                 to: ArtifactSource.resolve(from: from, source: source, language: language))
             if health {
                 try healthReport(artifact).writeOutput(to: output, label: "health report")

@@ -27,6 +27,23 @@ struct CFamilyTypeReferenceResolver {
         "operator_cast", "template_function"
     ]
 
+    private static let memberDeclaratorTypes: Set<String> = [
+        "identifier", "field_identifier", "pointer_declarator", "array_declarator",
+        "function_declarator", "init_declarator", "reference_declarator",
+        "qualified_identifier", "operator_name", "destructor_name"
+    ]
+
+    /// The declarator nodes a field/global `declaration` introduces — possibly several
+    /// (`int a, *b, c[3];`).
+    func memberDeclarators(of node: Node) -> [Node] {
+        // Exclude the `type` field: a type can itself be a `qualified_identifier`/`type_identifier`,
+        // which also appears in `memberDeclaratorTypes` (needed for out-of-line `Foo::bar` names).
+        let typeRange = node.child(byFieldName: "type")?.range
+        return node.namedChildren().filter { child in
+            Self.memberDeclaratorTypes.contains(child.nodeType ?? "") && child.range != typeRange
+        }
+    }
+
     func parseDeclarator(_ node: Node?) -> CFamilyDeclarator {
         guard let node, let nodeType = node.nodeType else { return CFamilyDeclarator() }
         switch nodeType {

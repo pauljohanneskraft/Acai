@@ -6,7 +6,7 @@ import AcaiLibrary
 extension MetricsSortKey: ExpressibleByArgument {}
 
 extension AcaiCommand {
-    struct Metrics: ParsableCommand {
+    struct Metrics: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Compute static-analysis metrics (counts, coupling, OO metrics) as JSON"
         )
@@ -35,16 +35,25 @@ extension AcaiCommand {
             try artifactSource.validate()
         }
 
-        mutating func run() throws {
-            let metrics = try generatedScope.applied(to: artifactSource.resolve()).computeMetrics()
+        mutating func run() async throws {
+            let artifact = try await generatedScope.applied(to: artifactSource.resolve())
+            let metrics = artifact.computeMetrics()
             let rendered: String
             switch format {
             case .json:
-                rendered = try JSONReport(metrics).text
+                let payload = MetricsPayload(metrics: metrics, health: HealthCheck(artifact: artifact).summary)
+                rendered = try JSONReport(payload).text
             case .human:
                 rendered = MetricsTextReport(metrics: metrics, sort: sort, top: top).render() + "\n"
             }
             try rendered.writeOutput(to: output, label: "metrics")
         }
     }
+}
+
+/// `health` lets a consumer of `acai metrics --format json` tell whether the metrics rest on a
+/// trustworthy parse without a separate `acai analyze --health` round trip.
+private struct MetricsPayload: Encodable {
+    var metrics: CodeMetrics
+    var health: HealthCheck.Summary
 }

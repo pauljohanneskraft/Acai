@@ -31,6 +31,12 @@ struct ImpactTool: AnalysisTool {
             artifact: artifact,
             rootType: try arguments.requiredString("type"),
             maxDepth: try arguments.int("depth")).report
-        return .json(try Value(report))
+        let payload = Payload(impact: report, health: HealthCheck(artifact: artifact).summary)
+        return .json(try Value(payload))
+    }
+
+    private struct Payload: Codable {
+        var impact: ImpactAnalysis.Report
+        var health: HealthCheck.Summary
     }
 }

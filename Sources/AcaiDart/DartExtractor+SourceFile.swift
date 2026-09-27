@@ -27,12 +27,12 @@ extension DartExtractor {
     @discardableResult
     private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
         if let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
-            types.append(typeDecl)
+            declarations.types.append(typeDecl)
             return true
         }
         if nodeType == "function_signature",
-           let function = extractFunctionSignature(child) {
-            freestandingFunctions.append(function)
+           let function = memberExtractor.functionSignature(child) {
+            declarations.freestandingFunctions.append(function)
             return true
         }
         return false
@@ -44,38 +44,71 @@ extension DartExtractor {
     /// `static_final_declaration_list` all surface as direct, flattened children of the file root
     /// instead. `walkSourceFile` folds each modifier/type child into `pendingGlobalInfo` as it
     /// walks past it and consumes that info the moment it reaches the list node that ends the
-    /// declaration, exactly the values `collectDeclarationInfo` would have produced had there been
+    /// declaration, exactly the values `declarationInfo(_:)` would have produced had there been
     /// a node to call it on.
     mutating func walkSourceFile(_ node: Node) {
-        var pendingGlobalInfo = DeclarationInfo()
+        var pendingGlobalInfo = DartTypeReferenceResolver.DeclarationInfo()
+        // Tracks the just-appended top-level function's index so a directly-following
+        // `function_body` sibling (its `async`/`async*`/`sync*` marker) can be applied to it.
+        var pendingFunctionIndex: Int?
         for child in node.children() {
             guard let nodeType = child.nodeType else { continue }
+            if nodeType == "function_body" {
+                attachAsyncModifier(to: pendingFunctionIndex, ifBodyIsAsync: child)
+                pendingFunctionIndex = nil
+                continue
+            }
+            pendingFunctionIndex = nil
             switch nodeType {
             case "library_name":
-                currentNamespace = extractLibraryName(child)
+                // The library name is the file's namespace for every declaration after it, so it is
+                // entered once and never left.
+                if let libraryName = extractLibraryName(child) {
+                    _ = declarations.enter(namespace: libraryName)
+                }
             case "import_or_export", "part_directive", "part_of_directive":
                 break
             case "initialized_identifier_list":
-                globalVariables.append(contentsOf:
-                    extractFieldsFromIdentifierList(child, info: resolvingNullableType(pendingGlobalInfo)))
-                pendingGlobalInfo = DeclarationInfo()
+                declarations.globalVariables.append(contentsOf:
+                    extractFieldsFromIdentifierList(child, info: pendingGlobalInfo.resolvingNullableType()))
+                pendingGlobalInfo = DartTypeReferenceResolver.DeclarationInfo()
             case "static_final_declaration_list":
-                globalVariables.append(contentsOf:
-                    extractStaticFinalFields(child, info: resolvingNullableType(pendingGlobalInfo)))
-                pendingGlobalInfo = DeclarationInfo()
+                declarations.globalVariables.append(contentsOf:
+                    extractStaticFinalFields(child, info: pendingGlobalInfo.resolvingNullableType()))
+                pendingGlobalInfo = DartTypeReferenceResolver.DeclarationInfo()
             case "final_builtin", "const_builtin", "type_identifier", "generic_type",
                  "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type":
-                applyDeclarationChild(child, nodeType: nodeType, to: &pendingGlobalInfo)
+                typeReferences.apply(child, nodeType: nodeType, to: &pendingGlobalInfo)
             default:
-                if !child.isNamed, text(child) == "late" {
-                    pendingGlobalInfo.isLate = true
-                } else if processTopLevelTypeNode(child, nodeType: nodeType) {
-                    pendingGlobalInfo = DeclarationInfo()
-                } else {
-                    extractTopLevelChildren(child)
-                }
+                pendingFunctionIndex = processTopLevelDefaultChild(
+                    child, nodeType: nodeType, pendingGlobalInfo: &pendingGlobalInfo
+                )
             }
         }
+    }
+
+    private mutating func attachAsyncModifier(to functionIndex: Int?, ifBodyIsAsync node: Node) {
+        guard let index = functionIndex, isAsyncFunctionBody(node) else { return }
+        declarations.freestandingFunctions[index].modifiers.append(.async)
+    }
+
+    /// Handles a top-level child that is neither a directive, a global-variable piece, nor a
+    /// declaration-info modifier: a type/function declaration, the `late` keyword, or a nested
+    /// wrapper to recurse into. Returns the appended function's index, for a directly-following
+    /// `function_body` sibling to apply its `async` marker to.
+    private mutating func processTopLevelDefaultChild(
+        _ child: Node, nodeType: String, pendingGlobalInfo: inout DartTypeReferenceResolver.DeclarationInfo
+    ) -> Int? {
+        if !child.isNamed, child.text(in: context) == "late" {
+            pendingGlobalInfo.isLate = true
+            return nil
+        }
+        guard processTopLevelTypeNode(child, nodeType: nodeType) else {
+            extractTopLevelChildren(child)
+            return nil
+        }
+        pendingGlobalInfo = DartTypeReferenceResolver.DeclarationInfo()
+        return nodeType == "function_signature" ? declarations.freestandingFunctions.count - 1 : nil
     }
 
     private mutating func extractTopLevelChildren(_ node: Node) {
@@ -88,7 +121,6 @@ extension DartExtractor {
     // MARK: - Library Name
 
     private func extractLibraryName(_ node: Node) -> String? {
-        let children = node.namedChildren()
-        return children.first.map { text($0) }
+        node.namedChildren().first.map { $0.text(in: context) }
     }
 }

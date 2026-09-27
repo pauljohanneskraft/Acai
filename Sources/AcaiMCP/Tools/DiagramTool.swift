@@ -43,7 +43,12 @@ struct DiagramTool: AnalysisTool {
         let format = try diagramFormat(arguments.string("format"))
         do {
             let export = try export(for: arguments, artifact: artifact)
-            return .content([.text(text: export.render(format), annotations: nil, _meta: nil)])
+            var content: [Tool.Content] = []
+            if let notice = HealthCheck(artifact: artifact).summary.lowTrustNotice {
+                content.append(.text(text: notice, annotations: nil, _meta: nil))
+            }
+            content.append(.text(text: export.render(format), annotations: nil, _meta: nil))
+            return .content(content)
         } catch let error as DiagramRequestError {
             throw MCPError.invalidParams(error.message)
         }

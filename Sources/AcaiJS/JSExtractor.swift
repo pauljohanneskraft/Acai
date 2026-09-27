@@ -54,38 +54,15 @@ struct JSExtractor {
         declarations.declaredTypeNames = declaredTypeNames
     }
 
-    // MARK: - Namespace Qualification
-
-    /// Qualifies every type id/qualifiedName with its enclosing structural prefix, recursing into
-    /// nested types, so a class inside `namespace Zoo` becomes `Zoo.Animal` (and a class inside
-    /// `namespace App { namespace Models { … } }` becomes `App.Models.User`). Top-level types are
-    /// unchanged (`prefix == nil` → id stays the simple name). Using the structural parent chain —
-    /// rather than each type's `namespace` field — keeps nested namespaces fully qualified, so
-    /// edges and inherited-type names to namespaced types resolve during enrichment.
-    private static func qualifyIDs(_ types: inout [TypeDeclaration], prefix: String?) {
-        for index in types.indices {
-            let qualified = prefix.map { "\($0).\(types[index].name)" } ?? types[index].name
-            types[index].id = qualified
-            types[index].qualifiedName = qualified
-            qualifyIDs(&types[index].nestedTypes, prefix: qualified)
-        }
-    }
-
     // MARK: - Public Entry Point
 
     mutating func extract(from root: Node) -> CodeArtifact {
         walkSourceFile(root)
-
-        Self.qualifyIDs(&declarations.types, prefix: nil)
-
+        // A class inside `namespace Zoo` becomes `Zoo.Animal`, so edges and inherited-type names to
+        // namespaced types resolve during enrichment.
+        declarations.qualifyNestedTypeIDs()
         return declarations.artifact(
             language: isTypeScript ? .typeScript : .javaScript, filePath: context.fileName
         )
-    }
-
-    // MARK: - Parse Diagnostics
-
-    func collectParseDiagnostics(from root: Node) -> [ParseDiagnostic] {
-        ParseDiagnosticsCollector(context: context).diagnostics(in: root)
     }
 }

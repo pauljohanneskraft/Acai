@@ -44,8 +44,11 @@ final class CallSiteTracker {
     // MARK: - Type scope, driven by `DeclarationVisitor.pushType`/`popType`
 
     func pushTypeScope(memberBlock: MemberBlockSyntax) {
-        methodReturnTypeMapStack.append(returnTypeMap(from: memberBlock))
-        ambiguousReturnTypeMethodNamesStack.append(ambiguousReturnTypeMethodNames(from: memberBlock))
+        let returnTypes = returnTypes(in: memberBlock)
+        methodReturnTypeMapStack.append(returnTypes.resolved)
+        // Tracked apart from the resolved map so an overloaded name is never deferred to the
+        // post-merge pass, which resolves per-type and would otherwise guess.
+        ambiguousReturnTypeMethodNamesStack.append(returnTypes.ambiguous)
         methodNameMapStack.append(methodNames(from: memberBlock))
     }
 
@@ -55,34 +58,18 @@ final class CallSiteTracker {
         methodNameMapStack.removeLast()
     }
 
-    /// Built from a raw pre-pass over the type's direct member list, so a forward-declared method's
-    /// return type is seen regardless of source order. Keeps only names with a single, unambiguous
-    /// return type across overloads.
-    private func returnTypeMap(from memberBlock: MemberBlockSyntax) -> [String: String] {
-        var typesByName: [String: Set<String>] = [:]
+    /// A raw pre-pass over the type's direct member list, so a forward-declared method's return
+    /// type is seen regardless of source order.
+    private func returnTypes(in memberBlock: MemberBlockSyntax) -> UnambiguousTypeNames {
+        var returnTypes = UnambiguousTypeNames()
         for item in memberBlock.members {
             guard let function = item.decl.as(FunctionDeclSyntax.self),
                   let returnClause = function.signature.returnClause,
                   let name = callSites.simpleIdentifierTypeName(from: returnClause.type)
             else { continue }
-            typesByName[function.name.text, default: []].insert(name)
+            returnTypes.record(name, for: function.name.text)
         }
-        return typesByName.compactMapValues { $0.count == 1 ? $0.first : nil }
-    }
-
-    /// Method names `returnTypeMap` silently drops for having more than one distinct return type among
-    /// overloads — tracked separately so such a name is never deferred to the post-merge pass, which
-    /// resolves per-type and would otherwise guess.
-    private func ambiguousReturnTypeMethodNames(from memberBlock: MemberBlockSyntax) -> Set<String> {
-        var typesByName: [String: Set<String>] = [:]
-        for item in memberBlock.members {
-            guard let function = item.decl.as(FunctionDeclSyntax.self),
-                  let returnClause = function.signature.returnClause,
-                  let name = callSites.simpleIdentifierTypeName(from: returnClause.type)
-            else { continue }
-            typesByName[function.name.text, default: []].insert(name)
-        }
-        return Set(typesByName.filter { $0.value.count > 1 }.keys)
+        return returnTypes
     }
 
     private func methodNames(from memberBlock: MemberBlockSyntax) -> Set<String> {
