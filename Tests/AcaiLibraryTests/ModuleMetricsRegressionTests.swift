@@ -9,12 +9,12 @@ import AcaiLibrary
 @Suite("Module metrics regression")
 struct ModuleMetricsRegressionTests {
 
-    private func withTempDir(_ body: (URL) throws -> Void) throws {
+    private func withTempDir(_ body: (URL) async throws -> Void) async throws {
         let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("acai-module-metrics-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
-        try body(dir)
+        try await body(dir)
     }
 
     private func write(_ relativePath: String, in root: URL, contents: String) throws {
@@ -25,13 +25,13 @@ struct ModuleMetricsRegressionTests {
     }
 
     @Test("a two-target SPM layout resolves to two real modules, not a single \"root\"")
-    func multiTargetLayoutResolvesRealModules() throws {
-        try withTempDir { root in
+    func multiTargetLayoutResolvesRealModules() async throws {
+        try await withTempDir { root in
             try write("Package.swift", in: root, contents: "// swift-tools-version:5.9")
             try write("Sources/A/X.swift", in: root, contents: "class X {}")
             try write("Sources/B/Y.swift", in: root, contents: "class Y {}")
 
-            let artifact = try AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
+            let artifact = try await AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
             let metrics = artifact.computeMetrics()
 
             #expect(Set(metrics.modules.map(\.name)) == ["A", "B"])
@@ -43,8 +43,8 @@ struct ModuleMetricsRegressionTests {
     /// symlink on macOS, so this checks module resolution doesn't depend on resolved vs. unresolved
     /// path forms agreeing.
     @Test("module resolution survives a resolved-vs-unresolved root URL mismatch")
-    func multiTargetLayoutResolvesWithSymlinkedRoot() throws {
-        try withTempDir { unresolvedRoot in
+    func multiTargetLayoutResolvesWithSymlinkedRoot() async throws {
+        try await withTempDir { unresolvedRoot in
             try write("Package.swift", in: unresolvedRoot, contents: "// swift-tools-version:5.9")
             try write("Sources/A/X.swift", in: unresolvedRoot, contents: "class X {}")
             try write("Sources/B/Y.swift", in: unresolvedRoot, contents: "class Y {}")
@@ -53,7 +53,7 @@ struct ModuleMetricsRegressionTests {
             // Only meaningful when NSTemporaryDirectory() actually is a symlink on this machine.
             guard resolvedRoot.path != unresolvedRoot.path else { return }
 
-            let artifact = try AnalysisService.standard.analyzeProject(at: resolvedRoot, allowedLanguages: [])
+            let artifact = try await AnalysisService.standard.analyzeProject(at: resolvedRoot, allowedLanguages: [])
             let metrics = artifact.computeMetrics()
 
             #expect(Set(metrics.modules.map(\.name)) == ["A", "B"])

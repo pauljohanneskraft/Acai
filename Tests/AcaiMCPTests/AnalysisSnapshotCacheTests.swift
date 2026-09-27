@@ -111,7 +111,7 @@ struct AnalysisSnapshotCacheTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let store = MCPTestSupport.freshStore()
             let resolvedPath = dir.resolvingSymlinksInPath().path
-            let artifact = try AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
+            let artifact = try await AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
             let fingerprint = SourceTreeFingerprint(directory: dir).compute()
             try store.write(artifact, sourcePath: resolvedPath, fingerprint: fingerprint)
 
@@ -140,7 +140,7 @@ struct AnalysisSnapshotCacheTests {
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let store = MCPTestSupport.freshStore()
             let resolvedPath = dir.resolvingSymlinksInPath().path
-            let artifact = try AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
+            let artifact = try await AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
             // A fingerprint that can never match the real tree.
             let staleFingerprint = CodeStateFingerprint.fileSystem(
                 latestModification: .distantPast, fileCount: 999, contentDigest: 0)
