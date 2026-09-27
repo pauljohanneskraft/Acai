@@ -9,7 +9,7 @@ import XCTest
 final class QueryJourneyTests: UIJourneyTestCase {
 
     func testQueryViewFiltersByMutablePublicState() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned)
 
         let query = QueryScreen(app: app)
         codebaseDetail.queryButton.tap("Query", until: query.list)

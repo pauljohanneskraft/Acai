@@ -9,12 +9,14 @@ import XCTest
 @MainActor
 final class AccessibilityTextSizeJourneyTests: UIJourneyTestCase {
     func testClassDiagramHoldsAtTheLargestAccessibilityTextSize() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed, dynamicTypeSize: "accessibility5")
+        // Canned: what this proves is the layout at `accessibility5`, and the canned artifact carries
+        // the same four types a parse would — `SeededFixtureContractTests` keeps the two in step.
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned, dynamicTypeSize: "accessibility5")
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
         for name in ["Derived", "Helper", "Worker"] {
-            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
+            diagram.typeNode(named: name).waitOrFail("\(name), drawn alongside Base")
         }
         // See `ScreenshotJourneyTests`: the initial centring races the status bar hiding.
         diagram.tapFitToView()

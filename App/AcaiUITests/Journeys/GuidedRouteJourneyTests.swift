@@ -7,7 +7,7 @@ import XCTest
 final class GuidedRouteJourneyTests: UIJourneyTestCase {
 
     func testAFirstIndexOffersARouteThatSurvivesHidingAndOpensItsDiagram() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned)
         codebaseDetail.guidedRouteCard.waitOrFail("the guided route card after a first index", timeout: .uiWork)
         XCTAssertFalse(codebaseDetail.guidedRouteButton.exists, "the header button is redundant while the card shows")
 
