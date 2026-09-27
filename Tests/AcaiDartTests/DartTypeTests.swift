@@ -36,32 +36,26 @@ struct DartTypeTests {
         #expect(shape.members.count >= 1)
     }
 
+    /// `interface class` may only be implemented, so it is Dart's interface declaration — the same
+    /// `TypeKind` a Swift `protocol` and a Java `interface` carry, and what makes the diagram
+    /// stereotype it. A plain `abstract class` stays `.class`.
     @Test func interfaceDeclaration() {
-        let source = """
+        let artifact = parser.parse(source: """
         abstract interface class Repository {
             Entity findById(String id);
             List<Entity> findAll();
         }
-        """
-        let artifact = parser.parse(source: source, fileName: "Repository.dart")
-        #expect(artifact.types.count == 1)
-        let repo = artifact.types[0]
-        // `interface class` may only be implemented, so it is Dart's interface declaration — the same
-        // `TypeKind` a Swift `protocol` and a Java `interface` carry, and what makes the diagram
-        // stereotype it. A plain `abstract class` stays `.class`.
-        #expect(repo.kind == .interface)
-        #expect(repo.modifiers.contains(.abstract))
-    }
 
-    @Test func abstractClassIsNotAnInterface() {
-        let source = """
         abstract class Shape {
             double area();
         }
-        """
-        let artifact = parser.parse(source: source, fileName: "Shape.dart")
-        #expect(artifact.types.first?.kind == .class)
-        #expect(artifact.types.first?.modifiers.contains(.abstract) == true)
+        """, fileName: "Repository.dart")
+        let repo = artifact.types.first { $0.name == "Repository" }
+        #expect(repo?.kind == .interface)
+        #expect(repo?.modifiers.contains(.abstract) == true)
+        let shape = artifact.types.first { $0.name == "Shape" }
+        #expect(shape?.kind == .class)
+        #expect(shape?.modifiers.contains(.abstract) == true)
     }
 
     @Test func enumDeclaration() {
