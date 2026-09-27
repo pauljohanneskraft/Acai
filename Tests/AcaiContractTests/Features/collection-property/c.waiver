@@ -1,0 +1,1 @@
+C has no class and no collection type; a to-many field is a pointer plus a separate count, which the declaration does not relate.

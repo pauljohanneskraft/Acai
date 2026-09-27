@@ -1,0 +1,1 @@
+JavaScript carries no type annotation, so a field holding a collection states neither its element type nor its multiplicity.

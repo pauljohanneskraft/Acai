@@ -204,7 +204,10 @@ extension CFamilyExtractor {
         let returnType = typeReferences.typeReference(
             from: node.child(byFieldName: "type"), declarator: CFamilyDeclarator())
         let kind = memberKind(name: simpleName, ownerName: ownerName, hasReturnType: returnType != nil)
-        let functionModifiers = modifiers(from: node)
+        // `int rank() override;` hangs the virtual specifier off the declarator, not the declaration,
+        // so an override that is declared rather than defined inline needs it read from there too.
+        let functionModifiers = (modifiers(from: node)
+            + virtualSpecifiers(in: node.child(byFieldName: "declarator"))).uniqued()
         return Member(
             name: simpleName, kind: kind,
             accessLevel: freeFunctionAccessLevel(
@@ -327,6 +330,13 @@ extension CFamilyExtractor {
         default:
             return nil
         }
+    }
+
+    private func virtualSpecifiers(in node: Node?) -> [Modifier] {
+        guard let node else { return [] }
+        return node.children()
+            .filter { $0.nodeType == "virtual_specifier" }
+            .compactMap { virtualSpecifierModifier($0.text(in: context)) }
     }
 
     private func virtualSpecifierModifier(_ text: String) -> Modifier? {

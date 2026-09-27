@@ -1020,7 +1020,7 @@
             "line" : 53
           },
           "modifiers" : [
-
+            "override"
           ],
           "name" : "price",
           "parameters" : [
@@ -1065,7 +1065,7 @@
             "line" : 57
           },
           "modifiers" : [
-
+            "override"
           ],
           "name" : "describe",
           "parameters" : [

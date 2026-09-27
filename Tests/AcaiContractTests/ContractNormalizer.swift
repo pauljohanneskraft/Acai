@@ -23,7 +23,7 @@ import AcaiCore
 ///    layer names a kind, and it is the level at which a Swift `protocol` and a Java `interface` are
 ///    the same declaration. It still distinguishes `class` from `struct` from `enumeration`, so a
 ///    class mis-parsed as a struct is not hidden.
-/// 7. **`open` is dropped from a type's modifiers, and `abstract` from an interface's.**
+/// 7. **`open` is dropped from a type's and a member's modifiers, and `abstract` from an interface's.**
 ///    Inheritability is spelled by *presence* in Kotlin and Swift and by the *absence* of `final`
 ///    everywhere else, so the same inheritable class carries opposite markers; and an interface is
 ///    abstract by definition, which Dart's `abstract interface class` must say out loud and a Swift
@@ -35,7 +35,10 @@ import AcaiCore
 ///    override as `@override` *and* Kotlin/Swift/C++ as a keyword; Python spells abstract and static
 ///    as `@abstractmethod`/`@staticmethod`. The modifier is the shared fact, so the duplicate
 ///    annotation goes. An annotation with no matching modifier is always kept.
-/// 9. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
+/// 9. **A private member's single leading underscore is dropped.** Dart and Python have no `private`
+///    keyword; the underscore is it, so the same member is `shut` in Swift and `_shut` there. Applied
+///    only where the parser already reports the member as private.
+/// 10. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
 struct ContractNormalizer {
@@ -80,16 +83,20 @@ struct ContractNormalizer {
     }
 
     private func signature(of member: Member) -> ContractShape.Signature {
-        ContractShape.Signature(
+        // A stored property's initializer expression is per-language — `[]` in Swift, `listOf()` in
+        // Kotlin, absent in Java and C++ — so the calls it makes are not a shared property. A
+        // *method*'s calls and reads are, which is where the call and read features live.
+        let isStored = member.kind == .property && !member.isComputed
+        return ContractShape.Signature(
             name: normalisedMemberName(member),
             role: member.kind.rawValue,
             access: member.accessLevel.umlSymbol,
-            modifiers: member.modifiers.map(\.rawValue).sorted(),
+            modifiers: member.modifiers.filter { $0 != .open }.map(\.rawValue).sorted(),
             annotations: annotationNames(member.annotations, restating: member.modifiers),
             type: member.type.map { typeName(of: $0) },
             parameters: member.parameters.map(parameter(of:)),
-            calls: member.callSites.map(call(of:)).sorted(),
-            reads: member.fieldReads.map { read in
+            calls: isStored ? [] : member.callSites.map(call(of:)).sorted(),
+            reads: isStored ? [] : member.fieldReads.map { read in
                 read.receiver.map { "\(simpleName($0)).\(read.name)" } ?? read.name
             }.sorted()
         )
@@ -109,8 +116,16 @@ struct ContractNormalizer {
         case .deinitializer:
             return Self.destructorName
         case .property, .method, .subscript:
-            return member.name
+            return privacyMarkerStripped(member.name, isPrivate: member.accessLevel == .private)
         }
+    }
+
+    /// Rule 9: Dart and Python have no `private` keyword — a leading underscore *is* the marker
+    /// (Dart's `_x`, Python's name-mangled `__x`), so the same member is `shut` in Swift and `_shut` or
+    /// `__shut` there. Applied only where the parser already reports the member as private.
+    private func privacyMarkerStripped(_ name: String, isPrivate: Bool) -> String {
+        guard isPrivate else { return name }
+        return String(name.drop(while: { $0 == "_" }))
     }
 
     private func parameter(of parameter: Parameter) -> String {
@@ -160,9 +175,11 @@ struct ContractNormalizer {
         let optional = reference.isOptional ? "?" : ""
         let base = classify(reference.name)
         guard base == Self.collectionToken || reference.isArray else { return base + optional }
-        let arguments = reference.genericArguments.map { typeName(of: $0) }
-        let element = arguments.isEmpty ? nil : arguments.joined(separator: ",")
-        return (element.map { "\(Self.collectionToken)<\($0)>" } ?? Self.collectionToken) + optional
+        var elements = reference.genericArguments.map { typeName(of: $0) }
+        // `Item[]` names its element in `name` with no generic arguments; `List<Item>` the other way.
+        if elements.isEmpty, base != Self.collectionToken { elements = [base] }
+        let inner = elements.isEmpty ? "" : "<\(elements.joined(separator: ","))>"
+        return Self.collectionToken + inner + optional
     }
 
     private func classify(_ name: String) -> String {
