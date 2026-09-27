@@ -10,8 +10,7 @@ struct QueryView: View {
     let codebaseID: UUID
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var selector = AcaiQuality.Selector()
-    @State private var memberFilter = MemberFilter()
+    @State private var filter = QueryFilterState()
     @State private var reindexPhase: AsyncOperationPhase = .idle
     /// A sheet, not inline: stacking `SelectorEditor` and `MemberFilterEditor` inline squeezes the
     /// results list too short to render on a compact-height screen.
@@ -80,12 +79,12 @@ struct QueryView: View {
 
     private func content(codebase: Codebase, artifact: CodeArtifact) -> some View {
         let rows = TypeQuery(
-            artifact: artifact, selector: selector, members: memberFilter,
+            artifact: artifact, selector: filter.selector, members: filter.members,
             languageResolver: artifact.standardLanguageResolver
         ).rows
         return Group {
             if rows.isEmpty {
-                emptyState(codebaseHasNoTypes: isFilterEmpty)
+                emptyState(reason: filter.emptyStateReason(hasAnyType: !artifact.types.isEmpty))
             } else {
                 List(rows, id: \.id) { row in
                     typeRow(row, codebase: codebase)
@@ -97,10 +96,6 @@ struct QueryView: View {
                 #endif
             }
         }
-    }
-
-    private var isFilterEmpty: Bool {
-        selector == AcaiQuality.Selector() && memberFilter == MemberFilter()
     }
 
     private var filterButton: some View {
@@ -115,13 +110,10 @@ struct QueryView: View {
     private var filterSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: .spacingL) {
-                SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $selector)
-                MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $memberFilter)
-                if !isFilterEmpty {
-                    Button(.app("View.QueryView.ClearFilters")) {
-                        selector = AcaiQuality.Selector()
-                        memberFilter = MemberFilter()
-                    }
+                SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $filter.selector)
+                MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $filter.members)
+                if !filter.isEmpty {
+                    Button(.app("View.QueryView.ClearFilters")) { filter.clear() }
                     .accessibilityIdentifier("query.clearFiltersButton")
                 }
                 Spacer()
@@ -141,8 +133,8 @@ struct QueryView: View {
         }
     }
 
-    private func emptyState(codebaseHasNoTypes: Bool) -> some View {
-        let text: LocalizedStringResource = codebaseHasNoTypes
+    private func emptyState(reason: QueryFilterState.EmptyStateReason) -> some View {
+        let text: LocalizedStringResource = reason == .codebaseHasNoTypes
             ? .app("View.QueryView.NoTypesInCodebase")
             : .app("View.QueryView.NoTypesMatchFilters")
         return VStack(spacing: .spacingM) {
@@ -170,7 +162,7 @@ struct QueryView: View {
                 Text(verbatim: row.qualifiedName)
                     .fontWeight(.medium)
                 Spacer()
-                if !memberFilter.hasActiveFacet {
+                if !filter.members.hasActiveFacet {
                     Text(.app("View.QueryView.Members \(row.members.count)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -198,7 +190,7 @@ struct QueryView: View {
                         .controlSize(.small)
                 }
             }
-            if memberFilter.hasActiveFacet {
+            if filter.members.hasActiveFacet {
                 memberRows(row, codebase: codebase)
             }
         }
