@@ -87,7 +87,7 @@ struct RepositorySubpathTests {
     @Test("A directory that is the repository root has an empty prefix")
     func rootDirectoryHasEmptyPrefix() {
         let root = URL(fileURLWithPath: "/tmp/repo")
-        #expect(RepositorySubpath(root: root, directory: root).prefix == "")
+        #expect(RepositorySubpath(root: root, directory: root).prefix.isEmpty)
     }
 
     @Test("A directory below the root carries its relative path as the prefix")
@@ -101,6 +101,6 @@ struct RepositorySubpathTests {
     func unrelatedDirectoryFallsBackToEmptyPrefix() {
         let root = URL(fileURLWithPath: "/tmp/repo")
         let elsewhere = URL(fileURLWithPath: "/tmp/other")
-        #expect(RepositorySubpath(root: root, directory: elsewhere).prefix == "")
+        #expect(RepositorySubpath(root: root, directory: elsewhere).prefix.isEmpty)
     }
 }
