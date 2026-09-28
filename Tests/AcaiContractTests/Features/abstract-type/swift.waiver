@@ -1,0 +1,1 @@
+Swift has no abstract class; a protocol with an unimplemented requirement is the idiom, which is a different TypeKind and is covered by interface-conformance.

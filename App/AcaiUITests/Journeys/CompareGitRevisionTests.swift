@@ -10,7 +10,7 @@ import XCTest
 @MainActor
 final class CompareGitRevisionTests: UIJourneyTestCase {
     func testComparingAgainstHEADShowsTheAddedTypeAsADelta() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .cannedComparedWithHEAD)
+        let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
         diagram.typeNode(named: "Added").waitOrFail("the Added type on the current side", timeout: .uiWork)

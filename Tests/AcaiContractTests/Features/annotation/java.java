@@ -1,0 +1,2 @@
+@Marker
+public class Box {}

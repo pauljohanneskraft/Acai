@@ -116,9 +116,6 @@ struct ArtifactSource: ParsableArguments {
         case .entry(let entry):
             try entry.artifact.validatingSchemaVersion(describedAs: description)
             return entry.artifact
-        case .legacyArtifact(let artifact):
-            try artifact.validatingSchemaVersion(describedAs: description)
-            return artifact
         case .absent:
             return nil
         }

@@ -1,0 +1,1 @@
+JavaScript carries no type annotation, so a field's declared type cannot be compared.

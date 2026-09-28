@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("MCPBinaryLocator")
+@Suite("MCPBinaryLocator", .timeLimit(.minutes(1)))
 struct MCPBinaryLocatorTests {
     @Test("Finds an executable binary in the first candidate directory that has one")
     func findsBinaryInFirstMatchingDirectory() throws {

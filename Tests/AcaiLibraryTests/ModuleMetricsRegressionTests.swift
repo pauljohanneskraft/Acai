@@ -6,7 +6,7 @@ import AcaiLibrary
 /// A real multi-target Swift package must resolve each target to its own module, not collapse into
 /// a fallback `"root"` — exercised end-to-end through `AnalysisService.standard.analyzeProject`, the
 /// real Swift parser, and `ProjectDiscovery`.
-@Suite("Module metrics regression")
+@Suite("Module metrics regression", .timeLimit(.minutes(1)))
 struct ModuleMetricsRegressionTests {
 
     private func withTempDir(_ body: (URL) async throws -> Void) async throws {

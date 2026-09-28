@@ -1,0 +1,1 @@
+JavaScript carries no parameter-type annotation, so a call through a parameter has no receiver type to resolve to.

@@ -1,0 +1,1 @@
+TypeScript cannot add a member to an existing class; declaration merging extends an interface's shape, not a class's members.

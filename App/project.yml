@@ -200,4 +200,5 @@ schemes:
       config: Debug
       targets:
         - package: Acai/AcaiCoreTests
+        - package: Acai/AcaiAppModelTests
         - package: Acai/AcaiAppTests

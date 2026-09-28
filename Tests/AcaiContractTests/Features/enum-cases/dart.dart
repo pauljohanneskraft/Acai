@@ -1,0 +1,4 @@
+enum Genre {
+  pop,
+  rock
+}

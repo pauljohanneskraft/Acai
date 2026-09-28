@@ -1,0 +1,1 @@
+Kotlin has no static member; the idiom is a companion object, which declares a nested type holding the member rather than a static member on the class, and is covered by companion-extension.

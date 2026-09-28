@@ -1,0 +1,1 @@
+Python can only add a member by assigning to the class at runtime, which is not a declaration.

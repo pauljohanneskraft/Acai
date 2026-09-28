@@ -6,10 +6,16 @@ import XCTest
 @MainActor
 final class GuidedRouteJourneyTests: UIJourneyTestCase {
 
-    func testFirstIndexOffersARouteWhoseStopOpensItsDiagram() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
+    func testAFirstIndexOffersARouteThatSurvivesHidingAndOpensItsDiagram() throws {
+        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned)
         codebaseDetail.guidedRouteCard.waitOrFail("the guided route card after a first index", timeout: .uiWork)
         XCTAssertFalse(codebaseDetail.guidedRouteButton.exists, "the header button is redundant while the card shows")
+
+        // Before the capture below, which scrolls: showing the route again reaches for the header
+        // button, which a scrolled screen has moved out of the way.
+        codebaseDetail.hideGuidedRoute()
+        codebaseDetail.showGuidedRoute()
+        codebaseDetail.guidedRouteStop(kind: "mostDependedUpon").waitOrFail("the most depended-upon stop")
 
         // Only the card: the rest of the screen shows the per-run "Last indexed" timestamp.
         codebaseDetail.scrollIntoView(codebaseDetail.guidedRouteCard, "the guided route card")
@@ -18,14 +24,5 @@ final class GuidedRouteJourneyTests: UIJourneyTestCase {
         let diagram = codebaseDetail.openGuidedRouteStop(kind: "mostDependedUpon", as: ClassDiagramScreen.self)
         diagram.typeNode(named: "Helper").waitOrFail("the focused Helper type node", timeout: .uiWork)
         diagram.typeNode(named: "Derived").waitOrFail("Helper's dependent Derived")
-    }
-
-    func testHidingTheRouteKeepsItAvailableFromTheHeader() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .parsed)
-        codebaseDetail.guidedRouteCard.waitOrFail("the guided route card after a first index", timeout: .uiWork)
-
-        codebaseDetail.hideGuidedRoute()
-        codebaseDetail.showGuidedRoute()
-        codebaseDetail.guidedRouteStop(kind: "mostDependedUpon").waitOrFail("the most depended-upon stop")
     }
 }

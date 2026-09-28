@@ -1,0 +1,19 @@
+{
+  "types": [
+    { "name": "Item", "kind": "class", "access": "+" },
+    {
+      "name": "Playlist",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "items", "role": "property", "access": "+", "type": "#collection<Item>" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "kind": "aggregation", "source": "Playlist", "target": "Item",
+      "label": "items", "multiplicity": "*"
+    }
+  ]
+}

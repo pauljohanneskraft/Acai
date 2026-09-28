@@ -28,11 +28,22 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     private(set) var pendingOpen: Task<Void, Never>?
     private var storeSubscriptions: Set<AnyCancellable> = []
+    let analyzers: CodebaseAnalyzerProviding
+    let comparisonSources: ComparisonArtifactSourcing
+    let checkouts: LocalCheckoutInspecting
 
     /// Each window has its own view model over the one shared store, so a change made through
     /// another window (or a system action) re-renders this one and prunes what it no longer finds.
-    init(store: ProjectStore) {
+    init(
+        store: ProjectStore,
+        analyzers: CodebaseAnalyzerProviding = CodebaseAnalyzingResolver(),
+        comparisonSources: ComparisonArtifactSourcing = ComparisonArtifactResolver(),
+        checkouts: LocalCheckoutInspecting = GitCheckoutInspector()
+    ) {
         self.store = store
+        self.analyzers = analyzers
+        self.comparisonSources = comparisonSources
+        self.checkouts = checkouts
         store.objectWillChange
             .sink { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -102,7 +113,8 @@ final class ProjectBrowserViewModel: ObservableObject {
             store: store,
             persist: { [weak self] in self?.persistChanges() },
             notify: { [weak self] in self?.objectWillChange.send() },
-            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) }
+            invalidateAnalysis: { [weak self] id in self?.invalidateAnalysis(codebaseID: id) },
+            analyzers: analyzers
         )
     }
 
@@ -257,6 +269,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     func freshness(for codebaseID: UUID) -> CodebaseFreshness? {
         if case .ready(_, let freshness) = freshnessStates[codebaseID] { return freshness }
         return nil
+    }
+
+    func showsStaleBanner(codebaseID: UUID) -> Bool {
+        freshness(for: codebaseID) == .stale
     }
 
     /// No-op when a matching (same token) result is already cached or in flight.

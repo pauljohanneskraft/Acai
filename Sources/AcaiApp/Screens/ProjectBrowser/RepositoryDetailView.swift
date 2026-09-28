@@ -1,58 +1,61 @@
-import AcaiGit
 import SwiftUI
 
 struct RepositoryDetailView: View {
     let remoteURL: URL
+    let remoteService: GitRemoteService
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
-    @State private var onDiskSize: Int64?
-    @State private var lastFetchedAt: Date?
-    @State private var worktreeNames: [String] = []
-    @State private var isFetching = false
-    @State private var isLoadingDetails = false
-    @State private var errorMessage: String?
-    @State private var isShallow = false
-    @State private var fullHistoryPhase: AsyncOperationPhase = .idle
-
-    private var hub: GitRepository {
-        GitRepository(remoteURL: remoteURL, storeDirectory: model.store.gitRepositoriesDir)
-    }
-
-    private var referencingCodebases: [Codebase] {
-        model.repositoryIndex().first { $0.remoteURL == remoteURL }?.codebases ?? []
+    /// Defaults to real git, swapped for a fixture under a UI test — see `GitRemoteService`.
+    init(remoteURL: URL, remoteService: GitRemoteService? = nil) {
+        self.remoteURL = remoteURL
+        self.remoteService = remoteService ?? GitRemoteServiceResolver().resolve()
     }
 
     var body: some View {
-        let referencingCodebases = referencingCodebases
+        RepositoryDetailContent(
+            details: RepositoryDetailModel(remoteURL: remoteURL, store: model.store, remoteService: remoteService))
+    }
+}
+
+private struct RepositoryDetailContent: View {
+    @StateObject private var details: RepositoryDetailModel
+    @State private var fullHistoryPhase: AsyncOperationPhase = .idle
+
+    init(details: @autoclosure @escaping () -> RepositoryDetailModel) {
+        _details = StateObject(wrappedValue: details())
+    }
+
+    var body: some View {
+        let referencingCodebases = details.referencingCodebases
         Form {
             Section(.app("View.RepositoryDetailView.Repository")) {
                 LabeledContent {
-                    Text(verbatim: remoteURL.absoluteString)
+                    Text(verbatim: details.remoteURL.absoluteString)
                 } label: {
                     Text(.app("View.RepositoryDetailView.Remote"))
                 }
                 LabeledContent {
-                    if isLoadingDetails {
+                    if details.isLoadingDetails {
                         ProgressView()
                     } else {
-                        Text(verbatim: onDiskSize.map(Self.byteCountFormatter.string(fromByteCount:)) ?? "—")
+                        Text(verbatim: details.onDiskSize.map(Self.byteCountFormatter.string(fromByteCount:)) ?? "—")
                             .accessibilityIdentifier("repository.diskSizeValue")
                     }
                 } label: {
                     Text(.app("View.RepositoryDetailView.DiskSize"))
                 }
                 LabeledContent {
-                    if isLoadingDetails {
+                    if details.isLoadingDetails {
                         ProgressView()
                     } else {
-                        (lastFetchedAt.map { Text(verbatim: $0.formatted(.relative(presentation: .named))) }
+                        (details.lastFetchedAt.map { Text(verbatim: $0.formatted(.relative(presentation: .named))) }
                             ?? Text(.app("View.RepositoryDetailView.Never")))
                             .accessibilityIdentifier("repository.lastFetchedValue")
                     }
                 } label: {
                     Text(.app("View.RepositoryDetailView.LastFetched"))
                 }
-                if isShallow {
+                if details.isShallow {
                     LabeledContent {
                         Label(
                             .app("View.CodebaseDetailView.LatestSnapshotOnly"),
@@ -64,9 +67,10 @@ struct RepositoryDetailView: View {
                     }
                     HStack {
                         FetchFullHistoryButton(
-                            remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "repository.fullHistory"
+                            remoteURL: details.remoteURL, phase: $fullHistoryPhase,
+                            identifierPrefix: "repository.fullHistory"
                         ) {
-                            Task { await loadDetails() }
+                            Task { await details.loadDetails() }
                         }
                     }
                 }
@@ -84,14 +88,14 @@ struct RepositoryDetailView: View {
                 }
             }
 
-            Section(.app("View.RepositoryDetailView.Worktrees \(worktreeNames.count)")) {
-                if isLoadingDetails {
+            Section(.app("View.RepositoryDetailView.Worktrees \(details.worktreeNames.count)")) {
+                if details.isLoadingDetails {
                     ProgressView()
-                } else if worktreeNames.isEmpty {
+                } else if details.worktreeNames.isEmpty {
                     Text(.app("View.RepositoryDetailView.NoLinkedWorktrees"))
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(worktreeNames, id: \.self) { name in
+                    ForEach(details.worktreeNames, id: \.self) { name in
                         Label(name, systemImage: "arrow.triangle.branch")
                             .font(.system(.body, design: .monospaced))
                     }
@@ -105,64 +109,24 @@ struct RepositoryDetailView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    Task { await fetchNow() }
+                    Task { await details.fetchNow() }
                 } label: {
                     Label(.app("View.RepositoryDetailView.FetchNow"), systemImage: "arrow.clockwise")
                 }
-                .disabled(isFetching)
+                .disabled(details.isFetching)
                 .accessibilityIdentifier("repository.fetchNowButton")
             }
         }
         .alert(
             .app("View.RepositoryDetailView.OperationFailed"),
-            isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+            isPresented: Binding(
+                get: { details.errorMessage != nil }, set: { if !$0 { details.errorMessage = nil } })
         ) {
             Button(.app("View.RepositoryDetailView.OK")) {}
         } message: {
-            Text(verbatim: errorMessage ?? "")
+            Text(verbatim: details.errorMessage ?? "")
         }
-        .task(id: remoteURL) { await loadDetails() }
-    }
-
-    private func loadDetails() async {
-        isLoadingDetails = true
-        defer { isLoadingDetails = false }
-        let hub = hub
-        let (size, fetchedAt, names, shallow) = await Task.detached(priority: .userInitiated) {
-            (
-                hub.onDiskSize, hub.lastFetchedAt,
-                (try? GitWorktree(repositoryDirectory: hub.localPath).list()) ?? [], hub.isShallow
-            )
-        }.value
-        isShallow = shallow
-        onDiskSize = size
-        lastFetchedAt = fetchedAt
-        worktreeNames = names.sorted()
-    }
-
-    private func fetchNow() async {
-        guard !isFetching else { return }
-        isFetching = true
-        defer { isFetching = false }
-        let hub = hub
-        let locks = model.store.gitRepositoryLocks
-        let remoteURL = remoteURL
-        do {
-            // Registered with `activityCenter` — shows up in the global Activity indicator and
-            // flips this repository's row (in the sidebar's Repositories section) to a spinner,
-            // the same as a codebase's reindex/fetch does.
-            _ = try await model.store.activityCenter.run(
-                title: .app("Activity.FetchingRemote \(remoteURL.lastPathComponent)"),
-                kind: .gitFetch, subject: .repository(remoteURL)
-            ) { onProgress in
-                try await locks.run(for: hub) {
-                    try await hub.fetch(onProgress: onProgress)
-                }
-            }
-            await loadDetails()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        .task { await details.loadDetails() }
     }
 
     private static let byteCountFormatter: ByteCountFormatter = {

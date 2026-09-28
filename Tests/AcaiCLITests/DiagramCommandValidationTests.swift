@@ -47,6 +47,21 @@ struct DiagramCommandValidationTests {
         )
     }
 
+    @Test func rejectsModuleCouplingWithAnotherMode() {
+        expectValidationError(
+            ["--source", "/tmp/x", "--module-coupling", "--package"],
+            contains: "Specify only one of"
+        )
+    }
+
+    /// `--module-coupling` is the one mode `DiagramShapeFlags` carries that `acai image` cannot
+    /// render, so the shared flag group must not let it through there silently.
+    @Test func moduleCouplingAloneIsAccepted() throws {
+        let root = try AcaiCommand.parseAsRoot(["diagram", "--source", "/tmp/x", "--module-coupling"])
+        let command = try #require(root as? AcaiCommand.Diagram)
+        #expect(command.shape.moduleCoupling)
+    }
+
     @Test func rejectsScopeWithoutCallGraph() {
         expectValidationError(
             ["--source", "/tmp/x", "--call-graph-scope", "type:A"],

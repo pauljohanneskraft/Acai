@@ -5,7 +5,7 @@ import AcaiQuality
 
 /// `ProjectStore.exportAllData()`/`importAllData(_:mode:)`: the manual "Export All Data" / "Import"
 /// bridge for "no iCloud sync."
-@Suite("ProjectStore export/import")
+@Suite("ProjectStore export/import", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStoreExportTests {
 

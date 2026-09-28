@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Browser windows")
+@Suite("Browser windows", .timeLimit(.minutes(1)))
 @MainActor
 struct BrowserWindowsTests {
     private func withTempStoreDir<T>(_ body: (URL) async throws -> T) async rethrows -> T {

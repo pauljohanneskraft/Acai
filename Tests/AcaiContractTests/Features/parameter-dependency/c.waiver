@@ -1,0 +1,1 @@
+C has no class and no member functions, so a parameter dependency runs from a free function rather than from one type to another.
